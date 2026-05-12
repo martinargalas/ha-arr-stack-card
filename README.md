@@ -156,14 +156,6 @@ sticky_nav_offset: 100    # px before sticky nav appears on mobile scroll
 
 ---
 
-## Support
-
-If you find this card useful, consider supporting the development:
-
-[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow)](https://buymeacoffee.com/argii)
-
----
-
 ## Related
 
 - [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) — required companion proxy integration
