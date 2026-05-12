@@ -27,8 +27,16 @@ var ArrStackCardEditor = class extends HTMLElement {
     const v = this._config?.styles?.[key];
     return v !== void 0 ? v : fallback;
   }
+  // Extract hex from stored hex or rgba string
+  _toHex(val, fallback) {
+    if (!val) return fallback;
+    if (/^#/.test(val)) return val;
+    const m = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (m) return "#" + [m[1], m[2], m[3]].map((n) => parseInt(n).toString(16).padStart(2, "0")).join("");
+    return fallback;
+  }
   _render() {
-    const c = this._config;
+    const perfMode = !!this._styleVal("performanceMode", false);
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -56,9 +64,12 @@ var ArrStackCardEditor = class extends HTMLElement {
           margin-bottom: 10px; padding-bottom: 4px;
           border-bottom: 1px solid var(--divider-color, #e0e0e0);
         }
-        .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .row label { flex: 1; font-size: 13px; }
-        .row select, .row input[type="number"], .row input[type="text"] {
+        .row {
+          display: flex; align-items: center; gap: 10px;
+          margin-bottom: 10px;
+        }
+        .row-label { flex: 1; font-size: 13px; }
+        .row select, .row input[type="number"] {
           width: 160px; padding: 6px 8px; border-radius: 6px; font-size: 13px;
           border: 1px solid var(--divider-color, #e0e0e0);
           background: var(--card-background-color, #fff);
@@ -68,12 +79,10 @@ var ArrStackCardEditor = class extends HTMLElement {
           width: 44px; height: 32px; padding: 2px; border-radius: 6px; cursor: pointer;
           border: 1px solid var(--divider-color, #e0e0e0);
           background: var(--card-background-color, #fff);
-        }
-        .row input[type="text"].color-text {
-          width: 110px; font-family: monospace; font-size: 12px;
+          flex-shrink: 0;
         }
         .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
-        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
         .toggle-slider {
           position: absolute; inset: 0; background: var(--divider-color, #ccc);
           border-radius: 20px; cursor: pointer; transition: background .2s;
@@ -86,6 +95,7 @@ var ArrStackCardEditor = class extends HTMLElement {
         .toggle input:checked + .toggle-slider { background: var(--primary-color, #03a9f4); }
         .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
         .hint { font-size: 11px; color: var(--secondary-text-color, #757575); margin-top: -6px; margin-bottom: 8px; }
+        .color-alpha { font-size: 10px; color: var(--secondary-text-color, #9e9e9e); flex-shrink: 0; white-space: nowrap; }
       </style>
 
       <a class="bmc" href="https://buymeacoffee.com/argii" target="_blank" rel="noopener">
@@ -94,21 +104,21 @@ var ArrStackCardEditor = class extends HTMLElement {
           <div class="bmc-title">Buy me a coffee \u2615</div>
           <div class="bmc-sub">If you find this card useful, support the developer</div>
         </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
 
       <!-- General -->
       <div class="section">
         <div class="section-title">General</div>
         <div class="row">
-          <label>Language</label>
+          <span class="row-label">Language</span>
           <select data-key="localisation">
             <option value="cs" ${this._val("localisation", "cs") === "cs" ? "selected" : ""}>Czech</option>
             <option value="en" ${this._val("localisation", "cs") === "en" ? "selected" : ""}>English</option>
           </select>
         </div>
         <div class="row">
-          <label>Layout</label>
+          <span class="row-label">Layout</span>
           <select data-key="layout">
             <option value="both"  ${this._val("layout", "both") === "both" ? "selected" : ""}>Both panels</option>
             <option value="left"  ${this._val("layout", "both") === "left" ? "selected" : ""}>Downloads only</option>
@@ -116,7 +126,7 @@ var ArrStackCardEditor = class extends HTMLElement {
           </select>
         </div>
         <div class="row">
-          <label>Sticky nav offset (px)</label>
+          <span class="row-label">Sticky nav offset (px)</span>
           <input type="number" data-key="sticky_nav_offset" value="${this._val("sticky_nav_offset", 100)}" min="0" max="500" step="10"/>
         </div>
       </div>
@@ -125,11 +135,11 @@ var ArrStackCardEditor = class extends HTMLElement {
       <div class="section">
         <div class="section-title">Downloads</div>
         <div class="row">
-          <label>Torrent items per page</label>
+          <span class="row-label">Torrent items per page</span>
           <input type="number" data-group="downloads" data-key="torrentItems" value="${this._cfg("downloads", "torrentItems", 3)}" min="1" max="20"/>
         </div>
         <div class="row">
-          <label>Usenet items per page</label>
+          <span class="row-label">Usenet items per page</span>
           <input type="number" data-group="downloads" data-key="usenetItems" value="${this._cfg("downloads", "usenetItems", 3)}" min="1" max="20"/>
         </div>
       </div>
@@ -138,89 +148,76 @@ var ArrStackCardEditor = class extends HTMLElement {
       <div class="section">
         <div class="section-title">Discover</div>
         <div class="row">
-          <label>Categories per page</label>
+          <span class="row-label">Categories per page</span>
           <input type="number" data-group="discover" data-key="categoriesCount" value="${this._cfg("discover", "categoriesCount", 3)}" min="1" max="10"/>
         </div>
         <div class="row">
-          <label>One-click movie request</label>
+          <span class="row-label">One-click movie request</span>
           <label class="toggle">
             <input type="checkbox" data-group="discover" data-key="oneClickMovieRequest" ${this._cfg("discover", "oneClickMovieRequest", false) ? "checked" : ""}>
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <div class="hint">When enabled, movies are requested immediately without a profile selection dialog.</div>
+        <div class="hint">Skip profile dialog \u2014 use default quality profile immediately.</div>
       </div>
 
       <!-- Appearance -->
       <div class="section">
         <div class="section-title">Appearance</div>
         <div class="row">
-          <label>Performance mode</label>
+          <span class="row-label">Performance mode</span>
           <label class="toggle">
-            <input type="checkbox" data-style-key="performanceMode" ${this._styleVal("performanceMode", false) ? "checked" : ""}>
+            <input type="checkbox" data-style-key="performanceMode" ${perfMode ? "checked" : ""}>
             <span class="toggle-slider"></span>
           </label>
         </div>
         <div class="hint">Disables backdrop blur \u2014 improves performance on low-end devices.</div>
-        ${this._colorRow("Accent color", "accentColor", "#0a84ff")}
-        ${this._colorRow("Card background", "cardBackground", "rgba(255,255,255,0.05)")}
-        ${this._colorRow("Popup background", "popupBackground", "rgba(255,255,255,0.05)")}
-        ${this._colorRow("Overlay background", "overlayBackground", "rgba(0,0,0,0.55)")}
-        ${this._colorRow("Primary text", "primaryTextColor", "rgba(255,255,255,1)")}
-        ${this._colorRow("Secondary text", "secondaryTextColor", "rgba(255,255,255,0.55)")}
-        ${this._colorRow("Muted text", "mutedTextColor", "rgba(255,255,255,0.28)")}
+
+        ${this._colorRow("Card background", "cardBackground", "#121216", "opacity 90% \u2014 perf mode only")}
       </div>
     `;
     this._wireEvents();
   }
-  _colorRow(label, key, fallback) {
-    const val = this._styleVal(key, fallback);
-    const isHex = /^#[0-9a-fA-F]{3,8}$/.test(val);
+  _colorRow(label, key, defaultHex, alphaHint) {
+    const stored = this._styleVal(key, null);
+    const hex = this._toHex(stored, defaultHex);
     return `
       <div class="row">
-        <label>${label}</label>
-        ${isHex ? `<input type="color" data-style-key="${key}" data-color-text="${key}" value="${val}"/>` : ""}
-        <input type="text" class="color-text" data-style-key="${key}" value="${val}" placeholder="${fallback}"/>
+        <span class="row-label">${label}</span>
+        ${alphaHint ? `<span class="color-alpha">${alphaHint}</span>` : ""}
+        <input type="color" data-style-key="${key}" value="${hex}"/>
       </div>`;
   }
   _wireEvents() {
-    this.shadowRoot.querySelectorAll('select[data-key], input[type="number"][data-key], input[type="text"][data-key]').forEach((el) => {
-      el.addEventListener("change", () => {
-        const key = el.dataset.key;
-        let val = el.type === "number" ? parseInt(el.value) : el.value;
-        this._update({ [key]: val });
-      });
+    this.shadowRoot.querySelectorAll("select[data-key]").forEach((el) => {
+      el.addEventListener("change", () => this._update({ [el.dataset.key]: el.value }));
+    });
+    this.shadowRoot.querySelectorAll('input[type="number"][data-key]').forEach((el) => {
+      el.addEventListener("change", () => this._update({ [el.dataset.key]: parseInt(el.value) }));
     });
     this.shadowRoot.querySelectorAll('input[type="number"][data-group]').forEach((el) => {
       el.addEventListener("change", () => {
-        const group = el.dataset.group;
-        const key = el.dataset.key;
-        const existing = this._config[group] || {};
-        this._update({ [group]: { ...existing, [key]: parseInt(el.value) } });
+        const existing = this._config[el.dataset.group] || {};
+        this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: parseInt(el.value) } });
       });
     });
     this.shadowRoot.querySelectorAll('input[type="checkbox"][data-group]').forEach((el) => {
       el.addEventListener("change", () => {
-        const group = el.dataset.group;
-        const key = el.dataset.key;
-        const existing = this._config[group] || {};
-        this._update({ [group]: { ...existing, [key]: el.checked } });
+        const existing = this._config[el.dataset.group] || {};
+        this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: el.checked } });
       });
     });
-    this.shadowRoot.querySelectorAll("input[data-style-key]").forEach((el) => {
-      const event = el.type === "color" ? "input" : "change";
-      el.addEventListener(event, () => {
-        const key = el.dataset.styleKey;
+    this.shadowRoot.querySelectorAll('input[type="checkbox"][data-style-key]').forEach((el) => {
+      el.addEventListener("change", () => {
         const existing = this._config.styles || {};
-        if (el.type === "checkbox") {
-          this._update({ styles: { ...existing, [key]: el.checked } });
-        } else {
-          if (el.type === "color") {
-            const textEl = this.shadowRoot.querySelector(`input[data-style-key="${key}"][type="text"]`);
-            if (textEl) textEl.value = el.value;
-          }
-          this._update({ styles: { ...existing, [key]: el.value } });
-        }
+        this._update({ styles: { ...existing, [el.dataset.styleKey]: el.checked } });
+        this._render();
+      });
+    });
+    this.shadowRoot.querySelectorAll('input[type="color"][data-style-key]').forEach((el) => {
+      el.addEventListener("input", () => {
+        const existing = this._config.styles || {};
+        this._update({ styles: { ...existing, [el.dataset.styleKey]: el.value } });
       });
     });
   }
@@ -443,8 +440,6 @@ var STYLES = `
 
         /* Design tokens \u2014 overridable via styles: in YAML config */
         --card-bg:        rgba(255,255,255,0.05);
-        --overlay-bg:     rgba(0,0,0,0.55);
-        --popup-bg:       rgba(255,255,255,0.05);
         --text-primary:   rgba(255,255,255,1);
         --text-secondary: rgba(255,255,255,0.55);
         --text-muted:     rgba(255,255,255,0.28);
@@ -769,7 +764,7 @@ var STYLES = `
 
       .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
 
-      .dm { font-size: 11px; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 2px; }
+      .dm { font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 2px; }
       .dm b { font-weight: 700; }
       .dm-val { color: rgba(255,255,255,0.5); font-weight: 700; }
 
@@ -828,7 +823,7 @@ var STYLES = `
         background: none;
         border: none;
         cursor: pointer;
-        color: rgba(255,255,255,0.55);
+        color: var(--text-secondary);
         font-size: 22px;
         line-height: 1;
         padding: 2px 5px;
@@ -991,7 +986,7 @@ var STYLES = `
 
       .mc-title {
         font-size: 12px; font-weight: 700;
-        color: #ffffff;
+        color: var(--text-primary);
         text-shadow: 0 1px 5px rgba(0,0,0,0.55);
         line-height: 1.3;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -999,7 +994,7 @@ var STYLES = `
       }
 
       .mc-sub {
-        font-size: 11px; color: rgba(255,255,255,0.58);
+        font-size: 11px; color: var(--text-secondary);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         margin-bottom: 3px;
       }
@@ -1098,7 +1093,7 @@ var STYLES = `
         padding: 10px 10px 8px; width: 100%;
       }
       .req-label {
-        font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.55);
+        font-size: 10px; font-weight: 700; color: var(--text-secondary);
         text-transform: uppercase; letter-spacing: 0.05em;
       }
       .req-select {
@@ -1143,7 +1138,7 @@ var STYLES = `
         flex-wrap: nowrap; overflow: hidden;
       }
       .pr-type-lbl {
-        font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.55);
+        font-size: 9px; font-weight: 700; color: var(--text-secondary);
         white-space: nowrap; flex-shrink: 0;
       }
       .pr-requester {
@@ -1257,7 +1252,7 @@ var STYLES = `
 
       /* \u2500\u2500 Placeholder \u2500\u2500 */
       .placeholder {
-        font-size: 12px; color: rgba(255,255,255,0.35);
+        font-size: 12px; color: var(--text-muted);
         padding: 8px 4px; text-align: center;
       }
 
@@ -2112,7 +2107,7 @@ var STYLES = `
       }
       /* Compensate lost blur with higher opacity so content stays readable */
       .card-body.perf-mode .col {
-        background: rgba(18,18,22,0.88);
+        background: var(--card-bg-perf, rgba(18,18,22,0.88));
       }
     `;
 
@@ -5636,22 +5631,16 @@ var ArrStackCard = class extends HTMLElement {
     const style = document.createElement("style");
     style.textContent = this._css();
     const userStyles = this._cfg?.styles || {};
+    const perfMode = !!(userStyles.performanceMode || this._cfg?.performanceMode);
     const customVars = [];
-    if (userStyles.cardBackground) customVars.push(`--card-bg: ${userStyles.cardBackground}`);
-    if (userStyles.overlayBackground) customVars.push(`--overlay-bg: ${userStyles.overlayBackground}`);
-    if (userStyles.popupBackground) customVars.push(`--popup-bg: ${userStyles.popupBackground}`);
-    if (userStyles.primaryTextColor) customVars.push(`--text-primary: ${userStyles.primaryTextColor}`);
-    if (userStyles.secondaryTextColor) customVars.push(`--text-secondary: ${userStyles.secondaryTextColor}`);
-    if (userStyles.mutedTextColor) customVars.push(`--text-muted: ${userStyles.mutedTextColor}`);
-    if (userStyles.accentColor) {
-      const rgb = this._hexToRgb(userStyles.accentColor);
-      customVars.push(`--accent: ${userStyles.accentColor}`);
-      customVars.push(`--accent-rgb: ${rgb}`);
-    }
-    if (customVars.length) {
-      const varStyle = document.createElement("style");
-      varStyle.textContent = `:host { ${customVars.join("; ")}; }`;
-      this.shadowRoot.appendChild(varStyle);
+    const hexRgba = (hex, alpha) => {
+      if (!hex || !hex.startsWith("#")) return null;
+      const rgb = this._hexToRgb(hex);
+      return rgb ? `rgba(${rgb},${alpha})` : null;
+    };
+    if (perfMode && userStyles.cardBackground) {
+      const v = hexRgba(userStyles.cardBackground, 0.9);
+      if (v) customVars.push(`--card-bg-perf: ${v}`);
     }
     const layout = this._cfg?.layout || "both";
     const wrapper = document.createElement("div");
@@ -5665,6 +5654,11 @@ var ArrStackCard = class extends HTMLElement {
     const popupRoot = document.createElement("div");
     popupRoot.id = "popup-root";
     this.shadowRoot.appendChild(style);
+    if (customVars.length) {
+      const varStyle = document.createElement("style");
+      varStyle.textContent = `:host { ${customVars.join("; ")}; }`;
+      this.shadowRoot.appendChild(varStyle);
+    }
     this.shadowRoot.appendChild(wrapper);
     this.shadowRoot.appendChild(popupRoot);
   }
