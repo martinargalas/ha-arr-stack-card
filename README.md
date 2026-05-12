@@ -1,5 +1,11 @@
 # Arr Stack Card
 
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![version](https://img.shields.io/github/v/release/martinargalas/ha-arr-stack-card)](https://github.com/martinargalas/ha-arr-stack-card/releases)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.x%2B-brightgreen.svg)](https://www.home-assistant.io)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow)](https://buymeacoffee.com/argii)
+
 <img width="376" height="746" alt="ScreenRecording2026-05-08at11 52 14-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/80a9ec5a-8556-4ccb-b7d6-d21761cbce55" />
 <img width="800" height="366" alt="ScreenRecording2026-05-07at12 40 00-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/dacd65e8-a41d-4e92-8749-8b963c5a7525" />
 
@@ -153,7 +159,7 @@ sticky_nav_offset: 100    # px before sticky nav appears on mobile scroll
 
 If you find this card useful, consider supporting the development:
 
-[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow?style=flat-square)](https://buymeacoffee.com/argii)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow)](https://buymeacoffee.com/argii)
 
 ---
 
