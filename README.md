@@ -120,13 +120,6 @@ discover:
 # Appearance
 styles:
   performanceMode: false         # disable backdrop blur
-  accentColor: "#0a84ff"         # hex only
-  cardBackground: "rgba(255,255,255,0.05)"
-  popupBackground: "rgba(255,255,255,0.05)"
-  overlayBackground: "rgba(0,0,0,0.55)"
-  primaryTextColor: "rgba(255,255,255,1)"
-  secondaryTextColor: "rgba(255,255,255,0.55)"
-  mutedTextColor: "rgba(255,255,255,0.28)"
 
 # Advanced
 sticky_nav_offset: 100    # px before sticky nav appears on mobile scroll
@@ -145,13 +138,6 @@ sticky_nav_offset: 100    # px before sticky nav appears on mobile scroll
 | `discover.categoriesCount` | `3` | Items per discover category row |
 | `discover.oneClickMovieRequest` | `false` | Request movies without profile dialog |
 | `styles.performanceMode` | `false` | Disables `backdrop-filter: blur()` |
-| `styles.accentColor` | `#0a84ff` | Primary accent color (hex) |
-| `styles.cardBackground` | `rgba(255,255,255,0.05)` | Glass panel background |
-| `styles.popupBackground` | `rgba(255,255,255,0.05)` | Popup glass background |
-| `styles.overlayBackground` | `rgba(0,0,0,0.55)` | Popup overlay backdrop |
-| `styles.primaryTextColor` | `rgba(255,255,255,1)` | Main text color |
-| `styles.secondaryTextColor` | `rgba(255,255,255,0.55)` | Secondary / label text |
-| `styles.mutedTextColor` | `rgba(255,255,255,0.28)` | Muted / placeholder text |
 | `sticky_nav_offset` | `100` | Scroll offset (px) before mobile nav appears |
 
 ---
