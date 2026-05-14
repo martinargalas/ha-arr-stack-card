@@ -109,7 +109,7 @@ The card can be fully configured via the visual editor in HA. Click the pencil i
 type: custom:arr-stack-card
 
 # General
-localisation: en             # en | cs  (default: cs)
+localisation: en             # en | cs  (default: en)
 layout: both                 # both | left | right  (default: both)
 sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (default: 100)
 
@@ -172,7 +172,7 @@ styles:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `localisation` | `cs` \| `en` | `cs` | UI language |
+| `localisation` | `cs` \| `en` | `en` | UI language |
 | `layout` | `both` \| `left` \| `right` | `both` | Which panels to show |
 | `sticky_nav_offset` | number | `100` | px from top where the floating nav bar appears (mobile/tablet) |
 

@@ -125,8 +125,8 @@ var ArrStackCardEditor = class extends HTMLElement {
         <div class="row">
           <span class="row-label">Language</span>
           <select data-key="localisation">
-            <option value="cs" ${this._val("localisation", "cs") === "cs" ? "selected" : ""}>Czech</option>
-            <option value="en" ${this._val("localisation", "cs") === "en" ? "selected" : ""}>English</option>
+            <option value="cs" ${this._val("localisation", "en") === "cs" ? "selected" : ""}>Czech</option>
+            <option value="en" ${this._val("localisation", "en") === "en" ? "selected" : ""}>English</option>
           </select>
         </div>
         <div class="row">
@@ -5642,7 +5642,7 @@ var ArrStackCard = class extends HTMLElement {
   }
   // Lokalizační helper — vrátí přeložený řetězec dle nastavení localisation: cs|en
   _t(key) {
-    const lang = this._cfg?.localisation === "en" ? "en" : "cs";
+    const lang = this._cfg?.localisation === "cs" ? "cs" : "en";
     return (ARR_I18N[lang] || ARR_I18N.cs)[key] || key;
   }
   // Returns items per page for a given section (respects YAML config)
