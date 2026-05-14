@@ -96,6 +96,18 @@ var ArrStackCardEditor = class extends HTMLElement {
         .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
         .hint { font-size: 11px; color: var(--secondary-text-color, #757575); margin-top: -6px; margin-bottom: 8px; }
         .color-alpha { font-size: 10px; color: var(--secondary-text-color, #9e9e9e); flex-shrink: 0; white-space: nowrap; }
+        .cat-list { display: flex; flex-direction: column; gap: 6px; }
+        .cat-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 8px 10px; border-radius: 8px;
+          background: var(--secondary-background-color, #f5f5f5);
+          border: 1px solid var(--divider-color, #e0e0e0);
+          transition: opacity .15s, border-color .15s, background .15s;
+        }
+        .cat-item.drag-over { border-color: var(--primary-color, #03a9f4); background: var(--primary-background-color, #fff); }
+        .cat-item.dragging { opacity: 0.4; }
+        .cat-label { flex: 1; font-size: 13px; }
+        .cat-disabled .cat-label { opacity: 0.45; }
       </style>
 
       <a class="bmc" href="https://buymeacoffee.com/argii" target="_blank" rel="noopener">
@@ -152,6 +164,11 @@ var ArrStackCardEditor = class extends HTMLElement {
           <input type="number" data-group="discover" data-key="categoriesCount" value="${this._cfg("discover", "categoriesCount", 3)}" min="1" max="10"/>
         </div>
         <div class="row">
+          <span class="row-label">Show More card on page</span>
+          <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg("discover", "showMoreOnPage", 3)}" min="1" max="50"/>
+        </div>
+        <div class="hint">Insert a "See More" card as the last slot on this page. Opens full-section overlay. Default: 3.</div>
+        <div class="row">
           <span class="row-label">One-click movie request</span>
           <label class="toggle">
             <input type="checkbox" data-group="discover" data-key="oneClickMovieRequest" ${this._cfg("discover", "oneClickMovieRequest", false) ? "checked" : ""}>
@@ -159,6 +176,24 @@ var ArrStackCardEditor = class extends HTMLElement {
           </label>
         </div>
         <div class="hint">Skip profile dialog \u2014 use default quality profile immediately.</div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="section">
+        <div class="section-title">Right Panel \u2014 Categories</div>
+        <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide.</div>
+        <div class="cat-list">
+          ${this._getCats().map((c) => `
+            <div class="cat-item${c.enabled === false ? " cat-disabled" : ""}" draggable="true" data-cat-id="${c.id}">
+              <ha-icon icon="mdi:drag-vertical" style="--mdc-icon-size:18px;color:var(--secondary-text-color,#9e9e9e);flex-shrink:0;cursor:grab"></ha-icon>
+              <span class="cat-label">${this._catLabel(c.id)}</span>
+              <label class="toggle">
+                <input type="checkbox" data-cat-toggle="${c.id}" ${c.enabled !== false ? "checked" : ""}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          `).join("")}
+        </div>
       </div>
 
       <!-- Appearance -->
@@ -177,6 +212,31 @@ var ArrStackCardEditor = class extends HTMLElement {
       </div>
     `;
     this._wireEvents();
+  }
+  _defaultCats() {
+    return [
+      { id: "radarr", enabled: true },
+      { id: "sonarr", enabled: true },
+      { id: "upcoming", enabled: true },
+      { id: "tvUpcoming", enabled: true },
+      { id: "trending", enabled: true },
+      { id: "popular", enabled: true },
+      { id: "calendar", enabled: true }
+    ];
+  }
+  _getCats() {
+    return this._config?.categories || this._defaultCats();
+  }
+  _catLabel(id) {
+    return {
+      radarr: "Movies (Radarr)",
+      sonarr: "TV Shows (Sonarr)",
+      upcoming: "Movie Requests",
+      tvUpcoming: "TV Requests",
+      trending: "Trending",
+      popular: "Popular",
+      calendar: "Calendar"
+    }[id] || id;
   }
   _colorRow(label, key, defaultHex, alphaHint) {
     const stored = this._styleVal(key, null);
@@ -218,6 +278,46 @@ var ArrStackCardEditor = class extends HTMLElement {
       el.addEventListener("input", () => {
         const existing = this._config.styles || {};
         this._update({ styles: { ...existing, [el.dataset.styleKey]: el.value } });
+      });
+    });
+    this.shadowRoot.querySelectorAll("input[data-cat-toggle]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const cats = this._getCats().map(
+          (c) => c.id === el.dataset.catToggle ? { ...c, enabled: el.checked } : c
+        );
+        this._update({ categories: cats });
+      });
+    });
+    let dragId = null;
+    this.shadowRoot.querySelectorAll(".cat-item").forEach((el) => {
+      el.addEventListener("dragstart", (e) => {
+        dragId = el.dataset.catId;
+        el.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
+        dragId = null;
+      });
+      el.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        el.classList.add("drag-over");
+      });
+      el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
+      el.addEventListener("drop", (e) => {
+        e.preventDefault();
+        el.classList.remove("drag-over");
+        const toId = el.dataset.catId;
+        if (!dragId || dragId === toId) return;
+        const cats = [...this._getCats()];
+        const from = cats.findIndex((c) => c.id === dragId);
+        const to = cats.findIndex((c) => c.id === toId);
+        if (from < 0 || to < 0) return;
+        const [item] = cats.splice(from, 1);
+        cats.splice(to, 0, item);
+        this._update({ categories: cats });
+        this._render();
       });
     });
   }
@@ -467,19 +567,19 @@ var STYLES = `
 
       .col-hdr-title {
         font-size: 14px; font-weight: 700;
-        color: var(--text-primary);
+        color: rgba(var(--arr-ht-rgb, 255, 255, 255), 1);
         white-space: nowrap;
       }
 
       .col-hdr-line {
         flex: 1; height: 6px;
         border-radius: 999px;
-        background: rgba(255,255,255,0.55);
+        background: rgba(var(--arr-hd-rgb, 255, 255, 255), 0.55);
         margin-left: 10px;
       }
 
-      .col-hdr ha-icon {
-        color: rgba(255,255,255,1);
+      .col-hdr > ha-icon {
+        color: rgba(var(--arr-ht-rgb, 255, 255, 255), 1);
         flex-shrink: 0;
       }
 
@@ -548,7 +648,7 @@ var STYLES = `
       .sec-title {
         font-size: 12px; font-weight: 700;
         text-transform: uppercase; letter-spacing: 0.09em;
-        color: var(--text-primary);
+        color: rgba(var(--arr-ht-rgb, 255, 255, 255), 1);
         text-shadow: 0 1px 3px rgba(0,0,0,0.3);
       }
 
@@ -556,9 +656,17 @@ var STYLES = `
         font-size: 9px; font-weight: 700;
         padding: 1px 6px; border-radius: 7px;
         margin-left: auto;
-        color: #ffffff;
+        color: rgba(var(--arr-tp-rgb, 255, 255, 255), 1);
         text-shadow: 0 1px 3px rgba(0,0,0,0.4);
       }
+      .sec-page-ind {
+        font-size: 10px; font-weight: 500;
+        color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.38);
+        white-space: nowrap; letter-spacing: 0.3px;
+        margin-left: auto;
+      }
+      .sec-page-ind + .sec-badge { margin-left: 8px; }
+      .sec-page-sep { margin: 0 2px; opacity: 0.55; }
 
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          DISK CHIPS
@@ -594,7 +702,7 @@ var STYLES = `
 
       .dc-label {
         font-size: 10px; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.06em; color: #fff; margin-bottom: 2px;
+        letter-spacing: 0.06em; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 1); margin-bottom: 2px;
         text-shadow: 0 1px 4px rgba(0,0,0,0.6);
       }
 
@@ -605,7 +713,7 @@ var STYLES = `
       .dc-val span { text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
 
       .dc-sub {
-        font-size: 11px; color: #fff;
+        font-size: 11px; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 1);
         text-shadow: 0 1px 4px rgba(0,0,0,0.6);
         line-height: 1.5;
       }
@@ -622,7 +730,7 @@ var STYLES = `
       }
 
       .client-hd ha-icon {
-        color: rgba(255,255,255,1); flex-shrink: 0;
+        color: rgba(var(--arr-ht-rgb, 255, 255, 255), 1); flex-shrink: 0;
       }
 
       .client-hd .col-hdr-line {
@@ -631,7 +739,7 @@ var STYLES = `
 
       .cl-name {
         font-size: 15px; font-weight: 700;
-        color: rgba(255,255,255,1);
+        color: rgba(var(--arr-ht-rgb, 255, 255, 255), 1);
         white-space: nowrap;
       }
 
@@ -642,13 +750,13 @@ var STYLES = `
       .sb {
         font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
         border: 1px solid rgba(255,255,255,0.30); background: rgba(255,255,255,0.12);
-        color: rgba(255,255,255,0.85); cursor: pointer;
+        color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.85); cursor: pointer;
         backdrop-filter: blur(8px);
       }
 
       .sb.on {
         background: rgba(var(--accent-rgb),0.30); border-color: rgba(var(--accent-rgb),0.55);
-        color: #fff;
+        color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1);
       }
 
       .sb:active { transform: scale(0.88); }
@@ -662,16 +770,16 @@ var STYLES = `
         width: 26px; height: 26px; flex-shrink: 0;
         border-radius: 7px; border: 1px solid rgba(255,255,255,0.22);
         background: rgba(255,255,255,0.10);
-        color: rgba(255,255,255,0.80); cursor: pointer;
+        color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.80); cursor: pointer;
         backdrop-filter: blur(8px);
         transition: background 0.15s, color 0.15s;
       }
       .action-btn:hover {
-        background: rgba(255,255,255,0.20); color: #fff;
+        background: rgba(255,255,255,0.20); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1);
       }
       .action-btn.paused {
         background: rgba(48,209,88,0.28); border-color: rgba(48,209,88,0.55);
-        color: #fff;
+        color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1);
       }
       .action-btn:active { transform: scale(0.88); }
 
@@ -698,30 +806,30 @@ var STYLES = `
         width: 22px; height: 22px; flex-shrink: 0;
         border-radius: 5px; border: 1px solid rgba(255,255,255,0.28);
         background: rgba(255,255,255,0.10);
-        color: rgba(255,255,255,0.90); cursor: pointer;
+        color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.90); cursor: pointer;
         padding: 0;
         transition: background 0.12s, color 0.12s;
       }
-      .tb:hover  { background: rgba(255,255,255,0.22); color: #fff; }
+      .tb:hover  { background: rgba(255,255,255,0.22); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
       .tb:active { transform: scale(0.88); }
 
       /* Resume \u2014 green tint */
-      .tb-resume { border-color: rgba(48,209,88,0.40); background: rgba(48,209,88,0.18); color: #fff; }
-      .tb-resume:hover { background: rgba(48,209,88,0.32); color: #fff; }
+      .tb-resume { border-color: rgba(48,209,88,0.40); background: rgba(48,209,88,0.18); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
+      .tb-resume:hover { background: rgba(48,209,88,0.32); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
 
       /* Pause \u2014 stejn\xE1 neutr\xE1ln\xED barva jako glob\xE1ln\xED action-btn */
-      .tb-pause  { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.10); color: #fff; }
+      .tb-pause  { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.10); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
       .tb-pause:hover  { background: rgba(255,255,255,0.22); }
 
       /* Remove (initial) \u2014 neutral */
       .tb-remove { }
-      .tb-remove:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.55); color: #fff; }
+      .tb-remove:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.55); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
 
-      .tb-retry { border-color: rgba(255,159,10,0.40); background: rgba(255,159,10,0.14); color: #fff; flex-shrink: 0; }
+      .tb-retry { border-color: rgba(255,159,10,0.40); background: rgba(255,159,10,0.14); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); flex-shrink: 0; }
       .tb-retry:hover { background: rgba(255,159,10,0.30); border-color: rgba(255,159,10,0.65); }
 
       .tb-hist-del { flex-shrink: 0; }
-      .tb-hist-del:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.55); color: #fff; }
+      .tb-hist-del:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.55); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
 
       .sab-failed-sep {
         margin: 6px 0 4px; height: 1px;
@@ -732,9 +840,9 @@ var STYLES = `
       /* Confirm row: cancel / keep / delete */
       .tb-cancel { border-color: rgba(255,255,255,0.30); }
       .tb-keep   { border-color: rgba(255,149,0,0.40);  background: rgba(255,149,0,0.18);  color: rgba(255,149,0,0.90); }
-      .tb-keep:hover { background: rgba(255,149,0,0.32); color: #fff; }
+      .tb-keep:hover { background: rgba(255,149,0,0.32); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
       .tb-del    { border-color: rgba(255,69,58,0.55);  background: rgba(255,69,58,0.28);  color: rgba(255,90,80,0.90); }
-      .tb-del:hover  { background: rgba(255,69,58,0.45); color: #fff; }
+      .tb-del:hover  { background: rgba(255,69,58,0.45); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
 
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          SECTION GLASS CARD
@@ -753,20 +861,20 @@ var STYLES = `
 
       .dl-name {
         font-size: 12px; font-weight: 600;
-        color: #ffffff;
+        color: rgba(var(--arr-pt-rgb, 255, 255, 255), 1);
         text-shadow: 0 1px 5px rgba(0,0,0,0.55);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         max-width: 360px;
       }
 
-      .dl-pct { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); flex-shrink: 0; margin-left: 8px;
+      .dl-pct { font-size: 13px; font-weight: 800; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.5); flex-shrink: 0; margin-left: 8px;
         text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
       .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
 
-      .dm { font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 2px; }
+      .dm { font-size: 11px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.55); display: flex; align-items: center; gap: 2px; }
       .dm b { font-weight: 700; }
-      .dm-val { color: rgba(255,255,255,0.5); font-weight: 700; }
+      .dm-val { color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.5); font-weight: 700; }
 
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          PILL CHIP SYSTEM  (speed + status)
@@ -775,7 +883,7 @@ var STYLES = `
       .g, .pill-green, .pill-orange, .pill-red, .pill-blue, .pill-yellow, .pill-teal {
         display: inline-flex; align-items: center; gap: 3px;
         border-radius: 999px; border: 1px solid transparent;
-        font-weight: 700; color: #fff; white-space: nowrap;
+        font-weight: 700; color: rgba(var(--arr-tp-rgb, 255, 255, 255), 1); white-space: nowrap;
       }
       /* macOS green \u2014 #30D158 */
       .g, .pill-green  { background: rgba(48,209,88,0.38);  border-color: rgba(48,209,88,0.70); }
@@ -823,7 +931,7 @@ var STYLES = `
         background: none;
         border: none;
         cursor: pointer;
-        color: var(--text-secondary);
+        color: rgba(var(--arr-pbt-rgb, 255, 255, 255), 0.55);
         font-size: 22px;
         line-height: 1;
         padding: 2px 5px;
@@ -882,7 +990,7 @@ var STYLES = `
         position: absolute; top: 4px; left: 4px; z-index: 2;
         background: rgba(0,0,0,0.62);
         backdrop-filter: blur(4px);
-        color: rgba(255,255,255,0.92);
+        color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.92);
         font-size: 9px; font-weight: 700;
         padding: 2px 5px; border-radius: 4px;
         letter-spacing: 0.05em;
@@ -986,7 +1094,7 @@ var STYLES = `
 
       .mc-title {
         font-size: 12px; font-weight: 700;
-        color: var(--text-primary);
+        color: rgba(var(--arr-pt-rgb, 255, 255, 255), 1);
         text-shadow: 0 1px 5px rgba(0,0,0,0.55);
         line-height: 1.3;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -994,7 +1102,7 @@ var STYLES = `
       }
 
       .mc-sub {
-        font-size: 11px; color: var(--text-secondary);
+        font-size: 11px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.55);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         margin-bottom: 3px;
       }
@@ -1006,7 +1114,7 @@ var STYLES = `
         font-size: 10px; font-weight: 800; line-height: 1;
         padding: 2px 6px; border-radius: 4px; white-space: nowrap;
         display: inline-flex; align-items: center; gap: 2px;
-        color: #fff;
+        color: rgba(var(--arr-tp-rgb, 255, 255, 255), 1);
       }
       .b-ok      { background:rgba(48,209,88,0.30);  border:1px solid rgba(48,209,88,0.62); }
       .b-sok     { background:rgba(48,209,88,0.26);  border:1px solid rgba(48,209,88,0.55); }
@@ -1036,12 +1144,12 @@ var STYLES = `
 
       /* Datum se smrskne pokud nen\xED m\xEDsto, ale nezalamuje se */
       .date-lbl {
-        font-size: 10px; color: rgba(255,255,255,0.52);
+        font-size: 10px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.52);
         flex: 0 1 auto; white-space: nowrap; min-width: 0;
       }
 
       .btn-add {
-        background: rgba(var(--accent-rgb),0.28); color: #fff;
+        background: rgba(var(--accent-rgb),0.28); color: rgba(var(--arr-tp-rgb, 255, 255, 255), 1);
         font-size: 10px; font-weight: 800; line-height: 1; padding: 2px 6px;
         border-radius: 4px; border: 1px solid rgba(var(--accent-rgb),0.50);
         cursor: pointer; flex-shrink: 0; margin-left: auto;
@@ -1557,6 +1665,27 @@ var STYLES = `
         color: rgba(160,80,0,0.90);
       }
 
+      .remove-lib-btn  { border-color: rgba(255,120,30,0.40); color: rgba(255,150,80,0.9);  height: 26px; box-sizing: border-box; }
+      .remove-lib-btn:hover  { background: rgba(255,120,30,0.18); border-color: rgba(255,120,30,0.65); color: #ff9640; }
+      .remove-disc-btn { border-color: rgba(255,60,60,0.35);  color: rgba(255,100,100,0.9); }
+      .remove-disc-btn:hover { background: rgba(255,60,60,0.18);  border-color: rgba(255,60,60,0.6);  color: #ff6060; }
+      .remove-confirm-row {
+        display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;
+      }
+      .remove-confirm-row .is-open-btn {
+        margin-top: 0; height: 26px; box-sizing: border-box;
+      }
+      .remove-ic-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px; box-sizing: border-box;
+        border-radius: 50%; border: 1px solid currentColor;
+        background: transparent; cursor: pointer; padding: 0; flex-shrink: 0;
+        transition: background 0.15s;
+      }
+      .remove-ic-no    { color: rgba(255,100,100,0.75); }
+      .remove-ic-no:hover { background: rgba(255,100,100,0.2); }
+      .remove-ic-btn svg { display: block; }
+
       /* IS confirm-add panel */
       .is-confirm-wrap {
         display: flex; flex-direction: column; align-items: center;
@@ -1759,14 +1888,14 @@ var STYLES = `
       }
       .rp-dot {
         width: 6px; height: 6px; border-radius: 50%;
-        background: rgba(255,255,255,0.22); border: none;
+        background: rgba(var(--arr-pd-rgb, 255, 255, 255), 0.22); border: none;
         cursor: pointer; padding: 0; flex-shrink: 0;
         transition: background 0.25s ease;
       }
-      .rp-dot:hover { background: rgba(255,255,255,0.45); }
+      .rp-dot:hover { background: rgba(var(--arr-pd-rgb, 255, 255, 255), 0.45); }
       .rp-dot-active {
         width: 18px; border-radius: 3px;
-        background: rgba(255,255,255,0.80);
+        background: rgba(var(--arr-pda-rgb, 255, 255, 255), 0.80);
         cursor: default; pointer-events: none;
         animation: dot-expand 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
       }
@@ -1775,10 +1904,10 @@ var STYLES = `
         to   { width: 18px; opacity: 1; }
       }
       .rp-btn {
-        background: rgba(255,255,255,0.08);
+        background: rgba(var(--arr-pbb-rgb, 255, 255, 255), 0.08);
         border: 1px solid rgba(255,255,255,0.18);
         border-radius: 20px;
-        color: rgba(255,255,255,0.65);
+        color: rgba(var(--arr-pbt-rgb, 255, 255, 255), 0.65);
         font-size: 12px; font-weight: 600;
         padding: 5px 14px;
         cursor: pointer;
@@ -1788,7 +1917,7 @@ var STYLES = `
       }
       .rp-btn:hover {
         background: rgba(255,255,255,0.15);
-        color: rgba(255,255,255,0.9);
+        color: rgba(var(--arr-pbt-rgb, 255, 255, 255), 0.9);
       }
       .rp-btn-hidden { visibility: hidden; pointer-events: none; }
 
@@ -1842,17 +1971,17 @@ var STYLES = `
         }
         .rp-nav > * { position: relative; z-index: 1; }
         .rp-nav .rp-btn {
-          color: rgba(255,255,255,0.88);
-          background: rgba(255,255,255,0.10);
+          color: rgba(var(--arr-pbt-rgb, 255, 255, 255), 0.88);
+          background: rgba(var(--arr-pbb-rgb, 255, 255, 255), 0.10);
           border-color: rgba(255,255,255,0.22);
           backdrop-filter: none;
         }
         .rp-nav .rp-btn:hover {
           background: rgba(255,255,255,0.18);
-          color: #fff;
+          color: rgba(var(--arr-pbt-rgb, 255, 255, 255), 1);
         }
-        .rp-nav .rp-dot { background: rgba(255,255,255,0.30); }
-        .rp-nav .rp-dot-active { background: rgba(255,255,255,0.90); }
+        .rp-nav .rp-dot { background: rgba(var(--arr-pd-rgb, 255, 255, 255), 0.30); }
+        .rp-nav .rp-dot-active { background: rgba(var(--arr-pda-rgb, 255, 255, 255), 0.90); }
       }
 
       /* Large phone: mgrid 3 col */
@@ -2643,7 +2772,7 @@ var _FetchMethods = class {
       const data = await this._hass.callApi("GET", "arr_stack/radarr/movies");
       const radarrFiltered = data.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
       this._radarrTotal = radarrFiltered.length;
-      this._radarr = radarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added)).slice(0, 32);
+      this._radarr = radarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
     } catch (e) {
       console.error("[arr-card] Radarr fetch error:", e);
     }
@@ -2653,7 +2782,7 @@ var _FetchMethods = class {
       const data = await this._hass.callApi("GET", "arr_stack/sonarr/series");
       const sonarrFiltered = data.filter((s) => s.added && s.added !== "0001-01-01T00:00:00Z");
       this._sonarrTotal = sonarrFiltered.length;
-      this._sonarr = sonarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added)).slice(0, 32);
+      this._sonarr = sonarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
     } catch (e) {
       console.error("[arr-card] Sonarr fetch error:", e);
     }
@@ -2681,8 +2810,7 @@ var _FetchMethods = class {
         this._hass.callApi("GET", "arr_stack/overseerr/upcoming?page=1"),
         this._hass.callApi("GET", "arr_stack/overseerr/upcoming?page=2")
       ]);
-      const combined = [...d1.results || [], ...d2.results || []];
-      this._upcoming = combined.slice(0, 32);
+      this._upcoming = [...d1.results || [], ...d2.results || []];
       this._upcomingError = null;
     } catch (e) {
       this._upcomingError = e.message;
@@ -2696,34 +2824,36 @@ var _FetchMethods = class {
         this._hass.callApi("GET", "arr_stack/overseerr/trending?page=2").catch(() => ({ results: [] }))
       ]);
       this._trending = [...d1.results || [], ...d2.results || []];
-      this._trendingApiTotalPages = d1.totalPages || 1;
-      this._trendingFetchedApiPage = 2;
-      if (this._trendingOverlayOpen) {
+      this._overlayApiTotalPages.trending = d1.totalPages || 1;
+      this._overlayApiPage.trending = 2;
+      if (this._overlay?.section === "trending") {
         const isMobile = window.matchMedia("(max-width: 480px)").matches;
         const rows = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
         const perPage = isMobile ? rows * 2 : rows * 4;
         const maxPage = Math.max(0, Math.ceil(this._trending.length / perPage) - 1);
-        if (this._trendingOverlayPage > maxPage) this._trendingOverlayPage = 0;
+        if (this._overlay.page > maxPage) this._overlay.page = 0;
       }
     } catch (e) {
       console.error("[arr-card] Overseerr trending fetch error:", e);
     }
   }
   // Proaktivně načte další API stránky na pozadí, pokud overlay nemá dost dat
-  async _proactiveTrendingLoad() {
+  async _proactiveSectionLoad(section) {
+    const cfg = this._getSectionOverlayConfig(section);
+    if (!cfg?.apiEndpoint) return;
     const isMobile = window.matchMedia("(max-width: 480px)").matches;
     const rows = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
     const perPage = isMobile ? rows * 2 : rows * 4;
-    while (this._trendingOverlayOpen && this._trending.length < perPage * 2 && this._trendingFetchedApiPage < this._trendingApiTotalPages) {
+    while (this._overlay?.section === section && (this[cfg.dataKey] || []).length < perPage * 2 && (this._overlayApiPage[section] || 0) < (this._overlayApiTotalPages[section] || 1)) {
       try {
-        const nextApiPage = this._trendingFetchedApiPage + 1;
-        const data = await this._hass.callApi("GET", `arr_stack/overseerr/trending?page=${nextApiPage}`);
-        this._trending = [...this._trending, ...data.results || []];
-        this._trendingApiTotalPages = data.totalPages || this._trendingApiTotalPages;
-        this._trendingFetchedApiPage = nextApiPage;
-        this._reRenderSection("trending");
+        const nextApiPage = (this._overlayApiPage[section] || 0) + 1;
+        const data = await this._hass.callApi("GET", `arr_stack/${cfg.apiEndpoint}?page=${nextApiPage}`);
+        this[cfg.dataKey] = [...this[cfg.dataKey] || [], ...data.results || []];
+        this._overlayApiTotalPages[section] = data.totalPages || this._overlayApiTotalPages[section] || 1;
+        this._overlayApiPage[section] = nextApiPage;
+        this._reRenderSection(section);
       } catch (err) {
-        console.error("[arr-card] Trending proactive load error:", err);
+        console.error(`[arr-card] ${section} proactive load error:`, err);
         break;
       }
     }
@@ -2734,7 +2864,9 @@ var _FetchMethods = class {
         this._hass.callApi("GET", "arr_stack/overseerr/popular?page=1"),
         this._hass.callApi("GET", "arr_stack/overseerr/popular?page=2")
       ]);
-      this._popular = [...d1.results || [], ...d2.results || []].slice(0, 32);
+      this._popular = [...d1.results || [], ...d2.results || []];
+      this._overlayApiTotalPages.popular = d1.totalPages || 1;
+      this._overlayApiPage.popular = 2;
     } catch (e) {
       console.error("[arr-card] Overseerr popular fetch error:", e);
     }
@@ -2745,7 +2877,9 @@ var _FetchMethods = class {
         this._hass.callApi("GET", "arr_stack/overseerr/tv_upcoming?page=1"),
         this._hass.callApi("GET", "arr_stack/overseerr/tv_upcoming?page=2")
       ]);
-      this._tvUpcoming = [...d1.results || [], ...d2.results || []].slice(0, 32);
+      this._tvUpcoming = [...d1.results || [], ...d2.results || []];
+      this._overlayApiTotalPages.tvUpcoming = d1.totalPages || 1;
+      this._overlayApiPage.tvUpcoming = 2;
     } catch (e) {
       console.error("[arr-card] Overseerr TV upcoming fetch error:", e);
     }
@@ -2822,6 +2956,7 @@ var _FetchMethods = class {
         this._reRenderRight();
       }
       this._fetchTvUpcoming().then(() => this._reRenderRight());
+      setTimeout(() => this._fetchSonarr().then(() => this._reRenderRight()), 2e3);
     } catch (e) {
       if (showId) this._optimisticRequested.delete(showId);
       this._reRenderRight();
@@ -3084,6 +3219,7 @@ var _FetchMethods = class {
         this._reRenderRight();
       }
       this._fetchOverseerr().then(() => this._reRenderRight());
+      setTimeout(() => this._fetchRadarr().then(() => this._reRenderRight()), 2e3);
     } catch (e) {
       this._optimisticRequested.delete(mediaId);
       this._reRenderRight();
@@ -3139,7 +3275,7 @@ var _RenderLeft = class {
       </div>
       <div class="disk-chip">
         <div class="dc-label">${this._t("storage")}</div>
-        <div class="dc-val"><span class="pill-orange dc-pill">${diskUsedStr}</span><span style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:600"> / ${diskTotalStr}</span></div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${diskUsedStr}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.6);font-weight:600"> / ${diskTotalStr}</span></div>
         <div class="mbar"><div class="mbar-fill pf-orange" style="width:${diskPct.toFixed(0)}%"></div></div>
         <div class="dc-sub">${diskPct.toFixed(0)} % \xB7 ${diskFreeStr} ${this._t("free")}</div>
       </div>
@@ -3246,10 +3382,10 @@ var _RenderLeft = class {
       </div>
       <div class="dl-r2">
         ${speedCol}
-        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(255,255,255,0.85)"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(255,255,255,0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
-        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(255,255,255,0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(255,255,255,0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
-        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(255,255,255,0.85)"></ha-icon><b class="dm-val">${leechs}</b></span>
+        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
+        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
+        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -3317,8 +3453,8 @@ var _RenderLeft = class {
       </div>
       <div class="dl-r2">
         <span class="dm"><b class="g"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px"></ha-icon> ${speedStr}</b></span>
-        <span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(255,255,255,0.85)"></ha-icon><b class="dm-val">${eta}</b></span>
-        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(255,255,255,0.85)"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
+        <span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
       </div>
       <div class="pbar"><div class="pbar-fill pf-orange" style="width:${pct}%"></div></div>
     </div>`;
@@ -3377,15 +3513,20 @@ var _RenderRight = class {
     const perPage = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
+    const DEFAULT_CATS = ["radarr", "sonarr", "upcoming", "tvUpcoming", "trending", "popular", "calendar"];
+    const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
+    const CAT_FN = {
+      radarr: () => this._renderRadarr(),
+      sonarr: () => this._renderSonarr(),
+      upcoming: () => this._renderUpcoming(),
+      tvUpcoming: () => this._renderTvUpcoming(),
+      trending: () => this._renderTrending(),
+      popular: () => this._renderPopular(),
+      calendar: hasCalendar ? () => this._renderCalendar() : null
+    };
     const allCategories = [
       ...hasPending ? [() => this._renderPendingRequests()] : [],
-      () => this._renderRadarr(),
-      () => this._renderSonarr(),
-      () => this._renderUpcoming(),
-      () => this._renderTvUpcoming(),
-      () => this._renderTrending(),
-      () => this._renderPopular(),
-      ...hasCalendar ? [() => this._renderCalendar()] : []
+      ...catConfig.filter((c) => c.enabled !== false).map((c) => CAT_FN[c.id]).filter(Boolean)
     ];
     const total = allCategories.length;
     const totalPages = Math.ceil(total / perPage);
@@ -3409,8 +3550,15 @@ var _RenderRight = class {
         ${this._t("next")} <ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:16px"></ha-icon>
       </button>
     </div>` : "";
-    if (this._trendingOverlayOpen) return this._renderTrendingOverlay() + this._renderTrendingOverlayNav();
+    if (this._overlay?.section) return this._renderSectionOverlay(this._overlay.section) + this._renderSectionOverlayNav(this._overlay.section);
     return `<div class="rp-sections">${_join(slice)}</div>${navBar}`;
+  }
+  _pageIndicator(section, itemsOrCount, perPage = 4) {
+    const count = Array.isArray(itemsOrCount) ? itemsOrCount.length : itemsOrCount || 0;
+    const totalPages = Math.ceil(count / perPage);
+    if (totalPages <= 1) return "";
+    const page = Math.min(this._pages[section] || 0, totalPages - 1);
+    return `<span class="sec-page-ind">${page + 1}<span class="sec-page-sep">/</span>${totalPages}</span>`;
   }
   _renderRightHeader() {
     return `
@@ -3421,13 +3569,15 @@ var _RenderRight = class {
     </div>`;
   }
   _renderRadarr() {
-    const grid = this._radarr.length === 0 ? `<div class="placeholder">${this._t("noRadarr")}</div>` : this._pagedGrid(this._radarr, "radarr", (m) => this._renderRadarrCard(m));
+    const smpCount = this._smpPageCount(this._radarr, "radarr");
+    const grid = this._radarr.length === 0 ? `<div class="placeholder">${this._t("noRadarr")}</div>` : this._pagedGridWithSmp(this._radarr, "radarr", (m) => this._renderRadarrCard(m));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
         <ha-icon icon="mdi:filmstrip" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("recentMovies")}</span>
         <div class="col-hdr-line"></div>
+        ${this._pageIndicator("radarr", smpCount)}
         <span class="sec-badge" style="background:rgba(0,132,255,0.15);border:1px solid rgba(0,132,255,0.25)">${this._radarrTotal} ${this._t("movies")}</span>
       </div>
       ${grid}
@@ -3511,7 +3661,7 @@ var _RenderRight = class {
         audioLangs = m.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
       }
       if (audioLangs.length > 0) {
-        const codes = this._topLangs(audioLangs).join(" | ");
+        const codes = this._topLangs(audioLangs).join("|");
         audioBadge = `<span class="badge b-audio" title="Audio: ${codes}"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
       }
     }
@@ -3519,10 +3669,10 @@ var _RenderRight = class {
     const bz = this._bazarrConfigured ? this._bazarr[m.id] : null;
     if (bz) {
       if (bz.missing.length > 0) {
-        const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+        const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join("|");
         subBadge = `<span class="badge b-sub-miss" title="${this._t("missingSubs")}: ${langs}"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
       } else if (bz.subtitles.length > 0) {
-        const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+        const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join("|");
         subBadge = `<span class="badge b-sub-ok" title="${this._t("subtitles")}: ${langs}"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
       }
     }
@@ -3564,13 +3714,15 @@ var _RenderRight = class {
     </div>`;
   }
   _renderSonarr() {
-    const grid = this._sonarr.length === 0 ? `<div class="placeholder">${this._t("noSonarr")}</div>` : this._pagedGrid(this._sonarr, "sonarr", (s) => this._renderSonarrCard(s));
+    const smpCount = this._smpPageCount(this._sonarr, "sonarr");
+    const grid = this._sonarr.length === 0 ? `<div class="placeholder">${this._t("noSonarr")}</div>` : this._pagedGridWithSmp(this._sonarr, "sonarr", (s) => this._renderSonarrCard(s));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
         <ha-icon icon="mdi:television-play" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("recentShows")}</span>
         <div class="col-hdr-line"></div>
+        ${this._pageIndicator("sonarr", smpCount)}
         <span class="sec-badge" style="background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.22)">${this._sonarrTotal} ${this._t("shows")}</span>
       </div>
       ${grid}
@@ -3608,13 +3760,15 @@ var _RenderRight = class {
     return img ? img.remoteUrl : null;
   }
   _renderUpcoming() {
+    const items = this._upcoming || [];
+    const smpCount = this._smpPageCount(items, "upcoming");
     let grid = "";
     if (this._upcomingError) {
       grid = `<div class="placeholder" style="color:rgba(255,80,80,0.9);font-size:11px">\u26A0 ${this._escHtml(this._upcomingError)}</div>`;
-    } else if (!this._upcoming || this._upcoming.length === 0) {
+    } else if (items.length === 0) {
       grid = `<div class="placeholder">${this._t("loading")}</div>`;
     } else {
-      grid = this._pagedGrid(this._upcoming, "upcoming", (m) => this._renderUpcomingCard(m));
+      grid = this._pagedGridWithSmp(items, "upcoming", (m) => this._renderUpcomingCard(m));
     }
     return `
     <div class="sec-card">
@@ -3622,20 +3776,24 @@ var _RenderRight = class {
         <ha-icon icon="mdi:ticket-outline" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("upcomingMovies")}</span>
         <div class="col-hdr-line"></div>
+        ${this._pageIndicator("upcoming", smpCount)}
         <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
       </div>
       ${grid}
     </div>`;
   }
   _renderTvUpcoming() {
+    const items = this._tvUpcoming || [];
+    const smpCount = this._smpPageCount(items, "tvUpcoming");
     const p = this._tvRequestPending?.source === "tvUpcoming" ? this._tvRequestPending : null;
-    const grid = !this._tvUpcoming || this._tvUpcoming.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGrid(this._tvUpcoming, "tvUpcoming", (m) => this._renderTvUpcomingCard(m));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "tvUpcoming", (m) => this._renderTvUpcomingCard(m));
     return `
     <div class="sec-card" style="position:relative">
       <div class="col-hdr" style="margin-bottom:5px">
         <ha-icon icon="mdi:television-play" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("newShows")}</span>
         <div class="col-hdr-line"></div>
+        ${this._pageIndicator("tvUpcoming", smpCount)}
         <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
       </div>
       ${grid}
@@ -3752,50 +3910,53 @@ var _RenderRight = class {
     return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex });
   }
   _renderTrending() {
+    const items = this._trending || [];
+    const smpCount = this._smpPageCount(items, "trending");
     const p = this._tvRequestPending?.source === "trending" ? this._tvRequestPending : null;
-    let grid;
-    if (!this._trending || this._trending.length === 0) {
-      grid = `<div class="placeholder">${this._t("loading")}</div>`;
-    } else {
-      const first35 = this._trending.slice(0, 35);
-      const itemsWithSeeMore = [...first35, { _isSeeMore: true }];
-      grid = this._pagedGrid(
-        itemsWithSeeMore,
-        "trending",
-        (m) => m._isSeeMore ? this._renderSeeMoreCard() : this._renderTrendingCard(m)
-      );
-    }
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trending", (m) => this._renderTrendingCard(m));
     return `
     <div class="sec-card" style="position:relative">
       <div class="col-hdr" style="margin-bottom:5px">
         <ha-icon icon="mdi:trending-up" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("trendingMovies")}</span>
         <div class="col-hdr-line"></div>
+        ${this._pageIndicator("trending", smpCount)}
         <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
     </div>`;
   }
-  _renderSeeMoreCard() {
-    const teasers = (this._trending || []).slice(-4);
+  // Returns item count for _pageIndicator, accounting for SMP card insertion
+  _smpPageCount(items, section) {
+    if (!items || items.length === 0) return 0;
+    const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
+    const itemsBefore = showMorePage * 4 - 1;
+    return items.length > itemsBefore ? itemsBefore + 1 : items.length;
+  }
+  _renderSeeMoreCardFor(section) {
+    const cfg = this._getSectionOverlayConfig(section);
+    const items = (cfg ? this[cfg.dataKey] : []) || [];
+    const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
+    const itemsBefore = showMorePage * 4 - 1;
+    const teasers = items.slice(-4);
     const cells = [];
     for (let i = 0; i < 4; i++) {
       const m = teasers[i];
-      if (m) {
-        const pp = m.posterPath || m.poster_path;
-        if (pp) {
-          cells.push(`<img src="https://image.tmdb.org/t/p/w92${pp}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`);
+      if (m && cfg) {
+        const url = cfg.getPosterUrl(m);
+        if (url) {
+          cells.push(`<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`);
         } else {
-          cells.push(`<div class="${this._grad(m.id)}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px">${m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"}</div>`);
+          cells.push(`<div class="${this._grad(m.id)}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px">${cfg.emoji(m)}</div>`);
         }
       } else {
         cells.push(`<div style="width:100%;height:100%;background:rgba(255,255,255,0.06)"></div>`);
       }
     }
-    const remainCount = Math.max(0, (this._trending?.length ?? 0) - 3);
+    const remainCount = Math.max(0, items.length - itemsBefore);
     return `
-    <div class="mc smp-card" data-action="trending-open">
+    <div class="mc smp-card" data-action="overlay-open" data-sec="${section}">
       <!-- hidden spacer \u2014 d\xE1 kart\u011B stejnou v\xFD\u0161ku jako ostatn\xED mc karty -->
       <div class="mc-cover-lg" style="padding:0;visibility:hidden" aria-hidden="true"></div>
       <div class="mc-info" style="visibility:hidden" aria-hidden="true">
@@ -3818,21 +3979,28 @@ var _RenderRight = class {
       </div>
     </div>`;
   }
-  _renderTrendingOverlay() {
-    const items = this._trending || [];
+  _renderSectionOverlay(section) {
+    const cfg = this._getSectionOverlayConfig(section);
+    if (!cfg) return "";
+    const items = this[cfg.dataKey] || [];
     const isMobile = window.matchMedia("(max-width: 480px)").matches;
     const rows = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
     const perPage = isMobile ? rows * 2 : rows * 4;
-    const page = this._trendingOverlayPage || 0;
+    const page = this._overlay.page || 0;
     const pageItems = items.slice(page * perPage, (page + 1) * perPage);
-    const gridHtml = pageItems.map((m, i) => this._renderTrendingCard(m, i)).join("");
+    const gridHtml = pageItems.map((m, i) => cfg.renderCard(m, i)).join("");
     return `
     <div class="trending-overlay">
       <div class="col-hdr" style="margin-bottom:8px">
-        <ha-icon icon="mdi:trending-up" style="--mdc-icon-size:24px"></ha-icon>
-        <span class="col-hdr-title">${this._t("trendingMovies")}</span>
+        <ha-icon icon="${cfg.icon}" style="--mdc-icon-size:24px"></ha-icon>
+        <span class="col-hdr-title">${this._t(cfg.titleKey)}</span>
         <div class="col-hdr-line"></div>
-        <button class="to-close" data-action="trending-close">\u2715</button>
+        <button class="to-close" data-action="overlay-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+            <path d="M19 12H5M11 6l-6 6 6 6"/>
+          </svg>
+        </button>
       </div>
       <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
         <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">\u2039</button>
@@ -3841,16 +4009,20 @@ var _RenderRight = class {
       </div>
     </div>`;
   }
-  // Paging pro trending overlay — stejná struktura jako standardní rp-nav
-  _renderTrendingOverlayNav() {
-    const items = this._trending || [];
+  // Paging nav pro sekce overlay — stejná struktura jako standardní rp-nav
+  _renderSectionOverlayNav(section) {
+    const cfg = this._getSectionOverlayConfig(section);
+    if (!cfg) return "";
+    const items = this[cfg.dataKey] || [];
     const isMobile = window.matchMedia("(max-width: 480px)").matches;
     const rows = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
     const perPage = isMobile ? rows * 2 : rows * 4;
-    const page = this._trendingOverlayPage || 0;
+    const page = this._overlay.page || 0;
     const totalPages = Math.ceil(items.length / perPage);
     const hasPrev = page > 0;
-    const hasNext = page < totalPages - 1 || this._trendingFetchedApiPage < this._trendingApiTotalPages;
+    const apiPage = this._overlayApiPage[section] || 0;
+    const apiTotal = this._overlayApiTotalPages[section] || 1;
+    const hasNext = page < totalPages - 1 || cfg.apiEndpoint && apiPage < apiTotal;
     if (!hasPrev && !hasNext) return "";
     const dots = totalPages > 1 ? Array.from(
       { length: totalPages },
@@ -3858,11 +4030,11 @@ var _RenderRight = class {
     ).join("") : "";
     return `
     <div class="rp-nav">
-      <button class="rp-btn ${hasPrev ? "" : "rp-btn-hidden"}" data-action="trending-prev" ${hasPrev ? "" : "disabled"}>
+      <button class="rp-btn ${hasPrev ? "" : "rp-btn-hidden"}" data-action="overlay-prev" ${hasPrev ? "" : "disabled"}>
         <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:16px"></ha-icon> ${this._t("prev")}
       </button>
       <div class="rp-dots">${dots}</div>
-      <button class="rp-btn ${hasNext ? "" : "rp-btn-hidden"}" data-action="trending-next" ${hasNext ? "" : "disabled"}>
+      <button class="rp-btn ${hasNext ? "" : "rp-btn-hidden"}" data-action="overlay-next" ${hasNext ? "" : "disabled"}>
         ${this._t("next")} <ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:16px"></ha-icon>
       </button>
     </div>`;
@@ -3918,13 +4090,16 @@ var _RenderRight = class {
     </div>`;
   }
   _renderPopular() {
-    const grid = !this._popular || this._popular.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGrid(this._popular, "popular", (m) => this._renderUpcomingCard(m, { showDate: false }));
+    const items = this._popular || [];
+    const smpCount = this._smpPageCount(items, "popular");
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "popular", (m) => this._renderUpcomingCard(m, { showDate: false }));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
         <ha-icon icon="mdi:fire" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("popularMovies")}</span>
         <div class="col-hdr-line"></div>
+        ${this._pageIndicator("popular", smpCount)}
         <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
       </div>
       ${grid}
@@ -3973,7 +4148,7 @@ var _RenderRight = class {
       coverHtml = `<div class="mc-cover-lg ${this._grad(m.id)}" style="position:relative">${tagHtml}\u{1F3AC}</div>`;
     }
     return `
-    <div class="mc" data-popup="movie" data-tmdbid="${m.id}" data-title="${title}" style="position:relative"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+    <div class="mc" data-popup="movie" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""} style="position:relative"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${coverHtml}
       <div class="mc-info">
         <div class="mc-title" title="${title}">${title}</div>
@@ -3999,6 +4174,7 @@ var _RenderRight = class {
         <ha-icon icon="mdi:calendar-clock" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("newEpisodes")}</span>
         <div class="col-hdr-line"></div>
+        ${this._pageIndicator("calendar", this._calendar || [])}
         <span class="sec-badge" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.22)">ze Sonarr</span>
       </div>
       ${grid}
@@ -4214,7 +4390,7 @@ var _WireMethods = class {
           const card = btn.closest(".mc[data-oi]");
           const cardIndex = card ? parseInt(card.dataset.oi, 10) : 0;
           const colCount = grid ? Math.round(getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length) : 4;
-          await this._openTrendingOverlayTvRequest(show, cardIndex, colCount);
+          await this._openOverlayTvRequest(show, cardIndex, colCount);
         } else {
           await this._openTvRequestOverlay(show, fromTrending ? "trending" : "tvUpcoming");
         }
@@ -4270,7 +4446,7 @@ var _WireMethods = class {
       });
     });
     this._wireTvOverlay();
-    this._wireTrendingOverlay();
+    this._wireSectionOverlay();
   }
   _wireTvOverlay() {
     const scroll = this.shadowRoot.getElementById("sv-scroll");
@@ -4301,83 +4477,91 @@ var _WireMethods = class {
     });
     updateState();
   }
-  _wireTrendingOverlay() {
+  _wireSectionOverlay() {
     const sr = this.shadowRoot;
-    sr.querySelector('[data-action="trending-open"]')?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this._trendingOverlayOpen = true;
-      this._trendingOverlayPage = 0;
-      this._trendingOverlayTvPending = null;
-      this._reRenderSection("trending");
-      this._proactiveTrendingLoad();
+    sr.querySelectorAll('[data-action="overlay-open"]').forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const sec = el.dataset.sec;
+        if (!sec) return;
+        this._overlay = { section: sec, page: 0, tvPending: null };
+        this._reRenderSection(sec);
+        const cfg = this._getSectionOverlayConfig(sec);
+        if (cfg?.apiEndpoint) this._proactiveSectionLoad(sec);
+      });
     });
     const overlay = sr.querySelector(".trending-overlay");
     if (!overlay) return;
-    overlay.querySelector('[data-action="trending-close"]')?.addEventListener("click", (e) => {
+    overlay.querySelector('[data-action="overlay-close"]')?.addEventListener("click", (e) => {
       e.stopPropagation();
-      this._trendingOverlayOpen = false;
-      this._trendingOverlayPage = 0;
-      this._trendingOverlayTvPending = null;
-      this._reRenderSection("trending");
+      const sec = this._overlay?.section;
+      this._overlay = { section: null, page: 0, tvPending: null };
+      this._reRenderSection(sec || "trending");
     });
-    sr.querySelector('[data-action="trending-prev"]')?.addEventListener("click", (e) => {
+    sr.querySelector('[data-action="overlay-prev"]')?.addEventListener("click", (e) => {
       e.stopPropagation();
-      this._trendingOverlayPage = Math.max(0, (this._trendingOverlayPage || 0) - 1);
-      this._trendingOverlayTvPending = null;
-      this._reRenderSection("trending");
-      this._scrollToTrendingOverlay();
+      this._overlay.page = Math.max(0, (this._overlay.page || 0) - 1);
+      this._overlay.tvPending = null;
+      this._reRenderSection(this._overlay.section);
+      this._scrollToSectionOverlay();
     });
-    sr.querySelector('[data-action="trending-next"]')?.addEventListener("click", async (e) => {
+    sr.querySelector('[data-action="overlay-next"]')?.addEventListener("click", async (e) => {
       e.stopPropagation();
+      const sec = this._overlay?.section;
+      const cfg = this._getSectionOverlayConfig(sec);
+      if (!cfg) return;
       const isMobile = window.matchMedia("(max-width: 480px)").matches;
       const rows = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
       const perPage = isMobile ? rows * 2 : rows * 4;
-      const newPage = (this._trendingOverlayPage || 0) + 1;
-      if (newPage * perPage >= this._trending.length && this._trendingFetchedApiPage < this._trendingApiTotalPages) {
-        try {
-          const nextApiPage = this._trendingFetchedApiPage + 1;
-          const data = await this._hass.callApi("GET", `arr_stack/overseerr/trending?page=${nextApiPage}`);
-          this._trending = [...this._trending, ...data.results || []];
-          this._trendingApiTotalPages = data.totalPages || this._trendingApiTotalPages;
-          this._trendingFetchedApiPage = nextApiPage;
-        } catch (err) {
-          console.error("[arr-card] Trending lazy load error:", err);
+      const items = this[cfg.dataKey] || [];
+      const newPage = (this._overlay.page || 0) + 1;
+      if (cfg.apiEndpoint && newPage * perPage >= items.length) {
+        const apiPage = this._overlayApiPage[sec] || 0;
+        const apiTotal = this._overlayApiTotalPages[sec] || 1;
+        if (apiPage < apiTotal) {
+          try {
+            const nextApiPage = apiPage + 1;
+            const data = await this._hass.callApi("GET", `arr_stack/${cfg.apiEndpoint}?page=${nextApiPage}`);
+            this[cfg.dataKey] = [...items, ...data.results || []];
+            this._overlayApiTotalPages[sec] = data.totalPages || apiTotal;
+            this._overlayApiPage[sec] = nextApiPage;
+          } catch (err) {
+            console.error(`[arr-card] ${sec} overlay lazy load error:`, err);
+          }
         }
       }
-      this._trendingOverlayPage = newPage;
-      this._trendingOverlayTvPending = null;
-      this._reRenderSection("trending");
-      this._scrollToTrendingOverlay();
+      this._overlay.page = newPage;
+      this._overlay.tvPending = null;
+      this._reRenderSection(this._overlay.section);
+      this._scrollToSectionOverlay();
     });
     sr.querySelectorAll(".rp-dot[data-topage]").forEach((dot) => {
       dot.addEventListener("click", (e) => {
         e.stopPropagation();
         const pg = parseInt(dot.dataset.topage, 10);
         if (!isNaN(pg)) {
-          this._trendingOverlayPage = pg;
-          this._trendingOverlayTvPending = null;
-          this._reRenderSection("trending");
-          this._scrollToTrendingOverlay();
+          this._overlay.page = pg;
+          this._overlay.tvPending = null;
+          this._reRenderSection(this._overlay.section);
+          this._scrollToSectionOverlay();
         }
       });
     });
-    if (this._trendingOverlayTvPending) {
+    if (this._overlay.tvPending) {
       requestAnimationFrame(() => this._positionTvOverlay());
     }
   }
-  // Po kliknutí next/prev v more overlay scrolluj viewport tak,
-  // aby col-right začínal nahoře — nav pak leží přesně pod kartami
   // Po kliknutí next/prev v more overlay scrolluj viewport na maximum —
   // spodok col-right bude na spodku viewportu, navbar presne pod kartami
-  _scrollToTrendingOverlay() {
+  _scrollToSectionOverlay() {
     requestAnimationFrame(() => {
       const sc = this._findScrollContainer();
       if (!sc) return;
       sc.scrollTo({ top: sc.scrollHeight, behavior: "smooth" });
     });
   }
-  async _openTrendingOverlayTvRequest(show, cardIndex, colCount) {
-    this._trendingOverlayTvPending = {
+  async _openOverlayTvRequest(show, cardIndex, colCount) {
+    this._overlay.tvPending = {
       show,
       seasons: null,
       selected: null,
@@ -4392,9 +4576,9 @@ var _WireMethods = class {
       (async () => {
         const detail = await this._hass.callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
         const seasons = (detail.seasons || []).filter((s) => s.seasonNumber > 0).map((s) => s.seasonNumber).sort((a, b) => a - b);
-        if (this._trendingOverlayTvPending) {
-          this._trendingOverlayTvPending.seasons = seasons;
-          this._trendingOverlayTvPending.selected = new Set(seasons);
+        if (this._overlay.tvPending) {
+          this._overlay.tvPending.seasons = seasons;
+          this._overlay.tvPending.selected = new Set(seasons);
         }
       })(),
       this._fetchSonarrProfiles(),
@@ -4402,14 +4586,14 @@ var _WireMethods = class {
         if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
       })()
     ]);
-    if (this._trendingOverlayTvPending) {
-      this._trendingOverlayTvPending.profileId = this._seerrSonarr?.profileId ?? null;
-      this._trendingOverlayTvPending.loading = false;
+    if (this._overlay.tvPending) {
+      this._overlay.tvPending.profileId = this._seerrSonarr?.profileId ?? null;
+      this._overlay.tvPending.loading = false;
       requestAnimationFrame(() => this._positionTvOverlay());
     }
   }
   _positionTvOverlay() {
-    const tvp = this._trendingOverlayTvPending;
+    const tvp = this._overlay.tvPending;
     const grid = this.shadowRoot.querySelector(".to-grid");
     if (!grid || !tvp) return;
     const container = grid.parentElement;
@@ -4469,8 +4653,8 @@ var _WireMethods = class {
     }
     el.querySelector(".to-tv-cancel-abs")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      this._trendingOverlayTvPending = null;
-      this._reRenderSection("trending");
+      this._overlay.tvPending = null;
+      this._reRenderSection(this._overlay.section);
     });
     el.querySelector(".to-tv-confirm-abs")?.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -4484,7 +4668,7 @@ var _WireMethods = class {
       const show = tvp.show;
       this._optimisticRequested.add(show.id);
       this._withdrawnIds.delete(show.id);
-      this._trendingOverlayTvPending = null;
+      this._overlay.tvPending = null;
       el.remove();
       try {
         if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
@@ -4539,7 +4723,7 @@ var _WireMethods = class {
           const rightEl = this.shadowRoot.getElementById("col-right");
           const rRect = rightEl ? rightEl.getBoundingClientRect() : null;
           const isShortPage = rRect ? rRect.height <= window.innerHeight : false;
-          if (!this._trendingOverlayOpen && lRect.bottom >= navOffset && (navWasMet || isShortPage && lRect.top < 0)) {
+          if (!this._overlay?.section && lRect.bottom >= navOffset && (navWasMet || isShortPage && lRect.top < 0)) {
             sc.scrollTop += lRect.bottom - navOffset + 1;
           }
         }
@@ -4563,6 +4747,7 @@ var _WireMethods = class {
         else this._rightPage = Math.max(cur - 1, 0);
         const right = this.shadowRoot.getElementById("col-right");
         if (right) {
+          if (this._rightMaxH) right.style.minHeight = this._rightMaxH + "px";
           right.innerHTML = this._renderRight();
           this._wirePageButtons();
           this._wirePopup();
@@ -4580,6 +4765,7 @@ var _WireMethods = class {
           this._rightPage = targetPage;
           const right = this.shadowRoot.getElementById("col-right");
           if (right) {
+            if (this._rightMaxH) right.style.minHeight = this._rightMaxH + "px";
             right.innerHTML = this._renderRight();
             this._wirePageButtons();
             this._wirePopup();
@@ -4668,7 +4854,8 @@ var _PopupMethods = class {
         const tmdbId = card.dataset.tmdbid;
         const tvdbId = card.dataset.tvdbid;
         const title = card.dataset.title || "";
-        this._openPopup(type, tmdbId, tvdbId, title);
+        const radarrId = card.dataset.radarrid ? parseInt(card.dataset.radarrid, 10) : null;
+        this._openPopup(type, tmdbId, tvdbId, title, radarrId);
       });
     });
   }
@@ -4681,7 +4868,7 @@ var _PopupMethods = class {
   get _isDaytime() {
     return this._hass?.states?.["sun.sun"]?.state === "above_horizon";
   }
-  async _openPopup(type, tmdbId, tvdbId, title) {
+  async _openPopup(type, tmdbId, tvdbId, title, radarrId = null) {
     this._isState = null;
     this._isResults = [];
     this._isFilter = "all";
@@ -4689,6 +4876,7 @@ var _PopupMethods = class {
     this._isGrabbed = /* @__PURE__ */ new Set();
     this._isHistory = {};
     this._isError = null;
+    this._removeConfirm = false;
     this._snIsOpen = false;
     this._snExpandedSeasons = /* @__PURE__ */ new Set();
     this._snEpisodes = /* @__PURE__ */ new Map();
@@ -4701,12 +4889,11 @@ var _PopupMethods = class {
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
     let _radarrId = null;
-    if ((type === "radarr" || type === "movie") && tmdbId) {
-      const m = (this._radarr || []).find((m2) => String(m2.tmdbId) === String(tmdbId));
-      _radarrId = m?.id ?? null;
+    if ((type === "radarr" || type === "movie") && (radarrId || tmdbId)) {
+      _radarrId = radarrId ?? (this._radarr || []).find((m) => String(m.tmdbId) === String(tmdbId))?.id ?? null;
     }
     let _sonarrSeries = null;
-    if (type === "sonarr" && (tvdbId || tmdbId)) {
+    if ((type === "sonarr" || type === "tv") && (tvdbId || tmdbId)) {
       _sonarrSeries = (this._sonarr || []).find(
         (s) => tvdbId && String(s.tvdbId) === String(tvdbId) || tmdbId && String(s.tmdbId) === String(tmdbId)
       ) ?? null;
@@ -4796,7 +4983,19 @@ var _PopupMethods = class {
       root.innerHTML = "";
       return;
     }
+    const prevIsWrap = root.querySelector(".is-results-wrap");
+    const prevBody = root.querySelector(".popup-body");
+    const savedIsScroll = prevIsWrap ? prevIsWrap.scrollTop : 0;
+    const savedBodyScroll = prevBody ? prevBody.scrollTop : 0;
     root.innerHTML = this._renderPopup();
+    if (savedIsScroll > 0) {
+      const newIsWrap = root.querySelector(".is-results-wrap");
+      if (newIsWrap) newIsWrap.scrollTop = savedIsScroll;
+    }
+    if (savedBodyScroll > 0) {
+      const newBody = root.querySelector(".popup-body");
+      if (newBody) newBody.scrollTop = savedBodyScroll;
+    }
     const overlay = root.querySelector(".popup-overlay");
     const glass = root.querySelector(".popup-glass");
     const closeBtn = root.querySelector(".popup-close");
@@ -4938,6 +5137,28 @@ var _PopupMethods = class {
         this._renderPopupEl();
         return;
       }
+      if (t.dataset.action === "remove-confirm") {
+        this._removeConfirm = "choose";
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "remove-choose-lib") {
+        this._removeFromLibrary(false);
+        return;
+      }
+      if (t.dataset.action === "remove-choose-disc") {
+        this._removeFromLibrary(true);
+        return;
+      }
+      if (t.dataset.action === "remove-no") {
+        this._removeConfirm = false;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "remove-yes") {
+        this._removeFromLibrary(t.dataset.files === "true");
+        return;
+      }
     });
   }
   _renderPopup() {
@@ -4989,7 +5210,7 @@ var _PopupMethods = class {
     const posterHtml = posterUrl ? `<img class="popup-poster" src="${posterUrl}" loading="lazy" onerror="this.style.display='none'" />` : "";
     const isAdmin = this._hass.user.is_admin;
     const isMovieType = d._type === "radarr" || d._type === "movie";
-    const isSonarrType = d._type === "sonarr";
+    const isSonarrType = d._type === "sonarr" || d._type === "tv";
     const isActive = !!this._isState;
     const snIsActive = this._snIsOpen;
     const personIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -5011,6 +5232,29 @@ var _PopupMethods = class {
       Interactive Search
       <span class="is-admin-badge">admin</span>
     </button>` : "";
+    const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const checkSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const crossSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const canRemoveRadarr = isAdmin && (d._type === "radarr" || d._type === "movie") && d._radarrId;
+    const canRemoveSonarr = isAdmin && (d._type === "sonarr" || d._type === "tv") && d._sonarrSeries?.id;
+    const radarrEntry = canRemoveRadarr ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
+    const sonarrEntry = canRemoveSonarr ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
+    const hasFiles = !!(radarrEntry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0);
+    const removeLabel = canRemoveSonarr ? "Remove Series" : "Remove";
+    const removeBtn = canRemoveRadarr || canRemoveSonarr ? (() => {
+      const rc = this._removeConfirm;
+      if (!rc) return `
+      <button class="is-open-btn remove-lib-btn" data-action="remove-confirm">
+        ${trashSvg} ${removeLabel}
+        <span class="is-admin-badge">admin</span>
+      </button>`;
+      return `
+      <div class="remove-confirm-row">
+        <button class="is-open-btn remove-lib-btn" data-action="remove-choose-lib">${trashSvg} Remove from library</button>
+        ${hasFiles ? `<button class="is-open-btn remove-disc-btn" data-action="remove-choose-disc">${trashSvg} Remove from disc</button>` : ""}
+        <button class="remove-ic-btn remove-ic-no" data-action="remove-no">${crossSvg}</button>
+      </div>`;
+    })() : "";
     const dayClass = this._isDaytime ? " popup-day" : "";
     const wideClass = isActive || snIsActive ? " is-wide" : "";
     return `
@@ -5029,6 +5273,7 @@ var _PopupMethods = class {
               ${overview ? `<p class="popup-overview">${overview}</p>` : `<p class="popup-overview" style="color:rgba(255,255,255,0.35);font-style:italic">${this._t("noDescription")}</p>`}
               ${isOpenBtn}
               ${snIsOpenBtn}
+              ${removeBtn}
             </div>
           </div>
           ${isActive || snIsActive ? "" : trailerHtml}
@@ -5041,6 +5286,26 @@ var _PopupMethods = class {
   // ─────────────────────────────────────────────
   // Interactive Search — panel HTML
   // ─────────────────────────────────────────────
+  async _removeFromLibrary(deleteFiles = false) {
+    const d = this._popup;
+    if (!d) return;
+    const df = deleteFiles ? "true" : "false";
+    try {
+      if ((d._type === "radarr" || d._type === "movie") && d._radarrId) {
+        await this._hass.callApi("DELETE", `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}`);
+        this._radarr = (this._radarr || []).filter((m) => m.id !== d._radarrId);
+      } else if ((d._type === "sonarr" || d._type === "tv") && d._sonarrSeries?.id) {
+        await this._hass.callApi("DELETE", `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}`);
+        this._sonarr = (this._sonarr || []).filter((s) => s.id !== d._sonarrSeries.id);
+      }
+    } catch (e) {
+      console.error("[ArrStack] Remove failed:", e);
+    }
+    this._popup = null;
+    this._removeConfirm = false;
+    this._render();
+    this._fetchAll();
+  }
 };
 var popupMixin = _PopupMethods.prototype;
 
@@ -5088,11 +5353,9 @@ var ArrStackCard = class extends HTMLElement {
     this._familyPendingIds = /* @__PURE__ */ new Map();
     this._radarrProfiles = [];
     this._tvRequestPending = null;
-    this._trendingOverlayOpen = false;
-    this._trendingOverlayPage = 0;
-    this._trendingOverlayTvPending = null;
-    this._trendingFetchedApiPage = 2;
-    this._trendingApiTotalPages = 1;
+    this._overlay = { section: null, page: 0, tvPending: null };
+    this._overlayApiPage = {};
+    this._overlayApiTotalPages = {};
     this._seerrSonarr = null;
     this._sonarrProfiles = [];
     this._qbitBusy = false;
@@ -5120,6 +5383,7 @@ var ArrStackCard = class extends HTMLElement {
     this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "" };
     this._rightPage = 0;
+    this._rightMaxH = 0;
     this._gradients = ["ca", "cb", "cc", "cd", "ce", "cf", "cg", "ch", "ci", "cj", "ck", "cl", "cm", "cn", "co", "cp", "cq", "cr"];
     this._gradientMap = {};
     this._gradientIdx = 0;
@@ -5129,7 +5393,10 @@ var ArrStackCard = class extends HTMLElement {
   // ─────────────────────────────────────────────
   setConfig(config) {
     this._config = config;
-    if (this._initialized) this._wireStickyNav();
+    if (this._initialized) {
+      this._wireStickyNav();
+      this._applyTheme();
+    }
   }
   set hass(hass) {
     this._hass = hass;
@@ -5197,6 +5464,84 @@ var ArrStackCard = class extends HTMLElement {
     if (flat !== void 0) return flat;
     return fallback;
   }
+  // Returns config object for a section overlay (icon, data key, render fn, etc.)
+  _getSectionOverlayConfig(section) {
+    const tmdbUrl = (path) => path ? `https://image.tmdb.org/t/p/w92${path}` : null;
+    const cfgs = {
+      trending: {
+        dataKey: "_trending",
+        icon: "mdi:trending-up",
+        titleKey: "trendingMovies",
+        apiEndpoint: "overseerr/trending",
+        hasTvPending: true,
+        renderCard: (m, i) => this._renderTrendingCard(m, i),
+        getPosterUrl: (m) => tmdbUrl(m.posterPath || m.poster_path),
+        emoji: (m) => m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
+      },
+      popular: {
+        dataKey: "_popular",
+        icon: "mdi:fire",
+        titleKey: "popularMovies",
+        apiEndpoint: "overseerr/popular",
+        hasTvPending: false,
+        renderCard: (m, i) => this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex: i }),
+        getPosterUrl: (m) => tmdbUrl(m.posterPath),
+        emoji: () => "\u{1F3AC}"
+      },
+      upcoming: {
+        dataKey: "_upcoming",
+        icon: "mdi:ticket-outline",
+        titleKey: "upcomingMovies",
+        apiEndpoint: null,
+        hasTvPending: false,
+        renderCard: (m, i) => this._renderUpcomingCard(m, { overlayIndex: i }),
+        getPosterUrl: (m) => tmdbUrl(m.posterPath || m.poster_path),
+        emoji: () => "\u{1F3AC}"
+      },
+      tvUpcoming: {
+        dataKey: "_tvUpcoming",
+        icon: "mdi:television-play",
+        titleKey: "newShows",
+        apiEndpoint: "overseerr/tv_upcoming",
+        hasTvPending: true,
+        renderCard: (m, i) => this._renderTvUpcomingCard(m, { showRating: true, overlayIndex: i }),
+        getPosterUrl: (m) => tmdbUrl(m.posterPath),
+        emoji: () => "\u{1F4FA}"
+      },
+      radarr: {
+        dataKey: "_radarr",
+        icon: "mdi:filmstrip",
+        titleKey: "recentMovies",
+        apiEndpoint: null,
+        hasTvPending: false,
+        renderCard: (m) => this._renderRadarrCard(m),
+        getPosterUrl: (m) => this._getRadarrPoster(m),
+        emoji: () => "\u{1F3AC}"
+      },
+      sonarr: {
+        dataKey: "_sonarr",
+        icon: "mdi:television-play",
+        titleKey: "recentShows",
+        apiEndpoint: null,
+        hasTvPending: false,
+        renderCard: (m) => this._renderSonarrCard(m),
+        getPosterUrl: (m) => this._getSonarrPoster(m),
+        emoji: () => "\u{1F4FA}"
+      }
+    };
+    return cfgs[section] || null;
+  }
+  // Paged grid with automatic See-More card insertion (if items exceed showMoreOnPage threshold)
+  _pagedGridWithSmp(items, section, renderFn) {
+    if (!items || items.length === 0) return "";
+    const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
+    const itemsBefore = showMorePage * 4 - 1;
+    if (items.length > itemsBefore) {
+      const withSmp = [...items.slice(0, itemsBefore), { _isSeeMore: true }];
+      return this._pagedGrid(withSmp, section, (m) => m._isSeeMore ? this._renderSeeMoreCardFor(section) : renderFn(m));
+    }
+    return this._pagedGrid(items, section, renderFn);
+  }
   // Lokalizační helper — vrátí přeložený řetězec dle nastavení localisation: cs|en
   _t(key) {
     const lang = this._cfg?.localisation === "en" ? "en" : "cs";
@@ -5214,6 +5559,74 @@ var ArrStackCard = class extends HTMLElement {
     if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
     const n = parseInt(hex, 16);
     return `${n >> 16 & 255},${n >> 8 & 255},${n & 255}`;
+  }
+  // Parse hex or rgb/rgba string → "R, G, B" (strips alpha)
+  _parseColorRgb(str) {
+    if (!str) return null;
+    const s = str.trim();
+    if (s.startsWith("#")) {
+      let hex = s.slice(1);
+      if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+      hex = hex.slice(0, 6);
+      if (hex.length !== 6) return null;
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+      return `${r}, ${g}, ${b}`;
+    }
+    const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (m) return `${m[1]}, ${m[2]}, ${m[3]}`;
+    return null;
+  }
+  // Inject theme CSS custom properties derived from config into shadow DOM
+  _applyTheme() {
+    if (!this.shadowRoot) return;
+    const cfg = (this._config || {}).styles || {};
+    const c = (k) => this._parseColorRgb(cfg[k]);
+    const rules = [];
+    const props = [];
+    const propMap = [
+      ["headingTextColor", "--arr-ht-rgb"],
+      ["headingColor", "--arr-hd-rgb"],
+      ["primaryTextColor", "--arr-pt-rgb"],
+      ["secondaryTextColor", "--arr-st-rgb"],
+      ["pagingButtonTextColor", "--arr-pbt-rgb"],
+      ["downloadButtonTextColor", "--arr-dbt-rgb"],
+      ["tagPillTextColor", "--arr-tp-rgb"],
+      ["pagingButtonBackgroundColor", "--arr-pbb-rgb"],
+      ["pagingDotColor", "--arr-pd-rgb"],
+      ["pagingDotActiveColor", "--arr-pda-rgb"]
+    ];
+    for (const [key, prop] of propMap) {
+      const rgb = c(key);
+      if (rgb) props.push(`${prop}: ${rgb};`);
+    }
+    if (props.length) rules.push(`:host { ${props.join(" ")} }`);
+    const mo = c("modalHeadingTextColor");
+    if (mo) rules.push(`.popup-overlay .popup-title { color: rgba(${mo}, 1) !important; }`);
+    const mp = c("modalPrimaryTextColor");
+    if (mp) {
+      rules.push(`.popup-overlay .popup-sub { color: rgba(${mp}, 0.55) !important; }`);
+      rules.push(`.popup-overlay .popup-overview { color: rgba(${mp}, 0.75) !important; }`);
+    }
+    const mci = c("modalCloseButtonIconColor");
+    if (mci) rules.push(`.popup-close { color: rgba(${mci}, 1) !important; }`);
+    const mcb = c("modalCloseButtonBackgroundColor");
+    if (mcb) rules.push(`.popup-close { background: rgba(${mcb}, 1) !important; box-shadow: none !important; }`);
+    const mb = c("modalBackgroundColor");
+    if (mb) rules.push(`.popup-overlay .popup-glass { background: rgba(${mb}, 0.05) !important; }`);
+    const mbt = c("modalButtonTextColor");
+    if (mbt) rules.push(`.popup-overlay .is-open-btn { color: rgba(${mbt}, 0.70) !important; }`);
+    const mbb = c("modalButtonBackgroundColor");
+    if (mbb) rules.push(`.popup-overlay .is-open-btn { background: rgba(${mbb}, 0.08) !important; }`);
+    let el = this.shadowRoot.getElementById("arr-theme");
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "arr-theme";
+      this.shadowRoot.appendChild(el);
+    }
+    el.textContent = rules.join("\n");
   }
   // ─────────────────────────────────────────────
   // Formatters
@@ -5416,7 +5829,6 @@ var ArrStackCard = class extends HTMLElement {
   _afterRightPageSwitch(scrollState = null) {
     const isMobile = window.matchMedia("(max-width: 900px)").matches;
     requestAnimationFrame(() => {
-      if (!isMobile) this._measureAndLockHeight();
       requestAnimationFrame(() => {
         this._checkBadgeOverflow();
         if (!isMobile || !scrollState) return;
@@ -5470,31 +5882,34 @@ var ArrStackCard = class extends HTMLElement {
     });
   }
   // Přeměří všechny stránky pravého sloupce a nastaví min-height na nejvyšší.
+  // Každá outer stránka se měří se všemi _pages sekcí = 0 (nejvyšší možná varianta).
   // Vše proběhne synchronně v jednom JS tiku — browser nestihne malovat.
   _measureAndLockHeight() {
     const right = this.shadowRoot.getElementById("col-right");
     if (!right) return;
     const savedPage = this._rightPage;
+    const savedPages = { ...this._pages };
     const perPage = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
     const hasCal = this._calendar && this._calendar.length > 0;
     const hasPend = this._hass.user.is_admin && this._pendingRequests.length > 0;
     const totalCats = 6 + (hasPend ? 1 : 0) + (hasCal ? 1 : 0);
     const totalPages = Math.ceil(totalCats / perPage);
-    if (totalPages <= 1) {
-      right.style.minHeight = "";
-      return;
-    }
     let maxH = 0;
     right.style.visibility = "hidden";
     right.style.minHeight = "";
     for (let p = 0; p < totalPages; p++) {
       this._rightPage = p;
+      Object.keys(this._pages).forEach((k) => {
+        this._pages[k] = 0;
+      });
       right.innerHTML = this._renderRight();
       maxH = Math.max(maxH, right.scrollHeight);
     }
     this._rightPage = savedPage;
+    Object.assign(this._pages, savedPages);
     right.innerHTML = this._renderRight();
     right.style.visibility = "";
+    this._rightMaxH = maxH;
     right.style.minHeight = maxH + "px";
     this._wirePageButtons();
     this._wirePopup();
@@ -5661,6 +6076,7 @@ var ArrStackCard = class extends HTMLElement {
     }
     this.shadowRoot.appendChild(wrapper);
     this.shadowRoot.appendChild(popupRoot);
+    this._applyTheme();
   }
   // ─────────────────────────────────────────────
   // Main render
