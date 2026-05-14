@@ -1,0 +1,73 @@
+{
+  "issues": {
+    "restart_required": {
+      "title": "Arr Stack — Restart required",
+      "description": "Arr Stack settings were changed. Restart Home Assistant to apply the changes.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Restart Home Assistant",
+            "description": "Click submit to restart Home Assistant and apply the Arr Stack changes."
+          }
+        }
+      }
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Arr Stack — Stahování (1/3)",
+        "description": "Všechna pole jsou volitelná. Nevyplněné služby se v kartě nezobrazí.",
+        "data": {
+          "qbittorrent_url": "qBittorrent URL (volitelné)",
+          "qbittorrent_user": "Uživatelské jméno (volitelné)",
+          "qbittorrent_password": "Heslo (volitelné)",
+          "sabnzbd_url": "SABnzbd URL (volitelné)",
+          "sabnzbd_api_key": "SABnzbd API klíč (volitelné)"
+        }
+      },
+      "media": {
+        "title": "Arr Stack — Správa médií (2/3)",
+        "data": {
+          "radarr_url": "Radarr URL",
+          "radarr_api_key": "Radarr API klíč",
+          "sonarr_url": "Sonarr URL",
+          "sonarr_api_key": "Sonarr API klíč"
+        }
+      },
+      "discovery": {
+        "title": "Arr Stack — Vyhledávání a titulky (3/3)",
+        "description": "After saving, a Home Assistant restart is required for changes to take effect.",
+        "data": {
+          "seerr_url": "Overseerr URL",
+          "seerr_api_key": "Overseerr API klíč",
+          "seerr_family_email": "Rodinný účet — email (volitelné)",
+          "seerr_family_password": "Rodinný účet — heslo (volitelné)",
+          "bazarr_url": "Bazarr URL (volitelné)",
+          "bazarr_api_key": "Bazarr API klíč (volitelné)"
+        }
+      }
+    },
+    "abort": {
+      "reconfigure_successful": "Settings updated — restart Home Assistant to apply the changes."
+    },
+    "error": {
+      "cannot_connect": "Nelze se připojit — zkontroluj URL a dostupnost služby",
+      "qbit_bad_credentials": "Špatné přihlašovací údaje qBittorrent",
+      "qbit_login_failed": "Přihlášení do qBittorrent selhalo",
+      "sabnzbd_bad_key": "Neplatný SABnzbd API klíč",
+      "radarr_bad_key": "Neplatný Radarr API klíč",
+      "radarr_error": "Chyba připojení k Radarr",
+      "sonarr_bad_key": "Neplatný Sonarr API klíč",
+      "sonarr_error": "Chyba připojení k Sonarr",
+      "overseerr_bad_key": "Neplatný Overseerr API klíč",
+      "overseerr_error": "Chyba připojení k Overseerr",
+      "seerr_family_bad_credentials": "Špatný email nebo heslo rodinného účtu",
+      "seerr_family_login_failed": "Přihlášení rodinného účtu selhalo",
+      "seerr_family_is_admin": "Rodinný účet má admin práva — použij účet bez admin oprávnění",
+      "bazarr_bad_key": "Neplatný Bazarr API klíč",
+      "bazarr_error": "Chyba připojení k Bazarr",
+      "unknown": "Neočekávaná chyba — zkontroluj logy HA"
+    }
+  }
+}
