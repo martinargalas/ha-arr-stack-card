@@ -1884,7 +1884,12 @@ var STYLES = `
         margin-top: auto;
       }
       .rp-dots {
-        display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+        display: flex; align-items: center; gap: 5px; flex: 1; justify-content: center; overflow: hidden; min-width: 0;
+      }
+      .rp-page-counter {
+        font-size: 12px; font-weight: 600; opacity: 0.7;
+        color: rgba(var(--arr-pbt-rgb, 255, 255, 255), 0.8);
+        white-space: nowrap;
       }
       .rp-dot {
         width: 6px; height: 6px; border-radius: 50%;
@@ -3536,7 +3541,7 @@ var _RenderRight = class {
     const _join = (fns) => fns.map((fn, i) => `${i > 0 ? '<div class="spacer-sm"></div>' : ""}${fn()}`).join("");
     const hasPrev = page > 0;
     const hasNext = page < totalPages - 1;
-    const dots = totalPages > 1 ? Array.from(
+    const dots = totalPages > 1 ? totalPages > 7 ? `<span class="rp-page-counter">${page + 1} / ${totalPages}</span>` : Array.from(
       { length: totalPages },
       (_, i) => `<button class="rp-dot${i === page ? " rp-dot-active" : ""}" data-section="right" data-page="${i}"></button>`
     ).join("") : "";
@@ -4024,7 +4029,7 @@ var _RenderRight = class {
     const apiTotal = this._overlayApiTotalPages[section] || 1;
     const hasNext = page < totalPages - 1 || cfg.apiEndpoint && apiPage < apiTotal;
     if (!hasPrev && !hasNext) return "";
-    const dots = totalPages > 1 ? Array.from(
+    const dots = totalPages > 1 ? totalPages > 7 ? `<span class="rp-page-counter">${page + 1} / ${totalPages}</span>` : Array.from(
       { length: totalPages },
       (_, i) => `<button class="rp-dot${i === page ? " rp-dot-active" : ""}" data-topage="${i}"></button>`
     ).join("") : "";
@@ -4839,6 +4844,32 @@ var _WireMethods = class {
         });
       }, { passive: true, signal: sig });
     });
+    const rpNav = this.shadowRoot.querySelector(".rp-nav");
+    if (rpNav) {
+      let startX = null;
+      rpNav.addEventListener("touchstart", (e) => {
+        startX = e.touches[0].clientX;
+      }, { passive: true, signal: sig });
+      rpNav.addEventListener("touchend", (e) => {
+        if (startX === null) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        startX = null;
+        if (Math.abs(dx) < THRESHOLD) return;
+        const dir = dx < 0 ? "next" : "prev";
+        const allCategories = (this._cfg.categories || this._defaultCategories()).filter((c) => c.enabled !== false);
+        const perPage = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
+        const totalPages = Math.ceil(allCategories.length / perPage);
+        const cur = this._pages["right"] || 0;
+        if (dir === "next" && cur < totalPages - 1) {
+          this._pages["right"] = cur + 1;
+        } else if (dir === "prev" && cur > 0) {
+          this._pages["right"] = cur - 1;
+        } else {
+          return;
+        }
+        this._reRenderRight();
+      }, { passive: true, signal: sig });
+    }
   }
 };
 var wireMixin = _WireMethods.prototype;
