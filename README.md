@@ -75,10 +75,11 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 
 ### Via HACS (recommended)
 
-1. Open HACS → Frontend
-2. Click **+ Explore & Download Repositories**
-3. Search for **Arr Stack Card** and install
-4. Hard refresh your browser (Cmd+Shift+R / Ctrl+Shift+R)
+1. Open HACS → **Frontend**
+2. Click the **⋮** menu (top right) → **Custom repositories**
+3. Add `https://github.com/martinargalas/ha-arr-stack-card` — category **Lovelace**
+4. Click **+ Explore & Download Repositories**, search for **Arr Stack Card** and install
+5. Hard refresh your browser (Cmd+Shift+R / Ctrl+Shift+R)
 
 ### Manual
 
