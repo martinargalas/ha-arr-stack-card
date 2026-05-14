@@ -122,7 +122,9 @@ downloads:
 discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
-  oneClickMovieRequest: false # skip quality-profile dialog on movie request  (default: false)
+  oneClickRequest: false       # skip quality-profile dialog on movie/show request  (default: false)
+  oneClickDefaultMovieProfile: ""  # quality profile name for one-click movie requests  (default: first profile)
+  oneClickDefaultShowProfile: ""   # quality profile name for one-click TV requests  (default: first profile)
 
 # Category order & visibility
 categories:
@@ -189,7 +191,9 @@ styles:
 |--------|------|---------|-------------|
 | `categoriesCount` | number | `3` | Media sections visible per right-panel page |
 | `showMoreOnPage` | number | `3` | Page number on which the "See More" card appears as the last slot. Clicking it opens a full-screen overlay showing all items in that section. |
-| `oneClickMovieRequest` | boolean | `false` | Skip quality-profile dialog — request movie instantly with the default profile |
+| `oneClickRequest` | boolean | `false` | Skip quality-profile dialog — request movie/show instantly |
+| `oneClickDefaultMovieProfile` | string | `""` | Quality profile name for one-click movie requests (uses first profile if empty) |
+| `oneClickDefaultShowProfile` | string | `""` | Quality profile name for one-click TV show requests (uses first profile if empty) |
 
 ### `categories`
 
