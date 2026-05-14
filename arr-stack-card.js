@@ -169,13 +169,23 @@ var ArrStackCardEditor = class extends HTMLElement {
         </div>
         <div class="hint">Insert a "See More" card as the last slot on this page. Opens full-section overlay. Default: 3.</div>
         <div class="row">
-          <span class="row-label">One-click movie request</span>
+          <span class="row-label">One-click request</span>
           <label class="toggle">
-            <input type="checkbox" data-group="discover" data-key="oneClickMovieRequest" ${this._cfg("discover", "oneClickMovieRequest", false) ? "checked" : ""}>
+            <input type="checkbox" data-group="discover" data-key="oneClickRequest" ${this._cfg("discover", "oneClickRequest", false) || this._cfg("discover", "oneClickMovieRequest", false) ? "checked" : ""}>
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <div class="hint">Skip profile dialog \u2014 use default quality profile immediately.</div>
+        <div class="hint">Skip profile dialog for movies and TV shows. TV automatically requests Season 1.</div>
+        <div class="row">
+          <span class="row-label">Default movie profile</span>
+          <input type="text" data-group="discover" data-key="oneClickDefaultMovieProfile" value="${this._cfg("discover", "oneClickDefaultMovieProfile", "")}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
+        </div>
+        <div class="hint">Quality profile name from Radarr (Settings \u2192 Profiles \u2192 Name). Leave empty to use Radarr default.</div>
+        <div class="row">
+          <span class="row-label">Default show profile</span>
+          <input type="text" data-group="discover" data-key="oneClickDefaultShowProfile" value="${this._cfg("discover", "oneClickDefaultShowProfile", "")}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
+        </div>
+        <div class="hint">Quality profile name from Sonarr (Settings \u2192 Profiles \u2192 Name). Leave empty to use Sonarr default.</div>
       </div>
 
       <!-- Right Panel -->
@@ -259,6 +269,12 @@ var ArrStackCardEditor = class extends HTMLElement {
       el.addEventListener("change", () => {
         const existing = this._config[el.dataset.group] || {};
         this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: parseInt(el.value) } });
+      });
+    });
+    this.shadowRoot.querySelectorAll('input[type="text"][data-group]').forEach((el) => {
+      el.addEventListener("change", () => {
+        const existing = this._config[el.dataset.group] || {};
+        this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: el.value } });
       });
     });
     this.shadowRoot.querySelectorAll('input[type="checkbox"][data-group]').forEach((el) => {
@@ -2912,6 +2928,43 @@ var _FetchMethods = class {
       console.error("[arr-card] Sonarr profiles fetch error:", e);
     }
   }
+  async _oneClickTvRequest(show) {
+    try {
+      if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      const profileName = this._cfgGet("discover", "oneClickDefaultShowProfile", "");
+      let profileId = this._seerrSonarr?.profileId ?? null;
+      if (profileName) {
+        await this._fetchSonarrProfiles();
+        const match = this._sonarrProfiles.find((p) => p.name === profileName);
+        if (match) profileId = match.id;
+      }
+      const detail = await this._hass.callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
+      const season1 = (detail.seasons || []).find((s) => s.seasonNumber === 1);
+      const seasons = season1 ? [1] : [(detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0]?.seasonNumber].filter(Boolean);
+      if (seasons.length === 0) return;
+      this._optimisticRequested.add(show.id);
+      this._withdrawnIds.delete(show.id);
+      this._reRenderRight();
+      const body = { mediaType: "tv", mediaId: show.id, seasons };
+      if (this._seerrSonarr) {
+        body.serverId = this._seerrSonarr.serverId;
+        body.profileId = profileId;
+        body.rootFolder = this._seerrSonarr.rootFolder;
+      }
+      if (!this._hass.user.is_admin) body.userMode = "family";
+      const resp = await this._hass.callApi("POST", "arr_stack/overseerr/request", body);
+      const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
+      if (reqId && !this._hass.user.is_admin) {
+        this._familyPendingIds.set(Number(show.id), reqId);
+        this._savePendingToStorage();
+      }
+      this._reRenderRight();
+    } catch (e) {
+      console.error("[arr-card] oneClick TV request error:", e);
+      this._optimisticRequested.delete(show.id);
+      this._reRenderRight();
+    }
+  }
   async _openTvRequestOverlay(m, source = "tvUpcoming") {
     this._tvRequestPending = { show: m, seasons: null, selected: null, profileId: null, mediaId: m.id, loading: true, source };
     this._reRenderRight();
@@ -4352,8 +4405,16 @@ var _WireMethods = class {
         if (!movieId) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
-        if (this._cfgGet("discover", "oneClickMovieRequest", false)) {
-          await this._addOverseerrRequest(tmdbId, null);
+        const oneClick = this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false);
+        if (oneClick) {
+          const profileName = this._cfgGet("discover", "oneClickDefaultMovieProfile", "");
+          let profileId = null;
+          if (profileName) {
+            await this._fetchRadarrProfiles();
+            const match = this._radarrProfiles.find((p) => p.name === profileName);
+            profileId = match ? match.id : null;
+          }
+          await this._addOverseerrRequest(tmdbId, profileId);
         } else {
           await this._fetchRadarrProfiles();
           this._requestPending = { movieId, tmdbId };
@@ -4390,6 +4451,12 @@ var _WireMethods = class {
         if (!show) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
+        const oneClick = this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false);
+        if (oneClick) {
+          await this._oneClickTvRequest(show);
+          btn.disabled = false;
+          return;
+        }
         if (btn.closest(".trending-overlay")) {
           const grid = btn.closest(".to-grid");
           const card = btn.closest(".mc[data-oi]");
@@ -6156,7 +6223,7 @@ var ArrStackCard = class extends HTMLElement {
       localisation: "en",
       layout: "both",
       downloads: { torrentItems: 3, usenetItems: 3 },
-      discover: { categoriesCount: 3, oneClickMovieRequest: false },
+      discover: { categoriesCount: 3, oneClickRequest: false, oneClickDefaultMovieProfile: "", oneClickDefaultShowProfile: "" },
       styles: { performanceMode: false }
     };
   }
