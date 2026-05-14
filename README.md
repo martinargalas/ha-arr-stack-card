@@ -1,71 +1,130 @@
 # Arr Stack Card
 
-A Home Assistant Lovelace card that aggregates **Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr and Bazarr** into a single dashboard panel.
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![version](https://img.shields.io/github/v/release/martinargalas/ha-arr-stack-card)](https://github.com/martinargalas/ha-arr-stack-card/releases)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-brightgreen.svg)](https://www.home-assistant.io)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Discord](https://img.shields.io/discord/1503764189057908798?logo=discord&label=chat&color=5865F2&logoColor=white)](https://discord.gg/SUfDr52G)
 
-![arr-stack-card](output/logo.png)
+<a href="https://buymeacoffee.com/argii" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>
+
+<a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
+
+<img width="376" height="746" alt="ScreenRecording2026-05-08at11 52 14-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/80a9ec5a-8556-4ccb-b7d6-d21761cbce55" />
+<img width="800" height="366" alt="ScreenRecording2026-05-07at12 40 00-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/dacd65e8-a41d-4e92-8749-8b963c5a7525" />
+
+A feature-rich Home Assistant Lovelace card for managing your media server stack. Integrates Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, and Bazarr into a single unified dashboard.
+
+> **Requires:** [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) — the companion HA proxy integration.
 
 ---
 
 ## Features
 
-- **Downloads panel** — live qBittorrent torrents and SABnzbd queue with pause/resume/delete
-- **Media library** — recent Radarr movies and Sonarr shows with quality badges, subtitle status (Bazarr)
-- **Discover** — Upcoming, New Shows, Trending, Popular from Overseerr with one-click requests
-- **Interactive Search** — Radarr/Sonarr release grabber inside a popup
-- **Section overlay** — full-screen browsing grid for any section via "See More" card
-- **Popup detail** — poster, overview, cast, ratings, request/remove actions
-- **Day/night theming** via `sun.sun` entity
-- **Mobile-first** responsive layout with swipe gestures
+### Movies (Radarr)
+- Library overview with download status badges (downloading, missing, available)
+- Subtitle status from Bazarr (missing / available languages)
+- Popup detail with poster, overview, ratings, and trailer link
+- Interactive Search — live indexer search with grab support directly from the card
+- Movie requests via Overseerr with quality profile selection
+
+### TV Shows (Sonarr)
+- Library overview with per-season episode counts and progress bars
+- Upcoming episodes calendar
+- Interactive Search per season (season pack) or per episode
+- TV show requests via Overseerr with season selection
+
+### Downloads (qBittorrent)
+- Active torrent list with progress, speed, and seeder/leecher counts
+- Pause, resume, stop seeding, and delete (with or without files)
+- Global pause/resume all
+- Sort by progress or speed
+
+### Downloads (SABnzbd)
+- Active NZB queue with progress and speed
+- Failed downloads history with retry and delete actions
+- Global pause/resume
+
+### Discover (Overseerr / Jellyseerr)
+- Trending, popular, and upcoming movies
+- New and upcoming TV shows
+- One-click or profile-based media requests
+- Admin: approve and decline pending requests
+- Family account: view and withdraw own requests
+
+### Appearance & UX
+- Day / night theming (based on `sun.sun` entity)
+- Responsive layout — mobile, tablet, desktop
+- Sticky bottom navigation bar on mobile
+- Pagination for all sections
+- **Section overlay** — full-screen browsing grid via "See More" card (configurable page)
+- Visual card editor in HA (no YAML required for basic setup)
+- Performance mode — disables backdrop blur for low-end devices
+
+---
+
+## Requirements
+
+1. Home Assistant with HACS installed
+2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
+3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
 
 ---
 
 ## Installation
 
-### HACS (recommended)
+### Via HACS (recommended)
 
-1. Add this repository to HACS as a custom repository (type: Lovelace)
-2. Install **Arr Stack Card**
-3. Add the resource and configure (see below)
+1. Open HACS → Frontend
+2. Click **+ Explore & Download Repositories**
+3. Search for **Arr Stack Card** and install
+4. Hard refresh your browser (Cmd+Shift+R / Ctrl+Shift+R)
 
 ### Manual
 
-1. Copy `output/arr-stack-card.js` to `/config/www/arr-stack-card.js`
-2. Copy `output/custom_components/arr_stack/` to `/config/custom_components/arr_stack/`
-3. Add the resource in **Settings → Dashboards → Resources**:
+1. Download `arr-stack-card.js` from the latest release
+2. Copy to `/config/www/arr-stack-card.js`
+3. Add to Lovelace resources:
+   ```yaml
+   url: /local/arr-stack-card.js
+   type: module
    ```
-   /local/arr-stack-card.js
-   ```
-4. Restart Home Assistant
-5. Configure the integration: **Settings → Devices & Services → Add Integration → Arr Stack**
 
 ---
 
-## Configuration
-
-### Minimal example
+## Basic Configuration
 
 ```yaml
 type: custom:arr-stack-card
 ```
 
-### Complete example
+The card can be fully configured via the visual editor in HA. Click the pencil icon when editing your dashboard.
+
+---
+
+## Full Configuration
 
 ```yaml
 type: custom:arr-stack-card
-localisation: en             # cs | en  (default: cs)
+
+# General
+localisation: en             # en | cs  (default: cs)
 layout: both                 # both | left | right  (default: both)
 sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (default: 100)
 
+# Download managers (left panel)
 downloads:
   torrentItems: 3            # qBittorrent items per page  (default: 3)
   usenetItems: 3             # SABnzbd items per page  (default: 3)
 
+# Discovery (right panel)
 discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
   oneClickMovieRequest: false # skip quality-profile dialog on movie request  (default: false)
 
-categories:                  # order & visibility of right-panel sections
+# Category order & visibility
+categories:
   - id: radarr
     enabled: true
   - id: sonarr
@@ -81,6 +140,7 @@ categories:                  # order & visibility of right-panel sections
   - id: calendar
     enabled: true
 
+# Appearance
 styles:
   performanceMode: false          # disable backdrop blur (improves perf on low-end devices)
   cardBackground: "#121216"       # card background colour (performance mode only)
@@ -105,7 +165,7 @@ styles:
 
 ---
 
-## Configuration options
+## Configuration Reference
 
 ### Top-level
 
@@ -172,11 +232,9 @@ All colour values accept `#rrggbb` hex or `rgb(r,g,b)` strings.
 
 ---
 
-## Integration (proxy)
+## Related
 
-All API calls go through the `arr_stack` Home Assistant integration, which acts as a secure proxy. Configure services in **Settings → Devices & Services → Arr Stack**.
-
-Supported services: Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, Bazarr.
+- [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) — required companion proxy integration
 
 ---
 

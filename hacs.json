@@ -1,8 +1,8 @@
 {
   "name": "Arr Stack Card",
   "filename": "arr-stack-card.js",
+  "render_readme": true,
   "content_in_root": false,
   "zip_release": false,
-  "render_readme": true,
   "homeassistant": "2024.1.0"
 }
