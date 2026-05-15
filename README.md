@@ -272,7 +272,7 @@ The card detects the HA user role automatically (`hass.user.is_admin`). No extra
 
 1. **Overseerr** — create a separate non-admin user (Settings → Users → Add User). This user will be used for all requests from non-admin HA accounts.
 2. **Home Assistant** — create a non-admin HA user for each family member (Settings → People → Add Person → uncheck Administrator).
-3. **Integration** — in the Arr Stack integration config, set the Overseerr non-admin credentials (API key of the non-admin Overseerr user). The integration proxy will forward requests under that user's identity.
+3. **Integration** — in the Arr Stack integration config, enter the non-admin Overseerr user's **email and password**. The integration proxy will forward requests under that user's identity.
 
 ### What non-admin users can do
 
