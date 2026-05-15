@@ -107,7 +107,7 @@ The card works out of the box with zero configuration. It auto-detects all servi
 type: custom:arr-stack-card
 ```
 
-That's it. The card will show all available panels, use English UI, display 3 categories per page with 4 items each, and show media request buttons if Overseerr is configured (one-click requesting is opt-in — set `discover.oneClickRequest: true` and configure `oneClickDefaultMovieProfile` / `oneClickDefaultShowProfile` to match your quality profile name, e.g. `HD - 720p/1080p`).
+That's it. The card will show all available panels, use English UI, display 3 categories per page with 4 items each, and show media request buttons if Overseerr is configured.
 
 Panels for services not configured in the integration (qBittorrent, SABnzbd, Overseerr, Bazarr) are hidden automatically — no YAML needed to disable them.
 
@@ -207,7 +207,7 @@ styles:
 | `categoriesCount` | number | `3` | Media sections visible per right-panel page |
 | `itemsPerCategory` | number | `4` | Number of columns per category grid. Increase for wide screens. |
 | `showMoreOnPage` | number | `3` | Page number on which the "See More" card appears as the last slot. Clicking it opens a full-screen overlay. |
-| `oneClickRequest` | boolean | `false` | Skip quality-profile dialog — request movie/show instantly |
+| `oneClickRequest` | boolean | `false` | Skip quality-profile dialog — request movie/show instantly. Set `oneClickDefaultMovieProfile` / `oneClickDefaultShowProfile` to match your profile name (e.g. `HD - 720p/1080p`), otherwise falls back to first available profile |
 | `oneClickDefaultMovieProfile` | string | `""` | Quality profile name for one-click movie requests (uses first profile if empty) |
 | `oneClickDefaultShowProfile` | string | `""` | Quality profile name for one-click TV show requests (uses first profile if empty) |
 
