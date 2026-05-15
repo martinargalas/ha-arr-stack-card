@@ -107,7 +107,7 @@ The card works out of the box with zero configuration. It auto-detects all servi
 type: custom:arr-stack-card
 ```
 
-That's it. The card will show all available panels, use English UI, display 3 categories per page with 4 items each, and support one-click requesting if Overseerr is configured.
+That's it. The card will show all available panels, use English UI, display 3 categories per page with 4 items each, and show media request buttons if Overseerr is configured (one-click requesting is opt-in — set `discover.oneClickRequest: true` and configure `oneClickDefaultMovieProfile` / `oneClickDefaultShowProfile` to match your quality profile name, e.g. `HD - 720p/1080p`).
 
 Panels for services not configured in the integration (qBittorrent, SABnzbd, Overseerr, Bazarr) are hidden automatically — no YAML needed to disable them.
 
