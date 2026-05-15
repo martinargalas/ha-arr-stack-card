@@ -611,7 +611,7 @@ var STYLES = `
       /* \u2500\u2500 Column header \u2500\u2500 */
       .col-hdr {
         display: flex; align-items: center; gap: 14px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         padding: 0 4px;
       }
 
@@ -908,15 +908,15 @@ var STYLES = `
         display: flex;
         align-items: center;
         gap: 8px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.09);
+        background: rgba(var(--arr-pbb-rgb, 255,255,255), 0.08);
+        border: 1px solid rgba(255,255,255,0.18);
         border-radius: 999px;
         padding: 8px 14px;
         margin-bottom: 8px;
         transition: border-color .2s;
       }
       .search-bar-wrap:focus-within {
-        border-color: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.35);
       }
       .search-bar-icon { color: var(--secondary-text-color, #888); flex-shrink: 0; }
       .search-bar-input {
@@ -2008,7 +2008,7 @@ var STYLES = `
       .rp-nav {
         position: relative;
         display: flex; align-items: center; justify-content: space-between;
-        padding: 10px 0 2px; gap: 8px;
+        padding: 6px 0 2px; gap: 8px;
         margin-top: auto;
       }
       .rp-dots {
@@ -3791,7 +3791,8 @@ var _RenderRight = class {
       </div>` : "";
       return `<div class="rp-sections">${this._renderSearch()}</div>${searchNavBar}`;
     }
-    return `<div class="rp-sections">${_join(pageSlice)}</div>${navBar}`;
+    const filler = Array(Math.max(0, regularPerPage - regSlice.length)).fill('<div class="spacer-sm"></div>').join("");
+    return `<div class="rp-sections">${_join(pageSlice)}${filler}</div>${navBar}`;
   }
   _renderSearch() {
     const hasQuery = !!this._searchQuery;
@@ -6393,7 +6394,17 @@ var ArrStackCard = class extends HTMLElement {
       });
     }
     requestAnimationFrame(() => {
-      if (!window.matchMedia("(max-width: 900px)").matches && !this._searchActive) this._measureAndLockHeight();
+      if (!this._searchActive) {
+        const isMobile = window.matchMedia("(max-width: 900px)").matches;
+        if (isMobile) {
+          const sc = this._findScrollContainer();
+          const savedTop = sc ? sc.scrollTop : 0;
+          this._measureAndLockHeight();
+          if (sc) sc.scrollTop = savedTop;
+        } else {
+          this._measureAndLockHeight();
+        }
+      }
       requestAnimationFrame(() => this._checkBadgeOverflow());
     });
   }
@@ -6405,21 +6416,18 @@ var ArrStackCard = class extends HTMLElement {
     if (!right) return;
     const savedPage = this._rightPage;
     const savedPages = { ...this._pages };
-    const perPage = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
-    const hasCal = this._calendar && this._calendar.length > 0;
-    const hasPend = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const totalCats = 6 + (hasPend ? 1 : 0) + (hasCal ? 1 : 0);
-    const totalPages = Math.ceil(totalCats / perPage);
     let maxH = 0;
     right.style.visibility = "hidden";
     right.style.minHeight = "";
-    for (let p = 0; p < totalPages; p++) {
+    for (let p = 0; p < 20; p++) {
       this._rightPage = p;
       Object.keys(this._pages).forEach((k) => {
         this._pages[k] = 0;
       });
       right.innerHTML = this._renderRight();
       maxH = Math.max(maxH, right.scrollHeight);
+      const hasNext = !!right.querySelector('.rp-btn[data-dir="next"]:not(.rp-btn-hidden):not([disabled])');
+      if (!hasNext) break;
     }
     this._rightPage = savedPage;
     Object.assign(this._pages, savedPages);

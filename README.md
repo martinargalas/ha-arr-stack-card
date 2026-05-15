@@ -101,11 +101,15 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 
 ## Basic Configuration
 
+The card works out of the box with zero configuration. It auto-detects all services configured via the integration (Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, Bazarr) and applies sensible defaults.
+
 ```yaml
 type: custom:arr-stack-card
 ```
 
-The card can be fully configured via the visual editor in HA. Click the pencil icon when editing your dashboard.
+That's it. The card will show all available panels, use English UI, display 3 categories per page with 4 items each, and support one-click requesting if Overseerr is configured.
+
+> **Visual editor** — most settings can be configured via the HA dashboard editor (click the pencil icon). Only `searchBarIconColor` and `styles.*` require manual YAML editing.
 
 ---
 
