@@ -3377,7 +3377,7 @@ var _FetchMethods = class {
   async _fetchSearch(query) {
     this._searchLoading = true;
     try {
-      const data = await this._hass.callApi("GET", `arr_stack/overseerr/search?query=${encodeURIComponent(query)}`);
+      const data = await this._hass.callApi("POST", "arr_stack/overseerr/search", { query });
       this._searchResults = (data?.results || []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
     } catch (e) {
       this._searchResults = [];
