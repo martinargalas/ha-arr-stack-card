@@ -23,14 +23,16 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 
 ### Movies (Radarr)
 - Library overview with download status badges (downloading, missing, available)
-- Subtitle status from Bazarr (missing / available languages)
+- **IMDB rating pill** on each movie card
+- Audio language tags (`CS | EN`) and Bazarr subtitle status badges, shown below the rating
 - Popup detail with poster, overview, ratings, and trailer link
 - Interactive Search — live indexer search with grab support directly from the card
 - Movie requests via Overseerr with quality profile selection
 
 ### TV Shows (Sonarr)
 - Library overview with per-season episode counts and progress bars
-- Upcoming episodes calendar
+- **IMDB rating pill** on each show card
+- **Upcoming episodes calendar** — shows airing date and `S01E01` badge per episode
 - Interactive Search per season (season pack) or per episode
 - TV show requests via Overseerr with season selection
 
@@ -39,15 +41,19 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 - Pause, resume, stop seeding, and delete (with or without files)
 - Global pause/resume all
 - Sort by progress or speed
+- **Disk usage** — free space read from qBittorrent (shown only when qBittorrent is configured)
 
 ### Downloads (SABnzbd)
 - Active NZB queue with progress and speed
 - Failed downloads history with retry and delete actions
 - Global pause/resume
+- **Disk usage** — free/total space with usage bar (priority over qBittorrent disk data)
+- Section hidden automatically when SABnzbd is not configured
 
 ### Discover (Overseerr / Jellyseerr)
 - Trending, popular, and upcoming movies
-- New and upcoming TV shows
+- New and upcoming TV shows — shows airing date on New Shows cards
+- Trending TV shows display rating
 - One-click or profile-based media requests
 - Admin: approve and decline pending requests
 - Family account: view and withdraw own requests
@@ -56,10 +62,10 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 - Day / night theming (based on `sun.sun` entity)
 - Responsive layout — mobile, tablet, desktop
 - Sticky bottom navigation bar on mobile
-- Pagination for all sections
+- Pagination for all sections with `itemsPerCategory` columns control
 - **Section overlay** — full-screen browsing grid via "See More" card (configurable page)
 - Visual card editor in HA (no YAML required for basic setup)
-- Performance mode — disables backdrop blur for low-end devices
+- Performance mode — disables backdrop blur; card background colour and transparency configurable
 
 ---
 
@@ -121,8 +127,9 @@ downloads:
 # Discovery (right panel)
 discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
+  itemsPerCategory: 4        # columns per category grid  (default: 4)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
-  oneClickRequest: false       # skip quality-profile dialog on movie/show request  (default: false)
+  oneClickRequest: false     # skip quality-profile dialog on movie/show request  (default: false)
   oneClickDefaultMovieProfile: ""  # quality profile name for one-click movie requests  (default: first profile)
   oneClickDefaultShowProfile: ""   # quality profile name for one-click TV requests  (default: first profile)
 
@@ -147,6 +154,8 @@ categories:
 styles:
   performanceMode: false          # disable backdrop blur (improves perf on low-end devices)
   cardBackground: "#121216"       # card background colour (performance mode only)
+  cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only, default: 90)
+  searchBarIconColor: ""          # search bar icon colour when search is inactive (default: heading colour)
   headingTextColor: "#ffffff"     # section header text
   headingColor: "#ffffff"         # section header icon
   primaryTextColor: "#ffffff"     # main text (titles)
@@ -190,7 +199,8 @@ styles:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `categoriesCount` | number | `3` | Media sections visible per right-panel page |
-| `showMoreOnPage` | number | `3` | Page number on which the "See More" card appears as the last slot. Clicking it opens a full-screen overlay showing all items in that section. |
+| `itemsPerCategory` | number | `4` | Number of columns per category grid. Increase for wide screens. |
+| `showMoreOnPage` | number | `3` | Page number on which the "See More" card appears as the last slot. Clicking it opens a full-screen overlay. |
 | `oneClickRequest` | boolean | `false` | Skip quality-profile dialog — request movie/show instantly |
 | `oneClickDefaultMovieProfile` | string | `""` | Quality profile name for one-click movie requests (uses first profile if empty) |
 | `oneClickDefaultShowProfile` | string | `""` | Quality profile name for one-click TV show requests (uses first profile if empty) |
@@ -217,9 +227,11 @@ All colour values accept `#rrggbb` hex or `rgb(r,g,b)` strings.
 |--------|---------|
 | `performanceMode` | Disables backdrop blur on the card — recommended on low-end devices |
 | `cardBackground` | Card background colour (applied only in performance mode) |
+| `cardBackgroundOpacity` | Card background opacity 0–100 (performance mode only, default `90`) |
+| `searchBarIconColor` | Search bar icon colour when search field is inactive. Defaults to heading colour on focus/type. |
 | `headingTextColor` | Section header text colour |
 | `headingColor` | Section header icon colour |
-| `primaryTextColor` | Primary text (movie/show titles) |
+| `primaryTextColor` | Primary text (movie/show titles on poster cards) |
 | `secondaryTextColor` | Secondary text (year, quality, metadata) |
 | `pagingButtonTextColor` | Prev/Next paging button text |
 | `pagingButtonBackgroundColor` | Prev/Next paging button background |
@@ -234,6 +246,15 @@ All colour values accept `#rrggbb` hex or `rgb(r,g,b)` strings.
 | `modalCloseButtonBackgroundColor` | Popup close button background |
 | `modalButtonTextColor` | Popup action button text (IS, Remove…) |
 | `modalButtonBackgroundColor` | Popup action button background |
+
+---
+
+## SABnzbd disk info
+
+SABnzbd reports disk space based on the **Temporary Download Folder** path configured in SABnzbd → Settings → Folders. Make sure:
+
+- You use the **API Key** (not the NZB Key) — found in SABnzbd → Config → General → **API Key**
+- The Temporary Download Folder path is valid and accessible
 
 ---
 

@@ -164,6 +164,11 @@ var ArrStackCardEditor = class extends HTMLElement {
           <input type="number" data-group="discover" data-key="categoriesCount" value="${this._cfg("discover", "categoriesCount", 3)}" min="1" max="10"/>
         </div>
         <div class="row">
+          <span class="row-label">Items per category</span>
+          <input type="number" data-group="discover" data-key="itemsPerCategory" value="${this._cfg("discover", "itemsPerCategory", 4)}" min="2" max="10"/>
+        </div>
+        <div class="hint">Number of poster columns per category row, search results and More overlay. Default: 4.</div>
+        <div class="row">
           <span class="row-label">Show More card on page</span>
           <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg("discover", "showMoreOnPage", 3)}" min="1" max="50"/>
         </div>
@@ -218,7 +223,8 @@ var ArrStackCardEditor = class extends HTMLElement {
         </div>
         <div class="hint">Disables backdrop blur \u2014 improves performance on low-end devices.</div>
 
-        ${this._colorRow("Card background", "cardBackground", "#121216", "opacity 90% \u2014 perf mode only")}
+        ${perfMode ? this._colorRow("Card background", "cardBackground", "#121216") : ""}
+        ${perfMode ? this._numberRow("Card background transparency", "cardBackgroundOpacity", 90, 0, 100, 1, "0\u2013100 %") : ""}
       </div>
     `;
     this._wireEvents();
@@ -247,6 +253,16 @@ var ArrStackCardEditor = class extends HTMLElement {
       popular: "Popular",
       calendar: "Calendar"
     }[id] || id;
+  }
+  _numberRow(label, key, defaultVal, min, max, step, hint) {
+    const stored = this._styleVal(key, null);
+    const val = stored != null ? stored : defaultVal;
+    return `
+      <div class="row">
+        <span class="row-label">${label}</span>
+        ${hint ? `<span class="color-alpha">${hint}</span>` : ""}
+        <input type="number" data-style-key="${key}" value="${val}" min="${min}" max="${max}" step="${step}" style="width:56px;text-align:right"/>
+      </div>`;
   }
   _colorRow(label, key, defaultHex, alphaHint) {
     const stored = this._styleVal(key, null);
@@ -288,6 +304,12 @@ var ArrStackCardEditor = class extends HTMLElement {
         const existing = this._config.styles || {};
         this._update({ styles: { ...existing, [el.dataset.styleKey]: el.checked } });
         this._render();
+      });
+    });
+    this.shadowRoot.querySelectorAll('input[type="number"][data-style-key]').forEach((el) => {
+      el.addEventListener("change", () => {
+        const existing = this._config.styles || {};
+        this._update({ styles: { ...existing, [el.dataset.styleKey]: parseFloat(el.value) } });
       });
     });
     this.shadowRoot.querySelectorAll('input[type="color"][data-style-key]').forEach((el) => {
@@ -448,7 +470,13 @@ var ARR_I18N = {
     snNotInSonarr: "Seri\xE1l nenalezen v Sonarru.",
     snEpisode: "Epizoda",
     snSeasonPack: "season pack",
-    snBack: "Zp\u011Bt"
+    snBack: "Zp\u011Bt",
+    // Search
+    searchPlaceholder: "Hledat filmy a seri\xE1ly\u2026",
+    typeShow: "Seri\xE1l",
+    // Pending badges
+    fromSeerr: "ze Seerr",
+    fromSonarr: "ze Sonarr"
   },
   en: {
     downloads: "Downloads",
@@ -537,7 +565,13 @@ var ARR_I18N = {
     snNotInSonarr: "Series not found in Sonarr.",
     snEpisode: "Episode",
     snSeasonPack: "season pack",
-    snBack: "Back"
+    snBack: "Back",
+    // Search
+    searchPlaceholder: "Search Movies and Shows\u2026",
+    typeShow: "Show",
+    // Pending badges
+    fromSeerr: "from Seerr",
+    fromSonarr: "from Sonarr"
   }
 };
 
@@ -866,6 +900,86 @@ var STYLES = `
       .sec-card { margin-bottom: 4px; }
 
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+         SEARCH BAR
+      \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+      .sec-search { padding-bottom: 0; }
+      .sec-search .mgrid { padding: 0 30px; }
+      .search-bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 999px;
+        padding: 8px 14px;
+        margin-bottom: 8px;
+        transition: border-color .2s;
+      }
+      .search-bar-wrap:focus-within {
+        border-color: rgba(255,255,255,0.2);
+      }
+      .search-bar-icon { color: var(--secondary-text-color, #888); flex-shrink: 0; }
+      .search-bar-input {
+        background: none;
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--secondary-text-color, #aaa);
+        width: 100%;
+      }
+      .search-bar-input::placeholder { color: rgba(255,255,255,0.25); }
+      .search-bar-clear {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.4);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0 2px;
+        flex-shrink: 0;
+      }
+      .sec-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+      .sec-grid .mc {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+        aspect-ratio: 2/3;
+        display: block;
+      }
+      .mc-grad {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+        padding: 18px 6px 6px;
+        pointer-events: none;
+      }
+      .mc-year {
+        font-size: 9px;
+        color: rgba(255,255,255,0.55);
+      }
+      .mc-type-tag {
+        position: absolute;
+        top: 5px; right: 5px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #fff;
+        border-radius: 4px;
+        padding: 2px 5px;
+        pointer-events: none;
+      }
+      .placeholder-poster {
+        width: 100%; height: 100%;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+      }
+
+      /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          DOWNLOAD ITEMS
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
       .dl {
@@ -987,6 +1101,7 @@ var STYLES = `
       .mc {
         background: rgba(255,255,255,0.10);
         border-radius: 11px; overflow: hidden; min-width: 0;
+        position: relative; aspect-ratio: 2/3; height: auto; cursor: pointer;
         container-type: inline-size;
         container-name: mc;
       }
@@ -997,23 +1112,20 @@ var STYLES = `
         font-size: 20px; flex-shrink: 0;
       }
 
-      .mc-cover-lg {
-        width: 100%; height: 92px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 26px; flex-shrink: 0;
-      }
+      .mc-cover-lg { display: none; }
       .media-type-tag {
-        position: absolute; top: 4px; left: 4px; z-index: 2;
+        position: absolute; top: 6px; left: 6px; z-index: 2;
         background: rgba(0,0,0,0.62);
         backdrop-filter: blur(4px);
         color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.92);
-        font-size: 9px; font-weight: 700;
-        padding: 2px 5px; border-radius: 4px;
+        font-size: 10px; font-weight: 800; line-height: 1;
+        padding: 2px 6px; border-radius: 4px;
         letter-spacing: 0.05em;
+        display: inline-flex; align-items: center;
         pointer-events: none;
       }
 
-      .mc-info { padding: 4px 7px 4px; }
+      .mc-info { display: none; }
 
       /* \u2500\u2500 See More card \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
       .smp-card { cursor: pointer; position: relative; overflow: hidden; }
@@ -1064,7 +1176,7 @@ var STYLES = `
       .to-grid {
         flex: 1; min-width: 0; position: relative;
         display: grid; grid-template-columns: repeat(4, 1fr);
-        column-gap: 7px; row-gap: 38px; align-content: start;
+        column-gap: 7px; row-gap: 7px; align-content: start;
       }
 
       /* Abs TV req overlay \u2014 pokryje \u0159\xE1dek karet */
@@ -1151,7 +1263,7 @@ var STYLES = `
       }
 
       .imdb {
-        display: flex; align-items: center; gap: 2px;
+        display: inline-flex; align-items: center; gap: 2px;
         border: 1px solid rgba(255,214,10,0.45); border-radius: 4px;
         padding: 2px 6px; font-size: 10px; font-weight: 800; line-height: 1;
         color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.55); flex-shrink: 0;
@@ -1911,18 +2023,13 @@ var STYLES = `
         width: 6px; height: 6px; border-radius: 50%;
         background: rgba(var(--arr-pd-rgb, 255, 255, 255), 0.22); border: none;
         cursor: pointer; padding: 0; flex-shrink: 0;
-        transition: background 0.25s ease;
+        transition: width 0.25s cubic-bezier(0.34,1.56,0.64,1), border-radius 0.25s ease, background 0.25s ease;
       }
       .rp-dot:hover { background: rgba(var(--arr-pd-rgb, 255, 255, 255), 0.45); }
       .rp-dot-active {
         width: 18px; border-radius: 3px;
         background: rgba(var(--arr-pda-rgb, 255, 255, 255), 0.80);
         cursor: default; pointer-events: none;
-        animation: dot-expand 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
-      }
-      @keyframes dot-expand {
-        from { width: 6px; opacity: 0.3; }
-        to   { width: 18px; opacity: 1; }
       }
       .rp-btn {
         background: rgba(var(--arr-pbb-rgb, 255, 255, 255), 0.08);
@@ -2007,7 +2114,7 @@ var STYLES = `
 
       /* Large phone: mgrid 3 col */
       @media (max-width: 700px) {
-        .mgrid   { grid-template-columns: repeat(3, 1fr); }
+        .mgrid   { grid-template-columns: repeat(3, 1fr) !important; }
         .dl-name { max-width: calc(100vw - 120px); }
         /* badges stay on one row \u2014 clip overflow */
         .mc-badges { flex-wrap: nowrap; overflow: hidden; }
@@ -2016,8 +2123,8 @@ var STYLES = `
 
       /* Small phone: mgrid 2 col */
       @media (max-width: 480px) {
-        .mgrid   { grid-template-columns: repeat(2, 1fr); }
-        .to-grid { grid-template-columns: repeat(2, 1fr); }
+        .mgrid   { grid-template-columns: repeat(2, 1fr) !important; }
+        .to-grid { grid-template-columns: repeat(2, 1fr) !important; }
         .disk-row    { flex-wrap: wrap; }
         .disk-chip   { min-width: calc(50% - 3px); }
         .col         { border-radius: 24px; padding: 12px; }
@@ -3034,8 +3141,9 @@ var _FetchMethods = class {
       this._bazarr = map;
       this._bazarrConfigured = true;
     } catch (e) {
-      const status = e?.status ?? e?.response?.status;
-      this._bazarrConfigured = status !== 503;
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      this._bazarrConfigured = !(status === 503 || body.includes("not configured"));
       console.error("[arr-card] Bazarr fetch error:", e);
     }
   }
@@ -3063,11 +3171,18 @@ var _FetchMethods = class {
   async _fetchSab() {
     try {
       const data = await this._hass.callApi("GET", "arr_stack/sabnzbd/queue");
+      if (data?.status === false) {
+        console.error("[arr-card] SABnzbd API error:", data?.error);
+        this._sabConfigured = false;
+        return;
+      }
       this._sab = data.queue || {};
       this._sabConfigured = true;
     } catch (e) {
-      const status = e?.status ?? e?.response?.status;
-      this._sabConfigured = status !== 503;
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = status === 503 || body.includes("not configured");
+      this._sabConfigured = !isNotConfigured;
       console.error("[arr-card] SABnzbd fetch error:", e);
     }
   }
@@ -3109,16 +3224,20 @@ var _FetchMethods = class {
   }
   async _fetchQbit() {
     try {
-      const [torrents, transfer] = await Promise.all([
+      const [torrents, transfer, maindata] = await Promise.all([
         this._hass.callApi("GET", "arr_stack/qbit/torrents"),
-        this._hass.callApi("GET", "arr_stack/qbit/transfer")
+        this._hass.callApi("GET", "arr_stack/qbit/transfer"),
+        this._hass.callApi("GET", "arr_stack/qbit/maindata").catch(() => null)
       ]);
       this._qbit = torrents;
       this._qbitTransfer = transfer;
+      this._qbitDiskFreeBytes = maindata?.server_state?.free_space_on_disk ?? null;
       this._qbitConfigured = true;
     } catch (e) {
-      const status = e?.status ?? e?.response?.status;
-      this._qbitConfigured = status !== 503;
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = status === 503 || body.includes("not configured");
+      this._qbitConfigured = !isNotConfigured;
       console.error("[arr-card] qBittorrent fetch error:", e);
     }
   }
@@ -3255,6 +3374,26 @@ var _FetchMethods = class {
       this._renderPopupEl();
     }
   }
+  async _fetchSearch(query) {
+    this._searchLoading = true;
+    try {
+      const data = await this._hass.callApi("GET", `arr_stack/overseerr/search?query=${encodeURIComponent(query)}`);
+      this._searchResults = (data?.results || []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
+    } catch (e) {
+      this._searchResults = [];
+      console.error("[arr-card] Search fetch error:", e);
+    }
+    this._searchLoading = false;
+    this._reRenderRight();
+    setTimeout(() => {
+      const inp = this.shadowRoot?.querySelector(".search-bar-input");
+      if (inp && this._searchActive) {
+        inp.focus();
+        const len = inp.value.length;
+        inp.setSelectionRange(len, len);
+      }
+    }, 80);
+  }
   async _addOverseerrRequest(mediaId, profileId = null) {
     this._optimisticRequested.add(mediaId);
     this._withdrawnIds.delete(mediaId);
@@ -3290,12 +3429,13 @@ var fetchMixin = _FetchMethods.prototype;
 // src/render/left.js
 var _RenderLeft = class {
   _renderLeft() {
+    const qbit = this._qbitConfigured ? this._renderQbit() : "";
+    const sab = this._sabConfigured ? this._renderSab() : "";
+    const sep = qbit && sab ? '<div class="spacer"></div>' : "";
     return `
     ${this._renderDiskRow()}
     <div class="spacer"></div>
-    ${this._renderQbit()}
-    <div class="spacer"></div>
-    ${this._renderSab()}
+    ${qbit}${sep}${sab}
   `;
   }
   _renderLeftHeader() {
@@ -3307,37 +3447,54 @@ var _RenderLeft = class {
     </div>`;
   }
   _renderDiskRow() {
-    const qbitSpeedBytes = this._qbitTransfer.dl_info_speed || 0;
-    const sabKbps = parseFloat(this._sab.kbpersec) || 0;
+    const fmtGB = (bytes) => {
+      const gb = bytes / 1073741824;
+      return gb >= 1024 ? (gb / 1024).toFixed(1) + " TB" : gb.toFixed(1) + " GB";
+    };
+    const qbitSpeedBytes = this._qbitConfigured ? this._qbitTransfer.dl_info_speed || 0 : 0;
+    const sabKbps = this._sabConfigured ? parseFloat(this._sab.kbpersec) || 0 : 0;
     const sabSpeedBytes = sabKbps * 1024;
     const combinedSpeed = qbitSpeedBytes + sabSpeedBytes;
-    const qbitSpeedStr = this.fmtSpeed(qbitSpeedBytes);
-    const sabSpeedStr = this.fmtSpeed(sabSpeedBytes);
     const combinedStr = this.fmtSpeed(combinedSpeed);
-    const diskFreeGB = parseFloat(this._sab.diskspace1) || 0;
-    const diskTotalGB = parseFloat(this._sab.diskspacetotal1) || 0;
-    const diskUsedGB = diskTotalGB - diskFreeGB;
-    const diskPct = diskTotalGB > 0 ? diskUsedGB / diskTotalGB * 100 : 0;
-    const diskUsedStr = diskUsedGB >= 1024 ? (diskUsedGB / 1024).toFixed(1) + " TB" : diskUsedGB.toFixed(1) + " GB";
-    const diskTotalStr = diskTotalGB >= 1024 ? (diskTotalGB / 1024).toFixed(1) + " TB" : diskTotalGB.toFixed(1) + " GB";
-    const diskFreeStr = diskFreeGB >= 1024 ? (diskFreeGB / 1024).toFixed(1) + " TB" : diskFreeGB.toFixed(1) + " GB";
-    const activeTorrents = Array.isArray(this._qbit) ? this._qbit.length : 0;
-    const sabSlots = Array.isArray(this._sab.slots) ? this._sab.slots.length : 0;
-    const sabTotal = this._sab.noofslots_total || sabSlots;
-    return `
-    <div class="disk-row">
-      <div class="disk-chip">
-        <div class="dc-label">${this._t("totalSpeed")}</div>
-        <div class="dc-val"><span class="g" style="font-size:15px;font-weight:800;padding:2px 10px"><ha-icon icon="mdi:download" style="--mdc-icon-size:14px"></ha-icon> ${combinedStr}</span></div>
-        <div class="dc-sub">qBit ${qbitSpeedStr} \xB7 SAB ${sabSpeedStr}</div>
-      </div>
+    let speedSub = "";
+    if (this._qbitConfigured && this._sabConfigured) {
+      speedSub = `qBit ${this.fmtSpeed(qbitSpeedBytes)} \xB7 SAB ${this.fmtSpeed(sabSpeedBytes)}`;
+    } else if (this._qbitConfigured) {
+      speedSub = `qBittorrent`;
+    } else if (this._sabConfigured) {
+      speedSub = `SABnzbd`;
+    }
+    const sabFreeGB = this._sabConfigured ? parseFloat(this._sab.diskspace1) || 0 : 0;
+    const sabTotalGB = this._sabConfigured ? parseFloat(this._sab.diskspacetotal1) || 0 : 0;
+    const hasSabDisk = sabTotalGB > 0;
+    const qbitFreeBytes = this._qbitDiskFreeBytes;
+    const hasQbitDisk = typeof qbitFreeBytes === "number" && qbitFreeBytes > 0;
+    let diskChip = "";
+    if (hasSabDisk) {
+      const usedGB = sabTotalGB - sabFreeGB;
+      const pct = usedGB / sabTotalGB * 100;
+      diskChip = `
       <div class="disk-chip">
         <div class="dc-label">${this._t("storage")}</div>
-        <div class="dc-val"><span class="pill-orange dc-pill">${diskUsedStr}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.6);font-weight:600"> / ${diskTotalStr}</span></div>
-        <div class="mbar"><div class="mbar-fill pf-orange" style="width:${diskPct.toFixed(0)}%"></div></div>
-        <div class="dc-sub">${diskPct.toFixed(0)} % \xB7 ${diskFreeStr} ${this._t("free")}</div>
-      </div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedGB * 1073741824)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(sabTotalGB * 1073741824)}</span></div>
+        <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(sabFreeGB * 1073741824)} ${this._t("free")}</div>
+      </div>`;
+    } else if (hasQbitDisk) {
+      diskChip = `
+      <div class="disk-chip">
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(qbitFreeBytes)} ${this._t("free")}</span></div>
+      </div>`;
+    }
+    const speedStyle = diskChip ? "" : "flex:1";
+    const speedChip = `
+    <div class="disk-chip" style="${speedStyle}">
+      <div class="dc-label">${this._t("totalSpeed")}</div>
+      <div class="dc-val"><span class="g" style="font-size:15px;font-weight:800;padding:2px 10px"><ha-icon icon="mdi:download" style="--mdc-icon-size:14px"></ha-icon> ${combinedStr}</span></div>
+      <div class="dc-sub">${speedSub}</div>
     </div>`;
+    return `<div class="disk-row">${speedChip}${diskChip}</div>`;
   }
   _renderQbit() {
     if (!this._qbitConfigured) return "";
@@ -3568,7 +3725,8 @@ var renderLeftMixin = _RenderLeft.prototype;
 // src/render/right.js
 var _RenderRight = class {
   _renderRight() {
-    const perPage = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
+    const perPage = Math.max(2, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
+    const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
     const DEFAULT_CATS = ["radarr", "sonarr", "upcoming", "tvUpcoming", "trending", "popular", "calendar"];
@@ -3582,16 +3740,16 @@ var _RenderRight = class {
       popular: () => this._renderPopular(),
       calendar: hasCalendar ? () => this._renderCalendar() : null
     };
-    const allCategories = [
+    const regularCategories = [
       ...hasPending ? [() => this._renderPendingRequests()] : [],
       ...catConfig.filter((c) => c.enabled !== false).map((c) => CAT_FN[c.id]).filter(Boolean)
     ];
-    const total = allCategories.length;
-    const totalPages = Math.ceil(total / perPage);
+    const totalPages = Math.max(1, Math.ceil(regularCategories.length / regularPerPage));
     const page = Math.max(0, Math.min(this._rightPage || 0, totalPages - 1));
-    const start = page * perPage;
-    const slice = allCategories.slice(start, start + perPage);
-    const _join = (fns) => fns.map((fn, i) => `${i > 0 ? '<div class="spacer-sm"></div>' : ""}${fn()}`).join("");
+    const regStart = page * regularPerPage;
+    const regSlice = regularCategories.slice(regStart, regStart + regularPerPage);
+    const pageSlice = [() => this._renderSearch(), ...regSlice];
+    const _join = (fns) => fns.map((fn, i) => `${i === 1 ? '<div style="height:3px"></div>' : i > 1 ? '<div class="spacer-sm"></div>' : ""}${fn()}`).join("");
     const hasPrev = page > 0;
     const hasNext = page < totalPages - 1;
     const dots = totalPages > 1 ? totalPages > 7 ? `<span class="rp-page-counter">${page + 1} / ${totalPages}</span>` : Array.from(
@@ -3609,7 +3767,137 @@ var _RenderRight = class {
       </button>
     </div>` : "";
     if (this._overlay?.section) return this._renderSectionOverlay(this._overlay.section) + this._renderSectionOverlayNav(this._overlay.section);
-    return `<div class="rp-sections">${_join(slice)}</div>${navBar}`;
+    if (this._searchActive) {
+      const _sCols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+      const searchPerPage = _sCols * 2;
+      const searchTotal = Math.ceil((this._searchResults || []).length / searchPerPage);
+      const sp = this._searchPage || 0;
+      const hasPrevS = sp > 0;
+      const hasNextS = sp < searchTotal - 1;
+      const searchNavBar = searchTotal > 1 ? `
+      <div class="rp-nav">
+        <button class="rp-btn ${hasPrevS ? "" : "rp-btn-hidden"}" data-section="right" data-dir="prev" ${hasPrevS ? "" : "disabled"}>
+          <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:16px"></ha-icon> ${this._t("prev")}
+        </button>
+        <div class="rp-dots">
+          ${searchTotal <= 7 ? Array.from(
+        { length: searchTotal },
+        (_, i) => `<button class="rp-dot${i === sp ? " rp-dot-active" : ""}" data-section="right" data-page="${i}"></button>`
+      ).join("") : `<span class="rp-page-counter">${sp + 1} / ${searchTotal}</span>`}
+        </div>
+        <button class="rp-btn ${hasNextS ? "" : "rp-btn-hidden"}" data-section="right" data-dir="next" ${hasNextS ? "" : "disabled"}>
+          ${this._t("next")} <ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:16px"></ha-icon>
+        </button>
+      </div>` : "";
+      return `<div class="rp-sections">${this._renderSearch()}</div>${searchNavBar}`;
+    }
+    return `<div class="rp-sections">${_join(pageSlice)}</div>${navBar}`;
+  }
+  _renderSearch() {
+    const hasQuery = !!this._searchQuery;
+    const headingColor = this._cfgGet("styles", "headingTextColor", "#fff") || "#fff";
+    const iconDefaultColor = this._cfgGet("styles", "searchBarIconColor", "") || "";
+    const iconStyle = hasQuery ? `color:${headingColor};` : iconDefaultColor ? `color:${iconDefaultColor};` : "";
+    const inputStyle = hasQuery ? `color:${headingColor};` : "";
+    const inner = this._searchActive ? this._renderSearchResultsGrid() : "";
+    const tvSearchOverlay = this._tvRequestPending?.source === "search" ? this._renderTvRequestOverlay() : "";
+    return `
+    <div class="sec-card sec-search" style="position:relative">
+      <div class="search-bar-wrap">
+        <ha-icon icon="mdi:magnify" class="search-bar-icon" style="--mdc-icon-size:22px;${iconStyle}"></ha-icon>
+        <input
+          class="search-bar-input"
+          type="text"
+          placeholder="${this._t("searchPlaceholder")}"
+          value="${this._escHtml(this._searchQuery)}"
+          data-action="search-input"
+          autocomplete="off"
+          style="${inputStyle}"
+        >
+        ${this._searchActive ? `<button class="search-bar-clear" data-action="search-clear" style="${iconStyle}">\u2715</button>` : ""}
+      </div>
+      ${inner}
+      ${tvSearchOverlay}
+    </div>`;
+  }
+  _renderSearchResultsGrid() {
+    if (this._searchLoading) {
+      return `<div class="placeholder">${this._t("loading")}</div>`;
+    }
+    if (!this._searchResults.length) {
+      return `<div class="placeholder" style="font-size:12px;color:var(--secondary-text-color,#888)">No results</div>`;
+    }
+    const gradColor = "rgba(0,0,0,0.88)";
+    const textColor = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+    const sPage = cols * 2;
+    const sp = this._searchPage || 0;
+    const cards = this._searchResults.slice(sp * sPage, (sp + 1) * sPage).map((m) => {
+      const isMovie = m.mediaType === "movie";
+      const title = this._escHtml(m.title || m.name || "");
+      const tmdbId = m.id;
+      const popupType = isMovie ? "movie" : "tv";
+      const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
+      const poster = m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
+      const radarrEntry = isMovie && Array.isArray(this._radarr) ? this._radarr.find((r) => r.tmdbId === tmdbId) : null;
+      const sonarrEntry = !isMovie && Array.isArray(this._sonarr) ? this._sonarr.find((s) => s.tmdbId === tmdbId) : null;
+      const mediaStatus = m.mediaInfo?.status;
+      const _inOptimistic = this._optimisticRequested.has(tmdbId);
+      const _withdrawn = this._withdrawnIds.has(tmdbId);
+      const _hasPending = this._familyPendingIds.has(tmdbId);
+      const inLib = isMovie ? !!radarrEntry : !!sonarrEntry;
+      const hasFile = isMovie ? !!radarrEntry?.hasFile : !!(sonarrEntry?.statistics?.episodeFileCount > 0);
+      const _stale = mediaStatus >= 3 && !inLib && !_inOptimistic && !_hasPending;
+      const _isAvail = (hasFile || mediaStatus === 5) && !_withdrawn && !_stale;
+      const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inLib) && !_withdrawn && !hasFile && !_stale;
+      const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(tmdbId);
+      const searchReqKey = "search-" + tmdbId;
+      const _isAdmin = this._hass.user.is_admin;
+      let actionBtn = "";
+      if (_isAvail) {
+        actionBtn = "";
+      } else if (_isReq) {
+        if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+          actionBtn = "";
+        } else {
+          const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${tmdbId}">\u2715</button>` : "";
+          actionBtn = withdrawBtn;
+        }
+      } else if (isMovie) {
+        actionBtn = `<button class="btn-add req-open" data-movieid="${tmdbId}" data-tmdb="${tmdbId}" data-reqkey="${searchReqKey}">${this._t("add")}</button>`;
+      } else {
+        actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}">${this._t("add")}</button>`;
+      }
+      let statusBadge = "";
+      if (_isAvail) {
+        statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+      } else if (_isReq) {
+        if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+          statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+        } else {
+          statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+        }
+      }
+      const posterHtml = poster ? `<img src="${poster}" alt="${title}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : `<div class="search-mc-ph ${this._grad(tmdbId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
+      const reqOverlay = isMovie && this._requestPending?.reqKey === searchReqKey ? this._renderRequestOverlay(tmdbId, tmdbId) : "";
+      return `
+      <div class="mc" data-popup="${popupType}" data-tmdbid="${tmdbId}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""} style="position:relative">
+        ${posterHtml}
+        <span class="media-type-tag">${typeTag}</span>
+        ${statusBadge}
+        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${gradColor} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
+            ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
+          </div>
+        </div>
+        ${reqOverlay}
+      </div>`;
+    }).join("");
+    return `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr);row-gap:10px">${cards}</div>`;
+  }
+  _statusBadge(html) {
+    return `<div style="position:absolute;top:6px;right:6px;z-index:2">${html}</div>`;
   }
   _pageIndicator(section, itemsOrCount, perPage = 4) {
     const count = Array.isArray(itemsOrCount) ? itemsOrCount.length : itemsOrCount || 0;
@@ -3691,26 +3979,29 @@ var _RenderRight = class {
   _renderRadarrCard(m) {
     const poster = this._getRadarrPoster(m);
     const title = this._escHtml(m.title || "Unknown");
-    const year = m.year || "";
-    const qualityName = m.movieFile?.quality?.quality?.name || "";
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const ratingVal = m.ratings?.imdb?.value || m.ratings?.tmdb?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
     const hasFile = m.hasFile;
     const cutoffNotMet = m.movieFile?.qualityCutoffNotMet;
     const dlFailed = this._radarrQueueFailed.has(m.id);
     const dlActive = this._radarrQueueActive.has(m.id);
-    let badge = "";
+    let badgeHtml = "";
     if (hasFile && cutoffNotMet) {
-      badge = `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>`;
+      badgeHtml = `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>`;
     } else if (hasFile) {
-      badge = `<span class="badge b-ok">\u2713</span>`;
+      badgeHtml = `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
     } else if (dlFailed) {
-      badge = `<span class="badge b-missing">\u2717<span class="b-txt"> Selhalo</span></span>`;
+      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> Selhalo</span></span>`;
     } else if (dlActive) {
-      badge = `<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
+      badgeHtml = `<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
     } else {
-      badge = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
     }
-    const sub = [year, qualityName].filter(Boolean).join(" \xB7 ");
+    const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
     let audioBadge = "";
+    let subBadge = "";
     if (hasFile) {
       let audioLangs = [];
       if (Array.isArray(m.movieFile?.languages) && m.movieFile.languages.length > 0) {
@@ -3719,28 +4010,29 @@ var _RenderRight = class {
         audioLangs = m.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
       }
       if (audioLangs.length > 0) {
-        const codes = this._topLangs(audioLangs).join("|");
-        audioBadge = `<span class="badge b-audio" title="Audio: ${codes}"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
+        const codes = this._topLangs(audioLangs).join(" | ");
+        audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
+      }
+      const bz = this._bazarrConfigured ? this._bazarr[m.id] : null;
+      if (bz) {
+        if (bz.missing.length > 0) {
+          const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+        } else if (bz.subtitles.length > 0) {
+          const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+        }
       }
     }
-    let subBadge = "";
-    const bz = this._bazarrConfigured ? this._bazarr[m.id] : null;
-    if (bz) {
-      if (bz.missing.length > 0) {
-        const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join("|");
-        subBadge = `<span class="badge b-sub-miss" title="${this._t("missingSubs")}: ${langs}"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-      } else if (bz.subtitles.length > 0) {
-        const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join("|");
-        subBadge = `<span class="badge b-sub-ok" title="${this._t("subtitles")}: ${langs}"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-      }
-    }
+    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
     return `
     <div class="mc" data-popup="radarr" data-tmdbid="${m.tmdbId}" data-title="${title}">
-      ${poster ? `<div class="mc-cover-lg" style="background:none;padding:0"><img src="${poster}" style="width:100%;height:92px;object-fit:cover" loading="lazy" /></div>` : `<div class="mc-cover-lg ${this._grad(m.id)}">\u{1F3AC}</div>`}
-      <div class="mc-info">
-        <div class="mc-title" title="${title}">${title}</div>
-        <div class="mc-sub">${this._escHtml(sub)}</div>
-        <div class="mc-badges">${badge}${subBadge}${audioBadge}</div>
+      ${img}
+      ${statusBadge}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
       </div>
     </div>`;
   }
@@ -3789,26 +4081,30 @@ var _RenderRight = class {
   _renderSonarrCard(s) {
     const poster = this._getSonarrPoster(s);
     const title = this._escHtml(s.title || "Unknown");
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const ratingVal = s.ratings?.imdb?.value || s.ratings?.tmdb?.value || s.ratings?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
     const stats = s.statistics || {};
     const fileCount = stats.episodeFileCount || 0;
     const totalCount = stats.totalEpisodeCount || 0;
-    const seasonCount = stats.seasonCount || 0;
-    let badge = "";
+    let badgeHtml = "";
     if (fileCount === 0 && totalCount > 0) {
-      badge = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
     } else if (fileCount < totalCount) {
-      badge = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
+      badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
     } else if (totalCount > 0) {
-      badge = `<span class="badge b-ok">\u2713</span>`;
+      badgeHtml = `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
     }
-    const epBadge = totalCount > 0 ? `<span class="badge b-ep">${totalCount} ep</span>` : "";
+    const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
+    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(s.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
     return `
     <div class="mc" data-popup="sonarr" data-tvdbid="${s.tvdbId}" data-tmdbid="${s.tmdbId || ""}" data-title="${title}">
-      ${poster ? `<div class="mc-cover-lg" style="background:none;padding:0"><img src="${poster}" style="width:100%;height:92px;object-fit:cover" loading="lazy" /></div>` : `<div class="mc-cover-lg ${this._grad(s.id)}">\u{1F4FA}</div>`}
-      <div class="mc-info">
-        <div class="mc-title" title="${title}">${title}</div>
-        <div class="mc-sub">${seasonCount} ${this._t("seasons")} \xB7 ${totalCount} ${this._t("episodes")}</div>
-        <div class="mc-badges">${epBadge}${badge}</div>
+      ${img}
+      ${statusBadge}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
       </div>
     </div>`;
   }
@@ -3826,7 +4122,7 @@ var _RenderRight = class {
     } else if (items.length === 0) {
       grid = `<div class="placeholder">${this._t("loading")}</div>`;
     } else {
-      grid = this._pagedGridWithSmp(items, "upcoming", (m) => this._renderUpcomingCard(m));
+      grid = this._pagedGridWithSmp(items, "upcoming", (m) => this._renderUpcomingCard(m, { reqKey: "upcoming-" + m.id }));
     }
     return `
     <div class="sec-card">
@@ -3835,7 +4131,7 @@ var _RenderRight = class {
         <span class="col-hdr-title">${this._t("upcomingMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("upcoming", smpCount)}
-        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
+        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">${this._t("fromSeerr")}</span>
       </div>
       ${grid}
     </div>`;
@@ -3852,15 +4148,16 @@ var _RenderRight = class {
         <span class="col-hdr-title">${this._t("newShows")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("tvUpcoming", smpCount)}
-        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
+        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">${this._t("fromSeerr")}</span>
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
     </div>`;
   }
-  _renderTvUpcomingCard(m, { showRating = false, typeTag = "", overlayIndex = null } = {}) {
+  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null } = {}) {
     const title = this._escHtml(m.name || m.originalName || "Unknown");
     const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
+    const dateStr = this.fmtDate(m.firstAirDate || m.first_air_date);
     const mediaStatus = m.mediaInfo?.status;
     const sonarrEntry = Array.isArray(this._sonarr) && this._sonarr.find((s) => s.tmdbId === m.id);
     const inSonarr = !!sonarrEntry;
@@ -3875,33 +4172,41 @@ var _RenderRight = class {
     const _isAdmin = this._hass.user.is_admin;
     let actionBtn = "";
     if (_isAvail) {
-      actionBtn = `<span class="badge b-st-avail" style="margin-left:auto">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      actionBtn = "";
     } else if (_isReq) {
       if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-        actionBtn = `<span class="badge b-st-proc" style="margin-left:auto">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`;
+        actionBtn = "";
       } else {
         const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
-        actionBtn = `<span class="mc-act-right"><span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>${withdrawBtn}</span>`;
+        actionBtn = withdrawBtn;
       }
     } else {
       actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}">${this._t("add")}</button>`;
     }
-    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
-    let coverHtml = "";
-    if (m.posterPath) {
-      const posterUrl = `https://image.tmdb.org/t/p/w342${m.posterPath}`;
-      coverHtml = `<div class="mc-cover-lg" style="background:none;padding:0;position:relative">${tagHtml}<img src="${posterUrl}" style="width:100%;height:92px;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML='\u{1F4FA}'" /></div>`;
-    } else {
-      coverHtml = `<div class="mc-cover-lg ${this._grad(m.id)}" style="position:relative">${tagHtml}\u{1F4FA}</div>`;
+    let statusBadge = "";
+    if (_isAvail) {
+      statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+    } else if (_isReq) {
+      if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+        statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+      } else {
+        statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+      }
     }
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
+    const img = m.posterPath ? `<img src="https://image.tmdb.org/t/p/w342${m.posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
     return `
     <div class="mc" data-popup="tv" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
-      ${coverHtml}
-      <div class="mc-info">
-        <div class="mc-title" title="${title}">${title}</div>
-        <div class="mc-act">
-          ${showRating ? `<span class="imdb">\u2B50 ${rating}</span>` : ""}
-          ${actionBtn}
+      ${img}
+      ${tagHtml}
+      ${statusBadge}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        ${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
+        <div style="display:flex;align-items:center;gap:4px">
+          <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
+          ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
         </div>
       </div>
     </div>`;
@@ -3963,9 +4268,9 @@ var _RenderRight = class {
   }
   _renderTrendingCard(m, overlayIndex = null) {
     if (m.mediaType === "tv") {
-      return this._renderTvUpcomingCard(m, { showRating: true, typeTag: this._t("typeTv"), overlayIndex });
+      return this._renderTvUpcomingCard(m, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex });
     }
-    return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex });
+    return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trending-" + m.id });
   }
   _renderTrending() {
     const items = this._trending || [];
@@ -3979,7 +4284,7 @@ var _RenderRight = class {
         <span class="col-hdr-title">${this._t("trendingMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("trending", smpCount)}
-        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
+        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">${this._t("fromSeerr")}</span>
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
@@ -3989,7 +4294,8 @@ var _RenderRight = class {
   _smpPageCount(items, section) {
     if (!items || items.length === 0) return 0;
     const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
-    const itemsBefore = showMorePage * 4 - 1;
+    const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+    const itemsBefore = showMorePage * cols - 1;
     return items.length > itemsBefore ? itemsBefore + 1 : items.length;
   }
   _renderSeeMoreCardFor(section) {
@@ -4015,12 +4321,6 @@ var _RenderRight = class {
     const remainCount = Math.max(0, items.length - itemsBefore);
     return `
     <div class="mc smp-card" data-action="overlay-open" data-sec="${section}">
-      <!-- hidden spacer \u2014 d\xE1 kart\u011B stejnou v\xFD\u0161ku jako ostatn\xED mc karty -->
-      <div class="mc-cover-lg" style="padding:0;visibility:hidden" aria-hidden="true"></div>
-      <div class="mc-info" style="visibility:hidden" aria-hidden="true">
-        <div class="mc-title">X</div>
-        <div class="mc-act"><span class="badge">X</span></div>
-      </div>
       <!-- 2\xD72 grid pokr\xFDv\xE1 celou kartu -->
       <div class="smp-full">
         <div class="smp-posters">${cells.join("")}</div>
@@ -4042,8 +4342,8 @@ var _RenderRight = class {
     if (!cfg) return "";
     const items = this[cfg.dataKey] || [];
     const isMobile = window.matchMedia("(max-width: 480px)").matches;
-    const rows = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
-    const perPage = isMobile ? rows * 2 : rows * 4;
+    const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+    const perPage = isMobile ? cols : cols * 2;
     const page = this._overlay.page || 0;
     const pageItems = items.slice(page * perPage, (page + 1) * perPage);
     const gridHtml = pageItems.map((m, i) => cfg.renderCard(m, i)).join("");
@@ -4062,7 +4362,7 @@ var _RenderRight = class {
       </div>
       <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
         <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">\u2039</button>
-        <div class="to-grid">${gridHtml}</div>
+        <div class="to-grid" style="grid-template-columns:repeat(${cols},1fr)">${gridHtml}</div>
         <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">\u203A</button>
       </div>
     </div>`;
@@ -4073,8 +4373,8 @@ var _RenderRight = class {
     if (!cfg) return "";
     const items = this[cfg.dataKey] || [];
     const isMobile = window.matchMedia("(max-width: 480px)").matches;
-    const rows = Math.max(1, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
-    const perPage = isMobile ? rows * 2 : rows * 4;
+    const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+    const perPage = isMobile ? cols : cols * 2;
     const page = this._overlay.page || 0;
     const totalPages = Math.ceil(items.length / perPage);
     const hasPrev = page > 0;
@@ -4150,7 +4450,7 @@ var _RenderRight = class {
   _renderPopular() {
     const items = this._popular || [];
     const smpCount = this._smpPageCount(items, "popular");
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "popular", (m) => this._renderUpcomingCard(m, { showDate: false }));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "popular", (m) => this._renderUpcomingCard(m, { showDate: false, reqKey: "popular-" + m.id }));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
@@ -4158,12 +4458,12 @@ var _RenderRight = class {
         <span class="col-hdr-title">${this._t("popularMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("popular", smpCount)}
-        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">ze Seerr</span>
+        <span class="sec-badge" style="background:rgba(0,132,255,0.12);border:1px solid rgba(0,132,255,0.22)">${this._t("fromSeerr")}</span>
       </div>
       ${grid}
     </div>`;
   }
-  _renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = "", overlayIndex = null } = {}) {
+  _renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = "", overlayIndex = null, reqKey = String(m.id) } = {}) {
     const title = this._escHtml(m.title || "Unknown");
     const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
     const dateStr = this.fmtDate(m.releaseDate);
@@ -4182,38 +4482,47 @@ var _RenderRight = class {
     const _isAdmin = this._hass.user.is_admin;
     let actionBtn = "";
     if (_isAvail) {
-      actionBtn = `<span class="badge b-st-avail" style="margin-left:auto">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      actionBtn = "";
     } else if (_isReq) {
       if (inRadarrDownloading) {
-        actionBtn = `<span class="badge b-dl" style="margin-left:auto">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
+        actionBtn = "";
       } else if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-        actionBtn = `<span class="badge b-st-proc" style="margin-left:auto">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`;
+        actionBtn = "";
       } else {
         const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
-        actionBtn = `<span class="mc-act-right"><span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>${withdrawBtn}</span>`;
+        actionBtn = withdrawBtn;
       }
     } else {
-      actionBtn = `<button class="btn-add req-open" data-movieid="${m.id}" data-tmdb="${m.id}">${this._t("add")}</button>`;
+      actionBtn = `<button class="btn-add req-open" data-movieid="${m.id}" data-tmdb="${m.id}" data-reqkey="${reqKey}">${this._t("add")}</button>`;
     }
-    const overlay = this._requestPending?.movieId === m.id ? this._renderRequestOverlay(m.id, m.id) : "";
-    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
-    let coverHtml = "";
+    let statusBadge = "";
+    if (_isAvail) {
+      statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+    } else if (_isReq) {
+      if (inRadarrDownloading) {
+        statusBadge = this._statusBadge(`<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`);
+      } else if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+        statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+      } else {
+        statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+      }
+    }
+    const overlay = this._requestPending?.reqKey === reqKey ? this._renderRequestOverlay(m.id, m.id) : "";
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const posterPath = m.posterPath || m.poster_path || null;
-    if (posterPath) {
-      const posterUrl = `https://image.tmdb.org/t/p/w342${posterPath}`;
-      coverHtml = `<div class="mc-cover-lg" style="background:none;padding:0;position:relative">${tagHtml}<img src="${posterUrl}" style="width:100%;height:92px;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML='\u{1F3AC}'" /></div>`;
-    } else {
-      coverHtml = `<div class="mc-cover-lg ${this._grad(m.id)}" style="position:relative">${tagHtml}\u{1F3AC}</div>`;
-    }
+    const img = posterPath ? `<img src="https://image.tmdb.org/t/p/w342${posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
+    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
     return `
-    <div class="mc" data-popup="movie" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""} style="position:relative"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
-      ${coverHtml}
-      <div class="mc-info">
-        <div class="mc-title" title="${title}">${title}</div>
-        <div class="mc-act">
-          ${showRating ? `<span class="imdb">\u2B50 ${rating}</span>` : ""}
-          ${showDate && dateStr ? `<span class="date-lbl">${dateStr}</span>` : ""}
-          ${actionBtn}
+    <div class="mc" data-popup="movie" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+      ${img}
+      ${tagHtml}
+      ${statusBadge}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        ${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
+        <div style="display:flex;align-items:center;gap:4px">
+          <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
+          ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
         </div>
       </div>
       ${overlay}
@@ -4224,7 +4533,8 @@ var _RenderRight = class {
     if (!this._calendar || this._calendar.length === 0) {
       grid = `<div class="placeholder">${this._t("noEpisodes")}</div>`;
     } else {
-      grid = this._pagedGrid(this._calendar, "calendar", (ep) => this._renderCalendarCard(ep));
+      const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+      grid = this._pagedGrid(this._calendar, "calendar", (ep) => this._renderCalendarCard(ep), cols);
     }
     return `
     <div class="sec-card">
@@ -4233,7 +4543,7 @@ var _RenderRight = class {
         <span class="col-hdr-title">${this._t("newEpisodes")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("calendar", this._calendar || [])}
-        <span class="sec-badge" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.22)">ze Sonarr</span>
+        <span class="sec-badge" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.22)">${this._t("fromSonarr")}</span>
       </div>
       ${grid}
     </div>`;
@@ -4244,17 +4554,20 @@ var _RenderRight = class {
     const s = String(ep.seasonNumber || 0).padStart(2, "0");
     const e = String(ep.episodeNumber || 0).padStart(2, "0");
     const badge = `S${s}E${e}`;
-    const dateStr = this.fmtDate(ep.airDate);
+    const dateStr = this.fmtDate(ep.airDateUtc || ep.airDate);
     const poster = this._getSonarrPoster(series);
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(ep.seriesId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
     return `
     <div class="mc" data-popup="sonarr" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
-      ${poster ? `<div class="mc-cover-lg" style="background:none;padding:0"><img src="${poster}" style="width:100%;height:92px;object-fit:cover" loading="lazy" /></div>` : `<div class="mc-cover-lg ${this._grad(ep.seriesId)}">\u{1F4FA}</div>`}
-      <div class="mc-info">
-        <div class="mc-title" title="${title}">${title}</div>
-        <div class="mc-act">
+      ${img}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        <div style="margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:4px">
+          ${dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : "<span></span>"}
           <span class="badge b-ep">${badge}</span>
-          <span class="date-lbl">${dateStr}</span>
         </div>
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
       </div>
     </div>`;
   }
@@ -4417,7 +4730,8 @@ var _WireMethods = class {
           await this._addOverseerrRequest(tmdbId, profileId);
         } else {
           await this._fetchRadarrProfiles();
-          this._requestPending = { movieId, tmdbId };
+          const reqKey = btn.dataset.reqkey || String(tmdbId);
+          this._requestPending = { movieId, tmdbId, reqKey };
           this._reRenderRight();
         }
       });
@@ -4447,7 +4761,8 @@ var _WireMethods = class {
         const showId = parseInt(btn.dataset.showid, 10);
         if (!showId) return;
         const fromTrending = this._trending.some((m) => m.id === showId && m.mediaType === "tv");
-        const show = fromTrending ? this._trending.find((m) => m.id === showId) : this._tvUpcoming.find((m) => m.id === showId);
+        const fromSearch = !fromTrending && (this._searchResults || []).some((m) => m.id === showId && m.mediaType === "tv");
+        const show = fromTrending ? this._trending.find((m) => m.id === showId) : fromSearch ? this._searchResults.find((m) => m.id === showId) : this._tvUpcoming.find((m) => m.id === showId);
         if (!show) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
@@ -4464,7 +4779,8 @@ var _WireMethods = class {
           const colCount = grid ? Math.round(getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length) : 4;
           await this._openOverlayTvRequest(show, cardIndex, colCount);
         } else {
-          await this._openTvRequestOverlay(show, fromTrending ? "trending" : "tvUpcoming");
+          const tvSource = fromSearch ? "search" : fromTrending ? "trending" : "tvUpcoming";
+          await this._openTvRequestOverlay(show, tvSource);
         }
       });
     });
@@ -4759,6 +5075,54 @@ var _WireMethods = class {
       await this._fetchAll();
     });
   }
+  _wireSearch() {
+    const root = this.shadowRoot;
+    const input = root.querySelector(".search-bar-input");
+    if (!input) return;
+    if (this._searchAbort) this._searchAbort.abort();
+    this._searchAbort = new AbortController();
+    const sig = this._searchAbort.signal;
+    const headingColor = this._cfgGet("styles", "headingTextColor", "#fff") || "#fff";
+    const iconDefaultColor = this._cfgGet("styles", "searchBarIconColor", "") || "";
+    const _setSearchColors = (on) => {
+      const wrap = input.closest(".search-bar-wrap");
+      if (!wrap) return;
+      const icon = wrap.querySelector("ha-icon");
+      const clear = wrap.querySelector(".search-bar-clear");
+      if (icon) icon.style.color = on ? headingColor : iconDefaultColor;
+      if (clear) clear.style.color = on ? headingColor : "";
+      input.style.color = on ? headingColor : "";
+    };
+    input.addEventListener("focus", () => _setSearchColors(true), { signal: sig });
+    input.addEventListener("blur", () => {
+      if (!this._searchQuery?.trim()) _setSearchColors(false);
+    }, { signal: sig });
+    input.addEventListener("input", () => {
+      const q = input.value.trim();
+      this._searchQuery = input.value;
+      this._searchPage = 0;
+      clearTimeout(this._searchTimer);
+      _setSearchColors(!!q || document.activeElement === input);
+      if (!q) {
+        this._searchActive = false;
+        this._searchResults = [];
+        this._reRenderRight();
+        return;
+      }
+      this._searchActive = true;
+      this._searchTimer = setTimeout(() => this._fetchSearch(q), 600);
+    }, { signal: sig });
+    root.addEventListener("click", (e) => {
+      if (e.target.closest(".search-bar-clear")) {
+        clearTimeout(this._searchTimer);
+        this._searchQuery = "";
+        this._searchActive = false;
+        this._searchPage = 0;
+        this._searchResults = [];
+        this._reRenderRight();
+      }
+    }, { signal: sig });
+  }
   // Rerenderuj jen sloupec kde sekce leží (nezpůsobuje scroll reset stránky)
   _reRenderSection(section) {
     const leftSections = /* @__PURE__ */ new Set(["qbit", "sab"]);
@@ -4788,6 +5152,7 @@ var _WireMethods = class {
       this._wirePageButtons();
       this._wirePopup();
       this._wireOverseerrButtons();
+      this._wireSearch();
       requestAnimationFrame(() => {
         this._checkBadgeOverflow();
         if (isMobile && sc && left) {
@@ -4813,17 +5178,37 @@ var _WireMethods = class {
         btn.addEventListener("animationend", () => btn.classList.remove("rp-btn-ping"), { once: true });
         const scrollState = this._captureScrollState();
         const dir = btn.dataset.dir;
-        const totalPages = this.shadowRoot.querySelectorAll(".rp-dot").length || 1;
-        const cur = typeof this._rightPage === "number" ? this._rightPage : 0;
-        if (dir === "next") this._rightPage = Math.min(cur + 1, totalPages - 1);
-        else this._rightPage = Math.max(cur - 1, 0);
+        if (this._searchActive) {
+          const _sc = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+          const searchTotal = Math.ceil((this._searchResults || []).length / (_sc * 2));
+          const cur = this._searchPage || 0;
+          if (dir === "next") this._searchPage = Math.min(cur + 1, searchTotal - 1);
+          else this._searchPage = Math.max(cur - 1, 0);
+        } else {
+          const totalPages = this.shadowRoot.querySelectorAll(".rp-dot").length || 1;
+          const cur = typeof this._rightPage === "number" ? this._rightPage : 0;
+          if (dir === "next") this._rightPage = Math.min(cur + 1, totalPages - 1);
+          else this._rightPage = Math.max(cur - 1, 0);
+        }
         const right = this.shadowRoot.getElementById("col-right");
         if (right) {
           if (this._rightMaxH) right.style.minHeight = this._rightMaxH + "px";
+          const navWasVisible = right.querySelector(".rp-nav")?.classList.contains("rp-nav-visible") ?? false;
           right.innerHTML = this._renderRight();
+          if (navWasVisible) {
+            const newNav = right.querySelector(".rp-nav");
+            if (newNav) {
+              newNav.style.transition = "none";
+              newNav.classList.add("rp-nav-visible");
+              requestAnimationFrame(() => {
+                newNav.style.transition = "";
+              });
+            }
+          }
           this._wirePageButtons();
           this._wirePopup();
           this._wireOverseerrButtons();
+          this._wireSearch();
           this._afterRightPageSwitch(scrollState);
         }
       }, { signal: sig });
@@ -4834,14 +5219,27 @@ var _WireMethods = class {
         const targetPage = parseInt(dot.dataset.page, 10);
         if (!isNaN(targetPage)) {
           const scrollState = this._captureScrollState();
-          this._rightPage = targetPage;
+          if (this._searchActive) this._searchPage = targetPage;
+          else this._rightPage = targetPage;
           const right = this.shadowRoot.getElementById("col-right");
           if (right) {
             if (this._rightMaxH) right.style.minHeight = this._rightMaxH + "px";
+            const navWasVisible = right.querySelector(".rp-nav")?.classList.contains("rp-nav-visible") ?? false;
             right.innerHTML = this._renderRight();
+            if (navWasVisible) {
+              const newNav = right.querySelector(".rp-nav");
+              if (newNav) {
+                newNav.style.transition = "none";
+                newNav.classList.add("rp-nav-visible");
+                requestAnimationFrame(() => {
+                  newNav.style.transition = "";
+                });
+              }
+            }
             this._wirePageButtons();
             this._wirePopup();
             this._wireOverseerrButtons();
+            this._wireSearch();
             this._afterRightPageSwitch(scrollState);
           }
         }
@@ -5430,6 +5828,7 @@ var ArrStackCard = class extends HTMLElement {
     this._popular = [];
     this._qbit = [];
     this._qbitTransfer = {};
+    this._qbitDiskFreeBytes = null;
     this._sab = {};
     this._sabFailed = [];
     this._sabRetryBusy = null;
@@ -5478,6 +5877,13 @@ var ArrStackCard = class extends HTMLElement {
     this._snIsGrabbing = null;
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
+    this._searchQuery = "";
+    this._searchResults = [];
+    this._searchPage = 0;
+    this._searchLoading = false;
+    this._searchActive = false;
+    this._searchTimer = null;
+    this._searchAbort = null;
     this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "" };
     this._rightPage = 0;
@@ -5633,12 +6039,13 @@ var ArrStackCard = class extends HTMLElement {
   _pagedGridWithSmp(items, section, renderFn) {
     if (!items || items.length === 0) return "";
     const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
-    const itemsBefore = showMorePage * 4 - 1;
+    const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+    const itemsBefore = showMorePage * cols - 1;
     if (items.length > itemsBefore) {
       const withSmp = [...items.slice(0, itemsBefore), { _isSeeMore: true }];
-      return this._pagedGrid(withSmp, section, (m) => m._isSeeMore ? this._renderSeeMoreCardFor(section) : renderFn(m));
+      return this._pagedGrid(withSmp, section, (m) => m._isSeeMore ? this._renderSeeMoreCardFor(section) : renderFn(m), cols);
     }
-    return this._pagedGrid(items, section, renderFn);
+    return this._pagedGrid(items, section, renderFn, cols);
   }
   // Lokalizační helper — vrátí přeložený řetězec dle nastavení localisation: cs|en
   _t(key) {
@@ -5801,7 +6208,7 @@ var ArrStackCard = class extends HTMLElement {
     const pageItems = items.slice(page * perPage, page * perPage + perPage);
     const dir = this._pageDir[section] || "";
     const animClass = dir === "next" ? "anim-next" : dir === "prev" ? "anim-prev" : "";
-    const grid = `<div class="mgrid ${animClass}">${pageItems.map((it) => renderFn(it)).join("")}</div>`;
+    const grid = `<div class="mgrid ${animClass}" style="grid-template-columns:repeat(${perPage},1fr)">${pageItems.map((it) => renderFn(it)).join("")}</div>`;
     if (totalPages <= 1) {
       return `
         <div class="pg-wrap">
@@ -5969,13 +6376,24 @@ var ArrStackCard = class extends HTMLElement {
   _reRenderRight() {
     const right = this.shadowRoot.getElementById("col-right");
     if (!right) return;
-    this._blurActive();
+    if (!this._searchActive) this._blurActive();
+    if (this._searchActive && this._rightMaxH) right.style.minHeight = this._rightMaxH + "px";
     right.innerHTML = this._renderRight();
     this._wirePageButtons();
     this._wirePopup();
     this._wireOverseerrButtons();
+    this._wireSearch();
+    if (this._searchActive) {
+      requestAnimationFrame(() => {
+        const inp = this.shadowRoot.querySelector(".search-bar-input");
+        if (inp) {
+          inp.focus();
+          inp.setSelectionRange(inp.value.length, inp.value.length);
+        }
+      });
+    }
     requestAnimationFrame(() => {
-      if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
+      if (!window.matchMedia("(max-width: 900px)").matches && !this._searchActive) this._measureAndLockHeight();
       requestAnimationFrame(() => this._checkBadgeOverflow());
     });
   }
@@ -6012,6 +6430,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wirePageButtons();
     this._wirePopup();
     this._wireOverseerrButtons();
+    this._wireSearch();
   }
   _checkBadgeOverflow() {
     this.shadowRoot.querySelectorAll(".mc").forEach((card) => {
@@ -6152,7 +6571,9 @@ var ArrStackCard = class extends HTMLElement {
       return rgb ? `rgba(${rgb},${alpha})` : null;
     };
     if (perfMode && userStyles.cardBackground) {
-      const v = hexRgba(userStyles.cardBackground, 0.9);
+      const opacityPct = userStyles.cardBackgroundOpacity;
+      const alpha = typeof opacityPct === "number" && opacityPct >= 0 && opacityPct <= 100 ? opacityPct / 100 : 0.9;
+      const v = hexRgba(userStyles.cardBackground, alpha);
       if (v) customVars.push(`--card-bg-perf: ${v}`);
     }
     const layout = this._cfg?.layout || "both";
@@ -6191,6 +6612,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wireOverseerrButtons();
     this._wirePageButtons();
     this._wirePopup();
+    this._wireSearch();
     this._renderPopupEl();
     requestAnimationFrame(() => {
       if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
