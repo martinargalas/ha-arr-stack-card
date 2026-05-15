@@ -21,6 +21,16 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 
 ## Features
 
+### Recently Added
+- Mixed movies + TV shows with files — sorted by date added
+- **IMDB rating**, audio language tags (`CS | EN`), and Bazarr subtitle status badges per card
+- Movie type tag (Movie / TV) on each poster
+
+### Recently Requested
+- Monitored movies and shows not yet downloaded — sorted by date added
+- **IMDB rating** per card; download status badge (downloading / missing / failed)
+- Auto-refreshes when a download completes — item moves to Recently Added automatically
+
 ### Movies (Radarr)
 - Library overview with download status badges (downloading, missing, available)
 - **IMDB rating pill** on each movie card
@@ -33,7 +43,7 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 - Library overview with per-season episode counts and progress bars
 - **IMDB rating pill** on each show card
 - **Upcoming episodes calendar** — shows airing date and `S01E01` badge per episode
-- Interactive Search per season (season pack) or per episode
+- Interactive Search per season (season pack) or per episode — if the show is not yet in Sonarr, it is added unmonitored automatically before searching
 - TV show requests via Overseerr with season selection
 
 ### Downloads (qBittorrent)
@@ -55,7 +65,7 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 - New and upcoming TV shows — shows airing date on New Shows cards
 - Trending TV shows display rating
 - One-click or profile-based media requests
-- Admin: approve and decline pending requests
+- Admin: approve and decline pending requests (poster-style cards with approve / decline buttons)
 - Family account: view and withdraw own requests
 
 ### Appearance & UX
@@ -141,9 +151,9 @@ discover:
 
 # Category order & visibility
 categories:
-  - id: radarr
+  - id: recentlyAdded
     enabled: true
-  - id: sonarr
+  - id: recentlyRequested
     enabled: true
   - id: upcoming
     enabled: true
@@ -218,13 +228,13 @@ Array of `{ id, enabled }` objects controlling visibility and order of right-pan
 
 | id | Section |
 |----|---------|
-| `radarr` | Recent movies from Radarr |
-| `sonarr` | Recent TV shows from Sonarr |
-| `upcoming` | Upcoming movie releases (Overseerr) |
-| `tvUpcoming` | New TV show releases (Overseerr) |
-| `trending` | Trending movies & shows (Overseerr) |
-| `popular` | Popular movies (Overseerr) |
-| `calendar` | Upcoming Sonarr episode air dates |
+| `recentlyAdded` | Recently Added — mixed movies & shows with files, sorted by date added |
+| `recentlyRequested` | Recently Requested — monitored movies & shows not yet downloaded |
+| `upcoming` | Upcoming Movies — movie releases (Overseerr) |
+| `tvUpcoming` | New Shows — upcoming TV releases (Overseerr) |
+| `trending` | Trending — trending movies & shows (Overseerr) |
+| `popular` | Popular Movies — popular movies (Overseerr) |
+| `calendar` | Calendar — upcoming Sonarr episode air dates |
 
 ### `styles`
 

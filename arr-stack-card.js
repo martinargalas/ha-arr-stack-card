@@ -240,8 +240,8 @@ var ArrStackCardEditor = class extends HTMLElement {
   }
   _defaultCats() {
     return [
-      { id: "radarr", enabled: true },
-      { id: "sonarr", enabled: true },
+      { id: "recentlyAdded", enabled: true },
+      { id: "recentlyRequested", enabled: true },
       { id: "upcoming", enabled: true },
       { id: "tvUpcoming", enabled: true },
       { id: "trending", enabled: true },
@@ -254,12 +254,14 @@ var ArrStackCardEditor = class extends HTMLElement {
   }
   _catLabel(id) {
     return {
-      radarr: "Movies (Radarr)",
-      sonarr: "TV Shows (Sonarr)",
-      upcoming: "Movie Requests",
-      tvUpcoming: "TV Requests",
+      radarr: "Recently Added",
+      sonarr: "Recently Requested",
+      recentlyAdded: "Recently Added",
+      recentlyRequested: "Recently Requested",
+      upcoming: "Upcoming Movies",
+      tvUpcoming: "New Shows",
       trending: "Trending",
-      popular: "Popular",
+      popular: "Popular Movies",
       calendar: "Calendar"
     }[id] || id;
   }
@@ -384,6 +386,8 @@ var ARR_I18N = {
     overview: "P\u0159ehled film\u016F a seri\xE1l\u016F",
     recentMovies: "Naposledy p\u0159idan\xE9 filmy",
     recentShows: "Naposledy p\u0159idan\xE9 seri\xE1ly",
+    recentlyAdded: "Naposledy p\u0159idan\xE9",
+    recentlyRequested: "Ned\xE1vno \u017E\xE1dan\xE9",
     upcomingMovies: "Nadch\xE1zej\xEDc\xED filmy",
     newShows: "Nov\xE9 seri\xE1ly",
     trendingMovies: "Trendy",
@@ -477,6 +481,9 @@ var ARR_I18N = {
     snExpandEpisodes: "Rozbal epizody",
     snNoEpisodes: "\u017D\xE1dn\xE9 epizody.",
     snNotInSonarr: "Seri\xE1l nenalezen v Sonarru.",
+    snConfirmMsg: "Seri\xE1l bude nejd\u0159\xEDve p\u0159id\xE1n do Sonarru bez monitorov\xE1n\xED.",
+    snAddingToSonarr: "P\u0159id\xE1v\xE1m seri\xE1l do Sonarru\u2026",
+    snNoSonarrId: "Seri\xE1l se nepoda\u0159ilo p\u0159idat do Sonarru",
     snEpisode: "Epizoda",
     snSeasonPack: "season pack",
     snBack: "Zp\u011Bt",
@@ -493,6 +500,8 @@ var ARR_I18N = {
     overview: "Movies & Shows",
     recentMovies: "Recently Added Movies",
     recentShows: "Recently Added Shows",
+    recentlyAdded: "Recently Added",
+    recentlyRequested: "Recently Requested",
     upcomingMovies: "Upcoming Movies",
     newShows: "New Shows",
     trendingMovies: "Trending",
@@ -572,6 +581,9 @@ var ARR_I18N = {
     snExpandEpisodes: "Expand episodes",
     snNoEpisodes: "No episodes.",
     snNotInSonarr: "Series not found in Sonarr.",
+    snConfirmMsg: "Series will be added to Sonarr unmonitored first.",
+    snAddingToSonarr: "Adding series to Sonarr\u2026",
+    snNoSonarrId: "Failed to add series to Sonarr",
     snEpisode: "Episode",
     snSeasonPack: "season pack",
     snBack: "Back",
@@ -2655,7 +2667,31 @@ var _SonarrIS = class {
   // ─────────────────────────────────────────────
   _renderSnSeasonsView() {
     const series = this._popup?._sonarrSeries;
-    if (!series) return `<div class="sn-is-section"><div class="is-loading">${this._t("snNotInSonarr")}</div></div>`;
+    if (!series) {
+      const checkSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const crossSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      if (this._snIsState === "confirm-add") {
+        return `<div class="sn-is-section">
+          <div class="is-confirm-wrap">
+            <div class="is-confirm-msg">${this._t("snConfirmMsg")}</div>
+            <div class="is-confirm-actions">
+              <button class="is-confirm-btn is-confirm-yes" data-action="sn-confirm-yes">${checkSvg}</button>
+              <button class="is-confirm-btn is-confirm-no" data-action="sn-confirm-no">${crossSvg}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+      if (this._snIsState === "adding") {
+        return `<div class="sn-is-section"><div class="is-loading">
+          <span class="action-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:var(--is-blue)"></span>
+          <span>${this._t("snAddingToSonarr")}</span>
+        </div></div>`;
+      }
+      if (this._snIsState === "error") {
+        return `<div class="sn-is-section"><div class="is-loading" style="color:rgba(255,69,58,0.80)">\u26A0 ${this._escHtml(this._snIsError || this._t("isLoadError"))}</div></div>`;
+      }
+      return `<div class="sn-is-section"><div class="is-loading">${this._t("snNotInSonarr")}</div></div>`;
+    }
     const seasons = (series.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
     const rows = seasons.map((s) => this._renderSnSeasonRow(s)).join("");
     return `<div class="sn-is-section">
@@ -2893,11 +2929,23 @@ var _FetchMethods = class {
     this._render();
   }
   async _fetchDownloadsAndRender() {
+    const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
+    const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
+    const hadItems = prevQbit.size > 0 || prevSab.size > 0;
     await Promise.allSettled([
       this._fetchQbit(),
       this._fetchSab(),
       this._fetchSabHistory()
     ]);
+    if (hadItems) {
+      const currQbit = new Set((this._qbit || []).map((t) => t.hash));
+      const currSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
+      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id));
+      if (completed) {
+        await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
+        this._reRenderRight();
+      }
+    }
     const left = this.shadowRoot.getElementById("col-left");
     if (!left) return;
     const newHtml = this._renderLeft();
@@ -2922,6 +2970,7 @@ var _FetchMethods = class {
     try {
       const data = await this._callApi("GET", "arr_stack/sonarr/series");
       const sonarrFiltered = data.filter((s) => s.added && s.added !== "0001-01-01T00:00:00Z");
+      this._sonarrAll = Array.isArray(data) ? data : [];
       this._sonarrTotal = sonarrFiltered.length;
       this._sonarr = sonarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
     } catch (e) {
@@ -3086,6 +3135,7 @@ var _FetchMethods = class {
     }
   }
   async _openTvRequestOverlay(m, source = "tvUpcoming") {
+    console.log("[arr-card] _openTvRequestOverlay called show=", m?.title, "source=", source);
     this._tvRequestPending = { show: m, seasons: null, selected: null, profileId: null, mediaId: m.id, loading: true, source };
     this._reRenderRight();
     await Promise.allSettled([
@@ -3709,26 +3759,23 @@ var _RenderLeft = class {
     const media = req.media ?? {};
     const isMovie = req.type === "movie";
     const title = this._escHtml(media.title || media.originalTitle || media.name || "\u2014");
-    const poster = media.posterPath ? `https://image.tmdb.org/t/p/w342${media.posterPath}` : null;
+    const poster = media.posterPath;
     const reqBy = this._escHtml(req.requestedBy?.displayName ?? req.requestedBy?.username ?? "?");
-    const reqDate = req.createdAt ? this.fmtDate(req.createdAt.slice(0, 10)) : "";
-    const typeLabel = isMovie ? this._t("movieLabel") : this._t("showLabel");
+    const typeLabel = isMovie ? this._t("typeMovie") : this._t("typeTv");
     const icon = isMovie ? "\u{1F3AC}" : "\u{1F4FA}";
     const tmdbId = media.tmdbId ?? 0;
-    const coverHtml = poster ? `<div class="mc-cover-lg" style="background:none;padding:0"><img src="${poster}" style="width:100%;height:92px;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML='${icon}'" /></div>` : `<div class="mc-cover-lg ${this._grad(req.id)}">${icon}</div>`;
+    const imgHtml = poster ? `<img src="https://image.tmdb.org/t/p/w342${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(req.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${icon}</div>`;
     return `
-    <div class="mc" data-popup="${isMovie ? "movie" : "tv"}" data-tmdbid="${tmdbId}" data-title="${title}" style="position:relative">
-      ${coverHtml}
-      <div class="mc-info">
-        <div class="mc-title" title="${title}">${title}</div>
-        <div class="pr-meta-row">
-          <span class="pr-type-lbl">${typeLabel}</span>
-          <span class="pr-requester">\u{1F464} ${reqBy}${reqDate ? ` \xB7 ${reqDate}` : ""}</span>
+    <div class="mc" data-popup="${isMovie ? "movie" : "tv"}" data-tmdbid="${tmdbId}" data-title="${title}">
+      ${imgHtml}
+      <span class="media-type-tag">${typeLabel}</span>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.93) 0%,transparent 80%);padding:36px 6px 5px;z-index:1">
+        <div style="font-size:8px;color:rgba(255,255,255,0.55);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\u{1F464} ${reqBy}</div>
+        <div class="pr-btn-row" style="margin-bottom:4px">
+          <button class="pr-approve" data-reqid="${req.id}">\u2713<span class="st-txt"> ${this._t("approve")}</span></button>
+          <button class="pr-decline" data-reqid="${req.id}">\u2715<span class="st-txt"> ${this._t("decline")}</span></button>
         </div>
-        <div class="pr-btn-row">
-          <button class="pr-approve" data-reqid="${req.id}">\u2713<span class="st-txt">${this._t("approve")}</span></button>
-          <button class="pr-decline" data-reqid="${req.id}">\u2715<span class="st-txt">${this._t("decline")}</span></button>
-        </div>
+        <div style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${title}">${title}</div>
       </div>
     </div>`;
   }
@@ -3742,11 +3789,13 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["radarr", "sonarr", "upcoming", "tvUpcoming", "trending", "popular", "calendar"];
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const CAT_FN = {
       radarr: () => this._renderRadarr(),
       sonarr: () => this._renderSonarr(),
+      recentlyAdded: () => this._renderRecentlyAdded(),
+      recentlyRequested: () => this._renderRecentlyRequested(),
       upcoming: () => this._renderUpcoming(),
       tvUpcoming: () => this._renderTvUpcoming(),
       trending: () => this._renderTrending(),
@@ -3880,7 +3929,7 @@ var _RenderRight = class {
       } else if (isMovie) {
         actionBtn = `<button class="btn-add req-open" data-movieid="${tmdbId}" data-tmdb="${tmdbId}" data-reqkey="${searchReqKey}">${this._t("add")}</button>`;
       } else {
-        actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}">${this._t("add")}</button>`;
+        actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}" data-source="search">${this._t("add")}</button>`;
       }
       let statusBadge = "";
       if (_isAvail) {
@@ -4127,6 +4176,131 @@ var _RenderRight = class {
     const img = s.images.find((i) => i.coverType === "poster");
     return img ? img.remoteUrl : null;
   }
+  _renderRecentlyAdded() {
+    const items = this.recentlyAdded;
+    const smpCount = this._smpPageCount(items, "recentlyAdded");
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyAdded", (m) => this._renderRecentlyAddedCard(m));
+    return `
+    <div class="sec-card">
+      <div class="col-hdr" style="margin-bottom:5px">
+        <ha-icon icon="mdi:check-circle-outline" style="--mdc-icon-size:24px"></ha-icon>
+        <span class="col-hdr-title">${this._t("recentlyAdded")}</span>
+        <div class="col-hdr-line"></div>
+        ${this._pageIndicator("recentlyAdded", smpCount)}
+      </div>
+      ${grid}
+    </div>`;
+  }
+  _renderRecentlyRequested() {
+    const items = this.recentlyRequested;
+    const smpCount = this._smpPageCount(items, "recentlyRequested");
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyRequested", (m) => this._renderRecentlyRequestedCard(m));
+    return `
+    <div class="sec-card">
+      <div class="col-hdr" style="margin-bottom:5px">
+        <ha-icon icon="mdi:clock-time-four-outline" style="--mdc-icon-size:24px"></ha-icon>
+        <span class="col-hdr-title">${this._t("recentlyRequested")}</span>
+        <div class="col-hdr-line"></div>
+        ${this._pageIndicator("recentlyRequested", smpCount)}
+      </div>
+      ${grid}
+    </div>`;
+  }
+  _renderRecentlyAddedCard(item) {
+    const isMovie = item._mediaType === "movie";
+    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const title = this._escHtml(item.title || "Unknown");
+    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
+    const popup = isMovie ? "radarr" : "sonarr";
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
+    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+    const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
+    let badgeHtml = "";
+    if (isMovie) {
+      badgeHtml = item.movieFile?.qualityCutoffNotMet ? `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+    } else {
+      const fileCount = item.statistics?.episodeFileCount ?? 0;
+      const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
+      badgeHtml = fileCount < totalCount ? `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+    }
+    const statusBadge = this._statusBadge(badgeHtml);
+    const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
+    let audioBadge = "";
+    let subBadge = "";
+    if (isMovie) {
+      let audioLangs = [];
+      if (Array.isArray(item.movieFile?.languages) && item.movieFile.languages.length > 0) {
+        audioLangs = item.movieFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
+      } else if (item.movieFile?.mediaInfo?.audioLanguages) {
+        audioLangs = item.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
+      }
+      if (audioLangs.length > 0) {
+        const codes = this._topLangs(audioLangs).join(" | ");
+        audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
+      }
+      const bz = this._bazarrConfigured ? this._bazarr[item.id] : null;
+      if (bz) {
+        if (bz.missing.length > 0) {
+          const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+        } else if (bz.subtitles.length > 0) {
+          const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+        }
+      }
+    }
+    return `
+    <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
+      ${img}
+      <span class="media-type-tag">${typeTag}</span>
+      ${statusBadge}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
+      </div>
+    </div>`;
+  }
+  _renderRecentlyRequestedCard(item) {
+    const isMovie = item._mediaType === "movie";
+    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const title = this._escHtml(item.title || "Unknown");
+    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
+    const popup = isMovie ? "radarr" : "sonarr";
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
+    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+    const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
+    let badgeHtml = "";
+    if (isMovie) {
+      const dlActive = this._radarrQueueActive?.has(item.id);
+      const dlFailed = this._radarrQueueFailed?.has(item.id);
+      if (dlFailed) badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> Selhalo</span></span>`;
+      else if (dlActive) badgeHtml = `<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
+      else badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+    } else {
+      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+    }
+    const statusBadge = this._statusBadge(badgeHtml);
+    const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
+    return `
+    <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
+      ${img}
+      <span class="media-type-tag">${typeTag}</span>
+      ${statusBadge}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
+      </div>
+    </div>`;
+  }
   _renderUpcoming() {
     const items = this._upcoming || [];
     const smpCount = this._smpPageCount(items, "upcoming");
@@ -4168,7 +4342,7 @@ var _RenderRight = class {
       ${p ? this._renderTvRequestOverlay() : ""}
     </div>`;
   }
-  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null } = {}) {
+  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null, source = "tvUpcoming" } = {}) {
     const title = this._escHtml(m.name || m.originalName || "Unknown");
     const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
     const dateStr = this.fmtDate(m.firstAirDate || m.first_air_date);
@@ -4195,7 +4369,7 @@ var _RenderRight = class {
         actionBtn = withdrawBtn;
       }
     } else {
-      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}">${this._t("add")}</button>`;
+      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}" data-source="${source}">${this._t("add")}</button>`;
     }
     let statusBadge = "";
     if (_isAvail) {
@@ -4282,7 +4456,7 @@ var _RenderRight = class {
   }
   _renderTrendingCard(m, overlayIndex = null) {
     if (m.mediaType === "tv") {
-      return this._renderTvUpcomingCard(m, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex });
+      return this._renderTvUpcomingCard(m, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trending" });
     }
     return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trending-" + m.id });
   }
@@ -4769,14 +4943,17 @@ var _WireMethods = class {
         await this._addOverseerrRequest(tmdbId, profileId);
       });
     });
-    this.shadowRoot.querySelectorAll(".tv-req-open").forEach((btn) => {
+    const tvBtns = this.shadowRoot.querySelectorAll(".tv-req-open");
+    console.log("[arr-card] wiring tv-req-open count=", tvBtns.length);
+    tvBtns.forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const showId = parseInt(btn.dataset.showid, 10);
         if (!showId) return;
-        const fromTrending = this._trending.some((m) => m.id === showId && m.mediaType === "tv");
-        const fromSearch = !fromTrending && (this._searchResults || []).some((m) => m.id === showId && m.mediaType === "tv");
-        const show = fromTrending ? this._trending.find((m) => m.id === showId) : fromSearch ? this._searchResults.find((m) => m.id === showId) : this._tvUpcoming.find((m) => m.id === showId);
+        const tvSource = btn.dataset.source || "tvUpcoming";
+        const show = tvSource === "trending" ? this._trending.find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "search" ? (this._searchResults || []).find((m) => m.id === showId && m.mediaType === "tv") : (this._tvUpcoming || []).find((m) => m.id === showId);
+        const fromTrending = tvSource === "trending";
+        const fromSearch = tvSource === "search";
         if (!show) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
@@ -4793,7 +4970,6 @@ var _WireMethods = class {
           const colCount = grid ? Math.round(getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length) : 4;
           await this._openOverlayTvRequest(show, cardIndex, colCount);
         } else {
-          const tvSource = fromSearch ? "search" : fromTrending ? "trending" : "tvUpcoming";
           await this._openTvRequestOverlay(show, tvSource);
         }
       });
@@ -5404,7 +5580,8 @@ var _PopupMethods = class {
     }
     let _sonarrSeries = null;
     if ((type === "sonarr" || type === "tv") && (tvdbId || tmdbId)) {
-      _sonarrSeries = (this._sonarr || []).find(
+      const sonarrPool = this._sonarrAll || this._sonarr || [];
+      _sonarrSeries = sonarrPool.find(
         (s) => tvdbId && String(s.tvdbId) === String(tvdbId) || tmdbId && String(s.tmdbId) === String(tmdbId)
       ) ?? null;
     }
@@ -5422,6 +5599,17 @@ var _PopupMethods = class {
         throw new Error("no_id");
       }
       const data = await this._hass.callApi("GET", apiPath);
+      if ((type === "tv" || type === "sonarr") && !_sonarrSeries && data.externalIds?.tvdbId) {
+        const tvdbFromDetail = String(data.externalIds.tvdbId);
+        let sonarrPool = this._sonarrAll || this._sonarr || [];
+        _sonarrSeries = sonarrPool.find((s) => String(s.tvdbId) === tvdbFromDetail) ?? null;
+        if (!_sonarrSeries) {
+          await this._fetchSonarr();
+          sonarrPool = this._sonarrAll || this._sonarr || [];
+          _sonarrSeries = sonarrPool.find((s) => String(s.tvdbId) === tvdbFromDetail) ?? null;
+          console.log("[arr-card] after fresh fetch: tvdb=", tvdbFromDetail, "found=", _sonarrSeries?.title ?? null, "pool tvdb+tmdb=", sonarrPool.map((s) => ({ tvdb: s.tvdbId, tmdb: s.tmdbId, title: s.title })));
+        }
+      }
       this._popup = { ...data, _type: type, _radarrId, _sonarrSeries };
     } catch (e) {
       console.error("[arr-card] popup fetch error:", e);
@@ -5556,9 +5744,27 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "sn-is-toggle") {
-        console.log("[sn-is] sonarrSeries:", this._popup._sonarrSeries, "type:", this._popup._type);
-        this._snIsOpen = !this._snIsOpen;
-        this._snActiveIs = null;
+        if (this._snIsOpen) {
+          this._snIsOpen = false;
+          this._snActiveIs = null;
+          this._snIsState = null;
+        } else {
+          this._snIsOpen = true;
+          this._snActiveIs = null;
+          this._snIsState = null;
+          if (!this._popup._sonarrSeries) {
+            this._snIsState = "confirm-add";
+          }
+        }
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "sn-confirm-yes") {
+        this._addSeriesToSonarr();
+        return;
+      }
+      if (t.dataset.action === "sn-confirm-no") {
+        this._snIsOpen = false;
         this._snIsState = null;
         this._renderPopupEl();
         return;
@@ -5816,6 +6022,45 @@ var _PopupMethods = class {
     this._render();
     this._fetchAll();
   }
+  async _addSeriesToSonarr() {
+    this._snIsState = "adding";
+    this._renderPopupEl();
+    try {
+      const d = this._popup;
+      const tvdbId = d.externalIds?.tvdbId || d._tvdbId;
+      if (!tvdbId) throw new Error(this._t("snNoSonarrId"));
+      const lookupResults = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
+      const seriesData = Array.isArray(lookupResults) ? lookupResults[0] : lookupResults;
+      if (!seriesData) throw new Error(this._t("snNoSonarrId"));
+      if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      const profileId = this._seerrSonarr?.profileId ?? 1;
+      const rootFolder = this._seerrSonarr?.rootFolder ?? "/tv";
+      let added;
+      try {
+        added = await this._callApi("POST", "arr_stack/sonarr/series", {
+          ...seriesData,
+          qualityProfileId: parseInt(profileId),
+          rootFolderPath: rootFolder,
+          monitored: false,
+          addOptions: { searchForMissingEpisodes: false, searchForCutoffUnmetEpisodes: false, monitor: "none" }
+        });
+      } catch (addErr) {
+        await this._fetchSonarr();
+        added = (this._sonarrAll || []).find((s) => String(s.tvdbId) === String(tvdbId));
+      }
+      await this._fetchSonarr();
+      const refreshed = (this._sonarrAll || []).find(
+        (s) => String(s.tvdbId) === String(tvdbId) || added?.id && s.id === added.id
+      ) || added;
+      if (!refreshed) throw new Error(this._t("snNoSonarrId"));
+      this._popup._sonarrSeries = refreshed;
+      this._snIsState = null;
+    } catch (e) {
+      this._snIsState = "error";
+      this._snIsError = e.message || this._t("isLoadError");
+    }
+    this._renderPopupEl();
+  }
 };
 var popupMixin = _PopupMethods.prototype;
 
@@ -5834,6 +6079,7 @@ var ArrStackCard = class extends HTMLElement {
     this._radarr = [];
     this._radarrTotal = 0;
     this._sonarr = [];
+    this._sonarrAll = [];
     this._sonarrTotal = 0;
     this._calendar = [];
     this._upcoming = [];
@@ -5898,7 +6144,7 @@ var ArrStackCard = class extends HTMLElement {
     this._searchActive = false;
     this._searchTimer = null;
     this._searchAbort = null;
-    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0 };
+    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "" };
     this._rightPage = 0;
     this._rightMaxH = 0;
@@ -5910,6 +6156,13 @@ var ArrStackCard = class extends HTMLElement {
   // HA lifecycle
   // ─────────────────────────────────────────────
   setConfig(config) {
+    if (Array.isArray(config.categories)) {
+      const CAT_MAP = { radarr: "recentlyAdded", sonarr: "recentlyRequested" };
+      config = {
+        ...config,
+        categories: config.categories.map((c) => CAT_MAP[c.id] ? { ...c, id: CAT_MAP[c.id] } : c)
+      };
+    }
     this._config = config;
     this._debug = !!config.debug;
     if (this._initialized) {
@@ -6046,6 +6299,26 @@ var ArrStackCard = class extends HTMLElement {
         renderCard: (m) => this._renderSonarrCard(m),
         getPosterUrl: (m) => this._getSonarrPoster(m),
         emoji: () => "\u{1F4FA}"
+      },
+      recentlyAdded: {
+        dataKey: "recentlyAdded",
+        icon: "mdi:check-circle-outline",
+        titleKey: "recentlyAdded",
+        apiEndpoint: null,
+        hasTvPending: false,
+        renderCard: (m) => this._renderRecentlyAddedCard(m),
+        getPosterUrl: (m) => m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
+        emoji: (m) => m._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
+      },
+      recentlyRequested: {
+        dataKey: "recentlyRequested",
+        icon: "mdi:clock-time-four-outline",
+        titleKey: "recentlyRequested",
+        apiEndpoint: null,
+        hasTvPending: false,
+        renderCard: (m) => this._renderRecentlyRequestedCard(m),
+        getPosterUrl: (m) => m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
+        emoji: (m) => m._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
       }
     };
     return cfgs[section] || null;
@@ -6246,7 +6519,19 @@ var ArrStackCard = class extends HTMLElement {
     if (section === "qbit") return Array.isArray(this._qbit) ? this._qbit : [];
     if (section === "sab") return Array.isArray(this._sab.slots) ? this._sab.slots : [];
     if (section === "pending") return this._pendingRequests || [];
+    if (section === "recentlyAdded") return this.recentlyAdded;
+    if (section === "recentlyRequested") return this.recentlyRequested;
     return this["_" + section] || [];
+  }
+  get recentlyAdded() {
+    const movies = (this._radarr || []).filter((m) => m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.movieFile?.dateAdded || m.added || "" }));
+    const shows = (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0).map((s) => ({ ...s, _mediaType: "tv", _sortDate: s.added || "" }));
+    return [...movies, ...shows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+  }
+  get recentlyRequested() {
+    const movies = (this._radarr || []).filter((m) => m.monitored && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.added || "" }));
+    const shows = (this._sonarr || []).filter((s) => s.monitored && (s.statistics?.episodeFileCount ?? 0) === 0).map((s) => ({ ...s, _mediaType: "tv", _sortDate: s.added || "" }));
+    return [...movies, ...shows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
   }
   // Paginated vertical list (for download items)
   _pagedList(items, section, renderFn, perPage = 4) {
@@ -6539,10 +6824,28 @@ var ArrStackCard = class extends HTMLElement {
     this._reRenderRight();
   }
   async _approvePendingRequest(requestId) {
+    const req = this._pendingRequests.find((r) => r.id === requestId);
+    const isMovie = req?.type === "movie";
     this._optimisticRemovePending(requestId);
     try {
-      await this._hass.callApi("POST", "arr_stack/overseerr/approve", { requestId });
-      this._fetchPendingRequests().then(() => this._reRenderRight());
+      if (isMovie && !this._seerrRadarr) await this._fetchOverseerrRadarrSettings();
+      if (!isMovie && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      const seerr = isMovie ? this._seerrRadarr : this._seerrSonarr;
+      const body = { requestId };
+      if (seerr) {
+        body.mediaType = isMovie ? "movie" : "tv";
+        body.serverId = seerr.serverId;
+        body.profileId = seerr.profileId;
+        body.rootFolder = seerr.rootFolder;
+        if (!isMovie && req?.seasons) body.seasons = req.seasons.map((s) => s.seasonNumber);
+      }
+      await this._hass.callApi("POST", "arr_stack/overseerr/approve", body);
+      await Promise.all([
+        this._fetchPendingRequests(),
+        this._fetchRadarr(),
+        this._fetchSonarr()
+      ]);
+      this._reRenderRight();
     } catch (e) {
       await this._fetchPendingRequests();
       this._reRenderRight();
