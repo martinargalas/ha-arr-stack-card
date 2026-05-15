@@ -109,6 +109,8 @@ type: custom:arr-stack-card
 
 That's it. The card will show all available panels, use English UI, display 3 categories per page with 4 items each, and support one-click requesting if Overseerr is configured.
 
+Panels for services not configured in the integration (qBittorrent, SABnzbd, Overseerr, Bazarr) are hidden automatically — no YAML needed to disable them.
+
 > **Visual editor** — most settings can be configured via the HA dashboard editor (click the pencil icon). Only `searchBarIconColor` and `styles.*` require manual YAML editing.
 
 ---
