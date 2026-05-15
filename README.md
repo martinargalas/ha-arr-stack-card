@@ -255,6 +255,37 @@ All colour values accept `#rrggbb` hex or `rgb(r,g,b)` strings.
 
 ---
 
+## Multi-user setup (Overseerr / Jellyseerr)
+
+The card supports separate admin and non-admin HA accounts, each mapped to a different Overseerr user.
+
+### How it works
+
+| HA account | Overseerr account | What they see |
+|------------|-------------------|---------------|
+| Admin | Admin | Full card — browse, request, **approve/decline** pending requests |
+| Non-admin | Non-admin (regular user) | Browse and request movies/shows only — no approve section |
+
+The card detects the HA user role automatically (`hass.user.is_admin`). No extra card configuration needed.
+
+### Setup
+
+1. **Overseerr** — create a separate non-admin user (Settings → Users → Add User). This user will be used for all requests from non-admin HA accounts.
+2. **Home Assistant** — create a non-admin HA user for each family member (Settings → People → Add Person → uncheck Administrator).
+3. **Integration** — in the Arr Stack integration config, set the Overseerr non-admin credentials (API key of the non-admin Overseerr user). The integration proxy will forward requests under that user's identity.
+
+### What non-admin users can do
+
+- Browse Trending, Popular, Upcoming movies and TV shows
+- Request a movie or TV show (one-click or profile picker)
+- View and withdraw their own pending requests
+
+### What admins additionally see
+
+- **Pending Requests** section in the left panel — lists all open requests with approve / decline buttons
+
+---
+
 ## SABnzbd disk info
 
 SABnzbd reports disk space based on the **Temporary Download Folder** path configured in SABnzbd → Settings → Folders. Make sure:
