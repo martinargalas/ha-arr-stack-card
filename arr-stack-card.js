@@ -225,6 +225,15 @@ var ArrStackCardEditor = class extends HTMLElement {
 
         ${perfMode ? this._colorRow("Card background", "cardBackground", "#121216") : ""}
         ${perfMode ? this._numberRow("Card background transparency", "cardBackgroundOpacity", 90, 0, 100, 1, "0\u2013100 %") : ""}
+
+        <div class="row">
+          <span class="row-label">Day / night modal colours</span>
+          <label class="toggle">
+            <input type="checkbox" data-style-key="dayNightMode" ${userStyles.dayNightMode ?? true ? "checked" : ""}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="hint">Automatically switches modal (popup) colours based on time of day. Disable if you use custom modal colours.</div>
       </div>
     `;
     this._wireEvents();
@@ -6570,18 +6579,18 @@ var ArrStackCard = class extends HTMLElement {
   _buildShell() {
     const style = document.createElement("style");
     style.textContent = this._css();
-    const userStyles = this._cfg?.styles || {};
-    const perfMode = !!(userStyles.performanceMode || this._cfg?.performanceMode);
+    const userStyles2 = this._cfg?.styles || {};
+    const perfMode = !!(userStyles2.performanceMode || this._cfg?.performanceMode);
     const customVars = [];
     const hexRgba = (hex, alpha) => {
       if (!hex || !hex.startsWith("#")) return null;
       const rgb = this._hexToRgb(hex);
       return rgb ? `rgba(${rgb},${alpha})` : null;
     };
-    if (perfMode && userStyles.cardBackground) {
-      const opacityPct = userStyles.cardBackgroundOpacity;
+    if (perfMode && userStyles2.cardBackground) {
+      const opacityPct = userStyles2.cardBackgroundOpacity;
       const alpha = typeof opacityPct === "number" && opacityPct >= 0 && opacityPct <= 100 ? opacityPct / 100 : 0.9;
-      const v = hexRgba(userStyles.cardBackground, alpha);
+      const v = hexRgba(userStyles2.cardBackground, alpha);
       if (v) customVars.push(`--card-bg-perf: ${v}`);
     }
     const layout = this._cfg?.layout || "both";
