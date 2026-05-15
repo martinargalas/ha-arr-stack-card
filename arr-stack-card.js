@@ -646,13 +646,13 @@ var STYLES = `
         display: grid;
         grid-template-columns: 2fr 3fr;
         gap: 12px;
-        padding: 0 12px 12px;
+        padding: 0 12px 8px;
       }
 
       /* \u2500\u2500 Glass outer panel \u2500\u2500 */
       .col {
         position: relative;
-        padding: 10px 15px;
+        padding: 7px 15px;
         min-width: 0; overflow: clip;
         border-radius: 34px;
         display: flex; flex-direction: column;
