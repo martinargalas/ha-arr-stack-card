@@ -2869,6 +2869,10 @@ var sonarrIsMixin = _SonarrIS.prototype;
 
 // src/fetch/index.js
 var _FetchMethods = class {
+  _callApi(method, path, body) {
+    const p = this._debug ? path + (path.includes("?") ? "&" : "?") + "_debug=1" : path;
+    return this._hass.callApi(method, p, body);
+  }
   async _fetchAll() {
     await Promise.allSettled([
       this._fetchRadarr(),
@@ -2906,7 +2910,7 @@ var _FetchMethods = class {
   }
   async _fetchRadarr() {
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/radarr/movies");
+      const data = await this._callApi("GET", "arr_stack/radarr/movies");
       const radarrFiltered = data.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
       this._radarrTotal = radarrFiltered.length;
       this._radarr = radarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
@@ -2916,7 +2920,7 @@ var _FetchMethods = class {
   }
   async _fetchSonarr() {
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/sonarr/series");
+      const data = await this._callApi("GET", "arr_stack/sonarr/series");
       const sonarrFiltered = data.filter((s) => s.added && s.added !== "0001-01-01T00:00:00Z");
       this._sonarrTotal = sonarrFiltered.length;
       this._sonarr = sonarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
@@ -2928,7 +2932,7 @@ var _FetchMethods = class {
     try {
       const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const end = new Date(Date.now() + 60 * 864e5).toISOString().split("T")[0];
-      const data = await this._hass.callApi("GET", `arr_stack/sonarr/calendar?start=${today}&end=${end}`);
+      const data = await this._callApi("GET", `arr_stack/sonarr/calendar?start=${today}&end=${end}`);
       const seen = /* @__PURE__ */ new Map();
       for (const ep of data) {
         const sid = ep.seriesId;
@@ -2944,8 +2948,8 @@ var _FetchMethods = class {
   async _fetchOverseerr() {
     try {
       const [d1, d2] = await Promise.all([
-        this._hass.callApi("GET", "arr_stack/overseerr/upcoming?page=1"),
-        this._hass.callApi("GET", "arr_stack/overseerr/upcoming?page=2")
+        this._callApi("GET", "arr_stack/overseerr/upcoming?page=1"),
+        this._callApi("GET", "arr_stack/overseerr/upcoming?page=2")
       ]);
       this._upcoming = [...d1.results || [], ...d2.results || []];
       this._upcomingError = null;
@@ -2957,8 +2961,8 @@ var _FetchMethods = class {
   async _fetchTrending() {
     try {
       const [d1, d2] = await Promise.all([
-        this._hass.callApi("GET", "arr_stack/overseerr/trending?page=1"),
-        this._hass.callApi("GET", "arr_stack/overseerr/trending?page=2").catch(() => ({ results: [] }))
+        this._callApi("GET", "arr_stack/overseerr/trending?page=1"),
+        this._callApi("GET", "arr_stack/overseerr/trending?page=2").catch(() => ({ results: [] }))
       ]);
       this._trending = [...d1.results || [], ...d2.results || []];
       this._overlayApiTotalPages.trending = d1.totalPages || 1;
@@ -2984,7 +2988,7 @@ var _FetchMethods = class {
     while (this._overlay?.section === section && (this[cfg.dataKey] || []).length < perPage * 2 && (this._overlayApiPage[section] || 0) < (this._overlayApiTotalPages[section] || 1)) {
       try {
         const nextApiPage = (this._overlayApiPage[section] || 0) + 1;
-        const data = await this._hass.callApi("GET", `arr_stack/${cfg.apiEndpoint}?page=${nextApiPage}`);
+        const data = await this._callApi("GET", `arr_stack/${cfg.apiEndpoint}?page=${nextApiPage}`);
         this[cfg.dataKey] = [...this[cfg.dataKey] || [], ...data.results || []];
         this._overlayApiTotalPages[section] = data.totalPages || this._overlayApiTotalPages[section] || 1;
         this._overlayApiPage[section] = nextApiPage;
@@ -2998,8 +3002,8 @@ var _FetchMethods = class {
   async _fetchPopular() {
     try {
       const [d1, d2] = await Promise.all([
-        this._hass.callApi("GET", "arr_stack/overseerr/popular?page=1"),
-        this._hass.callApi("GET", "arr_stack/overseerr/popular?page=2")
+        this._callApi("GET", "arr_stack/overseerr/popular?page=1"),
+        this._callApi("GET", "arr_stack/overseerr/popular?page=2")
       ]);
       this._popular = [...d1.results || [], ...d2.results || []];
       this._overlayApiTotalPages.popular = d1.totalPages || 1;
@@ -3011,8 +3015,8 @@ var _FetchMethods = class {
   async _fetchTvUpcoming() {
     try {
       const [d1, d2] = await Promise.all([
-        this._hass.callApi("GET", "arr_stack/overseerr/tv_upcoming?page=1"),
-        this._hass.callApi("GET", "arr_stack/overseerr/tv_upcoming?page=2")
+        this._callApi("GET", "arr_stack/overseerr/tv_upcoming?page=1"),
+        this._callApi("GET", "arr_stack/overseerr/tv_upcoming?page=2")
       ]);
       this._tvUpcoming = [...d1.results || [], ...d2.results || []];
       this._overlayApiTotalPages.tvUpcoming = d1.totalPages || 1;
@@ -3023,7 +3027,7 @@ var _FetchMethods = class {
   }
   async _fetchOverseerrSonarrSettings() {
     try {
-      const servers = await this._hass.callApi("GET", "arr_stack/overseerr/sonarr_settings");
+      const servers = await this._callApi("GET", "arr_stack/overseerr/sonarr_settings");
       if (!Array.isArray(servers) || servers.length === 0) return;
       const server = servers.find((s) => s.isDefault) || servers[0];
       this._seerrSonarr = {
@@ -3038,7 +3042,7 @@ var _FetchMethods = class {
   async _fetchSonarrProfiles() {
     if (this._sonarrProfiles.length > 0) return;
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/sonarr/profiles");
+      const data = await this._callApi("GET", "arr_stack/sonarr/profiles");
       if (Array.isArray(data)) this._sonarrProfiles = data;
     } catch (e) {
       console.error("[arr-card] Sonarr profiles fetch error:", e);
@@ -3054,7 +3058,7 @@ var _FetchMethods = class {
         const match = this._sonarrProfiles.find((p) => p.name === profileName);
         if (match) profileId = match.id;
       }
-      const detail = await this._hass.callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
+      const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
       const season1 = (detail.seasons || []).find((s) => s.seasonNumber === 1);
       const seasons = season1 ? [1] : [(detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0]?.seasonNumber].filter(Boolean);
       if (seasons.length === 0) return;
@@ -3068,7 +3072,7 @@ var _FetchMethods = class {
         body.rootFolder = this._seerrSonarr.rootFolder;
       }
       if (!this._hass.user.is_admin) body.userMode = "family";
-      const resp = await this._hass.callApi("POST", "arr_stack/overseerr/request", body);
+      const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
       if (reqId && !this._hass.user.is_admin) {
         this._familyPendingIds.set(Number(show.id), reqId);
@@ -3086,7 +3090,7 @@ var _FetchMethods = class {
     this._reRenderRight();
     await Promise.allSettled([
       (async () => {
-        const detail = await this._hass.callApi("GET", `arr_stack/overseerr/tv/${m.id}`);
+        const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${m.id}`);
         const seasons = (detail.seasons || []).filter((s) => s.seasonNumber > 0).map((s) => s.seasonNumber).sort((a, b) => a - b);
         if (this._tvRequestPending) {
           this._tvRequestPending.seasons = seasons;
@@ -3122,7 +3126,7 @@ var _FetchMethods = class {
         body.rootFolder = this._seerrSonarr.rootFolder;
       }
       if (!this._hass.user.is_admin) body.userMode = "family";
-      const resp = await this._hass.callApi("POST", "arr_stack/overseerr/request", body);
+      const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
       if (reqId && !this._hass.user.is_admin) {
         this._familyPendingIds.set(Number(mediaId), reqId);
@@ -3139,7 +3143,7 @@ var _FetchMethods = class {
   }
   async _fetchBazarr() {
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/bazarr/movies");
+      const data = await this._callApi("GET", "arr_stack/bazarr/movies");
       const map = {};
       for (const movie of data.data || []) {
         map[movie.radarrId] = {
@@ -3158,7 +3162,7 @@ var _FetchMethods = class {
   }
   async _fetchRadarrQueue() {
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/radarr/queue");
+      const data = await this._callApi("GET", "arr_stack/radarr/queue");
       const records = data.records || data;
       const failed = /* @__PURE__ */ new Set();
       const active = /* @__PURE__ */ new Set();
@@ -3179,7 +3183,7 @@ var _FetchMethods = class {
   }
   async _fetchSab() {
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/sabnzbd/queue");
+      const data = await this._callApi("GET", "arr_stack/sabnzbd/queue");
       if (data?.status === false) {
         console.error("[arr-card] SABnzbd API error:", data?.error);
         this._sabConfigured = false;
@@ -3197,7 +3201,7 @@ var _FetchMethods = class {
   }
   async _fetchSabHistory() {
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/sabnzbd/history");
+      const data = await this._callApi("GET", "arr_stack/sabnzbd/history");
       const slots = data?.history?.slots || [];
       this._sabFailed = slots.filter((s) => s.status === "Failed");
     } catch (e) {
@@ -3208,7 +3212,7 @@ var _FetchMethods = class {
     this._sabDeleteBusy = nzoId;
     this._reRenderLeft();
     try {
-      await this._hass.callApi("POST", "arr_stack/sabnzbd/action", { mode: "history", name: "delete", nzo_id: nzoId });
+      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "history", name: "delete", nzo_id: nzoId });
     } catch (e) {
       console.error("[arr-card] SABnzbd history delete error:", e);
     } finally {
@@ -3221,7 +3225,7 @@ var _FetchMethods = class {
     this._sabRetryBusy = nzoId;
     this._reRenderLeft();
     try {
-      await this._hass.callApi("POST", "arr_stack/sabnzbd/action", { mode: "retry", nzo_id: nzoId });
+      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "retry", nzo_id: nzoId });
     } catch (e) {
       console.error("[arr-card] SABnzbd retry error:", e);
     } finally {
@@ -3234,9 +3238,9 @@ var _FetchMethods = class {
   async _fetchQbit() {
     try {
       const [torrents, transfer, maindata] = await Promise.all([
-        this._hass.callApi("GET", "arr_stack/qbit/torrents"),
-        this._hass.callApi("GET", "arr_stack/qbit/transfer"),
-        this._hass.callApi("GET", "arr_stack/qbit/maindata").catch(() => null)
+        this._callApi("GET", "arr_stack/qbit/torrents"),
+        this._callApi("GET", "arr_stack/qbit/transfer"),
+        this._callApi("GET", "arr_stack/qbit/maindata").catch(() => null)
       ]);
       this._qbit = torrents;
       this._qbitTransfer = transfer;
@@ -3252,7 +3256,7 @@ var _FetchMethods = class {
   }
   async _fetchOverseerrRadarrSettings() {
     try {
-      const servers = await this._hass.callApi("GET", "arr_stack/overseerr/radarr_settings");
+      const servers = await this._callApi("GET", "arr_stack/overseerr/radarr_settings");
       if (!Array.isArray(servers) || servers.length === 0) return;
       const server = servers.find((s) => s.isDefault) || servers[0];
       this._seerrRadarr = {
@@ -3267,7 +3271,7 @@ var _FetchMethods = class {
   async _fetchRadarrProfiles() {
     if (this._radarrProfiles.length > 0) return;
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/radarr/profiles");
+      const data = await this._callApi("GET", "arr_stack/radarr/profiles");
       if (Array.isArray(data)) this._radarrProfiles = data;
     } catch (e) {
       console.error("[arr-card] Radarr profiles fetch error:", e);
@@ -3278,7 +3282,7 @@ var _FetchMethods = class {
   // ─────────────────────────────────────────────
   async _fetchSonarrEpisodes(seriesId, seasonNumber) {
     try {
-      const data = await this._hass.callApi("GET", `arr_stack/sonarr/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
+      const data = await this._callApi("GET", `arr_stack/sonarr/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
       const eps = (Array.isArray(data) ? data : []).sort((a, b) => a.episodeNumber - b.episodeNumber);
       this._snEpisodes.set(seasonNumber, eps);
     } catch (e) {
@@ -3298,15 +3302,15 @@ var _FetchMethods = class {
     try {
       let eps = this._snEpisodes.get(seasonNumber);
       if (!eps || eps.length === 0) {
-        const epData = await this._hass.callApi("GET", `arr_stack/sonarr/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
+        const epData = await this._callApi("GET", `arr_stack/sonarr/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
         eps = (Array.isArray(epData) ? epData : []).sort((a, b) => a.episodeNumber - b.episodeNumber);
         if (eps.length > 0) this._snEpisodes.set(seasonNumber, eps);
       }
       const firstEp = eps[0];
       if (!firstEp) throw new Error(this._t("snNoEpisodes"));
       const [data, histRaw] = await Promise.all([
-        this._hass.callApi("GET", `arr_stack/sonarr/release?episodeId=${firstEp.id}`),
-        this._hass.callApi("GET", `arr_stack/sonarr/history?seriesId=${seriesId}`).catch(() => null)
+        this._callApi("GET", `arr_stack/sonarr/release?episodeId=${firstEp.id}`),
+        this._callApi("GET", `arr_stack/sonarr/history?seriesId=${seriesId}`).catch(() => null)
       ]);
       this._snIsHistory = this._buildSnHistoryMap(histRaw);
       this._snIsResults = this._sortIsResults(Array.isArray(data) ? data : []);
@@ -3327,8 +3331,8 @@ var _FetchMethods = class {
     this._renderPopupEl();
     try {
       const [data, histRaw] = await Promise.all([
-        this._hass.callApi("GET", `arr_stack/sonarr/release?episodeId=${episodeId}`),
-        this._hass.callApi("GET", `arr_stack/sonarr/history?seriesId=${seriesId}`).catch(() => null)
+        this._callApi("GET", `arr_stack/sonarr/release?episodeId=${episodeId}`),
+        this._callApi("GET", `arr_stack/sonarr/history?seriesId=${seriesId}`).catch(() => null)
       ]);
       this._snIsHistory = this._buildSnHistoryMap(histRaw);
       this._snIsResults = this._sortIsResults(Array.isArray(data) ? data : []);
@@ -3367,7 +3371,7 @@ var _FetchMethods = class {
     this._renderPopupEl();
     try {
       const release = this._snIsResults.find((r) => r.guid === guid) || { guid, indexerId };
-      await this._hass.callApi("POST", "arr_stack/sonarr/release", release);
+      await this._callApi("POST", "arr_stack/sonarr/release", release);
       this._snIsGrabbed.add(guid);
     } catch (e) {
       console.error("[arr-card] Sonarr grab error:", e);
@@ -3386,7 +3390,7 @@ var _FetchMethods = class {
   async _fetchSearch(query) {
     this._searchLoading = true;
     try {
-      const data = await this._hass.callApi("POST", "arr_stack/overseerr/search", { query });
+      const data = await this._callApi("POST", "arr_stack/overseerr/search", { query });
       this._searchResults = (data?.results || []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
     } catch (e) {
       this._searchResults = [];
@@ -3417,7 +3421,7 @@ var _FetchMethods = class {
         body.rootFolder = this._seerrRadarr.rootFolder;
       }
       if (!this._hass.user.is_admin) body.userMode = "family";
-      const resp = await this._hass.callApi("POST", "arr_stack/overseerr/request", body);
+      const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
       if (reqId && !this._hass.user.is_admin) {
         this._familyPendingIds.set(Number(mediaId), reqId);
@@ -5907,6 +5911,7 @@ var ArrStackCard = class extends HTMLElement {
   // ─────────────────────────────────────────────
   setConfig(config) {
     this._config = config;
+    this._debug = !!config.debug;
     if (this._initialized) {
       this._wireStickyNav();
       this._applyTheme();
