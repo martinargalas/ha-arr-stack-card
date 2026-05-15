@@ -3473,8 +3473,8 @@ var _RenderLeft = class {
     } else if (this._sabConfigured) {
       speedSub = `SABnzbd`;
     }
-    const sabFreeGB = this._sabConfigured ? parseFloat(this._sab.diskspace1) || 0 : 0;
-    const sabTotalGB = this._sabConfigured ? parseFloat(this._sab.diskspacetotal1) || 0 : 0;
+    const sabFreeGB = this._sabConfigured ? parseFloat(this._sab.diskspace2) || 0 : 0;
+    const sabTotalGB = this._sabConfigured ? parseFloat(this._sab.diskspacetotal2) || 0 : 0;
     const hasSabDisk = sabTotalGB > 0;
     const qbitFreeBytes = this._qbitDiskFreeBytes;
     const hasQbitDisk = typeof qbitFreeBytes === "number" && qbitFreeBytes > 0;
