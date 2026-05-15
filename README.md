@@ -161,6 +161,7 @@ styles:
   performanceMode: false          # disable backdrop blur (improves perf on low-end devices)
   cardBackground: "#121216"       # card background colour (performance mode only)
   cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only, default: 90)
+  dayNightMode: true              # auto switch popup colours based on sun.sun — set false to keep night colours always
   searchBarIconColor: ""          # search bar icon colour when search is inactive (default: heading colour)
   headingTextColor: "#ffffff"     # section header text
   headingColor: "#ffffff"         # section header icon
@@ -234,6 +235,7 @@ All colour values accept `#rrggbb` hex or `rgb(r,g,b)` strings.
 | `performanceMode` | Disables backdrop blur on the card — recommended on low-end devices |
 | `cardBackground` | Card background colour (applied only in performance mode) |
 | `cardBackgroundOpacity` | Card background opacity 0–100 (performance mode only, default `90`) |
+| `dayNightMode` | `true` (default) — popup colours follow `sun.sun` (light during day, dark at night). Set `false` to always use dark popup colours — useful when setting custom popup colours so day mode doesn't override them. |
 | `searchBarIconColor` | Search bar icon colour when search field is inactive. Defaults to heading colour on focus/type. |
 | `headingTextColor` | Section header text colour |
 | `headingColor` | Section header icon colour |

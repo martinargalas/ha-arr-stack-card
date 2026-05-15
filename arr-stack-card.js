@@ -5752,7 +5752,7 @@ var _PopupMethods = class {
         <button class="remove-ic-btn remove-ic-no" data-action="remove-no">${crossSvg}</button>
       </div>`;
     })() : "";
-    const dayClass = this._isDaytime ? " popup-day" : "";
+    const dayClass = this._isDaytime && this._userStyles?.dayNightMode !== false ? " popup-day" : "";
     const wideClass = isActive || snIsActive ? " is-wide" : "";
     return `
     <div class="popup-overlay${dayClass}">
