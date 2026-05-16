@@ -3347,9 +3347,23 @@ var _FetchMethods = class {
       const data = await this._callApi("GET", "arr_stack/sabnzbd/history");
       const slots = data?.history?.slots || [];
       this._sabFailed = slots.filter((s) => s.status === "Failed");
-      this._sabCompleted = slots.filter((s) => s.status === "Completed").slice(0, 10);
+      const DONE = /* @__PURE__ */ new Set(["Completed", "Extracting", "Moving", "Running Script", "Verifying"]);
+      this._sabCompleted = slots.filter((s) => DONE.has(s.status)).slice(0, 10);
     } catch (e) {
       console.error("[arr-card] SABnzbd history fetch error:", e);
+    }
+  }
+  async _sabQueueDelete(nzoId) {
+    this._sabQueueBusy = nzoId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "queue", name: "delete", nzo_id: nzoId });
+    } catch (e) {
+      console.error("[arr-card] SAB queue delete error:", e);
+    } finally {
+      this._sabQueueBusy = null;
+      await this._fetchSab();
+      this._reRenderLeft();
     }
   }
   async _sabHistoryDelete(nzoId) {
@@ -3849,11 +3863,29 @@ var _RenderLeft = class {
       const pill = SAB_STATUS_PILLS[pillStatus] || { cls: "pill-gray", icon: "mdi:dots-horizontal", label: pillStatus || "\u2014" };
       speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
     }
+    const nzoId = s.nzo_id || "";
+    let actionBtns = "";
+    if (s._history) {
+      const isDeleting = this._sabDeleteBusy === nzoId;
+      actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzoid="${nzoId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    } else {
+      const isBusy = this._sabQueueBusy === nzoId;
+      if (isBusy) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._sabQueueConfirm === nzoId) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-sab-action="cancel" data-nzoid="${nzoId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"   data-sab-action="delete"  data-nzoid="${nzoId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        actionBtns = `<button class="tb tb-remove" data-sab-action="confirm" data-nzoid="${nzoId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
+    }
     return `
     <div class="dl">
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
         <span class="dl-pct">${pct}%</span>
+        <div class="tb-group">${actionBtns}</div>
       </div>
       <div class="dl-r2">
         ${speedCol}
@@ -5007,6 +5039,24 @@ var _WireMethods = class {
         e.stopPropagation();
         const nzoId = btn.dataset.nzoid;
         if (nzoId) this._sabHistoryDelete(nzoId);
+      });
+    });
+    this.shadowRoot.querySelectorAll("[data-sab-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.sabAction;
+        const nzoId = btn.dataset.nzoid;
+        if (!nzoId) return;
+        if (action === "confirm") {
+          this._sabQueueConfirm = nzoId;
+          this._reRenderLeft();
+        } else if (action === "cancel") {
+          this._sabQueueConfirm = null;
+          this._reRenderLeft();
+        } else if (action === "delete") {
+          this._sabQueueConfirm = null;
+          this._sabQueueDelete(nzoId);
+        }
       });
     });
     this.shadowRoot.querySelectorAll("[data-tb-action]").forEach((btn) => {
