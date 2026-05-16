@@ -185,13 +185,16 @@ styles:
   pagingDotActiveColor: "#ffffff"
   downloadButtonTextColor: "#ffffff"
   tagPillTextColor: "#ffffff"
-  modalHeadingTextColor: "#ffffff"
-  modalPrimaryTextColor: "#ffffff"
-  modalBackgroundColor: "#121216"
+  modalHeadingTextColor: "#ffffff"     # popup title, season titles, active IS filter tab, IS buttons
+  modalPrimaryTextColor: "#ffffff"     # popup body text, IS result rows (title, indexer, size, lang), episode number & title
+  modalSecondaryTextColor: "#aaaaaa"   # popup metadata, IS column headers, Results count, inactive filter tabs, air dates, score 0, unknown quality, "Querying…"
+  modalBackgroundColor: "#121216"      # popup glass tint — backdrop blur shows through; set dayNightMode: false when using a custom colour
+  modalOverlayColor: "#000000"         # colour of the dimmed overlay behind the popup
   modalCloseButtonIconColor: "#ffffff"
   modalCloseButtonBackgroundColor: "#333344"
-  modalButtonTextColor: "#cccccc"
-  modalButtonBackgroundColor: "#1e1e2e"
+  modalButtonTextColor: "#ffffff"      # text colour for all action buttons in the popup
+  modalButtonBackgroundColor: "#1e1e2e"       # background for IS / request / season action buttons
+  modalRemoveButtonBackgroundColor: "#ff6030" # background for the Remove › button (not the sub-buttons)
 ```
 
 ---
@@ -259,13 +262,16 @@ All colour values accept `#rrggbb` hex or `rgb(r,g,b)` strings.
 | `pagingDotActiveColor` | Active pagination dot |
 | `downloadButtonTextColor` | Download action button text |
 | `tagPillTextColor` | Media type tag pill text (Movie / TV) |
-| `modalHeadingTextColor` | Popup title text |
-| `modalPrimaryTextColor` | Popup body text (overview, metadata) |
-| `modalBackgroundColor` | Popup glass background |
+| `modalHeadingTextColor` | Popup title; season titles in Sonarr panel; active IS filter tab; IS action buttons |
+| `modalPrimaryTextColor` | Popup overview text; IS result rows (title, indexer, size, lang); episode number & title |
+| `modalSecondaryTextColor` | Popup metadata (year, rating); IS column headers, Results count, inactive filter tabs, age, peers dash, score 0, unknown quality, "Querying…"; episode air dates |
+| `modalBackgroundColor` | Popup glass tint — backdrop blur always shows through the colour. Set `dayNightMode: false` when using a fixed colour so day mode does not override it. |
+| `modalOverlayColor` | Colour of the dimmed overlay behind the popup |
 | `modalCloseButtonIconColor` | Popup close button icon |
 | `modalCloseButtonBackgroundColor` | Popup close button background |
-| `modalButtonTextColor` | Popup action button text (IS, Remove…) |
-| `modalButtonBackgroundColor` | Popup action button background |
+| `modalButtonTextColor` | Text colour for all action buttons in the popup |
+| `modalButtonBackgroundColor` | Background for IS, request, and season action buttons |
+| `modalRemoveButtonBackgroundColor` | Background for the **Remove ›** button only — the sub-buttons (Remove from Library, Remove from Disc) keep their system colours |
 
 ---
 
