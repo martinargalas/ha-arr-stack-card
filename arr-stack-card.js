@@ -1558,7 +1558,7 @@ var STYLES = `
         --is-orange:     #ff9500;
         --is-purple:     #bf5af2;
         --is-overlay-bg: var(--overlay-bg, rgba(0,0,0,0.55));
-        --is-glass-bg:   var(--popup-bg, rgba(255,255,255,0.05));
+        --is-glass-bg:   var(--popup-bg, rgba(10,10,22,0.55));
         --is-glass-bdr:  rgba(255,255,255,0.25);
         --is-glass-blur: blur(35px) saturate(100%);
         --is-shine:      linear-gradient(120deg,rgba(255,255,255,0.55),rgba(255,255,255,0.15) 25%,rgba(255,255,255,0.05) 50%,transparent 70%);
@@ -1580,7 +1580,7 @@ var STYLES = `
         --is-btn-abg:    rgba(10,132,255,0.18);
         --is-btn-abdr:   rgba(10,132,255,0.40);
         --is-btn-aclr:   rgba(100,180,255,0.95);
-        --is-fade-btm:   rgba(20,20,30,0.98);
+        --is-fade-btm:   rgba(10,10,18,0.94);
         --is-close-bg:   rgba(0,0,0,0.50);
         --is-backdrop-f: brightness(0.55);
         --is-rej-clr:    rgba(255,149,0,0.80);
@@ -1606,7 +1606,7 @@ var STYLES = `
       /* Denn\xED re\u017Eim (sun.sun = above_horizon) */
       .popup-overlay.popup-day {
         --is-overlay-bg: rgba(255,255,255,0.65);
-        --is-glass-bg:   rgba(255,255,255,0.78);
+        --is-glass-bg:   rgba(255,255,255,0.14);
         --is-glass-bdr:  rgba(255,255,255,0.90);
         --is-glass-blur: blur(40px) saturate(200%);
         --is-shine:      linear-gradient(120deg,rgba(255,255,255,0.95),rgba(255,255,255,0.50) 25%,rgba(255,255,255,0.15) 50%,transparent 70%);
@@ -1628,7 +1628,7 @@ var STYLES = `
         --is-btn-abg:    rgba(10,132,255,0.12);
         --is-btn-abdr:   rgba(10,132,255,0.35);
         --is-btn-aclr:   rgba(0,100,220,0.90);
-        --is-fade-btm:   rgba(255,255,255,0.95);
+        --is-fade-btm:   rgba(255,255,255,0.68);
         --is-close-bg:   rgba(0,0,0,0.12);
         --is-backdrop-f: brightness(0.72) saturate(0.85);
         --is-rej-clr:    rgba(180,90,0,0.85);
@@ -1719,7 +1719,7 @@ var STYLES = `
       .popup-backdrop-fade {
         position: absolute;
         bottom: 0; left: 0; right: 0;
-        height: 90px;
+        height: 60px;
         background: linear-gradient(to bottom, transparent, var(--is-fade-btm));
         pointer-events: none;
       }
@@ -1776,6 +1776,16 @@ var STYLES = `
         background: rgba(0,0,0,0.18);
       }
 
+      .popup-yt-thumb::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 50px;
+        background: linear-gradient(to bottom, var(--is-fade-btm), transparent);
+        pointer-events: none;
+        z-index: 1;
+      }
+
       .popup-yt-btn {
         background: rgba(200,0,0,0.88);
         color: #fff;
@@ -1816,10 +1826,10 @@ var STYLES = `
         color: rgba(160,80,0,0.90);
       }
 
-      .remove-lib-btn  { border-color: rgba(255,120,30,0.40); color: rgba(255,150,80,0.9);  height: 26px; box-sizing: border-box; }
-      .remove-lib-btn:hover  { background: rgba(255,120,30,0.18); border-color: rgba(255,120,30,0.65); color: #ff9640; }
-      .remove-disc-btn, .remove-excl-btn { border-color: rgba(255,69,58,0.50); color: rgba(255,90,80,0.95); }
-      .remove-disc-btn:hover, .remove-excl-btn:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.75); color: #ff453a; }
+      .remove-lib-btn  { border-color: rgba(255,120,30,0.45); color: rgba(255,150,80,0.9); height: 26px; box-sizing: border-box; }
+      .remove-lib-btn:hover  { background: rgba(255,120,30,0.18); border-color: rgba(255,120,30,0.70); color: #ff9640; }
+      .remove-disc-btn, .remove-excl-btn { border-color: rgba(255,69,58,0.55); color: rgba(255,90,80,0.95); }
+      .remove-disc-btn:hover, .remove-excl-btn:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.80); color: #ff453a; }
       .remove-confirm-row {
         display: inline-flex; align-items: center; flex-wrap: nowrap; gap: 6px; margin-top: 4px;
       }
@@ -6179,7 +6189,7 @@ var _PopupMethods = class {
         <button class="remove-ic-btn remove-ic-no" data-action="remove-no">${crossSvg}</button>
       </div>`;
     })() : "";
-    const dayClass = this._isDaytime && this._userStyles?.dayNightMode !== false ? " popup-day" : "";
+    const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
     const wideClass = isActive || snIsActive ? " is-wide" : "";
     return `
     <div class="popup-overlay${dayClass}">
@@ -6606,22 +6616,60 @@ var ArrStackCard = class extends HTMLElement {
     }
     if (props.length) rules.push(`:host { ${props.join(" ")} }`);
     const mo = c("modalHeadingTextColor");
-    if (mo) rules.push(`.popup-overlay .popup-title { color: rgba(${mo}, 1) !important; }`);
+    if (mo) {
+      rules.push(`.popup-overlay .popup-title { color: rgba(${mo}, 1) !important; }`);
+      rules.push(`.popup-overlay .is-f-btn.active { color: rgba(${mo}, 1) !important; }`);
+      rules.push(`.popup-overlay .sn-season-title { color: rgba(${mo}, 1) !important; }`);
+      rules.push(`.popup-overlay .btn-person:not(.active) { color: rgba(${mo}, 0.80) !important; border-color: rgba(${mo}, 0.25) !important; }`);
+    }
     const mp = c("modalPrimaryTextColor");
     if (mp) {
       rules.push(`.popup-overlay .popup-sub { color: rgba(${mp}, 0.55) !important; }`);
       rules.push(`.popup-overlay .popup-overview { color: rgba(${mp}, 0.75) !important; }`);
+      rules.push(`.popup-overlay .is-rel-title { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .is-indexer { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .is-size { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .is-lang-chip { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .sn-ep-num { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .sn-ep-title { color: rgba(${mp}, 0.90) !important; }`);
+    }
+    const msc = c("modalSecondaryTextColor");
+    if (msc) {
+      rules.push(`.popup-overlay .is-panel-title { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-count { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-f-btn:not(.active) { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-table thead th { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-s-zero { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-loading { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-q-sd { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-rel-age { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-peers-na { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .sn-seasons-label { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .sn-season-stat { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .sn-ep-date { color: rgba(${msc}, 0.70) !important; }`);
     }
     const mci = c("modalCloseButtonIconColor");
     if (mci) rules.push(`.popup-close { color: rgba(${mci}, 1) !important; }`);
     const mcb = c("modalCloseButtonBackgroundColor");
     if (mcb) rules.push(`.popup-close { background: rgba(${mcb}, 1) !important; box-shadow: none !important; }`);
     const mb = c("modalBackgroundColor");
-    if (mb) rules.push(`.popup-overlay .popup-glass { background: rgba(${mb}, 0.05) !important; }`);
+    if (mb) {
+      const [mr, mg, mb2] = mb.split(",").map(Number);
+      const lr = Math.round(mr + (255 - mr) * 0.6);
+      const lg = Math.round(mg + (255 - mg) * 0.6);
+      const lb = Math.round(mb2 + (255 - mb2) * 0.6);
+      const mbLight = `${lr}, ${lg}, ${lb}`;
+      rules.push(`.popup-overlay .popup-glass { background: rgba(${mb}, 0.30) !important; }`);
+      rules.push(`.popup-overlay { --is-fade-btm: rgba(${mb}, 0.30) !important; --is-hdr-bg: rgba(${mb}, 0.12) !important; --is-shine: linear-gradient(120deg,rgba(${mbLight},0.55),rgba(${mbLight},0.15) 25%,rgba(${mbLight},0.05) 50%,transparent 70%) !important; }`);
+    }
+    const mov = c("modalOverlayColor");
+    if (mov) rules.push(`.popup-overlay { background: rgba(${mov}, 0.65) !important; }`);
     const mbt = c("modalButtonTextColor");
-    if (mbt) rules.push(`.popup-overlay .is-open-btn { color: rgba(${mbt}, 0.70) !important; }`);
+    if (mbt) rules.push(`.popup-overlay .is-open-btn { color: rgba(${mbt}, 1) !important; }`);
     const mbb = c("modalButtonBackgroundColor");
-    if (mbb) rules.push(`.popup-overlay .is-open-btn { background: rgba(${mbb}, 0.08) !important; }`);
+    if (mbb) rules.push(`.popup-overlay .is-open-btn:not(.remove-lib-btn):not(.remove-disc-btn) { background: rgba(${mbb}, 0.20) !important; border-color: rgba(${mbb}, 0.40) !important; }`);
+    const mrb = c("modalRemoveButtonBackgroundColor");
+    if (mrb) rules.push(`.popup-overlay .is-open-btn[data-action="remove-confirm"] { background: rgba(${mrb}, 0.20) !important; border-color: rgba(${mrb}, 0.40) !important; }`);
     let el = this.shadowRoot.getElementById("arr-theme");
     if (!el) {
       el = document.createElement("style");
