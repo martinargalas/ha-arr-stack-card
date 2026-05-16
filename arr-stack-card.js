@@ -1031,7 +1031,7 @@ var STYLES = `
          PILL CHIP SYSTEM  (speed + status)
          Solid macOS colours, no gradient \u2014 clean and vivid
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
-      .g, .pill-green, .pill-orange, .pill-red, .pill-blue, .pill-yellow, .pill-teal {
+      .g, .pill-green, .pill-orange, .pill-red, .pill-blue, .pill-yellow, .pill-teal, .pill-gray {
         display: inline-flex; align-items: center; gap: 3px;
         border-radius: 999px; border: 1px solid transparent;
         font-weight: 700; color: rgba(var(--arr-tp-rgb, 255, 255, 255), 1); white-space: nowrap;
@@ -1048,6 +1048,8 @@ var STYLES = `
       .pill-blue        { background: rgba(10,132,255,0.38); border-color: rgba(10,132,255,0.70); }
       /* macOS yellow \u2014 #FFD60A */
       .pill-yellow      { background: rgba(255,214,10,0.32); border-color: rgba(255,214,10,0.65); }
+      /* gray \u2014 queued/unknown */
+      .pill-gray        { background: rgba(180,180,180,0.20); border-color: rgba(180,180,180,0.45); }
       /* Speed value pill (inline in torrent rows) */
       .g { padding: 0 7px; }
       /* Value pill in disk chips */
@@ -1816,13 +1818,16 @@ var STYLES = `
 
       .remove-lib-btn  { border-color: rgba(255,120,30,0.40); color: rgba(255,150,80,0.9);  height: 26px; box-sizing: border-box; }
       .remove-lib-btn:hover  { background: rgba(255,120,30,0.18); border-color: rgba(255,120,30,0.65); color: #ff9640; }
-      .remove-disc-btn { border-color: rgba(255,60,60,0.35);  color: rgba(255,100,100,0.9); }
-      .remove-disc-btn:hover { background: rgba(255,60,60,0.18);  border-color: rgba(255,60,60,0.6);  color: #ff6060; }
+      .remove-disc-btn, .remove-excl-btn { border-color: rgba(255,69,58,0.50); color: rgba(255,90,80,0.95); }
+      .remove-disc-btn:hover, .remove-excl-btn:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.75); color: #ff453a; }
       .remove-confirm-row {
-        display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;
+        display: inline-flex; align-items: center; flex-wrap: nowrap; gap: 6px; margin-top: 4px;
       }
       .remove-confirm-row .is-open-btn {
-        margin-top: 0; height: 26px; box-sizing: border-box;
+        margin-top: 0; height: 26px; box-sizing: border-box; flex-shrink: 1; min-width: 0;
+      }
+      @media (max-width: 480px) {
+        .remove-confirm-row { flex-wrap: wrap; }
       }
       .remove-ic-btn {
         display: inline-flex; align-items: center; justify-content: center;
@@ -2973,8 +2978,53 @@ var _FetchMethods = class {
       this._sonarrAll = Array.isArray(data) ? data : [];
       this._sonarrTotal = sonarrFiltered.length;
       this._sonarr = sonarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
+      await this._fetchSonarrRecentImports();
+      await this._fetchSonarrEpisodeFiles();
+      await this._fetchBazarrEpisodes();
     } catch (e) {
       console.error("[arr-card] Sonarr fetch error:", e);
+    }
+  }
+  async _fetchSonarrRecentImports() {
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr/recentimports");
+      const records = (data.records || []).filter((r) => r.eventType === "downloadFolderImported");
+      const dateMap = {};
+      for (const r of records) {
+        if (!(r.seriesId in dateMap)) dateMap[r.seriesId] = r.date;
+      }
+      this._sonarrImportDates = dateMap;
+    } catch (e) {
+      console.error("[arr-card] Sonarr recent imports fetch error:", e);
+      this._sonarrImportDates = {};
+    }
+  }
+  async _fetchSonarrEpisodeFiles() {
+    try {
+      const allSeries = (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0);
+      const importDates = this._sonarrImportDates || {};
+      const withImports = allSeries.filter((s) => s.id in importDates).sort((a, b) => importDates[b.id].localeCompare(importDates[a.id])).slice(0, 20);
+      const withoutImports = allSeries.filter((s) => !(s.id in importDates)).slice(0, Math.max(0, 20 - withImports.length));
+      const recent = [...withImports, ...withoutImports];
+      if (!recent.length) return;
+      const results = await Promise.allSettled(
+        recent.map((s) => this._callApi("GET", `arr_stack/sonarr/episodefiles?seriesId=${s.id}`))
+      );
+      const epFiles = {};
+      for (let i = 0; i < recent.length; i++) {
+        const r = results[i];
+        if (r.status === "fulfilled" && Array.isArray(r.value) && r.value.length > 0) {
+          const epNum = (f) => {
+            const m = (f.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
+            return m ? parseInt(m[1]) * 1e4 + parseInt(m[2]) : 0;
+          };
+          const sorted = r.value.sort((a, b) => epNum(b) - epNum(a));
+          epFiles[recent[i].id] = sorted[0];
+        }
+      }
+      this._sonarrEpFiles = epFiles;
+    } catch (e) {
+      console.error("[arr-card] Sonarr episode files fetch error:", e);
     }
   }
   async _fetchCalendar() {
@@ -3210,6 +3260,30 @@ var _FetchMethods = class {
       console.error("[arr-card] Bazarr fetch error:", e);
     }
   }
+  async _fetchBazarrEpisodes() {
+    if (!this._bazarrConfigured) return;
+    try {
+      const seriesIds = Object.keys(this._sonarrEpFiles || {});
+      if (!seriesIds.length) return;
+      const results = await Promise.allSettled(
+        seriesIds.map((sid) => this._callApi("GET", `arr_stack/bazarr/episodes?seriesId=${sid}`))
+      );
+      const map = {};
+      for (let i = 0; i < seriesIds.length; i++) {
+        const r = results[i];
+        if (r.status !== "fulfilled") continue;
+        for (const ep of r.value?.data || []) {
+          map[ep.sonarrEpisodeFileId] = {
+            subtitles: ep.subtitles || [],
+            missing: ep.missing_subtitles || []
+          };
+        }
+      }
+      this._bazarrEpisodes = map;
+    } catch (e) {
+      console.error("[arr-card] Bazarr episodes fetch error:", e);
+    }
+  }
   async _fetchRadarrQueue() {
     try {
       const data = await this._callApi("GET", "arr_stack/radarr/queue");
@@ -3239,7 +3313,26 @@ var _FetchMethods = class {
         this._sabConfigured = false;
         return;
       }
-      this._sab = data.queue || {};
+      const queue = data.queue || {};
+      const prev = this._sabMbleftPrev || {};
+      const curr = {};
+      const active = /* @__PURE__ */ new Set();
+      const slots = queue.slots || [];
+      const globalSpeed = parseFloat(queue.kbpersec) || 0;
+      for (let i = 0; i < slots.length; i++) {
+        const s = slots[i];
+        const mbleft = parseFloat(s.mbleft) || 0;
+        curr[s.nzo_id] = mbleft;
+        if (s.nzo_id in prev && prev[s.nzo_id] > mbleft) {
+          active.add(s.nzo_id);
+        }
+        if (i === 0 && globalSpeed > 0 && mbleft > 0) {
+          active.add(s.nzo_id);
+        }
+      }
+      this._sabMbleftPrev = curr;
+      this._sabActiveIds = queue.status === "Paused" ? /* @__PURE__ */ new Set() : active;
+      this._sab = queue;
       this._sabConfigured = true;
     } catch (e) {
       const status = e?.status_code ?? e?.status ?? e?.response?.status;
@@ -3254,6 +3347,7 @@ var _FetchMethods = class {
       const data = await this._callApi("GET", "arr_stack/sabnzbd/history");
       const slots = data?.history?.slots || [];
       this._sabFailed = slots.filter((s) => s.status === "Failed");
+      this._sabCompleted = slots.filter((s) => s.status === "Completed").slice(0, 10);
     } catch (e) {
       console.error("[arr-card] SABnzbd history fetch error:", e);
     }
@@ -3672,9 +3766,9 @@ var _RenderLeft = class {
     if (!this._sabConfigured) return "";
     const sabKbps = parseFloat(this._sab.kbpersec) || 0;
     const speedStr = this.fmtSpeed(sabKbps * 1024);
-    const slots = Array.isArray(this._sab.slots) ? this._sab.slots : [];
     const sabPaused = this._sab.status === "Paused";
-    const items = this._pagedList(slots, "sab", (s) => this._renderSabItem(s), this._perPage("sab"));
+    const allSlots = this._getPageData("sab");
+    const items = this._pagedList(allSlots, "sab", (s) => this._renderSabItem(s), this._perPage("sab"));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:8px">
@@ -3711,18 +3805,50 @@ var _RenderLeft = class {
     <div class="sab-failed-sep"></div>
     ${rows}`;
   }
+  _sabTimeleftToSecs(t) {
+    if (!t || t === "0:00:00") return 0;
+    const parts = t.split(":").map(Number);
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return 0;
+  }
   _renderSabItem(s) {
     const pct = parseFloat(s.percentage) || 0;
     const mbTotal = parseFloat(s.mb) || 0;
     const mbLeft = parseFloat(s.mbleft) || 0;
     const mbDone = mbTotal - mbLeft;
-    const sizeStr = s.size || `${mbTotal.toFixed(0)} MB`;
     const doneSizeStr = this.fmtSize(mbDone * 1024 * 1024);
     const totalSizeStr = this.fmtSize(mbTotal * 1024 * 1024);
-    const sabKbps = parseFloat(this._sab.kbpersec) || 0;
-    const speedStr = this.fmtSpeed(sabKbps * 1024);
     const eta = s.timeleft || "";
     const name = this._escHtml(s.filename || "Unknown");
+    const status = s.status || "";
+    const isDownloading = this._sabActiveIds?.has(s.nzo_id) ?? false;
+    const SAB_STATUS_PILLS = {
+      Queued: { cls: "pill-gray", icon: "mdi:clock-outline", label: "Queued" },
+      Paused: { cls: "pill-orange", icon: "mdi:pause", label: "Paused" },
+      Checking: { cls: "pill-teal", icon: "mdi:magnify", label: "Checking" },
+      Extracting: { cls: "pill-teal", icon: "mdi:archive-outline", label: "Extracting" },
+      Verifying: { cls: "pill-teal", icon: "mdi:shield-check", label: "Verifying" },
+      Repairing: { cls: "pill-teal", icon: "mdi:wrench-outline", label: "Repairing" },
+      Failed: { cls: "pill-red", icon: "mdi:alert-circle", label: "Failed" },
+      Completed: { cls: "pill-green", icon: "mdi:check-circle", label: "Completed" }
+    };
+    let speedCol = "";
+    if (isDownloading) {
+      const secs = this._sabTimeleftToSecs(eta);
+      let bps = 0;
+      if (secs > 0 && mbLeft > 0) {
+        bps = mbLeft * 1024 * 1024 / secs;
+      } else {
+        bps = (parseFloat(this._sab.kbpersec) || 0) * 1024;
+      }
+      speedCol = `<span class="dm"><b class="g"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px"></ha-icon> ${this.fmtSpeed(bps)}</b></span>`;
+    } else {
+      const globalPaused = this._sab?.status === "Paused";
+      const pillStatus = status === "Downloading" || status === "Queued" ? globalPaused ? "Paused" : "Queued" : status;
+      const pill = SAB_STATUS_PILLS[pillStatus] || { cls: "pill-gray", icon: "mdi:dots-horizontal", label: pillStatus || "\u2014" };
+      speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
+    }
     return `
     <div class="dl">
       <div class="dl-r1">
@@ -3730,8 +3856,8 @@ var _RenderLeft = class {
         <span class="dl-pct">${pct}%</span>
       </div>
       <div class="dl-r2">
-        <span class="dm"><b class="g"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px"></ha-icon> ${speedStr}</b></span>
-        <span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>
+        ${speedCol}
+        ${isDownloading ? `<span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>` : ""}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
       </div>
       <div class="pbar"><div class="pbar-fill pf-orange" style="width:${pct}%"></div></div>
@@ -4222,9 +4348,15 @@ var _RenderRight = class {
     if (isMovie) {
       badgeHtml = item.movieFile?.qualityCutoffNotMet ? `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
     } else {
-      const fileCount = item.statistics?.episodeFileCount ?? 0;
-      const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
-      badgeHtml = fileCount < totalCount ? `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      const epFile = this._sonarrEpFiles?.[item.id];
+      if (epFile) {
+        const match = (epFile.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
+        badgeHtml = match ? `<span class="badge b-st-avail">\u2713<span class="b-txt"> S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      } else {
+        const fileCount = item.statistics?.episodeFileCount ?? 0;
+        const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
+        badgeHtml = fileCount < totalCount ? `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      }
     }
     const statusBadge = this._statusBadge(badgeHtml);
     const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
@@ -4250,6 +4382,35 @@ var _RenderRight = class {
         } else if (bz.subtitles.length > 0) {
           const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
           subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+        }
+      }
+    } else {
+      const epFile = this._sonarrEpFiles?.[item.id];
+      if (epFile) {
+        let audioLangs = [];
+        if (Array.isArray(epFile.languages) && epFile.languages.length > 0) {
+          audioLangs = epFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
+        } else if (epFile.mediaInfo?.audioLanguages) {
+          audioLangs = epFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
+        }
+        if (audioLangs.length > 0) {
+          const codes = this._topLangs(audioLangs).join(" | ");
+          audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
+        }
+        const bze = this._bazarrConfigured ? this._bazarrEpisodes?.[epFile.id] : null;
+        if (bze) {
+          if (bze.missing.length > 0) {
+            const langs = this._topLangs(bze.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+            subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+          } else if (bze.subtitles.length > 0) {
+            const langs = this._topLangs(bze.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+            subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+          }
+        } else if (epFile.mediaInfo?.subtitles) {
+          const subLangs = this._topLangs(
+            epFile.mediaInfo.subtitles.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean)
+          ).join(" | ");
+          if (subLangs) subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${subLangs}</span>`;
         }
       }
     }
@@ -5482,7 +5643,7 @@ var _WireMethods = class {
         const dir = dx < 0 ? "next" : "prev";
         const data = this._getPageData(section);
         const perPage = this._perPage(section);
-        const total = Math.ceil(data.length / perPage);
+        const total = Math.ceil(this._smpPageCount(data, section) / perPage);
         const cur = this._pages[section] || 0;
         if (dir === "next" && cur < total - 1) {
           this._pages[section] = cur + 1;
@@ -5863,7 +6024,7 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "remove-choose-disc") {
-        this._removeFromLibrary(true);
+        this._removeFromLibrary(true, true);
         return;
       }
       if (t.dataset.action === "remove-no") {
@@ -5940,13 +6101,11 @@ var _PopupMethods = class {
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
       </svg>
       Interactive Search
-      <span class="is-admin-badge">admin</span>
     </button>` : "";
     const snIsOpenBtn = isAdmin && isSonarrType ? `
     <button class="is-open-btn${snIsActive ? " active" : ""}" data-action="sn-is-toggle">
       ${personIconSvg}
       Interactive Search
-      <span class="is-admin-badge">admin</span>
     </button>` : "";
     const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const checkSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -5956,18 +6115,17 @@ var _PopupMethods = class {
     const radarrEntry = canRemoveRadarr ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
     const sonarrEntry = canRemoveSonarr ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const hasFiles = !!(radarrEntry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0);
-    const removeLabel = canRemoveSonarr ? "Remove Series" : "Remove";
+    const removeLabel = canRemoveSonarr ? "Remove Series \u203A" : "Remove \u203A";
     const removeBtn = canRemoveRadarr || canRemoveSonarr ? (() => {
       const rc = this._removeConfirm;
       if (!rc) return `
       <button class="is-open-btn remove-lib-btn" data-action="remove-confirm">
         ${trashSvg} ${removeLabel}
-        <span class="is-admin-badge">admin</span>
       </button>`;
       return `
       <div class="remove-confirm-row">
         <button class="is-open-btn remove-lib-btn" data-action="remove-choose-lib">${trashSvg} Remove from library</button>
-        ${hasFiles ? `<button class="is-open-btn remove-disc-btn" data-action="remove-choose-disc">${trashSvg} Remove from disc</button>` : ""}
+        <button class="is-open-btn remove-disc-btn" data-action="remove-choose-disc">${trashSvg} Remove from disc</button>
         <button class="remove-ic-btn remove-ic-no" data-action="remove-no">${crossSvg}</button>
       </div>`;
     })() : "";
@@ -6002,16 +6160,17 @@ var _PopupMethods = class {
   // ─────────────────────────────────────────────
   // Interactive Search — panel HTML
   // ─────────────────────────────────────────────
-  async _removeFromLibrary(deleteFiles = false) {
+  async _removeFromLibrary(deleteFiles = false, addExclusion = false) {
     const d = this._popup;
     if (!d) return;
     const df = deleteFiles ? "true" : "false";
+    const ex = addExclusion ? "true" : "false";
     try {
       if ((d._type === "radarr" || d._type === "movie") && d._radarrId) {
-        await this._hass.callApi("DELETE", `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}`);
+        await this._hass.callApi("DELETE", `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}&addExclusion=${ex}`);
         this._radarr = (this._radarr || []).filter((m) => m.id !== d._radarrId);
       } else if ((d._type === "sonarr" || d._type === "tv") && d._sonarrSeries?.id) {
-        await this._hass.callApi("DELETE", `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}`);
+        await this._hass.callApi("DELETE", `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}&addExclusion=${ex}`);
         this._sonarr = (this._sonarr || []).filter((s) => s.id !== d._sonarrSeries.id);
       }
     } catch (e) {
@@ -6517,7 +6676,21 @@ var ArrStackCard = class extends HTMLElement {
   // Returns the correct data array for a given section key
   _getPageData(section) {
     if (section === "qbit") return Array.isArray(this._qbit) ? this._qbit : [];
-    if (section === "sab") return Array.isArray(this._sab.slots) ? this._sab.slots : [];
+    if (section === "sab") {
+      const slots = Array.isArray(this._sab?.slots) ? this._sab.slots : [];
+      const completed = (this._sabCompleted || []).map((s) => ({
+        nzo_id: s.nzo_id,
+        filename: s.name || s.filename || "Unknown",
+        percentage: "100",
+        mb: String((s.bytes || 0) / 1024 / 1024),
+        mbleft: "0",
+        status: "Completed",
+        timeleft: "",
+        size: s.size || "",
+        _history: true
+      }));
+      return [...slots, ...completed];
+    }
     if (section === "pending") return this._pendingRequests || [];
     if (section === "recentlyAdded") return this.recentlyAdded;
     if (section === "recentlyRequested") return this.recentlyRequested;
@@ -6525,7 +6698,7 @@ var ArrStackCard = class extends HTMLElement {
   }
   get recentlyAdded() {
     const movies = (this._radarr || []).filter((m) => m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.movieFile?.dateAdded || m.added || "" }));
-    const shows = (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0).map((s) => ({ ...s, _mediaType: "tv", _sortDate: s.added || "" }));
+    const shows = (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0).map((s) => ({ ...s, _mediaType: "tv", _sortDate: this._sonarrImportDates?.[s.id] || s.added || "" }));
     return [...movies, ...shows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
   }
   get recentlyRequested() {
