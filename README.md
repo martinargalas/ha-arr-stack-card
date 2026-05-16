@@ -22,9 +22,10 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 ## Features
 
 ### Recently Added
-- Mixed movies + TV shows with files — sorted by date added
+- Mixed movies + TV shows with files — sorted by download date
 - **IMDB rating**, audio language tags (`CS | EN`), and Bazarr subtitle status badges per card
 - Movie type tag (Movie / TV) on each poster
+- TV shows display the specific episode badge (e.g. `S04E04`) of the most recently downloaded episode, with audio and subtitle info
 
 ### Recently Requested
 - Monitored movies and shows not yet downloaded — sorted by date added
@@ -54,7 +55,8 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 - **Disk usage** — free space read from qBittorrent (shown only when qBittorrent is configured)
 
 ### Downloads (SABnzbd)
-- Active NZB queue with progress and speed
+- Active NZB queue with progress and speed — delete queue items (with confirm)
+- Completed downloads shown inline in the queue list
 - Failed downloads history with retry and delete actions
 - Global pause/resume
 - **Disk usage** — free/total space with usage bar (priority over qBittorrent disk data)
