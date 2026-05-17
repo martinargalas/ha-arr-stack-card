@@ -21,7 +21,7 @@ A Home Assistant Lovelace card for managing your media server stack. Integrates 
 
 ## Features
 
-Every media poster card displays an **IMDB rating pill**, **audio language tags** (`CS | EN`), and a **Bazarr subtitle status badge**. Services not configured in the integration are hidden automatically — no YAML needed to disable them.
+Library cards (Movies, TV Shows, Recently Added/Requested) display an **IMDB rating pill**, **audio language tags** (`CS | EN`), and a **Bazarr subtitle status badge**. Services not configured in the integration are hidden automatically — no YAML needed to disable them.
 
 ### Library
 
