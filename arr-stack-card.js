@@ -3362,10 +3362,13 @@ var _FetchMethods = class {
     this._vpnIpFetching = true;
     try {
       const res = await this._callApi("GET", "arr_stack/sabnzbd/status");
-      this._sabLocalIp = res?.status?.localipv4 || null;
-      this._sabPublicIp = res?.status?.publicipv4 || null;
+      const newLocal = res?.status?.localipv4 || null;
+      const newPublic = res?.status?.publicipv4 || null;
+      const changed = !this._sabVpnFetched || newLocal !== this._sabLocalIp || newPublic !== this._sabPublicIp;
+      this._sabLocalIp = newLocal;
+      this._sabPublicIp = newPublic;
       this._sabVpnFetched = true;
-      this._render();
+      if (changed) this._render();
     } catch (e) {
     } finally {
       this._vpnIpFetching = false;
@@ -4152,12 +4155,10 @@ var _RenderRight = class {
         ${posterHtml}
         <span class="media-type-tag">${typeTag}</span>
         ${statusBadge}
-        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${gradColor} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-          <div style="display:flex;align-items:center;gap:4px">
+        ${this._mcGrad(gradColor, `<div style="display:flex;align-items:center;gap:4px">
             <div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
             ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-          </div>
-        </div>
+          </div>`)}
         ${reqOverlay}
       </div>`;
     }).join("");
@@ -4291,16 +4292,14 @@ var _RenderRight = class {
         }
       }
     }
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
+    const img = this._mcImg(poster, "\u{1F3AC}", m.id);
     return `
     <div class="mc" data-popup="${POPUP_TYPE.RADARR}" data-tmdbid="${m.tmdbId}" data-title="${title}">
       ${img}
       ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
         ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
   _getRadarrPoster(m) {
@@ -4364,15 +4363,13 @@ var _RenderRight = class {
       badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
     }
     const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(s.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
+    const img = this._mcImg(poster, "\u{1F4FA}", s.id);
     return `
     <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${s.tvdbId}" data-tmdbid="${s.tmdbId || ""}" data-title="${title}">
       ${img}
       ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
   _getSonarrPoster(s) {
@@ -4418,7 +4415,7 @@ var _RenderRight = class {
     const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id);
     const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
     const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
@@ -4497,11 +4494,9 @@ var _RenderRight = class {
       ${img}
       <span class="media-type-tag">${typeTag}</span>
       ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
         ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
   _renderRecentlyRequestedCard(item) {
@@ -4512,7 +4507,7 @@ var _RenderRight = class {
     const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id);
     const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
     const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
@@ -4534,10 +4529,8 @@ var _RenderRight = class {
       ${img}
       <span class="media-type-tag">${typeTag}</span>
       ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
   _renderUpcoming() {
@@ -4623,19 +4616,17 @@ var _RenderRight = class {
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
-    const img = m.posterPath ? `<img src="https://image.tmdb.org/t/p/w342${m.posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
+    const img = this._mcImg(m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : null, "\u{1F4FA}", m.id);
     return `
     <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
       ${tagHtml}
       ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
+      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
         <div style="display:flex;align-items:center;gap:4px">
           <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
           ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-        </div>
-      </div>
+        </div>`)}
     </div>`;
   }
   _renderTvRequestOverlay() {
@@ -4938,20 +4929,18 @@ var _RenderRight = class {
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const posterPath = m.posterPath || m.poster_path || null;
-    const img = posterPath ? `<img src="https://image.tmdb.org/t/p/w342${posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
+    const img = this._mcImg(posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m.id);
     const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
     return `
     <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
       ${tagHtml}
       ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
+      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
         <div style="display:flex;align-items:center;gap:4px">
           <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
           ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-        </div>
-      </div>
+        </div>`)}
       ${overlay}
     </div>`;
   }
@@ -4985,17 +4974,15 @@ var _RenderRight = class {
     const poster = this._getSonarrPoster(series);
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(ep.seriesId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
+    const img = this._mcImg(poster, "\u{1F4FA}", ep.series?.id || ep.seriesId);
     return `
     <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
       ${img}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:4px">
+      ${this._mcGrad(grad, `<div style="margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:4px">
           ${dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : "<span></span>"}
           <span class="badge b-ep">${badge}</span>
         </div>
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -6768,6 +6755,14 @@ var ArrStackCard = class extends HTMLElement {
   // ─────────────────────────────────────────────
   // Badge / pill helpers
   // ─────────────────────────────────────────────
+  /** Media card poster img + gradient placeholder fallback */
+  _mcImg(poster, emoji, gradId, phClass = "") {
+    return poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${phClass}${this._grad(gradId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${emoji}</div>`;
+  }
+  /** Media card gradient footer overlay */
+  _mcGrad(grad, inner) {
+    return `<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">${inner}</div>`;
+  }
   /** Media card badge with text: <span class="badge {cls}">{icon}<span class="b-txt"> {text}</span></span> */
   _badge(cls, icon, text) {
     return `<span class="badge ${cls}">${icon}<span class="b-txt"> ${text}</span></span>`;
@@ -7038,6 +7033,14 @@ var ArrStackCard = class extends HTMLElement {
   _measureAndLockHeight() {
     const right = this.shadowRoot.getElementById("col-right");
     if (!right) return;
+    if (this._overlay?.section && this._rightMaxH) {
+      right.style.minHeight = this._rightMaxH + "px";
+      this._wirePageButtons();
+      this._wirePopup();
+      this._wireOverseerrButtons();
+      this._wireSearch();
+      return;
+    }
     const savedPage = this._rightPage;
     const savedPages = { ...this._pages };
     let maxH = 0;
