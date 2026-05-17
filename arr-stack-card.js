@@ -789,6 +789,11 @@ var STYLES = `
         line-height: 1.5;
       }
 
+      .vpn-shield { flex-shrink: 0; margin-left: -2px; }
+      .vpn-shield-ok   { color: rgba(48,209,88,0.90); }
+      .vpn-shield-fail { color: rgba(255,69,58,0.90); }
+      .vpn-shield-unk  { color: rgba(255,255,255,0.30); }
+
       .mbar { height: 2px; background: rgba(255,255,255,0.18); border-radius: 1px; overflow: hidden; margin-top: 3px; }
       .mbar-fill { height: 100%; border-radius: 1px; }
 
@@ -3195,7 +3200,6 @@ var _FetchMethods = class {
     }
   }
   async _openTvRequestOverlay(m, source = "tvUpcoming") {
-    console.log("[arr-card] _openTvRequestOverlay called show=", m?.title, "source=", source);
     this._tvRequestPending = { show: m, seasons: null, selected: null, profileId: null, mediaId: m.id, loading: true, source };
     this._reRenderRight();
     await Promise.allSettled([
@@ -3344,12 +3348,27 @@ var _FetchMethods = class {
       this._sabActiveIds = queue.status === "Paused" ? /* @__PURE__ */ new Set() : active;
       this._sab = queue;
       this._sabConfigured = true;
+      this._fetchVpnIp();
     } catch (e) {
       const status = e?.status_code ?? e?.status ?? e?.response?.status;
       const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
       const isNotConfigured = status === 503 || body.includes("not configured");
       this._sabConfigured = !isNotConfigured;
       console.error("[arr-card] SABnzbd fetch error:", e);
+    }
+  }
+  async _fetchVpnIp() {
+    if (this._vpnIpFetching) return;
+    this._vpnIpFetching = true;
+    try {
+      const res = await this._callApi("GET", "arr_stack/sabnzbd/status");
+      this._sabLocalIp = res?.status?.localipv4 || null;
+      this._sabPublicIp = res?.status?.publicipv4 || null;
+      this._sabVpnFetched = true;
+      this._render();
+    } catch (e) {
+    } finally {
+      this._vpnIpFetching = false;
     }
   }
   async _fetchSabHistory() {
@@ -3796,7 +3815,16 @@ var _RenderLeft = class {
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:8px">
-        ${this._appIcon("sab")}
+        <div style="position:relative;flex-shrink:0;display:inline-flex;width:26px;height:26px">
+          ${this._appIcon("sab")}
+          ${(() => {
+      if (!this._sabVpnFetched) return "";
+      const vpnOn = !!this._sabLocalIp;
+      const icon = vpnOn ? "mdi:shield-check" : "mdi:shield-off";
+      const cls = vpnOn ? "vpn-shield-ok" : "vpn-shield-fail";
+      return `<ha-icon icon="${icon}" class="vpn-shield ${cls}" style="--mdc-icon-size:13px;position:absolute;bottom:-4px;right:-5px"></ha-icon>`;
+    })()}
+        </div>
         <span class="col-hdr-title">SABnzbd</span>
         <div class="col-hdr-line"></div>
         ${this._sabBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn sab-global-toggle${sabPaused ? " paused" : ""}" title="${sabPaused ? this._t("resumeSab") : this._t("pauseSab")}">
@@ -3950,6 +3978,14 @@ var _RenderLeft = class {
 };
 var renderLeftMixin = _RenderLeft.prototype;
 
+// src/constants.js
+var POPUP_TYPE = {
+  RADARR: "radarr",
+  SONARR: "sonarr",
+  MOVIE: "movie",
+  TV: "tv"
+};
+
 // src/render/right.js
 var _RenderRight = class {
   _renderRight() {
@@ -4067,7 +4103,7 @@ var _RenderRight = class {
       const isMovie = m.mediaType === "movie";
       const title = this._escHtml(m.title || m.name || "");
       const tmdbId = m.id;
-      const popupType = isMovie ? "movie" : "tv";
+      const popupType = isMovie ? POPUP_TYPE.MOVIE : POPUP_TYPE.TV;
       const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
       const poster = m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
       const radarrEntry = isMovie && Array.isArray(this._radarr) ? this._radarr.find((r) => r.tmdbId === tmdbId) : null;
@@ -4257,7 +4293,7 @@ var _RenderRight = class {
     }
     const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
     return `
-    <div class="mc" data-popup="radarr" data-tmdbid="${m.tmdbId}" data-title="${title}">
+    <div class="mc" data-popup="${POPUP_TYPE.RADARR}" data-tmdbid="${m.tmdbId}" data-title="${title}">
       ${img}
       ${statusBadge}
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
@@ -4330,7 +4366,7 @@ var _RenderRight = class {
     const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
     const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(s.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
     return `
-    <div class="mc" data-popup="sonarr" data-tvdbid="${s.tvdbId}" data-tmdbid="${s.tmdbId || ""}" data-title="${title}">
+    <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${s.tvdbId}" data-tmdbid="${s.tmdbId || ""}" data-title="${title}">
       ${img}
       ${statusBadge}
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
@@ -4379,7 +4415,7 @@ var _RenderRight = class {
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
     const title = this._escHtml(item.title || "Unknown");
     const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-    const popup = isMovie ? "radarr" : "sonarr";
+    const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
@@ -4473,7 +4509,7 @@ var _RenderRight = class {
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
     const title = this._escHtml(item.title || "Unknown");
     const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-    const popup = isMovie ? "radarr" : "sonarr";
+    const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
@@ -4589,7 +4625,7 @@ var _RenderRight = class {
     const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
     const img = m.posterPath ? `<img src="https://image.tmdb.org/t/p/w342${m.posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
     return `
-    <div class="mc" data-popup="tv" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+    <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
       ${tagHtml}
       ${statusBadge}
@@ -4905,7 +4941,7 @@ var _RenderRight = class {
     const img = posterPath ? `<img src="https://image.tmdb.org/t/p/w342${posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
     const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
     return `
-    <div class="mc" data-popup="movie" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+    <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
       ${tagHtml}
       ${statusBadge}
@@ -4951,7 +4987,7 @@ var _RenderRight = class {
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(ep.seriesId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
     return `
-    <div class="mc" data-popup="sonarr" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
+    <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
       ${img}
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
         <div style="margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:4px">
@@ -5796,11 +5832,11 @@ var _PopupMethods = class {
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
     let _radarrId = null;
-    if ((type === "radarr" || type === "movie") && (radarrId || tmdbId)) {
+    if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && (radarrId || tmdbId)) {
       _radarrId = radarrId ?? (this._radarr || []).find((m) => String(m.tmdbId) === String(tmdbId))?.id ?? null;
     }
     let _sonarrSeries = null;
-    if ((type === "sonarr" || type === "tv") && (tvdbId || tmdbId)) {
+    if ((type === POPUP_TYPE.SONARR || type === POPUP_TYPE.TV) && (tvdbId || tmdbId)) {
       const sonarrPool = this._sonarrAll || this._sonarr || [];
       _sonarrSeries = sonarrPool.find(
         (s) => tvdbId && String(s.tvdbId) === String(tvdbId) || tmdbId && String(s.tmdbId) === String(tmdbId)
@@ -5810,17 +5846,17 @@ var _PopupMethods = class {
     this._renderPopupEl();
     try {
       let apiPath = "";
-      if (type === "tv" && tmdbId) {
+      if (type === POPUP_TYPE.TV && tmdbId) {
         apiPath = `arr_stack/overseerr/tv/${tmdbId}`;
-      } else if (type === "sonarr" && tmdbId) {
+      } else if (type === POPUP_TYPE.SONARR && tmdbId) {
         apiPath = `arr_stack/overseerr/tv/${tmdbId}`;
-      } else if ((type === "radarr" || type === "movie") && tmdbId) {
+      } else if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && tmdbId) {
         apiPath = `arr_stack/overseerr/movie/${tmdbId}`;
       } else {
         throw new Error("no_id");
       }
       const data = await this._hass.callApi("GET", apiPath);
-      if ((type === "tv" || type === "sonarr") && !_sonarrSeries && data.externalIds?.tvdbId) {
+      if ((type === POPUP_TYPE.TV || type === POPUP_TYPE.SONARR) && !_sonarrSeries && data.externalIds?.tvdbId) {
         const tvdbFromDetail = String(data.externalIds.tvdbId);
         let sonarrPool = this._sonarrAll || this._sonarr || [];
         _sonarrSeries = sonarrPool.find((s) => String(s.tvdbId) === tvdbFromDetail) ?? null;
@@ -5841,10 +5877,10 @@ var _PopupMethods = class {
   }
   // Build popup data from local arrays when Overseerr is unavailable/fails
   _localFallbackData(type, tmdbId, tvdbId, title) {
-    if (type === "tv") {
+    if (type === POPUP_TYPE.TV) {
       const show = this._tvUpcoming?.find((m) => String(m.id) === String(tmdbId));
       if (show) return {
-        _type: "tv",
+        _type: POPUP_TYPE.TV,
         _localData: true,
         title: show.name || show.originalName || title,
         overview: show.overview || "",
@@ -5854,7 +5890,7 @@ var _PopupMethods = class {
         relatedVideos: []
       };
     }
-    if (type === "sonarr") {
+    if (type === POPUP_TYPE.SONARR) {
       let series = tmdbId && this._sonarr.find((s) => String(s.tmdbId) === String(tmdbId)) || tvdbId && this._sonarr.find((s) => String(s.tvdbId) === String(tvdbId));
       if (!series) {
         const ep = this._calendar.find(
@@ -5864,7 +5900,7 @@ var _PopupMethods = class {
       }
       if (series) {
         return {
-          _type: "sonarr",
+          _type: POPUP_TYPE.SONARR,
           _localData: true,
           title: series.title,
           overview: series.overview || "",
@@ -5875,11 +5911,11 @@ var _PopupMethods = class {
         };
       }
     }
-    if (type === "radarr") {
+    if (type === POPUP_TYPE.RADARR) {
       const movie = this._radarr.find((m) => tmdbId && String(m.tmdbId) === String(tmdbId));
       if (movie) {
         return {
-          _type: "radarr",
+          _type: POPUP_TYPE.RADARR,
           _localData: true,
           title: movie.title,
           overview: movie.overview || "",
@@ -5938,7 +5974,7 @@ var _PopupMethods = class {
       if (t.dataset.action === "is-toggle") {
         if (this._isState) {
           this._isState = null;
-        } else if (this._popup._type === "movie" && !this._popup._radarrId) {
+        } else if (this._popup._type === POPUP_TYPE.MOVIE && !this._popup._radarrId) {
           this._isState = "confirm-add";
         } else {
           this._fetchInteractiveSearch(this._popup._radarrId);
@@ -6146,8 +6182,8 @@ var _PopupMethods = class {
        </a>` : "";
     const posterHtml = posterUrl ? `<img class="popup-poster" src="${posterUrl}" loading="lazy" onerror="this.style.display='none'" />` : "";
     const isAdmin = this._hass.user.is_admin;
-    const isMovieType = d._type === "radarr" || d._type === "movie";
-    const isSonarrType = d._type === "sonarr" || d._type === "tv";
+    const isMovieType = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE;
+    const isSonarrType = d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV;
     const isActive = !!this._isState;
     const snIsActive = this._snIsOpen;
     const personIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -6170,8 +6206,8 @@ var _PopupMethods = class {
     const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const checkSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     const crossSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-    const canRemoveRadarr = isAdmin && (d._type === "radarr" || d._type === "movie") && d._radarrId;
-    const canRemoveSonarr = isAdmin && (d._type === "sonarr" || d._type === "tv") && d._sonarrSeries?.id;
+    const canRemoveRadarr = isAdmin && (d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE) && d._radarrId;
+    const canRemoveSonarr = isAdmin && (d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id;
     const radarrEntry = canRemoveRadarr ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
     const sonarrEntry = canRemoveSonarr ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const hasFiles = !!(radarrEntry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0);
@@ -6226,10 +6262,10 @@ var _PopupMethods = class {
     const df = deleteFiles ? "true" : "false";
     const ex = addExclusion ? "true" : "false";
     try {
-      if ((d._type === "radarr" || d._type === "movie") && d._radarrId) {
+      if ((d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE) && d._radarrId) {
         await this._hass.callApi("DELETE", `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}&addExclusion=${ex}`);
         this._radarr = (this._radarr || []).filter((m) => m.id !== d._radarrId);
-      } else if ((d._type === "sonarr" || d._type === "tv") && d._sonarrSeries?.id) {
+      } else if ((d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id) {
         await this._hass.callApi("DELETE", `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}&addExclusion=${ex}`);
         this._sonarr = (this._sonarr || []).filter((s) => s.id !== d._sonarrSeries.id);
       }
@@ -6309,6 +6345,9 @@ var ArrStackCard = class extends HTMLElement {
     this._qbitTransfer = {};
     this._qbitDiskFreeBytes = null;
     this._sab = {};
+    this._sabLocalIp = null;
+    this._sabPublicIp = null;
+    this._sabVpnFetched = false;
     this._sabFailed = [];
     this._sabRetryBusy = null;
     this._sabDeleteBusy = null;
