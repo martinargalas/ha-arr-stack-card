@@ -10,30 +10,72 @@
 
 <a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
+Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, and Bazarr — directly from Home Assistant with a single unified dashboard card.
+
 <video src="https://github.com/user-attachments/assets/c53692f1-fd07-4c59-b7e3-d4bbf5d1c4c6" controls width="376" title="Mobile"></video>
 <video src="https://github.com/user-attachments/assets/5505e08f-b85e-4ef5-be4a-e5b13b60166a" controls width="800" title="Tablet"></video>
 
-A Home Assistant Lovelace card for managing your media server stack. Integrates Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, and Bazarr into a single unified dashboard.
+---
 
-> **Requires:** [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) — the companion HA proxy integration.
+> [!IMPORTANT]
+> This project consists of **two components** — both are required:
+> - **[Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration)** — backend proxy (install first)
+> - **Arr Stack Card** (this repo) — the Lovelace frontend card
+
+---
+
+## Quick Setup
+
+1. Install **[Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration)** via HACS → Integrations
+2. Install **Arr Stack Card** via HACS → Frontend (see [Installation](#installation) below)
+3. Add `custom:arr-stack-card` to your dashboard — done
+
+```yaml
+type: custom:arr-stack-card
+```
+
+The card auto-detects all configured services. No YAML configuration required to get started.
+
+---
+
+## How it works
+
+```
+HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Sonarr / SABnzbd / …
+```
+
+The card never calls your ARR services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
+
+---
+
+## Supported services
+
+| Service | Role |
+|---------|------|
+| Radarr | Movie library, downloads, interactive search |
+| Sonarr | TV library, episode calendar, downloads |
+| qBittorrent | Torrent download management |
+| SABnzbd | Usenet download management |
+| Overseerr / Jellyseerr | Media requests, discovery, approvals |
+| Bazarr | Subtitle status per movie/show |
+
+Services not configured in the integration are hidden automatically.
 
 ---
 
 ## Features
 
-Library cards (Movies, TV Shows, Recently Added/Requested) display an **IMDB rating pill**, **audio language tags** (`CS | EN`), and a **Bazarr subtitle status badge**. Services not configured in the integration are hidden automatically — no YAML needed to disable them.
-
 ### Library
 
 - **Recently Added** — mixed movies + TV shows with files, sorted by download date. TV shows show the most recently downloaded episode badge (e.g. `S04E04`).
 - **Recently Requested** — monitored movies and shows not yet downloaded, with download status (downloading / missing / failed). Auto-refreshes when a download completes.
-- **Movies (Radarr)** — full library with download status badges. Popup detail with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab. Request movies via Overseerr with quality profile selection.
-- **TV Shows (Sonarr)** — library with per-season episode counts and progress bars. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode. Request shows via Overseerr with season selection.
+- **Movies (Radarr)** — full library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup detail with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
+- **TV Shows (Sonarr)** — library with per-season episode counts and progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
 
 ### Downloads
 
 - **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Shows free disk space.
-- **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. Shows free/total disk space with usage bar (takes priority over qBittorrent disk data). **VPN shield indicator** on the SABnzbd header — green when VPN tunnel is active, red when off.
+- **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. Shows free/total disk space with usage bar. **VPN shield indicator** — green when VPN tunnel is active, red when off.
 
 ### Discovery (Overseerr / Jellyseerr)
 
@@ -56,7 +98,7 @@ Library cards (Movies, TV Shows, Recently Added/Requested) display an **IMDB rat
 
 ## Requirements
 
-1. Home Assistant with HACS installed
+1. Home Assistant 2024.1+ with HACS installed
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
 3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
 
@@ -84,19 +126,9 @@ Library cards (Movies, TV Shows, Recently Added/Requested) display an **IMDB rat
 
 ---
 
-## Basic Configuration
-
-The card works out of the box with zero configuration. It auto-detects all services configured via the integration and applies sensible defaults.
-
-```yaml
-type: custom:arr-stack-card
-```
+## Full Configuration
 
 > **Visual editor** — most settings are available via the HA dashboard editor (click the pencil icon). Only `styles.*` keys require manual YAML editing.
-
----
-
-## Full Configuration
 
 ```yaml
 type: custom:arr-stack-card
