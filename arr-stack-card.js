@@ -789,6 +789,11 @@ var STYLES = `
         line-height: 1.5;
       }
 
+      .vpn-shield { flex-shrink: 0; margin-left: -2px; }
+      .vpn-shield-ok   { color: rgba(48,209,88,0.90); }
+      .vpn-shield-fail { color: rgba(255,69,58,0.90); }
+      .vpn-shield-unk  { color: rgba(255,255,255,0.30); }
+
       .mbar { height: 2px; background: rgba(255,255,255,0.18); border-radius: 1px; overflow: hidden; margin-top: 3px; }
       .mbar-fill { height: 100%; border-radius: 1px; }
 
@@ -3067,24 +3072,28 @@ var _FetchMethods = class {
       console.error("[arr-card] Overseerr fetch error:", e);
     }
   }
-  async _fetchTrending() {
+  // Společný helper pro stránkované Overseerr fetche (trending/popular/tvUpcoming)
+  async _fetchOverseerrPaged(endpoint, dataKey, section) {
     try {
       const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/trending?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/trending?page=2").catch(() => ({ results: [] }))
+        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=1`),
+        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=2`).catch(() => ({ results: [] }))
       ]);
-      this._trending = [...d1.results || [], ...d2.results || []];
-      this._overlayApiTotalPages.trending = d1.totalPages || 1;
-      this._overlayApiPage.trending = 2;
-      if (this._overlay?.section === "trending") {
-        const isMobile = window.matchMedia("(max-width: 480px)").matches;
-        const rows = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
-        const perPage = isMobile ? rows * 2 : rows * 4;
-        const maxPage = Math.max(0, Math.ceil(this._trending.length / perPage) - 1);
-        if (this._overlay.page > maxPage) this._overlay.page = 0;
-      }
+      this[dataKey] = [...d1.results || [], ...d2.results || []];
+      this._overlayApiTotalPages[section] = d1.totalPages || 1;
+      this._overlayApiPage[section] = 2;
     } catch (e) {
-      console.error("[arr-card] Overseerr trending fetch error:", e);
+      console.error(`[arr-card] Overseerr ${section} fetch error:`, e);
+    }
+  }
+  async _fetchTrending() {
+    await this._fetchOverseerrPaged("trending", "_trending", "trending");
+    if (this._overlay?.section === "trending") {
+      const isMobile = window.matchMedia("(max-width: 480px)").matches;
+      const rows = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
+      const perPage = isMobile ? rows * 2 : rows * 4;
+      const maxPage = Math.max(0, Math.ceil(this._trending.length / perPage) - 1);
+      if (this._overlay.page > maxPage) this._overlay.page = 0;
     }
   }
   // Proaktivně načte další API stránky na pozadí, pokud overlay nemá dost dat
@@ -3109,30 +3118,10 @@ var _FetchMethods = class {
     }
   }
   async _fetchPopular() {
-    try {
-      const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/popular?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/popular?page=2")
-      ]);
-      this._popular = [...d1.results || [], ...d2.results || []];
-      this._overlayApiTotalPages.popular = d1.totalPages || 1;
-      this._overlayApiPage.popular = 2;
-    } catch (e) {
-      console.error("[arr-card] Overseerr popular fetch error:", e);
-    }
+    await this._fetchOverseerrPaged("popular", "_popular", "popular");
   }
   async _fetchTvUpcoming() {
-    try {
-      const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/tv_upcoming?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/tv_upcoming?page=2")
-      ]);
-      this._tvUpcoming = [...d1.results || [], ...d2.results || []];
-      this._overlayApiTotalPages.tvUpcoming = d1.totalPages || 1;
-      this._overlayApiPage.tvUpcoming = 2;
-    } catch (e) {
-      console.error("[arr-card] Overseerr TV upcoming fetch error:", e);
-    }
+    await this._fetchOverseerrPaged("tv_upcoming", "_tvUpcoming", "tvUpcoming");
   }
   async _fetchOverseerrSonarrSettings() {
     try {
@@ -3195,7 +3184,6 @@ var _FetchMethods = class {
     }
   }
   async _openTvRequestOverlay(m, source = "tvUpcoming") {
-    console.log("[arr-card] _openTvRequestOverlay called show=", m?.title, "source=", source);
     this._tvRequestPending = { show: m, seasons: null, selected: null, profileId: null, mediaId: m.id, loading: true, source };
     this._reRenderRight();
     await Promise.allSettled([
@@ -3344,12 +3332,30 @@ var _FetchMethods = class {
       this._sabActiveIds = queue.status === "Paused" ? /* @__PURE__ */ new Set() : active;
       this._sab = queue;
       this._sabConfigured = true;
+      this._fetchVpnIp();
     } catch (e) {
       const status = e?.status_code ?? e?.status ?? e?.response?.status;
       const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
       const isNotConfigured = status === 503 || body.includes("not configured");
       this._sabConfigured = !isNotConfigured;
       console.error("[arr-card] SABnzbd fetch error:", e);
+    }
+  }
+  async _fetchVpnIp() {
+    if (this._vpnIpFetching) return;
+    this._vpnIpFetching = true;
+    try {
+      const res = await this._callApi("GET", "arr_stack/sabnzbd/status");
+      const newLocal = res?.status?.localipv4 || null;
+      const newPublic = res?.status?.publicipv4 || null;
+      const changed = !this._sabVpnFetched || newLocal !== this._sabLocalIp || newPublic !== this._sabPublicIp;
+      this._sabLocalIp = newLocal;
+      this._sabPublicIp = newPublic;
+      this._sabVpnFetched = true;
+      if (changed) this._render();
+    } catch (e) {
+    } finally {
+      this._vpnIpFetching = false;
     }
   }
   async _fetchSabHistory() {
@@ -3737,15 +3743,15 @@ var _RenderLeft = class {
     const isSeeding = isActiveUpload || isStalledSeed;
     let speedCol = "";
     if (isActiveUpload) {
-      speedCol = `<span class="status-pill pill-teal"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px"></ha-icon> ${upSpeed}</span>`;
+      speedCol = this._pill("pill-teal", "mdi:upload", upSpeed);
     } else if (isStalledSeed) {
-      speedCol = `<span class="status-pill pill-teal" style="opacity:0.65"><ha-icon icon="mdi:upload-off" style="--mdc-icon-size:11px"></ha-icon> ${this._t("seeding")}</span>`;
+      speedCol = this._pill("pill-teal", "mdi:upload-off", this._t("seeding"), "opacity:0.65");
     } else if (isCompleted) {
-      speedCol = `<span class="status-pill pill-green"><ha-icon icon="mdi:check-circle" style="--mdc-icon-size:11px"></ha-icon> ${this._t("complete")}</span>`;
+      speedCol = this._pill("pill-green", "mdi:check-circle", this._t("complete"));
     } else if (isError) {
-      speedCol = `<span class="status-pill pill-red"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size:11px"></ha-icon> ${errorStates[state]}</span>`;
+      speedCol = this._pill("pill-red", "mdi:alert-circle", errorStates[state]);
     } else if (isStalledDL) {
-      speedCol = `<span class="status-pill pill-orange"><ha-icon icon="mdi:alert" style="--mdc-icon-size:11px"></ha-icon> ${this._t("stalled")}</span>`;
+      speedCol = this._pill("pill-orange", "mdi:alert", this._t("stalled"));
     } else {
       speedCol = `<span class="dm"><b class="g" style="font-size:13px"><span style="display:inline-block;transform:translateY(-4px)"><ha-icon icon="mdi:download" style="--mdc-icon-size:12px"></ha-icon></span> ${dlSpeed}</b></span>`;
     }
@@ -3796,7 +3802,16 @@ var _RenderLeft = class {
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:8px">
-        ${this._appIcon("sab")}
+        <div style="position:relative;flex-shrink:0;display:inline-flex;width:26px;height:26px">
+          ${this._appIcon("sab")}
+          ${(() => {
+      if (!this._sabVpnFetched) return "";
+      const vpnOn = !!this._sabLocalIp;
+      const icon = vpnOn ? "mdi:shield-check" : "mdi:shield-off";
+      const cls = vpnOn ? "vpn-shield-ok" : "vpn-shield-fail";
+      return `<ha-icon icon="${icon}" class="vpn-shield ${cls}" style="--mdc-icon-size:13px;position:absolute;bottom:-4px;right:-5px"></ha-icon>`;
+    })()}
+        </div>
         <span class="col-hdr-title">SABnzbd</span>
         <div class="col-hdr-line"></div>
         ${this._sabBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn sab-global-toggle${sabPaused ? " paused" : ""}" title="${sabPaused ? this._t("resumeSab") : this._t("pauseSab")}">
@@ -3950,6 +3965,14 @@ var _RenderLeft = class {
 };
 var renderLeftMixin = _RenderLeft.prototype;
 
+// src/constants.js
+var POPUP_TYPE = {
+  RADARR: "radarr",
+  SONARR: "sonarr",
+  MOVIE: "movie",
+  TV: "tv"
+};
+
 // src/render/right.js
 var _RenderRight = class {
   _renderRight() {
@@ -4067,7 +4090,7 @@ var _RenderRight = class {
       const isMovie = m.mediaType === "movie";
       const title = this._escHtml(m.title || m.name || "");
       const tmdbId = m.id;
-      const popupType = isMovie ? "movie" : "tv";
+      const popupType = isMovie ? POPUP_TYPE.MOVIE : POPUP_TYPE.TV;
       const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
       const poster = m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
       const radarrEntry = isMovie && Array.isArray(this._radarr) ? this._radarr.find((r) => r.tmdbId === tmdbId) : null;
@@ -4101,12 +4124,12 @@ var _RenderRight = class {
       }
       let statusBadge = "";
       if (_isAvail) {
-        statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
       } else if (_isReq) {
         if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-          statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+          statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
         } else {
-          statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+          statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
         }
       }
       const posterHtml = poster ? `<img src="${poster}" alt="${title}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : `<div class="search-mc-ph ${this._grad(tmdbId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
@@ -4116,19 +4139,14 @@ var _RenderRight = class {
         ${posterHtml}
         <span class="media-type-tag">${typeTag}</span>
         ${statusBadge}
-        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${gradColor} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-          <div style="display:flex;align-items:center;gap:4px">
+        ${this._mcGrad(gradColor, `<div style="display:flex;align-items:center;gap:4px">
             <div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
             ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-          </div>
-        </div>
+          </div>`)}
         ${reqOverlay}
       </div>`;
     }).join("");
     return `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr);row-gap:10px">${cards}</div>`;
-  }
-  _statusBadge(html) {
-    return `<div style="position:absolute;top:6px;right:6px;z-index:2">${html}</div>`;
   }
   _pageIndicator(section, itemsOrCount, perPage = 4) {
     const count = Array.isArray(itemsOrCount) ? itemsOrCount.length : itemsOrCount || 0;
@@ -4159,118 +4177,6 @@ var _RenderRight = class {
       </div>
       ${grid}
     </div>`;
-  }
-  // Map full language name → ISO 639-1 code
-  _langCode(name) {
-    const MAP = {
-      Czech: "CS",
-      English: "EN",
-      German: "DE",
-      French: "FR",
-      Spanish: "ES",
-      Italian: "IT",
-      Polish: "PL",
-      Slovak: "SK",
-      Russian: "RU",
-      Japanese: "JA",
-      Korean: "KO",
-      Chinese: "ZH",
-      Portuguese: "PT",
-      Dutch: "NL",
-      Swedish: "SV",
-      Norwegian: "NO",
-      Danish: "DA",
-      Finnish: "FI",
-      Hungarian: "HU",
-      Romanian: "RO",
-      Ukrainian: "UK",
-      Turkish: "TR",
-      Arabic: "AR",
-      Hindi: "HI",
-      Croatian: "HR",
-      Serbian: "SR",
-      Bulgarian: "BG",
-      Greek: "EL",
-      Hebrew: "HE",
-      Thai: "TH"
-    };
-    return MAP[name] || name.substring(0, 2).toUpperCase();
-  }
-  // Max 2 languages, CS first then EN then others
-  _topLangs(langs) {
-    const unique = [...new Set(langs.filter(Boolean))];
-    if (unique.length <= 2) return unique;
-    const priority = ["CS", "EN"];
-    const ordered = [
-      ...priority.filter((l) => unique.includes(l)),
-      ...unique.filter((l) => !priority.includes(l))
-    ];
-    return ordered.slice(0, 2);
-  }
-  _renderRadarrCard(m) {
-    const poster = this._getRadarrPoster(m);
-    const title = this._escHtml(m.title || "Unknown");
-    const grad = "rgba(0,0,0,0.88)";
-    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const ratingVal = m.ratings?.imdb?.value || m.ratings?.tmdb?.value || 0;
-    const rating = ratingVal ? ratingVal.toFixed(1) : "";
-    const hasFile = m.hasFile;
-    const cutoffNotMet = m.movieFile?.qualityCutoffNotMet;
-    const dlFailed = this._radarrQueueFailed.has(m.id);
-    const dlActive = this._radarrQueueActive.has(m.id);
-    let badgeHtml = "";
-    if (hasFile && cutoffNotMet) {
-      badgeHtml = `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>`;
-    } else if (hasFile) {
-      badgeHtml = `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
-    } else if (dlFailed) {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> Selhalo</span></span>`;
-    } else if (dlActive) {
-      badgeHtml = `<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
-    } else {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
-    }
-    const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
-    let audioBadge = "";
-    let subBadge = "";
-    if (hasFile) {
-      let audioLangs = [];
-      if (Array.isArray(m.movieFile?.languages) && m.movieFile.languages.length > 0) {
-        audioLangs = m.movieFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
-      } else if (m.movieFile?.mediaInfo?.audioLanguages) {
-        audioLangs = m.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
-      }
-      if (audioLangs.length > 0) {
-        const codes = this._topLangs(audioLangs).join(" | ");
-        audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
-      }
-      const bz = this._bazarrConfigured ? this._bazarr[m.id] : null;
-      if (bz) {
-        if (bz.missing.length > 0) {
-          const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-        } else if (bz.subtitles.length > 0) {
-          const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-        }
-      }
-    }
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
-    return `
-    <div class="mc" data-popup="radarr" data-tmdbid="${m.tmdbId}" data-title="${title}">
-      ${img}
-      ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
-        ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
-    </div>`;
-  }
-  _getRadarrPoster(m) {
-    if (!m.images) return null;
-    const img = m.images.find((i) => i.coverType === "poster");
-    return img ? img.remoteUrl : null;
   }
   _renderRequestOverlay(movieId, tmdbId) {
     const defProfileId = Number(this._seerrRadarr?.profileId ?? 0);
@@ -4309,41 +4215,6 @@ var _RenderRight = class {
       ${grid}
     </div>`;
   }
-  _renderSonarrCard(s) {
-    const poster = this._getSonarrPoster(s);
-    const title = this._escHtml(s.title || "Unknown");
-    const grad = "rgba(0,0,0,0.88)";
-    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const ratingVal = s.ratings?.imdb?.value || s.ratings?.tmdb?.value || s.ratings?.value || 0;
-    const rating = ratingVal ? ratingVal.toFixed(1) : "";
-    const stats = s.statistics || {};
-    const fileCount = stats.episodeFileCount || 0;
-    const totalCount = stats.totalEpisodeCount || 0;
-    let badgeHtml = "";
-    if (fileCount === 0 && totalCount > 0) {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
-    } else if (fileCount < totalCount) {
-      badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
-    } else if (totalCount > 0) {
-      badgeHtml = `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
-    }
-    const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(s.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
-    return `
-    <div class="mc" data-popup="sonarr" data-tvdbid="${s.tvdbId}" data-tmdbid="${s.tmdbId || ""}" data-title="${title}">
-      ${img}
-      ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
-    </div>`;
-  }
-  _getSonarrPoster(s) {
-    if (!s.images) return null;
-    const img = s.images.find((i) => i.coverType === "poster");
-    return img ? img.remoteUrl : null;
-  }
   _renderRecentlyAdded() {
     const items = this.recentlyAdded;
     const smpCount = this._smpPageCount(items, "recentlyAdded");
@@ -4372,136 +4243,6 @@ var _RenderRight = class {
         ${this._pageIndicator("recentlyRequested", smpCount)}
       </div>
       ${grid}
-    </div>`;
-  }
-  _renderRecentlyAddedCard(item) {
-    const isMovie = item._mediaType === "movie";
-    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
-    const title = this._escHtml(item.title || "Unknown");
-    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-    const popup = isMovie ? "radarr" : "sonarr";
-    const grad = "rgba(0,0,0,0.88)";
-    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
-    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
-    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
-    const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
-    let badgeHtml = "";
-    if (isMovie) {
-      badgeHtml = item.movieFile?.qualityCutoffNotMet ? `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
-    } else {
-      const epFile = this._sonarrEpFiles?.[item.id];
-      if (epFile) {
-        const match = (epFile.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
-        badgeHtml = match ? `<span class="badge b-st-avail">\u2713<span class="b-txt"> S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
-      } else {
-        const fileCount = item.statistics?.episodeFileCount ?? 0;
-        const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
-        badgeHtml = fileCount < totalCount ? `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
-      }
-    }
-    const statusBadge = this._statusBadge(badgeHtml);
-    const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
-    const rating = ratingVal ? ratingVal.toFixed(1) : "";
-    let audioBadge = "";
-    let subBadge = "";
-    if (isMovie) {
-      let audioLangs = [];
-      if (Array.isArray(item.movieFile?.languages) && item.movieFile.languages.length > 0) {
-        audioLangs = item.movieFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
-      } else if (item.movieFile?.mediaInfo?.audioLanguages) {
-        audioLangs = item.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
-      }
-      if (audioLangs.length > 0) {
-        const codes = this._topLangs(audioLangs).join(" | ");
-        audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
-      }
-      const bz = this._bazarrConfigured ? this._bazarr[item.id] : null;
-      if (bz) {
-        if (bz.missing.length > 0) {
-          const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-        } else if (bz.subtitles.length > 0) {
-          const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-        }
-      }
-    } else {
-      const epFile = this._sonarrEpFiles?.[item.id];
-      if (epFile) {
-        let audioLangs = [];
-        if (Array.isArray(epFile.languages) && epFile.languages.length > 0) {
-          audioLangs = epFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
-        } else if (epFile.mediaInfo?.audioLanguages) {
-          audioLangs = epFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
-        }
-        if (audioLangs.length > 0) {
-          const codes = this._topLangs(audioLangs).join(" | ");
-          audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
-        }
-        const bze = this._bazarrConfigured ? this._bazarrEpisodes?.[epFile.id] : null;
-        if (bze) {
-          if (bze.missing.length > 0) {
-            const langs = this._topLangs(bze.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-            subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-          } else if (bze.subtitles.length > 0) {
-            const langs = this._topLangs(bze.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-            subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
-          }
-        } else if (epFile.mediaInfo?.subtitles) {
-          const subLangs = this._topLangs(
-            epFile.mediaInfo.subtitles.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean)
-          ).join(" | ");
-          if (subLangs) subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${subLangs}</span>`;
-        }
-      }
-    }
-    return `
-    <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
-      ${img}
-      <span class="media-type-tag">${typeTag}</span>
-      ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
-        ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
-    </div>`;
-  }
-  _renderRecentlyRequestedCard(item) {
-    const isMovie = item._mediaType === "movie";
-    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
-    const title = this._escHtml(item.title || "Unknown");
-    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-    const popup = isMovie ? "radarr" : "sonarr";
-    const grad = "rgba(0,0,0,0.88)";
-    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(item.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
-    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
-    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
-    const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
-    let badgeHtml = "";
-    if (isMovie) {
-      const dlActive = this._radarrQueueActive?.has(item.id);
-      const dlFailed = this._radarrQueueFailed?.has(item.id);
-      if (dlFailed) badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> Selhalo</span></span>`;
-      else if (dlActive) badgeHtml = `<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
-      else badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
-    } else {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
-    }
-    const statusBadge = this._statusBadge(badgeHtml);
-    const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
-    const rating = ratingVal ? ratingVal.toFixed(1) : "";
-    return `
-    <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
-      ${img}
-      <span class="media-type-tag">${typeTag}</span>
-      ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
     </div>`;
   }
   _renderUpcoming() {
@@ -4543,63 +4284,6 @@ var _RenderRight = class {
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
-    </div>`;
-  }
-  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null, source = "tvUpcoming" } = {}) {
-    const title = this._escHtml(m.name || m.originalName || "Unknown");
-    const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
-    const dateStr = this.fmtDate(m.firstAirDate || m.first_air_date);
-    const mediaStatus = m.mediaInfo?.status;
-    const sonarrEntry = Array.isArray(this._sonarr) && this._sonarr.find((s) => s.tmdbId === m.id);
-    const inSonarr = !!sonarrEntry;
-    const inSonarrAvail = !!(sonarrEntry && sonarrEntry.statistics?.episodeFileCount > 0);
-    const _inOptimistic = this._optimisticRequested.has(m.id);
-    const _withdrawn = this._withdrawnIds.has(m.id);
-    const _hasPending = this._familyPendingIds.has(m.id);
-    const _stale = mediaStatus >= 3 && !inSonarr && !_inOptimistic && !_hasPending;
-    const _isAvail = (inSonarrAvail || mediaStatus === 5) && !_withdrawn && !_stale;
-    const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inSonarr) && !_withdrawn && !inSonarrAvail && !_stale;
-    const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m.id);
-    const _isAdmin = this._hass.user.is_admin;
-    let actionBtn = "";
-    if (_isAvail) {
-      actionBtn = "";
-    } else if (_isReq) {
-      if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-        actionBtn = "";
-      } else {
-        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
-        actionBtn = withdrawBtn;
-      }
-    } else {
-      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}" data-source="${source}">${this._t("add")}</button>`;
-    }
-    let statusBadge = "";
-    if (_isAvail) {
-      statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
-    } else if (_isReq) {
-      if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-        statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
-      } else {
-        statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
-      }
-    }
-    const grad = "rgba(0,0,0,0.88)";
-    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
-    const img = m.posterPath ? `<img src="https://image.tmdb.org/t/p/w342${m.posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
-    return `
-    <div class="mc" data-popup="tv" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
-      ${img}
-      ${tagHtml}
-      ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
-        <div style="display:flex;align-items:center;gap:4px">
-          <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
-          ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-        </div>
-      </div>
     </div>`;
   }
   _renderTvRequestOverlay() {
@@ -4656,12 +4340,6 @@ var _RenderRight = class {
         </div>
       </div>
     </div>`;
-  }
-  _renderTrendingCard(m, overlayIndex = null) {
-    if (m.mediaType === "tv") {
-      return this._renderTvUpcomingCard(m, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trending" });
-    }
-    return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trending-" + m.id });
   }
   _renderTrending() {
     const items = this._trending || [];
@@ -4854,6 +4532,367 @@ var _RenderRight = class {
       ${grid}
     </div>`;
   }
+  _renderCalendar() {
+    let grid = "";
+    if (!this._calendar || this._calendar.length === 0) {
+      grid = `<div class="placeholder">${this._t("noEpisodes")}</div>`;
+    } else {
+      const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+      grid = this._pagedGrid(this._calendar, "calendar", (ep) => this._renderCalendarCard(ep), cols);
+    }
+    return `
+    <div class="sec-card">
+      <div class="col-hdr" style="margin-bottom:5px">
+        <ha-icon icon="mdi:calendar-clock" style="--mdc-icon-size:24px"></ha-icon>
+        <span class="col-hdr-title">${this._t("newEpisodes")}</span>
+        <div class="col-hdr-line"></div>
+        ${this._pageIndicator("calendar", this._calendar || [])}
+        <span class="sec-badge" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.22)">${this._t("fromSonarr")}</span>
+      </div>
+      ${grid}
+    </div>`;
+  }
+  // ─────────────────────────────────────────────
+  // qBittorrent action API
+  // ─────────────────────────────────────────────
+};
+var renderRightMixin = _RenderRight.prototype;
+
+// src/render/media-cards.js
+var _MediaCardMethods = class {
+  _statusBadge(html) {
+    return `<div style="position:absolute;top:6px;right:6px;z-index:2">${html}</div>`;
+  }
+  // Map full language name → ISO 639-1 code
+  _langCode(name) {
+    const MAP = {
+      Czech: "CS",
+      English: "EN",
+      German: "DE",
+      French: "FR",
+      Spanish: "ES",
+      Italian: "IT",
+      Polish: "PL",
+      Slovak: "SK",
+      Russian: "RU",
+      Japanese: "JA",
+      Korean: "KO",
+      Chinese: "ZH",
+      Portuguese: "PT",
+      Dutch: "NL",
+      Swedish: "SV",
+      Norwegian: "NO",
+      Danish: "DA",
+      Finnish: "FI",
+      Hungarian: "HU",
+      Romanian: "RO",
+      Ukrainian: "UK",
+      Turkish: "TR",
+      Arabic: "AR",
+      Hindi: "HI",
+      Croatian: "HR",
+      Serbian: "SR",
+      Bulgarian: "BG",
+      Greek: "EL",
+      Hebrew: "HE",
+      Thai: "TH"
+    };
+    return MAP[name] || name.substring(0, 2).toUpperCase();
+  }
+  // Max 2 languages, CS first then EN then others
+  _topLangs(langs) {
+    const unique = [...new Set(langs.filter(Boolean))];
+    if (unique.length <= 2) return unique;
+    const priority = ["CS", "EN"];
+    const ordered = [
+      ...priority.filter((l) => unique.includes(l)),
+      ...unique.filter((l) => !priority.includes(l))
+    ];
+    return ordered.slice(0, 2);
+  }
+  _getRadarrPoster(m) {
+    if (!m.images) return null;
+    const img = m.images.find((i) => i.coverType === "poster");
+    return img ? img.remoteUrl : null;
+  }
+  _getSonarrPoster(s) {
+    if (!s.images) return null;
+    const img = s.images.find((i) => i.coverType === "poster");
+    return img ? img.remoteUrl : null;
+  }
+  _renderRadarrCard(m) {
+    const poster = this._getRadarrPoster(m);
+    const title = this._escHtml(m.title || "Unknown");
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const ratingVal = m.ratings?.imdb?.value || m.ratings?.tmdb?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
+    const hasFile = m.hasFile;
+    const cutoffNotMet = m.movieFile?.qualityCutoffNotMet;
+    const dlFailed = this._radarrQueueFailed.has(m.id);
+    const dlActive = this._radarrQueueActive.has(m.id);
+    let badgeHtml = "";
+    if (hasFile && cutoffNotMet) {
+      badgeHtml = this._badge("b-cutoff", "\u26A1", "Upgrade");
+    } else if (hasFile) {
+      badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+    } else if (dlFailed) {
+      badgeHtml = this._badge("b-missing", "\u2717", "Selhalo");
+    } else if (dlActive) {
+      badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
+    } else {
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
+    }
+    const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
+    let audioBadge = "";
+    let subBadge = "";
+    if (hasFile) {
+      let audioLangs = [];
+      if (Array.isArray(m.movieFile?.languages) && m.movieFile.languages.length > 0) {
+        audioLangs = m.movieFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
+      } else if (m.movieFile?.mediaInfo?.audioLanguages) {
+        audioLangs = m.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
+      }
+      if (audioLangs.length > 0) {
+        const codes = this._topLangs(audioLangs).join(" | ");
+        audioBadge = this._badgeIcon("b-audio", "mdi:volume-high", codes);
+      }
+      const bz = this._bazarrConfigured ? this._bazarr[m.id] : null;
+      if (bz) {
+        if (bz.missing.length > 0) {
+          const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = this._badgeIcon("b-sub-miss", "mdi:subtitles-outline", langs);
+        } else if (bz.subtitles.length > 0) {
+          const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", langs);
+        }
+      }
+    }
+    const img = this._mcImg(poster, "\u{1F3AC}", m.id);
+    return `
+    <div class="mc" data-popup="${POPUP_TYPE.RADARR}" data-tmdbid="${m.tmdbId}" data-title="${title}">
+      ${img}
+      ${statusBadge}
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+    </div>`;
+  }
+  _renderSonarrCard(s) {
+    const poster = this._getSonarrPoster(s);
+    const title = this._escHtml(s.title || "Unknown");
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const ratingVal = s.ratings?.imdb?.value || s.ratings?.tmdb?.value || s.ratings?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
+    const stats = s.statistics || {};
+    const fileCount = stats.episodeFileCount || 0;
+    const totalCount = stats.totalEpisodeCount || 0;
+    let badgeHtml = "";
+    if (fileCount === 0 && totalCount > 0) {
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
+    } else if (fileCount < totalCount) {
+      badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
+    } else if (totalCount > 0) {
+      badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+    }
+    const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
+    const img = this._mcImg(poster, "\u{1F4FA}", s.id);
+    return `
+    <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${s.tvdbId}" data-tmdbid="${s.tmdbId || ""}" data-title="${title}">
+      ${img}
+      ${statusBadge}
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+    </div>`;
+  }
+  _renderRecentlyAddedCard(item) {
+    const isMovie = item._mediaType === "movie";
+    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const title = this._escHtml(item.title || "Unknown");
+    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
+    const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id);
+    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+    const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
+    let badgeHtml = "";
+    if (isMovie) {
+      badgeHtml = item.movieFile?.qualityCutoffNotMet ? this._badge("b-cutoff", "\u26A1", "Upgrade") : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+    } else {
+      const epFile = this._sonarrEpFiles?.[item.id];
+      if (epFile) {
+        const match = (epFile.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
+        badgeHtml = match ? this._badge("b-st-avail", "\u2713", `S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}`) : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+      } else {
+        const fileCount = item.statistics?.episodeFileCount ?? 0;
+        const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
+        badgeHtml = fileCount < totalCount ? `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>` : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+      }
+    }
+    const statusBadge = this._statusBadge(badgeHtml);
+    const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
+    let audioBadge = "";
+    let subBadge = "";
+    if (isMovie) {
+      let audioLangs = [];
+      if (Array.isArray(item.movieFile?.languages) && item.movieFile.languages.length > 0) {
+        audioLangs = item.movieFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
+      } else if (item.movieFile?.mediaInfo?.audioLanguages) {
+        audioLangs = item.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
+      }
+      if (audioLangs.length > 0) {
+        const codes = this._topLangs(audioLangs).join(" | ");
+        audioBadge = this._badgeIcon("b-audio", "mdi:volume-high", codes);
+      }
+      const bz = this._bazarrConfigured ? this._bazarr[item.id] : null;
+      if (bz) {
+        if (bz.missing.length > 0) {
+          const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = this._badgeIcon("b-sub-miss", "mdi:subtitles-outline", langs);
+        } else if (bz.subtitles.length > 0) {
+          const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", langs);
+        }
+      }
+    } else {
+      const epFile = this._sonarrEpFiles?.[item.id];
+      if (epFile) {
+        let audioLangs = [];
+        if (Array.isArray(epFile.languages) && epFile.languages.length > 0) {
+          audioLangs = epFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
+        } else if (epFile.mediaInfo?.audioLanguages) {
+          audioLangs = epFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
+        }
+        if (audioLangs.length > 0) {
+          const codes = this._topLangs(audioLangs).join(" | ");
+          audioBadge = this._badgeIcon("b-audio", "mdi:volume-high", codes);
+        }
+        const bze = this._bazarrConfigured ? this._bazarrEpisodes?.[epFile.id] : null;
+        if (bze) {
+          if (bze.missing.length > 0) {
+            const langs = this._topLangs(bze.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+            subBadge = this._badgeIcon("b-sub-miss", "mdi:subtitles-outline", langs);
+          } else if (bze.subtitles.length > 0) {
+            const langs = this._topLangs(bze.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+            subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", langs);
+          }
+        } else if (epFile.mediaInfo?.subtitles) {
+          const subLangs = this._topLangs(
+            epFile.mediaInfo.subtitles.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean)
+          ).join(" | ");
+          if (subLangs) subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", subLangs);
+        }
+      }
+    }
+    return `
+    <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
+      ${img}
+      <span class="media-type-tag">${typeTag}</span>
+      ${statusBadge}
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+    </div>`;
+  }
+  _renderRecentlyRequestedCard(item) {
+    const isMovie = item._mediaType === "movie";
+    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const title = this._escHtml(item.title || "Unknown");
+    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
+    const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id);
+    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+    const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
+    let badgeHtml = "";
+    if (isMovie) {
+      const dlActive = this._radarrQueueActive?.has(item.id);
+      const dlFailed = this._radarrQueueFailed?.has(item.id);
+      if (dlFailed) badgeHtml = this._badge("b-missing", "\u2717", "Selhalo");
+      else if (dlActive) badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
+      else badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
+    } else {
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
+    }
+    const statusBadge = this._statusBadge(badgeHtml);
+    const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
+    const rating = ratingVal ? ratingVal.toFixed(1) : "";
+    return `
+    <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
+      ${img}
+      <span class="media-type-tag">${typeTag}</span>
+      ${statusBadge}
+      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+    </div>`;
+  }
+  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null, source = "tvUpcoming" } = {}) {
+    const title = this._escHtml(m.name || m.originalName || "Unknown");
+    const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
+    const dateStr = this.fmtDate(m.firstAirDate || m.first_air_date);
+    const mediaStatus = m.mediaInfo?.status;
+    const sonarrEntry = Array.isArray(this._sonarr) && this._sonarr.find((s) => s.tmdbId === m.id);
+    const inSonarr = !!sonarrEntry;
+    const inSonarrAvail = !!(sonarrEntry && sonarrEntry.statistics?.episodeFileCount > 0);
+    const _inOptimistic = this._optimisticRequested.has(m.id);
+    const _withdrawn = this._withdrawnIds.has(m.id);
+    const _hasPending = this._familyPendingIds.has(m.id);
+    const _stale = mediaStatus >= 3 && !inSonarr && !_inOptimistic && !_hasPending;
+    const _isAvail = (inSonarrAvail || mediaStatus === 5) && !_withdrawn && !_stale;
+    const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inSonarr) && !_withdrawn && !inSonarrAvail && !_stale;
+    const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m.id);
+    const _isAdmin = this._hass.user.is_admin;
+    let actionBtn = "";
+    if (_isAvail) {
+      actionBtn = "";
+    } else if (_isReq) {
+      if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+        actionBtn = "";
+      } else {
+        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
+        actionBtn = withdrawBtn;
+      }
+    } else {
+      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}" data-source="${source}">${this._t("add")}</button>`;
+    }
+    let statusBadge = "";
+    if (_isAvail) {
+      statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
+    } else if (_isReq) {
+      if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+        statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
+      } else {
+        statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
+      }
+    }
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
+    const img = this._mcImg(m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : null, "\u{1F4FA}", m.id);
+    return `
+    <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+      ${img}
+      ${tagHtml}
+      ${statusBadge}
+      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
+        <div style="display:flex;align-items:center;gap:4px">
+          <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
+          ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
+        </div>`)}
+    </div>`;
+  }
+  _renderTrendingCard(m, overlayIndex = null) {
+    if (m.mediaType === "tv") {
+      return this._renderTvUpcomingCard(m, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trending" });
+    }
+    return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trending-" + m.id });
+  }
   _renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = "", overlayIndex = null, reqKey = String(m.id) } = {}) {
     const title = this._escHtml(m.title || "Unknown");
     const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
@@ -4888,55 +4927,33 @@ var _RenderRight = class {
     }
     let statusBadge = "";
     if (_isAvail) {
-      statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+      statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
     } else if (_isReq) {
       if (inRadarrDownloading) {
-        statusBadge = this._statusBadge(`<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-dl", "\u2193", this._t("badgeDownloading")));
       } else if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-        statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
       } else {
-        statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
       }
     }
     const overlay = this._requestPending?.reqKey === reqKey ? this._renderRequestOverlay(m.id, m.id) : "";
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const posterPath = m.posterPath || m.poster_path || null;
-    const img = posterPath ? `<img src="https://image.tmdb.org/t/p/w342${posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(m.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F3AC}</div>`;
+    const img = this._mcImg(posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m.id);
     const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
     return `
-    <div class="mc" data-popup="movie" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+    <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
       ${tagHtml}
       ${statusBadge}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        ${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
+      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
         <div style="display:flex;align-items:center;gap:4px">
           <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
           ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-        </div>
-      </div>
+        </div>`)}
       ${overlay}
-    </div>`;
-  }
-  _renderCalendar() {
-    let grid = "";
-    if (!this._calendar || this._calendar.length === 0) {
-      grid = `<div class="placeholder">${this._t("noEpisodes")}</div>`;
-    } else {
-      const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
-      grid = this._pagedGrid(this._calendar, "calendar", (ep) => this._renderCalendarCard(ep), cols);
-    }
-    return `
-    <div class="sec-card">
-      <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:calendar-clock" style="--mdc-icon-size:24px"></ha-icon>
-        <span class="col-hdr-title">${this._t("newEpisodes")}</span>
-        <div class="col-hdr-line"></div>
-        ${this._pageIndicator("calendar", this._calendar || [])}
-        <span class="sec-badge" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.22)">${this._t("fromSonarr")}</span>
-      </div>
-      ${grid}
     </div>`;
   }
   _renderCalendarCard(ep) {
@@ -4949,24 +4966,136 @@ var _RenderRight = class {
     const poster = this._getSonarrPoster(series);
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(ep.seriesId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
+    const img = this._mcImg(poster, "\u{1F4FA}", ep.series?.id || ep.seriesId);
     return `
-    <div class="mc" data-popup="sonarr" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
+    <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
       ${img}
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:4px">
+      ${this._mcGrad(grad, `<div style="margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:4px">
           ${dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : "<span></span>"}
           <span class="badge b-ep">${badge}</span>
         </div>
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-      </div>
+        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
-  // ─────────────────────────────────────────────
-  // qBittorrent action API
-  // ─────────────────────────────────────────────
 };
-var renderRightMixin = _RenderRight.prototype;
+var mediaCardsMixin = _MediaCardMethods.prototype;
+
+// src/styles/theme.js
+var _ThemeMethods = class {
+  _hexToRgb(hex) {
+    hex = hex.replace(/^#/, "");
+    if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+    const n = parseInt(hex, 16);
+    return `${n >> 16 & 255},${n >> 8 & 255},${n & 255}`;
+  }
+  // Parse hex or rgb/rgba string → "R, G, B" (strips alpha)
+  _parseColorRgb(str) {
+    if (!str) return null;
+    const s = str.trim();
+    if (s.startsWith("#")) {
+      let hex = s.slice(1);
+      if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+      hex = hex.slice(0, 6);
+      if (hex.length !== 6) return null;
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+      return `${r}, ${g}, ${b}`;
+    }
+    const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (m) return `${m[1]}, ${m[2]}, ${m[3]}`;
+    return null;
+  }
+  // Inject theme CSS custom properties derived from config into shadow DOM
+  _applyTheme() {
+    if (!this.shadowRoot) return;
+    const cfg = (this._config || {}).styles || {};
+    const c = (k) => this._parseColorRgb(cfg[k]);
+    const rules = [];
+    const props = [];
+    const propMap = [
+      ["headingTextColor", "--arr-ht-rgb"],
+      ["headingColor", "--arr-hd-rgb"],
+      ["primaryTextColor", "--arr-pt-rgb"],
+      ["secondaryTextColor", "--arr-st-rgb"],
+      ["pagingButtonTextColor", "--arr-pbt-rgb"],
+      ["downloadButtonTextColor", "--arr-dbt-rgb"],
+      ["tagPillTextColor", "--arr-tp-rgb"],
+      ["pagingButtonBackgroundColor", "--arr-pbb-rgb"],
+      ["pagingDotColor", "--arr-pd-rgb"],
+      ["pagingDotActiveColor", "--arr-pda-rgb"]
+    ];
+    for (const [key, prop] of propMap) {
+      const rgb = c(key);
+      if (rgb) props.push(`${prop}: ${rgb};`);
+    }
+    if (props.length) rules.push(`:host { ${props.join(" ")} }`);
+    const mo = c("modalHeadingTextColor");
+    if (mo) {
+      rules.push(`.popup-overlay .popup-title { color: rgba(${mo}, 1) !important; }`);
+      rules.push(`.popup-overlay .is-f-btn.active { color: rgba(${mo}, 1) !important; }`);
+      rules.push(`.popup-overlay .sn-season-title { color: rgba(${mo}, 1) !important; }`);
+      rules.push(`.popup-overlay .btn-person:not(.active) { color: rgba(${mo}, 0.80) !important; border-color: rgba(${mo}, 0.25) !important; }`);
+    }
+    const mp = c("modalPrimaryTextColor");
+    if (mp) {
+      rules.push(`.popup-overlay .popup-sub { color: rgba(${mp}, 0.55) !important; }`);
+      rules.push(`.popup-overlay .popup-overview { color: rgba(${mp}, 0.75) !important; }`);
+      rules.push(`.popup-overlay .is-rel-title { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .is-indexer { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .is-size { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .is-lang-chip { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .sn-ep-num { color: rgba(${mp}, 0.90) !important; }`);
+      rules.push(`.popup-overlay .sn-ep-title { color: rgba(${mp}, 0.90) !important; }`);
+    }
+    const msc = c("modalSecondaryTextColor");
+    if (msc) {
+      rules.push(`.popup-overlay .is-panel-title { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-count { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-f-btn:not(.active) { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-table thead th { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-s-zero { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-loading { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-q-sd { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-rel-age { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .is-peers-na { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .sn-seasons-label { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .sn-season-stat { color: rgba(${msc}, 0.70) !important; }`);
+      rules.push(`.popup-overlay .sn-ep-date { color: rgba(${msc}, 0.70) !important; }`);
+    }
+    const mci = c("modalCloseButtonIconColor");
+    if (mci) rules.push(`.popup-close { color: rgba(${mci}, 1) !important; }`);
+    const mcb = c("modalCloseButtonBackgroundColor");
+    if (mcb) rules.push(`.popup-close { background: rgba(${mcb}, 1) !important; box-shadow: none !important; }`);
+    const mb = c("modalBackgroundColor");
+    if (mb) {
+      const [mr, mg, mb2] = mb.split(",").map(Number);
+      const lr = Math.round(mr + (255 - mr) * 0.6);
+      const lg = Math.round(mg + (255 - mg) * 0.6);
+      const lb = Math.round(mb2 + (255 - mb2) * 0.6);
+      const mbLight = `${lr}, ${lg}, ${lb}`;
+      rules.push(`.popup-overlay .popup-glass { background: rgba(${mb}, 0.30) !important; }`);
+      rules.push(`.popup-overlay { --is-fade-btm: rgba(${mb}, 0.30) !important; --is-hdr-bg: rgba(${mb}, 0.12) !important; --is-shine: linear-gradient(120deg,rgba(${mbLight},0.55),rgba(${mbLight},0.15) 25%,rgba(${mbLight},0.05) 50%,transparent 70%) !important; }`);
+    }
+    const mov = c("modalOverlayColor");
+    if (mov) rules.push(`.popup-overlay { background: rgba(${mov}, 0.65) !important; }`);
+    const mbt = c("modalButtonTextColor");
+    if (mbt) rules.push(`.popup-overlay .is-open-btn { color: rgba(${mbt}, 1) !important; }`);
+    const mbb = c("modalButtonBackgroundColor");
+    if (mbb) rules.push(`.popup-overlay .is-open-btn:not(.remove-lib-btn):not(.remove-disc-btn) { background: rgba(${mbb}, 0.20) !important; border-color: rgba(${mbb}, 0.40) !important; }`);
+    const mrb = c("modalRemoveButtonBackgroundColor");
+    if (mrb) rules.push(`.popup-overlay .is-open-btn[data-action="remove-confirm"] { background: rgba(${mrb}, 0.20) !important; border-color: rgba(${mrb}, 0.40) !important; }`);
+    let el = this.shadowRoot.getElementById("arr-theme");
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "arr-theme";
+      this.shadowRoot.appendChild(el);
+    }
+    el.textContent = rules.join("\n");
+  }
+};
+var themeMixin = _ThemeMethods.prototype;
 
 // src/wire/index.js
 var _WireMethods = class {
@@ -5796,11 +5925,11 @@ var _PopupMethods = class {
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
     let _radarrId = null;
-    if ((type === "radarr" || type === "movie") && (radarrId || tmdbId)) {
+    if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && (radarrId || tmdbId)) {
       _radarrId = radarrId ?? (this._radarr || []).find((m) => String(m.tmdbId) === String(tmdbId))?.id ?? null;
     }
     let _sonarrSeries = null;
-    if ((type === "sonarr" || type === "tv") && (tvdbId || tmdbId)) {
+    if ((type === POPUP_TYPE.SONARR || type === POPUP_TYPE.TV) && (tvdbId || tmdbId)) {
       const sonarrPool = this._sonarrAll || this._sonarr || [];
       _sonarrSeries = sonarrPool.find(
         (s) => tvdbId && String(s.tvdbId) === String(tvdbId) || tmdbId && String(s.tmdbId) === String(tmdbId)
@@ -5810,17 +5939,17 @@ var _PopupMethods = class {
     this._renderPopupEl();
     try {
       let apiPath = "";
-      if (type === "tv" && tmdbId) {
+      if (type === POPUP_TYPE.TV && tmdbId) {
         apiPath = `arr_stack/overseerr/tv/${tmdbId}`;
-      } else if (type === "sonarr" && tmdbId) {
+      } else if (type === POPUP_TYPE.SONARR && tmdbId) {
         apiPath = `arr_stack/overseerr/tv/${tmdbId}`;
-      } else if ((type === "radarr" || type === "movie") && tmdbId) {
+      } else if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && tmdbId) {
         apiPath = `arr_stack/overseerr/movie/${tmdbId}`;
       } else {
         throw new Error("no_id");
       }
       const data = await this._hass.callApi("GET", apiPath);
-      if ((type === "tv" || type === "sonarr") && !_sonarrSeries && data.externalIds?.tvdbId) {
+      if ((type === POPUP_TYPE.TV || type === POPUP_TYPE.SONARR) && !_sonarrSeries && data.externalIds?.tvdbId) {
         const tvdbFromDetail = String(data.externalIds.tvdbId);
         let sonarrPool = this._sonarrAll || this._sonarr || [];
         _sonarrSeries = sonarrPool.find((s) => String(s.tvdbId) === tvdbFromDetail) ?? null;
@@ -5841,10 +5970,10 @@ var _PopupMethods = class {
   }
   // Build popup data from local arrays when Overseerr is unavailable/fails
   _localFallbackData(type, tmdbId, tvdbId, title) {
-    if (type === "tv") {
+    if (type === POPUP_TYPE.TV) {
       const show = this._tvUpcoming?.find((m) => String(m.id) === String(tmdbId));
       if (show) return {
-        _type: "tv",
+        _type: POPUP_TYPE.TV,
         _localData: true,
         title: show.name || show.originalName || title,
         overview: show.overview || "",
@@ -5854,7 +5983,7 @@ var _PopupMethods = class {
         relatedVideos: []
       };
     }
-    if (type === "sonarr") {
+    if (type === POPUP_TYPE.SONARR) {
       let series = tmdbId && this._sonarr.find((s) => String(s.tmdbId) === String(tmdbId)) || tvdbId && this._sonarr.find((s) => String(s.tvdbId) === String(tvdbId));
       if (!series) {
         const ep = this._calendar.find(
@@ -5864,7 +5993,7 @@ var _PopupMethods = class {
       }
       if (series) {
         return {
-          _type: "sonarr",
+          _type: POPUP_TYPE.SONARR,
           _localData: true,
           title: series.title,
           overview: series.overview || "",
@@ -5875,11 +6004,11 @@ var _PopupMethods = class {
         };
       }
     }
-    if (type === "radarr") {
+    if (type === POPUP_TYPE.RADARR) {
       const movie = this._radarr.find((m) => tmdbId && String(m.tmdbId) === String(tmdbId));
       if (movie) {
         return {
-          _type: "radarr",
+          _type: POPUP_TYPE.RADARR,
           _localData: true,
           title: movie.title,
           overview: movie.overview || "",
@@ -5938,7 +6067,7 @@ var _PopupMethods = class {
       if (t.dataset.action === "is-toggle") {
         if (this._isState) {
           this._isState = null;
-        } else if (this._popup._type === "movie" && !this._popup._radarrId) {
+        } else if (this._popup._type === POPUP_TYPE.MOVIE && !this._popup._radarrId) {
           this._isState = "confirm-add";
         } else {
           this._fetchInteractiveSearch(this._popup._radarrId);
@@ -6146,8 +6275,8 @@ var _PopupMethods = class {
        </a>` : "";
     const posterHtml = posterUrl ? `<img class="popup-poster" src="${posterUrl}" loading="lazy" onerror="this.style.display='none'" />` : "";
     const isAdmin = this._hass.user.is_admin;
-    const isMovieType = d._type === "radarr" || d._type === "movie";
-    const isSonarrType = d._type === "sonarr" || d._type === "tv";
+    const isMovieType = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE;
+    const isSonarrType = d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV;
     const isActive = !!this._isState;
     const snIsActive = this._snIsOpen;
     const personIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -6170,8 +6299,8 @@ var _PopupMethods = class {
     const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const checkSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     const crossSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-    const canRemoveRadarr = isAdmin && (d._type === "radarr" || d._type === "movie") && d._radarrId;
-    const canRemoveSonarr = isAdmin && (d._type === "sonarr" || d._type === "tv") && d._sonarrSeries?.id;
+    const canRemoveRadarr = isAdmin && (d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE) && d._radarrId;
+    const canRemoveSonarr = isAdmin && (d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id;
     const radarrEntry = canRemoveRadarr ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
     const sonarrEntry = canRemoveSonarr ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const hasFiles = !!(radarrEntry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0);
@@ -6226,10 +6355,10 @@ var _PopupMethods = class {
     const df = deleteFiles ? "true" : "false";
     const ex = addExclusion ? "true" : "false";
     try {
-      if ((d._type === "radarr" || d._type === "movie") && d._radarrId) {
+      if ((d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE) && d._radarrId) {
         await this._hass.callApi("DELETE", `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}&addExclusion=${ex}`);
         this._radarr = (this._radarr || []).filter((m) => m.id !== d._radarrId);
-      } else if ((d._type === "sonarr" || d._type === "tv") && d._sonarrSeries?.id) {
+      } else if ((d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id) {
         await this._hass.callApi("DELETE", `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}&addExclusion=${ex}`);
         this._sonarr = (this._sonarr || []).filter((s) => s.id !== d._sonarrSeries.id);
       }
@@ -6309,6 +6438,9 @@ var ArrStackCard = class extends HTMLElement {
     this._qbitTransfer = {};
     this._qbitDiskFreeBytes = null;
     this._sab = {};
+    this._sabLocalIp = null;
+    this._sabPublicIp = null;
+    this._sabVpnFetched = false;
     this._sabFailed = [];
     this._sabRetryBusy = null;
     this._sabDeleteBusy = null;
@@ -6566,118 +6698,6 @@ var ArrStackCard = class extends HTMLElement {
     return 4;
   }
   // Converts "#rrggbb" or "#rgb" to "r,g,b" string for use in rgba()
-  _hexToRgb(hex) {
-    hex = hex.replace(/^#/, "");
-    if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
-    const n = parseInt(hex, 16);
-    return `${n >> 16 & 255},${n >> 8 & 255},${n & 255}`;
-  }
-  // Parse hex or rgb/rgba string → "R, G, B" (strips alpha)
-  _parseColorRgb(str) {
-    if (!str) return null;
-    const s = str.trim();
-    if (s.startsWith("#")) {
-      let hex = s.slice(1);
-      if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
-      hex = hex.slice(0, 6);
-      if (hex.length !== 6) return null;
-      const r = parseInt(hex.slice(0, 2), 16);
-      const g = parseInt(hex.slice(2, 4), 16);
-      const b = parseInt(hex.slice(4, 6), 16);
-      if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
-      return `${r}, ${g}, ${b}`;
-    }
-    const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-    if (m) return `${m[1]}, ${m[2]}, ${m[3]}`;
-    return null;
-  }
-  // Inject theme CSS custom properties derived from config into shadow DOM
-  _applyTheme() {
-    if (!this.shadowRoot) return;
-    const cfg = (this._config || {}).styles || {};
-    const c = (k) => this._parseColorRgb(cfg[k]);
-    const rules = [];
-    const props = [];
-    const propMap = [
-      ["headingTextColor", "--arr-ht-rgb"],
-      ["headingColor", "--arr-hd-rgb"],
-      ["primaryTextColor", "--arr-pt-rgb"],
-      ["secondaryTextColor", "--arr-st-rgb"],
-      ["pagingButtonTextColor", "--arr-pbt-rgb"],
-      ["downloadButtonTextColor", "--arr-dbt-rgb"],
-      ["tagPillTextColor", "--arr-tp-rgb"],
-      ["pagingButtonBackgroundColor", "--arr-pbb-rgb"],
-      ["pagingDotColor", "--arr-pd-rgb"],
-      ["pagingDotActiveColor", "--arr-pda-rgb"]
-    ];
-    for (const [key, prop] of propMap) {
-      const rgb = c(key);
-      if (rgb) props.push(`${prop}: ${rgb};`);
-    }
-    if (props.length) rules.push(`:host { ${props.join(" ")} }`);
-    const mo = c("modalHeadingTextColor");
-    if (mo) {
-      rules.push(`.popup-overlay .popup-title { color: rgba(${mo}, 1) !important; }`);
-      rules.push(`.popup-overlay .is-f-btn.active { color: rgba(${mo}, 1) !important; }`);
-      rules.push(`.popup-overlay .sn-season-title { color: rgba(${mo}, 1) !important; }`);
-      rules.push(`.popup-overlay .btn-person:not(.active) { color: rgba(${mo}, 0.80) !important; border-color: rgba(${mo}, 0.25) !important; }`);
-    }
-    const mp = c("modalPrimaryTextColor");
-    if (mp) {
-      rules.push(`.popup-overlay .popup-sub { color: rgba(${mp}, 0.55) !important; }`);
-      rules.push(`.popup-overlay .popup-overview { color: rgba(${mp}, 0.75) !important; }`);
-      rules.push(`.popup-overlay .is-rel-title { color: rgba(${mp}, 0.90) !important; }`);
-      rules.push(`.popup-overlay .is-indexer { color: rgba(${mp}, 0.90) !important; }`);
-      rules.push(`.popup-overlay .is-size { color: rgba(${mp}, 0.90) !important; }`);
-      rules.push(`.popup-overlay .is-lang-chip { color: rgba(${mp}, 0.90) !important; }`);
-      rules.push(`.popup-overlay .sn-ep-num { color: rgba(${mp}, 0.90) !important; }`);
-      rules.push(`.popup-overlay .sn-ep-title { color: rgba(${mp}, 0.90) !important; }`);
-    }
-    const msc = c("modalSecondaryTextColor");
-    if (msc) {
-      rules.push(`.popup-overlay .is-panel-title { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-count { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-f-btn:not(.active) { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-table thead th { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-s-zero { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-loading { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-q-sd { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-rel-age { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .is-peers-na { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .sn-seasons-label { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .sn-season-stat { color: rgba(${msc}, 0.70) !important; }`);
-      rules.push(`.popup-overlay .sn-ep-date { color: rgba(${msc}, 0.70) !important; }`);
-    }
-    const mci = c("modalCloseButtonIconColor");
-    if (mci) rules.push(`.popup-close { color: rgba(${mci}, 1) !important; }`);
-    const mcb = c("modalCloseButtonBackgroundColor");
-    if (mcb) rules.push(`.popup-close { background: rgba(${mcb}, 1) !important; box-shadow: none !important; }`);
-    const mb = c("modalBackgroundColor");
-    if (mb) {
-      const [mr, mg, mb2] = mb.split(",").map(Number);
-      const lr = Math.round(mr + (255 - mr) * 0.6);
-      const lg = Math.round(mg + (255 - mg) * 0.6);
-      const lb = Math.round(mb2 + (255 - mb2) * 0.6);
-      const mbLight = `${lr}, ${lg}, ${lb}`;
-      rules.push(`.popup-overlay .popup-glass { background: rgba(${mb}, 0.30) !important; }`);
-      rules.push(`.popup-overlay { --is-fade-btm: rgba(${mb}, 0.30) !important; --is-hdr-bg: rgba(${mb}, 0.12) !important; --is-shine: linear-gradient(120deg,rgba(${mbLight},0.55),rgba(${mbLight},0.15) 25%,rgba(${mbLight},0.05) 50%,transparent 70%) !important; }`);
-    }
-    const mov = c("modalOverlayColor");
-    if (mov) rules.push(`.popup-overlay { background: rgba(${mov}, 0.65) !important; }`);
-    const mbt = c("modalButtonTextColor");
-    if (mbt) rules.push(`.popup-overlay .is-open-btn { color: rgba(${mbt}, 1) !important; }`);
-    const mbb = c("modalButtonBackgroundColor");
-    if (mbb) rules.push(`.popup-overlay .is-open-btn:not(.remove-lib-btn):not(.remove-disc-btn) { background: rgba(${mbb}, 0.20) !important; border-color: rgba(${mbb}, 0.40) !important; }`);
-    const mrb = c("modalRemoveButtonBackgroundColor");
-    if (mrb) rules.push(`.popup-overlay .is-open-btn[data-action="remove-confirm"] { background: rgba(${mrb}, 0.20) !important; border-color: rgba(${mrb}, 0.40) !important; }`);
-    let el = this.shadowRoot.getElementById("arr-theme");
-    if (!el) {
-      el = document.createElement("style");
-      el.id = "arr-theme";
-      this.shadowRoot.appendChild(el);
-    }
-    el.textContent = rules.join("\n");
-  }
   // ─────────────────────────────────────────────
   // Formatters
   // ─────────────────────────────────────────────
@@ -6726,6 +6746,29 @@ var ArrStackCard = class extends HTMLElement {
     return this._gradientMap[key];
   }
   // ─────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // Badge / pill helpers
+  // ─────────────────────────────────────────────
+  /** Media card poster img + gradient placeholder fallback */
+  _mcImg(poster, emoji, gradId, phClass = "") {
+    return poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${phClass}${this._grad(gradId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${emoji}</div>`;
+  }
+  /** Media card gradient footer overlay */
+  _mcGrad(grad, inner) {
+    return `<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,${grad} 0%,transparent 80%);padding:28px 6px 6px;z-index:1">${inner}</div>`;
+  }
+  /** Media card badge with text: <span class="badge {cls}">{icon}<span class="b-txt"> {text}</span></span> */
+  _badge(cls, icon, text) {
+    return `<span class="badge ${cls}">${icon}<span class="b-txt"> ${text}</span></span>`;
+  }
+  /** Media card badge with mdi icon: <span class="badge {cls}"><ha-icon ...> {text}</span> */
+  _badgeIcon(cls, mdiIcon, text) {
+    return `<span class="badge ${cls}"><ha-icon icon="${mdiIcon}" style="--mdc-icon-size:9px"></ha-icon> ${text}</span>`;
+  }
+  /** Download panel status pill: <span class="status-pill {cls}"><ha-icon ...> {text}</span> */
+  _pill(cls, mdiIcon, text, style = "") {
+    return `<span class="status-pill ${cls}"${style ? ` style="${style}"` : ""}><ha-icon icon="${mdiIcon}" style="--mdc-icon-size:11px"></ha-icon> ${text}</span>`;
+  }
   // App SVG icons (white, 22×22)
   // ─────────────────────────────────────────────
   _appIcon(app) {
@@ -6984,6 +7027,14 @@ var ArrStackCard = class extends HTMLElement {
   _measureAndLockHeight() {
     const right = this.shadowRoot.getElementById("col-right");
     if (!right) return;
+    if (this._overlay?.section && this._rightMaxH) {
+      right.style.minHeight = this._rightMaxH + "px";
+      this._wirePageButtons();
+      this._wirePopup();
+      this._wireOverseerrButtons();
+      this._wireSearch();
+      return;
+    }
     const savedPage = this._rightPage;
     const savedPages = { ...this._pages };
     let maxH = 0;
@@ -7258,6 +7309,8 @@ applyMixin(ArrStackCard.prototype, sonarrIsMixin);
 applyMixin(ArrStackCard.prototype, fetchMixin);
 applyMixin(ArrStackCard.prototype, renderLeftMixin);
 applyMixin(ArrStackCard.prototype, renderRightMixin);
+applyMixin(ArrStackCard.prototype, mediaCardsMixin);
+applyMixin(ArrStackCard.prototype, themeMixin);
 applyMixin(ArrStackCard.prototype, wireMixin);
 applyMixin(ArrStackCard.prototype, popupMixin);
 customElements.define("arr-stack-card", ArrStackCard);
