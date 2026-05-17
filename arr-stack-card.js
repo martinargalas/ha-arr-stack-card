@@ -3072,24 +3072,28 @@ var _FetchMethods = class {
       console.error("[arr-card] Overseerr fetch error:", e);
     }
   }
-  async _fetchTrending() {
+  // Společný helper pro stránkované Overseerr fetche (trending/popular/tvUpcoming)
+  async _fetchOverseerrPaged(endpoint, dataKey, section) {
     try {
       const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/trending?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/trending?page=2").catch(() => ({ results: [] }))
+        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=1`),
+        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=2`).catch(() => ({ results: [] }))
       ]);
-      this._trending = [...d1.results || [], ...d2.results || []];
-      this._overlayApiTotalPages.trending = d1.totalPages || 1;
-      this._overlayApiPage.trending = 2;
-      if (this._overlay?.section === "trending") {
-        const isMobile = window.matchMedia("(max-width: 480px)").matches;
-        const rows = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
-        const perPage = isMobile ? rows * 2 : rows * 4;
-        const maxPage = Math.max(0, Math.ceil(this._trending.length / perPage) - 1);
-        if (this._overlay.page > maxPage) this._overlay.page = 0;
-      }
+      this[dataKey] = [...d1.results || [], ...d2.results || []];
+      this._overlayApiTotalPages[section] = d1.totalPages || 1;
+      this._overlayApiPage[section] = 2;
     } catch (e) {
-      console.error("[arr-card] Overseerr trending fetch error:", e);
+      console.error(`[arr-card] Overseerr ${section} fetch error:`, e);
+    }
+  }
+  async _fetchTrending() {
+    await this._fetchOverseerrPaged("trending", "_trending", "trending");
+    if (this._overlay?.section === "trending") {
+      const isMobile = window.matchMedia("(max-width: 480px)").matches;
+      const rows = Math.max(1, parseInt(this._cfg.categoriesCount) || 3);
+      const perPage = isMobile ? rows * 2 : rows * 4;
+      const maxPage = Math.max(0, Math.ceil(this._trending.length / perPage) - 1);
+      if (this._overlay.page > maxPage) this._overlay.page = 0;
     }
   }
   // Proaktivně načte další API stránky na pozadí, pokud overlay nemá dost dat
@@ -3114,30 +3118,10 @@ var _FetchMethods = class {
     }
   }
   async _fetchPopular() {
-    try {
-      const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/popular?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/popular?page=2")
-      ]);
-      this._popular = [...d1.results || [], ...d2.results || []];
-      this._overlayApiTotalPages.popular = d1.totalPages || 1;
-      this._overlayApiPage.popular = 2;
-    } catch (e) {
-      console.error("[arr-card] Overseerr popular fetch error:", e);
-    }
+    await this._fetchOverseerrPaged("popular", "_popular", "popular");
   }
   async _fetchTvUpcoming() {
-    try {
-      const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/tv_upcoming?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/tv_upcoming?page=2")
-      ]);
-      this._tvUpcoming = [...d1.results || [], ...d2.results || []];
-      this._overlayApiTotalPages.tvUpcoming = d1.totalPages || 1;
-      this._overlayApiPage.tvUpcoming = 2;
-    } catch (e) {
-      console.error("[arr-card] Overseerr TV upcoming fetch error:", e);
-    }
+    await this._fetchOverseerrPaged("tv_upcoming", "_tvUpcoming", "tvUpcoming");
   }
   async _fetchOverseerrSonarrSettings() {
     try {
