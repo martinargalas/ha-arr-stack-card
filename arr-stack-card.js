@@ -3756,15 +3756,15 @@ var _RenderLeft = class {
     const isSeeding = isActiveUpload || isStalledSeed;
     let speedCol = "";
     if (isActiveUpload) {
-      speedCol = `<span class="status-pill pill-teal"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px"></ha-icon> ${upSpeed}</span>`;
+      speedCol = this._pill("pill-teal", "mdi:upload", upSpeed);
     } else if (isStalledSeed) {
-      speedCol = `<span class="status-pill pill-teal" style="opacity:0.65"><ha-icon icon="mdi:upload-off" style="--mdc-icon-size:11px"></ha-icon> ${this._t("seeding")}</span>`;
+      speedCol = this._pill("pill-teal", "mdi:upload-off", this._t("seeding"), "opacity:0.65");
     } else if (isCompleted) {
-      speedCol = `<span class="status-pill pill-green"><ha-icon icon="mdi:check-circle" style="--mdc-icon-size:11px"></ha-icon> ${this._t("complete")}</span>`;
+      speedCol = this._pill("pill-green", "mdi:check-circle", this._t("complete"));
     } else if (isError) {
-      speedCol = `<span class="status-pill pill-red"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size:11px"></ha-icon> ${errorStates[state]}</span>`;
+      speedCol = this._pill("pill-red", "mdi:alert-circle", errorStates[state]);
     } else if (isStalledDL) {
-      speedCol = `<span class="status-pill pill-orange"><ha-icon icon="mdi:alert" style="--mdc-icon-size:11px"></ha-icon> ${this._t("stalled")}</span>`;
+      speedCol = this._pill("pill-orange", "mdi:alert", this._t("stalled"));
     } else {
       speedCol = `<span class="dm"><b class="g" style="font-size:13px"><span style="display:inline-block;transform:translateY(-4px)"><ha-icon icon="mdi:download" style="--mdc-icon-size:12px"></ha-icon></span> ${dlSpeed}</b></span>`;
     }
@@ -4137,12 +4137,12 @@ var _RenderRight = class {
       }
       let statusBadge = "";
       if (_isAvail) {
-        statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
       } else if (_isReq) {
         if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-          statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+          statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
         } else {
-          statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+          statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
         }
       }
       const posterHtml = poster ? `<img src="${poster}" alt="${title}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : `<div class="search-mc-ph ${this._grad(tmdbId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
@@ -4256,15 +4256,15 @@ var _RenderRight = class {
     const dlActive = this._radarrQueueActive.has(m.id);
     let badgeHtml = "";
     if (hasFile && cutoffNotMet) {
-      badgeHtml = `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>`;
+      badgeHtml = this._badge("b-cutoff", "\u26A1", "Upgrade");
     } else if (hasFile) {
-      badgeHtml = `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
     } else if (dlFailed) {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> Selhalo</span></span>`;
+      badgeHtml = this._badge("b-missing", "\u2717", "Selhalo");
     } else if (dlActive) {
-      badgeHtml = `<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
+      badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
     } else {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     }
     const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
     let audioBadge = "";
@@ -4278,16 +4278,16 @@ var _RenderRight = class {
       }
       if (audioLangs.length > 0) {
         const codes = this._topLangs(audioLangs).join(" | ");
-        audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
+        audioBadge = this._badgeIcon("b-audio", "mdi:volume-high", codes);
       }
       const bz = this._bazarrConfigured ? this._bazarr[m.id] : null;
       if (bz) {
         if (bz.missing.length > 0) {
           const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+          subBadge = this._badgeIcon("b-sub-miss", "mdi:subtitles-outline", langs);
         } else if (bz.subtitles.length > 0) {
           const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+          subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", langs);
         }
       }
     }
@@ -4357,11 +4357,11 @@ var _RenderRight = class {
     const totalCount = stats.totalEpisodeCount || 0;
     let badgeHtml = "";
     if (fileCount === 0 && totalCount > 0) {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     } else if (fileCount < totalCount) {
       badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
     } else if (totalCount > 0) {
-      badgeHtml = `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
     }
     const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
     const img = poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div class="${this._grad(s.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">\u{1F4FA}</div>`;
@@ -4424,16 +4424,16 @@ var _RenderRight = class {
     const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
     let badgeHtml = "";
     if (isMovie) {
-      badgeHtml = item.movieFile?.qualityCutoffNotMet ? `<span class="badge b-cutoff">\u26A1<span class="b-txt"> Upgrade</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+      badgeHtml = item.movieFile?.qualityCutoffNotMet ? this._badge("b-cutoff", "\u26A1", "Upgrade") : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
     } else {
       const epFile = this._sonarrEpFiles?.[item.id];
       if (epFile) {
         const match = (epFile.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
-        badgeHtml = match ? `<span class="badge b-st-avail">\u2713<span class="b-txt"> S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+        badgeHtml = match ? this._badge("b-st-avail", "\u2713", `S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}`) : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
       } else {
         const fileCount = item.statistics?.episodeFileCount ?? 0;
         const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
-        badgeHtml = fileCount < totalCount ? `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>` : `<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`;
+        badgeHtml = fileCount < totalCount ? `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>` : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
       }
     }
     const statusBadge = this._statusBadge(badgeHtml);
@@ -4450,16 +4450,16 @@ var _RenderRight = class {
       }
       if (audioLangs.length > 0) {
         const codes = this._topLangs(audioLangs).join(" | ");
-        audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
+        audioBadge = this._badgeIcon("b-audio", "mdi:volume-high", codes);
       }
       const bz = this._bazarrConfigured ? this._bazarr[item.id] : null;
       if (bz) {
         if (bz.missing.length > 0) {
           const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+          subBadge = this._badgeIcon("b-sub-miss", "mdi:subtitles-outline", langs);
         } else if (bz.subtitles.length > 0) {
           const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-          subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+          subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", langs);
         }
       }
     } else {
@@ -4473,22 +4473,22 @@ var _RenderRight = class {
         }
         if (audioLangs.length > 0) {
           const codes = this._topLangs(audioLangs).join(" | ");
-          audioBadge = `<span class="badge b-audio"><ha-icon icon="mdi:volume-high" style="--mdc-icon-size:9px"></ha-icon> ${codes}</span>`;
+          audioBadge = this._badgeIcon("b-audio", "mdi:volume-high", codes);
         }
         const bze = this._bazarrConfigured ? this._bazarrEpisodes?.[epFile.id] : null;
         if (bze) {
           if (bze.missing.length > 0) {
             const langs = this._topLangs(bze.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-            subBadge = `<span class="badge b-sub-miss"><ha-icon icon="mdi:subtitles-outline" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+            subBadge = this._badgeIcon("b-sub-miss", "mdi:subtitles-outline", langs);
           } else if (bze.subtitles.length > 0) {
             const langs = this._topLangs(bze.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
-            subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${langs}</span>`;
+            subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", langs);
           }
         } else if (epFile.mediaInfo?.subtitles) {
           const subLangs = this._topLangs(
             epFile.mediaInfo.subtitles.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean)
           ).join(" | ");
-          if (subLangs) subBadge = `<span class="badge b-sub-ok"><ha-icon icon="mdi:subtitles" style="--mdc-icon-size:9px"></ha-icon> ${subLangs}</span>`;
+          if (subLangs) subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", subLangs);
         }
       }
     }
@@ -4520,11 +4520,11 @@ var _RenderRight = class {
     if (isMovie) {
       const dlActive = this._radarrQueueActive?.has(item.id);
       const dlFailed = this._radarrQueueFailed?.has(item.id);
-      if (dlFailed) badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> Selhalo</span></span>`;
-      else if (dlActive) badgeHtml = `<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`;
-      else badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+      if (dlFailed) badgeHtml = this._badge("b-missing", "\u2717", "Selhalo");
+      else if (dlActive) badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
+      else badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     } else {
-      badgeHtml = `<span class="badge b-missing">\u2717<span class="b-txt"> ${this._t("badgeMissing")}</span></span>`;
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     }
     const statusBadge = this._statusBadge(badgeHtml);
     const ratingVal = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.value || 0;
@@ -4612,12 +4612,12 @@ var _RenderRight = class {
     }
     let statusBadge = "";
     if (_isAvail) {
-      statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+      statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
     } else if (_isReq) {
       if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-        statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
       } else {
-        statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
       }
     }
     const grad = "rgba(0,0,0,0.88)";
@@ -4924,14 +4924,14 @@ var _RenderRight = class {
     }
     let statusBadge = "";
     if (_isAvail) {
-      statusBadge = this._statusBadge(`<span class="badge b-st-avail">\u2713<span class="b-txt"> ${this._t("badgeAvailable")}</span></span>`);
+      statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
     } else if (_isReq) {
       if (inRadarrDownloading) {
-        statusBadge = this._statusBadge(`<span class="badge b-dl">\u2193<span class="b-txt"> ${this._t("badgeDownloading")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-dl", "\u2193", this._t("badgeDownloading")));
       } else if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
-        statusBadge = this._statusBadge(`<span class="badge b-st-proc">\u2193<span class="b-txt"> ${this._t("badgeAdded")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
       } else {
-        statusBadge = this._statusBadge(`<span class="badge b-st-pend">\u23F1<span class="b-txt"> ${this._t("badgePending")}</span></span>`);
+        statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
       }
     }
     const overlay = this._requestPending?.reqKey === reqKey ? this._renderRequestOverlay(m.id, m.id) : "";
@@ -6765,6 +6765,21 @@ var ArrStackCard = class extends HTMLElement {
     return this._gradientMap[key];
   }
   // ─────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // Badge / pill helpers
+  // ─────────────────────────────────────────────
+  /** Media card badge with text: <span class="badge {cls}">{icon}<span class="b-txt"> {text}</span></span> */
+  _badge(cls, icon, text) {
+    return `<span class="badge ${cls}">${icon}<span class="b-txt"> ${text}</span></span>`;
+  }
+  /** Media card badge with mdi icon: <span class="badge {cls}"><ha-icon ...> {text}</span> */
+  _badgeIcon(cls, mdiIcon, text) {
+    return `<span class="badge ${cls}"><ha-icon icon="${mdiIcon}" style="--mdc-icon-size:9px"></ha-icon> ${text}</span>`;
+  }
+  /** Download panel status pill: <span class="status-pill {cls}"><ha-icon ...> {text}</span> */
+  _pill(cls, mdiIcon, text, style = "") {
+    return `<span class="status-pill ${cls}"${style ? ` style="${style}"` : ""}><ha-icon icon="${mdiIcon}" style="--mdc-icon-size:11px"></ha-icon> ${text}</span>`;
+  }
   // App SVG icons (white, 22×22)
   // ─────────────────────────────────────────────
   _appIcon(app) {
