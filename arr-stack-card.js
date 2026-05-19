@@ -3075,7 +3075,9 @@ var _FetchMethods = class {
       this._fetchPendingRequests(),
       this._fetchMyPendingRequests(),
       this._fetchRadarrTags(),
-      this._fetchSonarrTags()
+      this._fetchSonarrTags(),
+      this._fetchRadarrRootFolders(),
+      this._fetchSonarrRootFolders()
     ]);
     this._render();
   }
@@ -3287,6 +3289,13 @@ var _FetchMethods = class {
         const match = this._sonarrProfiles.find((p) => p.name === profileName);
         if (match) profileId = match.id;
       }
+      const tagName = this._cfgGet("discover", "oneClickDefaultShowTag", "");
+      let tagId = null;
+      if (tagName && this._sonarrTags.length > 0) {
+        const tagMatch = this._sonarrTags.find((t) => t.label === tagName);
+        if (tagMatch) tagId = tagMatch.id;
+      }
+      const cfgRootFolder = this._cfgGet("discover", "oneClickDefaultShowRootFolder", "") || null;
       const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
       const season1 = (detail.seasons || []).find((s) => s.seasonNumber === 1);
       const seasons = season1 ? [1] : [(detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0]?.seasonNumber].filter(Boolean);
@@ -3298,9 +3307,10 @@ var _FetchMethods = class {
       if (this._seerrSonarr) {
         body.serverId = this._seerrSonarr.serverId;
         body.profileId = profileId;
-        body.rootFolder = this._seerrSonarr.rootFolder;
+        body.rootFolder = cfgRootFolder || this._seerrSonarr.rootFolder;
       }
       if (!this._hass.user.is_admin) body.userMode = "family";
+      if (tagId !== null) body.tags = [parseInt(tagId)];
       const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
       if (reqId && !this._hass.user.is_admin) {
@@ -3338,7 +3348,7 @@ var _FetchMethods = class {
       this._wireTvOverlay();
     }
   }
-  async _addOverseerrTvRequest(mediaId, seasons, profileId, tagId = null) {
+  async _addOverseerrTvRequest(mediaId, seasons, profileId, tagId = null, rootFolder = null) {
     const showId = this._tvRequestPending?.show?.id;
     if (showId) {
       this._optimisticRequested.add(showId);
@@ -3352,7 +3362,7 @@ var _FetchMethods = class {
       if (this._seerrSonarr) {
         body.serverId = this._seerrSonarr.serverId;
         body.profileId = profileId !== null ? parseInt(profileId) : this._seerrSonarr.profileId;
-        body.rootFolder = this._seerrSonarr.rootFolder;
+        body.rootFolder = rootFolder || this._seerrSonarr.rootFolder;
       }
       if (tagId !== null) body.tags = [parseInt(tagId)];
       if (!this._hass.user.is_admin) body.userMode = "family";
@@ -3599,6 +3609,22 @@ var _FetchMethods = class {
     } catch (e) {
     }
   }
+  async _fetchRadarrRootFolders() {
+    if (this._radarrRootFolders.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr/rootfolders");
+      if (Array.isArray(data)) this._radarrRootFolders = data;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarrRootFolders() {
+    if (this._sonarrRootFolders.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr/rootfolders");
+      if (Array.isArray(data)) this._sonarrRootFolders = data;
+    } catch (e) {
+    }
+  }
   // ─────────────────────────────────────────────
   // Sonarr Interactive Search
   // ─────────────────────────────────────────────
@@ -3729,7 +3755,7 @@ var _FetchMethods = class {
       }
     }, 80);
   }
-  async _addOverseerrRequest(mediaId, profileId = null, tagId = null) {
+  async _addOverseerrRequest(mediaId, profileId = null, tagId = null, rootFolder = null) {
     this._optimisticRequested.add(mediaId);
     this._withdrawnIds.delete(mediaId);
     this._requestPending = null;
@@ -3740,7 +3766,7 @@ var _FetchMethods = class {
       if (this._seerrRadarr) {
         body.serverId = this._seerrRadarr.serverId;
         body.profileId = profileId !== null ? parseInt(profileId) : this._seerrRadarr.profileId;
-        body.rootFolder = this._seerrRadarr.rootFolder;
+        body.rootFolder = rootFolder || this._seerrRadarr.rootFolder;
       }
       if (tagId !== null) body.tags = [parseInt(tagId)];
       if (!this._hass.user.is_admin) body.userMode = "family";
@@ -4340,6 +4366,11 @@ var _RenderRight = class {
       <option value="">\u2014 no tag \u2014</option>
       ${this._radarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
     </select>` : "";
+    const rootFolderHtml = isAdmin && this._radarrRootFolders.length > 1 ? `
+    <span class="req-label">Root folder</span>
+    <select class="req-select" id="req-rootfolder-${movieId}">
+      ${this._radarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
+    </select>` : "";
     return `
     <div class="req-overlay">
       <div class="req-inner">
@@ -4348,6 +4379,7 @@ var _RenderRight = class {
           ${profileOptions}
         </select>
         ${tagHtml}
+        ${rootFolderHtml}
         <div class="req-actions">
           <button class="req-cancel" data-req="cancel">${this._t("cancel")}</button>
           <button class="req-confirm" data-req="confirm" data-movieid="${movieId}" data-tmdb="${tmdbId}">
@@ -4485,6 +4517,10 @@ var _RenderRight = class {
             <select class="req-select" id="tv-req-tag">
               <option value="">\u2014 no tag \u2014</option>
               ${this._sonarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
+            </select>` : ""}
+            ${this._hass?.user?.is_admin && this._sonarrRootFolders.length > 1 ? `
+            <select class="req-select" id="tv-req-rootfolder">
+              ${this._sonarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
             </select>` : ""}
           </div>
         </div>
@@ -4666,6 +4702,10 @@ var _RenderRight = class {
           <select class="req-select" id="tv-req-tag-abs">
             <option value="">\u2014 no tag \u2014</option>
             ${this._sonarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
+          </select>` : ""}
+          ${this._hass?.user?.is_admin && this._sonarrRootFolders.length > 1 ? `
+          <select class="req-select" id="tv-req-rootfolder-abs">
+            ${this._sonarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
           </select>` : ""}
         </div>
       </div>
@@ -5432,9 +5472,16 @@ var _WireMethods = class {
             const match = this._radarrProfiles.find((p) => p.name === profileName);
             profileId = match ? match.id : null;
           }
-          await this._addOverseerrRequest(tmdbId, profileId);
+          const cfgMovieTag = this._cfgGet("discover", "oneClickDefaultMovieTag", "") || "";
+          let movieTagId = null;
+          if (cfgMovieTag && this._radarrTags.length > 0) {
+            const tm = this._radarrTags.find((t) => t.label === cfgMovieTag);
+            if (tm) movieTagId = tm.id;
+          }
+          const cfgMovieRootFolder = this._cfgGet("discover", "oneClickDefaultMovieRootFolder", "") || null;
+          await this._addOverseerrRequest(tmdbId, profileId, movieTagId, cfgMovieRootFolder);
         } else {
-          await Promise.all([this._fetchRadarrProfiles(), this._fetchRadarrTags()]);
+          await Promise.all([this._fetchRadarrProfiles(), this._fetchRadarrTags(), this._fetchRadarrRootFolders()]);
           const reqKey = btn.dataset.reqkey || String(tmdbId);
           this._requestPending = { movieId, tmdbId, reqKey };
           this._reRenderRight();
@@ -5455,11 +5502,13 @@ var _WireMethods = class {
         const tmdbId = parseInt(btn.dataset.tmdb, 10);
         const sel = this.shadowRoot.getElementById(`req-select-${movieId}`);
         const tagSel = this.shadowRoot.getElementById(`req-tag-${movieId}`);
+        const rfSel = this.shadowRoot.getElementById(`req-rootfolder-${movieId}`);
         const profileId = sel ? sel.value : null;
         const tagId = tagSel ? tagSel.value : null;
+        const rootFolder = rfSel?.value || null;
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
-        await this._addOverseerrRequest(tmdbId, profileId, tagId || null);
+        await this._addOverseerrRequest(tmdbId, profileId, tagId || null, rootFolder);
       });
     });
     const tvBtns = this.shadowRoot.querySelectorAll(".tv-req-open");
@@ -5509,11 +5558,13 @@ var _WireMethods = class {
         if (!seasons.length) return;
         const profileSel = this.shadowRoot.getElementById("tv-req-profile");
         const tagSel = this.shadowRoot.getElementById("tv-req-tag");
+        const rfSel = this.shadowRoot.getElementById("tv-req-rootfolder");
         const profileId = profileSel ? profileSel.value : null;
         const tagId = tagSel?.value || null;
+        const rootFolder = rfSel?.value || null;
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
-        await this._addOverseerrTvRequest(mediaId, seasons, profileId, tagId);
+        await this._addOverseerrTvRequest(mediaId, seasons, profileId, tagId, rootFolder);
       });
     });
     this.shadowRoot.querySelectorAll(".req-withdraw").forEach((btn) => {
@@ -5761,8 +5812,10 @@ var _WireMethods = class {
       if (!checkedSeasons.length) return;
       const profileSel = el.querySelector("#tv-req-profile-abs");
       const tagSel = el.querySelector("#tv-req-tag-abs");
+      const rfSel = el.querySelector("#tv-req-rootfolder-abs");
       const profileId = profileSel ? profileSel.value : null;
       const tagId = tagSel?.value || null;
+      const rootFolder = rfSel?.value || null;
       const mediaId = parseInt(e.currentTarget.dataset.mediaid, 10);
       e.currentTarget.disabled = true;
       e.currentTarget.innerHTML = '<span class="action-spinner" style="width:10px;height:10px;border-width:1.5px"></span>';
@@ -5777,7 +5830,7 @@ var _WireMethods = class {
         if (this._seerrSonarr) {
           body.serverId = this._seerrSonarr.serverId;
           body.profileId = profileId !== null ? parseInt(profileId) : this._seerrSonarr.profileId;
-          body.rootFolder = this._seerrSonarr.rootFolder;
+          body.rootFolder = rootFolder || this._seerrSonarr.rootFolder;
         }
         if (tagId) body.tags = [parseInt(tagId)];
         if (!this._hass.user.is_admin) body.userMode = "family";
@@ -6670,6 +6723,8 @@ var ArrStackCard = class extends HTMLElement {
     this._radarrProfiles = [];
     this._radarrTags = [];
     this._sonarrTags = [];
+    this._radarrRootFolders = [];
+    this._sonarrRootFolders = [];
     this._tvRequestPending = null;
     this._overlay = { section: null, page: 0, tvPending: null };
     this._overlayApiPage = {};
