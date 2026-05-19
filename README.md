@@ -148,9 +148,13 @@ discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
   itemsPerCategory: 4        # columns per category grid  (default: 4)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
-  oneClickRequest: false     # skip quality-profile dialog on movie/show request  (default: false)
+  oneClickRequest: false     # skip request overlay on movie/show request — uses defaults below  (default: false)
   oneClickDefaultMovieProfile: ""  # quality profile name for one-click movie requests
+  oneClickDefaultMovieTag: ""      # Radarr tag label for one-click movie requests  (optional)
+  oneClickDefaultMovieRootFolder: ""  # Radarr root folder path for one-click movie requests  (optional)
   oneClickDefaultShowProfile: ""   # quality profile name for one-click TV requests
+  oneClickDefaultShowTag: ""       # Sonarr tag label for one-click TV requests  (optional)
+  oneClickDefaultShowRootFolder: ""   # Sonarr root folder path for one-click TV requests  (optional)
 
 # Category order & visibility
 categories:
