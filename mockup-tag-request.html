@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Request Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e0e18;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 48px;
+    flex-wrap: wrap;
+    padding: 40px;
+  }
+
+  .scenario { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .scenario-label { color: rgba(255,255,255,0.35); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Card */
+  .mc {
+    width: 148px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    background: #1a1a2e;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .poster {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    display: block;
+    background: linear-gradient(135deg, #2a2a4a, #1a1a3a);
+  }
+  .poster-placeholder {
+    width: 100%;
+    height: 210px;
+    background: linear-gradient(135deg, #1e1e3a 0%, #2d2d50 50%, #1a1a30 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.15);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .card-bottom {
+    padding: 8px 10px 10px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.88);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .card-year {
+    font-size: 10px;
+    color: rgba(255,255,255,0.38);
+    margin-bottom: 8px;
+  }
+  .btn-add {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(10,132,255,0.40);
+    background: rgba(10,132,255,0.12);
+    color: rgba(80,160,255,0.95);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  /* Request overlay — current */
+  .req-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,22,0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+  }
+  .req-inner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .req-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgba(255,255,255,0.38);
+  }
+  .req-select {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-weight: 500;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 24px;
+    cursor: pointer;
+  }
+  .req-select:focus { outline: none; border-color: rgba(10,132,255,0.55); }
+  .req-select option { background: #1e1e3a; }
+
+  .req-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .req-cancel {
+    flex: 1;
+    padding: 6px 8px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.50);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .req-confirm {
+    flex: 1.6;
+    padding: 6px 8px;
+    border-radius: 20px;
+    border: 1px solid rgba(10,132,255,0.45);
+    background: rgba(10,132,255,0.20);
+    color: rgba(100,180,255,0.95);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  /* Tag section */
+  .req-tag-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .req-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .req-tag {
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.50);
+    font-size: 9px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.13s;
+    letter-spacing: 0.02em;
+  }
+  .req-tag.selected {
+    border-color: rgba(10,132,255,0.55);
+    background: rgba(10,132,255,0.20);
+    color: rgba(100,180,255,0.95);
+  }
+  .req-tag:hover {
+    border-color: rgba(255,255,255,0.28);
+    color: rgba(255,255,255,0.80);
+  }
+  .req-tag.selected:hover {
+    border-color: rgba(10,132,255,0.75);
+    color: #fff;
+  }
+
+  /* divider */
+  .req-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 1px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- CURRENT: no tags -->
+<div class="scenario">
+  <div class="scenario-label">Current</div>
+  <div class="mc">
+    <div class="poster-placeholder">POSTER</div>
+    <div class="card-bottom">
+      <div class="card-title">Inception</div>
+      <div class="card-year">2010</div>
+      <button class="btn-add">+ Add</button>
+    </div>
+    <div class="req-overlay">
+      <div class="req-inner">
+        <span class="req-label">Quality</span>
+        <select class="req-select">
+          <option>HD - 720p/1080p</option>
+          <option>4K</option>
+          <option>Any</option>
+        </select>
+        <div class="req-actions">
+          <button class="req-cancel">Cancel</button>
+          <button class="req-confirm">↓ Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROPOSED: with tag chips -->
+<div class="scenario">
+  <div class="scenario-label">With tags — chip picker</div>
+  <div class="mc">
+    <div class="poster-placeholder">POSTER</div>
+    <div class="card-bottom">
+      <div class="card-title">Inception</div>
+      <div class="card-year">2010</div>
+      <button class="btn-add">+ Add</button>
+    </div>
+    <div class="req-overlay">
+      <div class="req-inner">
+        <span class="req-label">Quality</span>
+        <select class="req-select">
+          <option>HD - 720p/1080p</option>
+          <option>4K</option>
+          <option>Any</option>
+        </select>
+        <div class="req-divider"></div>
+        <div class="req-tag-wrap">
+          <span class="req-label">Tag</span>
+          <div class="req-tags">
+            <span class="req-tag selected">Disk A</span>
+            <span class="req-tag">Disk B</span>
+            <span class="req-tag">4K Drive</span>
+          </div>
+        </div>
+        <div class="req-actions">
+          <button class="req-cancel">Cancel</button>
+          <button class="req-confirm">↓ Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROPOSED: with tag dropdown -->
+<div class="scenario">
+  <div class="scenario-label">With tags — dropdown</div>
+  <div class="mc">
+    <div class="poster-placeholder">POSTER</div>
+    <div class="card-bottom">
+      <div class="card-title">Inception</div>
+      <div class="card-year">2010</div>
+      <button class="btn-add">+ Add</button>
+    </div>
+    <div class="req-overlay">
+      <div class="req-inner">
+        <span class="req-label">Quality</span>
+        <select class="req-select">
+          <option>HD - 720p/1080p</option>
+          <option>4K</option>
+          <option>Any</option>
+        </select>
+        <span class="req-label">Tag</span>
+        <select class="req-select">
+          <option value="">— none —</option>
+          <option selected>Disk A</option>
+          <option>Disk B</option>
+          <option>4K Drive</option>
+        </select>
+        <div class="req-actions">
+          <button class="req-cancel">Cancel</button>
+          <button class="req-confirm">↓ Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

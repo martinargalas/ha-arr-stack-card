@@ -1283,6 +1283,7 @@ var STYLES = `
       .b-sub-miss{ background:rgba(255,149,0,0.28);  border:1px solid rgba(255,149,0,0.58); }
       .b-missing { background:rgba(255,69,58,0.30);  border:1px solid rgba(255,69,58,0.62); }
       .b-cutoff  { background:rgba(255,214,10,0.28); border:1px solid rgba(255,214,10,0.62); }
+      .b-tag     { background:rgba(175,82,222,0.26); border:1px solid rgba(175,82,222,0.55); }
 
       /* \u2500\u2500 Upcoming action row \u2500\u2500 */
       .mc-act {
@@ -1940,6 +1941,25 @@ var STYLES = `
       }
       .is-table thead th:first-child { padding-left: 16px; }
       .is-table thead th:last-child  { padding-right: 16px; }
+      .is-sort-arrow { margin-left: 3px; font-size: 9px; opacity: 1; }
+      .is-sort-arrow.is-sort-inactive { opacity: 0.3; }
+      .is-f-select {
+        appearance: none; -webkit-appearance: none;
+        background-color: rgba(var(--arr-ht-rgb,255,255,255),0.07);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23888' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 7px center;
+        border: 1px solid rgba(var(--arr-ht-rgb,255,255,255),0.14);
+        border-radius: 20px; color: rgba(var(--arr-st-rgb,180,180,180),0.70);
+        font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+        padding: 3px 22px 3px 9px; cursor: pointer; outline: none;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .is-f-select.active {
+        background-color: rgba(var(--arr-ht-rgb,255,255,255),0.16);
+        border-color: rgba(var(--arr-ht-rgb,255,255,255),0.40);
+        color: rgba(var(--arr-ht-rgb,255,255,255),1);
+      }
+      .is-f-select option { background: #1e1e2e; color: #ffffff; }
       .is-table tbody tr { border-bottom: 1px solid var(--is-divider); transition: background 0.10s; }
       .is-table tbody tr:hover { background: var(--is-row-hover); }
       .is-table td { padding: 7px 8px; vertical-align: middle; }
@@ -2298,15 +2318,15 @@ var STYLES = `
         gap: 8px;
       }
 
+      .sn-ep-item { display: block; }
+      .sn-ep-item:hover .sn-ep-row { background: var(--is-row-hover); }
       .sn-ep-row {
         display: flex;
         align-items: center;
         gap: 6px;
         padding: 5px 4px;
         border-radius: 5px;
-        flex-wrap: wrap;
       }
-      .sn-ep-row:hover { background: var(--is-row-hover); }
       .sn-ep-row.has-file .sn-ep-num { color: var(--is-green); }
 
       .sn-ep-num {
@@ -2447,24 +2467,61 @@ var _InteractiveSearch = class {
     }
     if (this._isState !== "results") return "";
     const all = this._isResults;
-    const filter = this._isFilter;
-    const visible = filter === "torrent" ? all.filter((r) => r.protocol === "torrent") : filter === "usenet" ? all.filter((r) => r.protocol !== "torrent") : all;
+    const visible = this._applyIsFilters(all);
     const isMobile = window.matchMedia("(max-width: 600px)").matches;
     const rowsHtml = isMobile ? this._renderIsCards(visible) : this._renderIsTable(visible);
-    const fBtn = (val, label) => `<button class="is-f-btn${this._isFilter === val ? " active" : ""}" data-isfilter="${val}">${label}</button>`;
+    const { protocol, indexer, quality, lang } = this._isFilters;
+    const anyFilter = protocol || indexer || quality || lang;
+    const countHtml = visible.length !== all.length ? `<span class="is-count">${visible.length}<span style="opacity:0.45">/${all.length}</span></span>` : `<span class="is-count">${all.length}</span>`;
+    const uniqIndexers = [...new Set(all.map((r) => r.indexer).filter(Boolean))].sort();
+    const uniqQualities = [...new Set(all.map((r) => this._isQualityLabel(r)).filter(Boolean))];
+    const uniqLangs = [...new Set(all.map((r) => ((r.languages || [])[0]?.name || "").slice(0, 2).toUpperCase()).filter(Boolean))].sort();
+    const mkSelect = (dim, label, current, options) => {
+      const opts = options.map(
+        (v) => `<option value="${this._escHtml(v)}"${current === v ? " selected" : ""}>${this._escHtml(v)}</option>`
+      ).join("");
+      return `<select class="is-f-select${current ? " active" : ""}" data-isselect="${dim}">
+        <option value="">${label}</option>
+        ${opts}
+      </select>`;
+    };
     return `
       <div class="is-panel">
         <div class="is-panel-hdr">
           <span class="is-panel-title">${this._t("isResults")}</span>
-          <span class="is-count">${all.length}</span>
+          ${countHtml}
           <div class="is-filter">
-            ${fBtn("all", this._t("isFilterAll"))}
-            ${fBtn("torrent", "TOR")}
-            ${fBtn("usenet", "NZB")}
+            ${mkSelect("protocol", "Protocol", protocol, ["torrent", "usenet"])}
+            ${uniqIndexers.length > 1 ? mkSelect("indexer", "Indexer", indexer, uniqIndexers) : ""}
+            ${uniqQualities.length > 1 ? mkSelect("quality", "Quality", quality, uniqQualities) : ""}
+            ${uniqLangs.length > 1 ? mkSelect("lang", "Lang", lang, uniqLangs) : ""}
           </div>
         </div>
         <div class="is-results-wrap">${rowsHtml}</div>
       </div>`;
+  }
+  _isQualityLabel(r) {
+    const name = r.quality?.quality?.name || "";
+    if (/2160|4K|UHD/i.test(name)) return /HDR/i.test(name) ? "4K HDR" : "4K";
+    if (/1080/i.test(name)) return "1080p";
+    if (/720/i.test(name)) return "720p";
+    return name || "SD";
+  }
+  _applyIsFilters(releases) {
+    const { protocol, indexer, quality, lang } = this._isFilters;
+    return releases.filter((r) => {
+      if (protocol) {
+        const proto = r.protocol === "torrent" ? "torrent" : "usenet";
+        if (proto !== protocol) return false;
+      }
+      if (indexer && (r.indexer || "") !== indexer) return false;
+      if (quality && this._isQualityLabel(r) !== quality) return false;
+      if (lang) {
+        const lc = ((r.languages || [])[0]?.name || "").slice(0, 2).toUpperCase();
+        if (lc !== lang) return false;
+      }
+      return true;
+    });
   }
   _isQualityBadge(r) {
     const name = r.quality?.quality?.name || "";
@@ -2523,8 +2580,43 @@ var _InteractiveSearch = class {
       </svg>
     </button>`;
   }
+  _isSortValue(r, col) {
+    switch (col) {
+      case "src":
+        return r.protocol === "torrent" ? 0 : 1;
+      case "title":
+        return (r.title || "").toLowerCase();
+      case "indexer":
+        return (r.indexer || "").toLowerCase();
+      case "size":
+        return r.size || 0;
+      case "peers":
+        return r.protocol === "torrent" ? r.seeders ?? -1 : -1;
+      case "lang":
+        return ((r.languages || [])[0]?.name || "").toLowerCase();
+      case "quality":
+        return r.quality?.quality?.name || "";
+      case "score":
+        return r.customFormatScore ?? -Infinity;
+      default:
+        return 0;
+    }
+  }
   _renderIsTable(releases) {
-    const rows = releases.map((r) => {
+    const { col, dir } = this._isSort || {};
+    const sorted = col ? [...releases].sort((a, b) => {
+      const av = this._isSortValue(a, col);
+      const bv = this._isSortValue(b, col);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    }) : releases;
+    const arrow = (c) => {
+      if (col !== c) return `<span class="is-sort-arrow is-sort-inactive">\u21C5</span>`;
+      return `<span class="is-sort-arrow">${dir === -1 ? "\u2193" : "\u2191"}</span>`;
+    };
+    const th = (c, label) => `<th data-issort="${c}" style="cursor:pointer;user-select:none">${label}${arrow(c)}</th>`;
+    const rows = sorted.map((r) => {
       const rejHtml = !r.approved && r.rejections?.length ? `<div class="is-rej-row">\u26A0 ${this._escHtml(r.rejections.slice(0, 2).join(" \xB7 "))}</div>` : "";
       return `<tr>
         <td>${this._isSrcPill(r)}</td>
@@ -2544,8 +2636,8 @@ var _InteractiveSearch = class {
     }).join("");
     return `<table class="is-table">
       <thead><tr>
-        <th>Src</th><th>Title</th><th>Indexer</th>
-        <th>Size</th><th>Peers</th><th>Lang</th><th>Quality</th><th>Score</th><th></th>
+        ${th("src", "Src")}${th("title", "Title")}${th("indexer", "Indexer")}
+        ${th("size", "Size")}${th("peers", "Peers")}${th("lang", "Lang")}${th("quality", "Quality")}${th("score", "Score")}<th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -2782,13 +2874,15 @@ var _SonarrIS = class {
     const epTitle = this._escHtml(ep.title || "");
     const airDate = ep.airDate ? ep.airDate.slice(0, 10) : "";
     const epIsHtml = !isMobile && isActive ? this._renderSnIsPanel() : "";
-    return `<div class="sn-ep-row${hasFile ? " has-file" : ""}">
-      <span class="sn-ep-num">${epNum}</span>
-      <span class="sn-ep-title">${epTitle}</span>
-      ${airDate ? `<span class="sn-ep-date">${airDate}</span>` : ""}
-      <button class="btn-person btn-person-sm${isActive ? " active" : ""}" data-action="sn-ep-is" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Interactive Search \u2014 ${this._t("snEpisode").toLowerCase()}">
-        ${personIcon}
-      </button>
+    return `<div class="sn-ep-item">
+      <div class="sn-ep-row${hasFile ? " has-file" : ""}">
+        <span class="sn-ep-num">${epNum}</span>
+        <span class="sn-ep-title">${epTitle}</span>
+        ${airDate ? `<span class="sn-ep-date">${airDate}</span>` : ""}
+        <button class="btn-person btn-person-sm${isActive ? " active" : ""}" data-action="sn-ep-is" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Interactive Search \u2014 ${this._t("snEpisode").toLowerCase()}">
+          ${personIcon}
+        </button>
+      </div>
       ${epIsHtml}
     </div>`;
   }
@@ -2811,25 +2905,60 @@ var _SonarrIS = class {
     }
     if (this._snIsState !== "results") return "";
     const all = this._snIsResults;
-    const visible = this._snIsFilter === "torrent" ? all.filter((r) => r.protocol === "torrent") : this._snIsFilter === "usenet" ? all.filter((r) => r.protocol !== "torrent") : all;
+    const { protocol, indexer, quality, lang } = this._snIsFilters || {};
+    const visible = all.filter((r) => {
+      if (protocol) {
+        const p = r.protocol === "torrent" ? "torrent" : "usenet";
+        if (p !== protocol) return false;
+      }
+      if (indexer && (r.indexer || "") !== indexer) return false;
+      if (quality && this._isQualityLabel(r) !== quality) return false;
+      if (lang) {
+        const lc = ((r.languages || [])[0]?.name || "").slice(0, 2).toUpperCase();
+        if (lc !== lang) return false;
+      }
+      return true;
+    });
     const isMobile = window.matchMedia("(max-width: 600px)").matches;
     const rowsHtml = isMobile ? this._renderSnIsCards(visible) : this._renderSnIsTable(visible);
-    const fBtn = (val, label) => `<button class="is-f-btn${this._snIsFilter === val ? " active" : ""}" data-snisfilter="${val}">${label}</button>`;
+    const uniqIndexers = [...new Set(all.map((r) => r.indexer).filter(Boolean))].sort();
+    const uniqQualities = [...new Set(all.map((r) => this._isQualityLabel(r)).filter(Boolean))];
+    const uniqLangs = [...new Set(all.map((r) => ((r.languages || [])[0]?.name || "").slice(0, 2).toUpperCase()).filter(Boolean))].sort();
+    const mkSel = (dim, label, cur, opts) => {
+      const options = opts.map(
+        (v) => `<option value="${this._escHtml(v)}"${cur === v ? " selected" : ""}>${this._escHtml(v)}</option>`
+      ).join("");
+      return `<select class="is-f-select${cur ? " active" : ""}" data-snisselect="${dim}">
+        <option value="">${label}</option>${options}
+      </select>`;
+    };
+    const countHtml = visible.length !== all.length ? `<span class="is-count">${visible.length}<span style="opacity:0.45">/${all.length}</span></span>` : `<span class="is-count">${all.length}</span>`;
     return `<div class="sn-is-panel">
       <div class="is-panel-hdr">
         <span class="is-panel-title">${this._snActiveIs?.type === "season" ? this._t("snSeasonPack").charAt(0).toUpperCase() + this._t("snSeasonPack").slice(1) : this._t("snEpisode")}</span>
-        <span class="is-count">${all.length}</span>
+        ${countHtml}
         <div class="is-filter">
-          ${fBtn("all", this._t("isFilterAll"))}
-          ${fBtn("torrent", "TOR")}
-          ${fBtn("usenet", "NZB")}
+          ${mkSel("protocol", "Protocol", protocol, ["torrent", "usenet"])}
+          ${uniqIndexers.length > 1 ? mkSel("indexer", "Indexer", indexer, uniqIndexers) : ""}
+          ${uniqQualities.length > 1 ? mkSel("quality", "Quality", quality, uniqQualities) : ""}
+          ${uniqLangs.length > 1 ? mkSel("lang", "Lang", lang, uniqLangs) : ""}
         </div>
       </div>
       <div class="is-results-wrap">${rowsHtml}</div>
     </div>`;
   }
   _renderSnIsTable(releases) {
-    const rows = releases.map((r) => {
+    const { col, dir } = this._snIsSort || {};
+    const sorted = col ? [...releases].sort((a, b) => {
+      const av = this._isSortValue(a, col);
+      const bv = this._isSortValue(b, col);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    }) : releases;
+    const arrow = (c) => col !== c ? `<span class="is-sort-arrow is-sort-inactive">\u21C5</span>` : `<span class="is-sort-arrow">${dir === -1 ? "\u2193" : "\u2191"}</span>`;
+    const th = (c, label) => `<th data-snissort="${c}" style="cursor:pointer;user-select:none">${label}${arrow(c)}</th>`;
+    const rows = sorted.map((r) => {
       const rejHtml = !r.approved && r.rejections?.length ? `<div class="is-rej-row">\u26A0 ${this._escHtml(r.rejections.slice(0, 2).join(" \xB7 "))}</div>` : "";
       return `<tr>
         <td>${this._isSrcPill(r)}</td>
@@ -2849,8 +2978,8 @@ var _SonarrIS = class {
     }).join("");
     return `<table class="is-table">
       <thead><tr>
-        <th>Src</th><th>Title</th><th>Indexer</th>
-        <th>Size</th><th>Peers</th><th>Lang</th><th>Quality</th><th>Score</th><th></th>
+        ${th("src", "Src")}${th("title", "Title")}${th("indexer", "Indexer")}
+        ${th("size", "Size")}${th("peers", "Peers")}${th("lang", "Lang")}${th("quality", "Quality")}${th("score", "Score")}<th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -2944,7 +3073,11 @@ var _FetchMethods = class {
       this._fetchBazarr(),
       this._fetchRadarrQueue(),
       this._fetchPendingRequests(),
-      this._fetchMyPendingRequests()
+      this._fetchMyPendingRequests(),
+      this._fetchRadarrTags(),
+      this._fetchSonarrTags(),
+      this._fetchRadarrRootFolders(),
+      this._fetchSonarrRootFolders()
     ]);
     this._render();
   }
@@ -3156,6 +3289,13 @@ var _FetchMethods = class {
         const match = this._sonarrProfiles.find((p) => p.name === profileName);
         if (match) profileId = match.id;
       }
+      const tagName = this._cfgGet("discover", "oneClickDefaultShowTag", "");
+      let tagId = null;
+      if (tagName && this._sonarrTags.length > 0) {
+        const tagMatch = this._sonarrTags.find((t) => t.label === tagName);
+        if (tagMatch) tagId = tagMatch.id;
+      }
+      const cfgRootFolder = this._cfgGet("discover", "oneClickDefaultShowRootFolder", "") || null;
       const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
       const season1 = (detail.seasons || []).find((s) => s.seasonNumber === 1);
       const seasons = season1 ? [1] : [(detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0]?.seasonNumber].filter(Boolean);
@@ -3167,9 +3307,10 @@ var _FetchMethods = class {
       if (this._seerrSonarr) {
         body.serverId = this._seerrSonarr.serverId;
         body.profileId = profileId;
-        body.rootFolder = this._seerrSonarr.rootFolder;
+        body.rootFolder = cfgRootFolder || this._seerrSonarr.rootFolder;
       }
       if (!this._hass.user.is_admin) body.userMode = "family";
+      if (tagId !== null) body.tags = [parseInt(tagId)];
       const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
       if (reqId && !this._hass.user.is_admin) {
@@ -3207,7 +3348,7 @@ var _FetchMethods = class {
       this._wireTvOverlay();
     }
   }
-  async _addOverseerrTvRequest(mediaId, seasons, profileId) {
+  async _addOverseerrTvRequest(mediaId, seasons, profileId, tagId = null, rootFolder = null) {
     const showId = this._tvRequestPending?.show?.id;
     if (showId) {
       this._optimisticRequested.add(showId);
@@ -3221,8 +3362,9 @@ var _FetchMethods = class {
       if (this._seerrSonarr) {
         body.serverId = this._seerrSonarr.serverId;
         body.profileId = profileId !== null ? parseInt(profileId) : this._seerrSonarr.profileId;
-        body.rootFolder = this._seerrSonarr.rootFolder;
+        body.rootFolder = rootFolder || this._seerrSonarr.rootFolder;
       }
+      if (tagId !== null) body.tags = [parseInt(tagId)];
       if (!this._hass.user.is_admin) body.userMode = "family";
       const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
@@ -3451,6 +3593,38 @@ var _FetchMethods = class {
       console.error("[arr-card] Radarr profiles fetch error:", e);
     }
   }
+  async _fetchRadarrTags() {
+    if (this._radarrTags.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr/tags");
+      if (Array.isArray(data)) this._radarrTags = data;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarrTags() {
+    if (this._sonarrTags.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr/tags");
+      if (Array.isArray(data)) this._sonarrTags = data;
+    } catch (e) {
+    }
+  }
+  async _fetchRadarrRootFolders() {
+    if (this._radarrRootFolders.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr/rootfolders");
+      if (Array.isArray(data)) this._radarrRootFolders = data;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarrRootFolders() {
+    if (this._sonarrRootFolders.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr/rootfolders");
+      if (Array.isArray(data)) this._sonarrRootFolders = data;
+    } catch (e) {
+    }
+  }
   // ─────────────────────────────────────────────
   // Sonarr Interactive Search
   // ─────────────────────────────────────────────
@@ -3581,7 +3755,7 @@ var _FetchMethods = class {
       }
     }, 80);
   }
-  async _addOverseerrRequest(mediaId, profileId = null) {
+  async _addOverseerrRequest(mediaId, profileId = null, tagId = null, rootFolder = null) {
     this._optimisticRequested.add(mediaId);
     this._withdrawnIds.delete(mediaId);
     this._requestPending = null;
@@ -3592,8 +3766,9 @@ var _FetchMethods = class {
       if (this._seerrRadarr) {
         body.serverId = this._seerrRadarr.serverId;
         body.profileId = profileId !== null ? parseInt(profileId) : this._seerrRadarr.profileId;
-        body.rootFolder = this._seerrRadarr.rootFolder;
+        body.rootFolder = rootFolder || this._seerrRadarr.rootFolder;
       }
+      if (tagId !== null) body.tags = [parseInt(tagId)];
       if (!this._hass.user.is_admin) body.userMode = "family";
       const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
@@ -4184,6 +4359,18 @@ var _RenderRight = class {
     const profileOptions = profiles.length > 0 ? profiles.map(
       (p) => `<option value="${p.id}" ${Number(p.id) === defProfileId ? "selected" : ""}>${this._escHtml(p.name)}</option>`
     ).join("") : `<option value="${defProfileId}">${this._t("defaultProfile")}</option>`;
+    const isAdmin = this._hass?.user?.is_admin;
+    const tagHtml = isAdmin && this._radarrTags.length > 0 ? `
+    <span class="req-label">Tag</span>
+    <select class="req-select" id="req-tag-${movieId}">
+      <option value="">\u2014 no tag \u2014</option>
+      ${this._radarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
+    </select>` : "";
+    const rootFolderHtml = isAdmin && this._radarrRootFolders.length > 1 ? `
+    <span class="req-label">Root folder</span>
+    <select class="req-select" id="req-rootfolder-${movieId}">
+      ${this._radarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
+    </select>` : "";
     return `
     <div class="req-overlay">
       <div class="req-inner">
@@ -4191,6 +4378,8 @@ var _RenderRight = class {
         <select class="req-select" id="req-select-${movieId}">
           ${profileOptions}
         </select>
+        ${tagHtml}
+        ${rootFolderHtml}
         <div class="req-actions">
           <button class="req-cancel" data-req="cancel">${this._t("cancel")}</button>
           <button class="req-confirm" data-req="confirm" data-movieid="${movieId}" data-tmdb="${tmdbId}">
@@ -4324,6 +4513,15 @@ var _RenderRight = class {
           <div class="tv-req-info">
             <div class="tv-req-title">${this._escHtml(p.show.name || p.show.originalName || "")}</div>
             <select class="req-select" id="tv-req-profile">${profileOptions}</select>
+            ${this._hass?.user?.is_admin && this._sonarrTags.length > 0 ? `
+            <select class="req-select" id="tv-req-tag">
+              <option value="">\u2014 no tag \u2014</option>
+              ${this._sonarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
+            </select>` : ""}
+            ${this._hass?.user?.is_admin && this._sonarrRootFolders.length > 1 ? `
+            <select class="req-select" id="tv-req-rootfolder">
+              ${this._sonarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
+            </select>` : ""}
           </div>
         </div>
         <div class="sv-nav-wrap">
@@ -4500,6 +4698,15 @@ var _RenderRight = class {
         <div class="tv-req-info">
           <div class="tv-req-title">${this._escHtml(p.show.name || p.show.originalName || "")}</div>
           <select class="req-select" id="tv-req-profile-abs">${profileOptions}</select>
+          ${this._hass?.user?.is_admin && this._sonarrTags.length > 0 ? `
+          <select class="req-select" id="tv-req-tag-abs">
+            <option value="">\u2014 no tag \u2014</option>
+            ${this._sonarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
+          </select>` : ""}
+          ${this._hass?.user?.is_admin && this._sonarrRootFolders.length > 1 ? `
+          <select class="req-select" id="tv-req-rootfolder-abs">
+            ${this._sonarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
+          </select>` : ""}
         </div>
       </div>
       <div class="sv-nav-wrap">
@@ -5265,9 +5472,16 @@ var _WireMethods = class {
             const match = this._radarrProfiles.find((p) => p.name === profileName);
             profileId = match ? match.id : null;
           }
-          await this._addOverseerrRequest(tmdbId, profileId);
+          const cfgMovieTag = this._cfgGet("discover", "oneClickDefaultMovieTag", "") || "";
+          let movieTagId = null;
+          if (cfgMovieTag && this._radarrTags.length > 0) {
+            const tm = this._radarrTags.find((t) => t.label === cfgMovieTag);
+            if (tm) movieTagId = tm.id;
+          }
+          const cfgMovieRootFolder = this._cfgGet("discover", "oneClickDefaultMovieRootFolder", "") || null;
+          await this._addOverseerrRequest(tmdbId, profileId, movieTagId, cfgMovieRootFolder);
         } else {
-          await this._fetchRadarrProfiles();
+          await Promise.all([this._fetchRadarrProfiles(), this._fetchRadarrTags(), this._fetchRadarrRootFolders()]);
           const reqKey = btn.dataset.reqkey || String(tmdbId);
           this._requestPending = { movieId, tmdbId, reqKey };
           this._reRenderRight();
@@ -5287,10 +5501,14 @@ var _WireMethods = class {
         const movieId = parseInt(btn.dataset.movieid, 10);
         const tmdbId = parseInt(btn.dataset.tmdb, 10);
         const sel = this.shadowRoot.getElementById(`req-select-${movieId}`);
+        const tagSel = this.shadowRoot.getElementById(`req-tag-${movieId}`);
+        const rfSel = this.shadowRoot.getElementById(`req-rootfolder-${movieId}`);
         const profileId = sel ? sel.value : null;
+        const tagId = tagSel ? tagSel.value : null;
+        const rootFolder = rfSel?.value || null;
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
-        await this._addOverseerrRequest(tmdbId, profileId);
+        await this._addOverseerrRequest(tmdbId, profileId, tagId || null, rootFolder);
       });
     });
     const tvBtns = this.shadowRoot.querySelectorAll(".tv-req-open");
@@ -5339,10 +5557,14 @@ var _WireMethods = class {
         const seasons = checked.map((el) => parseInt(el.dataset.season, 10)).filter(Boolean);
         if (!seasons.length) return;
         const profileSel = this.shadowRoot.getElementById("tv-req-profile");
+        const tagSel = this.shadowRoot.getElementById("tv-req-tag");
+        const rfSel = this.shadowRoot.getElementById("tv-req-rootfolder");
         const profileId = profileSel ? profileSel.value : null;
+        const tagId = tagSel?.value || null;
+        const rootFolder = rfSel?.value || null;
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
-        await this._addOverseerrTvRequest(mediaId, seasons, profileId);
+        await this._addOverseerrTvRequest(mediaId, seasons, profileId, tagId, rootFolder);
       });
     });
     this.shadowRoot.querySelectorAll(".req-withdraw").forEach((btn) => {
@@ -5588,8 +5810,12 @@ var _WireMethods = class {
       e.stopPropagation();
       const checkedSeasons = [...el.querySelectorAll(".sv-input:checked")].map((cb) => parseInt(cb.dataset.season, 10)).filter(Boolean);
       if (!checkedSeasons.length) return;
-      const profileSel = el.querySelector(".req-select");
+      const profileSel = el.querySelector("#tv-req-profile-abs");
+      const tagSel = el.querySelector("#tv-req-tag-abs");
+      const rfSel = el.querySelector("#tv-req-rootfolder-abs");
       const profileId = profileSel ? profileSel.value : null;
+      const tagId = tagSel?.value || null;
+      const rootFolder = rfSel?.value || null;
       const mediaId = parseInt(e.currentTarget.dataset.mediaid, 10);
       e.currentTarget.disabled = true;
       e.currentTarget.innerHTML = '<span class="action-spinner" style="width:10px;height:10px;border-width:1.5px"></span>';
@@ -5604,8 +5830,9 @@ var _WireMethods = class {
         if (this._seerrSonarr) {
           body.serverId = this._seerrSonarr.serverId;
           body.profileId = profileId !== null ? parseInt(profileId) : this._seerrSonarr.profileId;
-          body.rootFolder = this._seerrSonarr.rootFolder;
+          body.rootFolder = rootFolder || this._seerrSonarr.rootFolder;
         }
+        if (tagId) body.tags = [parseInt(tagId)];
         if (!this._hass.user.is_admin) body.userMode = "family";
         await this._hass.callApi("POST", "arr_stack/overseerr/request", body);
       } catch (err) {
@@ -5907,7 +6134,8 @@ var _PopupMethods = class {
   async _openPopup(type, tmdbId, tvdbId, title, radarrId = null) {
     this._isState = null;
     this._isResults = [];
-    this._isFilter = "all";
+    this._isFilters = { protocol: "", indexer: "", quality: "", lang: "" };
+    this._isSort = { col: null, dir: 1 };
     this._isGrabbing = null;
     this._isGrabbed = /* @__PURE__ */ new Set();
     this._isHistory = {};
@@ -5921,6 +6149,8 @@ var _PopupMethods = class {
     this._snIsResults = [];
     this._snIsError = null;
     this._snIsFilter = "all";
+    this._snIsFilters = { protocol: "", indexer: "", quality: "", lang: "" };
+    this._snIsSort = { col: null, dir: 1 };
     this._snIsGrabbing = null;
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
@@ -6062,7 +6292,7 @@ var _PopupMethods = class {
     }
     if (glass) glass.addEventListener("click", (e) => {
       e.stopPropagation();
-      const t = e.target.closest("[data-action],[data-isfilter],[data-snisfilter],[data-grab],[data-sngrab],[data-guid]");
+      const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid]");
       if (!t) return;
       if (t.dataset.action === "is-toggle") {
         if (this._isState) {
@@ -6084,8 +6314,13 @@ var _PopupMethods = class {
         this._renderPopupEl();
         return;
       }
-      if (t.dataset.isfilter !== void 0) {
-        this._isFilter = t.dataset.isfilter;
+      if (t.dataset.issort !== void 0) {
+        const col = t.dataset.issort;
+        if (this._isSort.col === col) {
+          this._isSort = { col, dir: this._isSort.dir * -1 };
+        } else {
+          this._isSort = { col, dir: -1 };
+        }
         this._renderPopupEl();
         return;
       }
@@ -6193,6 +6428,16 @@ var _PopupMethods = class {
         this._renderPopupEl();
         return;
       }
+      if (t.dataset.snissort !== void 0) {
+        const col = t.dataset.snissort;
+        if (this._snIsSort.col === col) {
+          this._snIsSort = { col, dir: this._snIsSort.dir * -1 };
+        } else {
+          this._snIsSort = { col, dir: -1 };
+        }
+        this._renderPopupEl();
+        return;
+      }
       if (t.dataset.sngrab !== void 0) {
         this._sonarrGrab(t.dataset.sngrab, parseInt(t.dataset.indexerid));
         return;
@@ -6225,6 +6470,16 @@ var _PopupMethods = class {
         this._removeFromLibrary(t.dataset.files === "true");
         return;
       }
+    });
+    if (glass) glass.addEventListener("change", (e) => {
+      const sel = e.target.closest("[data-isselect],[data-snisselect]");
+      if (!sel) return;
+      if (sel.dataset.isselect !== void 0) {
+        this._isFilters = { ...this._isFilters, [sel.dataset.isselect]: sel.value };
+      } else if (sel.dataset.snisselect !== void 0) {
+        this._snIsFilters = { ...this._snIsFilters, [sel.dataset.snisselect]: sel.value };
+      }
+      this._renderPopupEl();
     });
   }
   _renderPopup() {
@@ -6304,6 +6559,11 @@ var _PopupMethods = class {
     const radarrEntry = canRemoveRadarr ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
     const sonarrEntry = canRemoveSonarr ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const hasFiles = !!(radarrEntry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0);
+    const _popupRadarrEntry = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
+    const _popupSonarrEntry = (d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
+    const _popupTags = _popupRadarrEntry ? (_popupRadarrEntry.tags || []).map((id) => (this._radarrTags || []).find((t) => t.id === id)?.label).filter(Boolean) : _popupSonarrEntry ? (_popupSonarrEntry.tags || []).map((id) => (this._sonarrTags || []).find((t) => t.id === id)?.label).filter(Boolean) : [];
+    const _tagIconSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:0.7"><path d="M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M17.41,11.58C17.77,11.94 18,12.44 18,13C18,13.55 17.78,14.05 17.41,14.41L12.41,19.41C12.05,19.78 11.55,20 11,20C10.45,20 9.95,19.78 9.58,19.41L2.59,12.42C2.22,12.05 2,11.55 2,11V6C2,4.89 2.89,4 4,4H9C9.55,4 10.05,4.22 10.41,4.58L17.41,11.58Z"/></svg>`;
+    const popupTagHtml = _popupTags.length > 0 ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:-6px;margin-bottom:10px">${_popupTags.map((l) => `<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:3px;padding:0 4px 0 3px;line-height:1.7">${_tagIconSvg}${this._escHtml(l)}</span>`).join("")}</div>` : "";
     const removeLabel = canRemoveSonarr ? "Remove Series \u203A" : "Remove \u203A";
     const removeBtn = canRemoveRadarr || canRemoveSonarr ? (() => {
       const rc = this._removeConfirm;
@@ -6333,6 +6593,7 @@ var _PopupMethods = class {
             <div class="popup-meta">
               <h2 class="popup-title">${title}</h2>
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
+              ${popupTagHtml}
               ${overview ? `<p class="popup-overview">${overview}</p>` : `<p class="popup-overview" style="color:rgba(255,255,255,0.35);font-style:italic">${this._t("noDescription")}</p>`}
               ${isOpenBtn}
               ${snIsOpenBtn}
@@ -6460,6 +6721,10 @@ var ArrStackCard = class extends HTMLElement {
     this._myRequestIds = /* @__PURE__ */ new Map();
     this._familyPendingIds = /* @__PURE__ */ new Map();
     this._radarrProfiles = [];
+    this._radarrTags = [];
+    this._sonarrTags = [];
+    this._radarrRootFolders = [];
+    this._sonarrRootFolders = [];
     this._tvRequestPending = null;
     this._overlay = { section: null, page: 0, tvPending: null };
     this._overlayApiPage = {};
@@ -6472,7 +6737,8 @@ var ArrStackCard = class extends HTMLElement {
     this._popup = null;
     this._isState = null;
     this._isResults = [];
-    this._isFilter = "all";
+    this._isFilters = { protocol: "", indexer: "", quality: "", lang: "" };
+    this._isSort = { col: null, dir: 1 };
     this._isGrabbing = null;
     this._isGrabbed = /* @__PURE__ */ new Set();
     this._isConfirm = null;
@@ -6485,6 +6751,8 @@ var ArrStackCard = class extends HTMLElement {
     this._snIsResults = [];
     this._snIsError = null;
     this._snIsFilter = "all";
+    this._snIsFilters = { protocol: "", indexer: "", quality: "", lang: "" };
+    this._snIsSort = { col: null, dir: 1 };
     this._snIsGrabbing = null;
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
