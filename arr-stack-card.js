@@ -279,7 +279,7 @@ var ArrStackCardEditor = class extends HTMLElement {
       popular: "Popular Movies",
       calendar: "Calendar",
       streams: "Now Playing (Plex / Jellyfin) \u2014 auto-hidden when nothing plays",
-      tautulli: "Tautulli (Plex stats)"
+      tautulli: "Statistics"
     }[id] || id;
   }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
@@ -7733,7 +7733,7 @@ var _TautulliMethods = class {
     const stats = data.stats || [];
     const showWarn = data.sharingDetected && !data.sharingAcked;
     return `
-      <div class="section-label">Tautulli</div>
+      <div class="section-label">Statistics</div>
       <div class="tl-row">
         ${this._tlLibCard(stats)}
         ${showWarn ? this._tlSharingCard(data) : this._tlUsersCard(stats, act)}
