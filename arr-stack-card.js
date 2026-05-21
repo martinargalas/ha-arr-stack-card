@@ -246,11 +246,16 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "tvUpcoming", enabled: true },
       { id: "trending", enabled: true },
       { id: "popular", enabled: true },
-      { id: "calendar", enabled: true }
+      { id: "calendar", enabled: true },
+      { id: "streams", enabled: false }
     ];
   }
   _getCats() {
-    return this._config?.categories || this._defaultCats();
+    if (!this._config?.categories) return this._defaultCats();
+    const saved = this._config.categories;
+    const savedIds = new Set(saved.map((c) => c.id));
+    const missing = this._defaultCats().filter((c) => !savedIds.has(c.id));
+    return [...saved, ...missing];
   }
   _catLabel(id) {
     return {
@@ -262,7 +267,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       tvUpcoming: "New Shows",
       trending: "Trending",
       popular: "Popular Movies",
-      calendar: "Calendar"
+      calendar: "Calendar",
+      streams: "Now Playing (Plex / Jellyfin)"
     }[id] || id;
   }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
@@ -447,6 +453,9 @@ var ARR_I18N = {
     noDownloads: "\u017D\xE1dn\xE9 aktivn\xED stahov\xE1n\xED",
     noRadarr: "\u017D\xE1dn\xE1 data z Radarr",
     noSonarr: "\u017D\xE1dn\xE1 data ze Sonarr",
+    noStreams: "Nic se nep\u0159ehr\xE1v\xE1",
+    streamsTitle: "P\u0159ehr\xE1v\xE1n\xED",
+    streamsActive: "aktivn\xED",
     noEpisodes: "\u017D\xE1dn\xE9 nadch\xE1zej\xEDc\xED epizody",
     loading: "Na\u010D\xEDt\xE1n\xED\u2026",
     loadingDetail: "Na\u010D\xEDt\xE1m\u2026",
@@ -551,6 +560,9 @@ var ARR_I18N = {
     noDownloads: "No active downloads",
     noRadarr: "No data from Radarr",
     noSonarr: "No data from Sonarr",
+    noStreams: "Nothing playing",
+    streamsTitle: "Now Playing",
+    streamsActive: "active",
     noEpisodes: "No upcoming episodes",
     loading: "Loading\u2026",
     loadingDetail: "Loading\u2026",
@@ -796,6 +808,31 @@ var STYLES = `
 
       .mbar { height: 2px; background: rgba(255,255,255,0.18); border-radius: 1px; overflow: hidden; margin-top: 3px; }
       .mbar-fill { height: 100%; border-radius: 1px; }
+
+      .rf-disk-chip { margin-bottom: 8px; }
+      .rf-disk-inner { display: flex; justify-content: space-between; align-items: flex-start; }
+      .rf-disk-left { flex: 1; min-width: 0; }
+      .rf-disk-right { text-align: right; margin-left: 10px; flex-shrink: 0; max-width: 55%; }
+      .dc-root-path { font-size: 10px; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 0.6); font-weight: 600; line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .disk-chip.dc-pageable { padding: 0; }
+      .stream-badge { font-size: 9px; font-weight: 800; padding: 1px 4px; border-radius: 3px; letter-spacing: 0.04em; vertical-align: middle; }
+      .stream-badge-plex { background: rgba(229,160,13,0.25); color: rgba(229,160,13,1); border: 1px solid rgba(229,160,13,0.35); }
+      .stream-badge-jf   { background: rgba(0,164,220,0.25);  color: rgba(0,164,220,1);  border: 1px solid rgba(0,164,220,0.35); }
+      .stream-prog-track { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.15); z-index: 2; }
+      .stream-prog-fill  { height: 100%; background: rgba(229,160,13,0.9); border-radius: 0 1px 0 0; transition: width 0.5s linear; }
+      .stream-paused img { filter: brightness(0.55) saturate(0.4); }
+      .stream-paused-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2; color: rgba(255,255,255,0.9); }
+      .stream-device-tag { position: absolute; top: 6px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.85); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; pointer-events: none; }
+      .popup-ctrl-btn { background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.85); transition: background 0.15s; }
+      .popup-ctrl-btn:hover { background: rgba(255,255,255,0.16); }
+      .popup-ctrl-btn-main { width: 56px; height: 56px; background: rgba(229,160,13,0.2); }
+      .popup-ctrl-btn-main:hover { background: rgba(229,160,13,0.35); }
+      .stream-seek-wrap:hover .stream-prog-fill { background: rgba(229,160,13,1); }
+
+      .dc-pageable { display: flex; align-items: stretch; justify-content: space-between; }
+      .dc-page-content { flex: 1; min-width: 0; padding: 7px 4px; }
+      .dc-chev { background: none; border: none; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 0.55); cursor: pointer; padding: 7px 3px; display: flex; align-items: center; flex-shrink: 0; }
+      .dc-chev:disabled { opacity: 0.18; cursor: default; }
 
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          CLIENT HEADER
@@ -3831,8 +3868,70 @@ var _RenderLeft = class {
     const hasSabDisk = sabTotalGB > 0;
     const qbitFreeBytes = this._qbitDiskFreeBytes;
     const hasQbitDisk = typeof qbitFreeBytes === "number" && qbitFreeBytes > 0;
+    const DISK_ROUND = 100 * 1024 * 1024;
+    const allRoots = [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
+    const diskMap = /* @__PURE__ */ new Map();
+    for (const r of allRoots) {
+      const key = Math.round(r.freeSpace / DISK_ROUND);
+      if (!diskMap.has(key)) diskMap.set(key, { freeSpace: r.freeSpace, paths: /* @__PURE__ */ new Set() });
+      diskMap.get(key).paths.add(r.path);
+    }
+    const uniqueDisks = [...diskMap.values()].map((d) => ({ freeSpace: d.freeSpace, paths: [...d.paths] }));
+    const diskTotal = uniqueDisks.length;
+    const SAB_ROUND_EARLY = 1024 * 1024 * 1024;
+    let diskPage;
+    if (this._diskPage.left === null) {
+      const sabKey = hasSabDisk ? Math.round(sabFreeGB * 1073741824 / SAB_ROUND_EARLY) : -1;
+      const sabIdx = uniqueDisks.findIndex((d) => Math.round(d.freeSpace / SAB_ROUND_EARLY) === sabKey);
+      diskPage = sabIdx >= 0 ? sabIdx : 0;
+    } else {
+      diskPage = Math.min(this._diskPage.left, Math.max(0, diskTotal - 1));
+    }
+    const activeDisk = uniqueDisks[diskPage];
+    const diskLabel = activeDisk ? activeDisk.paths.map((p) => p.replace(/\/$/, "").split("/").filter(Boolean).pop() || p).join(" \xB7 ") : "";
+    const multiDisk = diskTotal > 1;
+    const _chev = (dir, disabled) => `
+    <button class="dc-chev" data-diskkey="left" data-diskdir="${dir}" ${disabled ? "disabled" : ""}>
+      <ha-icon icon="mdi:chevron-${dir === "prev" ? "left" : "right"}" style="--mdc-icon-size:16px"></ha-icon>
+    </button>`;
+    const SAB_ROUND = 1024 * 1024 * 1024;
+    const sabFreeBytes = sabFreeGB * 1073741824;
+    const sabTotalBytes = sabTotalGB * 1073741824;
+    const sabDiskKey = hasSabDisk ? Math.round(sabFreeBytes / SAB_ROUND) : -1;
+    const activeSabKey = activeDisk ? Math.round(activeDisk.freeSpace / SAB_ROUND) : -2;
+    const activeIsSab = hasSabDisk && sabDiskKey === activeSabKey;
+    const activeDiskKey = activeDisk ? Math.round(activeDisk.freeSpace / DISK_ROUND) : -2;
+    const qbitDiskKey = hasQbitDisk ? Math.round(qbitFreeBytes / DISK_ROUND) : -3;
+    const activeIsQbit = hasQbitDisk && !activeIsSab && qbitDiskKey === activeDiskKey;
     let diskChip = "";
-    if (hasSabDisk) {
+    if (multiDisk && activeDisk) {
+      let pageContent = "";
+      if (activeIsSab) {
+        const usedGB = sabTotalGB - sabFreeGB;
+        const pct = usedGB / sabTotalGB * 100;
+        pageContent = `
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedGB * 1073741824)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(sabTotalBytes)}</span></div>
+        <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(sabFreeBytes)} ${this._t("free")}</div>`;
+      } else if (activeIsQbit) {
+        pageContent = `
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(qbitFreeBytes)} ${this._t("free")}</span></div>
+        ${diskLabel ? `<div class="dc-sub">${this._escHtml(diskLabel)}</div>` : ""}`;
+      } else {
+        pageContent = `
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(activeDisk.freeSpace)} ${this._t("free")}</span></div>
+        ${diskLabel ? `<div class="dc-sub">${this._escHtml(diskLabel)}</div>` : ""}`;
+      }
+      diskChip = `
+      <div class="disk-chip dc-pageable">
+        ${_chev("prev", diskPage === 0)}
+        <div class="dc-page-content">${pageContent}</div>
+        ${_chev("next", diskPage >= diskTotal - 1)}
+      </div>`;
+    } else if (hasSabDisk) {
       const usedGB = sabTotalGB - sabFreeGB;
       const pct = usedGB / sabTotalGB * 100;
       diskChip = `
@@ -4145,7 +4244,8 @@ var POPUP_TYPE = {
   RADARR: "radarr",
   SONARR: "sonarr",
   MOVIE: "movie",
-  TV: "tv"
+  TV: "tv",
+  STREAM: "stream"
 };
 
 // src/render/right.js
@@ -4166,7 +4266,8 @@ var _RenderRight = class {
       tvUpcoming: () => this._renderTvUpcoming(),
       trending: () => this._renderTrending(),
       popular: () => this._renderPopular(),
-      calendar: hasCalendar ? () => this._renderCalendar() : null
+      calendar: hasCalendar ? () => this._renderCalendar() : null,
+      streams: () => this._renderStreams()
     };
     const regularCategories = [
       ...hasPending ? [() => this._renderPendingRequests()] : [],
@@ -4336,6 +4437,42 @@ var _RenderRight = class {
       <ha-icon icon="mdi:movie-outline" style="--mdc-icon-size:22px"></ha-icon>
       <span class="col-hdr-title">${this._t("overview")}</span>
       <div class="col-hdr-line"></div>
+    </div>`;
+  }
+  _renderRootDiskChip(key, roots) {
+    if (!roots || roots.length === 0) return "";
+    const fmtGB = (bytes) => {
+      const gb = bytes / 1073741824;
+      return gb >= 1024 ? (gb / 1024).toFixed(1) + " TB" : gb.toFixed(1) + " GB";
+    };
+    const DISK_ROUND = 100 * 1024 * 1024;
+    const diskMap = /* @__PURE__ */ new Map();
+    for (const r of roots) {
+      const key2 = Math.round(r.freeSpace / DISK_ROUND);
+      if (!diskMap.has(key2)) diskMap.set(key2, { freeSpace: r.freeSpace, paths: [] });
+      diskMap.get(key2).paths.push(r.path);
+    }
+    const uniqueDisks = [...diskMap.values()];
+    const total = uniqueDisks.length;
+    const page = Math.min(this._diskPage[key] || 0, total - 1);
+    const disk = uniqueDisks[page];
+    const pathsHtml = disk.paths.map((p) => `<div class="dc-root-path">${this._escHtml(p)}</div>`).join("");
+    const pagingHtml = total > 1 ? `
+    <div class="dc-disk-paging">
+      <button class="dc-disk-btn" data-diskkey="${key}" data-diskdir="prev" ${page === 0 ? "disabled" : ""}>\u2039</button>
+      <span class="dc-disk-dots">${page + 1} / ${total}</span>
+      <button class="dc-disk-btn" data-diskkey="${key}" data-diskdir="next" ${page >= total - 1 ? "disabled" : ""}>\u203A</button>
+    </div>` : "";
+    return `
+    <div class="disk-chip rf-disk-chip">
+      <div class="rf-disk-inner">
+        <div class="rf-disk-left">
+          <div class="dc-label">${this._t("storage")}</div>
+          <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(disk.freeSpace)} ${this._t("free")}</span></div>
+          ${pagingHtml}
+        </div>
+        <div class="rf-disk-right">${pathsHtml}</div>
+      </div>
     </div>`;
   }
   _renderRadarr() {
@@ -4757,6 +4894,137 @@ var _RenderRight = class {
         <span class="sec-badge" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.22)">${this._t("fromSonarr")}</span>
       </div>
       ${grid}
+    </div>`;
+  }
+  // ─────────────────────────────────────────────
+  // Active Streams (Plex / Jellyfin via hass.states)
+  // ─────────────────────────────────────────────
+  _renderStreams() {
+    const states = this._hass?.states || {};
+    const streams = Object.entries(states).filter(([id, s]) => {
+      if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) return false;
+      if (s.state !== "playing" && s.state !== "paused") {
+        this._streamsEnded.delete(id);
+        return false;
+      }
+      if (this._streamsEnded.has(id)) return false;
+      const attr = s.attributes || {};
+      const dur = attr.media_duration || 0;
+      const pos = attr.media_position || 0;
+      if (dur > 0 && pos >= dur - 2) return false;
+      return true;
+    }).map(([id, s]) => ({ id, state: s.state, attr: s.attributes || {} }));
+    this._streams = streams;
+    this._startStreamsTimer(streams);
+    this._syncStreamPopup();
+    const grid = streams.length === 0 ? `<div class="placeholder">${this._t("noStreams")}</div>` : this._pagedGridWithSmp(streams, "streams", (s) => this._renderStreamCard(s));
+    return `
+    <div class="sec-card">
+      <div class="col-hdr" style="margin-bottom:5px">
+        <ha-icon icon="mdi:play-network" style="--mdc-icon-size:24px"></ha-icon>
+        <span class="col-hdr-title">${this._t("streamsTitle")}</span>
+        <div class="col-hdr-line"></div>
+        ${streams.length > 0 ? `<span class="sec-badge" style="background:rgba(229,160,13,0.12);border:1px solid rgba(229,160,13,0.25)">${streams.length} ${this._t("streamsActive")}</span>` : ""}
+      </div>
+      ${grid}
+    </div>`;
+  }
+  _startStreamsTimer(streams) {
+    if (this._streamsTimer) {
+      clearInterval(this._streamsTimer);
+      this._streamsTimer = null;
+    }
+    const playing = streams.filter((s) => s.state === "playing" && s.attr.media_duration > 0);
+    if (!playing.length) return;
+    this._streamsTimer = setInterval(() => {
+      let anyNewlyEnded = false;
+      this.shadowRoot?.querySelectorAll(".stream-prog-fill").forEach((el) => {
+        const pos = parseFloat(el.dataset.pos);
+        const dur = parseFloat(el.dataset.dur);
+        const updatedAt = parseFloat(el.dataset.updated);
+        const entity = el.dataset.entity;
+        if (!dur) return;
+        const isPlaying = el.dataset.state === "playing";
+        const elapsed = isPlaying ? (Date.now() - updatedAt) / 1e3 : 0;
+        const current = Math.min(pos + elapsed, dur);
+        el.style.width = (current / dur * 100).toFixed(2) + "%";
+        if (isPlaying && entity && current >= dur && !this._streamsEnded.has(entity)) {
+          this._streamsEnded.add(entity);
+          anyNewlyEnded = true;
+        }
+      });
+      if (anyNewlyEnded) this._reRenderSection("streams");
+    }, 1e3);
+  }
+  _renderStreamCard({ id, state, attr }) {
+    const isPlex = id.startsWith("media_player.plex_");
+    const isPlaying = state === "playing";
+    const contentType = attr.media_content_type || "";
+    const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
+    const isLiveTV = contentType === "channel" || !!attr.media_channel && !isMusic || attr.media_library_title === "Live TV";
+    const isTV = isLiveTV || contentType === "tvshow" || contentType === "episode" || !!attr.media_series_title;
+    const channel = attr.media_channel || "";
+    const title = isLiveTV ? channel || attr.media_title || "" : isTV ? attr.media_series_title || attr.media_title || "" : attr.media_artist || attr.media_title || "";
+    const epLabel = !isLiveTV && isTV && attr.media_season && attr.media_episode ? `S${String(attr.media_season).padStart(2, "0")}E${String(attr.media_episode).padStart(2, "0")}` : "";
+    const subtitle = isMusic ? attr.media_album_name || "" : isLiveTV ? attr.media_title || "" : isTV ? attr.media_title || "" : "";
+    const nl = (attr.friendly_name || id).toLowerCase();
+    let deviceIcon = "mdi:television";
+    let deviceName = "TV";
+    if (/iphone|android.*mobile|for\s+ios|for\s+android\s*\(mobile\)/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    } else if (/ipad|for\s+android\s*\(tablet\)|tablet/i.test(nl)) {
+      deviceIcon = "mdi:tablet";
+      deviceName = "Tablet";
+    } else if (/macbook|for\s+mac\b|mac\s+desktop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Mac";
+    } else if (/laptop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Notebook";
+    } else if (/windows|for\s+windows|desktop|pc\b/i.test(nl)) {
+      deviceIcon = "mdi:monitor";
+      deviceName = "PC";
+    } else if (/web|chrome|browser|safari|firefox|for\s+web/i.test(nl)) {
+      deviceIcon = "mdi:web";
+      deviceName = "Browser";
+    } else if (/apple\s*tv|android\s*tv|fire\s*tv|roku|samsung.*tv|lg.*tv|shield|htpc|for\s+tv/i.test(nl)) {
+      deviceIcon = "mdi:television";
+      deviceName = "TV";
+    } else if (/android/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    }
+    const poster = attr.entity_picture || null;
+    const img = this._mcImg(poster, isMusic ? "\u{1F3B5}" : isTV ? "\u{1F4FA}" : "\u{1F3AC}", id);
+    const duration = attr.media_duration || 0;
+    const position = attr.media_position || 0;
+    const updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    const elapsed = isPlaying ? (Date.now() - updatedAt) / 1e3 : 0;
+    const currentPos = Math.min(position + elapsed, duration);
+    const initPct = duration > 0 ? (currentPos / duration * 100).toFixed(2) : 0;
+    const progBar = duration > 0 ? `<div class="stream-prog-track"><div class="stream-prog-fill" data-entity="${this._escHtml(id)}" data-pos="${position}" data-dur="${duration}" data-updated="${updatedAt}" data-state="${state}" style="width:${initPct}%;transition:none"></div></div>` : "";
+    const svcBadge = this._statusBadge(
+      isPlex ? `<span class="stream-badge stream-badge-plex">PLEX</span>` : `<span class="stream-badge stream-badge-jf">JF</span>`
+    );
+    const pausedOverlay = !isPlaying ? `<div class="stream-paused-overlay"><ha-icon icon="mdi:pause-circle" style="--mdc-icon-size:32px;opacity:0.85"></ha-icon></div>` : "";
+    const deviceTag = `<span class="stream-device-tag"><ha-icon icon="${deviceIcon}" style="--mdc-icon-size:9px"></ha-icon> ${this._escHtml(deviceName)}</span>`;
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb,255,255,255),1)";
+    const sub = subtitle ? `<div style="font-size:10px;color:rgba(var(--arr-pt-rgb,255,255,255),0.6);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(subtitle)}</div>` : "";
+    return `
+    <div class="mc${!isPlaying ? " stream-paused" : ""}" data-stream-entity="${this._escHtml(id)}" data-stream-type="${this._escHtml(contentType)}" data-stream-title="${this._escHtml(attr.media_title || title)}" data-stream-series="${this._escHtml(attr.media_series_title || "")}" style="cursor:pointer">
+      ${img}
+      ${deviceTag}
+      ${svcBadge}
+      ${pausedOverlay}
+      ${this._mcGrad(grad, `
+        ${epLabel ? `<div style="margin-bottom:3px"><span class="imdb">${epLabel}</span></div>` : ""}
+        ${isLiveTV && channel ? `<div style="margin-bottom:3px"><span class="imdb">${this._escHtml(channel)}</span></div>` : ""}
+        <div style="font-size:10px;font-weight:700;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(title)}</div>
+        ${sub}
+      `)}
+      ${progBar}
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -6037,6 +6305,35 @@ var _WireMethods = class {
         });
       }, { signal: sig });
     });
+    scope.querySelectorAll(".dc-chev").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.diskkey;
+        const dir = btn.dataset.diskdir;
+        if (!key || btn.disabled) return;
+        let roots;
+        if (key === "left") {
+          roots = [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
+        } else {
+          roots = key === "radarr" ? this._radarrRootFolders : this._sonarrRootFolders;
+        }
+        const DISK_ROUND = 100 * 1024 * 1024;
+        const diskMap = /* @__PURE__ */ new Map();
+        for (const r of roots) {
+          const key2 = Math.round(r.freeSpace / DISK_ROUND);
+          if (!diskMap.has(key2)) diskMap.set(key2, true);
+        }
+        const total = diskMap.size;
+        const cur = this._diskPage[key] ?? 0;
+        if (dir === "next" && cur < total - 1) this._diskPage[key] = cur + 1;
+        else if (dir === "prev" && cur > 0) this._diskPage[key] = cur - 1;
+        else return;
+        if (key === "left") {
+          this._reRenderLeft();
+        } else {
+          this._reRenderSection(key);
+        }
+      }, { signal: sig });
+    });
   }
   // ─────────────────────────────────────────────
   // Swipe gesta pro stránkování sekcí (touch)
@@ -6121,6 +6418,116 @@ var _PopupMethods = class {
         this._openPopup(type, tmdbId, tvdbId, title, radarrId);
       });
     });
+    this.shadowRoot.querySelectorAll(".mc[data-stream-entity]").forEach((card) => {
+      card.addEventListener("click", () => {
+        this._openStreamPopup(
+          card.dataset.streamEntity,
+          card.dataset.streamType || "",
+          card.dataset.streamTitle || "",
+          card.dataset.streamSeries || ""
+        );
+      });
+    });
+  }
+  // ─────────────────────────────────────────────
+  // Stream popup — open from stream card click
+  // ─────────────────────────────────────────────
+  async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
+    const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
+    const streamAttr = this._hass?.states?.[entityId]?.attributes || {};
+    console.log("[stream-popup] entity:", entityId, "contentType:", contentType, "libTitle:", streamAttr.media_library_title, "channel:", streamAttr.media_channel, "seriesTitle:", streamAttr.media_series_title);
+    const isLiveTV = contentType === "channel" || !!streamAttr.media_channel || streamAttr.media_library_title === "Live TV";
+    const isTV = isLiveTV || contentType === "tvshow" || contentType === "episode" || !!seriesTitle || !!streamAttr.media_series_title;
+    if (isMusic) {
+      const s = this._hass?.states?.[entityId];
+      const attr = s?.attributes || {};
+      this._popup = {
+        _type: POPUP_TYPE.STREAM,
+        _streamEntity: entityId,
+        _streamState: s?.state || "idle",
+        title: attr.media_title || "",
+        _artist: attr.media_artist || "",
+        _album: attr.media_album_name || "",
+        _duration: attr.media_duration || 0,
+        _position: attr.media_position || 0,
+        _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
+        _poster: attr.entity_picture || null
+      };
+      this._renderPopupEl();
+      return;
+    }
+    if (isTV) {
+      const lookupTitle = seriesTitle || trackTitle;
+      const s = (this._sonarr || []).find(
+        (s2) => s2.title?.toLowerCase() === lookupTitle?.toLowerCase()
+      );
+      if (s) {
+        await this._openPopup(POPUP_TYPE.SONARR, s.tmdbId ? String(s.tmdbId) : null, s.tvdbId ? String(s.tvdbId) : null, s.title);
+      } else {
+        await this._openPopup(POPUP_TYPE.TV, null, null, lookupTitle);
+      }
+      if (this._popup) {
+        this._popup._noIS = true;
+        this._renderPopupEl();
+      }
+      return;
+    }
+    const titleNoYear = trackTitle.replace(/\s*\(\d{4}\)\s*$/, "").trim();
+    const m = (this._radarr || []).find((m2) => {
+      const t = m2.title?.toLowerCase() || "";
+      return t === trackTitle.toLowerCase() || t === titleNoYear.toLowerCase();
+    });
+    if (m) {
+      await this._openPopup(POPUP_TYPE.RADARR, String(m.tmdbId), null, m.title, m.id);
+    } else {
+      const s = this._hass?.states?.[entityId];
+      const attr = s?.attributes || {};
+      this._popup = {
+        _type: POPUP_TYPE.STREAM,
+        _streamEntity: entityId,
+        _streamState: s?.state || "idle",
+        title: trackTitle,
+        _artist: "",
+        _album: "",
+        _duration: attr.media_duration || 0,
+        _position: attr.media_position || 0,
+        _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
+        _poster: attr.entity_picture || null,
+        _noIS: false
+      };
+      this._renderPopupEl();
+    }
+  }
+  // Update all progress fills for an entity across card + popup (call after seek)
+  _updateStreamFills(entityId, newPos, dur) {
+    const pct = dur > 0 ? Math.min(newPos / dur * 100, 100).toFixed(2) : 0;
+    const now = Date.now().toString();
+    this.shadowRoot?.querySelectorAll(`.stream-prog-fill[data-entity="${entityId}"]`).forEach((f) => {
+      f.style.width = pct + "%";
+      f.dataset.pos = newPos.toFixed(2);
+      f.dataset.updated = now;
+    });
+  }
+  // Sync music popup to current hass state (called from _renderStreams on each refresh)
+  _syncStreamPopup() {
+    const d = this._popup;
+    if (!d || d._type !== POPUP_TYPE.STREAM || !d._streamEntity) return;
+    const s = this._hass?.states?.[d._streamEntity];
+    if (!s) return;
+    const attr = s.attributes || {};
+    if (attr.media_title === d.title && s.state === d._streamState) return;
+    this._popup = {
+      ...d,
+      _streamState: s.state,
+      title: attr.media_title || d.title,
+      _artist: attr.media_artist || "",
+      _album: attr.media_album_name || "",
+      _duration: attr.media_duration || 0,
+      _position: attr.media_position || 0,
+      _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
+      _poster: attr.entity_picture || null
+    };
+    this._renderPopupEl();
   }
   // ─────────────────────────────────────────────
   // Popup: fetch detail data and open modal
@@ -6257,6 +6664,10 @@ var _PopupMethods = class {
   _renderPopupEl() {
     const root = this.shadowRoot.getElementById("popup-root");
     if (!root) return;
+    if (this._streamPopupTimer) {
+      clearInterval(this._streamPopupTimer);
+      this._streamPopupTimer = null;
+    }
     if (!this._popup) {
       root.innerHTML = "";
       return;
@@ -6470,7 +6881,69 @@ var _PopupMethods = class {
         this._removeFromLibrary(t.dataset.files === "true");
         return;
       }
+      if (t.dataset.action === "stream-playpause") {
+        this._hass.callService("media_player", "media_play_pause", { entity_id: t.dataset.entity });
+        if (this._popup?._type === POPUP_TYPE.STREAM) {
+          this._popup._streamState = this._popup._streamState === "playing" ? "paused" : "playing";
+          this._renderPopupEl();
+        }
+        return;
+      }
+      if (t.dataset.action === "stream-prev") {
+        this._hass.callService("media_player", "media_previous_track", { entity_id: t.dataset.entity });
+        setTimeout(() => {
+          this._syncStreamPopup();
+          this._reRenderSection("streams");
+        }, 2e3);
+        return;
+      }
+      if (t.dataset.action === "stream-next") {
+        this._hass.callService("media_player", "media_next_track", { entity_id: t.dataset.entity });
+        setTimeout(() => {
+          this._syncStreamPopup();
+          this._reRenderSection("streams");
+        }, 2e3);
+        return;
+      }
+      if (t.dataset.action === "stream-seek") {
+        const rect = t.getBoundingClientRect();
+        const clientX = e.clientX ?? e.changedTouches?.[0]?.clientX ?? 0;
+        const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const dur = parseFloat(t.dataset.dur);
+        if (dur > 0) {
+          const newPos = pct * dur;
+          this._updateStreamFills(t.dataset.entity, newPos, dur);
+          this._hass.callService("media_player", "media_seek", { entity_id: t.dataset.entity, seek_position: newPos });
+        }
+        return;
+      }
     });
+    const seekWrap = root.querySelector(".stream-seek-wrap");
+    if (seekWrap) {
+      const applySeek = (clientX, commit) => {
+        const rect = seekWrap.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const dur = parseFloat(seekWrap.dataset.dur);
+        const eid = seekWrap.dataset.entity;
+        if (dur > 0 && eid) {
+          const newPos = pct * dur;
+          this._updateStreamFills(eid, newPos, dur);
+          if (commit) this._hass.callService("media_player", "media_seek", { entity_id: eid, seek_position: newPos });
+        }
+      };
+      seekWrap.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        applySeek(e.touches[0].clientX, true);
+      }, { passive: false });
+      seekWrap.addEventListener("touchmove", (e) => {
+        e.preventDefault();
+        applySeek(e.touches[0].clientX, false);
+      }, { passive: false });
+      seekWrap.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        applySeek(e.changedTouches[0].clientX, true);
+      }, { passive: false });
+    }
     if (glass) glass.addEventListener("change", (e) => {
       const sel = e.target.closest("[data-isselect],[data-snisselect]");
       if (!sel) return;
@@ -6481,6 +6954,23 @@ var _PopupMethods = class {
       }
       this._renderPopupEl();
     });
+    if (this._popup?._type === POPUP_TYPE.STREAM) {
+      const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+      this._streamPopupTimer = setInterval(() => {
+        const fill = root.querySelector(".stream-prog-fill");
+        const timeEl = root.querySelector(".stream-popup-time");
+        if (!fill) return;
+        const pos = parseFloat(fill.dataset.pos);
+        const dur = parseFloat(fill.dataset.dur);
+        const updatedAt = parseFloat(fill.dataset.updated);
+        if (!dur) return;
+        const playing = this._popup?._streamState === "playing";
+        const elapsed = playing ? (Date.now() - updatedAt) / 1e3 : 0;
+        const current = Math.min(pos + elapsed, dur);
+        fill.style.width = (current / dur * 100).toFixed(2) + "%";
+        if (timeEl) timeEl.textContent = `${fmt(current)} / ${fmt(dur)}`;
+      }, 1e3);
+    }
   }
   _renderPopup() {
     const d = this._popup;
@@ -6494,6 +6984,7 @@ var _PopupMethods = class {
         </div>
       </div>`;
     }
+    if (d._type === POPUP_TYPE.STREAM) return this._renderStreamPopup(d);
     if (d._error) {
       return `
       <div class="popup-overlay">
@@ -6538,7 +7029,7 @@ var _PopupMethods = class {
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
     <circle cx="12" cy="7" r="4"/>
   </svg>`;
-    const isOpenBtn = isAdmin && isMovieType ? `
+    const isOpenBtn = isAdmin && isMovieType && !d._noIS ? `
     <button class="is-open-btn${isActive ? " active" : ""}" data-action="is-toggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -6546,7 +7037,7 @@ var _PopupMethods = class {
       </svg>
       Interactive Search
     </button>` : "";
-    const snIsOpenBtn = isAdmin && isSonarrType ? `
+    const snIsOpenBtn = isAdmin && isSonarrType && !d._noIS ? `
     <button class="is-open-btn${snIsActive ? " active" : ""}" data-action="sn-is-toggle">
       ${personIconSvg}
       Interactive Search
@@ -6630,6 +7121,68 @@ var _PopupMethods = class {
     this._removeConfirm = false;
     this._render();
     this._fetchAll();
+  }
+  // ─────────────────────────────────────────────
+  // Music / stream popup renderer
+  // ─────────────────────────────────────────────
+  _renderStreamPopup(d) {
+    const isPlaying = d._streamState === "playing";
+    const title = this._escHtml(d.title || "");
+    const artist = this._escHtml(d._artist || "");
+    const album = this._escHtml(d._album || "");
+    const duration = d._duration || 0;
+    const position = d._position || 0;
+    const updatedAt = d._updatedAt || Date.now();
+    const elapsed = isPlaying ? (Date.now() - updatedAt) / 1e3 : 0;
+    const currentPos = Math.min(position + elapsed, duration);
+    const initPct = duration > 0 ? (currentPos / duration * 100).toFixed(2) : 0;
+    const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    const timeLabel = duration > 0 ? `${fmt(currentPos)} / ${fmt(duration)}` : "";
+    const eid = this._escHtml(d._streamEntity || "");
+    const posterUrl = d._poster || "";
+    const posterHtml = posterUrl ? `<img class="popup-poster" src="${this._escHtml(posterUrl)}" loading="lazy" onerror="this.style.display='none'" />` : "";
+    const backdropStyle = posterUrl ? `background-image:url('${this._escHtml(posterUrl)}');background-size:cover;background-position:center;filter:blur(6px) brightness(0.4)` : "background:linear-gradient(135deg,rgba(20,20,40,1),rgba(40,20,60,1))";
+    const subLine = [artist, album].filter(Boolean).join(" \xB7 ");
+    const seekBar = duration > 0 ? `
+    <div class="stream-seek-wrap" data-action="stream-seek" data-entity="${eid}" data-dur="${duration}" style="cursor:pointer;padding:6px 0;margin-bottom:4px">
+      <div class="stream-prog-track" style="height:4px;position:relative;bottom:auto;left:auto;right:auto;border-radius:2px">
+        <div class="stream-prog-fill" data-entity="${eid}" data-pos="${position}" data-dur="${duration}" data-updated="${updatedAt}" style="width:${initPct}%;transition:none;border-radius:2px"></div>
+      </div>
+    </div>
+    <div class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:10px">${timeLabel}</div>` : "";
+    const controls = `
+    <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
+      <button class="popup-ctrl-btn" data-action="stream-prev" data-entity="${eid}">
+        <ha-icon icon="mdi:skip-previous" style="--mdc-icon-size:26px"></ha-icon>
+      </button>
+      <button class="popup-ctrl-btn popup-ctrl-btn-main" data-action="stream-playpause" data-entity="${eid}">
+        <ha-icon icon="mdi:${isPlaying ? "pause" : "play"}" style="--mdc-icon-size:32px"></ha-icon>
+      </button>
+      <button class="popup-ctrl-btn" data-action="stream-next" data-entity="${eid}">
+        <ha-icon icon="mdi:skip-next" style="--mdc-icon-size:26px"></ha-icon>
+      </button>
+    </div>`;
+    const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
+    return `
+    <div class="popup-overlay${dayClass}">
+      <div class="popup-glass">
+        <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div class="popup-backdrop" style="${backdropStyle}">
+          <div class="popup-backdrop-fade"></div>
+        </div>
+        <div class="popup-body">
+          <div class="popup-content">
+            ${posterHtml}
+            <div class="popup-meta">
+              <h2 class="popup-title">${title}</h2>
+              ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
+              ${seekBar}
+              ${controls}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
   }
   async _addSeriesToSonarr() {
     this._snIsState = "adding";
@@ -6763,8 +7316,12 @@ var ArrStackCard = class extends HTMLElement {
     this._searchActive = false;
     this._searchTimer = null;
     this._searchAbort = null;
-    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0 };
-    this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "" };
+    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
+    this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "", streams: "" };
+    this._streamsTimer = null;
+    this._streamPopupTimer = null;
+    this._streamsEnded = /* @__PURE__ */ new Set();
+    this._diskPage = { radarr: 0, sonarr: 0, left: null };
     this._rightPage = 0;
     this._rightMaxH = 0;
     this._gradients = ["ca", "cb", "cc", "cd", "ce", "cf", "cg", "ch", "ci", "cj", "ck", "cl", "cm", "cn", "co", "cp", "cq", "cr"];
@@ -6790,6 +7347,7 @@ var ArrStackCard = class extends HTMLElement {
     }
   }
   set hass(hass) {
+    const prev = this._hass;
     this._hass = hass;
     if (!this._initialized) {
       this._initialized = true;
@@ -6803,6 +7361,45 @@ var ArrStackCard = class extends HTMLElement {
         requestAnimationFrame(() => this._checkBadgeOverflow());
       });
       this._resizeObserver.observe(this);
+      return;
+    }
+    if (prev) {
+      const cur = hass.states || {};
+      const old = prev.states || {};
+      for (const id of Object.keys(cur)) {
+        if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) continue;
+        const nowActive = cur[id]?.state === "playing" || cur[id]?.state === "paused";
+        const wasActive = old[id]?.state === "playing" || old[id]?.state === "paused";
+        if (nowActive && !wasActive) {
+          this._streamsEnded.delete(id);
+          this._reRenderSection("streams");
+          break;
+        }
+      }
+      for (const id of this._streamsEnded) {
+        const curS = cur[id];
+        if (!curS) {
+          this._streamsEnded.delete(id);
+          continue;
+        }
+        const nowActive = curS.state === "playing" || curS.state === "paused";
+        if (!nowActive) {
+          this._streamsEnded.delete(id);
+          continue;
+        }
+        const curAttr = curS.attributes || {};
+        const oldAttr = old[id]?.attributes || {};
+        const curUpd = curAttr.media_position_updated_at;
+        const oldUpd = oldAttr.media_position_updated_at;
+        const titleChg = curAttr.media_title !== oldAttr.media_title;
+        const idChg = curAttr.media_content_id !== oldAttr.media_content_id;
+        const posReset = (curAttr.media_position || 0) < 10 && (oldAttr.media_position || 0) > 30;
+        if (curUpd && curUpd !== oldUpd || titleChg || idChg || posReset) {
+          this._streamsEnded.delete(id);
+          this._reRenderSection("streams");
+          break;
+        }
+      }
     }
   }
   disconnectedCallback() {
@@ -6813,6 +7410,14 @@ var ArrStackCard = class extends HTMLElement {
     if (this._fastInterval) {
       clearInterval(this._fastInterval);
       this._fastInterval = null;
+    }
+    if (this._streamsTimer) {
+      clearInterval(this._streamsTimer);
+      this._streamsTimer = null;
+    }
+    if (this._streamPopupTimer) {
+      clearInterval(this._streamPopupTimer);
+      this._streamPopupTimer = null;
     }
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
