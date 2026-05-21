@@ -797,6 +797,17 @@ var STYLES = `
       .mbar { height: 2px; background: rgba(255,255,255,0.18); border-radius: 1px; overflow: hidden; margin-top: 3px; }
       .mbar-fill { height: 100%; border-radius: 1px; }
 
+      .rf-disk-chip { margin-bottom: 8px; }
+      .rf-disk-inner { display: flex; justify-content: space-between; align-items: flex-start; }
+      .rf-disk-left { flex: 1; min-width: 0; }
+      .rf-disk-right { text-align: right; margin-left: 10px; flex-shrink: 0; max-width: 55%; }
+      .dc-root-path { font-size: 10px; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 0.6); font-weight: 600; line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .disk-chip.dc-pageable { padding: 0; }
+      .dc-pageable { display: flex; align-items: stretch; justify-content: space-between; }
+      .dc-page-content { flex: 1; min-width: 0; padding: 7px 4px; }
+      .dc-chev { background: none; border: none; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 0.55); cursor: pointer; padding: 7px 3px; display: flex; align-items: center; flex-shrink: 0; }
+      .dc-chev:disabled { opacity: 0.18; cursor: default; }
+
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          CLIENT HEADER
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
@@ -3831,8 +3842,70 @@ var _RenderLeft = class {
     const hasSabDisk = sabTotalGB > 0;
     const qbitFreeBytes = this._qbitDiskFreeBytes;
     const hasQbitDisk = typeof qbitFreeBytes === "number" && qbitFreeBytes > 0;
+    const DISK_ROUND = 100 * 1024 * 1024;
+    const allRoots = [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
+    const diskMap = /* @__PURE__ */ new Map();
+    for (const r of allRoots) {
+      const key = Math.round(r.freeSpace / DISK_ROUND);
+      if (!diskMap.has(key)) diskMap.set(key, { freeSpace: r.freeSpace, paths: /* @__PURE__ */ new Set() });
+      diskMap.get(key).paths.add(r.path);
+    }
+    const uniqueDisks = [...diskMap.values()].map((d) => ({ freeSpace: d.freeSpace, paths: [...d.paths] }));
+    const diskTotal = uniqueDisks.length;
+    const SAB_ROUND_EARLY = 1024 * 1024 * 1024;
+    let diskPage;
+    if (this._diskPage.left === null) {
+      const sabKey = hasSabDisk ? Math.round(sabFreeGB * 1073741824 / SAB_ROUND_EARLY) : -1;
+      const sabIdx = uniqueDisks.findIndex((d) => Math.round(d.freeSpace / SAB_ROUND_EARLY) === sabKey);
+      diskPage = sabIdx >= 0 ? sabIdx : 0;
+    } else {
+      diskPage = Math.min(this._diskPage.left, Math.max(0, diskTotal - 1));
+    }
+    const activeDisk = uniqueDisks[diskPage];
+    const diskLabel = activeDisk ? activeDisk.paths.map((p) => p.replace(/\/$/, "").split("/").filter(Boolean).pop() || p).join(" \xB7 ") : "";
+    const multiDisk = diskTotal > 1;
+    const _chev = (dir, disabled) => `
+    <button class="dc-chev" data-diskkey="left" data-diskdir="${dir}" ${disabled ? "disabled" : ""}>
+      <ha-icon icon="mdi:chevron-${dir === "prev" ? "left" : "right"}" style="--mdc-icon-size:16px"></ha-icon>
+    </button>`;
+    const SAB_ROUND = 1024 * 1024 * 1024;
+    const sabFreeBytes = sabFreeGB * 1073741824;
+    const sabTotalBytes = sabTotalGB * 1073741824;
+    const sabDiskKey = hasSabDisk ? Math.round(sabFreeBytes / SAB_ROUND) : -1;
+    const activeSabKey = activeDisk ? Math.round(activeDisk.freeSpace / SAB_ROUND) : -2;
+    const activeIsSab = hasSabDisk && sabDiskKey === activeSabKey;
+    const activeDiskKey = activeDisk ? Math.round(activeDisk.freeSpace / DISK_ROUND) : -2;
+    const qbitDiskKey = hasQbitDisk ? Math.round(qbitFreeBytes / DISK_ROUND) : -3;
+    const activeIsQbit = hasQbitDisk && !activeIsSab && qbitDiskKey === activeDiskKey;
     let diskChip = "";
-    if (hasSabDisk) {
+    if (multiDisk && activeDisk) {
+      let pageContent = "";
+      if (activeIsSab) {
+        const usedGB = sabTotalGB - sabFreeGB;
+        const pct = usedGB / sabTotalGB * 100;
+        pageContent = `
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedGB * 1073741824)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(sabTotalBytes)}</span></div>
+        <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(sabFreeBytes)} ${this._t("free")}</div>`;
+      } else if (activeIsQbit) {
+        pageContent = `
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(qbitFreeBytes)} ${this._t("free")}</span></div>
+        ${diskLabel ? `<div class="dc-sub">${this._escHtml(diskLabel)}</div>` : ""}`;
+      } else {
+        pageContent = `
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(activeDisk.freeSpace)} ${this._t("free")}</span></div>
+        ${diskLabel ? `<div class="dc-sub">${this._escHtml(diskLabel)}</div>` : ""}`;
+      }
+      diskChip = `
+      <div class="disk-chip dc-pageable">
+        ${_chev("prev", diskPage === 0)}
+        <div class="dc-page-content">${pageContent}</div>
+        ${_chev("next", diskPage >= diskTotal - 1)}
+      </div>`;
+    } else if (hasSabDisk) {
       const usedGB = sabTotalGB - sabFreeGB;
       const pct = usedGB / sabTotalGB * 100;
       diskChip = `
@@ -4336,6 +4409,42 @@ var _RenderRight = class {
       <ha-icon icon="mdi:movie-outline" style="--mdc-icon-size:22px"></ha-icon>
       <span class="col-hdr-title">${this._t("overview")}</span>
       <div class="col-hdr-line"></div>
+    </div>`;
+  }
+  _renderRootDiskChip(key, roots) {
+    if (!roots || roots.length === 0) return "";
+    const fmtGB = (bytes) => {
+      const gb = bytes / 1073741824;
+      return gb >= 1024 ? (gb / 1024).toFixed(1) + " TB" : gb.toFixed(1) + " GB";
+    };
+    const DISK_ROUND = 100 * 1024 * 1024;
+    const diskMap = /* @__PURE__ */ new Map();
+    for (const r of roots) {
+      const key2 = Math.round(r.freeSpace / DISK_ROUND);
+      if (!diskMap.has(key2)) diskMap.set(key2, { freeSpace: r.freeSpace, paths: [] });
+      diskMap.get(key2).paths.push(r.path);
+    }
+    const uniqueDisks = [...diskMap.values()];
+    const total = uniqueDisks.length;
+    const page = Math.min(this._diskPage[key] || 0, total - 1);
+    const disk = uniqueDisks[page];
+    const pathsHtml = disk.paths.map((p) => `<div class="dc-root-path">${this._escHtml(p)}</div>`).join("");
+    const pagingHtml = total > 1 ? `
+    <div class="dc-disk-paging">
+      <button class="dc-disk-btn" data-diskkey="${key}" data-diskdir="prev" ${page === 0 ? "disabled" : ""}>\u2039</button>
+      <span class="dc-disk-dots">${page + 1} / ${total}</span>
+      <button class="dc-disk-btn" data-diskkey="${key}" data-diskdir="next" ${page >= total - 1 ? "disabled" : ""}>\u203A</button>
+    </div>` : "";
+    return `
+    <div class="disk-chip rf-disk-chip">
+      <div class="rf-disk-inner">
+        <div class="rf-disk-left">
+          <div class="dc-label">${this._t("storage")}</div>
+          <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(disk.freeSpace)} ${this._t("free")}</span></div>
+          ${pagingHtml}
+        </div>
+        <div class="rf-disk-right">${pathsHtml}</div>
+      </div>
     </div>`;
   }
   _renderRadarr() {
@@ -6037,6 +6146,35 @@ var _WireMethods = class {
         });
       }, { signal: sig });
     });
+    scope.querySelectorAll(".dc-chev").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.diskkey;
+        const dir = btn.dataset.diskdir;
+        if (!key || btn.disabled) return;
+        let roots;
+        if (key === "left") {
+          roots = [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
+        } else {
+          roots = key === "radarr" ? this._radarrRootFolders : this._sonarrRootFolders;
+        }
+        const DISK_ROUND = 100 * 1024 * 1024;
+        const diskMap = /* @__PURE__ */ new Map();
+        for (const r of roots) {
+          const key2 = Math.round(r.freeSpace / DISK_ROUND);
+          if (!diskMap.has(key2)) diskMap.set(key2, true);
+        }
+        const total = diskMap.size;
+        const cur = this._diskPage[key] ?? 0;
+        if (dir === "next" && cur < total - 1) this._diskPage[key] = cur + 1;
+        else if (dir === "prev" && cur > 0) this._diskPage[key] = cur - 1;
+        else return;
+        if (key === "left") {
+          this._reRenderLeft();
+        } else {
+          this._reRenderSection(key);
+        }
+      }, { signal: sig });
+    });
   }
   // ─────────────────────────────────────────────
   // Swipe gesta pro stránkování sekcí (touch)
@@ -6765,6 +6903,7 @@ var ArrStackCard = class extends HTMLElement {
     this._searchAbort = null;
     this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "" };
+    this._diskPage = { radarr: 0, sonarr: 0, left: null };
     this._rightPage = 0;
     this._rightMaxH = 0;
     this._gradients = ["ca", "cb", "cc", "cd", "ce", "cf", "cg", "ch", "ci", "cj", "ck", "cl", "cm", "cn", "co", "cp", "cq", "cr"];
