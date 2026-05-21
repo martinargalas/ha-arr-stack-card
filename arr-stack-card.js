@@ -6,7 +6,16 @@ var ArrStackCardEditor = class extends HTMLElement {
     this._config = {};
   }
   setConfig(config) {
-    this._config = config || {};
+    config = config || {};
+    if (Array.isArray(config.categories)) {
+      const CAT_MAP = { radarr: "recentlyAdded", sonarr: "recentlyRequested" };
+      const seen = /* @__PURE__ */ new Set();
+      config = {
+        ...config,
+        categories: config.categories.map((c) => CAT_MAP[c.id] ? { ...c, id: CAT_MAP[c.id] } : c).filter((c) => seen.has(c.id) ? false : seen.add(c.id))
+      };
+    }
+    this._config = config;
     this._render();
   }
   connectedCallback() {
@@ -247,7 +256,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "trending", enabled: true },
       { id: "popular", enabled: true },
       { id: "calendar", enabled: true },
-      { id: "streams", enabled: false }
+      { id: "streams", enabled: true },
+      { id: "tautulli", enabled: true }
     ];
   }
   _getCats() {
@@ -268,7 +278,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       trending: "Trending",
       popular: "Popular Movies",
       calendar: "Calendar",
-      streams: "Now Playing (Plex / Jellyfin)"
+      streams: "Now Playing (Plex / Jellyfin) \u2014 auto-hidden when nothing plays",
+      tautulli: "Tautulli (Plex stats)"
     }[id] || id;
   }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
@@ -2464,6 +2475,135 @@ var STYLES = `
       .card-body.perf-mode .col {
         background: var(--card-bg-perf, rgba(18,18,22,0.88));
       }
+
+      /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+         TAUTULLI POSTER ROW
+      \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+      .tl-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .tl-card {
+        border-radius: 10px; padding: 11px 10px; cursor: pointer;
+        position: relative; overflow: hidden; aspect-ratio: 2/3;
+        display: flex; flex-direction: column;
+        transition: transform .15s, box-shadow .15s;
+        border: 1px solid rgba(255,255,255,0.08);
+      }
+      .tl-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+      .tl-card-blue   { background: linear-gradient(160deg, #1a1f3c 0%, #0d1526 100%); }
+      .tl-card-green  { background: linear-gradient(160deg, #1a2b1f 0%, #0d1e11 100%); }
+      .tl-card-orange { background: linear-gradient(160deg, #2b1e0e 0%, #1e1208 100%); }
+      .tl-card-purple { background: linear-gradient(160deg, #221330 0%, #150b22 100%); }
+      .tl-card-warn   { background: linear-gradient(160deg, #2b1212 0%, #1e0909 100%); border-color: rgba(255,60,60,0.3) !important; }
+      .tl-accent { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+      .tl-accent-blue   { background: rgba(99,140,255,0.7); }
+      .tl-accent-green  { background: rgba(60,200,120,0.7); }
+      .tl-accent-orange { background: rgba(250,160,40,0.7); }
+      .tl-accent-purple { background: rgba(180,80,255,0.7); }
+      .tl-accent-red    { background: rgba(255,60,60,0.8); }
+      .tl-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; flex-shrink: 0; }
+      .tl-icon-blue   { background: rgba(99,140,255,0.15); }
+      .tl-icon-green  { background: rgba(60,200,120,0.15); }
+      .tl-icon-orange { background: rgba(250,160,40,0.15); }
+      .tl-icon-purple { background: rgba(180,80,255,0.15); }
+      .tl-icon-red    { background: rgba(255,60,60,0.15); }
+      .tl-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.3); margin-bottom: 6px; flex-shrink: 0; }
+      .tl-label-warn { color: rgba(255,100,100,0.6); }
+      .tl-stat-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+      .tl-stat-name { font-size: 10px; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72px; }
+      .tl-stat-val  { font-size: 10px; font-weight: 700; color: rgba(250,180,50,0.9); flex-shrink: 0; margin-left: 4px; }
+      .tl-big-num   { font-size: 34px; font-weight: 800; color: rgba(250,160,40,0.9); line-height: 1; margin-bottom: 4px; }
+      .tl-big-sub   { font-size: 10px; color: rgba(255,255,255,0.35); margin-bottom: 8px; }
+      .tl-sub-row   { font-size: 9px; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+      .tl-sub-val   { font-weight: 600; color: rgba(255,255,255,0.6); }
+      .tl-user-row  { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+      .tl-user-row:last-of-type { margin-bottom: 0; }
+      .tl-avatar { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.1); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.6); overflow: hidden; }
+      .tl-avatar img { width: 100%; height: 100%; object-fit: cover; }
+      .tl-avatar-warn { background: rgba(255,60,60,0.2); color: rgba(255,120,120,0.9); }
+      .tl-user-name  { font-size: 10px; color: rgba(255,255,255,0.75); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tl-user-name-warn { color: rgba(255,120,120,0.95); }
+      .tl-user-plays { font-size: 9px; font-weight: 700; color: rgba(250,180,50,0.85); flex-shrink: 0; }
+      .tl-user-plays-warn { color: rgba(255,80,80,0.8); }
+      .tl-warn-sub   { font-size: 8px; color: rgba(255,80,80,0.6); }
+      .tl-warn-badge { position: absolute; top: 8px; right: 8px; background: rgba(255,60,60,0.2); border: 1px solid rgba(255,60,60,0.4); border-radius: 4px; padding: 1px 4px; font-size: 8px; color: rgba(255,100,100,0.9); font-weight: 700; }
+      .tl-mini-bars { display: flex; align-items: flex-end; gap: 2px; flex: 1; min-height: 0; }
+      .tl-bar-col   { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+      .tl-bar { width: 100%; border-radius: 2px 2px 0 0; background: rgba(180,80,255,0.5); min-height: 2px; transition: background .15s; }
+      .tl-card:hover .tl-bar { background: rgba(180,80,255,0.8); }
+      .tl-bar-day   { font-size: 6px; color: rgba(255,255,255,0.2); }
+      .tl-chart-sum { font-size: 9px; color: rgba(255,255,255,0.4); margin-top: 4px; flex-shrink: 0; }
+      .tl-chart-sum strong { color: rgba(180,80,255,0.9); font-weight: 700; }
+
+      /* Tautulli modal */
+      .tl-modal-overlay {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
+      }
+      .tl-modal-box {
+        background: #1a1a24; border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.08);
+        width: min(880px, 96vw); max-height: 88vh;
+        display: flex; flex-direction: column; overflow: hidden;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+      }
+      .tl-modal-hdr  { display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px 0; flex-shrink: 0; }
+      .tl-modal-icon { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+      .tl-modal-icon-blue   { background: rgba(99,140,255,0.15); }
+      .tl-modal-icon-green  { background: rgba(60,200,120,0.15); }
+      .tl-modal-icon-orange { background: rgba(250,160,40,0.15); }
+      .tl-modal-icon-purple { background: rgba(180,80,255,0.15); }
+      .tl-modal-hdr-text  { flex: 1; }
+      .tl-modal-title     { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+      .tl-modal-subtitle  { font-size: 12px; color: rgba(255,255,255,0.4); }
+      .tl-modal-close {
+        margin-left: 8px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%;
+        width: 30px; height: 30px; cursor: pointer; color: rgba(255,255,255,0.6); font-size: 16px;
+        display: flex; align-items: center; justify-content: center;
+        transition: background .15s; flex-shrink: 0;
+      }
+      .tl-modal-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+      .tl-modal-tabs { display: flex; gap: 4px; padding: 12px 22px 0; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+      .tl-tab { padding: 7px 16px; border-radius: 8px 8px 0 0; font-size: 12px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: rgba(255,255,255,0.45); transition: all .15s; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+      .tl-tab.tl-tab-active { color: #fff; border-bottom-color: rgba(250,180,50,0.8); }
+      .tl-tab:hover:not(.tl-tab-active) { color: rgba(255,255,255,0.7); }
+      .tl-modal-body { flex: 1; overflow-y: auto; padding: 16px 22px 20px; }
+      .tl-modal-body::-webkit-scrollbar { width: 4px; }
+      .tl-modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .tl-lib-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .tl-lib-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px; text-align: center; }
+      .tl-graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .tl-graph-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 14px; }
+      .tl-graph-card.full { grid-column: 1 / -1; }
+      .tl-graph-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+      .tl-bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 72px; }
+      .tl-bar-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+      .tl-bar-chart-bar { width: 100%; border-radius: 2px 2px 0 0; background: rgba(250,180,50,0.5); min-height: 2px; transition: background .15s; cursor: pointer; }
+      .tl-bar-chart-bar:hover { background: rgba(250,180,50,0.85); }
+      .tl-bar-chart-label { font-size: 7px; color: rgba(255,255,255,0.25); }
+      .tl-filter { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.55); cursor: pointer; transition: all .15s; }
+      .tl-filter.tl-filter-active { background: rgba(250,180,50,0.15); border-color: rgba(250,180,50,0.35); color: rgba(250,180,50,0.9); }
+      .tl-hist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      .tl-hist-table th { text-align: left; padding: 6px 8px; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.07); }
+      .tl-hist-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); vertical-align: middle; }
+      .tl-hist-table tr:last-child td { border-bottom: none; }
+      .tl-hist-table tr:hover td { background: rgba(255,255,255,0.03); }
+      .tl-users-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      .tl-users-table th { text-align: left; padding: 6px 8px; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.07); }
+      .tl-users-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); vertical-align: middle; }
+      .tl-users-table tr:last-child td { border-bottom: none; }
+      .tl-users-table tr.tl-row-warn td { background: rgba(255,60,60,0.04); }
+      .tl-users-table tr:hover td { background: rgba(255,255,255,0.03); }
+      .tl-warn-banner { display: flex; align-items: flex-start; gap: 10px; background: rgba(255,60,60,0.08); border: 1px solid rgba(255,60,60,0.22); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 11px; color: rgba(255,120,120,0.9); line-height: 1.5; }
+      .tl-ack-btn { margin-left: auto; flex-shrink: 0; align-self: center; background: rgba(255,60,60,0.18); border: 1px solid rgba(255,60,60,0.35); border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; color: rgba(255,120,120,0.9); cursor: pointer; transition: all .15s; white-space: nowrap; }
+      .tl-ack-btn:hover { background: rgba(255,60,60,0.3); color: #fff; }
+      .tl-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
+      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6); cursor: pointer; font-size: 12px; transition: all .15s; }
+      .tl-page-btn:disabled { opacity: 0.3; pointer-events: none; }
+      .tl-page-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+      .tl-page-counter { font-size: 12px; color: rgba(255,255,255,0.4); }
+      .tl-badge-movie  { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; background: rgba(99,120,255,0.18); color: rgba(140,155,255,0.9); border: 1px solid rgba(99,120,255,0.28); }
+      .tl-badge-tv     { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; background: rgba(80,200,120,0.13); color: rgba(100,220,140,0.9); border: 1px solid rgba(80,200,120,0.22); }
+      .tl-badge-music  { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; background: rgba(250,180,50,0.13); color: rgba(250,200,80,0.9); border: 1px solid rgba(250,180,50,0.22); }
     `;
 
 // src/render/interactive-search.js
@@ -3114,7 +3254,8 @@ var _FetchMethods = class {
       this._fetchRadarrTags(),
       this._fetchSonarrTags(),
       this._fetchRadarrRootFolders(),
-      this._fetchSonarrRootFolders()
+      this._fetchSonarrRootFolders(),
+      this._fetchTautulli()
     ]);
     this._render();
   }
@@ -3822,6 +3963,81 @@ var _FetchMethods = class {
       console.error("[arr-card] Overseerr add request error:", e);
     }
   }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tautulli — poster data fetch
+  // ──────────────────────────────────────────────────────────────────────────
+  async _fetchTautulli() {
+    if (!this._tautulliConfigured) return;
+    try {
+      const [actRaw, statsRaw, playsRaw, ackRaw] = await Promise.all([
+        this._hass.callApi("GET", "arr_stack/tautulli/get_activity").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tautulli/get_home_stats?time_range=7&stats_count=5&stats_type=plays").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tautulli/get_plays_by_date?time_range=7&y_axis=plays").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tautulli/sharing_ack").catch(() => null)
+      ]);
+      if (actRaw === null && statsRaw === null) {
+        this._tautulliConfigured = false;
+        return;
+      }
+      const act = actRaw?.response?.data || {};
+      const stats = statsRaw?.response?.data || [];
+      const playsD = playsRaw?.response?.data || {};
+      const cats = playsD.categories || [];
+      const series = playsD.series || [];
+      const playsData = cats.map((date, i) => ({
+        date,
+        value: series.reduce((s, sr) => s + ((sr.data || [])[i] || 0), 0)
+      }));
+      const sessions = act.sessions || [];
+      const byUser = {};
+      sessions.forEach((s) => {
+        const uid = s.user_id || s.username || s.friendly_name;
+        if (!uid) return;
+        if (!byUser[uid]) byUser[uid] = { name: s.friendly_name || s.username || String(uid), ips: /* @__PURE__ */ new Set() };
+        if (s.ip_address) byUser[uid].ips.add(s.ip_address);
+      });
+      const ackedIps = ackRaw?.ackedIps || {};
+      const sharingUsers = [];
+      for (const [uid, info] of Object.entries(byUser)) {
+        if (info.ips.size <= 1) continue;
+        const knownIps = new Set(ackedIps[info.name] || []);
+        const newIps = [...info.ips].filter((ip) => !knownIps.has(ip));
+        if (newIps.length > 0) sharingUsers.push(info.name);
+      }
+      this._tautulli = {
+        activity: act,
+        stats,
+        playsData,
+        sharingDetected: sharingUsers.length > 0,
+        sharingAcked: false,
+        sharingUsers,
+        ackedIps
+      };
+    } catch (e) {
+      console.warn("[arr-card] Tautulli fetch error:", e);
+    }
+  }
+  async _ackTautulliSharing() {
+    if (!this._tautulli) return;
+    const { sharingUsers, ackedIps: prev } = this._tautulli;
+    const act = this._tautulli.activity || {};
+    const sessions = act.sessions || [];
+    const updated = { ...prev };
+    sharingUsers.forEach((name) => {
+      const userSessions = sessions.filter((s) => (s.friendly_name || s.username) === name);
+      const ips = userSessions.map((s) => s.ip_address).filter(Boolean);
+      const existing = new Set(prev[name] || []);
+      ips.forEach((ip) => existing.add(ip));
+      updated[name] = [...existing];
+    });
+    try {
+      await this._hass.callApi("POST", "arr_stack/tautulli/sharing_ack", { ackedIps: updated });
+      this._tautulli = { ...this._tautulli, sharingAcked: true, ackedIps: updated };
+      this._reRenderRight();
+    } catch (e) {
+      console.warn("[arr-card] Tautulli ack error:", e);
+    }
+  }
 };
 var fetchMixin = _FetchMethods.prototype;
 
@@ -4255,8 +4471,14 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar"];
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar", "tautulli"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
+    const states = this._hass?.states || {};
+    const hasActiveStreams = Object.keys(states).some((id) => {
+      if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) return false;
+      const st = states[id].state;
+      return st === "playing" || st === "paused";
+    });
     const CAT_FN = {
       radarr: () => this._renderRadarr(),
       sonarr: () => this._renderSonarr(),
@@ -4267,7 +4489,8 @@ var _RenderRight = class {
       trending: () => this._renderTrending(),
       popular: () => this._renderPopular(),
       calendar: hasCalendar ? () => this._renderCalendar() : null,
-      streams: () => this._renderStreams()
+      streams: hasActiveStreams ? () => this._renderStreams() : null,
+      tautulli: this._tautulliConfigured !== false ? () => this._renderTautulli() : null
     };
     const regularCategories = [
       ...hasPending ? [() => this._renderPendingRequests()] : [],
@@ -4917,14 +5140,15 @@ var _RenderRight = class {
     this._streams = streams;
     this._startStreamsTimer(streams);
     this._syncStreamPopup();
-    const grid = streams.length === 0 ? `<div class="placeholder">${this._t("noStreams")}</div>` : this._pagedGridWithSmp(streams, "streams", (s) => this._renderStreamCard(s));
+    if (streams.length === 0) return "";
+    const grid = this._pagedGridWithSmp(streams, "streams", (s) => this._renderStreamCard(s));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
         <ha-icon icon="mdi:play-network" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("streamsTitle")}</span>
         <div class="col-hdr-line"></div>
-        ${streams.length > 0 ? `<span class="sec-badge" style="background:rgba(229,160,13,0.12);border:1px solid rgba(229,160,13,0.25)">${streams.length} ${this._t("streamsActive")}</span>` : ""}
+        <span class="sec-badge" style="background:rgba(229,160,13,0.12);border:1px solid rgba(229,160,13,0.25)">${streams.length} ${this._t("streamsActive")}</span>
       </div>
       ${grid}
     </div>`;
@@ -4944,6 +5168,7 @@ var _RenderRight = class {
         const updatedAt = parseFloat(el.dataset.updated);
         const entity = el.dataset.entity;
         if (!dur) return;
+        if (!el.dataset.state) return;
         const isPlaying = el.dataset.state === "playing";
         const elapsed = isPlaying ? (Date.now() - updatedAt) / 1e3 : 0;
         const current = Math.min(pos + elapsed, dur);
@@ -4954,6 +5179,19 @@ var _RenderRight = class {
         }
       });
       if (anyNewlyEnded) this._reRenderSection("streams");
+      let anyRestarted = false;
+      for (const endedId of this._streamsEnded) {
+        const s = this._hass?.states?.[endedId];
+        if (!s) continue;
+        if (s.state !== "playing" && s.state !== "paused") continue;
+        const hassPos = s.attributes?.media_position || 0;
+        const hassDur = s.attributes?.media_duration || 0;
+        if (hassDur > 0 && hassPos < hassDur - 5) {
+          this._streamsEnded.delete(endedId);
+          anyRestarted = true;
+        }
+      }
+      if (anyRestarted) this._reRenderSection("streams");
     }, 1e3);
   }
   _renderStreamCard({ id, state, attr }) {
@@ -4996,7 +5234,17 @@ var _RenderRight = class {
       deviceName = "Phone";
     }
     const poster = attr.entity_picture || null;
-    const img = this._mcImg(poster, isMusic ? "\u{1F3B5}" : isTV ? "\u{1F4FA}" : "\u{1F3AC}", id);
+    let img;
+    if (!poster && isLiveTV) {
+      const ch = channel || (attr.media_title || "").slice(0, 6).toUpperCase();
+      img = `<div style="position:absolute;inset:0;background:linear-gradient(135deg,#0d1b2a 0%,#1b2838 60%,#0a1628 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px">
+      <ha-icon icon="mdi:broadcast" style="--mdc-icon-size:30px;color:rgba(220,60,60,0.85)"></ha-icon>
+      ${ch ? `<span style="font-size:8px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.45);max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(ch)}</span>` : ""}
+      <span style="font-size:7px;font-weight:800;letter-spacing:3px;color:rgba(220,60,60,0.7)">LIVE</span>
+    </div>`;
+    } else {
+      img = this._mcImg(poster, isMusic ? "\u{1F3B5}" : isTV ? "\u{1F4FA}" : "\u{1F3AC}", id);
+    }
     const duration = attr.media_duration || 0;
     const position = attr.media_position || 0;
     const updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
@@ -6400,6 +6648,101 @@ var _WireMethods = class {
       }, { passive: true, signal: sig });
     }
   }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tautulli — poster & modal wiring
+  // ──────────────────────────────────────────────────────────────────────────
+  _wireTautulliPosters(right) {
+    right.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-tl-open]");
+      if (!card) return;
+      this._openTautulliModal(card.dataset.tlOpen);
+    });
+  }
+  _wireTautulliModal(el) {
+    el.querySelector("#tl-close")?.addEventListener("click", () => this._closeTautulliModal());
+    el.addEventListener("click", (e) => {
+      if (e.target === el) this._closeTautulliModal();
+    });
+    el.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-tl-tab]");
+      if (!tab || !this._tautulliModal) return;
+      const t = tab.dataset.tlTab;
+      this._tautulliModal.tab = t;
+      el.querySelectorAll(".tl-tab").forEach((b) => b.classList.toggle("tl-tab-active", b.dataset.tlTab === t));
+      const iconCls = { libraries: "blue", users: "green", history: "orange", graphs: "purple" }[t] || "blue";
+      const iconEl = el.querySelector("#tl-hdr-icon");
+      if (iconEl) {
+        iconEl.className = `tl-modal-icon tl-modal-icon-${iconCls}`;
+        iconEl.innerHTML = this._tlTabIcon(t);
+      }
+      const titleEl = el.querySelector("#tl-hdr-title");
+      if (titleEl) titleEl.textContent = this._tlTabTitle(t);
+      const subEl = el.querySelector("#tl-hdr-sub");
+      if (subEl) subEl.textContent = this._tlTabSubtitle(t);
+      this._tlLoadTab(t, el);
+    });
+  }
+  _wireTautulliModalBody(body) {
+    body.querySelector("#tl-ack-btn")?.addEventListener("click", async () => {
+      await this._ackTautulliSharing();
+      const r = await this._hass.callApi("GET", "arr_stack/tautulli/get_users_table?length=50&start=0&order_column=plays&order_dir=desc").catch(() => null);
+      body.innerHTML = this._tlBodyUsers(r?.response?.data?.data);
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("#tl-hist-prev")?.addEventListener("click", async () => {
+      if (!this._tautulliModal || this._tautulliModal.histPage <= 0) return;
+      this._tautulliModal.histPage--;
+      this._tautulliModal.histLoading = true;
+      body.innerHTML = this._tlBodyHistory();
+      const data = await this._tlFetchHistory(this._tautulliModal.histPage, this._tautulliModal.histUser, this._tautulliModal.histMedia);
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histData = data.data || [];
+      this._tautulliModal.histTotal = data.recordsFiltered || 0;
+      this._tautulliModal.histLoading = false;
+      body.innerHTML = this._tlBodyHistory();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("#tl-hist-next")?.addEventListener("click", async () => {
+      if (!this._tautulliModal) return;
+      const totalPages = Math.ceil(this._tautulliModal.histTotal / 25);
+      if (this._tautulliModal.histPage >= totalPages - 1) return;
+      this._tautulliModal.histPage++;
+      this._tautulliModal.histLoading = true;
+      body.innerHTML = this._tlBodyHistory();
+      const data = await this._tlFetchHistory(this._tautulliModal.histPage, this._tautulliModal.histUser, this._tautulliModal.histMedia);
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histData = data.data || [];
+      this._tautulliModal.histTotal = data.recordsFiltered || 0;
+      this._tautulliModal.histLoading = false;
+      body.innerHTML = this._tlBodyHistory();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelectorAll("[data-tl-hist-media]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const media = btn.dataset.tlHistMedia === "all" ? null : btn.dataset.tlHistMedia;
+        this._tautulliModal.histMedia = media;
+        this._tautulliModal.histPage = 0;
+        this._tautulliModal.histLoading = true;
+        body.innerHTML = this._tlBodyHistory();
+        const data = await this._tlFetchHistory(0, this._tautulliModal.histUser, media);
+        if (!this._tautulliModal) return;
+        this._tautulliModal.histData = data.data || [];
+        this._tautulliModal.histTotal = data.recordsFiltered || 0;
+        this._tautulliModal.histLoading = false;
+        body.innerHTML = this._tlBodyHistory();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-graph-sub]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        this._tautulliModal.graphsSub = btn.dataset.tlGraphSub;
+        body.innerHTML = this._tlBodyGraphs();
+        this._wireTautulliModalBody(body);
+      });
+    });
+  }
 };
 var wireMixin = _WireMethods.prototype;
 
@@ -6435,7 +6778,6 @@ var _PopupMethods = class {
   async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
     const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
     const streamAttr = this._hass?.states?.[entityId]?.attributes || {};
-    console.log("[stream-popup] entity:", entityId, "contentType:", contentType, "libTitle:", streamAttr.media_library_title, "channel:", streamAttr.media_channel, "seriesTitle:", streamAttr.media_series_title);
     const isLiveTV = contentType === "channel" || !!streamAttr.media_channel || streamAttr.media_library_title === "Live TV";
     const isTV = isLiveTV || contentType === "tvshow" || contentType === "episode" || !!seriesTitle || !!streamAttr.media_series_title;
     if (isMusic) {
@@ -6468,6 +6810,7 @@ var _PopupMethods = class {
       }
       if (this._popup) {
         this._popup._noIS = true;
+        this._attachStreamData(entityId);
         this._renderPopupEl();
       }
       return;
@@ -6479,6 +6822,10 @@ var _PopupMethods = class {
     });
     if (m) {
       await this._openPopup(POPUP_TYPE.RADARR, String(m.tmdbId), null, m.title, m.id);
+      if (this._popup) {
+        this._attachStreamData(entityId);
+        this._renderPopupEl();
+      }
     } else {
       const s = this._hass?.states?.[entityId];
       const attr = s?.attributes || {};
@@ -6498,6 +6845,70 @@ var _PopupMethods = class {
       this._renderPopupEl();
     }
   }
+  // Attach live stream data to current popup (called after _openPopup for movie/TV from stream card)
+  _attachStreamData(entityId) {
+    if (!this._popup) return;
+    const s = this._hass?.states?.[entityId];
+    const attr = s?.attributes || {};
+    this._popup._streamEntity = entityId;
+    this._popup._streamState = s?.state || "idle";
+    this._popup._duration = attr.media_duration || 0;
+    this._popup._position = attr.media_position || 0;
+    this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    this._popup._plexMachineId = null;
+    if (entityId.startsWith("media_player.plex_")) this._fetchPlexMachineId(entityId);
+  }
+  async _fetchPlexMachineId(entityId) {
+    try {
+      const [raw, clientsRaw] = await Promise.all([
+        this._hass.callApi("GET", "arr_stack/plex/sessions"),
+        this._hass.callApi("GET", "arr_stack/plex/clients").catch(() => null)
+      ]);
+      const clients = clientsRaw?.MediaContainer?.Server || [];
+      const sessions = raw?.MediaContainer?.Metadata || [];
+      if (!sessions.length) return;
+      const attr = this._hass?.states?.[entityId]?.attributes || {};
+      const rawTitle = (attr.media_title || "").replace(/\s*\(\d{4}\)\s*$/, "").trim().toLowerCase();
+      const mediaPos = attr.media_position || 0;
+      let match = sessions.find((s) => {
+        if (!s.Player?.machineIdentifier) return false;
+        const sTitle = (s.title || "").toLowerCase();
+        const titleOk = rawTitle && sTitle === rawTitle;
+        const posOk = Math.abs((s.viewOffset || 0) / 1e3 - mediaPos) < 60;
+        return titleOk && posOk;
+      });
+      if (!match) match = sessions.find((s) => rawTitle && (s.title || "").toLowerCase() === rawTitle);
+      if (!match && sessions.length === 1 && sessions[0].Player?.machineIdentifier) match = sessions[0];
+      const p = match?.Player;
+      if (p && this._popup && p.platform === "tvOS") {
+        this._popup._plexMachineId = p.machineIdentifier;
+        const port = p.port || (p.secure ? 32433 : 32500);
+        const protocol = p.secure ? "https" : "http";
+        this._popup._plexPlayerUrl = p.address ? `${protocol}://${p.address}:${port}` : null;
+        this._renderPopupEl();
+      }
+    } catch (_) {
+    }
+  }
+  // Seek via HA media_seek, or fall back to Plex direct API when HA seek unsupported
+  _doSeek(entityId, newPos) {
+    const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
+    const canSeek = !!(supported & 2);
+    if (canSeek) {
+      this._hass.callService("media_player", "media_seek", { entity_id: entityId, seek_position: newPos });
+      return;
+    }
+    const machineId = this._popup?._plexMachineId;
+    if (machineId) {
+      this._hass.callApi("POST", "arr_stack/plex/player", {
+        action: "seekTo",
+        machineIdentifier: machineId,
+        offset: Math.round(newPos * 1e3),
+        playerUrl: this._popup?._plexPlayerUrl || null
+      }).catch(() => {
+      });
+    }
+  }
   // Update all progress fills for an entity across card + popup (call after seek)
   _updateStreamFills(entityId, newPos, dur) {
     const pct = dur > 0 ? Math.min(newPos / dur * 100, 100).toFixed(2) : 0;
@@ -6511,23 +6922,38 @@ var _PopupMethods = class {
   // Sync music popup to current hass state (called from _renderStreams on each refresh)
   _syncStreamPopup() {
     const d = this._popup;
-    if (!d || d._type !== POPUP_TYPE.STREAM || !d._streamEntity) return;
+    if (!d || !d._streamEntity) return;
     const s = this._hass?.states?.[d._streamEntity];
     if (!s) return;
     const attr = s.attributes || {};
-    if (attr.media_title === d.title && s.state === d._streamState) return;
-    this._popup = {
-      ...d,
-      _streamState: s.state,
-      title: attr.media_title || d.title,
-      _artist: attr.media_artist || "",
-      _album: attr.media_album_name || "",
-      _duration: attr.media_duration || 0,
-      _position: attr.media_position || 0,
-      _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
-      _poster: attr.entity_picture || null
-    };
-    this._renderPopupEl();
+    if (d._type === POPUP_TYPE.STREAM) {
+      if (attr.media_title === d.title && s.state === d._streamState) return;
+      this._popup = {
+        ...d,
+        _streamState: s.state,
+        title: attr.media_title || d.title,
+        _artist: attr.media_artist || "",
+        _album: attr.media_album_name || "",
+        _duration: attr.media_duration || 0,
+        _position: attr.media_position || 0,
+        _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
+        _poster: attr.entity_picture || null
+      };
+      this._renderPopupEl();
+      return;
+    }
+    if (s.state !== d._streamState) {
+      d._streamState = s.state;
+      d._position = attr.media_position || 0;
+      d._duration = attr.media_duration || 0;
+      d._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+      const root = this.shadowRoot?.getElementById("popup-root");
+      const btn = root?.querySelector('[data-action="stream-playpause"]');
+      if (btn) {
+        const playing = s.state === "playing";
+        btn.innerHTML = playing ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+      }
+    }
   }
   // ─────────────────────────────────────────────
   // Popup: fetch detail data and open modal
@@ -6594,7 +7020,6 @@ var _PopupMethods = class {
           await this._fetchSonarr();
           sonarrPool = this._sonarrAll || this._sonarr || [];
           _sonarrSeries = sonarrPool.find((s) => String(s.tvdbId) === tvdbFromDetail) ?? null;
-          console.log("[arr-card] after fresh fetch: tvdb=", tvdbFromDetail, "found=", _sonarrSeries?.title ?? null, "pool tvdb+tmdb=", sonarrPool.map((s) => ({ tvdb: s.tvdbId, tmdb: s.tmdbId, title: s.title })));
         }
       }
       this._popup = { ...data, _type: type, _radarrId, _sonarrSeries };
@@ -6882,10 +7307,36 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "stream-playpause") {
-        this._hass.callService("media_player", "media_play_pause", { entity_id: t.dataset.entity });
-        if (this._popup?._type === POPUP_TYPE.STREAM) {
-          this._popup._streamState = this._popup._streamState === "playing" ? "paused" : "playing";
-          this._renderPopupEl();
+        const entityId = t.dataset.entity;
+        const curState = this._hass?.states?.[entityId]?.state;
+        const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
+        const canPause = supported & 1;
+        const canPlay = supported & 16384;
+        let svc;
+        if (curState === "playing") {
+          svc = canPause ? "media_pause" : canPlay ? "media_play_pause" : null;
+        } else {
+          svc = canPlay ? "media_play" : canPause ? "media_play_pause" : null;
+        }
+        if (svc) {
+          this._hass.callService("media_player", svc, { entity_id: entityId });
+        } else if (this._popup?._plexMachineId) {
+          const plexAction = curState === "playing" ? "pause" : "play";
+          this._hass.callApi("POST", "arr_stack/plex/player", {
+            action: plexAction,
+            machineIdentifier: this._popup._plexMachineId,
+            playerUrl: this._popup._plexPlayerUrl || null
+          }).catch(() => {
+          });
+        }
+        const newState = curState === "playing" ? "paused" : "playing";
+        if (this._popup?._streamEntity === entityId) {
+          this._popup._streamState = newState;
+          if (this._popup._type === POPUP_TYPE.STREAM) this._renderPopupEl();
+          else {
+            const btn = this.shadowRoot?.getElementById("popup-root")?.querySelector('[data-action="stream-playpause"]');
+            if (btn) btn.innerHTML = `<ha-icon icon="mdi:${newState === "playing" ? "pause" : "play"}" style="--mdc-icon-size:32px"></ha-icon>`;
+          }
         }
         return;
       }
@@ -6913,7 +7364,7 @@ var _PopupMethods = class {
         if (dur > 0) {
           const newPos = pct * dur;
           this._updateStreamFills(t.dataset.entity, newPos, dur);
-          this._hass.callService("media_player", "media_seek", { entity_id: t.dataset.entity, seek_position: newPos });
+          this._doSeek(t.dataset.entity, newPos);
         }
         return;
       }
@@ -6928,7 +7379,7 @@ var _PopupMethods = class {
         if (dur > 0 && eid) {
           const newPos = pct * dur;
           this._updateStreamFills(eid, newPos, dur);
-          if (commit) this._hass.callService("media_player", "media_seek", { entity_id: eid, seek_position: newPos });
+          if (commit) this._doSeek(eid, newPos);
         }
       };
       seekWrap.addEventListener("touchstart", (e) => {
@@ -6954,7 +7405,7 @@ var _PopupMethods = class {
       }
       this._renderPopupEl();
     });
-    if (this._popup?._type === POPUP_TYPE.STREAM) {
+    if (this._popup?._type === POPUP_TYPE.STREAM || this._popup?._streamEntity) {
       const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
       this._streamPopupTimer = setInterval(() => {
         const fill = root.querySelector(".stream-prog-fill");
@@ -7086,17 +7537,57 @@ var _PopupMethods = class {
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
               ${popupTagHtml}
               ${overview ? `<p class="popup-overview">${overview}</p>` : `<p class="popup-overview" style="color:rgba(255,255,255,0.35);font-style:italic">${this._t("noDescription")}</p>`}
+              ${d._streamEntity ? this._renderPopupStreamControls(d) : ""}
               ${isOpenBtn}
               ${snIsOpenBtn}
               ${removeBtn}
             </div>
           </div>
-          ${isActive || snIsActive ? "" : trailerHtml}
+          ${isActive || snIsActive ? "" : !d._streamEntity ? trailerHtml : ""}
           ${isActive ? this._renderIsPanel() : ""}
           ${snIsActive ? this._renderSonarrIsSection() : ""}
         </div>
       </div>
     </div>`;
+  }
+  // ─────────────────────────────────────────────
+  // Stream controls embedded in movie/TV popup
+  // ─────────────────────────────────────────────
+  _renderPopupStreamControls(d) {
+    const eid = d._streamEntity;
+    const dur = d._duration || 0;
+    const pos = d._position || 0;
+    const upd = d._updatedAt || Date.now();
+    const playing = d._streamState === "playing";
+    const elapsed = playing ? (Date.now() - upd) / 1e3 : 0;
+    const current = Math.min(pos + elapsed, dur);
+    const initPct = dur > 0 ? (current / dur * 100).toFixed(2) : 0;
+    const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    const timeLabel = dur > 0 ? `${fmt(current)} / ${fmt(dur)}` : "";
+    const isTV = d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV;
+    const supported = this._hass?.states?.[eid]?.attributes?.supported_features || 0;
+    const canControl = !!(supported & 1) || !!(supported & 16384) || !!d._plexMachineId;
+    const canSeek = !!(supported & 2);
+    const canPlexSeek = !!d._plexMachineId;
+    const seekBar = dur > 0 ? `
+    <div ${canSeek || canPlexSeek ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${this._escHtml(eid)}" data-dur="${dur}" style="cursor:pointer;padding:6px 0;margin-bottom:2px"` : `style="padding:6px 0;margin-bottom:2px"`}>
+      <div style="position:relative;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden">
+        <div class="stream-prog-fill" data-entity="${this._escHtml(eid)}" data-pos="${pos}" data-dur="${dur}" data-updated="${upd}" style="position:absolute;inset:0 auto 0 0;width:${initPct}%;background:rgba(255,255,255,0.7);border-radius:2px;transition:none"></div>
+      </div>
+    </div>
+    <div class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:8px">${timeLabel}</div>` : "";
+    const controls = canControl ? `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:6px">
+      ${isTV ? `<button class="popup-ctrl-btn" data-action="stream-prev" data-entity="${this._escHtml(eid)}"><ha-icon icon="mdi:skip-previous" style="--mdc-icon-size:26px"></ha-icon></button>` : ""}
+      <button class="popup-ctrl-btn popup-ctrl-btn-main" data-action="stream-playpause" data-entity="${this._escHtml(eid)}">
+        <ha-icon icon="mdi:${playing ? "pause" : "play"}" style="--mdc-icon-size:32px"></ha-icon>
+      </button>
+      ${isTV ? `<button class="popup-ctrl-btn" data-action="stream-next" data-entity="${this._escHtml(eid)}"><ha-icon icon="mdi:skip-next" style="--mdc-icon-size:26px"></ha-icon></button>` : ""}
+    </div>` : "";
+    return `<div style="margin-top:10px;margin-bottom:2px">
+    ${seekBar}
+    ${controls}
+  </div>`;
   }
   // ─────────────────────────────────────────────
   // Interactive Search — panel HTML
@@ -7143,14 +7634,19 @@ var _PopupMethods = class {
     const posterHtml = posterUrl ? `<img class="popup-poster" src="${this._escHtml(posterUrl)}" loading="lazy" onerror="this.style.display='none'" />` : "";
     const backdropStyle = posterUrl ? `background-image:url('${this._escHtml(posterUrl)}');background-size:cover;background-position:center;filter:blur(6px) brightness(0.4)` : "background:linear-gradient(135deg,rgba(20,20,40,1),rgba(40,20,60,1))";
     const subLine = [artist, album].filter(Boolean).join(" \xB7 ");
+    const rawEid = d._streamEntity || "";
+    const suppFeats = this._hass?.states?.[rawEid]?.attributes?.supported_features || 0;
+    const canControl = !!(suppFeats & 1) || !!(suppFeats & 16384) || !!d._plexMachineId;
+    const canSeek = !!(suppFeats & 2);
+    const canPlexSeek = !!d._plexMachineId;
     const seekBar = duration > 0 ? `
-    <div class="stream-seek-wrap" data-action="stream-seek" data-entity="${eid}" data-dur="${duration}" style="cursor:pointer;padding:6px 0;margin-bottom:4px">
+    <div ${canSeek || canPlexSeek ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${eid}" data-dur="${duration}" style="cursor:pointer;padding:6px 0;margin-bottom:4px"` : `style="padding:6px 0;margin-bottom:4px"`}>
       <div class="stream-prog-track" style="height:4px;position:relative;bottom:auto;left:auto;right:auto;border-radius:2px">
         <div class="stream-prog-fill" data-entity="${eid}" data-pos="${position}" data-dur="${duration}" data-updated="${updatedAt}" style="width:${initPct}%;transition:none;border-radius:2px"></div>
       </div>
     </div>
     <div class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:10px">${timeLabel}</div>` : "";
-    const controls = `
+    const controls = canControl ? `
     <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
       <button class="popup-ctrl-btn" data-action="stream-prev" data-entity="${eid}">
         <ha-icon icon="mdi:skip-previous" style="--mdc-icon-size:26px"></ha-icon>
@@ -7161,7 +7657,7 @@ var _PopupMethods = class {
       <button class="popup-ctrl-btn" data-action="stream-next" data-entity="${eid}">
         <ha-icon icon="mdi:skip-next" style="--mdc-icon-size:26px"></ha-icon>
       </button>
-    </div>`;
+    </div>` : "";
     const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
     return `
     <div class="popup-overlay${dayClass}">
@@ -7226,6 +7722,435 @@ var _PopupMethods = class {
 };
 var popupMixin = _PopupMethods.prototype;
 
+// src/render/tautulli.js
+var _TautulliMethods = class {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Poster row — 4 cards in right panel
+  // ──────────────────────────────────────────────────────────────────────────
+  _renderTautulli() {
+    const data = this._tautulli || {};
+    const act = data.activity || {};
+    const stats = data.stats || [];
+    const showWarn = data.sharingDetected && !data.sharingAcked;
+    return `
+      <div class="section-label">Tautulli</div>
+      <div class="tl-row">
+        ${this._tlLibCard(stats)}
+        ${showWarn ? this._tlSharingCard(data) : this._tlUsersCard(stats, act)}
+        ${this._tlConcurrentCard(act)}
+        ${this._tlActivityCard(data.playsData)}
+      </div>`;
+  }
+  _tlLibCard(stats) {
+    const rows = (stats || []).find((s) => s.stat_id === "top_libraries")?.rows || [];
+    const top3 = rows.slice(0, 3);
+    const statRows = top3.map(
+      (r) => `<div class="tl-stat-row">
+        <span class="tl-stat-name">${r.section_name || "\u2014"}</span>
+        <span class="tl-stat-val">${r.total_plays ?? 0}</span>
+      </div>`
+    ).join("") || '<div class="tl-stat-row"><span class="tl-stat-name" style="color:rgba(255,255,255,0.2)">No data</span></div>';
+    return `<div class="tl-card tl-card-blue" data-tl-open="libraries">
+      <div class="tl-accent tl-accent-blue"></div>
+      <div class="tl-icon tl-icon-blue">${this._tlSvgLibraries()}</div>
+      <div class="tl-label">Top Libraries</div>
+      ${statRows}
+    </div>`;
+  }
+  _tlUsersCard(stats, act) {
+    const rows = (stats || []).find((s) => s.stat_id === "top_users")?.rows || [];
+    const top3 = rows.slice(0, 3);
+    const streams = act?.stream_count ?? 0;
+    const userRows = top3.map(
+      (r) => `<div class="tl-user-row">
+        <div class="tl-avatar">${(r.friendly_name || r.user || "?").charAt(0).toUpperCase()}</div>
+        <span class="tl-user-name">${r.friendly_name || r.user || "\u2014"}</span>
+        <span class="tl-user-plays">${r.total_plays ?? 0}</span>
+      </div>`
+    ).join("") || '<div class="tl-stat-row"><span class="tl-stat-name" style="color:rgba(255,255,255,0.2)">No data</span></div>';
+    return `<div class="tl-card tl-card-green" data-tl-open="users">
+      <div class="tl-accent tl-accent-green"></div>
+      <div class="tl-icon tl-icon-green">${this._tlSvgUsers()}</div>
+      <div class="tl-label">Top Users</div>
+      ${userRows}
+      <div class="tl-chart-sum" style="margin-top:auto">${streams} active stream${streams !== 1 ? "s" : ""}</div>
+    </div>`;
+  }
+  _tlSharingCard(data) {
+    const users = (data.sharingUsers || []).slice(0, 2);
+    const nameStr = users.join(", ") || "Unknown";
+    return `<div class="tl-card tl-card-warn" data-tl-open="users">
+      <div class="tl-accent tl-accent-red"></div>
+      <div class="tl-warn-badge">!</div>
+      <div class="tl-icon tl-icon-red">${this._tlSvgWarn()}</div>
+      <div class="tl-label tl-label-warn">Sharing Detected</div>
+      <div class="tl-user-row">
+        <div class="tl-avatar tl-avatar-warn">!</div>
+        <span class="tl-user-name tl-user-name-warn">${nameStr}</span>
+      </div>
+      <div class="tl-warn-sub">Multiple IPs detected</div>
+      <div class="tl-warn-sub" style="margin-top:4px">Click to review &amp; acknowledge</div>
+    </div>`;
+  }
+  _tlConcurrentCard(act) {
+    const streams = act?.stream_count ?? 0;
+    const transcodes = act?.stream_count_transcode ?? 0;
+    const direct = act?.stream_count_direct_play ?? 0;
+    const wanMbps = act?.wan_bandwidth ? (act.wan_bandwidth / 1e3).toFixed(1) : null;
+    return `<div class="tl-card tl-card-orange" data-tl-open="history">
+      <div class="tl-accent tl-accent-orange"></div>
+      <div class="tl-icon tl-icon-orange">${this._tlSvgStreams()}</div>
+      <div class="tl-label">Active Streams</div>
+      <div class="tl-big-num">${streams}</div>
+      <div class="tl-big-sub">${wanMbps !== null ? wanMbps + " Mbps WAN" : "concurrent"}</div>
+      <div class="tl-sub-row">Direct <span class="tl-sub-val">${direct}</span></div>
+      <div class="tl-sub-row">Transcode <span class="tl-sub-val">${transcodes}</span></div>
+    </div>`;
+  }
+  _tlActivityCard(playsData) {
+    const days = (playsData || []).slice(-7);
+    const max = Math.max(...days.map((d) => d.value || 0), 1);
+    const total = days.reduce((s, d) => s + (d.value || 0), 0);
+    const bars = days.map((d) => {
+      const h = Math.max(2, Math.round((d.value || 0) / max * 100));
+      const lbl = (d.date || "").slice(-2);
+      return `<div class="tl-bar-col">
+        <div class="tl-bar" style="height:${h}%" title="${d.date}: ${d.value || 0} plays"></div>
+        <div class="tl-bar-day">${lbl}</div>
+      </div>`;
+    }).join("");
+    return `<div class="tl-card tl-card-purple" data-tl-open="graphs">
+      <div class="tl-accent tl-accent-purple"></div>
+      <div class="tl-icon tl-icon-purple">${this._tlSvgGraphs()}</div>
+      <div class="tl-label">Play Activity</div>
+      <div class="tl-mini-bars">${bars || '<div style="color:rgba(255,255,255,0.2);font-size:10px">No data</div>'}</div>
+      <div class="tl-chart-sum">7-day total: <strong>${total}</strong></div>
+    </div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Modal
+  // ──────────────────────────────────────────────────────────────────────────
+  _openTautulliModal(tab) {
+    tab = tab || "libraries";
+    this._tautulliModal = {
+      tab,
+      histPage: 0,
+      histUser: null,
+      histMedia: null,
+      histTotal: 0,
+      histData: [],
+      histLoading: false,
+      graphsSub: "media",
+      graphsData: null,
+      graphsLoading: false
+    };
+    this.shadowRoot.querySelector(".tl-modal-overlay")?.remove();
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._tlModalHtml(tab);
+    const el = wrap.firstElementChild;
+    this.shadowRoot.appendChild(el);
+    this._wireTautulliModal(el);
+    this._tlLoadTab(tab, el);
+  }
+  _closeTautulliModal() {
+    this.shadowRoot.querySelector(".tl-modal-overlay")?.remove();
+    this._tautulliModal = null;
+  }
+  _tlModalHtml(tab) {
+    const iconCls = { libraries: "blue", users: "green", history: "orange", graphs: "purple" }[tab] || "blue";
+    const allTabs = ["libraries", "users", "history", "graphs"];
+    const tabBtns = allTabs.map(
+      (t) => `<button class="tl-tab${t === tab ? " tl-tab-active" : ""}" data-tl-tab="${t}">${this._tlTabLabel(t)}</button>`
+    ).join("");
+    return `<div class="tl-modal-overlay">
+      <div class="tl-modal-box">
+        <div class="tl-modal-hdr">
+          <div class="tl-modal-icon tl-modal-icon-${iconCls}" id="tl-hdr-icon">${this._tlTabIcon(tab)}</div>
+          <div class="tl-modal-hdr-text">
+            <div class="tl-modal-title" id="tl-hdr-title">${this._tlTabTitle(tab)}</div>
+            <div class="tl-modal-subtitle" id="tl-hdr-sub">${this._tlTabSubtitle(tab)}</div>
+          </div>
+          <button class="tl-modal-close" id="tl-close">&#x2715;</button>
+        </div>
+        <div class="tl-modal-tabs">${tabBtns}</div>
+        <div class="tl-modal-body" id="tl-body">
+          <div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>
+        </div>
+      </div>
+    </div>`;
+  }
+  _tlTabLabel(t) {
+    return { libraries: "Libraries", users: "Users", history: "History", graphs: "Graphs" }[t] || t;
+  }
+  _tlTabIcon(t) {
+    return {
+      libraries: this._tlSvgLibraries(),
+      users: this._tlSvgUsers(),
+      history: this._tlSvgStreams(),
+      graphs: this._tlSvgGraphs()
+    }[t] || "";
+  }
+  _tlTabTitle(t) {
+    return {
+      libraries: "Most Active Libraries",
+      users: "Most Active Users",
+      history: "Recent History",
+      graphs: "Play Statistics"
+    }[t] || "";
+  }
+  _tlTabSubtitle(t) {
+    const streams = this._tautulli?.activity?.stream_count ?? 0;
+    return {
+      libraries: "Play counts per library section",
+      users: `${streams} active stream${streams !== 1 ? "s" : ""} right now`,
+      history: "Last played items across all users",
+      graphs: "7-day play activity breakdown"
+    }[t] || "";
+  }
+  async _tlLoadTab(tab, modal) {
+    const body = modal.querySelector("#tl-body");
+    if (!body) return;
+    if (tab === "libraries") {
+      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const r = await this._tlApiFetch("get_libraries_table", "length=20&start=0&order_column=plays&order_dir=desc");
+      body.innerHTML = this._tlBodyLibraries(r?.response?.data?.data);
+    } else if (tab === "users") {
+      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const r = await this._tlApiFetch("get_users_table", "length=50&start=0&order_column=plays&order_dir=desc");
+      body.innerHTML = this._tlBodyUsers(r?.response?.data?.data);
+      this._wireTautulliModalBody(body);
+    } else if (tab === "history") {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histLoading = true;
+      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const data = await this._tlFetchHistory(0, null, null);
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histData = data.data || [];
+      this._tautulliModal.histTotal = data.recordsFiltered || 0;
+      this._tautulliModal.histLoading = false;
+      body.innerHTML = this._tlBodyHistory();
+      this._wireTautulliModalBody(body);
+    } else if (tab === "graphs") {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.graphsLoading = true;
+      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const gd = await this._tlFetchGraphs();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.graphsData = gd;
+      this._tautulliModal.graphsLoading = false;
+      body.innerHTML = this._tlBodyGraphs();
+      this._wireTautulliModalBody(body);
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tab body renderers
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyLibraries(data) {
+    if (!data || !data.length) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data available</div>';
+    const cards = data.map((lib) => {
+      const type = (lib.section_type || "unknown").toLowerCase();
+      const icon = type === "movie" ? this._tlSvgLibraries() : type === "show" ? this._tlSvgUsers() : this._tlSvgGraphs();
+      return `<div class="tl-lib-card">
+        <div style="display:flex;justify-content:center;margin-bottom:8px;color:rgba(255,255,255,0.35)">${icon}</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lib.section_name || "\u2014"}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:capitalize;margin-bottom:8px">${lib.section_type || "\u2014"}</div>
+        <div style="font-size:11px;color:rgba(250,180,50,0.9);font-weight:700">${lib.plays ?? 0} plays</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35)">${lib.count ?? 0} items</div>
+        ${lib.duration ? `<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">${this._tlFmtDuration(lib.duration)}</div>` : ""}
+      </div>`;
+    }).join("");
+    return `<div class="tl-lib-grid">${cards}</div>`;
+  }
+  _tlBodyUsers(data) {
+    if (!data || !data.length) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data available</div>';
+    const tl = this._tautulli || {};
+    const showBanner = tl.sharingDetected && !tl.sharingAcked;
+    const warnUsers = tl.sharingUsers || [];
+    const banner = showBanner ? `<div class="tl-warn-banner">
+      <div style="flex:1"><strong>Account sharing detected</strong><br>
+        ${warnUsers.length ? "Affected: " + warnUsers.join(", ") : "Multiple IPs detected for the same account."}
+        Review IPs below and acknowledge if expected.</div>
+      <button class="tl-ack-btn" id="tl-ack-btn">Acknowledge</button>
+    </div>` : "";
+    const rows = data.map((u) => {
+      const name = u.friendly_name || u.username || "\u2014";
+      const isWarn = warnUsers.includes(name) || warnUsers.includes(u.username);
+      return `<tr${isWarn ? ' class="tl-row-warn"' : ""}>
+        <td>${name}</td>
+        <td style="text-align:right">${u.plays ?? 0}</td>
+        <td style="text-align:right">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</td>
+        <td>${u.last_seen ? this._tlFmtDate(u.last_seen) : "\u2014"}</td>
+        <td style="font-family:monospace;font-size:11px">${u.ip_address || "\u2014"}</td>
+      </tr>`;
+    }).join("");
+    return `${banner}<table class="tl-users-table">
+      <thead><tr><th>User</th><th style="text-align:right">Plays</th><th style="text-align:right">Duration</th><th>Last Seen</th><th>IP</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+  _tlBodyHistory() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    if (m.histLoading) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+    const { histData: data, histTotal: total, histPage: page, histMedia: media } = m;
+    const perPage = 25;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const filters = ["all", "movie", "episode", "track"].map((v) => {
+      const lbl = v === "all" ? "All" : v === "episode" ? "TV" : v === "track" ? "Music" : "Movies";
+      const active = !media && v === "all" || media === v;
+      return `<button class="tl-filter${active ? " tl-filter-active" : ""}" data-tl-hist-media="${v}">${lbl}</button>`;
+    }).join("");
+    if (!data || !data.length) {
+      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div>
+        <div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>`;
+    }
+    const rows = data.map((h) => {
+      const type = h.media_type || "";
+      const bdg = type === "movie" ? '<span class="tl-badge-movie">Movie</span> ' : type === "episode" ? '<span class="tl-badge-tv">TV</span> ' : type === "track" ? '<span class="tl-badge-music">Music</span> ' : "";
+      return `<tr>
+        <td>${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td>
+        <td>${bdg}${h.full_title || h.title || "\u2014"}</td>
+        <td>${h.friendly_name || h.user || "\u2014"}</td>
+        <td>${h.player || "\u2014"}</td>
+        <td style="text-align:right">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td>
+        <td style="font-size:10px;color:rgba(255,255,255,0.45)">${h.transcode_decision || "\u2014"}</td>
+      </tr>`;
+    }).join("");
+    const pagination = totalPages > 1 ? `<div class="tl-pagination">
+      <button class="tl-page-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}>\u2039 Prev</button>
+      <span class="tl-page-counter">Page ${page + 1} / ${totalPages} &nbsp;(${total} total)</span>
+      <button class="tl-page-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}>Next \u203A</button>
+    </div>` : "";
+    return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div>
+      <table class="tl-hist-table">
+        <thead><tr><th>Date</th><th>Title</th><th>User</th><th>Player</th><th style="text-align:right">Duration</th><th>Stream</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>${pagination}`;
+  }
+  _tlBodyGraphs() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    if (m.graphsLoading || !m.graphsData) {
+      return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+    }
+    const sub = m.graphsSub || "media";
+    const subDefs = [{ id: "media", lbl: "Media Type" }, { id: "stream", lbl: "Stream Type" }, { id: "totals", lbl: "Play Totals" }];
+    const subTabs = subDefs.map(
+      (s) => `<button class="tl-filter${s.id === sub ? " tl-filter-active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
+    ).join("");
+    let body = "";
+    if (sub === "media") {
+      body = `<div class="tl-graphs-grid">
+        ${this._tlGraphCard("Daily Play Count by Media Type", m.graphsData.byDate, true)}
+        ${this._tlGraphCard("Plays by Day of Week", m.graphsData.byDow, false)}
+        ${this._tlGraphCard("Plays by Hour of Day", m.graphsData.byHod, false)}
+      </div>`;
+    } else if (sub === "stream") {
+      body = '<div style="color:rgba(255,255,255,0.3);padding:20px;text-align:center">Stream type graphs coming soon</div>';
+    } else {
+      body = '<div style="color:rgba(255,255,255,0.3);padding:20px;text-align:center">Play totals coming soon</div>';
+    }
+    return `<div style="display:flex;gap:6px;margin-bottom:16px">${subTabs}</div>${body}`;
+  }
+  _tlGraphCard(title, rawData, full) {
+    const clsFull = full ? " full" : "";
+    const d = rawData?.response?.data;
+    if (!d) {
+      return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div>
+        <div style="color:rgba(255,255,255,0.2);font-size:11px;text-align:center;padding:20px">No data</div></div>`;
+    }
+    const cats = d.categories || [];
+    const series = d.series || [];
+    const colors = ["rgba(250,180,50,0.7)", "rgba(99,180,255,0.7)", "rgba(100,220,150,0.7)", "rgba(250,120,50,0.7)"];
+    const allVals = series.flatMap((s) => s.data || []);
+    const maxV = Math.max(...allVals, 1);
+    const bars = cats.map((cat, i) => {
+      const stacked = series.map((s, si) => {
+        const v = (s.data || [])[i] || 0;
+        const h = Math.max(1, Math.round(v / maxV * 60));
+        return `<div class="tl-bar-chart-bar" style="height:${h}px;background:${colors[si % colors.length]}" title="${s.name}: ${v}"></div>`;
+      }).reverse().join("");
+      const lbl = full ? (cat || "").slice(-5) : (cat || "").slice(0, 3);
+      return `<div class="tl-bar-chart-col">${stacked}<div class="tl-bar-chart-label">${lbl}</div></div>`;
+    }).join("");
+    const legend = series.map(
+      (s, i) => `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:10px;color:rgba(255,255,255,0.5)">
+        <span style="width:8px;height:8px;border-radius:2px;background:${colors[i % colors.length]};display:inline-block;flex-shrink:0"></span>${s.name}
+      </span>`
+    ).join("");
+    return `<div class="tl-graph-card${clsFull}">
+      <div class="tl-graph-title">${title}</div>
+      <div class="tl-bar-chart">${bars}</div>
+      ${legend ? `<div style="margin-top:8px">${legend}</div>` : ""}
+    </div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // API helpers (modal tabs — poster data comes from _fetchTautulli in fetch/)
+  // ──────────────────────────────────────────────────────────────────────────
+  async _tlApiFetch(cmd, params) {
+    try {
+      return await this._hass.callApi("GET", `arr_stack/tautulli/${cmd}${params ? "?" + params : ""}`);
+    } catch (e) {
+      console.warn("[arr-card] Tautulli fetch error:", cmd, e);
+      return null;
+    }
+  }
+  async _tlFetchHistory(page, user, media) {
+    const start = (page || 0) * 25;
+    let p = `length=25&start=${start}&order_column=date&order_dir=desc`;
+    if (user) p += `&user_id=${encodeURIComponent(user)}`;
+    if (media) p += `&media_type=${encodeURIComponent(media)}`;
+    const r = await this._tlApiFetch("get_history", p);
+    return r?.response?.data || { data: [], recordsFiltered: 0 };
+  }
+  async _tlFetchGraphs() {
+    const [byDate, byDow, byHod] = await Promise.all([
+      this._tlApiFetch("get_plays_by_date", "time_range=7&y_axis=plays"),
+      this._tlApiFetch("get_plays_by_dayofweek", "time_range=7&y_axis=plays"),
+      this._tlApiFetch("get_plays_by_hourofday", "time_range=7&y_axis=plays")
+    ]);
+    return { byDate, byDow, byHod };
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Formatters
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlFmtDuration(secs) {
+    if (!secs) return "0m";
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor(secs % 3600 / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+  _tlFmtDate(ts) {
+    if (!ts) return "\u2014";
+    const d = new Date(typeof ts === "number" ? ts * 1e3 : ts);
+    const sec = Math.floor((Date.now() - d.getTime()) / 1e3);
+    if (sec < 60) return "just now";
+    if (sec < 3600) return Math.floor(sec / 60) + "m ago";
+    if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
+    if (sec < 604800) return Math.floor(sec / 86400) + "d ago";
+    return d.toLocaleDateString();
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // SVG icons (16px, stroke-based)
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlSvgLibraries() {
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 00-2 2v14a2 2 0 002 2h3M16 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3M8 3v18M16 3v18"/></svg>`;
+  }
+  _tlSvgUsers() {
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`;
+  }
+  _tlSvgStreams() {
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  }
+  _tlSvgGraphs() {
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
+  }
+  _tlSvgWarn() {
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>`;
+  }
+};
+var tautulliMixin = _TautulliMethods.prototype;
+
 // src/card.js
 var ArrStackCard = class extends HTMLElement {
   constructor() {
@@ -7262,6 +8187,9 @@ var ArrStackCard = class extends HTMLElement {
     this._qbitConfigured = true;
     this._sabConfigured = true;
     this._bazarrConfigured = true;
+    this._tautulliConfigured = true;
+    this._tautulli = null;
+    this._tautulliModal = null;
     this._bazarr = {};
     this._radarrQueueFailed = /* @__PURE__ */ new Set();
     this._radarrQueueActive = /* @__PURE__ */ new Set();
@@ -7334,9 +8262,10 @@ var ArrStackCard = class extends HTMLElement {
   setConfig(config) {
     if (Array.isArray(config.categories)) {
       const CAT_MAP = { radarr: "recentlyAdded", sonarr: "recentlyRequested" };
+      const seen = /* @__PURE__ */ new Set();
       config = {
         ...config,
-        categories: config.categories.map((c) => CAT_MAP[c.id] ? { ...c, id: CAT_MAP[c.id] } : c)
+        categories: config.categories.map((c) => CAT_MAP[c.id] ? { ...c, id: CAT_MAP[c.id] } : c).filter((c) => seen.has(c.id) ? false : seen.add(c.id))
       };
     }
     this._config = config;
@@ -7870,6 +8799,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wirePopup();
     this._wireOverseerrButtons();
     this._wireSearch();
+    this._wireTautulliPosters(right);
     if (this._searchActive) {
       requestAnimationFrame(() => {
         const inp = this.shadowRoot.querySelector(".search-bar-input");
@@ -8186,6 +9116,7 @@ applyMixin(ArrStackCard.prototype, mediaCardsMixin);
 applyMixin(ArrStackCard.prototype, themeMixin);
 applyMixin(ArrStackCard.prototype, wireMixin);
 applyMixin(ArrStackCard.prototype, popupMixin);
+applyMixin(ArrStackCard.prototype, tautulliMixin);
 customElements.define("arr-stack-card", ArrStackCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
