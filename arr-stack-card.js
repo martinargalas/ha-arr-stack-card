@@ -1729,6 +1729,8 @@ var STYLES = `
       .popup-glass > * { position: relative; z-index: 1; }
       /* Wider modal p\u0159i IS v\xFDsledc\xEDch */
       .popup-glass.is-wide { width: min(900px, 94vw); }
+      /* Extra-wide modal pro Tautulli statistics */
+      .popup-glass.tl-wide { width: min(1100px, 96vw); }
 
       /* Scrollable body below the backdrop */
       .popup-body {
@@ -2224,6 +2226,7 @@ var STYLES = `
       /* Large phone: mgrid 3 col */
       @media (max-width: 700px) {
         .mgrid   { grid-template-columns: repeat(3, 1fr) !important; }
+        .tl-row  { grid-template-columns: repeat(3, 1fr) !important; }
         .dl-name { max-width: calc(100vw - 120px); }
         /* badges stay on one row \u2014 clip overflow */
         .mc-badges { flex-wrap: nowrap; overflow: hidden; }
@@ -2234,6 +2237,7 @@ var STYLES = `
       @media (max-width: 480px) {
         .mgrid   { grid-template-columns: repeat(2, 1fr) !important; }
         .to-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        .tl-row  { grid-template-columns: repeat(2, 1fr) !important; }
         .disk-row    { flex-wrap: wrap; }
         .disk-chip   { min-width: calc(50% - 3px); }
         .col         { border-radius: 24px; padding: 12px; }
@@ -2479,20 +2483,16 @@ var STYLES = `
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          TAUTULLI POSTER ROW
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
-      .tl-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .tl-row { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
       .tl-card {
-        border-radius: 10px; padding: 11px 10px; cursor: pointer;
+        background: rgba(255,255,255,0.10);
+        border-radius: 11px; padding: 11px 10px; cursor: pointer;
         position: relative; overflow: hidden; aspect-ratio: 2/3;
         display: flex; flex-direction: column;
         transition: transform .15s, box-shadow .15s;
-        border: 1px solid rgba(255,255,255,0.08);
       }
-      .tl-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-      .tl-card-blue   { background: linear-gradient(160deg, #1a1f3c 0%, #0d1526 100%); }
-      .tl-card-green  { background: linear-gradient(160deg, #1a2b1f 0%, #0d1e11 100%); }
-      .tl-card-orange { background: linear-gradient(160deg, #2b1e0e 0%, #1e1208 100%); }
-      .tl-card-purple { background: linear-gradient(160deg, #221330 0%, #150b22 100%); }
-      .tl-card-warn   { background: linear-gradient(160deg, #2b1212 0%, #1e0909 100%); border-color: rgba(255,60,60,0.3) !important; }
+      .tl-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+      .tl-card-warn { background: rgba(180,30,30,0.22); }
       .tl-accent { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
       .tl-accent-blue   { background: rgba(99,140,255,0.7); }
       .tl-accent-green  { background: rgba(60,200,120,0.7); }
@@ -2534,76 +2534,64 @@ var STYLES = `
       .tl-chart-sum strong { color: rgba(180,80,255,0.9); font-weight: 700; }
 
       /* Tautulli modal */
-      .tl-modal-overlay {
-        position: fixed; inset: 0; z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
-        background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
-      }
-      .tl-modal-box {
-        background: #1a1a24; border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.08);
-        width: min(880px, 96vw); max-height: 88vh;
-        display: flex; flex-direction: column; overflow: hidden;
-        box-shadow: 0 24px 80px rgba(0,0,0,0.7);
-      }
-      .tl-modal-hdr  { display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px 0; flex-shrink: 0; }
-      .tl-modal-icon { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-      .tl-modal-icon-blue   { background: rgba(99,140,255,0.15); }
-      .tl-modal-icon-green  { background: rgba(60,200,120,0.15); }
-      .tl-modal-icon-orange { background: rgba(250,160,40,0.15); }
-      .tl-modal-icon-purple { background: rgba(180,80,255,0.15); }
-      .tl-modal-hdr-text  { flex: 1; }
-      .tl-modal-title     { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
-      .tl-modal-subtitle  { font-size: 12px; color: rgba(255,255,255,0.4); }
-      .tl-modal-close {
-        margin-left: 8px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%;
-        width: 30px; height: 30px; cursor: pointer; color: rgba(255,255,255,0.6); font-size: 16px;
-        display: flex; align-items: center; justify-content: center;
-        transition: background .15s; flex-shrink: 0;
-      }
-      .tl-modal-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
-      .tl-modal-tabs { display: flex; gap: 4px; padding: 12px 22px 0; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
-      .tl-tab { padding: 7px 16px; border-radius: 8px 8px 0 0; font-size: 12px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: rgba(255,255,255,0.45); transition: all .15s; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-      .tl-tab.tl-tab-active { color: #fff; border-bottom-color: rgba(250,180,50,0.8); }
-      .tl-tab:hover:not(.tl-tab-active) { color: rgba(255,255,255,0.7); }
-      .tl-modal-body { flex: 1; overflow-y: auto; padding: 16px 22px 20px; }
-      .tl-modal-body::-webkit-scrollbar { width: 4px; }
-      .tl-modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
-      .tl-lib-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .tl-lib-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px; text-align: center; }
+      /* tl-modal-* removed \u2014 now uses popup-overlay / popup-glass / popup-close / is-panel-hdr */
       .tl-graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-      .tl-graph-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 14px; }
+      .tl-graph-card { background: var(--is-row-hover, rgba(255,255,255,0.03)); border: 1px solid var(--is-divider, rgba(255,255,255,0.07)); border-radius: 12px; padding: 14px; }
       .tl-graph-card.full { grid-column: 1 / -1; }
-      .tl-graph-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+      .tl-graph-title { font-size: 11px; font-weight: 700; color: var(--is-text-label, rgba(255,255,255,0.45)); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
       .tl-bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 72px; }
       .tl-bar-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
       .tl-bar-chart-bar { width: 100%; border-radius: 2px 2px 0 0; background: rgba(250,180,50,0.5); min-height: 2px; transition: background .15s; cursor: pointer; }
       .tl-bar-chart-bar:hover { background: rgba(250,180,50,0.85); }
-      .tl-bar-chart-label { font-size: 7px; color: rgba(255,255,255,0.25); }
-      .tl-filter { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.55); cursor: pointer; transition: all .15s; }
-      .tl-filter.tl-filter-active { background: rgba(250,180,50,0.15); border-color: rgba(250,180,50,0.35); color: rgba(250,180,50,0.9); }
+      .tl-bar-chart-label { font-size: 7px; color: var(--is-text-muted, rgba(255,255,255,0.25)); }
       .tl-hist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      .tl-hist-table th { text-align: left; padding: 6px 8px; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.07); }
-      .tl-hist-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); vertical-align: middle; }
+      .tl-hist-table th { text-align: left; padding: 6px 8px; color: var(--is-text-label); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--is-divider); }
+      .tl-hist-table td { padding: 9px 8px; border-bottom: 1px solid var(--is-divider); color: var(--is-text-body); vertical-align: middle; }
       .tl-hist-table tr:last-child td { border-bottom: none; }
-      .tl-hist-table tr:hover td { background: rgba(255,255,255,0.03); }
+      .tl-hist-table tr:hover td { background: var(--is-row-hover); }
       .tl-users-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      .tl-users-table th { text-align: left; padding: 6px 8px; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.07); }
-      .tl-users-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); vertical-align: middle; }
+      .tl-users-table th { text-align: left; padding: 6px 8px; color: var(--is-text-label); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--is-divider); }
+      .tl-users-table td { padding: 9px 8px; border-bottom: 1px solid var(--is-divider); color: var(--is-text-body); vertical-align: middle; }
       .tl-users-table tr:last-child td { border-bottom: none; }
       .tl-users-table tr.tl-row-warn td { background: rgba(255,60,60,0.04); }
-      .tl-users-table tr:hover td { background: rgba(255,255,255,0.03); }
+      .tl-users-table tr:hover td { background: var(--is-row-hover); }
       .tl-warn-banner { display: flex; align-items: flex-start; gap: 10px; background: rgba(255,60,60,0.08); border: 1px solid rgba(255,60,60,0.22); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 11px; color: rgba(255,120,120,0.9); line-height: 1.5; }
       .tl-ack-btn { margin-left: auto; flex-shrink: 0; align-self: center; background: rgba(255,60,60,0.18); border: 1px solid rgba(255,60,60,0.35); border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; color: rgba(255,120,120,0.9); cursor: pointer; transition: all .15s; white-space: nowrap; }
       .tl-ack-btn:hover { background: rgba(255,60,60,0.3); color: #fff; }
       .tl-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
-      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6); cursor: pointer; font-size: 12px; transition: all .15s; }
+      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg); color: var(--is-btn-clr); cursor: pointer; font-size: 12px; transition: all .15s; }
       .tl-page-btn:disabled { opacity: 0.3; pointer-events: none; }
       .tl-page-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+      .tl-page-btn.active { background: rgba(10,132,255,0.28); border-color: rgba(10,132,255,0.55); color: #fff; }
+      .tl-col-item { display: flex; align-items: center; gap: 8px; padding: 6px 14px; cursor: pointer; font-size: 12px; color: var(--is-text-body,rgba(255,255,255,0.8)); white-space: nowrap; transition: background .1s; }
+      .tl-col-item:hover { background: var(--is-row-hover,rgba(255,255,255,0.05)); }
+      .tl-col-chk { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); background: transparent; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
+      .tl-col-chk.on { background: rgba(10,132,255,0.85); border-color: rgba(10,132,255,0.9); }
+      .tl-col-chk.on::after { content: "\u2713"; font-size: 9px; color: #fff; font-weight: 900; line-height: 1; }
+      .tl-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+      .tl-toolbar-actions { margin-left:auto; display:flex; align-items:center; gap:6px; }
+      .tl-edit-btn { display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 4px; border: 1px solid; cursor: pointer; font-size: 10px; font-weight: 600; transition: all .15s; white-space: nowrap; }
+      .tl-del-btn   { background: rgba(255,69,58,0.18);  border-color: rgba(255,69,58,0.4);  color: rgba(255,100,90,0.9); }
+      .tl-del-btn:hover   { background: rgba(255,69,58,0.35); }
+      .tl-purge-btn { background: rgba(255,149,0,0.18); border-color: rgba(255,149,0,0.4); color: rgba(255,180,50,0.9); }
+      .tl-purge-btn:hover { background: rgba(255,149,0,0.35); }
+      .tl-tog-btn   { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.4); width: 26px; height: 26px; padding: 0; justify-content: center; border-radius: 50%; }
+      .tl-tog-btn.on { background: rgba(48,209,88,0.18); border-color: rgba(48,209,88,0.4); color: rgba(80,220,110,0.9); }
+      .tl-tog-btn:hover { opacity: 0.8; }
       .tl-page-counter { font-size: 12px; color: rgba(255,255,255,0.4); }
       .tl-badge-movie  { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; background: rgba(99,120,255,0.18); color: rgba(140,155,255,0.9); border: 1px solid rgba(99,120,255,0.28); }
       .tl-badge-tv     { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; background: rgba(80,200,120,0.13); color: rgba(100,220,140,0.9); border: 1px solid rgba(80,200,120,0.22); }
       .tl-badge-music  { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; background: rgba(250,180,50,0.13); color: rgba(250,200,80,0.9); border: 1px solid rgba(250,180,50,0.22); }
+      .tl-mob-card { padding: 10px 12px; border-bottom: 1px solid var(--is-divider); transition: background 0.1s; }
+      .tl-mob-card:last-child { border-bottom: none; }
+      .tl-mob-card:hover { background: var(--is-row-hover); }
+      .tl-mob-r1 { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; min-width: 0; }
+      .tl-mob-name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tl-mob-meta { display: flex; gap: 10px; font-size: 11px; color: var(--is-text-label); flex-wrap: wrap; }
+      .tl-mob-edit { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
+      .tl-icon-btn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+      .tl-mob-pag { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+      .tl-mob-pag-info { flex: 1; text-align: center; font-size: 12px; color: var(--is-text-label); }
     `;
 
 // src/render/interactive-search.js
@@ -3969,11 +3957,13 @@ var _FetchMethods = class {
   async _fetchTautulli() {
     if (!this._tautulliConfigured) return;
     try {
-      const [actRaw, statsRaw, playsRaw, ackRaw] = await Promise.all([
+      const [actRaw, statsRaw, playsRaw, ackRaw, libsRaw, histRaw] = await Promise.all([
         this._hass.callApi("GET", "arr_stack/tautulli/get_activity").catch(() => null),
         this._hass.callApi("GET", "arr_stack/tautulli/get_home_stats?time_range=7&stats_count=5&stats_type=plays").catch(() => null),
         this._hass.callApi("GET", "arr_stack/tautulli/get_plays_by_date?time_range=7&y_axis=plays").catch(() => null),
-        this._hass.callApi("GET", "arr_stack/tautulli/sharing_ack").catch(() => null)
+        this._hass.callApi("GET", "arr_stack/tautulli/sharing_ack").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tautulli/get_libraries_table?length=20&start=0").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tautulli/get_history?length=3&order_column=date&order_dir=desc").catch(() => null)
       ]);
       if (actRaw === null && statsRaw === null) {
         this._tautulliConfigured = false;
@@ -3984,9 +3974,15 @@ var _FetchMethods = class {
       const playsD = playsRaw?.response?.data || {};
       const cats = playsD.categories || [];
       const series = playsD.series || [];
+      const movieSeries = series.find((sr) => /movie/i.test(sr.name));
+      const showSeries = series.find((sr) => /tv|show/i.test(sr.name));
+      const musicSeries = series.find((sr) => /music|artist/i.test(sr.name));
       const playsData = cats.map((date, i) => ({
         date,
-        value: series.reduce((s, sr) => s + ((sr.data || [])[i] || 0), 0)
+        value: series.reduce((s, sr) => s + ((sr.data || [])[i] || 0), 0),
+        movie: (movieSeries?.data || [])[i] || 0,
+        show: (showSeries?.data || [])[i] || 0,
+        music: (musicSeries?.data || [])[i] || 0
       }));
       const sessions = act.sessions || [];
       const byUser = {};
@@ -4008,6 +4004,8 @@ var _FetchMethods = class {
         activity: act,
         stats,
         playsData,
+        libraries: libsRaw?.response?.data?.data || [],
+        recentHistory: histRaw?.response?.data?.data || [],
         sharingDetected: sharingUsers.length > 0,
         sharingAcked: false,
         sharingUsers,
@@ -6648,9 +6646,11 @@ var _WireMethods = class {
       }, { passive: true, signal: sig });
     }
   }
-  // ──────────────────────────────────────────────────────────────────────────
-  // Tautulli — poster & modal wiring
-  // ──────────────────────────────────────────────────────────────────────────
+};
+var wireMixin = _WireMethods.prototype;
+
+// src/wire/tautulli.js
+var _WireTautulliMethods = class {
   _wireTautulliPosters(right) {
     right.addEventListener("click", (e) => {
       const card = e.target.closest("[data-tl-open]");
@@ -6663,23 +6663,18 @@ var _WireMethods = class {
     el.addEventListener("click", (e) => {
       if (e.target === el) this._closeTautulliModal();
     });
-    el.addEventListener("click", (e) => {
-      const tab = e.target.closest("[data-tl-tab]");
-      if (!tab || !this._tautulliModal) return;
-      const t = tab.dataset.tlTab;
-      this._tautulliModal.tab = t;
-      el.querySelectorAll(".tl-tab").forEach((b) => b.classList.toggle("tl-tab-active", b.dataset.tlTab === t));
-      const iconCls = { libraries: "blue", users: "green", history: "orange", graphs: "purple" }[t] || "blue";
-      const iconEl = el.querySelector("#tl-hdr-icon");
-      if (iconEl) {
-        iconEl.className = `tl-modal-icon tl-modal-icon-${iconCls}`;
-        iconEl.innerHTML = this._tlTabIcon(t);
-      }
-      const titleEl = el.querySelector("#tl-hdr-title");
-      if (titleEl) titleEl.textContent = this._tlTabTitle(t);
-      const subEl = el.querySelector("#tl-hdr-sub");
-      if (subEl) subEl.textContent = this._tlTabSubtitle(t);
-      this._tlLoadTab(t, el);
+    el.querySelectorAll("[data-tl-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const t = btn.dataset.tlTab;
+        if (!t || !this._tautulliModal) return;
+        el.querySelectorAll("[data-tl-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        this._tautulliModal.tab = t;
+        const titleEl = el.querySelector("#tl-hdr-title");
+        if (titleEl) titleEl.textContent = this._tlTabTitle(t);
+        const subEl = el.querySelector("#tl-hdr-sub");
+        if (subEl) subEl.textContent = this._tlTabSubtitle(t);
+        this._tlLoadTab(t, el);
+      });
     });
   }
   _wireTautulliModalBody(body) {
@@ -6720,12 +6715,12 @@ var _WireMethods = class {
     body.querySelectorAll("[data-tl-hist-media]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const media = btn.dataset.tlHistMedia === "all" ? null : btn.dataset.tlHistMedia;
-        this._tautulliModal.histMedia = media;
+        const media = btn.dataset.tlHistMedia;
+        this._tautulliModal.histMedia = media === "all" ? null : media;
         this._tautulliModal.histPage = 0;
         this._tautulliModal.histLoading = true;
         body.innerHTML = this._tlBodyHistory();
-        const data = await this._tlFetchHistory(0, this._tautulliModal.histUser, media);
+        const data = await this._tlFetchHistory(0, this._tautulliModal.histUser, this._tautulliModal.histMedia);
         if (!this._tautulliModal) return;
         this._tautulliModal.histData = data.data || [];
         this._tautulliModal.histTotal = data.recordsFiltered || 0;
@@ -6742,9 +6737,241 @@ var _WireMethods = class {
         this._wireTautulliModalBody(body);
       });
     });
+    body.querySelector("#tl-libs-perpage")?.addEventListener("change", async (e) => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libsPerPage = parseInt(e.target.value);
+      this._tautulliModal.libsPage = 0;
+      await this._tlRefetchLibraries(body);
+    });
+    body.querySelectorAll("[data-tl-lib-sort]").forEach((th) => {
+      th.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const col = th.dataset.tlLibSort;
+        if (this._tautulliModal.libsSortCol === col) {
+          this._tautulliModal.libsSortDir = this._tautulliModal.libsSortDir === "asc" ? "desc" : "asc";
+        } else {
+          this._tautulliModal.libsSortCol = col;
+          this._tautulliModal.libsSortDir = "desc";
+        }
+        this._tautulliModal.libsPage = 0;
+        await this._tlRefetchLibraries(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-lpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m.libsTotal / m.libsPerPage));
+        const val = btn.dataset.tlLpage;
+        let p = m.libsPage;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.libsPage) return;
+        m.libsPage = p;
+        await this._tlRefetchLibraries(body);
+      });
+    });
+    body.querySelector("#tl-libs-edit-btn")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libsEditMode = !this._tautulliModal.libsEditMode;
+      body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("#tl-libs-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libsColsOpen = !this._tautulliModal.libsColsOpen;
+      const menu = body.querySelector("#tl-libs-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.libsColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-lib-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("libsHiddenCols", ["type"]);
+        const col = item.dataset.tlLibCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tautulliModal.libsColsOpen = true;
+        body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelector("#tl-libs-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libsMobColsOpen = !this._tautulliModal.libsMobColsOpen;
+      const menu = body.querySelector("#tl-libs-mob-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.libsMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-lib-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]);
+        const col = item.dataset.tlLibMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tautulliModal.libsMobColsOpen = true;
+        body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-lib-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const sid = btn.dataset.tlLibDelete;
+        const name = btn.dataset.tlLibName || sid;
+        if (!confirm(`Delete library "${name}" from Tautulli? This cannot be undone.`)) return;
+        btn.disabled = true;
+        btn.textContent = "\u2026";
+        await this._tlApiFetch("delete_library", `section_id=${sid}`);
+        await this._tlRefetchLibraries(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-lib-purge]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const sid = btn.dataset.tlLibPurge;
+        const name = btn.dataset.tlLibName || sid;
+        if (!confirm(`Delete all history for library "${name}"? This cannot be undone.`)) return;
+        btn.disabled = true;
+        btn.textContent = "\u2026";
+        await this._tlApiFetch("delete_all_library_history", `section_id=${sid}`);
+        await this._tlRefetchLibraries(body);
+      });
+    });
+    body.querySelector("#tl-users-perpage")?.addEventListener("change", async (e) => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.usersPerPage = parseInt(e.target.value);
+      this._tautulliModal.usersPage = 0;
+      await this._tlRefetchUsers(body);
+    });
+    body.querySelectorAll("[data-tl-sort]").forEach((th) => {
+      th.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const col = th.dataset.tlSort;
+        if (this._tautulliModal.usersSortCol === col) {
+          this._tautulliModal.usersSortDir = this._tautulliModal.usersSortDir === "asc" ? "desc" : "asc";
+        } else {
+          this._tautulliModal.usersSortCol = col;
+          this._tautulliModal.usersSortDir = "desc";
+        }
+        this._tautulliModal.usersPage = 0;
+        await this._tlRefetchUsers(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-upage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m.usersTotal / m.usersPerPage));
+        const val = btn.dataset.tlUpage;
+        let p = m.usersPage;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.usersPage) return;
+        m.usersPage = p;
+        await this._tlRefetchUsers(body);
+      });
+    });
+    body.querySelector("#tl-users-edit-btn")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.usersEditMode = !this._tautulliModal.usersEditMode;
+      body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("#tl-users-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.usersColsOpen = !this._tautulliModal.usersColsOpen;
+      const menu = body.querySelector("#tl-users-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.usersColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("usersHiddenCols", ["username", "fullname", "email"]);
+        const col = item.dataset.tlCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tautulliModal.usersColsOpen = true;
+        body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelector("#tl-users-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.usersMobColsOpen = !this._tautulliModal.usersMobColsOpen;
+      const menu = body.querySelector("#tl-users-mob-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.usersMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-usr-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("usersMobHiddenCols", ["lastPlayed", "platform", "player", "ip", "username", "email"]);
+        const col = item.dataset.tlUsrMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tautulliModal.usersMobColsOpen = true;
+        body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const uid = btn.dataset.tlDelete;
+        const name = btn.dataset.tlName || uid;
+        if (!confirm(`Delete user "${name}" from Tautulli? This cannot be undone.`)) return;
+        btn.disabled = true;
+        btn.textContent = "\u2026";
+        await this._tlApiFetch("delete_user", `user_id=${uid}`);
+        await this._tlRefetchUsers(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-purge]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const uid = btn.dataset.tlPurge;
+        const name = btn.dataset.tlName || uid;
+        if (!confirm(`Delete all history for "${name}"? This cannot be undone.`)) return;
+        btn.disabled = true;
+        btn.textContent = "\u2026";
+        await this._tlApiFetch("delete_all_user_history", `user_id=${uid}`);
+        await this._tlRefetchUsers(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-toggle-hist]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const uid = btn.dataset.tlToggleHist;
+        const cur = parseInt(btn.dataset.tlKh || "1");
+        btn.style.opacity = "0.5";
+        btn.disabled = true;
+        await this._tlApiFetch("edit_user", `user_id=${uid}&keep_history=${cur ? 0 : 1}`);
+        await this._tlRefetchUsers(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-toggle-guest]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const uid = btn.dataset.tlToggleGuest;
+        const cur = parseInt(btn.dataset.tlAg || "0");
+        btn.style.opacity = "0.5";
+        btn.disabled = true;
+        await this._tlApiFetch("edit_user", `user_id=${uid}&allow_guest=${cur ? 0 : 1}`);
+        await this._tlRefetchUsers(body);
+      });
+    });
   }
 };
-var wireMixin = _WireMethods.prototype;
+var wireTautulliMixin = _WireTautulliMethods.prototype;
 
 // src/popup/index.js
 var _PopupMethods = class {
@@ -7722,6 +7949,359 @@ var _PopupMethods = class {
 };
 var popupMixin = _PopupMethods.prototype;
 
+// src/render/tautulli-shared.js
+var _TL_COLS_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
+var _TL_EDIT_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+var _TL_CHEV_L = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+var _TL_CHEV_R = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+var _TL_SEL_STY = `margin:0 4px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:4px;color:var(--is-text,#fff);padding:2px 4px;font-size:12px`;
+var _TL_MENU_STY = `position:absolute;right:0;top:calc(100% + 4px);background:var(--popup-bg,#18182a);border:1px solid var(--is-divider,rgba(255,255,255,0.12));border-radius:8px;padding:6px 0;min-width:190px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.5)`;
+var _TautulliSharedMethods = class {
+  // ── State helper ──────────────────────────────────────────────────────────
+  _tlHidden(key, defaults) {
+    const m = this._tautulliModal;
+    if (!m) return new Set(defaults);
+    if (!m[key]) m[key] = new Set(defaults);
+    return m[key];
+  }
+  // ── Icons ─────────────────────────────────────────────────────────────────
+  _tlLibSvgIcon(type, name, size) {
+    const sm = size !== "md";
+    const sz = sm ? 10 : 15;
+    const sc = sm ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.75)";
+    const sty = sm ? "flex-shrink:0" : "vertical-align:middle;margin-right:7px;flex-shrink:0";
+    const isPodcast = type === "podcast" || (name || "").toLowerCase().includes("podcast");
+    const s = `stroke="${sc}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+    const w = (p) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}">${p}</svg>`;
+    if (type === "movie") return w('<rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/>');
+    if (type === "show") return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="${sc}" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
+    if (isPodcast) return w('<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>');
+    if (type === "artist") return w('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>');
+    return w('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>');
+  }
+  _tlMediaIcon(type, size) {
+    const sz = size || 11;
+    const col = "rgba(255,255,255,0.45)";
+    const s = `stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+    if (type === "movie") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="flex-shrink:0;vertical-align:middle"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`;
+    if (type === "episode") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="${col}" style="flex-shrink:0;vertical-align:middle"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
+    if (type === "track") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="flex-shrink:0;vertical-align:middle"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    return "";
+  }
+  // ── Toolbar building blocks ───────────────────────────────────────────────
+  _tlPerPageSelect(id, perPage, opts) {
+    opts = opts || [10, 25, 50, 100];
+    const options = opts.map((n) => `<option value="${n}"${n === perPage ? " selected" : ""}>${n}</option>`).join("");
+    return `<select id="${id}" style="${_TL_SEL_STY}">${options}</select>`;
+  }
+  _tlEditBtn(id, active, label) {
+    label = label || "Edit";
+    return `<button id="${id}" class="tl-page-btn${active ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px">${_TL_EDIT_SVG}${label}</button>`;
+  }
+  _tlColsMenu(btnId, menuId, items, isOpen) {
+    return `<div style="position:relative"><button id="${btnId}" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px">${_TL_COLS_SVG}Columns</button><div id="${menuId}" style="display:${isOpen ? "block" : "none"};${_TL_MENU_STY}">${items}</div></div>`;
+  }
+  _tlColItems(cols, hiddenSet, dataAttr) {
+    return cols.map((c) => {
+      const on = !hiddenSet.has(c.key);
+      return `<div class="tl-col-item" ${dataAttr}="${c.key}"><span class="tl-col-chk${on ? " on" : ""}"></span>${c.label}</div>`;
+    }).join("");
+  }
+  _tlToolbar(opts) {
+    const { isMobile, select, editBtn, colsBtn, banner } = opts;
+    const b = banner || "";
+    const label = isMobile ? `Show ${select}` : `Show ${select} entries per page`;
+    return `${b}<div class="tl-toolbar"><span style="font-size:12px;color:var(--is-text-label)">${label}</span><div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+  }
+  // ── Pagination ────────────────────────────────────────────────────────────
+  _tlMobPag(attr, page, totalPages) {
+    return `<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px"><button class="tl-page-btn tl-icon-btn" data-${attr}="prev"${page === 0 ? " disabled" : ""}>${_TL_CHEV_L}</button><span style="font-size:13px;font-weight:600;color:var(--is-text);min-width:44px;text-align:center">${page + 1}/${totalPages}</span><button class="tl-page-btn tl-icon-btn" data-${attr}="next"${page >= totalPages - 1 ? " disabled" : ""}>${_TL_CHEV_R}</button></div>`;
+  }
+  _tlDeskPag(attr, page, perPage, total, label) {
+    label = label || "entries";
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const from = total > 0 ? page * perPage + 1 : 0;
+    const to = Math.min((page + 1) * perPage, total);
+    const showing = total > 0 ? `Showing ${from}\u2013${to} of ${total} ${label}` : `No ${label}`;
+    const btns = [];
+    btns.push(`<button class="tl-page-btn" data-${attr}="first"${page === 0 ? " disabled" : ""}>First</button>`);
+    btns.push(`<button class="tl-page-btn" data-${attr}="prev"${page === 0 ? " disabled" : ""}>Previous</button>`);
+    const lo = Math.max(0, Math.min(page - 2, totalPages - 5));
+    const hi = Math.min(totalPages - 1, lo + 4);
+    for (let i = lo; i <= hi; i++) btns.push(`<button class="tl-page-btn${i === page ? " active" : ""}" data-${attr}="${i}">${i + 1}</button>`);
+    btns.push(`<button class="tl-page-btn" data-${attr}="next"${page >= totalPages - 1 ? " disabled" : ""}>Next</button>`);
+    btns.push(`<button class="tl-page-btn" data-${attr}="last"${page >= totalPages - 1 ? " disabled" : ""}>Last</button>`);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px"><span style="font-size:12px;color:var(--is-text-label)">${showing}</span><div style="display:flex;gap:4px;flex-wrap:wrap">${btns.join("")}</div></div>`;
+  }
+  // ── Formatters ────────────────────────────────────────────────────────────
+  _tlFmtDuration(secs) {
+    if (!secs) return "0m";
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor(secs % 3600 / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+  _tlFmtDate(ts) {
+    if (!ts) return "\u2014";
+    const d = new Date(typeof ts === "number" ? ts * 1e3 : ts);
+    const sec = Math.floor((Date.now() - d.getTime()) / 1e3);
+    if (sec < 60) return "just now";
+    if (sec < 3600) return Math.floor(sec / 60) + "m ago";
+    if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
+    if (sec < 604800) return Math.floor(sec / 86400) + "d ago";
+    return d.toLocaleDateString();
+  }
+};
+var tautulliSharedMixin = _TautulliSharedMethods.prototype;
+
+// src/render/tautulli-table.js
+var _tlSortTh = (c, sortCol, sortDir, dataAttr) => `<th data-${dataAttr}="${c.sort}" style="${c.right ? "text-align:right;" : ""}cursor:pointer;user-select:none"><span style="white-space:nowrap">${c.label} <span style="opacity:${c.sort === sortCol ? 1 : 0.3};font-size:9px">${c.sort === sortCol ? sortDir === "asc" ? "\u2191" : "\u2193" : "\u2195"}</span></span></th>`;
+var _DEL_BTN = (data, name) => `<button class="tl-edit-btn tl-del-btn" ${data} title="Delete"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>Delete</button>`;
+var _PURGE_BTN = (data, name) => `<button class="tl-edit-btn tl-purge-btn" ${data} title="Purge history"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Purge</button>`;
+var _TautulliTableMethods = class {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Libraries
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyLibraries(data, total) {
+    const isMobile = window.matchMedia("(max-width:600px)").matches;
+    const m = this._tautulliModal || {};
+    const page = m.libsPage || 0;
+    const perPage = m.libsPerPage || 25;
+    const sortCol = m.libsSortCol || "plays";
+    const sortDir = m.libsSortDir || "desc";
+    const editMode = m.libsEditMode || false;
+    const hidden = this._tlHidden("libsHiddenCols", ["type"]);
+    const mobHidden = this._tlHidden("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]);
+    const tot = total || 0;
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const COLS = [
+      { key: "name", label: "Library", sort: "section_name", right: false },
+      { key: "type", label: "Type", sort: "section_type", right: false },
+      { key: "count", label: "Items", sort: "count", right: true },
+      { key: "parents", label: "Seasons/Albums", sort: "parent_count", right: true },
+      { key: "children", label: "Episodes/Tracks", sort: "child_count", right: true },
+      { key: "lastStream", label: "Streamed", sort: "last_accessed", right: false },
+      { key: "lastPlayed", label: "Last Played", sort: "last_played", right: false },
+      { key: "plays", label: "Plays", sort: "plays", right: true },
+      { key: "duration", label: "Duration", sort: "duration", right: true }
+    ];
+    const vis = COLS.filter((c) => !hidden.has(c.key));
+    const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "name"), hidden, "data-tl-lib-col");
+    const deskColsBtn = this._tlColsMenu("tl-libs-cols-btn", "tl-libs-cols-menu", deskColItems, m.libsColsOpen);
+    const MOB_LIB_COLS = [
+      { key: "plays", label: "Plays" },
+      { key: "lastPlayed", label: "Last Played" },
+      { key: "type", label: "Type" },
+      { key: "parents", label: "Seasons/Albums" },
+      { key: "children", label: "Eps/Tracks" },
+      { key: "lastStream", label: "Last Streamed" }
+    ];
+    const mobColItems = this._tlColItems(MOB_LIB_COLS, mobHidden, "data-tl-lib-mob-col");
+    const mobColsBtn = this._tlColsMenu("tl-libs-mob-cols-btn", "tl-libs-mob-cols-menu", mobColItems, m.libsMobColsOpen);
+    const select = this._tlPerPageSelect("tl-libs-perpage", perPage);
+    const editBtn = this._tlEditBtn("tl-libs-edit-btn", editMode);
+    const toolbar = this._tlToolbar({ isMobile, select, editBtn, colsBtn: isMobile ? mobColsBtn : deskColsBtn });
+    if (isMobile) {
+      const cards = (data || []).map((lib) => {
+        const type = (lib.section_type || "").toLowerCase();
+        const icon = this._tlLibSvgIcon(type, lib.section_name || "", "sm");
+        const sid = lib.section_id || "";
+        const editBtns = editMode ? `<div class="tl-mob-edit">
+          ${_DEL_BTN(`data-tl-lib-delete="${sid}" data-tl-lib-name="${lib.section_name || sid}"`)}
+          ${_PURGE_BTN(`data-tl-lib-purge="${sid}" data-tl-lib-name="${lib.section_name || sid}"`)}
+        </div>` : "";
+        const mp = [];
+        if (!mobHidden.has("plays")) mp.push(`<span style="font-weight:600;flex-shrink:0">&#9654; ${lib.plays ?? 0}</span>`);
+        if (!mobHidden.has("lastPlayed") && lib.last_played) mp.push(`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lib.last_played}</span>`);
+        if (!mobHidden.has("type") && lib.section_type) mp.push(`<span style="text-transform:capitalize;color:var(--is-text-label)">${lib.section_type}</span>`);
+        if (!mobHidden.has("parents") && lib.parent_count != null) mp.push(`<span>${lib.parent_count} sea/alb</span>`);
+        if (!mobHidden.has("children") && lib.child_count != null) mp.push(`<span>${lib.child_count} ep/trk</span>`);
+        if (!mobHidden.has("lastStream") && lib.last_accessed) mp.push(`<span>${this._tlFmtDate(lib.last_accessed)}</span>`);
+        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">
+          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.07)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
+          <div style="flex:1;min-width:0"><div class="tl-mob-name">${lib.section_name || "\u2014"}</div>${mp.length ? `<div class="tl-mob-meta">${mp.join("")}</div>` : ""}</div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">${lib.count ?? "\u2014"}</div>
+            ${lib.duration ? `<div style="font-size:11px;color:var(--is-text-label)">${this._tlFmtDuration(lib.duration)}</div>` : ""}
+          </div>
+        </div>${editBtns}</div>`;
+      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data</div>';
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-lpage", page, totalPages);
+    }
+    const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
+    const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-lib-sort")).join("");
+    const rows = (data || []).map((lib) => {
+      const type = (lib.section_type || "").toLowerCase();
+      const icon = this._tlLibSvgIcon(type, lib.section_name || "", "md");
+      const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : '<span style="color:rgba(255,255,255,0.2)">never</span>';
+      const lPly = lib.last_played ? `<span style="font-size:11px;color:rgba(255,255,255,0.55)">${lib.last_played}</span>` : '<span style="color:rgba(255,255,255,0.2)">n/a</span>';
+      const cm = {
+        name: `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lib.section_name || "\u2014"}</strong></span></td>`,
+        type: `<td style="text-transform:capitalize;color:var(--is-text-label);white-space:nowrap">${lib.section_type || "\u2014"}</td>`,
+        count: `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${lib.count ?? "\u2014"}</td>`,
+        parents: `<td style="text-align:right">${lib.parent_count != null ? lib.parent_count : "\u2014"}</td>`,
+        children: `<td style="text-align:right">${lib.child_count != null ? lib.child_count : "\u2014"}</td>`,
+        lastStream: `<td style="white-space:nowrap">${lAcc}</td>`,
+        lastPlayed: `<td style="max-width:160px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lPly}</div></td>`,
+        plays: `<td style="text-align:right;font-weight:700">${lib.plays ?? 0}</td>`,
+        duration: `<td style="text-align:right;white-space:nowrap">${lib.duration ? this._tlFmtDuration(lib.duration) : "\u2014"}</td>`
+      };
+      const sid = lib.section_id || "";
+      const editCell = editMode ? `<td style="white-space:nowrap;padding-right:12px"><div style="display:inline-flex;align-items:center;gap:4px">
+        ${_DEL_BTN(`data-tl-lib-delete="${sid}" data-tl-lib-name="${lib.section_name || sid}"`)}
+        ${_PURGE_BTN(`data-tl-lib-purge="${sid}" data-tl-lib-name="${lib.section_name || sid}"`)}
+      </div></td>` : "";
+      return `<tr>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
+    }).join("");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data</td></tr>`}</tbody></table></div>` + this._tlDeskPag("tl-lpage", page, perPage, tot, "libraries");
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Users
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyUsers(data, total) {
+    const isMobile = window.matchMedia("(max-width:600px)").matches;
+    const m = this._tautulliModal || {};
+    const page = m.usersPage || 0;
+    const perPage = m.usersPerPage || 25;
+    const sortCol = m.usersSortCol || "plays";
+    const sortDir = m.usersSortDir || "desc";
+    const editMode = m.usersEditMode || false;
+    const hidden = this._tlHidden("usersHiddenCols", ["username", "fullname", "email"]);
+    const mobHidden = this._tlHidden("usersMobHiddenCols", ["lastPlayed", "platform", "player", "ip", "username", "email"]);
+    const tot = total || 0;
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const COLS = [
+      { key: "user", label: "User", sort: "friendly_name", right: false },
+      { key: "username", label: "Username", sort: "username", right: false },
+      { key: "fullname", label: "Full Name", sort: "full_name", right: false },
+      { key: "email", label: "Email", sort: "email", right: false },
+      { key: "lastSeen", label: "Last Streamed", sort: "last_seen", right: false },
+      { key: "ip", label: "Last Known IP", sort: "ip_address", right: false },
+      { key: "platform", label: "Last Platform", sort: "platform", right: false },
+      { key: "player", label: "Last Player", sort: "player", right: false },
+      { key: "lastPlayed", label: "Last Played", sort: "last_played", right: false },
+      { key: "plays", label: "Total Plays", sort: "plays", right: true },
+      { key: "duration", label: "Total Duration", sort: "duration", right: true }
+    ];
+    const vis = COLS.filter((c) => !hidden.has(c.key));
+    const tl2 = this._tautulli || {};
+    const showBanner = tl2.sharingDetected && !tl2.sharingAcked;
+    const wU = tl2.sharingUsers || [];
+    const banner = showBanner ? `<div class="tl-warn-banner"><div style="flex:1"><strong>Account sharing detected</strong><br>${wU.length ? "Affected: " + wU.join(", ") : "Multiple IPs detected for the same account."} Review IPs below and acknowledge if expected.</div><button class="tl-ack-btn" id="tl-ack-btn">Acknowledge</button></div>` : "";
+    const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "user"), hidden, "data-tl-col");
+    const deskColsBtn = this._tlColsMenu("tl-users-cols-btn", "tl-users-cols-menu", deskColItems, m.usersColsOpen);
+    const MOB_USR_COLS = [
+      { key: "lastSeen", label: "Last Seen" },
+      { key: "lastPlayed", label: "Last Played" },
+      { key: "platform", label: "Platform" },
+      { key: "player", label: "Player" },
+      { key: "ip", label: "Last IP" },
+      { key: "username", label: "Username" },
+      { key: "email", label: "Email" }
+    ];
+    const mobColItems = this._tlColItems(MOB_USR_COLS, mobHidden, "data-tl-usr-mob-col");
+    const mobColsBtn = this._tlColsMenu("tl-users-mob-cols-btn", "tl-users-mob-cols-menu", mobColItems, m.usersMobColsOpen);
+    const select = this._tlPerPageSelect("tl-users-perpage", perPage);
+    const editBtn = this._tlEditBtn("tl-users-edit-btn", editMode);
+    const toolbar = this._tlToolbar({ isMobile, select, editBtn, colsBtn: isMobile ? mobColsBtn : deskColsBtn, banner });
+    if (isMobile) {
+      const warnUsers2 = wU;
+      const cards = (data || []).map((u) => {
+        const name = u.friendly_name || u.username || "\u2014";
+        const thumb = u.user_thumb || "";
+        const av = thumb ? `<img src="${thumb}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,0.35);font-size:13px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
+        const uid = u.user_id || "";
+        const kh = u.keep_history != null ? Number(u.keep_history) : 1;
+        const ag = u.allow_guest != null ? Number(u.allow_guest) : 0;
+        const editBtns = editMode ? `<div class="tl-mob-edit">
+          ${_DEL_BTN(`data-tl-delete="${uid}" data-tl-name="${this._escHtml(name)}"`)}
+          ${_PURGE_BTN(`data-tl-purge="${uid}" data-tl-name="${this._escHtml(name)}"`)}
+          <button class="tl-edit-btn tl-tog-btn${kh ? " on" : ""}" data-tl-toggle-hist="${uid}" data-tl-kh="${kh}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          <button class="tl-edit-btn tl-tog-btn${ag ? " on" : ""}" data-tl-toggle-guest="${uid}" data-tl-ag="${ag}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></button>
+        </div>` : "";
+        const um = [];
+        if (!mobHidden.has("lastSeen")) um.push(`<span>${u.last_seen ? this._tlFmtDate(u.last_seen) : "Never seen"}</span>`);
+        if (!mobHidden.has("lastPlayed") && u.last_played) um.push(`<span style="display:inline-flex;align-items:center;gap:3px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._tlMediaIcon(u.media_type, 10)}<span style="overflow:hidden;text-overflow:ellipsis">${this._escHtml(u.last_played)}</span></span>`);
+        if (!mobHidden.has("platform") && u.platform) um.push(`<span>${this._escHtml(u.platform)}</span>`);
+        if (!mobHidden.has("player") && u.player) um.push(`<span>${this._escHtml(u.player)}</span>`);
+        if (!mobHidden.has("ip") && u.ip_address) um.push(`<span style="font-family:monospace;font-size:10px">${this._escHtml(u.ip_address)}</span>`);
+        if (!mobHidden.has("username") && u.username) um.push(`<span style="color:var(--is-text-label)">${this._escHtml(u.username)}</span>`);
+        if (!mobHidden.has("email") && u.email) um.push(`<span style="color:var(--is-text-label);font-size:10px">${this._escHtml(u.email)}</span>`);
+        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">
+          ${av}
+          <div style="flex:1;min-width:0"><div class="tl-mob-name">${this._escHtml(name)}</div>${um.length ? `<div class="tl-mob-meta">${um.join("")}</div>` : ""}</div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ${u.plays ?? 0}</div>
+            <div style="font-size:11px;color:var(--is-text-label)">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</div>
+          </div>
+        </div>${editBtns}</div>`;
+      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data</div>';
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-upage", page, totalPages);
+    }
+    const warnUsers = wU;
+    const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
+    const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-sort")).join("");
+    const rows = (data || []).map((u) => {
+      const name = u.friendly_name || u.username || "\u2014";
+      const isW = warnUsers.includes(name) || warnUsers.includes(u.username);
+      const thumb = u.user_thumb || "";
+      const av = thumb ? `<img src="${thumb}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,0.35);font-size:12px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
+      const mIco = u.last_played ? this._tlMediaIcon(u.media_type) : "";
+      const cm = {
+        user: `<td><div style="display:flex;align-items:center;gap:8px">${av}<span style="font-weight:600">${this._escHtml(name)}</span></div></td>`,
+        username: `<td style="color:var(--is-text-label)">${this._escHtml(u.username || "\u2014")}</td>`,
+        fullname: `<td style="color:var(--is-text-label)">${this._escHtml(u.full_name || "\u2014")}</td>`,
+        email: `<td style="color:var(--is-text-label);font-size:11px">${this._escHtml(u.email || "\u2014")}</td>`,
+        lastSeen: `<td>${u.last_seen ? this._tlFmtDate(u.last_seen) : '<span style="color:rgba(255,255,255,0.25)">never</span>'}</td>`,
+        ip: `<td style="font-family:monospace;font-size:11px">${this._escHtml(u.ip_address || "n/a")}</td>`,
+        platform: `<td>${this._escHtml(u.platform || "n/a")}</td>`,
+        player: `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="rgba(255,255,255,0.45)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : '<span style="color:rgba(255,255,255,0.25)">n/a</span>'}</td>`,
+        lastPlayed: `<td style="max-width:160px"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.last_played ? mIco + '<span style="overflow:hidden;text-overflow:ellipsis">' + this._escHtml(u.last_played) + "</span>" : '<span style="color:rgba(255,255,255,0.25)">n/a</span>'}</div></td>`,
+        plays: `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${u.plays ?? 0}</td>`,
+        duration: `<td style="text-align:right">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</td>`
+      };
+      const uid = u.user_id || "";
+      const kh = u.keep_history != null ? Number(u.keep_history) : 1;
+      const ag = u.allow_guest != null ? Number(u.allow_guest) : 0;
+      const editCell = editMode ? `<td style="white-space:nowrap;padding-right:12px"><div style="display:inline-flex;align-items:center;gap:4px">
+        ${_DEL_BTN(`data-tl-delete="${uid}" data-tl-name="${this._escHtml(name)}"`)}
+        ${_PURGE_BTN(`data-tl-purge="${uid}" data-tl-name="${this._escHtml(name)}"`)}
+        <button class="tl-edit-btn tl-tog-btn${kh ? " on" : ""}" data-tl-toggle-hist="${uid}" data-tl-kh="${kh}" title="${kh ? "Disable" : "Enable"} history"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+        <button class="tl-edit-btn tl-tog-btn${ag ? " on" : ""}" data-tl-toggle-guest="${uid}" data-tl-ag="${ag}" title="${ag ? "Disable" : "Enable"} guest"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></button>
+      </div></td>` : "";
+      return `<tr${isW ? ' class="tl-row-warn"' : ""}>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
+    }).join("");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data</td></tr>`}</tbody></table></div>` + this._tlDeskPag("tl-upage", page, perPage, tot, "active users");
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Refetch
+  // ──────────────────────────────────────────────────────────────────────────
+  async _tlRefetchLibraries(body) {
+    const m = this._tautulliModal;
+    if (!m) return;
+    body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+    const start = (m.libsPage || 0) * (m.libsPerPage || 25);
+    const r = await this._tlApiFetch("get_libraries_table", `length=${m.libsPerPage || 25}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
+    if (!this._tautulliModal) return;
+    m.libsData = r?.response?.data?.data || [];
+    m.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.libsData.length;
+    body.innerHTML = this._tlBodyLibraries(m.libsData, m.libsTotal);
+    this._wireTautulliModalBody(body);
+  }
+  async _tlRefetchUsers(body) {
+    const m = this._tautulliModal;
+    if (!m) return;
+    body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+    const start = (m.usersPage || 0) * (m.usersPerPage || 25);
+    const r = await this._tlApiFetch("get_users_table", `length=${m.usersPerPage || 25}&start=${start}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`);
+    if (!this._tautulliModal) return;
+    m.usersData = r?.response?.data?.data || [];
+    m.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.usersData.length;
+    body.innerHTML = this._tlBodyUsers(m.usersData, m.usersTotal);
+    this._wireTautulliModalBody(body);
+  }
+};
+var tautulliTableMixin = _TautulliTableMethods.prototype;
+
 // src/render/tautulli.js
 var _TautulliMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
@@ -7733,78 +8313,90 @@ var _TautulliMethods = class {
     const stats = data.stats || [];
     const showWarn = data.sharingDetected && !data.sharingAcked;
     return `
-      <div class="section-label">Statistics</div>
-      <div class="tl-row">
-        ${this._tlLibCard(stats)}
-        ${showWarn ? this._tlSharingCard(data) : this._tlUsersCard(stats, act)}
-        ${this._tlConcurrentCard(act)}
-        ${this._tlActivityCard(data.playsData)}
+      <div class="sec-card">
+        <div class="col-hdr" style="margin-bottom:5px">
+          <ha-icon icon="mdi:chart-bar" style="--mdc-icon-size:24px"></ha-icon>
+          <span class="col-hdr-title">Statistics</span>
+          <div class="col-hdr-line"></div>
+        </div>
+        <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8249;</button>
+          <div class="tl-row">
+            ${this._tlLibCard(data)}
+            ${showWarn ? this._tlSharingCard(data) : this._tlUsersCard(stats, act, data)}
+            ${this._tlHistoryCard(data)}
+            ${this._tlActivityCard(data.playsData)}
+          </div>
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8250;</button>
+        </div>
       </div>`;
   }
-  _tlLibCard(stats) {
-    const rows = (stats || []).find((s) => s.stat_id === "top_libraries")?.rows || [];
-    const top3 = rows.slice(0, 3);
-    const statRows = top3.map(
-      (r) => `<div class="tl-stat-row">
-        <span class="tl-stat-name">${r.section_name || "\u2014"}</span>
-        <span class="tl-stat-val">${r.total_plays ?? 0}</span>
-      </div>`
-    ).join("") || '<div class="tl-stat-row"><span class="tl-stat-name" style="color:rgba(255,255,255,0.2)">No data</span></div>';
-    return `<div class="tl-card tl-card-blue" data-tl-open="libraries">
-      <div class="tl-accent tl-accent-blue"></div>
-      <div class="tl-icon tl-icon-blue">${this._tlSvgLibraries()}</div>
-      <div class="tl-label">Top Libraries</div>
-      ${statRows}
+  _tlLibCard(data) {
+    const libs = data.libraries || [];
+    const rows = libs.map((lib) => {
+      const type = (lib.section_type || "").toLowerCase();
+      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">` + this._tlLibSvgIcon(type, lib.section_name, "sm") + `<span style="font-size:9px;color:rgba(255,255,255,0.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:2px">${lib.section_name || "\u2014"}</span><span style="font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${lib.count ?? lib.plays ?? 0}</span></div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>`;
+    const sectTag = libs.length > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${libs.length}</span>` : "";
+    return `<div class="tl-card" data-tl-open="libraries">
+      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <span class="media-type-tag">Libraries</span>${sectTag}
+      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${rows}</div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Libraries</div>
+      </div>
     </div>`;
   }
-  _tlUsersCard(stats, act) {
-    const rows = (stats || []).find((s) => s.stat_id === "top_users")?.rows || [];
-    const top3 = rows.slice(0, 3);
+  _tlUsersCard(stats, act, data) {
+    const userRows = (stats || []).find((s) => s.stat_id === "top_users")?.rows || [];
     const streams = act?.stream_count ?? 0;
-    const userRows = top3.map(
-      (r) => `<div class="tl-user-row">
-        <div class="tl-avatar">${(r.friendly_name || r.user || "?").charAt(0).toUpperCase()}</div>
-        <span class="tl-user-name">${r.friendly_name || r.user || "\u2014"}</span>
-        <span class="tl-user-plays">${r.total_plays ?? 0}</span>
-      </div>`
-    ).join("") || '<div class="tl-stat-row"><span class="tl-stat-name" style="color:rgba(255,255,255,0.2)">No data</span></div>';
-    return `<div class="tl-card tl-card-green" data-tl-open="users">
-      <div class="tl-accent tl-accent-green"></div>
-      <div class="tl-icon tl-icon-green">${this._tlSvgUsers()}</div>
-      <div class="tl-label">Top Users</div>
-      ${userRows}
-      <div class="tl-chart-sum" style="margin-top:auto">${streams} active stream${streams !== 1 ? "s" : ""}</div>
+    const items = userRows.slice(0, 5).map((r) => {
+      const name = r.friendly_name || r.user || "\u2014";
+      const plays = r.total_plays ?? 0;
+      const thumb = r.user_thumb || "";
+      const av = thumb ? `<img src="${thumb}" style="width:14px;height:14px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.18)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.14);display:inline-block;flex-shrink:0"></span>`;
+      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${av}<span style="font-size:9px;color:rgba(255,255,255,0.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${plays}</span></div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>`;
+    const activeTag = streams > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(48,209,88,0.30);border:1px solid rgba(48,209,88,0.62)">${streams} active</span>` : "";
+    return `<div class="tl-card" data-tl-open="users">
+      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <span class="media-type-tag">Users</span>${activeTag}
+      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${items}</div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Top 5 users</div>
+      </div>
     </div>`;
   }
   _tlSharingCard(data) {
-    const users = (data.sharingUsers || []).slice(0, 2);
-    const nameStr = users.join(", ") || "Unknown";
+    const name = (data.sharingUsers || [])[0] || "Unknown";
     return `<div class="tl-card tl-card-warn" data-tl-open="users">
-      <div class="tl-accent tl-accent-red"></div>
-      <div class="tl-warn-badge">!</div>
-      <div class="tl-icon tl-icon-red">${this._tlSvgWarn()}</div>
-      <div class="tl-label tl-label-warn">Sharing Detected</div>
-      <div class="tl-user-row">
-        <div class="tl-avatar tl-avatar-warn">!</div>
-        <span class="tl-user-name tl-user-name-warn">${nameStr}</span>
+      <span class="media-type-tag" style="color:rgba(255,150,150,0.95)">! Sharing</span>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(70,0,0,0.95) 0%,rgba(40,0,0,0.65) 55%,transparent 100%);padding:48px 8px 8px;z-index:1">
+        <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${name}</div>
+        <div style="font-size:9px;color:rgba(255,150,150,0.7)">Multiple IPs \xB7 Click to review</div>
       </div>
-      <div class="tl-warn-sub">Multiple IPs detected</div>
-      <div class="tl-warn-sub" style="margin-top:4px">Click to review &amp; acknowledge</div>
     </div>`;
   }
-  _tlConcurrentCard(act) {
-    const streams = act?.stream_count ?? 0;
-    const transcodes = act?.stream_count_transcode ?? 0;
-    const direct = act?.stream_count_direct_play ?? 0;
-    const wanMbps = act?.wan_bandwidth ? (act.wan_bandwidth / 1e3).toFixed(1) : null;
-    return `<div class="tl-card tl-card-orange" data-tl-open="history">
-      <div class="tl-accent tl-accent-orange"></div>
-      <div class="tl-icon tl-icon-orange">${this._tlSvgStreams()}</div>
-      <div class="tl-label">Active Streams</div>
-      <div class="tl-big-num">${streams}</div>
-      <div class="tl-big-sub">${wanMbps !== null ? wanMbps + " Mbps WAN" : "concurrent"}</div>
-      <div class="tl-sub-row">Direct <span class="tl-sub-val">${direct}</span></div>
-      <div class="tl-sub-row">Transcode <span class="tl-sub-val">${transcodes}</span></div>
+  _tlHistoryCard(data) {
+    const hist = (data.recentHistory || []).slice(0, 3);
+    const streams = (data.activity || {}).stream_count ?? 0;
+    const items = hist.map((h) => {
+      const title = h.full_title || h.title || "\u2014";
+      const user = h.friendly_name || h.user || "";
+      const ago = h.date ? this._tlFmtDate(h.date) : "";
+      return `<div style="margin-bottom:4px"><div style="font-size:9px;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:8px;color:rgba(255,255,255,0.4)">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No history</div>`;
+    const streamTag = streams > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${streams} now</span>` : "";
+    return `<div class="tl-card" data-tl-open="history">
+      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <span class="media-type-tag">History</span>${streamTag}
+      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${items}</div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Latest streams</div>
+      </div>
     </div>`;
   }
   _tlActivityCard(playsData) {
@@ -7812,23 +8404,28 @@ var _TautulliMethods = class {
     const max = Math.max(...days.map((d) => d.value || 0), 1);
     const total = days.reduce((s, d) => s + (d.value || 0), 0);
     const bars = days.map((d) => {
-      const h = Math.max(2, Math.round((d.value || 0) / max * 100));
-      const lbl = (d.date || "").slice(-2);
-      return `<div class="tl-bar-col">
-        <div class="tl-bar" style="height:${h}%" title="${d.date}: ${d.value || 0} plays"></div>
-        <div class="tl-bar-day">${lbl}</div>
-      </div>`;
+      const h = Math.max(d.value ? 2 : 0, Math.round((d.value || 0) / max * 100));
+      return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end"><div style="width:100%;height:${h}%;background:rgba(255,255,255,0.5);border-radius:2px 2px 0 0;min-height:${d.value ? 2 : 0}px"></div></div>`;
     }).join("");
-    return `<div class="tl-card tl-card-purple" data-tl-open="graphs">
-      <div class="tl-accent tl-accent-purple"></div>
-      <div class="tl-icon tl-icon-purple">${this._tlSvgGraphs()}</div>
-      <div class="tl-label">Play Activity</div>
-      <div class="tl-mini-bars">${bars || '<div style="color:rgba(255,255,255,0.2);font-size:10px">No data</div>'}</div>
-      <div class="tl-chart-sum">7-day total: <strong>${total}</strong></div>
+    const labels = days.map(
+      (d) => `<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">${(d.date || "").slice(-2)}</div>`
+    ).join("");
+    const playsTag = total > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${total} plays</span>` : "";
+    return `<div class="tl-card" data-tl-open="graphs">
+      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+      <span class="media-type-tag">Charts</span>${playsTag}
+      <div style="position:absolute;top:33%;left:8px;right:8px;bottom:38px;z-index:2;display:flex;flex-direction:column">
+        <div style="flex:1;display:flex;gap:2px;">${bars || ""}</div>
+        <div style="display:flex;gap:2px;margin-top:2px">${labels}</div>
+      </div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
+        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Play Activity</div>
+      </div>
     </div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
-  // Modal
+  // Modal — open / close / shell HTML
   // ──────────────────────────────────────────────────────────────────────────
   _openTautulliModal(tab) {
     tab = tab || "libraries";
@@ -7842,9 +8439,31 @@ var _TautulliMethods = class {
       histLoading: false,
       graphsSub: "media",
       graphsData: null,
-      graphsLoading: false
+      graphsLoading: false,
+      usersPage: 0,
+      usersPerPage: 25,
+      usersSortCol: "plays",
+      usersSortDir: "desc",
+      usersData: [],
+      usersTotal: 0,
+      usersHiddenCols: /* @__PURE__ */ new Set(["username", "fullname", "email"]),
+      usersColsOpen: false,
+      usersMobHiddenCols: /* @__PURE__ */ new Set(["lastPlayed", "platform", "player", "ip", "username", "email"]),
+      usersMobColsOpen: false,
+      usersEditMode: false,
+      libsPage: 0,
+      libsPerPage: 25,
+      libsSortCol: "plays",
+      libsSortDir: "desc",
+      libsData: [],
+      libsTotal: 0,
+      libsEditMode: false,
+      libsHiddenCols: /* @__PURE__ */ new Set(["type"]),
+      libsColsOpen: false,
+      libsMobHiddenCols: /* @__PURE__ */ new Set(["type", "parents", "children", "lastStream"]),
+      libsMobColsOpen: false
     };
-    this.shadowRoot.querySelector(".tl-modal-overlay")?.remove();
+    this.shadowRoot.querySelector("[data-tl-modal]")?.remove();
     const wrap = document.createElement("div");
     wrap.innerHTML = this._tlModalHtml(tab);
     const el = wrap.firstElementChild;
@@ -7853,28 +8472,34 @@ var _TautulliMethods = class {
     this._tlLoadTab(tab, el);
   }
   _closeTautulliModal() {
-    this.shadowRoot.querySelector(".tl-modal-overlay")?.remove();
+    this.shadowRoot.querySelector("[data-tl-modal]")?.remove();
     this._tautulliModal = null;
   }
   _tlModalHtml(tab) {
-    const iconCls = { libraries: "blue", users: "green", history: "orange", graphs: "purple" }[tab] || "blue";
+    const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
+    const isMobile = window.matchMedia("(max-width: 600px)").matches;
     const allTabs = ["libraries", "users", "history", "graphs"];
     const tabBtns = allTabs.map(
-      (t) => `<button class="tl-tab${t === tab ? " tl-tab-active" : ""}" data-tl-tab="${t}">${this._tlTabLabel(t)}</button>`
+      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-tl-tab="${t}">${this._tlTabLabel(t)}</button>`
     ).join("");
-    return `<div class="tl-modal-overlay">
-      <div class="tl-modal-box">
-        <div class="tl-modal-hdr">
-          <div class="tl-modal-icon tl-modal-icon-${iconCls}" id="tl-hdr-icon">${this._tlTabIcon(tab)}</div>
-          <div class="tl-modal-hdr-text">
-            <div class="tl-modal-title" id="tl-hdr-title">${this._tlTabTitle(tab)}</div>
-            <div class="tl-modal-subtitle" id="tl-hdr-sub">${this._tlTabSubtitle(tab)}</div>
-          </div>
-          <button class="tl-modal-close" id="tl-close">&#x2715;</button>
-        </div>
-        <div class="tl-modal-tabs">${tabBtns}</div>
-        <div class="tl-modal-body" id="tl-body">
-          <div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>
+    const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const sub = this._tlTabSubtitle(tab);
+    const hdrInner = isMobile ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+           <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._tlTabTitle(tab)}</div>
+           <button class="popup-close" id="tl-close" style="position:relative;top:0;right:0;flex-shrink:0">${closeSvg}</button>
+         </div>
+         <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
+           <div id="tl-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._tlTabTitle(tab)}</div>
+           ${sub ? `<div id="tl-hdr-sub" style="font-size:12px;color:var(--is-text-sec);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>` : ""}
+         </div>
+         <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         <button class="popup-close" id="tl-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">${closeSvg}</button>`;
+    const hdrStyle = isMobile ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
+    return `<div class="popup-overlay${dayClass}" data-tl-modal>
+      <div class="popup-glass tl-wide">
+        <div class="is-panel-hdr" style="${hdrStyle}">${hdrInner}</div>
+        <div class="popup-body" id="tl-body" style="padding:${isMobile ? "12px 14px 16px" : "14px 22px 20px"}">
+          <div class="is-loading"><span>Loading\u2026</span></div>
         </div>
       </div>
     </div>`;
@@ -7891,33 +8516,36 @@ var _TautulliMethods = class {
     }[t] || "";
   }
   _tlTabTitle(t) {
-    return {
-      libraries: "Most Active Libraries",
-      users: "Most Active Users",
-      history: "Recent History",
-      graphs: "Play Statistics"
-    }[t] || "";
+    return { libraries: "All Libraries", users: "All Users", history: "Recent History", graphs: "Play Statistics" }[t] || "";
   }
   _tlTabSubtitle(t) {
-    const streams = this._tautulli?.activity?.stream_count ?? 0;
-    return {
-      libraries: "Play counts per library section",
-      users: `${streams} active stream${streams !== 1 ? "s" : ""} right now`,
-      history: "Last played items across all users",
-      graphs: "7-day play activity breakdown"
-    }[t] || "";
+    return { libraries: "", users: "", history: "Last played items across all users", graphs: "7-day play activity breakdown" }[t] || "";
   }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tab loader
+  // ──────────────────────────────────────────────────────────────────────────
   async _tlLoadTab(tab, modal) {
     const body = modal.querySelector("#tl-body");
     if (!body) return;
     if (tab === "libraries") {
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-      const r = await this._tlApiFetch("get_libraries_table", "length=20&start=0&order_column=plays&order_dir=desc");
-      body.innerHTML = this._tlBodyLibraries(r?.response?.data?.data);
+      const ml = this._tautulliModal;
+      if (!ml) return;
+      const r = await this._tlApiFetch("get_libraries_table", `length=${ml.libsPerPage || 25}&start=${(ml.libsPage || 0) * (ml.libsPerPage || 25)}&order_column=${ml.libsSortCol || "plays"}&order_dir=${ml.libsSortDir || "desc"}`);
+      if (!this._tautulliModal) return;
+      ml.libsData = r?.response?.data?.data || [];
+      ml.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || ml.libsData.length;
+      body.innerHTML = this._tlBodyLibraries(ml.libsData, ml.libsTotal);
+      this._wireTautulliModalBody(body);
     } else if (tab === "users") {
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-      const r = await this._tlApiFetch("get_users_table", "length=50&start=0&order_column=plays&order_dir=desc");
-      body.innerHTML = this._tlBodyUsers(r?.response?.data?.data);
+      const m2 = this._tautulliModal;
+      if (!m2) return;
+      const r = await this._tlApiFetch("get_users_table", `length=${m2.usersPerPage || 25}&start=${(m2.usersPage || 0) * (m2.usersPerPage || 25)}&order_column=${m2.usersSortCol || "plays"}&order_dir=${m2.usersSortDir || "desc"}`);
+      if (!this._tautulliModal) return;
+      m2.usersData = r?.response?.data?.data || [];
+      m2.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m2.usersData.length;
+      body.innerHTML = this._tlBodyUsers(m2.usersData, m2.usersTotal);
       this._wireTautulliModalBody(body);
     } else if (tab === "history") {
       if (!this._tautulliModal) return;
@@ -7943,51 +8571,8 @@ var _TautulliMethods = class {
     }
   }
   // ──────────────────────────────────────────────────────────────────────────
-  // Tab body renderers
+  // History tab renderer
   // ──────────────────────────────────────────────────────────────────────────
-  _tlBodyLibraries(data) {
-    if (!data || !data.length) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data available</div>';
-    const cards = data.map((lib) => {
-      const type = (lib.section_type || "unknown").toLowerCase();
-      const icon = type === "movie" ? this._tlSvgLibraries() : type === "show" ? this._tlSvgUsers() : this._tlSvgGraphs();
-      return `<div class="tl-lib-card">
-        <div style="display:flex;justify-content:center;margin-bottom:8px;color:rgba(255,255,255,0.35)">${icon}</div>
-        <div style="font-size:12px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lib.section_name || "\u2014"}</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:capitalize;margin-bottom:8px">${lib.section_type || "\u2014"}</div>
-        <div style="font-size:11px;color:rgba(250,180,50,0.9);font-weight:700">${lib.plays ?? 0} plays</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.35)">${lib.count ?? 0} items</div>
-        ${lib.duration ? `<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">${this._tlFmtDuration(lib.duration)}</div>` : ""}
-      </div>`;
-    }).join("");
-    return `<div class="tl-lib-grid">${cards}</div>`;
-  }
-  _tlBodyUsers(data) {
-    if (!data || !data.length) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data available</div>';
-    const tl = this._tautulli || {};
-    const showBanner = tl.sharingDetected && !tl.sharingAcked;
-    const warnUsers = tl.sharingUsers || [];
-    const banner = showBanner ? `<div class="tl-warn-banner">
-      <div style="flex:1"><strong>Account sharing detected</strong><br>
-        ${warnUsers.length ? "Affected: " + warnUsers.join(", ") : "Multiple IPs detected for the same account."}
-        Review IPs below and acknowledge if expected.</div>
-      <button class="tl-ack-btn" id="tl-ack-btn">Acknowledge</button>
-    </div>` : "";
-    const rows = data.map((u) => {
-      const name = u.friendly_name || u.username || "\u2014";
-      const isWarn = warnUsers.includes(name) || warnUsers.includes(u.username);
-      return `<tr${isWarn ? ' class="tl-row-warn"' : ""}>
-        <td>${name}</td>
-        <td style="text-align:right">${u.plays ?? 0}</td>
-        <td style="text-align:right">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</td>
-        <td>${u.last_seen ? this._tlFmtDate(u.last_seen) : "\u2014"}</td>
-        <td style="font-family:monospace;font-size:11px">${u.ip_address || "\u2014"}</td>
-      </tr>`;
-    }).join("");
-    return `${banner}<table class="tl-users-table">
-      <thead><tr><th>User</th><th style="text-align:right">Plays</th><th style="text-align:right">Duration</th><th>Last Seen</th><th>IP</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-  }
   _tlBodyHistory() {
     const m = this._tautulliModal;
     if (!m) return "";
@@ -7998,53 +8583,46 @@ var _TautulliMethods = class {
     const filters = ["all", "movie", "episode", "track"].map((v) => {
       const lbl = v === "all" ? "All" : v === "episode" ? "TV" : v === "track" ? "Music" : "Movies";
       const active = !media && v === "all" || media === v;
-      return `<button class="tl-filter${active ? " tl-filter-active" : ""}" data-tl-hist-media="${v}">${lbl}</button>`;
+      return `<button class="is-f-btn${active ? " active" : ""}" data-tl-hist-media="${v}">${lbl}</button>`;
     }).join("");
     if (!data || !data.length) {
-      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div>
-        <div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>`;
+      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div><div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>`;
     }
     const rows = data.map((h) => {
       const type = h.media_type || "";
       const bdg = type === "movie" ? '<span class="tl-badge-movie">Movie</span> ' : type === "episode" ? '<span class="tl-badge-tv">TV</span> ' : type === "track" ? '<span class="tl-badge-music">Music</span> ' : "";
-      return `<tr>
-        <td>${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td>
-        <td>${bdg}${h.full_title || h.title || "\u2014"}</td>
-        <td>${h.friendly_name || h.user || "\u2014"}</td>
-        <td>${h.player || "\u2014"}</td>
-        <td style="text-align:right">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td>
-        <td style="font-size:10px;color:rgba(255,255,255,0.45)">${h.transcode_decision || "\u2014"}</td>
-      </tr>`;
+      return `<tr><td>${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td><td>${bdg}${h.full_title || h.title || "\u2014"}</td><td>${h.friendly_name || h.user || "\u2014"}</td><td>${h.player || "\u2014"}</td><td style="text-align:right">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td><td style="font-size:10px;color:rgba(255,255,255,0.45)">${h.transcode_decision || "\u2014"}</td></tr>`;
     }).join("");
-    const pagination = totalPages > 1 ? `<div class="tl-pagination">
-      <button class="tl-page-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}>\u2039 Prev</button>
-      <span class="tl-page-counter">Page ${page + 1} / ${totalPages} &nbsp;(${total} total)</span>
-      <button class="tl-page-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}>Next \u203A</button>
-    </div>` : "";
-    return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div>
-      <table class="tl-hist-table">
-        <thead><tr><th>Date</th><th>Title</th><th>User</th><th>Player</th><th style="text-align:right">Duration</th><th>Stream</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>${pagination}`;
+    const isMobile = window.matchMedia("(max-width: 600px)").matches;
+    const pagination = totalPages > 1 ? isMobile ? `<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px"><button class="tl-page-btn tl-icon-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><span style="font-size:13px;font-weight:600;color:var(--is-text);min-width:44px;text-align:center">${page + 1}/${totalPages}</span><button class="tl-page-btn tl-icon-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button></div>` : `<div class="tl-pagination"><button class="tl-page-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}>\u2039 Prev</button><span class="tl-page-counter">Page ${page + 1} / ${totalPages} &nbsp;(${total} total)</span><button class="tl-page-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}>Next \u203A</button></div>` : "";
+    if (isMobile) {
+      const mobCards = data.map((h) => {
+        const type = h.media_type || "";
+        const bdg = type === "movie" ? '<span class="tl-badge-movie">Movie</span> ' : type === "episode" ? '<span class="tl-badge-tv">TV</span> ' : type === "track" ? '<span class="tl-badge-music">Music</span> ' : "";
+        const dur = h.duration ? this._tlFmtDuration(h.duration) : "\u2014";
+        const ago = h.date ? this._tlFmtDate(h.date) : "\u2014";
+        const meta = [h.player, h.transcode_decision].filter(Boolean);
+        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name">${bdg}${this._escHtml(h.full_title || h.title || "\u2014")}</div><div class="tl-mob-meta"><span style="color:var(--is-text-label)">${this._escHtml(h.friendly_name || h.user || "\u2014")}</span><span style="color:rgba(255,255,255,0.25)">\xB7</span><span style="color:var(--is-text-label)">${ago}</span>${meta.map((v) => `<span style="color:rgba(255,255,255,0.25)">\xB7</span><span style="color:var(--is-text-label)">${this._escHtml(v)}</span>`).join("")}</div></div><div style="text-align:right;flex-shrink:0;color:rgba(255,255,255,0.7);font-size:12px;font-weight:600">${dur}</div></div></div>`;
+      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>';
+      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div>${mobCards}${pagination}`;
+    }
+    return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div><table class="tl-hist-table"><thead><tr><th>Date</th><th>Title</th><th>User</th><th>Player</th><th style="text-align:right">Duration</th><th>Stream</th></tr></thead><tbody>${rows}</tbody></table>${pagination}`;
   }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Graphs tab renderer
+  // ──────────────────────────────────────────────────────────────────────────
   _tlBodyGraphs() {
     const m = this._tautulliModal;
     if (!m) return "";
-    if (m.graphsLoading || !m.graphsData) {
-      return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    }
+    if (m.graphsLoading || !m.graphsData) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
     const sub = m.graphsSub || "media";
     const subDefs = [{ id: "media", lbl: "Media Type" }, { id: "stream", lbl: "Stream Type" }, { id: "totals", lbl: "Play Totals" }];
     const subTabs = subDefs.map(
-      (s) => `<button class="tl-filter${s.id === sub ? " tl-filter-active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
+      (s) => `<button class="is-f-btn${s.id === sub ? " active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
     ).join("");
     let body = "";
     if (sub === "media") {
-      body = `<div class="tl-graphs-grid">
-        ${this._tlGraphCard("Daily Play Count by Media Type", m.graphsData.byDate, true)}
-        ${this._tlGraphCard("Plays by Day of Week", m.graphsData.byDow, false)}
-        ${this._tlGraphCard("Plays by Hour of Day", m.graphsData.byHod, false)}
-      </div>`;
+      body = `<div class="tl-graphs-grid">${this._tlGraphCard("Daily Play Count by Media Type", m.graphsData.byDate, true)}${this._tlGraphCard("Plays by Day of Week", m.graphsData.byDow, false)}${this._tlGraphCard("Plays by Hour of Day", m.graphsData.byHod, false)}</div>`;
     } else if (sub === "stream") {
       body = '<div style="color:rgba(255,255,255,0.3);padding:20px;text-align:center">Stream type graphs coming soon</div>';
     } else {
@@ -8055,10 +8633,7 @@ var _TautulliMethods = class {
   _tlGraphCard(title, rawData, full) {
     const clsFull = full ? " full" : "";
     const d = rawData?.response?.data;
-    if (!d) {
-      return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div>
-        <div style="color:rgba(255,255,255,0.2);font-size:11px;text-align:center;padding:20px">No data</div></div>`;
-    }
+    if (!d) return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div><div style="color:rgba(255,255,255,0.2);font-size:11px;text-align:center;padding:20px">No data</div></div>`;
     const cats = d.categories || [];
     const series = d.series || [];
     const colors = ["rgba(250,180,50,0.7)", "rgba(99,180,255,0.7)", "rgba(100,220,150,0.7)", "rgba(250,120,50,0.7)"];
@@ -8074,18 +8649,12 @@ var _TautulliMethods = class {
       return `<div class="tl-bar-chart-col">${stacked}<div class="tl-bar-chart-label">${lbl}</div></div>`;
     }).join("");
     const legend = series.map(
-      (s, i) => `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:10px;color:rgba(255,255,255,0.5)">
-        <span style="width:8px;height:8px;border-radius:2px;background:${colors[i % colors.length]};display:inline-block;flex-shrink:0"></span>${s.name}
-      </span>`
+      (s, i) => `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:10px;color:rgba(255,255,255,0.5)"><span style="width:8px;height:8px;border-radius:2px;background:${colors[i % colors.length]};display:inline-block;flex-shrink:0"></span>${s.name}</span>`
     ).join("");
-    return `<div class="tl-graph-card${clsFull}">
-      <div class="tl-graph-title">${title}</div>
-      <div class="tl-bar-chart">${bars}</div>
-      ${legend ? `<div style="margin-top:8px">${legend}</div>` : ""}
-    </div>`;
+    return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div><div class="tl-bar-chart">${bars}</div>${legend ? `<div style="margin-top:8px">${legend}</div>` : ""}</div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
-  // API helpers (modal tabs — poster data comes from _fetchTautulli in fetch/)
+  // API helpers
   // ──────────────────────────────────────────────────────────────────────────
   async _tlApiFetch(cmd, params) {
     try {
@@ -8112,26 +8681,7 @@ var _TautulliMethods = class {
     return { byDate, byDow, byHod };
   }
   // ──────────────────────────────────────────────────────────────────────────
-  // Formatters
-  // ──────────────────────────────────────────────────────────────────────────
-  _tlFmtDuration(secs) {
-    if (!secs) return "0m";
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor(secs % 3600 / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  }
-  _tlFmtDate(ts) {
-    if (!ts) return "\u2014";
-    const d = new Date(typeof ts === "number" ? ts * 1e3 : ts);
-    const sec = Math.floor((Date.now() - d.getTime()) / 1e3);
-    if (sec < 60) return "just now";
-    if (sec < 3600) return Math.floor(sec / 60) + "m ago";
-    if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
-    if (sec < 604800) return Math.floor(sec / 86400) + "d ago";
-    return d.toLocaleDateString();
-  }
-  // ──────────────────────────────────────────────────────────────────────────
-  // SVG icons (16px, stroke-based)
+  // SVG icons (16px, tab icons)
   // ──────────────────────────────────────────────────────────────────────────
   _tlSvgLibraries() {
     return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 00-2 2v14a2 2 0 002 2h3M16 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3M8 3v18M16 3v18"/></svg>`;
@@ -9063,6 +9613,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wirePageButtons();
     this._wirePopup();
     this._wireSearch();
+    if (right) this._wireTautulliPosters(right);
     this._renderPopupEl();
     requestAnimationFrame(() => {
       if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
@@ -9115,7 +9666,10 @@ applyMixin(ArrStackCard.prototype, renderRightMixin);
 applyMixin(ArrStackCard.prototype, mediaCardsMixin);
 applyMixin(ArrStackCard.prototype, themeMixin);
 applyMixin(ArrStackCard.prototype, wireMixin);
+applyMixin(ArrStackCard.prototype, wireTautulliMixin);
 applyMixin(ArrStackCard.prototype, popupMixin);
+applyMixin(ArrStackCard.prototype, tautulliSharedMixin);
+applyMixin(ArrStackCard.prototype, tautulliTableMixin);
 applyMixin(ArrStackCard.prototype, tautulliMixin);
 customElements.define("arr-stack-card", ArrStackCard);
 window.customCards = window.customCards || [];
