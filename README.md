@@ -10,80 +10,97 @@
 
 <a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
+Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, and Bazarr — directly from Home Assistant with a single unified dashboard card.
+
+![Arr Stack Card preview](screenshot.png)
+
 <video src="https://github.com/user-attachments/assets/c53692f1-fd07-4c59-b7e3-d4bbf5d1c4c6" controls width="376" title="Mobile"></video>
 <video src="https://github.com/user-attachments/assets/5505e08f-b85e-4ef5-be4a-e5b13b60166a" controls width="800" title="Tablet"></video>
 
-A feature-rich Home Assistant Lovelace card for managing your media server stack. Integrates Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, and Bazarr into a single unified dashboard.
+---
 
-> **Requires:** [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) — the companion HA proxy integration.
+> [!IMPORTANT]
+> This project consists of **two components** — both are required:
+> - **[Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration)** — backend proxy (install first)
+> - **Arr Stack Card** (this repo) — the Lovelace frontend card
+
+---
+
+## Quick Setup
+
+1. Install **[Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration)** via HACS → Integrations
+2. Install **Arr Stack Card** via HACS → Frontend (see [Installation](#installation) below)
+3. Add `custom:arr-stack-card` to your dashboard — done
+
+```yaml
+type: custom:arr-stack-card
+```
+
+The card auto-detects all configured services. No YAML configuration required to get started.
+
+---
+
+## How it works
+
+```
+HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Sonarr / SABnzbd / …
+```
+
+The card never calls your ARR services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
+
+---
+
+## Supported services
+
+| Service | Role |
+|---------|------|
+| Radarr | Movie library, downloads, interactive search |
+| Sonarr | TV library, episode calendar, downloads |
+| qBittorrent | Torrent download management |
+| SABnzbd | Usenet download management |
+| Overseerr / Jellyseerr | Media requests, discovery, approvals |
+| Bazarr | Subtitle status per movie/show |
+
+Services not configured in the integration are hidden automatically.
 
 ---
 
 ## Features
 
-### Recently Added
-- Mixed movies + TV shows with files — sorted by download date
-- **IMDB rating**, audio language tags (`CS | EN`), and Bazarr subtitle status badges per card
-- Movie type tag (Movie / TV) on each poster
-- TV shows display the specific episode badge (e.g. `S04E04`) of the most recently downloaded episode, with audio and subtitle info
+### Library
 
-### Recently Requested
-- Monitored movies and shows not yet downloaded — sorted by date added
-- **IMDB rating** per card; download status badge (downloading / missing / failed)
-- Auto-refreshes when a download completes — item moves to Recently Added automatically
+- **Recently Added** — mixed movies + TV shows with files, sorted by download date. TV shows show the most recently downloaded episode badge (e.g. `S04E04`).
+- **Recently Requested** — monitored movies and shows not yet downloaded, with download status (downloading / missing / failed). Auto-refreshes when a download completes.
+- **Movies (Radarr)** — full library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup detail with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
+- **TV Shows (Sonarr)** — library with per-season episode counts and progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
 
-### Movies (Radarr)
-- Library overview with download status badges (downloading, missing, available)
-- **IMDB rating pill** on each movie card
-- Audio language tags (`CS | EN`) and Bazarr subtitle status badges, shown below the rating
-- Popup detail with poster, overview, ratings, and trailer link
-- Interactive Search — live indexer search with grab support directly from the card
-- Movie requests via Overseerr with quality profile selection
+### Downloads
 
-### TV Shows (Sonarr)
-- Library overview with per-season episode counts and progress bars
-- **IMDB rating pill** on each show card
-- **Upcoming episodes calendar** — shows airing date and `S01E01` badge per episode
-- Interactive Search per season (season pack) or per episode — if the show is not yet in Sonarr, it is added unmonitored automatically before searching
-- TV show requests via Overseerr with season selection
+- **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Shows free disk space.
+- **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. Shows free/total disk space with usage bar. **VPN shield indicator** — green when VPN tunnel is active, red when off.
 
-### Downloads (qBittorrent)
-- Active torrent list with progress, speed, and seeder/leecher counts
-- Pause, resume, stop seeding, and delete (with or without files)
-- Global pause/resume all
-- Sort by progress or speed
-- **Disk usage** — free space read from qBittorrent (shown only when qBittorrent is configured)
+### Discovery (Overseerr / Jellyseerr)
 
-### Downloads (SABnzbd)
-- Active NZB queue with progress and speed — delete queue items (with confirm)
-- Completed downloads shown inline in the queue list
-- Failed downloads history with retry and delete actions
-- Global pause/resume
-- **Disk usage** — free/total space with usage bar (priority over qBittorrent disk data)
-- Section hidden automatically when SABnzbd is not configured
-
-### Discover (Overseerr / Jellyseerr)
-- Trending, popular, and upcoming movies
-- New and upcoming TV shows — shows airing date on New Shows cards
-- Trending TV shows display rating
+- Trending, popular, and upcoming movies and TV shows
 - One-click or profile-based media requests
-- Admin: approve and decline pending requests (poster-style cards with approve / decline buttons)
-- Family account: view and withdraw own requests
+- **Admin:** approve and decline pending requests with poster-style cards
+- **Family accounts:** view and withdraw own requests
 
 ### Appearance & UX
-- Day / night theming (based on `sun.sun` entity)
+
+- Day / night theming based on `sun.sun`
 - Responsive layout — mobile, tablet, desktop
 - Sticky bottom navigation bar on mobile
-- Pagination for all sections with `itemsPerCategory` columns control
-- **Section overlay** — full-screen browsing grid via "See More" card (configurable page)
+- Pagination for all sections; configurable columns per category
+- **See More overlay** — full-screen grid for any section
 - Visual card editor in HA (no YAML required for basic setup)
-- Performance mode — disables backdrop blur; card background colour and transparency configurable
+- Performance mode — disables backdrop blur; configurable card background colour and opacity
 
 ---
 
 ## Requirements
 
-1. Home Assistant with HACS installed
+1. Home Assistant 2024.1+ with HACS installed
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
 3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
 
@@ -111,23 +128,9 @@ A feature-rich Home Assistant Lovelace card for managing your media server stack
 
 ---
 
-## Basic Configuration
-
-The card works out of the box with zero configuration. It auto-detects all services configured via the integration (Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, Bazarr) and applies sensible defaults.
-
-```yaml
-type: custom:arr-stack-card
-```
-
-That's it. The card will show all available panels, use English UI, display 3 categories per page with 4 items each, and show media request buttons if Overseerr is configured.
-
-Panels for services not configured in the integration (qBittorrent, SABnzbd, Overseerr, Bazarr) are hidden automatically — no YAML needed to disable them.
-
-> **Visual editor** — most settings can be configured via the HA dashboard editor (click the pencil icon). Only `styles.*` keys require manual YAML editing.
-
----
-
 ## Full Configuration
+
+> **Visual editor** — most settings are available via the HA dashboard editor (click the pencil icon). Only `styles.*` keys require manual YAML editing.
 
 ```yaml
 type: custom:arr-stack-card
@@ -147,9 +150,13 @@ discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
   itemsPerCategory: 4        # columns per category grid  (default: 4)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
-  oneClickRequest: false     # skip quality-profile dialog on movie/show request  (default: false)
-  oneClickDefaultMovieProfile: ""  # quality profile name for one-click movie requests  (default: first profile)
-  oneClickDefaultShowProfile: ""   # quality profile name for one-click TV requests  (default: first profile)
+  oneClickRequest: false     # skip request overlay on movie/show request — uses defaults below  (default: false)
+  oneClickDefaultMovieProfile: ""  # quality profile name for one-click movie requests
+  oneClickDefaultMovieTag: ""      # Radarr tag label for one-click movie requests  (optional)
+  oneClickDefaultMovieRootFolder: ""  # Radarr root folder path for one-click movie requests  (optional)
+  oneClickDefaultShowProfile: ""   # quality profile name for one-click TV requests
+  oneClickDefaultShowTag: ""       # Sonarr tag label for one-click TV requests  (optional)
+  oneClickDefaultShowRootFolder: ""   # Sonarr root folder path for one-click TV requests  (optional)
 
 # Category order & visibility
 categories:
@@ -174,150 +181,64 @@ styles:
   cardBackground: "#121216"       # card background colour (performance mode only)
   cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only, default: 90)
   dayNightMode: true              # auto switch popup colours based on sun.sun — set false to keep night colours always
-  searchBarIconColor: ""          # search bar icon colour when search is inactive (default: heading colour)
-  headingTextColor: "#ffffff"     # section header text
-  headingColor: "#ffffff"         # section header icon
-  primaryTextColor: "#ffffff"     # main text (titles)
-  secondaryTextColor: "#aaaaaa"   # subtitles, metadata
+  searchBarIconColor: ""          # search bar icon colour when inactive (default: heading colour)
+  headingTextColor: "#ffffff"
+  headingColor: "#ffffff"
+  primaryTextColor: "#ffffff"
+  secondaryTextColor: "#aaaaaa"
   pagingButtonTextColor: "#ffffff"
   pagingButtonBackgroundColor: "#1e1e2e"
   pagingDotColor: "#555555"
   pagingDotActiveColor: "#ffffff"
   downloadButtonTextColor: "#ffffff"
   tagPillTextColor: "#ffffff"
-  modalHeadingTextColor: "#ffffff"     # popup title, season titles, active IS filter tab, IS buttons
-  modalPrimaryTextColor: "#ffffff"     # popup body text, IS result rows (title, indexer, size, lang), episode number & title
-  modalSecondaryTextColor: "#aaaaaa"   # popup metadata, IS column headers, Results count, inactive filter tabs, air dates, score 0, unknown quality, "Querying…"
-  modalBackgroundColor: "#121216"      # popup glass tint — backdrop blur shows through; set dayNightMode: false when using a custom colour
-  modalOverlayColor: "#000000"         # colour of the dimmed overlay behind the popup
+  modalHeadingTextColor: "#ffffff"
+  modalPrimaryTextColor: "#ffffff"
+  modalSecondaryTextColor: "#aaaaaa"
+  modalBackgroundColor: "#121216"      # set dayNightMode: false when using a custom colour
+  modalOverlayColor: "#000000"
   modalCloseButtonIconColor: "#ffffff"
   modalCloseButtonBackgroundColor: "#333344"
-  modalButtonTextColor: "#ffffff"      # text colour for all action buttons in the popup
-  modalButtonBackgroundColor: "#1e1e2e"       # background for IS / request / season action buttons
-  modalRemoveButtonBackgroundColor: "#ff6030" # background for the Remove › button (not the sub-buttons)
+  modalButtonTextColor: "#ffffff"
+  modalButtonBackgroundColor: "#1e1e2e"
+  modalRemoveButtonBackgroundColor: "#ff6030"
 ```
 
----
-
-## Configuration Reference
-
-### Top-level
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `localisation` | `cs` \| `en` | `en` | UI language |
-| `layout` | `both` \| `left` \| `right` | `both` | Which panels to show |
-| `sticky_nav_offset` | number | `100` | px from top where the floating nav bar appears (mobile/tablet) |
-
-### `downloads`
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `torrentItems` | number | `3` | qBittorrent rows per page |
-| `usenetItems` | number | `3` | SABnzbd rows per page |
-
-### `discover`
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `categoriesCount` | number | `3` | Media sections visible per right-panel page |
-| `itemsPerCategory` | number | `4` | Number of columns per category grid. Increase for wide screens. |
-| `showMoreOnPage` | number | `3` | Page number on which the "See More" card appears as the last slot. Clicking it opens a full-screen overlay. |
-| `oneClickRequest` | boolean | `false` | Skip quality-profile dialog — request movie/show instantly. Set `oneClickDefaultMovieProfile` / `oneClickDefaultShowProfile` to match your profile name (e.g. `HD - 720p/1080p`), otherwise falls back to first available profile |
-| `oneClickDefaultMovieProfile` | string | `""` | Quality profile name for one-click movie requests (uses first profile if empty) |
-| `oneClickDefaultShowProfile` | string | `""` | Quality profile name for one-click TV show requests (uses first profile if empty) |
-
-### `categories`
-
-Array of `{ id, enabled }` objects controlling visibility and order of right-panel sections.
+### Category IDs
 
 | id | Section |
 |----|---------|
-| `recentlyAdded` | Recently Added — mixed movies & shows with files, sorted by date added |
-| `recentlyRequested` | Recently Requested — monitored movies & shows not yet downloaded |
-| `upcoming` | Upcoming Movies — movie releases (Overseerr) |
-| `tvUpcoming` | New Shows — upcoming TV releases (Overseerr) |
-| `trending` | Trending — trending movies & shows (Overseerr) |
-| `popular` | Popular Movies — popular movies (Overseerr) |
-| `calendar` | Calendar — upcoming Sonarr episode air dates |
+| `recentlyAdded` | Recently Added |
+| `recentlyRequested` | Recently Requested |
+| `upcoming` | Upcoming Movies |
+| `tvUpcoming` | New Shows |
+| `trending` | Trending |
+| `popular` | Popular Movies |
+| `calendar` | Sonarr episode calendar |
 
-### `styles`
+### Style notes
 
-All colour values accept `#rrggbb` hex or `rgb(r,g,b)` strings.
-
-| Option | Affects |
-|--------|---------|
-| `performanceMode` | Disables backdrop blur on the card — recommended on low-end devices |
-| `cardBackground` | Card background colour (applied only in performance mode) |
-| `cardBackgroundOpacity` | Card background opacity 0–100 (performance mode only, default `90`) |
-| `dayNightMode` | `true` (default) — popup colours follow `sun.sun` (light during day, dark at night). Set `false` to always use dark popup colours — useful when setting custom popup colours so day mode doesn't override them. |
-| `searchBarIconColor` | Search bar icon colour when search field is inactive. Defaults to heading colour on focus/type. |
-| `headingTextColor` | Section header text colour |
-| `headingColor` | Section header icon colour |
-| `primaryTextColor` | Primary text (movie/show titles on poster cards) |
-| `secondaryTextColor` | Secondary text (year, quality, metadata) |
-| `pagingButtonTextColor` | Prev/Next paging button text |
-| `pagingButtonBackgroundColor` | Prev/Next paging button background |
-| `pagingDotColor` | Inactive pagination dot |
-| `pagingDotActiveColor` | Active pagination dot |
-| `downloadButtonTextColor` | Download action button text |
-| `tagPillTextColor` | Media type tag pill text (Movie / TV) |
-| `modalHeadingTextColor` | Popup title; season titles in Sonarr panel; active IS filter tab; IS action buttons |
-| `modalPrimaryTextColor` | Popup overview text; IS result rows (title, indexer, size, lang); episode number & title |
-| `modalSecondaryTextColor` | Popup metadata (year, rating); IS column headers, Results count, inactive filter tabs, age, peers dash, score 0, unknown quality, "Querying…"; episode air dates |
-| `modalBackgroundColor` | Popup glass tint — backdrop blur always shows through the colour. Set `dayNightMode: false` when using a fixed colour so day mode does not override it. |
-| `modalOverlayColor` | Colour of the dimmed overlay behind the popup |
-| `modalCloseButtonIconColor` | Popup close button icon |
-| `modalCloseButtonBackgroundColor` | Popup close button background |
-| `modalButtonTextColor` | Text colour for all action buttons in the popup |
-| `modalButtonBackgroundColor` | Background for IS, request, and season action buttons |
-| `modalRemoveButtonBackgroundColor` | Background for the **Remove ›** button only — the sub-buttons (Remove from Library, Remove from Disc) keep their system colours |
+- All colour values accept `#rrggbb` hex or `rgb(r,g,b)`.
+- `dayNightMode: true` (default) — popup follows `sun.sun`. Set `false` to always use dark colours, required when setting custom `modal*` colours so day mode doesn't override them.
+- `performanceMode: true` — disables backdrop blur; `cardBackground` and `cardBackgroundOpacity` apply only in this mode.
+- `modalRemoveButtonBackgroundColor` — affects only the **Remove ›** button, not the sub-buttons (Remove from Library / Remove from Disc).
 
 ---
 
 ## Multi-user setup (Overseerr / Jellyseerr)
 
-The card supports separate admin and non-admin HA accounts, each mapped to a different Overseerr user.
+| HA account | What they can do |
+|------------|-----------------|
+| Admin | Browse, request, **approve/decline** pending requests |
+| Non-admin | Browse, request, view and withdraw own requests |
 
-### How it works
+The card detects the HA user role automatically (`hass.user.is_admin`). No extra card config needed.
 
-| HA account | Overseerr account | What they see |
-|------------|-------------------|---------------|
-| Admin | Admin | Full card — browse, request, **approve/decline** pending requests |
-| Non-admin | Non-admin (regular user) | Browse and request movies/shows only — no approve section |
+**Setup:**
 
-The card detects the HA user role automatically (`hass.user.is_admin`). No extra card configuration needed.
-
-### Setup
-
-1. **Overseerr** — create a separate non-admin user (Settings → Users → Add User). This user will be used for all requests from non-admin HA accounts.
+1. **Overseerr** — create a non-admin user (Settings → Users → Add User).
 2. **Home Assistant** — create a non-admin HA user for each family member (Settings → People → Add Person → uncheck Administrator).
-3. **Integration** — in the Arr Stack integration config, enter the non-admin Overseerr user's **email and password**. The integration proxy will forward requests under that user's identity.
-
-### What non-admin users can do
-
-- Browse Trending, Popular, Upcoming movies and TV shows
-- Request a movie or TV show (one-click or profile picker)
-- View and withdraw their own pending requests
-
-### What admins additionally see
-
-- **Pending Requests** section in the left panel — lists all open requests with approve / decline buttons
-
----
-
-## SABnzbd disk info
-
-SABnzbd reports disk space based on the **Temporary Download Folder** path configured in SABnzbd → Settings → Folders. Make sure:
-
-- You use the **API Key** (not the NZB Key) — found in SABnzbd → Config → General → **API Key**
-- The Temporary Download Folder path is valid and accessible
-
----
-
-## Related
-
-- [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) — required companion proxy integration
+3. **Integration** — in the Arr Stack integration config, enter the non-admin Overseerr user's email and password. The proxy forwards requests under that user's identity.
 
 ---
 
