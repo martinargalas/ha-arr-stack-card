@@ -72,9 +72,11 @@ Services not configured in the integration are hidden automatically. Plex and Je
 
 ### Downloads (left panel)
 
+The left panel shows your download managers. Each section only appears if that service is configured in the integration — if you only use qBittorrent, SABnzbd won't show up, and vice versa.
+
 - **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed.
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
-- **Disk space** — free space with usage bar. Multiple root folders (Radarr/Sonarr) are deduplicated and shown as pageable disk cards.
+- **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Root folders on the same physical disk are automatically deduplicated (by free space) and their paths combined (e.g. `movies · tv`). If your media is spread across multiple disks, each disk appears as a separate card — use the chevron arrows to page through them. The card defaults to showing the disk that matches your SABnzbd download directory.
 
 ### Right panel — configurable sections
 
