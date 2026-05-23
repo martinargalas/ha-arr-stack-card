@@ -48,8 +48,6 @@ HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Son
 
 The card never calls your services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
 
-Plex and Jellyfin streams are read from native HA `media_player` entities — no extra configuration required if those integrations are already set up.
-
 ---
 
 ## Supported services
@@ -66,7 +64,7 @@ Plex and Jellyfin streams are read from native HA `media_player` entities — no
 | Jellyfin | Active stream monitoring |
 | Tautulli | Watch history, statistics, and usage graphs |
 
-Services not configured in the integration are hidden automatically.
+Services not configured in the integration are hidden automatically. Plex and Jellyfin are an exception — their streams come from HA `media_player` entities (no integration config needed) and the Now Playing section auto-hides when nothing is playing.
 
 ---
 
@@ -124,6 +122,18 @@ Services not configured in the integration are hidden automatically.
 3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
 
 Plex, Jellyfin, and Tautulli are optional — their sections are hidden when not configured.
+
+### Now Playing (Plex / Jellyfin)
+
+The Now Playing section reads from standard HA `media_player` entities — no Arr Stack Integration config needed. The card picks up any entity whose ID starts with `media_player.plex_` or `media_player.jellyfin_`, which is the default naming created by the official HA integrations.
+
+**Setup:**
+- **Plex** — install the [Plex integration](https://www.home-assistant.io/integrations/plex/) in HA. It will create `media_player.plex_*` entities automatically for each active session.
+- **Jellyfin** — install the [Jellyfin integration](https://www.home-assistant.io/integrations/jellyfin/) in HA. It will create `media_player.jellyfin_*` entities automatically.
+
+No custom entity naming required. The Now Playing section auto-hides when nothing is playing.
+
+Playback control (pause, resume, stop) is available for Plex. Apple TV is supported via the Plex integration.
 
 ---
 
