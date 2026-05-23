@@ -10,7 +10,7 @@
 
 <a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, and Bazarr — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, and Tautulli — directly from Home Assistant with a single unified dashboard card.
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -43,10 +43,12 @@ The card auto-detects all configured services. No YAML configuration required to
 ## How it works
 
 ```
-HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Sonarr / SABnzbd / …
+HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Sonarr / Plex / …
 ```
 
-The card never calls your ARR services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
+The card never calls your services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
+
+Plex and Jellyfin streams are read from native HA `media_player` entities — no extra configuration required if those integrations are already set up.
 
 ---
 
@@ -60,6 +62,9 @@ The card never calls your ARR services directly. All API calls go through the HA
 | SABnzbd | Usenet download management |
 | Overseerr / Jellyseerr | Media requests, discovery, approvals |
 | Bazarr | Subtitle status per movie/show |
+| Plex | Active stream monitoring and playback control |
+| Jellyfin | Active stream monitoring |
+| Tautulli | Watch history, statistics, and usage graphs |
 
 Services not configured in the integration are hidden automatically.
 
@@ -76,8 +81,9 @@ Services not configured in the integration are hidden automatically.
 
 ### Downloads
 
-- **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Shows free disk space.
-- **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. Shows free/total disk space with usage bar. **VPN shield indicator** — green when VPN tunnel is active, red when off.
+- **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed.
+- **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
+- **Disk space** — free space display with usage bar. Multiple root folders (from Radarr/Sonarr) are deduplicated and shown as pageable disk cards.
 
 ### Discovery (Overseerr / Jellyseerr)
 
@@ -85,6 +91,19 @@ Services not configured in the integration are hidden automatically.
 - One-click or profile-based media requests
 - **Admin:** approve and decline pending requests with poster-style cards
 - **Family accounts:** view and withdraw own requests
+
+### Now Playing (Plex / Jellyfin)
+
+- Live view of active streams — title, user, media type, and playback progress
+- Playback control: pause, resume, stop (Apple TV supported via Plex)
+- Auto-hidden when no streams are active
+
+### Statistics (Tautulli)
+
+- Watch history with search and filters
+- Play count and duration charts by day, day of week, hour, and media type
+- Stream type breakdown and concurrent stream graph
+- Per-user and per-library statistics
 
 ### Appearance & UX
 
@@ -103,6 +122,8 @@ Services not configured in the integration are hidden automatically.
 1. Home Assistant 2024.1+ with HACS installed
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
 3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
+
+Plex, Jellyfin, and Tautulli are optional — their sections are hidden when not configured.
 
 ---
 
@@ -174,6 +195,10 @@ categories:
     enabled: true
   - id: calendar
     enabled: true
+  - id: streams
+    enabled: true
+  - id: tautulli
+    enabled: true
 
 # Appearance
 styles:
@@ -215,6 +240,8 @@ styles:
 | `trending` | Trending |
 | `popular` | Popular Movies |
 | `calendar` | Sonarr episode calendar |
+| `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
+| `tautulli` | Statistics (Tautulli) |
 
 ### Style notes
 
