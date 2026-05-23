@@ -70,33 +70,37 @@ Services not configured in the integration are hidden automatically. Plex and Je
 
 ## Features
 
-### Library
-
-- **Recently Added** — mixed movies + TV shows with files, sorted by download date. TV shows show the most recently downloaded episode badge (e.g. `S04E04`).
-- **Recently Requested** — monitored movies and shows not yet downloaded, with download status (downloading / missing / failed). Auto-refreshes when a download completes.
-- **Movies (Radarr)** — full library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup detail with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
-- **TV Shows (Sonarr)** — library with per-season episode counts and progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
-
-### Downloads
+### Downloads (left panel)
 
 - **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed.
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
-- **Disk space** — free space display with usage bar. Multiple root folders (from Radarr/Sonarr) are deduplicated and shown as pageable disk cards.
+- **Disk space** — free space with usage bar. Multiple root folders (Radarr/Sonarr) are deduplicated and shown as pageable disk cards.
 
-### Discovery (Overseerr / Jellyseerr)
+### Right panel — configurable sections
 
-- Trending, popular, and upcoming movies and TV shows
+The right panel is a modular dashboard. You choose which sections appear and in what order via the visual editor. Each section is powered by a different service and can be enabled or disabled independently.
+
+#### Library (Radarr / Sonarr)
+
+- **Recently Added** — mixed movies + TV shows with files, sorted by download date. TV shows show the most recently downloaded episode badge (e.g. `S04E04`).
+- **Recently Requested** — monitored movies and shows not yet downloaded, with download status (downloading / missing / failed). Auto-refreshes when a download completes.
+- **Movies** — full Radarr library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
+- **TV Shows** — full Sonarr library with per-season progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
+
+#### Discovery (Overseerr / Jellyseerr)
+
+- **Trending, popular, upcoming** — movies and TV shows sourced from Overseerr/Jellyseerr
 - One-click or profile-based media requests
 - **Admin:** approve and decline pending requests with poster-style cards
 - **Family accounts:** view and withdraw own requests
 
-### Now Playing (Plex / Jellyfin)
+#### Now Playing (Plex / Jellyfin)
 
 - Live view of active streams — title, user, media type, and playback progress
-- Playback control: pause, resume, stop (Apple TV supported via Plex)
+- Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
 - Auto-hidden when no streams are active
 
-### Statistics (Tautulli)
+#### Statistics (Tautulli)
 
 - Watch history with search and filters
 - Play count and duration charts by day, day of week, hour, and media type
@@ -121,7 +125,7 @@ Services not configured in the integration are hidden automatically. Plex and Je
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
 3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
 
-Plex, Jellyfin, and Tautulli are optional — their sections are hidden when not configured.
+All services except Radarr, Sonarr, and Overseerr/Jellyseerr are optional — unconfigured services are hidden automatically.
 
 ### Now Playing (Plex / Jellyfin)
 
@@ -133,7 +137,7 @@ The Now Playing section reads from standard HA `media_player` entities — no Ar
 
 No custom entity naming required. The Now Playing section auto-hides when nothing is playing.
 
-Playback control (pause, resume, stop) is available for Plex. Apple TV is supported via the Plex integration.
+Playback control (pause, resume, stop) is available for Plex and works for most clients. Android phones and web browsers are not supported.
 
 ---
 
