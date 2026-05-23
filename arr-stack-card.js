@@ -1606,6 +1606,7 @@ var STYLES = `
 
       /* \u2500\u2500 Popup day/night CSS custom properties \u2500\u2500 */
       .popup-overlay {
+        color: var(--is-text);
         --is-blue:       #0a84ff;
         --is-green:      #30d158;
         --is-red:        #ff453a;
@@ -1625,6 +1626,7 @@ var STYLES = `
         --is-divider:    rgba(255,255,255,0.10);
         --is-row-hover:  rgba(255,255,255,0.04);
         --is-hdr-bg:     rgba(10,12,22,0.80);
+        --is-menu-bg:    #18182a;
         --is-hdr-blur:   blur(20px);
         --is-btn-bg:     rgba(255,255,255,0.08);
         --is-btn-bdr:    rgba(255,255,255,0.18);
@@ -1673,6 +1675,7 @@ var STYLES = `
         --is-divider:    rgba(0,0,0,0.08);
         --is-row-hover:  rgba(0,0,0,0.03);
         --is-hdr-bg:     rgba(240,242,255,0.82);
+        --is-menu-bg:    rgba(245,246,255,0.99);
         --is-hdr-blur:   blur(20px);
         --is-btn-bg:     rgba(0,0,0,0.05);
         --is-btn-bdr:    rgba(0,0,0,0.12);
@@ -1729,8 +1732,8 @@ var STYLES = `
       .popup-glass > * { position: relative; z-index: 1; }
       /* Wider modal p\u0159i IS v\xFDsledc\xEDch */
       .popup-glass.is-wide { width: min(900px, 94vw); }
-      /* Extra-wide modal pro Tautulli statistics */
-      .popup-glass.tl-wide { width: min(1100px, 96vw); }
+      /* Extra-wide modal pro Tautulli statistics \u2014 pevn\xE1 v\xFD\u0161ka eliminuje skok p\u0159i p\u0159ep\xEDn\xE1n\xED tab\u016F */
+      .popup-glass.tl-wide { width: min(1100px, 96vw); height: 88vh; }
 
       /* Scrollable body below the backdrop */
       .popup-body {
@@ -2535,15 +2538,41 @@ var STYLES = `
 
       /* Tautulli modal */
       /* tl-modal-* removed \u2014 now uses popup-overlay / popup-glass / popup-close / is-panel-hdr */
-      .tl-graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-      .tl-graph-card { background: var(--is-row-hover, rgba(255,255,255,0.03)); border: 1px solid var(--is-divider, rgba(255,255,255,0.07)); border-radius: 12px; padding: 14px; }
-      .tl-graph-card.full { grid-column: 1 / -1; }
-      .tl-graph-title { font-size: 11px; font-weight: 700; color: var(--is-text-label, rgba(255,255,255,0.45)); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
-      .tl-bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 72px; }
-      .tl-bar-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-      .tl-bar-chart-bar { width: 100%; border-radius: 2px 2px 0 0; background: rgba(250,180,50,0.5); min-height: 2px; transition: background .15s; cursor: pointer; }
-      .tl-bar-chart-bar:hover { background: rgba(250,180,50,0.85); }
-      .tl-bar-chart-label { font-size: 7px; color: var(--is-text-muted, rgba(255,255,255,0.25)); }
+      /* \u2500\u2500 Tautulli Graphs \u2500\u2500 */
+      .tl-graph-title { font-size: 10px; font-weight: 700; color: var(--is-text-label); text-transform: uppercase; letter-spacing: .06em; }
+      .tl-g-card { background: var(--is-row-hover); border: 1px solid var(--is-divider); border-radius: 10px; padding: 12px 12px 10px 12px; --tl-wknd: rgba(255,255,255,0.035); --tl-col-hlt: rgba(255,255,255,0.06); }
+      .popup-day .tl-g-card { --tl-wknd: rgba(0,0,0,0.03); --tl-col-hlt: rgba(0,0,0,0.05); }
+      .tl-g-svg { width: 100%; display: block; overflow: visible; }
+
+      /* Bar animation: scale up from bottom of each bar's own bbox */
+      @keyframes tl-g-bar-up {
+        from { transform: scaleY(0); opacity: 0.4; }
+        to   { transform: scaleY(1); opacity: 1; }
+      }
+      .tl-g-anim-bar {
+        transform-box: fill-box;
+        transform-origin: center bottom;
+        animation: tl-g-bar-up 0.38s cubic-bezier(.22,.61,.36,1) both;
+      }
+      /* Hover highlight for column groups */
+      .tl-g-col:hover .tl-g-anim-bar { opacity: 1 !important; filter: brightness(1.15); }
+
+      /* Line animation: draw left\u2192right via stroke-dashoffset (large dasharray, no pathLength) */
+      @keyframes tl-g-line-draw {
+        from { stroke-dashoffset: 4000; }
+        to   { stroke-dashoffset: 0; }
+      }
+      .tl-g-anim-line {
+        stroke-dasharray: 4000;
+        animation: tl-g-line-draw 0.75s ease-out both;
+      }
+
+      /* HTML x-axis label row below SVG \u2014 avoids font stretching from preserveAspectRatio:none */
+      .tl-g-x-labels { position: relative; height: 16px; margin-top: 2px; overflow: visible; }
+      .tl-g-x-labels span { white-space: nowrap; font-size: 10px; color: var(--is-text-muted); line-height: 1; }
+
+      /* HTML y-axis label \u2014 consistent size regardless of chart width */
+      .tl-g-ylabel { position: absolute; top: 2px; left: 2px; font-size: 10px; color: var(--is-text-muted); line-height: 1; pointer-events: none; z-index: 1; white-space: nowrap; }
       .tl-hist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
       .tl-hist-table th { text-align: left; padding: 6px 8px; color: var(--is-text-label); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--is-divider); }
       .tl-hist-table td { padding: 9px 8px; border-bottom: 1px solid var(--is-divider); color: var(--is-text-body); vertical-align: middle; }
@@ -2559,13 +2588,13 @@ var STYLES = `
       .tl-ack-btn { margin-left: auto; flex-shrink: 0; align-self: center; background: rgba(255,60,60,0.18); border: 1px solid rgba(255,60,60,0.35); border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; color: rgba(255,120,120,0.9); cursor: pointer; transition: all .15s; white-space: nowrap; }
       .tl-ack-btn:hover { background: rgba(255,60,60,0.3); color: #fff; }
       .tl-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
-      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg); color: var(--is-btn-clr); cursor: pointer; font-size: 12px; transition: all .15s; }
+      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg); color: var(--is-btn-clr); cursor: pointer; font-size: 12px; line-height: 1.4; transition: all .15s; }
       .tl-page-btn:disabled { opacity: 0.3; pointer-events: none; }
       .tl-page-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
       .tl-page-btn.active { background: rgba(10,132,255,0.28); border-color: rgba(10,132,255,0.55); color: #fff; }
       .tl-col-item { display: flex; align-items: center; gap: 8px; padding: 6px 14px; cursor: pointer; font-size: 12px; color: var(--is-text-body,rgba(255,255,255,0.8)); white-space: nowrap; transition: background .1s; }
       .tl-col-item:hover { background: var(--is-row-hover,rgba(255,255,255,0.05)); }
-      .tl-col-chk { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); background: transparent; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
+      .tl-col-chk { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--is-btn-bdr); background: transparent; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
       .tl-col-chk.on { background: rgba(10,132,255,0.85); border-color: rgba(10,132,255,0.9); }
       .tl-col-chk.on::after { content: "\u2713"; font-size: 9px; color: #fff; font-weight: 900; line-height: 1; }
       .tl-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
@@ -2586,7 +2615,7 @@ var STYLES = `
       .tl-mob-card:last-child { border-bottom: none; }
       .tl-mob-card:hover { background: var(--is-row-hover); }
       .tl-mob-r1 { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; min-width: 0; }
-      .tl-mob-name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tl-mob-name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--is-text); }
       .tl-mob-meta { display: flex; gap: 10px; font-size: 11px; color: var(--is-text-label); flex-wrap: wrap; }
       .tl-mob-edit { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
       .tl-icon-btn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
@@ -2903,8 +2932,7 @@ var _InteractiveSearch = class {
     try {
       const release = this._isResults.find((r) => r.guid === guid) || { guid, indexerId };
       release.movieId = this._popup._radarrId;
-      const result = await this._hass.callApi("POST", "arr_stack/radarr/release", release);
-      console.log("[arr-card] grab result:", result);
+      await this._hass.callApi("POST", "arr_stack/radarr/release", release);
       this._isGrabbed.add(guid);
     } catch (e) {
       console.error("[arr-card] grab error:", e);
@@ -6026,7 +6054,6 @@ var _WireMethods = class {
       });
     });
     const tvBtns = this.shadowRoot.querySelectorAll(".tv-req-open");
-    console.log("[arr-card] wiring tv-req-open count=", tvBtns.length);
     tvBtns.forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -6684,58 +6711,141 @@ var _WireTautulliMethods = class {
       body.innerHTML = this._tlBodyUsers(r?.response?.data?.data);
       this._wireTautulliModalBody(body);
     });
-    body.querySelector("#tl-hist-prev")?.addEventListener("click", async () => {
-      if (!this._tautulliModal || this._tautulliModal.histPage <= 0) return;
-      this._tautulliModal.histPage--;
-      this._tautulliModal.histLoading = true;
-      body.innerHTML = this._tlBodyHistory();
-      const data = await this._tlFetchHistory(this._tautulliModal.histPage, this._tautulliModal.histUser, this._tautulliModal.histMedia);
+    {
+      let _histSearchTimer = null;
+      body.querySelector("#tl-hist-search")?.addEventListener("input", (e) => {
+        if (!this._tautulliModal) return;
+        this._tautulliModal.histSearch = e.target.value || "";
+        this._tautulliModal.histPage = 0;
+        clearTimeout(_histSearchTimer);
+        _histSearchTimer = setTimeout(async () => {
+          const inp0 = body.querySelector("#tl-hist-search");
+          const sel0 = inp0?.selectionStart ?? null;
+          await this._tlRefetchHistory(body);
+          const inp = body.querySelector("#tl-hist-search");
+          if (inp && sel0 !== null) {
+            inp.focus();
+            inp.setSelectionRange(sel0, sel0);
+          }
+        }, 400);
+      });
+    }
+    body.querySelector("#tl-hist-user-sel")?.addEventListener("change", async (e) => {
       if (!this._tautulliModal) return;
-      this._tautulliModal.histData = data.data || [];
-      this._tautulliModal.histTotal = data.recordsFiltered || 0;
-      this._tautulliModal.histLoading = false;
-      body.innerHTML = this._tlBodyHistory();
-      this._wireTautulliModalBody(body);
-    });
-    body.querySelector("#tl-hist-next")?.addEventListener("click", async () => {
-      if (!this._tautulliModal) return;
-      const totalPages = Math.ceil(this._tautulliModal.histTotal / 25);
-      if (this._tautulliModal.histPage >= totalPages - 1) return;
-      this._tautulliModal.histPage++;
-      this._tautulliModal.histLoading = true;
-      body.innerHTML = this._tlBodyHistory();
-      const data = await this._tlFetchHistory(this._tautulliModal.histPage, this._tautulliModal.histUser, this._tautulliModal.histMedia);
-      if (!this._tautulliModal) return;
-      this._tautulliModal.histData = data.data || [];
-      this._tautulliModal.histTotal = data.recordsFiltered || 0;
-      this._tautulliModal.histLoading = false;
-      body.innerHTML = this._tlBodyHistory();
-      this._wireTautulliModalBody(body);
+      this._tautulliModal.histUser = e.target.value || null;
+      this._tautulliModal.histPage = 0;
+      await this._tlRefetchHistory(body);
     });
     body.querySelectorAll("[data-tl-hist-media]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const media = btn.dataset.tlHistMedia;
-        this._tautulliModal.histMedia = media === "all" ? null : media;
+        const v = btn.dataset.tlHistMedia;
+        this._tautulliModal.histMedia = this._tautulliModal.histMedia === v ? null : v;
         this._tautulliModal.histPage = 0;
-        this._tautulliModal.histLoading = true;
-        body.innerHTML = this._tlBodyHistory();
-        const data = await this._tlFetchHistory(0, this._tautulliModal.histUser, this._tautulliModal.histMedia);
+        await this._tlRefetchHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-hist-play]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        this._tautulliModal.histData = data.data || [];
-        this._tautulliModal.histTotal = data.recordsFiltered || 0;
-        this._tautulliModal.histLoading = false;
+        const v = btn.dataset.tlHistPlay;
+        this._tautulliModal.histPlayback = this._tautulliModal.histPlayback === v ? null : v;
+        this._tautulliModal.histPage = 0;
+        await this._tlRefetchHistory(body);
+      });
+    });
+    body.querySelector("#tl-hist-perpage")?.addEventListener("change", async (e) => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histPerPage = parseInt(e.target.value) || 25;
+      this._tautulliModal.histPage = 0;
+      await this._tlRefetchHistory(body);
+    });
+    body.querySelector("#tl-hist-del-mode")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histDeleteMode = !this._tautulliModal.histDeleteMode;
+      body.innerHTML = this._tlBodyHistory();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("#tl-hist-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histColsOpen = !this._tautulliModal.histColsOpen;
+      const menu = body.querySelector("#tl-hist-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.histColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-hist-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("histHiddenCols", ["ip", "paused", "stopped"]);
+        const col = item.dataset.tlHistCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tlSaveColPrefs();
+        this._tautulliModal.histColsOpen = true;
         body.innerHTML = this._tlBodyHistory();
         this._wireTautulliModalBody(body);
       });
     });
-    body.querySelectorAll("[data-tl-graph-sub]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+    body.querySelector("#tl-hist-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histMobColsOpen = !this._tautulliModal.histMobColsOpen;
+      const menu = body.querySelector("#tl-hist-mob-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.histMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-hist-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
         if (!this._tautulliModal) return;
-        this._tautulliModal.graphsSub = btn.dataset.tlGraphSub;
-        body.innerHTML = this._tlBodyGraphs();
+        const hidden = this._tlHidden("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
+        const col = item.dataset.tlHistMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tlSaveColPrefs();
+        this._tautulliModal.histMobColsOpen = true;
+        body.innerHTML = this._tlBodyHistory();
         this._wireTautulliModalBody(body);
       });
+    });
+    body.querySelectorAll("[data-tl-hpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m.histTotal / (m.histPerPage || 25)));
+        const val = btn.dataset.tlHpage;
+        let p = m.histPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.histPage) return;
+        m.histPage = p;
+        await this._tlRefetchHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-hist-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const rid = btn.dataset.tlHistDelete;
+        if (!confirm("Delete this history entry? This cannot be undone.")) return;
+        btn.disabled = true;
+        await this._tlApiFetch("delete_history", `row_id=${rid}`);
+        await this._tlRefetchHistory(body);
+      });
+    });
+    this._wireGraphControls(body);
+    body.querySelector("#tl-libs-search")?.addEventListener("input", (e) => {
+      if (!this._tautulliModal) return;
+      const pos = e.target.selectionStart;
+      this._tautulliModal.libsSearch = e.target.value || "";
+      this._tautulliModal.libsPage = 0;
+      body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
+      this._wireTautulliModalBody(body);
+      const inp = body.querySelector("#tl-libs-search");
+      if (inp) {
+        inp.focus();
+        inp.setSelectionRange(pos, pos);
+      }
     });
     body.querySelector("#tl-libs-perpage")?.addEventListener("change", async (e) => {
       if (!this._tautulliModal) return;
@@ -6794,6 +6904,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlLibCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.libsColsOpen = true;
         body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
         this._wireTautulliModalBody(body);
@@ -6813,6 +6924,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlLibMobCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.libsMobColsOpen = true;
         body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
         this._wireTautulliModalBody(body);
@@ -6841,6 +6953,19 @@ var _WireTautulliMethods = class {
         await this._tlApiFetch("delete_all_library_history", `section_id=${sid}`);
         await this._tlRefetchLibraries(body);
       });
+    });
+    body.querySelector("#tl-users-search")?.addEventListener("input", (e) => {
+      if (!this._tautulliModal) return;
+      const pos = e.target.selectionStart;
+      this._tautulliModal.usersSearch = e.target.value || "";
+      this._tautulliModal.usersPage = 0;
+      body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
+      this._wireTautulliModalBody(body);
+      const inp = body.querySelector("#tl-users-search");
+      if (inp) {
+        inp.focus();
+        inp.setSelectionRange(pos, pos);
+      }
     });
     body.querySelector("#tl-users-perpage")?.addEventListener("change", async (e) => {
       if (!this._tautulliModal) return;
@@ -6899,6 +7024,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.usersColsOpen = true;
         body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
         this._wireTautulliModalBody(body);
@@ -6918,6 +7044,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlUsrMobCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.usersMobColsOpen = true;
         body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
         this._wireTautulliModalBody(body);
@@ -6967,6 +7094,240 @@ var _WireTautulliMethods = class {
         btn.disabled = true;
         await this._tlApiFetch("edit_user", `user_id=${uid}&allow_guest=${cur ? 0 : 1}`);
         await this._tlRefetchUsers(body);
+      });
+    });
+  }
+  // ── Graph controls wiring ─────────────────────────────────────────────────
+  // Called after body render when graphs tab is active.
+  // Also called from _wireTautulliModalBody for all tabs (no-ops if no els).
+  _wireGraphControls(body) {
+    if (!body) return;
+    body.querySelectorAll("[data-tl-graph-sub]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const newSub = btn.dataset.tlGraphSub;
+        if (newSub === m.graphsSub) return;
+        m.graphsSub = newSub;
+        m.graphsData = null;
+        if (newSub === "totals") {
+          if (m.graphsRange > 60) m.graphsRange = 12;
+        } else {
+          if (m.graphsRange <= 60 && m.graphsSub === "totals") m.graphsRange = 30;
+        }
+        await this._tlRefetchGraphs(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-g-metric]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const v = btn.dataset.tlGMetric;
+        if (v === m.graphsMetric) return;
+        m.graphsMetric = v;
+        m.graphsData = null;
+        await this._tlRefetchGraphs(body);
+      });
+    });
+    {
+      let _gRangeTimer = null;
+      const doRangeRefetch = async (inputEl) => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const v = Math.max(1, parseInt(inputEl.value) || 1);
+        m.graphsRange = v;
+        m.graphsData = null;
+        await this._tlRefetchGraphs(body);
+      };
+      const rangeEl = body.querySelector("#tl-g-range");
+      if (rangeEl) {
+        rangeEl.addEventListener("input", (e) => {
+          clearTimeout(_gRangeTimer);
+          _gRangeTimer = setTimeout(() => doRangeRefetch(e.target), 700);
+        });
+        rangeEl.addEventListener("change", (e) => {
+          clearTimeout(_gRangeTimer);
+          doRangeRefetch(e.target);
+        });
+      }
+    }
+    body.querySelector("#tl-g-dd-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const m = this._tautulliModal;
+      if (!m) return;
+      m.graphsDdOpen = !m.graphsDdOpen;
+      const panel = body.querySelector("#tl-g-dd-panel");
+      if (panel) panel.style.display = m.graphsDdOpen ? "block" : "none";
+    });
+    body.addEventListener("click", (e) => {
+      const m = this._tautulliModal;
+      if (!m || !m.graphsDdOpen) return;
+      if (!e.target.closest("#tl-g-dd-wrap")) {
+        m.graphsDdOpen = false;
+        const panel = body.querySelector("#tl-g-dd-panel");
+        if (panel) panel.style.display = "none";
+      }
+    });
+    body.querySelector("#tl-g-dd-all")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const m = this._tautulliModal;
+      if (!m) return;
+      m.graphsSelectedUsers = null;
+      m.graphsData = null;
+      await this._tlRefetchGraphs(body);
+    });
+    body.querySelector("#tl-g-dd-none")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const m = this._tautulliModal;
+      if (!m) return;
+      m.graphsSelectedUsers = /* @__PURE__ */ new Set();
+      m.graphsData = null;
+      await this._tlRefetchGraphs(body);
+    });
+    body.querySelectorAll("[data-tl-g-uid]").forEach((item) => {
+      item.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const m = this._tautulliModal;
+        if (!m) return;
+        const uid = item.dataset.tlGUid;
+        const sel = m.graphsSelectedUsers;
+        if (sel && sel.size === 1 && sel.has(uid)) {
+          m.graphsSelectedUsers = null;
+        } else {
+          m.graphsSelectedUsers = /* @__PURE__ */ new Set([uid]);
+        }
+        m.graphsData = null;
+        m.graphsDdOpen = true;
+        await this._tlRefetchGraphs(body);
+        const panel = body.querySelector("#tl-g-dd-panel");
+        if (panel) panel.style.display = "block";
+      });
+    });
+    const _tlGVBW = 1e3, _tlGSVH = 200;
+    const _tlGRoundedTopJS = (x, y, w, h, rx, ry) => {
+      rx = Math.min(rx, w / 2);
+      ry = Math.min(ry, h / 2);
+      if (rx < 0.5 || ry < 0.5) return `M${x},${y + h} L${x},${y} L${x + w},${y} L${x + w},${y + h} Z`;
+      const f = (n) => n.toFixed(2);
+      return `M${f(x)},${f(y + h)} L${f(x)},${f(y + ry)} Q${f(x)},${f(y)} ${f(x + rx)},${f(y)} L${f(x + w - rx)},${f(y)} Q${f(x + w)},${f(y)} ${f(x + w)},${f(y + ry)} L${f(x + w)},${f(y + h)} Z`;
+    };
+    const fixSvgDots = (svg) => {
+      const svgW = svg.getBoundingClientRect().width;
+      if (!svgW) return;
+      const scaleX = svgW / _tlGVBW;
+      svg.querySelectorAll("circle").forEach((c) => {
+        const r = parseFloat(c.getAttribute("r")) || 0;
+        const el = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+        el.setAttribute("cx", c.getAttribute("cx") || "0");
+        el.setAttribute("cy", c.getAttribute("cy") || "0");
+        el.setAttribute("rx", String(r));
+        el.setAttribute("ry", String(r * scaleX));
+        el.setAttribute("data-tl-dot-r", String(r));
+        const fill = c.getAttribute("fill");
+        if (fill) el.setAttribute("fill", fill);
+        const styl = c.getAttribute("style");
+        if (styl) el.setAttribute("style", styl);
+        c.parentNode.replaceChild(el, c);
+      });
+      svg.querySelectorAll("ellipse[data-tl-dot-r]").forEach((el) => {
+        const r = parseFloat(el.getAttribute("data-tl-dot-r")) || 0;
+        el.setAttribute("ry", String(r * scaleX));
+      });
+      svg.querySelectorAll("path[data-tl-rr]").forEach((p) => {
+        const rr = parseFloat(p.getAttribute("data-tl-rr")) || 0;
+        const bx = parseFloat(p.getAttribute("data-tl-bx")) || 0;
+        const by = parseFloat(p.getAttribute("data-tl-by")) || 0;
+        const bw = parseFloat(p.getAttribute("data-tl-bw")) || 0;
+        const bh = parseFloat(p.getAttribute("data-tl-bh")) || 0;
+        p.setAttribute("d", _tlGRoundedTopJS(bx, by, bw, bh, rr, rr * scaleX));
+      });
+    };
+    requestAnimationFrame(() => {
+      body.querySelectorAll(".tl-g-svg").forEach((svg) => {
+        fixSvgDots(svg);
+        if (typeof ResizeObserver !== "undefined") {
+          const ro = new ResizeObserver(() => fixSvgDots(svg));
+          ro.observe(svg);
+        }
+      });
+    });
+    body.querySelectorAll(".tl-g-card").forEach((card) => {
+      let activeCol = null;
+      const tipEl = card.querySelector(".tl-g-tip");
+      if (!tipEl) return;
+      const showColTip = (colData, eClientX, eClientY) => {
+        if (!colData.vals || !colData.vals.length) return;
+        const lbl = colData.lbl || "";
+        const rows = colData.vals.map((v) => {
+          const disp = v.fv != null ? v.fv : v.v;
+          return `<div style="display:flex;align-items:center;gap:6px;padding:1px 0">
+            <span style="width:6px;height:6px;border-radius:1px;background:${v.hex || "var(--is-text-muted)"};flex-shrink:0"></span>
+            <span style="color:var(--is-text-muted)">${v.n}</span>
+            <span style="font-weight:600;color:var(--is-text);margin-left:auto;padding-left:10px">${disp}</span>
+          </div>`;
+        }).join("");
+        const totDisp = colData.ftot != null ? colData.ftot : colData.tot;
+        const totRow = totDisp != null ? `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--is-divider);margin-top:4px;padding-top:4px">
+               <span style="color:var(--is-text-muted);font-weight:600">Total</span>
+               <span style="font-weight:700;color:var(--is-text)">${totDisp}</span>
+             </div>` : "";
+        tipEl.innerHTML = `<div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px">${lbl}</div>${rows}${totRow}`;
+        const cardRect = tipEl.parentElement.getBoundingClientRect();
+        let tipLeft = eClientX - cardRect.left;
+        let tipTop = eClientY - cardRect.top - 8;
+        tipEl.style.display = "block";
+        tipEl.style.left = "0";
+        tipEl.style.top = "0";
+        const tipW = tipEl.offsetWidth, tipH = tipEl.offsetHeight, contW = cardRect.width;
+        tipLeft = Math.max(4, Math.min(tipLeft - tipW / 2, contW - tipW - 4));
+        tipTop = Math.max(4, tipTop - tipH);
+        tipEl.style.left = tipLeft + "px";
+        tipEl.style.top = tipTop + "px";
+      };
+      const clearHighlights = () => card.querySelectorAll(".tl-g-lhlt").forEach((r) => r.style.opacity = "0");
+      const hideTip = () => {
+        tipEl.style.display = "none";
+        activeCol = null;
+        clearHighlights();
+      };
+      card.addEventListener("click", (e) => {
+        const lcol = e.target.closest(".tl-g-lcol");
+        if (lcol) {
+          if (lcol === activeCol) {
+            hideTip();
+            return;
+          }
+          clearHighlights();
+          activeCol = lcol;
+          const hlt = lcol.querySelector(".tl-g-lhlt");
+          if (hlt) hlt.style.opacity = "1";
+          let colData2;
+          try {
+            colData2 = JSON.parse(lcol.dataset.tlGCol);
+          } catch {
+            return;
+          }
+          showColTip(colData2, e.clientX, e.clientY);
+          return;
+        }
+        const col = e.target.closest(".tl-g-col");
+        if (!col || !col.dataset.tlGCol) {
+          hideTip();
+          return;
+        }
+        if (col === activeCol) {
+          hideTip();
+          return;
+        }
+        clearHighlights();
+        activeCol = col;
+        let colData;
+        try {
+          colData = JSON.parse(col.dataset.tlGCol);
+        } catch {
+          return;
+        }
+        showColTip(colData, e.clientX, e.clientY);
       });
     });
   }
@@ -7952,10 +8313,13 @@ var popupMixin = _PopupMethods.prototype;
 // src/render/tautulli-shared.js
 var _TL_COLS_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
 var _TL_EDIT_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+var _TL_TRASH_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
 var _TL_CHEV_L = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
 var _TL_CHEV_R = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
-var _TL_SEL_STY = `margin:0 4px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:4px;color:var(--is-text,#fff);padding:2px 4px;font-size:12px`;
-var _TL_MENU_STY = `position:absolute;right:0;top:calc(100% + 4px);background:var(--popup-bg,#18182a);border:1px solid var(--is-divider,rgba(255,255,255,0.12));border-radius:8px;padding:6px 0;min-width:190px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.5)`;
+var _TL_CHEV_LL = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 18 12 12 18 6"/><polyline points="12 18 6 12 12 6"/></svg>`;
+var _TL_CHEV_RR = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 18 12 12 6 6"/><polyline points="12 18 18 12 12 6"/></svg>`;
+var _TL_SEL_STY = `margin:0 4px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;color:var(--is-text,#fff);padding:4px 8px;font-size:12px`;
+var _TL_MENU_STY = `position:absolute;right:0;top:calc(100% + 4px);background:var(--is-menu-bg,#18182a);border:1px solid var(--is-divider,rgba(255,255,255,0.12));border-radius:8px;padding:6px 0;min-width:190px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.18)`;
 var _TautulliSharedMethods = class {
   // ── State helper ──────────────────────────────────────────────────────────
   _tlHidden(key, defaults) {
@@ -7964,28 +8328,46 @@ var _TautulliSharedMethods = class {
     if (!m[key]) m[key] = new Set(defaults);
     return m[key];
   }
+  // ── Column prefs — HA user data (cross-device) ────────────────────────────
+  async _tlLoadColPrefs() {
+    try {
+      const r = await this._hass.callWS({ type: "frontend/get_user_data", key: "arr-tl-cols" });
+      return r?.value || {};
+    } catch {
+      return {};
+    }
+  }
+  _tlSaveColPrefs() {
+    const m = this._tautulliModal;
+    if (!m) return;
+    const KEYS = ["libsHiddenCols", "libsMobHiddenCols", "usersHiddenCols", "usersMobHiddenCols", "histHiddenCols", "histMobHiddenCols"];
+    const value = {};
+    for (const k of KEYS) if (m[k]) value[k] = [...m[k]];
+    this._hass.callWS({ type: "frontend/store_user_data", key: "arr-tl-cols", value }).catch(() => {
+    });
+  }
   // ── Icons ─────────────────────────────────────────────────────────────────
   _tlLibSvgIcon(type, name, size) {
     const sm = size !== "md";
     const sz = sm ? 10 : 15;
-    const sc = sm ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.75)";
-    const sty = sm ? "flex-shrink:0" : "vertical-align:middle;margin-right:7px;flex-shrink:0";
+    const clr = "var(--is-text-sec)";
+    const sty = sm ? `flex-shrink:0;color:${clr}` : `vertical-align:middle;margin-right:7px;flex-shrink:0;color:${clr}`;
     const isPodcast = type === "podcast" || (name || "").toLowerCase().includes("podcast");
-    const s = `stroke="${sc}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+    const s = `stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
     const w = (p) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}">${p}</svg>`;
     if (type === "movie") return w('<rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/>');
-    if (type === "show") return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="${sc}" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
+    if (type === "show") return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
     if (isPodcast) return w('<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>');
     if (type === "artist") return w('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>');
     return w('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>');
   }
   _tlMediaIcon(type, size) {
     const sz = size || 11;
-    const col = "rgba(255,255,255,0.45)";
-    const s = `stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
-    if (type === "movie") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="flex-shrink:0;vertical-align:middle"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`;
-    if (type === "episode") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="${col}" style="flex-shrink:0;vertical-align:middle"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
-    if (type === "track") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="flex-shrink:0;vertical-align:middle"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    const s = `stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+    const sty = `flex-shrink:0;vertical-align:middle;color:var(--is-text-muted)`;
+    if (type === "movie") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`;
+    if (type === "episode") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
+    if (type === "track") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
     return "";
   }
   // ── Toolbar building blocks ───────────────────────────────────────────────
@@ -7996,7 +8378,8 @@ var _TautulliSharedMethods = class {
   }
   _tlEditBtn(id, active, label) {
     label = label || "Edit";
-    return `<button id="${id}" class="tl-page-btn${active ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px">${_TL_EDIT_SVG}${label}</button>`;
+    const icon = label === "Delete" ? _TL_TRASH_SVG : _TL_EDIT_SVG;
+    return `<button id="${id}" class="tl-page-btn${active ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px">${icon}${label}</button>`;
   }
   _tlColsMenu(btnId, menuId, items, isOpen) {
     return `<div style="position:relative"><button id="${btnId}" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px">${_TL_COLS_SVG}Columns</button><div id="${menuId}" style="display:${isOpen ? "block" : "none"};${_TL_MENU_STY}">${items}</div></div>`;
@@ -8010,12 +8393,33 @@ var _TautulliSharedMethods = class {
   _tlToolbar(opts) {
     const { isMobile, select, editBtn, colsBtn, banner } = opts;
     const b = banner || "";
-    const label = isMobile ? `Show ${select}` : `Show ${select} entries per page`;
-    return `${b}<div class="tl-toolbar"><span style="font-size:12px;color:var(--is-text-label)">${label}</span><div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+    const showLabel = select ? `<span style="font-size:12px;color:var(--is-text-label)">${isMobile ? `Show ${select}` : `Show ${select} entries per page`}</span>` : "";
+    return `${b}<div class="tl-toolbar">${showLabel}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
   }
   // ── Pagination ────────────────────────────────────────────────────────────
   _tlMobPag(attr, page, totalPages) {
-    return `<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px"><button class="tl-page-btn tl-icon-btn" data-${attr}="prev"${page === 0 ? " disabled" : ""}>${_TL_CHEV_L}</button><span style="font-size:13px;font-weight:600;color:var(--is-text);min-width:44px;text-align:center">${page + 1}/${totalPages}</span><button class="tl-page-btn tl-icon-btn" data-${attr}="next"${page >= totalPages - 1 ? " disabled" : ""}>${_TL_CHEV_R}</button></div>`;
+    if (totalPages <= 1) return "";
+    const DOT_LIMIT = 15;
+    let center;
+    if (totalPages <= DOT_LIMIT) {
+      const dots = Array.from(
+        { length: totalPages },
+        (_, i) => i === page ? `<button data-${attr}="${i}" style="width:18px;height:6px;border-radius:3px;background:var(--is-text);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none;cursor:default;outline:none" disabled></button>` : `<button class="tl-page-btn" data-${attr}="${i}" style="width:6px;height:6px;border-radius:50%;background:var(--is-text-muted);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none"></button>`
+      ).join("");
+      center = `<div style="display:flex;align-items:center;gap:5px">${dots}</div>`;
+    } else {
+      center = `<span style="font-size:13px;font-weight:600;color:var(--is-text,#fff);min-width:44px;text-align:center">${page + 1}/${totalPages}</span>`;
+    }
+    const first = page === 0;
+    const last = page >= totalPages - 1;
+    const btnSty = "display:inline-flex;align-items:center;gap:4px;padding:5px 10px";
+    return `<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px">
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="first" style="${btnSty}"${first ? " disabled" : ""}>${_TL_CHEV_LL}</button>
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="prev" style="${btnSty}"${first ? " disabled" : ""}>${_TL_CHEV_L}</button>
+      ${center}
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="next" style="${btnSty}"${last ? " disabled" : ""}>${_TL_CHEV_R}</button>
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="last" style="${btnSty}"${last ? " disabled" : ""}>${_TL_CHEV_RR}</button>
+    </div>`;
   }
   _tlDeskPag(attr, page, perPage, total, label) {
     label = label || "entries";
@@ -8034,11 +8438,37 @@ var _TautulliSharedMethods = class {
     return `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px"><span style="font-size:12px;color:var(--is-text-label)">${showing}</span><div style="display:flex;gap:4px;flex-wrap:wrap">${btns.join("")}</div></div>`;
   }
   // ── Formatters ────────────────────────────────────────────────────────────
+  // Dynamický počet řádků/karet = (88vh − overhead) / výška řádku
+  // hasFilter: true pro history (filter bar +44px)
+  _tlCalcPerPage(opts) {
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const modalH = window.innerHeight * 0.88;
+    const hdr = isMob ? 90 : 68;
+    const pad = 34;
+    const bar = 44;
+    const filter = opts && opts.hasFilter ? 44 : 0;
+    const thead = isMob ? 0 : 36;
+    const pag = isMob ? 56 : 52;
+    const rowH = isMob ? 62 : 38;
+    return Math.max(3, Math.floor((modalH - hdr - pad - bar - filter - thead - pag) / rowH));
+  }
   _tlFmtDuration(secs) {
     if (!secs) return "0m";
     const h = Math.floor(secs / 3600);
     const m = Math.floor(secs % 3600 / 60);
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+  _tlFmtTime(ts) {
+    if (!ts) return "\u2014";
+    const d = new Date(typeof ts === "number" ? ts * 1e3 : ts);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  _tlUserSelect(id, users, selUser) {
+    const opts = [
+      `<option value="">All users</option>`,
+      ...(users || []).map((u) => `<option value="${u.user_id ?? ""}"${String(selUser ?? "") === String(u.user_id ?? "") ? " selected" : ""}>${u.friendly_name || u.user || "?"}</option>`)
+    ].join("");
+    return `<select id="${id}" style="${_TL_SEL_STY};max-width:130px">${opts}</select>`;
   }
   _tlFmtDate(ts) {
     if (!ts) return "\u2014";
@@ -8049,6 +8479,13 @@ var _TautulliSharedMethods = class {
     if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
     if (sec < 604800) return Math.floor(sec / 86400) + "d ago";
     return d.toLocaleDateString();
+  }
+  _tlSearchInput(id, value) {
+    const SEARCH_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--is-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+    return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:4px;padding:4px 7px">
+      ${SEARCH_SVG}
+      <input id="${id}" type="search" value="${this._escHtml(value || "")}" placeholder="Search\u2026" autocomplete="off" style="background:none;border:none;outline:none;color:var(--is-text,#fff);font-size:12px;width:110px;min-width:60px">
+    </div>`;
   }
 };
 var tautulliSharedMixin = _TautulliSharedMethods.prototype;
@@ -8065,13 +8502,15 @@ var _TautulliTableMethods = class {
     const isMobile = window.matchMedia("(max-width:600px)").matches;
     const m = this._tautulliModal || {};
     const page = m.libsPage || 0;
-    const perPage = m.libsPerPage || 25;
+    const perPage = this._tlCalcPerPage();
     const sortCol = m.libsSortCol || "plays";
     const sortDir = m.libsSortDir || "desc";
     const editMode = m.libsEditMode || false;
+    const search = (m.libsSearch || "").toLowerCase().trim();
     const hidden = this._tlHidden("libsHiddenCols", ["type"]);
     const mobHidden = this._tlHidden("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]);
-    const tot = total || 0;
+    const filtered = search ? (data || []).filter((l) => (l.section_name || "").toLowerCase().includes(search)) : data || [];
+    const tot = filtered.length;
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const COLS = [
       { key: "name", label: "Library", sort: "section_name", right: false },
@@ -8097,11 +8536,15 @@ var _TautulliTableMethods = class {
     ];
     const mobColItems = this._tlColItems(MOB_LIB_COLS, mobHidden, "data-tl-lib-mob-col");
     const mobColsBtn = this._tlColsMenu("tl-libs-mob-cols-btn", "tl-libs-mob-cols-menu", mobColItems, m.libsMobColsOpen);
-    const select = this._tlPerPageSelect("tl-libs-perpage", perPage);
     const editBtn = this._tlEditBtn("tl-libs-edit-btn", editMode);
-    const toolbar = this._tlToolbar({ isMobile, select, editBtn, colsBtn: isMobile ? mobColsBtn : deskColsBtn });
+    const searchEl = this._tlSearchInput("tl-libs-search", m.libsSearch);
+    const colsBtn = isMobile ? mobColsBtn : deskColsBtn;
+    const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const toolbar = `<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+    const page2 = Math.min(page, totalPages - 1);
+    const sliced = filtered.slice(page2 * perPage, (page2 + 1) * perPage);
     if (isMobile) {
-      const cards = (data || []).map((lib) => {
+      const cards = sliced.map((lib) => {
         const type = (lib.section_type || "").toLowerCase();
         const icon = this._tlLibSvgIcon(type, lib.section_name || "", "sm");
         const sid = lib.section_id || "";
@@ -8117,23 +8560,23 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("children") && lib.child_count != null) mp.push(`<span>${lib.child_count} ep/trk</span>`);
         if (!mobHidden.has("lastStream") && lib.last_accessed) mp.push(`<span>${this._tlFmtDate(lib.last_accessed)}</span>`);
         return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">
-          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.07)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
+          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
           <div style="flex:1;min-width:0"><div class="tl-mob-name">${lib.section_name || "\u2014"}</div>${mp.length ? `<div class="tl-mob-meta">${mp.join("")}</div>` : ""}</div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">${lib.count ?? "\u2014"}</div>
             ${lib.duration ? `<div style="font-size:11px;color:var(--is-text-label)">${this._tlFmtDuration(lib.duration)}</div>` : ""}
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data</div>';
+      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</div>';
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-lpage", page, totalPages);
     }
     const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
     const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-lib-sort")).join("");
-    const rows = (data || []).map((lib) => {
+    const rows = sliced.map((lib) => {
       const type = (lib.section_type || "").toLowerCase();
       const icon = this._tlLibSvgIcon(type, lib.section_name || "", "md");
-      const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : '<span style="color:rgba(255,255,255,0.2)">never</span>';
-      const lPly = lib.last_played ? `<span style="font-size:11px;color:rgba(255,255,255,0.55)">${lib.last_played}</span>` : '<span style="color:rgba(255,255,255,0.2)">n/a</span>';
+      const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : '<span style="color:var(--is-text-muted)">never</span>';
+      const lPly = lib.last_played ? `<span style="font-size:11px;color:var(--is-text-sec)">${lib.last_played}</span>` : '<span style="color:var(--is-text-muted)">n/a</span>';
       const cm = {
         name: `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lib.section_name || "\u2014"}</strong></span></td>`,
         type: `<td style="text-transform:capitalize;color:var(--is-text-label);white-space:nowrap">${lib.section_type || "\u2014"}</td>`,
@@ -8152,7 +8595,7 @@ var _TautulliTableMethods = class {
       </div></td>` : "";
       return `<tr>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data</td></tr>`}</tbody></table></div>` + this._tlDeskPag("tl-lpage", page, perPage, tot, "libraries");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-lpage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Users
@@ -8161,13 +8604,15 @@ var _TautulliTableMethods = class {
     const isMobile = window.matchMedia("(max-width:600px)").matches;
     const m = this._tautulliModal || {};
     const page = m.usersPage || 0;
-    const perPage = m.usersPerPage || 25;
+    const perPage = this._tlCalcPerPage();
     const sortCol = m.usersSortCol || "plays";
     const sortDir = m.usersSortDir || "desc";
     const editMode = m.usersEditMode || false;
+    const search = (m.usersSearch || "").toLowerCase().trim();
     const hidden = this._tlHidden("usersHiddenCols", ["username", "fullname", "email"]);
     const mobHidden = this._tlHidden("usersMobHiddenCols", ["lastPlayed", "platform", "player", "ip", "username", "email"]);
-    const tot = total || 0;
+    const filtered = search ? (data || []).filter((u) => [u.friendly_name || "", u.username || "", u.email || ""].some((v) => v.toLowerCase().includes(search))) : data || [];
+    const tot = filtered.length;
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const COLS = [
       { key: "user", label: "User", sort: "friendly_name", right: false },
@@ -8200,15 +8645,19 @@ var _TautulliTableMethods = class {
     ];
     const mobColItems = this._tlColItems(MOB_USR_COLS, mobHidden, "data-tl-usr-mob-col");
     const mobColsBtn = this._tlColsMenu("tl-users-mob-cols-btn", "tl-users-mob-cols-menu", mobColItems, m.usersMobColsOpen);
-    const select = this._tlPerPageSelect("tl-users-perpage", perPage);
     const editBtn = this._tlEditBtn("tl-users-edit-btn", editMode);
-    const toolbar = this._tlToolbar({ isMobile, select, editBtn, colsBtn: isMobile ? mobColsBtn : deskColsBtn, banner });
+    const searchEl = this._tlSearchInput("tl-users-search", m.usersSearch);
+    const colsBtn = isMobile ? mobColsBtn : deskColsBtn;
+    const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const toolbar = `${banner}<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+    const page2 = Math.min(page, totalPages - 1);
+    const sliced = filtered.slice(page2 * perPage, (page2 + 1) * perPage);
     if (isMobile) {
       const warnUsers2 = wU;
-      const cards = (data || []).map((u) => {
+      const cards = sliced.map((u) => {
         const name = u.friendly_name || u.username || "\u2014";
         const thumb = u.user_thumb || "";
-        const av = thumb ? `<img src="${thumb}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,0.35);font-size:13px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
+        const av = thumb ? `<img src="${thumb}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--is-divider)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
         const uid = u.user_id || "";
         const kh = u.keep_history != null ? Number(u.keep_history) : 1;
         const ag = u.allow_guest != null ? Number(u.allow_guest) : 0;
@@ -8234,28 +8683,28 @@ var _TautulliTableMethods = class {
             <div style="font-size:11px;color:var(--is-text-label)">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</div>
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data</div>';
+      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</div>';
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-upage", page, totalPages);
     }
     const warnUsers = wU;
     const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
     const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-sort")).join("");
-    const rows = (data || []).map((u) => {
+    const rows = sliced.map((u) => {
       const name = u.friendly_name || u.username || "\u2014";
       const isW = warnUsers.includes(name) || warnUsers.includes(u.username);
       const thumb = u.user_thumb || "";
-      const av = thumb ? `<img src="${thumb}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,0.35);font-size:12px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
+      const av = thumb ? `<img src="${thumb}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--is-divider)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
       const mIco = u.last_played ? this._tlMediaIcon(u.media_type) : "";
       const cm = {
         user: `<td><div style="display:flex;align-items:center;gap:8px">${av}<span style="font-weight:600">${this._escHtml(name)}</span></div></td>`,
         username: `<td style="color:var(--is-text-label)">${this._escHtml(u.username || "\u2014")}</td>`,
         fullname: `<td style="color:var(--is-text-label)">${this._escHtml(u.full_name || "\u2014")}</td>`,
         email: `<td style="color:var(--is-text-label);font-size:11px">${this._escHtml(u.email || "\u2014")}</td>`,
-        lastSeen: `<td>${u.last_seen ? this._tlFmtDate(u.last_seen) : '<span style="color:rgba(255,255,255,0.25)">never</span>'}</td>`,
+        lastSeen: `<td>${u.last_seen ? this._tlFmtDate(u.last_seen) : '<span style="color:var(--is-text-muted)">never</span>'}</td>`,
         ip: `<td style="font-family:monospace;font-size:11px">${this._escHtml(u.ip_address || "n/a")}</td>`,
         platform: `<td>${this._escHtml(u.platform || "n/a")}</td>`,
-        player: `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="rgba(255,255,255,0.45)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : '<span style="color:rgba(255,255,255,0.25)">n/a</span>'}</td>`,
-        lastPlayed: `<td style="max-width:160px"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.last_played ? mIco + '<span style="overflow:hidden;text-overflow:ellipsis">' + this._escHtml(u.last_played) + "</span>" : '<span style="color:rgba(255,255,255,0.25)">n/a</span>'}</div></td>`,
+        player: `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="color:var(--is-text-muted)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : '<span style="color:var(--is-text-muted)">n/a</span>'}</td>`,
+        lastPlayed: `<td style="max-width:160px"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.last_played ? mIco + '<span style="overflow:hidden;text-overflow:ellipsis">' + this._escHtml(u.last_played) + "</span>" : '<span style="color:var(--is-text-muted)">n/a</span>'}</div></td>`,
         plays: `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${u.plays ?? 0}</td>`,
         duration: `<td style="text-align:right">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</td>`
       };
@@ -8270,7 +8719,7 @@ var _TautulliTableMethods = class {
       </div></td>` : "";
       return `<tr${isW ? ' class="tl-row-warn"' : ""}>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data</td></tr>`}</tbody></table></div>` + this._tlDeskPag("tl-upage", page, perPage, tot, "active users");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-upage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Refetch
@@ -8278,9 +8727,10 @@ var _TautulliTableMethods = class {
   async _tlRefetchLibraries(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const start = (m.libsPage || 0) * (m.libsPerPage || 25);
-    const r = await this._tlApiFetch("get_libraries_table", `length=${m.libsPerPage || 25}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
+    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const pp = this._tlCalcPerPage();
+    const start = (m.libsPage || 0) * pp;
+    const r = await this._tlApiFetch("get_libraries_table", `length=${pp}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
     if (!this._tautulliModal) return;
     m.libsData = r?.response?.data?.data || [];
     m.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.libsData.length;
@@ -8290,13 +8740,150 @@ var _TautulliTableMethods = class {
   async _tlRefetchUsers(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const start = (m.usersPage || 0) * (m.usersPerPage || 25);
-    const r = await this._tlApiFetch("get_users_table", `length=${m.usersPerPage || 25}&start=${start}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`);
+    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const pp = this._tlCalcPerPage();
+    const start = (m.usersPage || 0) * pp;
+    const r = await this._tlApiFetch("get_users_table", `length=${pp}&start=${start}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`);
     if (!this._tautulliModal) return;
     m.usersData = r?.response?.data?.data || [];
     m.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.usersData.length;
     body.innerHTML = this._tlBodyUsers(m.usersData, m.usersTotal);
+    this._wireTautulliModalBody(body);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // History
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyHistory() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    if (m.histLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const page = m.histPage || 0;
+    const perPage = this._tlCalcPerPage({ hasFilter: true });
+    const tot = m.histTotal || 0;
+    const data = m.histData || [];
+    const media = m.histMedia || null;
+    const playback = m.histPlayback || null;
+    const delMode = m.histDeleteMode || false;
+    const users = m.histUsers || [];
+    const selUser = m.histUser || "";
+    const hidden = this._tlHidden("histHiddenCols", ["ip", "paused", "stopped"]);
+    const mobHidden = this._tlHidden("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const HIST_COLS = [
+      { key: "date", label: "Date", right: false },
+      { key: "user", label: "User", right: false },
+      { key: "ip", label: "IP", right: false },
+      { key: "platform", label: "Platform", right: false },
+      { key: "product", label: "Product", right: false },
+      { key: "player", label: "Player", right: false },
+      { key: "title", label: "Title", right: false },
+      { key: "started", label: "Started", right: false },
+      { key: "paused", label: "Paused", right: true },
+      { key: "stopped", label: "Stopped", right: false },
+      { key: "duration", label: "Duration", right: true }
+    ];
+    const userSel = this._tlUserSelect("tl-hist-user-sel", users, selUser);
+    const mediaBtns = [
+      { v: "movie", l: "Movies" },
+      { v: "episode", l: "TV Shows" },
+      { v: "track", l: "Music" },
+      { v: "live", l: "Live TV" }
+    ].map((f) => `<button class="tl-page-btn${media === f.v ? " active" : ""}" data-tl-hist-media="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
+    const playBtns = [
+      { v: "direct play", l: "Direct Play" },
+      { v: "direct stream", l: "Direct Stream" },
+      { v: "transcode", l: "Transcode" }
+    ].map((f) => `<button class="tl-page-btn${playback === f.v ? " active" : ""}" data-tl-hist-play="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
+    const delBtn = this._tlEditBtn("tl-hist-del-mode", delMode, "Delete");
+    const MOB_HIST_PICKER = [
+      { key: "platform", label: "Platform" },
+      { key: "player", label: "Player" },
+      { key: "started", label: "Started" },
+      { key: "duration", label: "Duration" },
+      { key: "ip", label: "IP" },
+      { key: "paused", label: "Paused" },
+      { key: "stopped", label: "Stopped" }
+    ];
+    const colsBtn = isMob ? this._tlColsMenu("tl-hist-mob-cols-btn", "tl-hist-mob-cols-menu", this._tlColItems(MOB_HIST_PICKER, mobHidden, "data-tl-hist-mob-col"), m.histMobColsOpen) : this._tlColsMenu("tl-hist-cols-btn", "tl-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-hist-col"), m.histColsOpen);
+    const histSearchEl = this._tlSearchInput("tl-hist-search", m.histSearch);
+    const histSearchElFlex = histSearchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    let toolbar;
+    if (isMob) {
+      const row1 = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">${histSearchElFlex}<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${delBtn}${colsBtn}</div></div>`;
+      const userSelFull = userSel.replace("max-width:130px", "width:100%;max-width:none").replace("margin:0 4px", "margin:0");
+      const row2s = `<div style="margin-bottom:6px">${userSelFull}</div>`;
+      const row3 = `<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">${mediaBtns}${playBtns}</div>`;
+      toolbar = row1 + row2s + row3;
+    } else {
+      const filterRow = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">${userSel.replace("margin:0 4px", "margin:0")}<div style="display:flex;gap:4px;flex-wrap:wrap">${mediaBtns}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${playBtns}</div></div>`;
+      toolbar = `<div class="tl-toolbar">${histSearchElFlex}<div class="tl-toolbar-actions">${delBtn}${colsBtn}</div></div>${filterRow}`;
+    }
+    const _wRing = '<circle cx="7" cy="7" r="5.5" fill="none" style="stroke:var(--is-text-muted)" stroke-width="1.5"/>';
+    const _wSvg = (inner) => `<svg width="14" height="14" viewBox="0 0 14 14">${inner}</svg>`;
+    const _wArc = (d) => `<path d="${d}" style="fill:var(--is-text-body)"/>`;
+    const watchSvg = (ws) => ws === 4 ? _wSvg('<circle cx="7" cy="7" r="5.5" style="fill:var(--is-text-body)"/>') : ws === 3 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,1,1 1.5,7 Z")}`) : ws === 2 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 7,12.5 Z")}`) : ws === 1 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 12.5,7 Z")}`) : _wSvg(_wRing);
+    if (!data.length) {
+      return toolbar + '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No history</div>';
+    }
+    if (isMob) {
+      const cards = data.map((h) => {
+        const icon = this._tlMediaIcon(h.media_type || "", 12);
+        const title = this._escHtml(h.full_title || h.title || "\u2014");
+        const user = this._escHtml(h.friendly_name || h.user || "\u2014");
+        const ago = h.date ? this._tlFmtDate(h.date) : "\u2014";
+        const dur = h.duration ? this._tlFmtDuration(h.duration) : "\u2014";
+        const pct = h.percent_complete ?? 0;
+        const ws = pct >= 85 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 10 ? 1 : 0;
+        const mp = [];
+        if (!mobHidden.has("platform") && h.platform) mp.push(this._escHtml(h.platform));
+        if (!mobHidden.has("player") && h.player) mp.push(this._escHtml(h.player));
+        if (!mobHidden.has("started") && h.started) mp.push(this._tlFmtTime(h.started));
+        if (!mobHidden.has("ip") && h.ip_address) mp.push(h.ip_address);
+        if (!mobHidden.has("paused") && h.paused_counter) mp.push("paused " + this._tlFmtDuration(h.paused_counter));
+        const meta = `<div class="tl-mob-meta"><span>${user}</span><span style="color:var(--is-text-muted)"> &middot; </span><span>${ago}</span>${mp.map((v) => `<span style="color:var(--is-text-muted)"> &middot; </span><span>${v}</span>`).join("")}</div>`;
+        const delEl = delMode ? `<button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${h.row_id}" style="margin-top:6px;font-size:10px">Delete</button>` : "";
+        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>${meta}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div></div>${delEl}</div>`;
+      }).join("");
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-hpage", page, totalPages);
+    }
+    const vis = HIST_COLS.filter((c) => !hidden.has(c.key));
+    const thead = vis.map((c) => `<th style="${c.right ? "text-align:right;" : ""}white-space:nowrap">${c.label}</th>`).join("") + "<th></th>";
+    const delHdr = delMode ? '<th style="width:1px"></th>' : "";
+    const rows = data.map((h) => {
+      const icon = this._tlMediaIcon(h.media_type || "", 11);
+      const pct = h.percent_complete ?? 0;
+      const ws = pct >= 85 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 10 ? 1 : 0;
+      const rid = h.row_id || "";
+      const esc = (s) => this._escHtml(s || "");
+      const cm = {
+        date: `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td>`,
+        user: `<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.friendly_name || h.user)}</td>`,
+        ip: `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.ip_address || "\u2014"}</td>`,
+        platform: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.platform)}</td>`,
+        product: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.product)}</td>`,
+        player: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.player)}</td>`,
+        title: `<td style="max-width:240px"><div style="display:flex;align-items:center;gap:5px;min-width:0">${icon}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1" title="${esc(h.full_title || h.title)}">${esc(h.full_title || h.title)}</span></div></td>`,
+        started: `<td style="white-space:nowrap;font-size:11px">${h.started ? this._tlFmtTime(h.started) : "\u2014"}</td>`,
+        paused: `<td style="text-align:right;white-space:nowrap;font-size:11px">${h.paused_counter ? this._tlFmtDuration(h.paused_counter) : "0m"}</td>`,
+        stopped: `<td style="white-space:nowrap;font-size:11px">${h.stopped ? this._tlFmtTime(h.stopped) : "\u2014"}</td>`,
+        duration: `<td style="text-align:right;white-space:nowrap;font-weight:600">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td>`
+      };
+      const watchCell = `<td style="text-align:right;padding-right:8px;white-space:nowrap">${watchSvg(ws)}</td>`;
+      const delCell = delMode ? `<td style="padding:0 4px;white-space:nowrap"><button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${rid}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>` : "";
+      return `<tr>${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchCell}${delCell}</tr>`;
+    }).join("");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" style="text-align:center;color:var(--is-text-muted);padding:30px">No history</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-hpage", page, totalPages);
+  }
+  async _tlRefetchHistory(body) {
+    const m = this._tautulliModal;
+    if (!m) return;
+    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const data = await this._tlFetchHistory(m.histPage, m.histUser, m.histMedia, m.histPlayback, this._tlCalcPerPage({ hasFilter: true }), m.histSearch);
+    if (!this._tautulliModal) return;
+    m.histData = data.data || [];
+    m.histTotal = data.recordsFiltered || 0;
+    body.innerHTML = this._tlBodyHistory();
     this._wireTautulliModalBody(body);
   }
 };
@@ -8332,20 +8919,22 @@ var _TautulliMethods = class {
       </div>`;
   }
   _tlLibCard(data) {
-    const libs = data.libraries || [];
-    const rows = libs.map((lib) => {
+    const libs = (data.libraries || []).filter((lib) => (lib.section_type || "").toLowerCase() !== "live");
+    const rows = libs.map((lib, i) => {
       const type = (lib.section_type || "").toLowerCase();
-      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">` + this._tlLibSvgIcon(type, lib.section_name, "sm") + `<span style="font-size:9px;color:rgba(255,255,255,0.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:2px">${lib.section_name || "\u2014"}</span><span style="font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${lib.count ?? lib.plays ?? 0}</span></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>`;
-    const sectTag = libs.length > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${libs.length}</span>` : "";
-    return `<div class="tl-card" data-tl-open="libraries">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-      <span class="media-type-tag">Libraries</span>${sectTag}
-      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${rows}</div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Libraries</div>
+      const count = lib.count ?? lib.plays ?? 0;
+      const dim = count === 0 ? ";opacity:0.28" : "";
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return `<div style="${sep}display:flex;align-items:center;gap:5px;padding:4px 0">` + this._tlLibSvgIcon(type, lib.section_name, "sm") + `<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:1px">${lib.section_name || "\u2014"}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0${dim}">${count}</span></div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No data</div>`;
+    const sectTag = libs.length > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${libs.length}</span>` : "";
+    return `<div class="tl-card" data-tl-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Libraries</span>
+        ${sectTag}
       </div>
+      <div style="flex:1;position:relative;z-index:2">${rows}</div>
     </div>`;
   }
   _tlUsersCard(stats, act, data) {
@@ -8356,17 +8945,17 @@ var _TautulliMethods = class {
       const plays = r.total_plays ?? 0;
       const thumb = r.user_thumb || "";
       const av = thumb ? `<img src="${thumb}" style="width:14px;height:14px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.18)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.14);display:inline-block;flex-shrink:0"></span>`;
-      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${av}<span style="font-size:9px;color:rgba(255,255,255,0.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${plays}</span></div>`;
+      const sep = userRows.indexOf(r) > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return `<div style="${sep}display:flex;align-items:center;gap:6px;padding:4px 0">${av}<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${plays}</span></div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>`;
-    const activeTag = streams > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(48,209,88,0.30);border:1px solid rgba(48,209,88,0.62)">${streams} active</span>` : "";
-    return `<div class="tl-card" data-tl-open="users">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      <span class="media-type-tag">Users</span>${activeTag}
-      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${items}</div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Top 5 users</div>
+    const activeTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} active</span>` : "";
+    return `<div class="tl-card" data-tl-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Users</span>
+        ${activeTag}
       </div>
+      <div style="flex:1;position:relative;z-index:2">${items}</div>
     </div>`;
   }
   _tlSharingCard(data) {
@@ -8382,21 +8971,21 @@ var _TautulliMethods = class {
   _tlHistoryCard(data) {
     const hist = (data.recentHistory || []).slice(0, 3);
     const streams = (data.activity || {}).stream_count ?? 0;
-    const items = hist.map((h) => {
+    const items = hist.map((h, i) => {
       const title = h.full_title || h.title || "\u2014";
       const user = h.friendly_name || h.user || "";
       const ago = h.date ? this._tlFmtDate(h.date) : "";
-      return `<div style="margin-bottom:4px"><div style="font-size:9px;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:8px;color:rgba(255,255,255,0.4)">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No history</div>`;
-    const streamTag = streams > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${streams} now</span>` : "";
-    return `<div class="tl-card" data-tl-open="history">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <span class="media-type-tag">History</span>${streamTag}
-      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${items}</div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Latest streams</div>
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return `<div style="${sep}padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No history</div>`;
+    const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} now</span>` : "";
+    return `<div class="tl-card" data-tl-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>
+        ${streamTag}
       </div>
+      <div style="flex:1;position:relative;z-index:2">${items}</div>
     </div>`;
   }
   _tlActivityCard(playsData) {
@@ -8405,62 +8994,83 @@ var _TautulliMethods = class {
     const total = days.reduce((s, d) => s + (d.value || 0), 0);
     const bars = days.map((d) => {
       const h = Math.max(d.value ? 2 : 0, Math.round((d.value || 0) / max * 100));
-      return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end"><div style="width:100%;height:${h}%;background:rgba(255,255,255,0.5);border-radius:2px 2px 0 0;min-height:${d.value ? 2 : 0}px"></div></div>`;
+      const gap = 100 - h;
+      return `<div style="flex:1;display:flex;flex-direction:column"><div style="flex:${gap}"></div><div style="flex:${h};background:rgba(255,255,255,0.55);border-radius:2px 2px 0 0${d.value ? "" : ";display:none"}"></div></div>`;
     }).join("");
     const labels = days.map(
       (d) => `<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">${(d.date || "").slice(-2)}</div>`
     ).join("");
-    const playsTag = total > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${total} plays</span>` : "";
-    return `<div class="tl-card" data-tl-open="graphs">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
-      <span class="media-type-tag">Charts</span>${playsTag}
-      <div style="position:absolute;top:33%;left:8px;right:8px;bottom:38px;z-index:2;display:flex;flex-direction:column">
-        <div style="flex:1;display:flex;gap:2px;">${bars || ""}</div>
-        <div style="display:flex;gap:2px;margin-top:2px">${labels}</div>
+    const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} plays</span>` : "";
+    return `<div class="tl-card" data-tl-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Charts</span>
+          <span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">last 7 days</span>
+        </div>
+        ${playsTag}
       </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Play Activity</div>
+      <div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0">
+        <div style="flex:1;display:flex;gap:2px">${bars || ""}</div>
+        <div style="display:flex;gap:2px;margin-top:2px">${labels}</div>
       </div>
     </div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Modal — open / close / shell HTML
   // ──────────────────────────────────────────────────────────────────────────
-  _openTautulliModal(tab) {
+  async _openTautulliModal(tab) {
     tab = tab || "libraries";
+    const prefs = await this._tlLoadColPrefs();
+    const hSet = (key, defs) => prefs[key] ? new Set(prefs[key]) : new Set(defs);
     this._tautulliModal = {
       tab,
       histPage: 0,
+      histPerPage: 10,
+      histSearch: "",
       histUser: null,
       histMedia: null,
+      histPlayback: null,
       histTotal: 0,
       histData: [],
+      histUsers: [],
       histLoading: false,
+      histDeleteMode: false,
+      histColsOpen: false,
+      histMobColsOpen: false,
+      histHiddenCols: hSet("histHiddenCols", ["ip", "paused", "stopped"]),
+      histMobHiddenCols: hSet("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]),
       graphsSub: "media",
       graphsData: null,
       graphsLoading: false,
+      graphsMetric: "plays",
+      graphsRange: window.matchMedia("(max-width:600px)").matches ? 7 : 30,
+      graphsSelectedUsers: null,
+      graphsUserList: [],
+      graphsDdOpen: false,
       usersPage: 0,
-      usersPerPage: 25,
+      usersPerPage: 10,
       usersSortCol: "plays",
       usersSortDir: "desc",
+      usersSearch: "",
       usersData: [],
       usersTotal: 0,
-      usersHiddenCols: /* @__PURE__ */ new Set(["username", "fullname", "email"]),
+      usersHiddenCols: hSet("usersHiddenCols", ["username", "fullname", "email"]),
       usersColsOpen: false,
-      usersMobHiddenCols: /* @__PURE__ */ new Set(["lastPlayed", "platform", "player", "ip", "username", "email"]),
+      usersMobHiddenCols: hSet("usersMobHiddenCols", ["lastPlayed", "platform", "player", "ip", "username", "email"]),
       usersMobColsOpen: false,
       usersEditMode: false,
       libsPage: 0,
-      libsPerPage: 25,
+      libsPerPage: 10,
       libsSortCol: "plays",
       libsSortDir: "desc",
+      libsSearch: "",
       libsData: [],
       libsTotal: 0,
       libsEditMode: false,
-      libsHiddenCols: /* @__PURE__ */ new Set(["type"]),
+      libsHiddenCols: hSet("libsHiddenCols", ["type"]),
       libsColsOpen: false,
-      libsMobHiddenCols: /* @__PURE__ */ new Set(["type", "parents", "children", "lastStream"]),
+      libsMobHiddenCols: hSet("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]),
       libsMobColsOpen: false
     };
     this.shadowRoot.querySelector("[data-tl-modal]")?.remove();
@@ -8519,7 +9129,7 @@ var _TautulliMethods = class {
     return { libraries: "All Libraries", users: "All Users", history: "Recent History", graphs: "Play Statistics" }[t] || "";
   }
   _tlTabSubtitle(t) {
-    return { libraries: "", users: "", history: "Last played items across all users", graphs: "7-day play activity breakdown" }[t] || "";
+    return { libraries: "", users: "", history: "", graphs: "" }[t] || "";
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Tab loader
@@ -8531,7 +9141,8 @@ var _TautulliMethods = class {
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
       const ml = this._tautulliModal;
       if (!ml) return;
-      const r = await this._tlApiFetch("get_libraries_table", `length=${ml.libsPerPage || 25}&start=${(ml.libsPage || 0) * (ml.libsPerPage || 25)}&order_column=${ml.libsSortCol || "plays"}&order_dir=${ml.libsSortDir || "desc"}`);
+      const _pp = this._tlCalcPerPage();
+      const r = await this._tlApiFetch("get_libraries_table", `length=${_pp}&start=${(ml.libsPage || 0) * _pp}&order_column=${ml.libsSortCol || "plays"}&order_dir=${ml.libsSortDir || "desc"}`);
       if (!this._tautulliModal) return;
       ml.libsData = r?.response?.data?.data || [];
       ml.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || ml.libsData.length;
@@ -8541,7 +9152,8 @@ var _TautulliMethods = class {
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
       const m2 = this._tautulliModal;
       if (!m2) return;
-      const r = await this._tlApiFetch("get_users_table", `length=${m2.usersPerPage || 25}&start=${(m2.usersPage || 0) * (m2.usersPerPage || 25)}&order_column=${m2.usersSortCol || "plays"}&order_dir=${m2.usersSortDir || "desc"}`);
+      const _pp2 = this._tlCalcPerPage();
+      const r = await this._tlApiFetch("get_users_table", `length=${_pp2}&start=${(m2.usersPage || 0) * _pp2}&order_column=${m2.usersSortCol || "plays"}&order_dir=${m2.usersSortDir || "desc"}`);
       if (!this._tautulliModal) return;
       m2.usersData = r?.response?.data?.data || [];
       m2.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m2.usersData.length;
@@ -8551,107 +9163,35 @@ var _TautulliMethods = class {
       if (!this._tautulliModal) return;
       this._tautulliModal.histLoading = true;
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-      const data = await this._tlFetchHistory(0, null, null);
+      const [data, usersR] = await Promise.all([
+        this._tlFetchHistory(0, null, null, null, this._tlCalcPerPage({ hasFilter: true })),
+        this._tlApiFetch("get_users_table", "length=100&start=0&order_column=friendly_name&order_dir=asc")
+      ]);
       if (!this._tautulliModal) return;
       this._tautulliModal.histData = data.data || [];
       this._tautulliModal.histTotal = data.recordsFiltered || 0;
       this._tautulliModal.histLoading = false;
+      this._tautulliModal.histUsers = usersR?.response?.data?.data || [];
       body.innerHTML = this._tlBodyHistory();
       this._wireTautulliModalBody(body);
     } else if (tab === "graphs") {
-      if (!this._tautulliModal) return;
-      this._tautulliModal.graphsLoading = true;
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const mg = this._tautulliModal;
+      if (!mg) return;
+      if (!mg.graphsUserList?.length) {
+        const ur = await this._tlApiFetch("get_users_table", "length=100&start=0&order_column=friendly_name&order_dir=asc");
+        if (!this._tautulliModal) return;
+        mg.graphsUserList = ur?.response?.data?.data || [];
+      }
+      mg.graphsLoading = true;
+      body.innerHTML = this._tlBodyGraphs();
       const gd = await this._tlFetchGraphs();
       if (!this._tautulliModal) return;
-      this._tautulliModal.graphsData = gd;
-      this._tautulliModal.graphsLoading = false;
+      mg.graphsData = gd;
+      mg.graphsLoading = false;
       body.innerHTML = this._tlBodyGraphs();
-      this._wireTautulliModalBody(body);
+      this._wireGraphControls(body);
+      this._tlGTriggerAnim(body);
     }
-  }
-  // ──────────────────────────────────────────────────────────────────────────
-  // History tab renderer
-  // ──────────────────────────────────────────────────────────────────────────
-  _tlBodyHistory() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    if (m.histLoading) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const { histData: data, histTotal: total, histPage: page, histMedia: media } = m;
-    const perPage = 25;
-    const totalPages = Math.max(1, Math.ceil(total / perPage));
-    const filters = ["all", "movie", "episode", "track"].map((v) => {
-      const lbl = v === "all" ? "All" : v === "episode" ? "TV" : v === "track" ? "Music" : "Movies";
-      const active = !media && v === "all" || media === v;
-      return `<button class="is-f-btn${active ? " active" : ""}" data-tl-hist-media="${v}">${lbl}</button>`;
-    }).join("");
-    if (!data || !data.length) {
-      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div><div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>`;
-    }
-    const rows = data.map((h) => {
-      const type = h.media_type || "";
-      const bdg = type === "movie" ? '<span class="tl-badge-movie">Movie</span> ' : type === "episode" ? '<span class="tl-badge-tv">TV</span> ' : type === "track" ? '<span class="tl-badge-music">Music</span> ' : "";
-      return `<tr><td>${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td><td>${bdg}${h.full_title || h.title || "\u2014"}</td><td>${h.friendly_name || h.user || "\u2014"}</td><td>${h.player || "\u2014"}</td><td style="text-align:right">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td><td style="font-size:10px;color:rgba(255,255,255,0.45)">${h.transcode_decision || "\u2014"}</td></tr>`;
-    }).join("");
-    const isMobile = window.matchMedia("(max-width: 600px)").matches;
-    const pagination = totalPages > 1 ? isMobile ? `<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px"><button class="tl-page-btn tl-icon-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><span style="font-size:13px;font-weight:600;color:var(--is-text);min-width:44px;text-align:center">${page + 1}/${totalPages}</span><button class="tl-page-btn tl-icon-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button></div>` : `<div class="tl-pagination"><button class="tl-page-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}>\u2039 Prev</button><span class="tl-page-counter">Page ${page + 1} / ${totalPages} &nbsp;(${total} total)</span><button class="tl-page-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}>Next \u203A</button></div>` : "";
-    if (isMobile) {
-      const mobCards = data.map((h) => {
-        const type = h.media_type || "";
-        const bdg = type === "movie" ? '<span class="tl-badge-movie">Movie</span> ' : type === "episode" ? '<span class="tl-badge-tv">TV</span> ' : type === "track" ? '<span class="tl-badge-music">Music</span> ' : "";
-        const dur = h.duration ? this._tlFmtDuration(h.duration) : "\u2014";
-        const ago = h.date ? this._tlFmtDate(h.date) : "\u2014";
-        const meta = [h.player, h.transcode_decision].filter(Boolean);
-        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name">${bdg}${this._escHtml(h.full_title || h.title || "\u2014")}</div><div class="tl-mob-meta"><span style="color:var(--is-text-label)">${this._escHtml(h.friendly_name || h.user || "\u2014")}</span><span style="color:rgba(255,255,255,0.25)">\xB7</span><span style="color:var(--is-text-label)">${ago}</span>${meta.map((v) => `<span style="color:rgba(255,255,255,0.25)">\xB7</span><span style="color:var(--is-text-label)">${this._escHtml(v)}</span>`).join("")}</div></div><div style="text-align:right;flex-shrink:0;color:rgba(255,255,255,0.7);font-size:12px;font-weight:600">${dur}</div></div></div>`;
-      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>';
-      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div>${mobCards}${pagination}`;
-    }
-    return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div><table class="tl-hist-table"><thead><tr><th>Date</th><th>Title</th><th>User</th><th>Player</th><th style="text-align:right">Duration</th><th>Stream</th></tr></thead><tbody>${rows}</tbody></table>${pagination}`;
-  }
-  // ──────────────────────────────────────────────────────────────────────────
-  // Graphs tab renderer
-  // ──────────────────────────────────────────────────────────────────────────
-  _tlBodyGraphs() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    if (m.graphsLoading || !m.graphsData) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const sub = m.graphsSub || "media";
-    const subDefs = [{ id: "media", lbl: "Media Type" }, { id: "stream", lbl: "Stream Type" }, { id: "totals", lbl: "Play Totals" }];
-    const subTabs = subDefs.map(
-      (s) => `<button class="is-f-btn${s.id === sub ? " active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
-    ).join("");
-    let body = "";
-    if (sub === "media") {
-      body = `<div class="tl-graphs-grid">${this._tlGraphCard("Daily Play Count by Media Type", m.graphsData.byDate, true)}${this._tlGraphCard("Plays by Day of Week", m.graphsData.byDow, false)}${this._tlGraphCard("Plays by Hour of Day", m.graphsData.byHod, false)}</div>`;
-    } else if (sub === "stream") {
-      body = '<div style="color:rgba(255,255,255,0.3);padding:20px;text-align:center">Stream type graphs coming soon</div>';
-    } else {
-      body = '<div style="color:rgba(255,255,255,0.3);padding:20px;text-align:center">Play totals coming soon</div>';
-    }
-    return `<div style="display:flex;gap:6px;margin-bottom:16px">${subTabs}</div>${body}`;
-  }
-  _tlGraphCard(title, rawData, full) {
-    const clsFull = full ? " full" : "";
-    const d = rawData?.response?.data;
-    if (!d) return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div><div style="color:rgba(255,255,255,0.2);font-size:11px;text-align:center;padding:20px">No data</div></div>`;
-    const cats = d.categories || [];
-    const series = d.series || [];
-    const colors = ["rgba(250,180,50,0.7)", "rgba(99,180,255,0.7)", "rgba(100,220,150,0.7)", "rgba(250,120,50,0.7)"];
-    const allVals = series.flatMap((s) => s.data || []);
-    const maxV = Math.max(...allVals, 1);
-    const bars = cats.map((cat, i) => {
-      const stacked = series.map((s, si) => {
-        const v = (s.data || [])[i] || 0;
-        const h = Math.max(1, Math.round(v / maxV * 60));
-        return `<div class="tl-bar-chart-bar" style="height:${h}px;background:${colors[si % colors.length]}" title="${s.name}: ${v}"></div>`;
-      }).reverse().join("");
-      const lbl = full ? (cat || "").slice(-5) : (cat || "").slice(0, 3);
-      return `<div class="tl-bar-chart-col">${stacked}<div class="tl-bar-chart-label">${lbl}</div></div>`;
-    }).join("");
-    const legend = series.map(
-      (s, i) => `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:10px;color:rgba(255,255,255,0.5)"><span style="width:8px;height:8px;border-radius:2px;background:${colors[i % colors.length]};display:inline-block;flex-shrink:0"></span>${s.name}</span>`
-    ).join("");
-    return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div><div class="tl-bar-chart">${bars}</div>${legend ? `<div style="margin-top:8px">${legend}</div>` : ""}</div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
   // API helpers
@@ -8664,21 +9204,16 @@ var _TautulliMethods = class {
       return null;
     }
   }
-  async _tlFetchHistory(page, user, media) {
-    const start = (page || 0) * 25;
-    let p = `length=25&start=${start}&order_column=date&order_dir=desc`;
+  async _tlFetchHistory(page, user, media, playback, perPage, search) {
+    perPage = perPage || 10;
+    const start = (page || 0) * perPage;
+    let p = `length=${perPage}&start=${start}&order_column=date&order_dir=desc`;
     if (user) p += `&user_id=${encodeURIComponent(user)}`;
     if (media) p += `&media_type=${encodeURIComponent(media)}`;
+    if (playback) p += `&transcode_decision=${encodeURIComponent(playback)}`;
+    if (search) p += `&search=${encodeURIComponent(search)}`;
     const r = await this._tlApiFetch("get_history", p);
     return r?.response?.data || { data: [], recordsFiltered: 0 };
-  }
-  async _tlFetchGraphs() {
-    const [byDate, byDow, byHod] = await Promise.all([
-      this._tlApiFetch("get_plays_by_date", "time_range=7&y_axis=plays"),
-      this._tlApiFetch("get_plays_by_dayofweek", "time_range=7&y_axis=plays"),
-      this._tlApiFetch("get_plays_by_hourofday", "time_range=7&y_axis=plays")
-    ]);
-    return { byDate, byDow, byHod };
   }
   // ──────────────────────────────────────────────────────────────────────────
   // SVG icons (16px, tab icons)
@@ -8700,6 +9235,455 @@ var _TautulliMethods = class {
   }
 };
 var tautulliMixin = _TautulliMethods.prototype;
+
+// src/render/tautulli-graphs.js
+var _TL_G_HEX = {
+  "Movies": "#FF9F0A",
+  "TV": "#32ADE6",
+  "Music": "#4CD964",
+  "Live TV": "#FF375F",
+  "Direct Play": "#30D158",
+  "Direct Stream": "#007AFF",
+  "Transcode": "#FF3B30"
+};
+var _TL_G_VBW = 1e3;
+var _TL_G_SVH = 200;
+var _TL_G_DISP = 200;
+var _P = { l: 12, r: 6, t: 18, b: 6 };
+function _tlGHex(n) {
+  return _TL_G_HEX[n] || "#8888aa";
+}
+function _tlGAttr(v) {
+  return String(v).replace(/"/g, "&quot;");
+}
+function _tlGFmtDur(sec) {
+  if (!sec || sec <= 0) return "0";
+  const m = Math.floor(sec / 60);
+  if (m < 1) return sec + "s";
+  const h = Math.floor(m / 60);
+  if (h < 1) return m + "m";
+  const d = Math.floor(h / 24);
+  if (d < 1) return h + "h " + (m % 60 > 0 ? m % 60 + "m" : "");
+  const mo = Math.floor(d / 30);
+  if (mo < 1) return d + "d " + (h % 24 > 0 ? h % 24 + "h" : "");
+  return mo + "mo " + (d % 30 > 0 ? d % 30 + "d" : "");
+}
+function _tlGFmtDurShort(sec) {
+  if (!sec || sec <= 0) return "0";
+  const m = Math.floor(sec / 60);
+  if (m < 1) return sec + "s";
+  const h = Math.floor(m / 60);
+  if (h < 1) return m + "m";
+  const d = Math.floor(h / 24);
+  if (d < 1) return h + "h";
+  return d + "d";
+}
+function _tlGPrep(rawData, opts) {
+  opts = opts || {};
+  const d = rawData?.response?.data;
+  if (!d) return null;
+  let cats = d.categories || [];
+  let series = (d.series || []).filter((s) => s.name !== "Total");
+  if (!cats.length || !series.length) return null;
+  if (opts.isDate && opts.range && cats.length < opts.range) {
+    const today = /* @__PURE__ */ new Date(), full = [];
+    for (let i = opts.range - 1; i >= 0; i--) {
+      const dd = new Date(today - i * 864e5);
+      full.push(dd.toISOString().slice(0, 10));
+    }
+    const map = {};
+    cats.forEach((c, ci) => {
+      map[c] = {};
+      series.forEach((s, si) => {
+        map[c][si] = (s.data || [])[ci] || 0;
+      });
+    });
+    cats = full;
+    series = series.map((s, si) => ({
+      ...s,
+      data: full.map((dt) => map[dt]?.[si] || 0)
+    }));
+  }
+  const maxV = Math.max(1, ...cats.map(
+    (_, i) => series.reduce((s, ser) => s + ((ser.data || [])[i] || 0), 0)
+  ));
+  return { cats, series, maxV };
+}
+function _tlGXLabels(visibleLabels) {
+  if (!visibleLabels.length) return "";
+  return '<div class="tl-g-x-labels">' + visibleLabels.map((l) => {
+    let style;
+    if (l.first) {
+      style = `left:${l.pct.toFixed(1)}%;transform:translateX(0)`;
+    } else if (l.last) {
+      style = `left:${l.pct.toFixed(1)}%;transform:translateX(-100%)`;
+    } else {
+      style = `left:${l.pct.toFixed(1)}%;transform:translateX(-50%)`;
+    }
+    return `<span style="position:absolute;${style};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${l.lbl}</span>`;
+  }).join("") + "</div>";
+}
+var _TautulliGraphsMethods = class {
+  _tlBodyGraphs() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    if (m.graphsLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading&hellip;</div>';
+    const sub = m.graphsSub || "media";
+    const metric = m.graphsMetric || "plays";
+    const range = m.graphsRange || 30;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isTot = sub === "totals";
+    const subTabBar = `
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        ${[{ id: "media", lbl: "Media Type" }, { id: "stream", lbl: "Stream Type" }, { id: "totals", lbl: "Play Totals" }].map(
+      (s) => `<button class="tl-page-btn${s.id === sub ? " active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
+    ).join("")}
+      </div>`;
+    const metricBtns = `
+      <div style="display:inline-flex;gap:2px;flex-shrink:0">
+        <button class="tl-page-btn${metric === "plays" ? " active" : ""}" data-tl-g-metric="plays"   >${isMob ? "Plays" : "Play Count"}</button>
+        <button class="tl-page-btn${metric === "duration" ? " active" : ""}" data-tl-g-metric="duration">${isMob ? "Duration" : "Play Duration"}</button>
+      </div>`;
+    const rangeUnit = isTot ? "months" : "days";
+    const rangeCtrl = `
+      <div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--is-text-muted);flex-shrink:0">
+        <span>Last</span>
+        <input id="tl-g-range" type="number" value="${range}" min="1" max="${isTot ? 60 : 365}"
+          style="width:38px;background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-text);padding:4px 4px;font-size:12px;line-height:1.4;text-align:center;font-family:inherit;outline:none;box-sizing:border-box;-webkit-appearance:none;appearance:none">
+        <span>${rangeUnit}</span>
+      </div>`;
+    const rightControls = `
+      <div style="display:flex;align-items:center;gap:${isMob ? "4" : "6"}px;flex-wrap:nowrap;justify-content:${isMob ? "flex-start" : "flex-end"}">
+        ${this._tlGUserDropdown()}${metricBtns}${rangeCtrl}
+      </div>`;
+    const controls = isMob ? `<div style="margin-bottom:8px">${rightControls}</div>
+         <div style="margin-bottom:12px">${subTabBar}</div>` : `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+           ${subTabBar}${rightControls}
+         </div>`;
+    const gd = m.graphsData || {};
+    const isDur = metric === "duration";
+    const BASE = { range, isDate: true, isDuration: isDur, isMob };
+    let body = "";
+    if (sub === "media") {
+      const lineSvg = this._tlGLineSvg(gd.byDate, { ...BASE, chartId: "md", xLabel: (d) => d.slice(-5) });
+      const barOpts = { isDuration: isDur, isMob };
+      const dowSvg = this._tlGBarSvg(gd.byDow, { ...barOpts, chartId: "dw", xLabel: (d) => d.slice(0, 3) });
+      const hodSvg = this._tlGBarSvg(gd.byHod, { ...barOpts, chartId: "hd", xLabel: (_, i) => i % 4 === 0 ? `${i}h` : "" });
+      const halfRow = isMob ? `<div style="margin-bottom:10px">${this._tlGCard("By Day of Week", gd.byDow, dowSvg)}</div>
+           <div style="margin-bottom:10px">${this._tlGCard("By Hour of Day", gd.byHod, hodSvg)}</div>` : `<div style="display:flex;gap:10px;margin-bottom:10px">
+             <div style="flex:1;min-width:0">${this._tlGCard("By Day of Week", gd.byDow, dowSvg)}</div>
+             <div style="flex:1;min-width:0">${this._tlGCard("By Hour of Day", gd.byHod, hodSvg)}</div>
+           </div>`;
+      body = `<div style="margin-bottom:10px">${this._tlGCard("Daily Play Count by Media Type", gd.byDate, lineSvg)}</div>${halfRow}`;
+    } else if (sub === "stream") {
+      const lineSvg = this._tlGLineSvg(gd.streamByDate, { ...BASE, chartId: "st", xLabel: (d) => d.slice(-5) });
+      const concSvg = this._tlGLineSvg(gd.concurrentByDate, { ...BASE, chartId: "cc", isDuration: false, xLabel: (d) => d.slice(-5) });
+      body = `<div style="margin-bottom:10px">${this._tlGCard("Daily Play Count by Stream Type", gd.streamByDate, lineSvg)}</div>
+              <div>${this._tlGCard("Daily Concurrent Streams by Stream Type", gd.concurrentByDate, concSvg)}</div>`;
+    } else {
+      const barSvg = this._tlGBarSvg(gd.monthly, { isDuration: isDur, isMob, chartId: "mo", xLabel: (d) => d.slice(0, 3) });
+      body = `<div style="margin-bottom:10px">${this._tlGCard("Total Play Count by Month", gd.monthly, barSvg)}</div>`;
+    }
+    return controls + body;
+  }
+  // ── Card wrapper ──────────────────────────────────────────────────────────
+  _tlGCard(title, rawData, chartHtml) {
+    const series = (rawData?.response?.data?.series || []).filter((s) => s.name !== "Total");
+    const legend = series.map(
+      (s) => `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)"><span style="width:7px;height:7px;border-radius:2px;background:${_tlGHex(s.name)};flex-shrink:0;display:inline-block;opacity:0.9"></span>${s.name}</span>`
+    ).join("");
+    return `<div class="tl-g-card" style="position:relative">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span class="tl-graph-title">${title}</span>
+        ${legend ? `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${legend}</div>` : ""}
+      </div>
+      <div style="position:relative">
+        ${chartHtml}
+        <div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+      </div>
+    </div>`;
+  }
+  _tlGSvgEl(inner) {
+    return `<svg class="tl-g-svg" viewBox="0 0 ${_TL_G_VBW} ${_TL_G_SVH}" width="100%" height="${_TL_G_DISP}" preserveAspectRatio="none">${inner}</svg>`;
+  }
+  // HTML y-label + SVG wrapper — avoids font distortion from preserveAspectRatio:none
+  _tlGWrap(svgHtml, labelsHtml, yLblTxt) {
+    return `<div style="position:relative">
+      <span class="tl-g-ylabel">${yLblTxt}</span>
+      ${svgHtml}
+    </div>${labelsHtml}`;
+  }
+  // ── Stacked bar chart ─────────────────────────────────────────────────────
+  // Returns svgHtml + x-labels HTML div
+  _tlGBarSvg(rawData, opts) {
+    opts = opts || {};
+    const prep = _tlGPrep(rawData, opts);
+    const VBW = _TL_G_VBW, SVH = _TL_G_SVH;
+    const noData = this._tlGWrap(
+      this._tlGSvgEl(`<text x="${VBW / 2}" y="${SVH / 2}" text-anchor="middle" dominant-baseline="middle" style="fill:var(--is-text-muted);font-size:22">No data</text>`),
+      "",
+      ""
+    );
+    if (!prep) return noData;
+    const { cats, series, maxV } = prep;
+    const n = cats.length;
+    const cW = VBW - _P.l - _P.r;
+    const cH = SVH - _P.t - _P.b;
+    const baseY = _P.t + cH;
+    const cid = opts.chartId || "g";
+    const isDur = !!opts.isDuration;
+    const defs = "<defs>" + series.map((s, si) => {
+      const h = _tlGHex(s.name);
+      return `<linearGradient id="tl-gb-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.92"/><stop offset="100%" stop-color="${h}" stop-opacity="0.42"/></linearGradient>`;
+    }).join("") + "</defs>";
+    const serGrad = {};
+    series.forEach((s, si) => {
+      serGrad[s.name] = `url(#tl-gb-${cid}-${si})`;
+    });
+    const slotW = cW / n;
+    const bwFrac = n <= 7 ? 0.5 : n <= 14 ? 0.55 : Math.min(0.65, Math.max(0.14, 42 / slotW));
+    const bw = Math.max(4, slotW * bwFrac);
+    const rr = Math.min(bw * 0.38, 10);
+    const labelW = opts.isMob ? 110 : 62;
+    const showEvery = Math.max(1, Math.ceil(labelW / slotW));
+    let bars = "", delay = 0;
+    const visibleLabels = [];
+    cats.forEach((cat, i) => {
+      const x = _P.l + i * slotW + (slotW - bw) / 2;
+      const total = series.reduce((s, ser) => s + ((ser.data || [])[i] || 0), 0);
+      const sorted = series.slice().sort((a, b) => ((a.data || [])[i] || 0) - ((b.data || [])[i] || 0));
+      const tipVals = sorted.filter((s) => ((s.data || [])[i] || 0) > 0).reverse().map((s) => {
+        const v = (s.data || [])[i] || 0;
+        return { n: s.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(s.name) };
+      });
+      const tipData = _tlGAttr(JSON.stringify({
+        lbl: cat,
+        tot: total,
+        ftot: isDur ? _tlGFmtDur(total) : null,
+        vals: tipVals
+      }));
+      let colPaths = "", curY = baseY;
+      if (total > 0) {
+        sorted.forEach((ser, si2) => {
+          const v = (ser.data || [])[i] || 0;
+          if (!v) return;
+          const h = v / maxV * cH;
+          const fill = serGrad[ser.name] || _tlGHex(ser.name);
+          const isTop = si2 === sorted.length - 1 || sorted.slice(si2 + 1).every((s2) => !((s2.data || [])[i] || 0));
+          curY -= h;
+          const pathD = isTop ? this._tlGRoundedTop(x, curY, bw, h, rr) : `M${x},${curY + h} L${x},${curY} L${x + bw},${curY} L${x + bw},${curY + h} Z`;
+          const rrAttr = isTop && rr >= 0.5 ? ` data-tl-rr="${rr.toFixed(2)}" data-tl-bx="${x.toFixed(2)}" data-tl-by="${curY.toFixed(2)}" data-tl-bw="${bw.toFixed(2)}" data-tl-bh="${h.toFixed(2)}"` : "";
+          colPaths += `<path d="${pathD}"${rrAttr} style="fill:${fill}" class="tl-g-anim-bar" data-d="${(delay * 0.012).toFixed(2)}"/>`;
+        });
+        delay++;
+      }
+      bars += `<g class="tl-g-col" data-tl-g-col="${tipData}" style="cursor:${total > 0 ? "pointer" : "default"}"><rect x="${(_P.l + i * slotW).toFixed(1)}" y="${_P.t}" width="${slotW.toFixed(1)}" height="${cH}" fill="transparent"/>` + colPaths + `</g>`;
+      const lbl = typeof opts.xLabel === "function" ? opts.xLabel(cat, i, n) : cat || "";
+      if (lbl) {
+        const lr = Math.floor((n - 2) / showEvery) * showEvery;
+        if (i % showEvery === 0 || i === n - 1 && (n - 1 - lr) * slotW >= labelW * 0.8) {
+          visibleLabels.push({ pct: (_P.l + i * slotW + slotW / 2) / VBW * 100, lbl, first: i === 0, last: i === n - 1 });
+        }
+      }
+    });
+    const yLblTxt = isDur ? _tlGFmtDurShort(maxV) : String(maxV);
+    return this._tlGWrap(this._tlGSvgEl(defs + bars), _tlGXLabels(visibleLabels), yLblTxt);
+  }
+  _tlGRoundedTop(x, y, w, h, r) {
+    r = Math.min(r, h / 2, w / 2);
+    if (r < 0.5) return `M${x},${y + h} L${x},${y} L${x + w},${y} L${x + w},${y + h} Z`;
+    const f = (n) => n.toFixed(2);
+    return `M${f(x)},${f(y + h)} L${f(x)},${f(y + r)} Q${f(x)},${f(y)} ${f(x + r)},${f(y)} L${f(x + w - r)},${f(y)} Q${f(x + w)},${f(y)} ${f(x + w)},${f(y + r)} L${f(x + w)},${f(y + h)} Z`;
+  }
+  // ── Line chart ────────────────────────────────────────────────────────────
+  // Dots: filled with card bg color (var(--is-row-hover)) so line underneath is hidden,
+  //       stroke ring drawn on top → line visually ends at dot edge, never passes through
+  _tlGLineSvg(rawData, opts) {
+    opts = opts || {};
+    const prep = _tlGPrep(rawData, opts);
+    const VBW = _TL_G_VBW, SVH = _TL_G_SVH;
+    const noDt = this._tlGWrap(
+      this._tlGSvgEl(`<text x="${VBW / 2}" y="${SVH / 2}" text-anchor="middle" dominant-baseline="middle" style="fill:var(--is-text-muted);font-size:22">No data</text>`),
+      "",
+      ""
+    );
+    if (!prep) return noDt;
+    const { cats, series, maxV } = prep;
+    const n = cats.length;
+    const cW = VBW - _P.l - _P.r;
+    const cH = SVH - _P.t - _P.b;
+    const baseY = _P.t + cH;
+    const cid = opts.chartId || "l";
+    const isDur = !!opts.isDuration;
+    const dotR = n <= 12 ? 4 : n <= 30 ? 3 : 2;
+    const slotW2 = cW / Math.max(n, 1);
+    const ptX = (i) => _P.l + (i + 0.5) * slotW2;
+    const colL = (i) => _P.l + i * slotW2;
+    const colR = (i) => _P.l + (i + 1) * slotW2;
+    const seriesPts = series.map((ser) => {
+      const vals = ser.data || [];
+      return vals.map((v, i) => ({
+        x: ptX(i),
+        y: _P.t + cH - v / maxV * cH,
+        v,
+        cat: cats[i]
+      }));
+    });
+    let di = series.map((s, si) => {
+      const h = _tlGHex(s.name);
+      return `<linearGradient id="tl-gl-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.18"/><stop offset="100%" stop-color="${h}" stop-opacity="0"/></linearGradient>`;
+    }).join("");
+    series.forEach((ser, si) => {
+      const circles = seriesPts[si].filter((p) => p.v > 0).map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${dotR}" fill="black"/>`).join("");
+      di += `<mask id="tl-lmask-${cid}-${si}" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="${VBW}" height="${SVH}" fill="white"/>` + circles + `</mask>`;
+    });
+    const defs = `<defs>${di}</defs>`;
+    let out = defs;
+    if (opts.isDate) {
+      cats.forEach((cat, i) => {
+        const dow = (/* @__PURE__ */ new Date(cat + "T12:00:00")).getDay();
+        if (dow !== 0 && dow !== 6) return;
+        const rx = colL(i), rw = colR(i) - rx;
+        out += `<rect x="${rx.toFixed(1)}" y="${_P.t}" width="${rw.toFixed(1)}" height="${cH}" style="fill:var(--tl-wknd)"/>`;
+      });
+    }
+    series.forEach((ser, si) => {
+      const pts = seriesPts[si];
+      if (!pts.some((p) => p.v > 0)) return;
+      const hex = _tlGHex(ser.name);
+      out += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tl-gl-${cid}-${si})"/>`;
+      out += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line" mask="url(#tl-lmask-${cid}-${si})"/>`;
+    });
+    series.forEach((ser, si) => {
+      const pts = seriesPts[si];
+      const hex = _tlGHex(ser.name);
+      pts.forEach((p) => {
+        if (!p.v) return;
+        const tipJson = _tlGAttr(JSON.stringify({ lbl: p.cat, name: ser.name, val: p.v, hex }));
+        out += `<circle class="tl-g-dot" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${dotR}" style="fill:transparent;stroke:${hex};stroke-width:2.5;cursor:pointer" vector-effect="non-scaling-stroke" data-tl-g-dot="${tipJson}"/>`;
+      });
+    });
+    cats.forEach((cat, i) => {
+      const rx = colL(i), rw = colR(i) - rx;
+      const tipVals = series.map((ser) => {
+        const v = (ser.data || [])[i] || 0;
+        return { n: ser.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(ser.name) };
+      }).filter((v) => v.v > 0).sort((a, b) => b.v - a.v);
+      const tot = tipVals.reduce((s, v) => s + v.v, 0);
+      const td = _tlGAttr(JSON.stringify({ lbl: cat, tot, ftot: isDur ? _tlGFmtDur(tot) : null, vals: tipVals }));
+      out += `<g class="tl-g-lcol" data-tl-g-col="${td}" style="cursor:pointer"><rect class="tl-g-lhlt" x="${rx.toFixed(1)}" y="${_P.t}" width="${rw.toFixed(1)}" height="${cH}" style="fill:var(--tl-col-hlt);opacity:0"/><rect x="${rx.toFixed(1)}" y="${_P.t}" width="${rw.toFixed(1)}" height="${cH}" fill="transparent"/></g>`;
+    });
+    const labelW = opts.isMob ? 110 : 62;
+    const showEvery = Math.max(1, Math.ceil(labelW / slotW2));
+    const visibleLabels = [];
+    cats.forEach((cat, i) => {
+      const lbl = typeof opts.xLabel === "function" ? opts.xLabel(cat, i, n) : (cat || "").slice(-5);
+      if (!lbl) return;
+      const lr = Math.floor((n - 2) / showEvery) * showEvery;
+      if (i % showEvery === 0 || i === n - 1 && (n - 1 - lr) * slotW2 >= labelW * 0.8) {
+        visibleLabels.push({ pct: ptX(i) / VBW * 100, lbl, first: i === 0, last: i === n - 1 });
+      }
+    });
+    const yLblTxt = isDur ? _tlGFmtDurShort(maxV) : String(maxV);
+    return this._tlGWrap(this._tlGSvgEl(out), _tlGXLabels(visibleLabels), yLblTxt);
+  }
+  _tlGSmoothLine(pts) {
+    if (pts.length < 2) return pts.length === 1 ? `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}` : "";
+    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = pts[i - 1], p1 = pts[i];
+      const cx1 = p0.x + (p1.x - p0.x) / 4;
+      const cx2 = p1.x - (p1.x - p0.x) / 4;
+      d += ` C${cx1.toFixed(1)},${p0.y.toFixed(1)} ${cx2.toFixed(1)},${p1.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+    }
+    return d;
+  }
+  _tlGSmoothArea(pts, baseY) {
+    const lp = pts[pts.length - 1], fp = pts[0];
+    return this._tlGSmoothLine(pts) + ` L${lp.x.toFixed(1)},${baseY.toFixed(1)} L${fp.x.toFixed(1)},${baseY.toFixed(1)} Z`;
+  }
+  // ── User dropdown ─────────────────────────────────────────────────────────
+  _tlGUserDropdown() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    const users = m.graphsUserList || [], sel = m.graphsSelectedUsers;
+    let btnLabel = "All Users";
+    if (sel && sel.size === 1) {
+      const u = users.find((u2) => sel.has(String(u2.user_id)));
+      btnLabel = u ? u.friendly_name || u.username || "1 User" : "1 User";
+    }
+    const chevron = `<svg viewBox="0 0 10 6" width="8" height="5" style="position:absolute;right:7px;top:50%;transform:translateY(-50%)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><polyline points="1,1 5,5 9,1"/></svg>`;
+    const chkSvg = `<svg viewBox="0 0 14 14" width="12" height="12"><polyline points="2,7 5.5,10.5 12,3" fill="none" stroke="var(--is-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const items = users.map((u) => {
+      const uid = String(u.user_id), checked = !sel || sel.has(uid);
+      const name = u.friendly_name || u.username || uid;
+      return `<div class="tl-g-dd-item" data-tl-g-uid="${uid}"
+        style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px;cursor:pointer;font-size:11px;color:var(--is-text-body)">
+        <span>${name}</span>
+        <span style="width:14px;height:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center">${checked ? chkSvg : ""}</span>
+      </div>`;
+    }).join("");
+    return `<div style="position:relative;flex-shrink:0" id="tl-g-dd-wrap">
+      <button id="tl-g-dd-btn" class="tl-page-btn" style="white-space:nowrap;padding:4px 24px 4px 10px;position:relative">
+        ${btnLabel}${chevron}
+      </button>
+      <div id="tl-g-dd-panel" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:8px;min-width:160px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.35);overflow:hidden">
+        <div style="display:flex;gap:6px;padding:6px 8px 8px;border-bottom:1px solid var(--is-divider)">
+          <button id="tl-g-dd-all"  class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">Select All</button>
+          <button id="tl-g-dd-none" class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">Deselect All</button>
+        </div>
+        <div style="max-height:160px;overflow-y:auto">${items || '<div style="padding:8px 12px;font-size:11px;color:var(--is-text-muted)">No users</div>'}</div>
+      </div>
+    </div>`;
+  }
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+  async _tlFetchGraphs() {
+    const m = this._tautulliModal;
+    const metric = m?.graphsMetric || "plays";
+    const range = m?.graphsRange || 30;
+    const sub = m?.graphsSub || "media";
+    const yAxis = metric === "duration" ? "duration" : "plays";
+    const sel = m?.graphsSelectedUsers;
+    const userParam = sel && sel.size === 1 ? `&user_id=${[...sel][0]}` : "";
+    const base = `time_range=${range}&y_axis=${yAxis}${userParam}`;
+    if (sub === "media") {
+      const [byDate, byDow, byHod] = await Promise.all([
+        this._tlApiFetch("get_plays_by_date", base),
+        this._tlApiFetch("get_plays_by_dayofweek", base),
+        this._tlApiFetch("get_plays_by_hourofday", base)
+      ]);
+      return { byDate, byDow, byHod };
+    } else if (sub === "stream") {
+      const [streamByDate, concurrentByDate] = await Promise.all([
+        this._tlApiFetch("get_plays_by_stream_type", base),
+        this._tlApiFetch("get_concurrent_streams_by_stream_type", `time_range=${range}${userParam}`)
+      ]);
+      return { streamByDate, concurrentByDate };
+    } else {
+      const monthly = await this._tlApiFetch("get_plays_per_month", base);
+      return { monthly };
+    }
+  }
+  async _tlRefetchGraphs(body) {
+    const m = this._tautulliModal;
+    if (!m || !body) return;
+    m.graphsLoading = true;
+    body.innerHTML = this._tlBodyGraphs();
+    const gd = await this._tlFetchGraphs();
+    if (!this._tautulliModal) return;
+    m.graphsData = gd;
+    m.graphsLoading = false;
+    body.innerHTML = this._tlBodyGraphs();
+    this._wireGraphControls(body);
+    this._tlGTriggerAnim(body);
+  }
+  _tlGTriggerAnim(body) {
+    body.querySelectorAll(".tl-g-anim-bar").forEach((el) => {
+      el.style.animationDelay = (el.getAttribute("data-d") || "0") + "s";
+    });
+  }
+};
+var tautulliGraphsMixin = _TautulliGraphsMethods.prototype;
 
 // src/card.js
 var ArrStackCard = class extends HTMLElement {
@@ -9671,6 +10655,7 @@ applyMixin(ArrStackCard.prototype, popupMixin);
 applyMixin(ArrStackCard.prototype, tautulliSharedMixin);
 applyMixin(ArrStackCard.prototype, tautulliTableMixin);
 applyMixin(ArrStackCard.prototype, tautulliMixin);
+applyMixin(ArrStackCard.prototype, tautulliGraphsMixin);
 customElements.define("arr-stack-card", ArrStackCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
