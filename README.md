@@ -66,7 +66,7 @@ The card never calls your services directly. All API calls go through the HA int
 | Jellyfin | Active stream monitoring | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
 
-Services not configured in the integration are hidden automatically. [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) are an exception — their streams come from HA `media_player` entities (no integration config needed) and the Now Playing section auto-hides when nothing is playing.
+Services not configured in the integration are hidden automatically. [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) streams are read from HA `media_player` entities rather than the integration config — the Now Playing section also auto-hides when nothing is playing.
 
 ---
 
