@@ -10,7 +10,7 @@
 
 <a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, and Tautulli — directly from Home Assistant with a single unified dashboard card. Dual Radarr/Sonarr instances (HD + 4K) supported. Overseerr is optional.
+Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, and Tautulli — directly from Home Assistant with a single unified dashboard card.
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -135,7 +135,13 @@ Without Overseerr, trending/popular/upcoming sections are hidden. Movies and sho
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
 3. At minimum: **Radarr** and **Sonarr** — everything else is optional
 
-All other services (Overseerr, qBittorrent, SABnzbd, Bazarr, Plex, Tautulli, second Radarr/Sonarr) are optional — unconfigured services are hidden automatically.
+All other services are optional — unconfigured services are hidden automatically.
+
+**With Overseerr / Jellyseerr** you additionally get:
+- Trending, popular, and upcoming movie/show sections
+- One-click media requests with quality profile selection
+- Admin: approve and decline pending requests
+- Family accounts: household members can request and withdraw their own media
 
 ### Now Playing (Plex / Jellyfin)
 
