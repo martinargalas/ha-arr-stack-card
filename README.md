@@ -52,19 +52,19 @@ The card never calls your services directly. All API calls go through the HA int
 
 ## Supported services
 
-| Service | Role |
-|---------|------|
-| Radarr | Movie library, downloads, interactive search |
-| Radarr 2 | Second Radarr instance — HD + 4K workflow |
-| Sonarr | TV library, episode calendar, downloads |
-| Sonarr 2 | Second Sonarr instance — HD + 4K workflow |
-| qBittorrent | Torrent download management |
-| SABnzbd | Usenet download management |
-| Overseerr / Jellyseerr | Media requests, discovery, approvals *(optional)* |
-| Bazarr | Subtitle status per movie/show |
-| Plex | Active stream monitoring and playback control |
-| Jellyfin | Active stream monitoring |
-| Tautulli | Watch history, statistics, and usage graphs |
+| Service | Role | Required |
+|---------|------|----------|
+| Radarr | Movie library, downloads, interactive search | ✅ Yes |
+| Sonarr | TV library, episode calendar, downloads | ✅ Yes |
+| Radarr 2 | Second Radarr instance — HD + 4K workflow | Optional |
+| Sonarr 2 | Second Sonarr instance — HD + 4K workflow | Optional |
+| qBittorrent | Torrent download management | Optional |
+| SABnzbd | Usenet download management | Optional |
+| Overseerr / Jellyseerr | Media requests, discovery, approvals | Optional |
+| Bazarr | Subtitle status per movie/show | Optional |
+| Plex | Active stream monitoring and playback control | Optional |
+| Jellyfin | Active stream monitoring | Optional |
+| Tautulli | Watch history, statistics, and usage graphs | Optional |
 
 Services not configured in the integration are hidden automatically. Plex and Jellyfin are an exception — their streams come from HA `media_player` entities (no integration config needed) and the Now Playing section auto-hides when nothing is playing.
 
