@@ -66,7 +66,7 @@ The card never calls your services directly. All API calls go through the HA int
 | Jellyfin | Active stream monitoring | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
 
-Services not configured in the integration are hidden automatically. [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) streams are read from HA `media_player` entities rather than the integration config — the Now Playing section also auto-hides when nothing is playing.
+Services not configured in the integration are hidden automatically.
 
 ---
 
@@ -105,6 +105,8 @@ Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popu
 Without Overseerr, trending/popular/upcoming sections are hidden. Movies and shows can still be added directly to Radarr/Sonarr from search results.
 
 #### Now Playing (Plex / Jellyfin)
+
+Requires the [Plex](https://www.home-assistant.io/integrations/plex/) and/or [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration installed — the card reads active sessions from their `media_player` entities automatically.
 
 - Live view of active streams — title, user, media type, and playback progress
 - Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
