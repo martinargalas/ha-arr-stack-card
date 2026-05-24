@@ -10,7 +10,7 @@
 
 <a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, and Tautulli — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, and Tautulli — directly from Home Assistant with a single unified dashboard card. Dual Radarr/Sonarr instances (HD + 4K) supported. Overseerr is optional.
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -55,10 +55,12 @@ The card never calls your services directly. All API calls go through the HA int
 | Service | Role |
 |---------|------|
 | Radarr | Movie library, downloads, interactive search |
+| Radarr 2 | Second Radarr instance — HD + 4K workflow |
 | Sonarr | TV library, episode calendar, downloads |
+| Sonarr 2 | Second Sonarr instance — HD + 4K workflow |
 | qBittorrent | Torrent download management |
 | SABnzbd | Usenet download management |
-| Overseerr / Jellyseerr | Media requests, discovery, approvals |
+| Overseerr / Jellyseerr | Media requests, discovery, approvals *(optional)* |
 | Bazarr | Subtitle status per movie/show |
 | Plex | Active stream monitoring and playback control |
 | Jellyfin | Active stream monitoring |
@@ -89,12 +91,18 @@ The right panel is a modular dashboard. You choose which sections appear and in 
 - **Movies** — full Radarr library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
 - **TV Shows** — full Sonarr library with per-season progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
 
-#### Discovery (Overseerr / Jellyseerr)
+#### Library — dual instances (Radarr 2 / Sonarr 2)
+
+Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popup shows per-instance status chips (available / downloading / missing) and lets you choose which instance to search or remove from.
+
+#### Discovery (Overseerr / Jellyseerr — optional)
 
 - **Trending, popular, upcoming** — movies and TV shows sourced from Overseerr/Jellyseerr
 - One-click or profile-based media requests
 - **Admin:** approve and decline pending requests with poster-style cards
 - **Family accounts:** view and withdraw own requests
+
+Without Overseerr, trending/popular/upcoming sections are hidden. Movies and shows can still be added directly to Radarr/Sonarr from search results.
 
 #### Now Playing (Plex / Jellyfin)
 
@@ -125,9 +133,9 @@ The right panel is a modular dashboard. You choose which sections appear and in 
 
 1. Home Assistant 2024.1+ with HACS installed
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
-3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
+3. At minimum: **Radarr** and **Sonarr** — everything else is optional
 
-All services except Radarr, Sonarr, and Overseerr/Jellyseerr are optional — unconfigured services are hidden automatically.
+All other services (Overseerr, qBittorrent, SABnzbd, Bazarr, Plex, Tautulli, second Radarr/Sonarr) are optional — unconfigured services are hidden automatically.
 
 ### Now Playing (Plex / Jellyfin)
 
@@ -268,7 +276,9 @@ styles:
 
 ---
 
-## Multi-user setup (Overseerr / Jellyseerr)
+## Multi-user setup (Overseerr / Jellyseerr — optional)
+
+> This section only applies if you have Overseerr or Jellyseerr configured. Without it, all HA users (admin and non-admin) can add media directly to Radarr/Sonarr.
 
 | HA account | What they can do |
 |------------|-----------------|
