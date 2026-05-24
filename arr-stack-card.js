@@ -3346,8 +3346,7 @@ var _FetchMethods = class {
       this._fetchRadarr2Profiles(),
       this._fetchRadarr2Tags(),
       this._fetchRadarr2RootFolders(),
-      this._fetchTautulli(),
-      this._fetchPlexSessions()
+      this._fetchTautulli()
     ]);
     this._render();
   }
@@ -3375,16 +3374,37 @@ var _FetchMethods = class {
     const type = s.type || "";
     const isTV = type === "episode";
     const isMusic = type === "track";
-    const thumb = s.thumb || "";
-    const token = this._hass?.auth?.data?.access_token || "";
-    const poster = thumb ? `${location.origin}/api/arr_stack/plex/image?path=${encodeURIComponent(thumb)}&access_token=${encodeURIComponent(token)}` : null;
-    const nl = (player.product || player.title || "").toLowerCase();
+    const poster = null;
+    const productStr = (player.product || "").toLowerCase();
+    const deviceStr = (player.device || "").toLowerCase();
+    const platformStr = (player.platform || "").toLowerCase();
+    const nl = `${productStr} ${deviceStr} ${platformStr}`;
     let deviceIcon = "mdi:television";
     let deviceName = "TV";
-    if (/iphone|for ios/i.test(nl)) {
+    if (/plexamp/i.test(productStr)) {
+      if (/ipad|ipados/i.test(nl)) {
+        deviceIcon = "mdi:tablet";
+        deviceName = "iPad";
+      } else if (/iphone|ios/i.test(nl)) {
+        deviceIcon = "mdi:cellphone";
+        deviceName = "iPhone";
+      } else if (/android/i.test(nl)) {
+        deviceIcon = "mdi:cellphone";
+        deviceName = "Phone";
+      } else if (/mac|macos/i.test(nl)) {
+        deviceIcon = "mdi:laptop";
+        deviceName = "Mac";
+      } else if (/windows/i.test(nl)) {
+        deviceIcon = "mdi:monitor";
+        deviceName = "PC";
+      } else {
+        deviceIcon = "mdi:music";
+        deviceName = "Plexamp";
+      }
+    } else if (/iphone|for ios/i.test(nl)) {
       deviceIcon = "mdi:cellphone";
       deviceName = "Phone";
-    } else if (/ipad/i.test(nl)) {
+    } else if (/ipad|ipados/i.test(nl)) {
       deviceIcon = "mdi:tablet";
       deviceName = "Tablet";
     } else if (/macbook|for mac\b|mac desktop/i.test(nl)) {
@@ -3424,7 +3444,9 @@ var _FetchMethods = class {
         media_album_name: isMusic ? s.parentTitle || "" : "",
         media_channel: "",
         media_library_title: "",
-        entity_picture: poster,
+        entity_picture: null,
+        // Plex poster built fresh at render via _plexThumb
+        _plexThumb: s.thumb || s.parentThumb || s.grandparentThumb || "",
         media_duration: Math.round((s.duration || 0) / 1e3),
         media_position: Math.round((s.viewOffset || 0) / 1e3),
         media_position_updated_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -4408,7 +4430,7 @@ var _FetchMethods = class {
         this._hass.callApi("GET", "arr_stack/tautulli/get_plays_by_date?time_range=7&y_axis=plays").catch(() => null),
         this._hass.callApi("GET", "arr_stack/tautulli/sharing_ack").catch(() => null),
         this._hass.callApi("GET", "arr_stack/tautulli/get_libraries_table?length=20&start=0").catch(() => null),
-        this._hass.callApi("GET", "arr_stack/tautulli/get_history?length=3&order_column=date&order_dir=desc").catch(() => null)
+        this._hass.callApi("GET", `arr_stack/tautulli/get_history?length=${this._config?.security?.ip_history_depth ?? 200}&order_column=date&order_dir=desc`).catch(() => null)
       ]);
       if (actRaw === null && statsRaw === null) {
         this._tautulliConfigured = false;
@@ -4429,21 +4451,28 @@ var _FetchMethods = class {
         show: (showSeries?.data || [])[i] || 0,
         music: (musicSeries?.data || [])[i] || 0
       }));
-      const sessions = act.sessions || [];
+      const threshold = this._config?.security?.ip_sharing_threshold ?? 2;
+      const histRows = histRaw?.response?.data?.data || [];
       const byUser = {};
-      sessions.forEach((s) => {
-        const uid = s.user_id || s.username || s.friendly_name;
-        if (!uid) return;
-        if (!byUser[uid]) byUser[uid] = { name: s.friendly_name || s.username || String(uid), ips: /* @__PURE__ */ new Set() };
-        if (s.ip_address) byUser[uid].ips.add(s.ip_address);
+      histRows.forEach((h) => {
+        const name = h.friendly_name || h.user || h.username;
+        if (!name || !h.ip_address) return;
+        if (!byUser[name]) byUser[name] = {};
+        const ip = h.ip_address;
+        if (!byUser[name][ip]) byUser[name][ip] = { ip, lastSeen: h.date || h.stopped || 0, count: 0 };
+        byUser[name][ip].count++;
+        if ((h.date || h.stopped || 0) > byUser[name][ip].lastSeen) byUser[name][ip].lastSeen = h.date || h.stopped || 0;
       });
       const ackedIps = ackRaw?.ackedIps || {};
       const sharingUsers = [];
-      for (const [uid, info] of Object.entries(byUser)) {
-        if (info.ips.size <= 1) continue;
-        const knownIps = new Set(ackedIps[info.name] || []);
-        const newIps = [...info.ips].filter((ip) => !knownIps.has(ip));
-        if (newIps.length > 0) sharingUsers.push(info.name);
+      const ipReport = {};
+      for (const [name, ipMap] of Object.entries(byUser)) {
+        const knownIps = new Set(ackedIps[name] || []);
+        const newIps = Object.values(ipMap).filter((e) => !knownIps.has(e.ip));
+        if (newIps.length >= threshold) {
+          sharingUsers.push(name);
+          ipReport[name] = Object.values(ipMap).sort((a, b) => b.lastSeen - a.lastSeen);
+        }
       }
       this._tautulli = {
         activity: act,
@@ -4454,7 +4483,8 @@ var _FetchMethods = class {
         sharingDetected: sharingUsers.length > 0,
         sharingAcked: false,
         sharingUsers,
-        ackedIps
+        ackedIps,
+        ipReport
       };
     } catch (e) {
       console.warn("[arr-card] Tautulli fetch error:", e);
@@ -5601,13 +5631,12 @@ var _RenderRight = class {
     </div>`;
   }
   // ─────────────────────────────────────────────
-  // Active Streams (Plex via proxy poll + Jellyfin via hass.states)
+  // Active Streams (Plex / Jellyfin via hass.states)
   // ─────────────────────────────────────────────
   _renderStreams() {
     const states = this._hass?.states || {};
-    const plexStreams = (this._plexSessions || []).filter((s) => !this._streamsEnded.has(s.id));
-    const jellyfinStreams = Object.entries(states).filter(([id, s]) => {
-      if (!id.startsWith("media_player.jellyfin_")) return false;
+    const streams = Object.entries(states).filter(([id, s]) => {
+      if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) return false;
       if (s.state !== "playing" && s.state !== "paused") {
         this._streamsEnded.delete(id);
         return false;
@@ -5618,8 +5647,7 @@ var _RenderRight = class {
       const pos = attr.media_position || 0;
       if (dur > 0 && pos >= dur - 2) return false;
       return true;
-    }).map(([id, s]) => ({ id, source: "jellyfin", state: s.state, attr: s.attributes || {} }));
-    const streams = [...plexStreams, ...jellyfinStreams];
+    }).map(([id, s]) => ({ id, state: s.state, attr: s.attributes || {} }));
     this._streams = streams;
     this._startStreamsTimer(streams);
     this._syncStreamPopup();
@@ -5664,29 +5692,21 @@ var _RenderRight = class {
       if (anyNewlyEnded) this._reRenderSection("streams");
       let anyRestarted = false;
       for (const endedId of this._streamsEnded) {
-        if (endedId.startsWith("plex:")) {
-          const ps = (this._plexSessions || []).find((s) => s.id === endedId);
-          if (ps && ps.attr.media_position < ps.attr.media_duration - 5) {
-            this._streamsEnded.delete(endedId);
-            anyRestarted = true;
-          }
-        } else {
-          const s = this._hass?.states?.[endedId];
-          if (!s) continue;
-          if (s.state !== "playing" && s.state !== "paused") continue;
-          const hassPos = s.attributes?.media_position || 0;
-          const hassDur = s.attributes?.media_duration || 0;
-          if (hassDur > 0 && hassPos < hassDur - 5) {
-            this._streamsEnded.delete(endedId);
-            anyRestarted = true;
-          }
+        const s = this._hass?.states?.[endedId];
+        if (!s) continue;
+        if (s.state !== "playing" && s.state !== "paused") continue;
+        const hassPos = s.attributes?.media_position || 0;
+        const hassDur = s.attributes?.media_duration || 0;
+        if (hassDur > 0 && hassPos < hassDur - 5) {
+          this._streamsEnded.delete(endedId);
+          anyRestarted = true;
         }
       }
       if (anyRestarted) this._reRenderSection("streams");
     }, 1e3);
   }
-  _renderStreamCard({ id, source, state, attr }) {
-    const isPlex = source === "plex" || id.startsWith("plex:");
+  _renderStreamCard({ id, state, attr }) {
+    const isPlex = id.startsWith("media_player.plex_");
     const isPlaying = state === "playing";
     const contentType = attr.media_content_type || "";
     const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
@@ -7217,6 +7237,14 @@ var _WireTautulliMethods = class {
     });
   }
   _wireTautulliModalBody(body) {
+    body.querySelector("#tl-ip-report-toggle")?.addEventListener("click", async () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.ipReportOpen = !this._tautulliModal.ipReportOpen;
+      const m = this._tautulliModal;
+      const r2 = await this._tlApiFetch("get_users_table", `length=50&start=${(m.usersPage || 0) * 50}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`).catch(() => null);
+      body.innerHTML = this._tlBodyUsers(r2?.response?.data?.data);
+      this._wireTautulliModalBody(body);
+    });
     body.querySelector("#tl-ack-btn")?.addEventListener("click", async () => {
       await this._ackTautulliSharing();
       const r = await this._hass.callApi("GET", "arr_stack/tautulli/get_users_table?length=50&start=0&order_column=plays&order_dir=desc").catch(() => null);
@@ -7876,32 +7904,25 @@ var _PopupMethods = class {
   // ─────────────────────────────────────────────
   // Stream popup — open from stream card click
   // ─────────────────────────────────────────────
-  // Helper: get stream state+attr from Plex sessions or HA entity
-  _getStreamData(entityId) {
-    if (entityId.startsWith("plex:")) {
-      const ps = (this._plexSessions || []).find((s2) => s2.id === entityId);
-      return { streamState: ps?.state || "idle", attr: ps?.attr || {}, _machineIdentifier: ps?._machineIdentifier || null, _playerUrl: ps?._playerUrl || null };
-    }
-    const s = this._hass?.states?.[entityId];
-    return { streamState: s?.state || "idle", attr: s?.attributes || {}, _machineIdentifier: null, _playerUrl: null };
-  }
   async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
     const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
-    const { streamState, attr: streamAttr, _machineIdentifier, _playerUrl } = this._getStreamData(entityId);
+    const streamAttr = this._hass?.states?.[entityId]?.attributes || {};
     const isLiveTV = contentType === "channel" || !!streamAttr.media_channel || streamAttr.media_library_title === "Live TV";
     const isTV = isLiveTV || contentType === "tvshow" || contentType === "episode" || !!seriesTitle || !!streamAttr.media_series_title;
     if (isMusic) {
+      const s = this._hass?.states?.[entityId];
+      const attr = s?.attributes || {};
       this._popup = {
         _type: POPUP_TYPE.STREAM,
         _streamEntity: entityId,
-        _streamState: streamState,
-        title: streamAttr.media_title || "",
-        _artist: streamAttr.media_artist || "",
-        _album: streamAttr.media_album_name || "",
-        _duration: streamAttr.media_duration || 0,
-        _position: streamAttr.media_position || 0,
-        _updatedAt: streamAttr.media_position_updated_at ? new Date(streamAttr.media_position_updated_at).getTime() : Date.now(),
-        _poster: streamAttr.entity_picture || null
+        _streamState: s?.state || "idle",
+        title: attr.media_title || "",
+        _artist: attr.media_artist || "",
+        _album: attr.media_album_name || "",
+        _duration: attr.media_duration || 0,
+        _position: attr.media_position || 0,
+        _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
+        _poster: attr.entity_picture || null
       };
       this._renderPopupEl();
       return;
@@ -7938,7 +7959,7 @@ var _PopupMethods = class {
       this._popup = {
         _type: POPUP_TYPE.STREAM,
         _streamEntity: entityId,
-        _streamState: streamState,
+        _streamState: this._hass?.states?.[entityId]?.state || "idle",
         title: trackTitle,
         _artist: "",
         _album: "",
@@ -7954,28 +7975,15 @@ var _PopupMethods = class {
   // Attach live stream data to current popup (called after _openPopup for movie/TV from stream card)
   _attachStreamData(entityId) {
     if (!this._popup) return;
+    const s = this._hass?.states?.[entityId];
+    const attr = s?.attributes || {};
     this._popup._streamEntity = entityId;
+    this._popup._streamState = s?.state || "idle";
+    this._popup._duration = attr.media_duration || 0;
+    this._popup._position = attr.media_position || 0;
+    this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
     this._popup._plexMachineId = null;
-    this._popup._plexPlayerUrl = null;
-    if (entityId.startsWith("plex:")) {
-      const ps = (this._plexSessions || []).find((s) => s.id === entityId);
-      const attr = ps?.attr || {};
-      this._popup._streamState = ps?.state || "idle";
-      this._popup._duration = attr.media_duration || 0;
-      this._popup._position = attr.media_position || 0;
-      this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
-      if (ps?._machineIdentifier) {
-        this._popup._plexMachineId = ps._machineIdentifier;
-        this._popup._plexPlayerUrl = ps._playerUrl || null;
-      }
-    } else {
-      const s = this._hass?.states?.[entityId];
-      const attr = s?.attributes || {};
-      this._popup._streamState = s?.state || "idle";
-      this._popup._duration = attr.media_duration || 0;
-      this._popup._position = attr.media_position || 0;
-      this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
-    }
+    if (entityId.startsWith("media_player.plex_")) this._fetchPlexMachineId(entityId);
   }
   async _fetchPlexMachineId(entityId) {
     try {
@@ -8009,25 +8017,23 @@ var _PopupMethods = class {
     } catch (_) {
     }
   }
-  // Seek via Plex direct API (for plex: IDs) or HA media_seek (for Jellyfin)
+  // Seek via HA media_seek, or fall back to Plex direct API when HA seek unsupported
   _doSeek(entityId, newPos) {
-    if (entityId.startsWith("plex:")) {
-      const machineId = this._popup?._plexMachineId;
-      if (machineId) {
-        this._hass.callApi("POST", "arr_stack/plex/player", {
-          action: "seekTo",
-          machineIdentifier: machineId,
-          offset: Math.round(newPos * 1e3),
-          playerUrl: this._popup?._plexPlayerUrl || null
-        }).catch(() => {
-        });
-      }
-      return;
-    }
     const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
     const canSeek = !!(supported & 2);
     if (canSeek) {
       this._hass.callService("media_player", "media_seek", { entity_id: entityId, seek_position: newPos });
+      return;
+    }
+    const machineId = this._popup?._plexMachineId;
+    if (machineId) {
+      this._hass.callApi("POST", "arr_stack/plex/player", {
+        action: "seekTo",
+        machineIdentifier: machineId,
+        offset: Math.round(newPos * 1e3),
+        playerUrl: this._popup?._plexPlayerUrl || null
+      }).catch(() => {
+      });
     }
   }
   // Update all progress fills for an entity across card + popup (call after seek)
@@ -8044,23 +8050,14 @@ var _PopupMethods = class {
   _syncStreamPopup() {
     const d = this._popup;
     if (!d || !d._streamEntity) return;
-    let s_state, attr;
-    if (d._streamEntity.startsWith("plex:")) {
-      const ps = (this._plexSessions || []).find((ps2) => ps2.id === d._streamEntity);
-      if (!ps) return;
-      s_state = ps.state;
-      attr = ps.attr || {};
-    } else {
-      const s = this._hass?.states?.[d._streamEntity];
-      if (!s) return;
-      s_state = s.state;
-      attr = s.attributes || {};
-    }
+    const s = this._hass?.states?.[d._streamEntity];
+    if (!s) return;
+    const attr = s.attributes || {};
     if (d._type === POPUP_TYPE.STREAM) {
-      if (attr.media_title === d.title && s_state === d._streamState) return;
+      if (attr.media_title === d.title && s.state === d._streamState) return;
       this._popup = {
         ...d,
-        _streamState: s_state,
+        _streamState: s.state,
         title: attr.media_title || d.title,
         _artist: attr.media_artist || "",
         _album: attr.media_album_name || "",
@@ -8072,15 +8069,15 @@ var _PopupMethods = class {
       this._renderPopupEl();
       return;
     }
-    if (s_state !== d._streamState) {
-      d._streamState = s_state;
+    if (s.state !== d._streamState) {
+      d._streamState = s.state;
       d._position = attr.media_position || 0;
       d._duration = attr.media_duration || 0;
       d._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
       const root = this.shadowRoot?.getElementById("popup-root");
       const btn = root?.querySelector('[data-action="stream-playpause"]');
       if (btn) {
-        const playing = s_state === "playing";
+        const playing = s.state === "playing";
         btn.innerHTML = playing ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
       }
     }
@@ -8525,9 +8522,8 @@ var _PopupMethods = class {
       }
       if (t.dataset.action === "stream-playpause") {
         const entityId = t.dataset.entity;
-        const isPlex = entityId.startsWith("plex:");
-        const curState = isPlex ? this._popup?._streamState || "playing" : this._hass?.states?.[entityId]?.state || "playing";
-        const supported = isPlex ? 0 : this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
+        const curState = this._hass?.states?.[entityId]?.state;
+        const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
         const canPause = supported & 1;
         const canPlay = supported & 16384;
         let svc;
@@ -9373,6 +9369,53 @@ var _TautulliTableMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
   // Users
   // ──────────────────────────────────────────────────────────────────────────
+  _tlIpReport() {
+    const tl = this._tautulli || {};
+    const m = this._tautulliModal || {};
+    if (!tl.sharingDetected || tl.sharingAcked) return "";
+    const open = m.ipReportOpen !== false;
+    const threshold = this._config?.security?.ip_sharing_threshold ?? 2;
+    const users = tl.sharingUsers || [];
+    const report = tl.ipReport || {};
+    const rows = users.map((name) => {
+      const ips = report[name] || [];
+      const ipRows = ips.map((e) => {
+        const d = e.lastSeen ? new Date(e.lastSeen * 1e3) : null;
+        const dateStr = d ? d.toLocaleDateString(void 0, { month: "short", day: "numeric", year: "numeric" }) : "\u2014";
+        return `<tr>
+          <td style="padding:4px 8px;font-size:11px;font-family:monospace;color:var(--is-text)">${e.ip}</td>
+          <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted)">${dateStr}</td>
+          <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted);text-align:right">${e.count}</td>
+        </tr>`;
+      }).join("");
+      return `<div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:rgba(255,150,150,0.9);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          ${name}
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">IP Address</th>
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">Last Seen</th>
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:right">Plays</th>
+            </tr>
+          </thead>
+          <tbody>${ipRows}</tbody>
+        </table>
+      </div>`;
+    }).join("");
+    const chevron = open ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>` : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`;
+    return `<div style="background:rgba(180,30,30,0.12);border:1px solid rgba(255,100,100,0.2);border-radius:8px;margin-bottom:10px;overflow:hidden">
+      <div id="tl-ip-report-toggle" style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="rgba(255,150,150,0.9)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size:12px;font-weight:700;color:rgba(255,150,150,0.95);flex:1">Account sharing detected \xB7 ${users.length} user${users.length !== 1 ? "s" : ""} \xB7 ${threshold}+ unique IPs</span>
+        <button class="tl-ack-btn" id="tl-ack-btn" style="font-size:10px;padding:3px 10px;margin-right:4px" onclick="event.stopPropagation()">Acknowledge</button>
+        ${chevron}
+      </div>
+      ${open ? `<div style="padding:0 12px 12px">${rows}</div>` : ""}
+    </div>`;
+  }
   _tlBodyUsers(data, total) {
     const isMobile = window.matchMedia("(max-width:600px)").matches;
     const m = this._tautulliModal || {};
@@ -9404,7 +9447,7 @@ var _TautulliTableMethods = class {
     const tl2 = this._tautulli || {};
     const showBanner = tl2.sharingDetected && !tl2.sharingAcked;
     const wU = tl2.sharingUsers || [];
-    const banner = showBanner ? `<div class="tl-warn-banner"><div style="flex:1"><strong>Account sharing detected</strong><br>${wU.length ? "Affected: " + wU.join(", ") : "Multiple IPs detected for the same account."} Review IPs below and acknowledge if expected.</div><button class="tl-ack-btn" id="tl-ack-btn">Acknowledge</button></div>` : "";
+    const banner = "";
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "user"), hidden, "data-tl-col");
     const deskColsBtn = this._tlColsMenu("tl-users-cols-btn", "tl-users-cols-menu", deskColItems, m.usersColsOpen);
     const MOB_USR_COLS = [
@@ -9422,7 +9465,8 @@ var _TautulliTableMethods = class {
     const searchEl = this._tlSearchInput("tl-users-search", m.usersSearch);
     const colsBtn = isMobile ? mobColsBtn : deskColsBtn;
     const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
-    const toolbar = `${banner}<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+    const ipReport = this._tlIpReport();
+    const toolbar = `${ipReport}<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
     const page2 = Math.min(page, totalPages - 1);
     const sliced = filtered.slice(page2 * perPage, (page2 + 1) * perPage);
     if (isMobile) {
@@ -9798,6 +9842,7 @@ var _TautulliMethods = class {
     const hSet = (key, defs) => prefs[key] ? new Set(prefs[key]) : new Set(defs);
     this._tautulliModal = {
       tab,
+      ipReportOpen: true,
       histPage: 0,
       histPerPage: 10,
       histSearch: "",
@@ -10621,7 +10666,7 @@ var ArrStackCard = class extends HTMLElement {
       const cur = hass.states || {};
       const old = prev.states || {};
       for (const id of Object.keys(cur)) {
-        if (!id.startsWith("media_player.jellyfin_")) continue;
+        if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) continue;
         const nowActive = cur[id]?.state === "playing" || cur[id]?.state === "paused";
         const wasActive = old[id]?.state === "playing" || old[id]?.state === "paused";
         if (nowActive && !wasActive) {
@@ -10631,7 +10676,6 @@ var ArrStackCard = class extends HTMLElement {
         }
       }
       for (const id of this._streamsEnded) {
-        if (!id.startsWith("media_player.jellyfin_")) continue;
         const curS = cur[id];
         if (!curS) {
           this._streamsEnded.delete(id);

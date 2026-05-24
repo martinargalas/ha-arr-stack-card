@@ -115,6 +115,7 @@ The card reads active sessions from `media_player.plex_*` and `media_player.jell
 - Play count and duration charts by day, day of week, hour, and media type
 - Stream type breakdown and concurrent stream graph
 - Per-user and per-library statistics
+- **Account sharing detection** — warns when the same account streams from multiple IPs; configurable threshold and history depth; acknowledge known IPs per user
 
 ### Appearance & UX
 
@@ -177,7 +178,7 @@ Playback control (pause, resume, stop) is available for Plex. This requires Plex
 
 ## Full Configuration
 
-> **Visual editor** — most settings are available via the HA dashboard editor (click the pencil icon). Only `styles.*` keys require manual YAML editing.
+> **Visual editor** — most settings are available via the HA dashboard editor (click the pencil icon). Only `styles.*` and `security.*` keys require manual YAML editing.
 
 ```yaml
 type: custom:arr-stack-card
@@ -226,6 +227,11 @@ categories:
   - id: tautulli
     enabled: true
 
+# Security
+security:
+  ip_sharing_threshold: 2    # unique IPs per user before sharing warning appears  (default: 2)
+  ip_history_depth: 200      # number of history records scanned for IP detection  (default: 200)
+
 # Appearance
 styles:
   performanceMode: false          # disable backdrop blur (improves perf on low-end devices)
@@ -268,6 +274,17 @@ styles:
 | `calendar` | Sonarr episode calendar |
 | `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
 | `tautulli` | Statistics (Tautulli) |
+
+### Security
+
+Account sharing detection is available when Tautulli is configured.
+
+| Key | Description |
+|-----|-------------|
+| `security.ip_sharing_threshold` | Number of unique IPs per user that triggers the sharing warning. Default: `2` |
+| `security.ip_history_depth` | Number of recent history records scanned per fetch to collect IP data. Default: `200` |
+
+When sharing is detected, a warning card appears in the Statistics section. Clicking it opens the Users tab with a collapsible IP report — showing each flagged user, their IP addresses, last seen date, and play count. You can acknowledge known IPs per user to dismiss the warning.
 
 ### Style notes
 
