@@ -95,18 +95,15 @@ The right panel is a modular dashboard. You choose which sections appear and in 
 
 Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popup shows per-instance status chips (available / downloading / missing) and lets you choose which instance to search or remove from.
 
-#### Discovery (Overseerr / Jellyseerr — optional)
+#### Discovery
 
-- **Trending, popular, upcoming** — movies and TV shows sourced from Overseerr/Jellyseerr
-- One-click or profile-based media requests
-- **Admin:** approve and decline pending requests with poster-style cards
-- **Family accounts:** view and withdraw own requests
-
-Without Overseerr, trending/popular/upcoming sections are hidden. Movies and shows can still be added directly to Radarr/Sonarr from search results.
+- **Trending, popular, upcoming** — movies and TV shows, always available
+- One-click or profile-based media requests directly to Radarr/Sonarr
+- **With Overseerr / Jellyseerr (optional):** approve and decline pending requests, family accounts with per-user request management
 
 #### Now Playing (Plex / Jellyfin)
 
-Requires the [Plex](https://www.home-assistant.io/integrations/plex/) and/or [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration installed — the card reads active sessions from their `media_player` entities automatically.
+The card reads active sessions from `media_player.plex_*` and `media_player.jellyfin_*` entities created by the official [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integrations. Plex playback control additionally requires Plex to be configured in the Arr Stack Integration (step 5).
 
 - Live view of active streams — title, user, media type, and playback progress
 - Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
@@ -140,22 +137,19 @@ Requires the [Plex](https://www.home-assistant.io/integrations/plex/) and/or [Je
 All other services are optional — unconfigured services are hidden automatically.
 
 **With Overseerr / Jellyseerr** you additionally get:
-- Trending, popular, and upcoming movie/show sections
-- One-click media requests with quality profile selection
-- Admin: approve and decline pending requests
-- Family accounts: household members can request and withdraw their own media
+- Request approval workflow — admin can approve and decline pending requests
+- Family accounts — household members can request and withdraw their own media
 
 ### Now Playing (Plex / Jellyfin)
 
-The Now Playing section reads from standard HA `media_player` entities — no Arr Stack Integration config needed. The card picks up any entity whose ID starts with `media_player.plex_` or `media_player.jellyfin_`, which is the default naming created by the official HA integrations.
+Both Plex and Jellyfin read from standard HA `media_player` entities:
 
-**Setup:**
-- **Plex** — install the [Plex integration](https://www.home-assistant.io/integrations/plex/) in HA. It will create `media_player.plex_*` entities automatically for each active session.
-- **Jellyfin** — install the [Jellyfin integration](https://www.home-assistant.io/integrations/jellyfin/) in HA. It will create `media_player.jellyfin_*` entities automatically.
+- **Plex** — install the [Plex integration](https://www.home-assistant.io/integrations/plex/) in HA. It creates `media_player.plex_*` entities automatically for each active session.
+- **Jellyfin** — install the [Jellyfin integration](https://www.home-assistant.io/integrations/jellyfin/) in HA. It creates `media_player.jellyfin_*` entities automatically.
 
-No custom entity naming required. The Now Playing section auto-hides when nothing is playing.
+The Now Playing section auto-hides when nothing is playing.
 
-Playback control (pause, resume, stop) is available for Plex and works for most clients. Android phones and web browsers are not supported.
+Playback control (pause, resume, stop) is available for Plex. This requires Plex to also be configured in the Arr Stack Integration (step 5). Works for most clients — Android phones and web browsers are not supported.
 
 ---
 

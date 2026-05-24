@@ -3346,9 +3346,95 @@ var _FetchMethods = class {
       this._fetchRadarr2Profiles(),
       this._fetchRadarr2Tags(),
       this._fetchRadarr2RootFolders(),
-      this._fetchTautulli()
+      this._fetchTautulli(),
+      this._fetchPlexSessions()
     ]);
     this._render();
+  }
+  async _fetchPlexSessions() {
+    const now = Date.now();
+    if (now - (this._plexLastFetch || 0) < 5e3) return;
+    this._plexLastFetch = now;
+    try {
+      const raw = await this._callApi("GET", "arr_stack/plex/sessions");
+      if (Array.isArray(raw)) {
+        this._plexConfigured = false;
+        this._plexSessions = [];
+        return;
+      }
+      this._plexConfigured = true;
+      const sessions = raw?.MediaContainer?.Metadata || [];
+      this._plexSessions = sessions.filter((s) => s.Player?.machineIdentifier && (s.Player.state === "playing" || s.Player.state === "paused")).map((s) => this._normalizePlexSession(s));
+    } catch (_) {
+      this._plexConfigured = false;
+      this._plexSessions = [];
+    }
+  }
+  _normalizePlexSession(s) {
+    const player = s.Player || {};
+    const type = s.type || "";
+    const isTV = type === "episode";
+    const isMusic = type === "track";
+    const thumb = s.thumb || "";
+    const token = this._hass?.auth?.data?.access_token || "";
+    const poster = thumb ? `${location.origin}/api/arr_stack/plex/image?path=${encodeURIComponent(thumb)}&access_token=${encodeURIComponent(token)}` : null;
+    const nl = (player.product || player.title || "").toLowerCase();
+    let deviceIcon = "mdi:television";
+    let deviceName = "TV";
+    if (/iphone|for ios/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    } else if (/ipad/i.test(nl)) {
+      deviceIcon = "mdi:tablet";
+      deviceName = "Tablet";
+    } else if (/macbook|for mac\b|mac desktop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Mac";
+    } else if (/laptop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Notebook";
+    } else if (/windows|for windows|desktop|pc\b/i.test(nl)) {
+      deviceIcon = "mdi:monitor";
+      deviceName = "PC";
+    } else if (/web|chrome|browser|safari|firefox/i.test(nl)) {
+      deviceIcon = "mdi:web";
+      deviceName = "Browser";
+    } else if (/apple\s*tv|android\s*tv|fire\s*tv|roku|shield/i.test(nl)) {
+      deviceIcon = "mdi:television";
+      deviceName = "TV";
+    } else if (/android/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    }
+    const port = player.port || (player.secure ? 32433 : 32500);
+    const protocol = player.secure ? "https" : "http";
+    const playerUrl = player.address ? `${protocol}://${player.address}:${port}` : null;
+    return {
+      id: `plex:${player.machineIdentifier}`,
+      source: "plex",
+      state: player.state || "playing",
+      attr: {
+        media_content_type: isTV ? "episode" : isMusic ? "music" : "movie",
+        media_title: s.title || "",
+        // episode title / movie title / track title
+        media_series_title: isTV ? s.grandparentTitle || "" : "",
+        media_season: isTV ? s.parentIndex || 0 : 0,
+        media_episode: isTV ? s.index || 0 : 0,
+        media_artist: isMusic ? s.grandparentTitle || "" : "",
+        media_album_name: isMusic ? s.parentTitle || "" : "",
+        media_channel: "",
+        media_library_title: "",
+        entity_picture: poster,
+        media_duration: Math.round((s.duration || 0) / 1e3),
+        media_position: Math.round((s.viewOffset || 0) / 1e3),
+        media_position_updated_at: (/* @__PURE__ */ new Date()).toISOString(),
+        friendly_name: player.product || player.title || "",
+        supported_features: 0
+      },
+      _machineIdentifier: player.machineIdentifier,
+      _playerUrl: playerUrl,
+      _plexUser: s.User?.title || ""
+    };
   }
   async _fetchDownloadsAndRender() {
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
@@ -3494,39 +3580,39 @@ var _FetchMethods = class {
       console.error("[arr-card] Sonarr calendar fetch error:", e);
     }
   }
+  // Returns discover service prefix — 'overseerr' when configured, 'tmdb' as fallback
+  get _discoverSvc() {
+    return this._overseerrConfigured === false ? "tmdb" : "overseerr";
+  }
   async _fetchOverseerr() {
-    if (this._overseerrConfigured === false) {
-      this._upcoming = [];
-      return;
-    }
+    if (this._overseerrConfigured === null) return;
     try {
+      const svc = this._discoverSvc;
       const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/upcoming?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/upcoming?page=2")
+        this._callApi("GET", `arr_stack/${svc}/upcoming?page=1`),
+        this._callApi("GET", `arr_stack/${svc}/upcoming?page=2`).catch(() => ({ results: [] }))
       ]);
       this._upcoming = [...d1.results || [], ...d2.results || []];
       this._upcomingError = null;
     } catch (e) {
       this._upcomingError = e.message;
-      console.error("[arr-card] Overseerr fetch error:", e);
+      console.error("[arr-card] Upcoming fetch error:", e);
     }
   }
-  // Společný helper pro stránkované Overseerr fetche (trending/popular/tvUpcoming)
+  // Společný helper pro stránkované fetche (trending/popular/tvUpcoming)
   async _fetchOverseerrPaged(endpoint, dataKey, section) {
-    if (this._overseerrConfigured === false) {
-      this[dataKey] = [];
-      return;
-    }
+    if (this._overseerrConfigured === null) return;
     try {
+      const svc = this._discoverSvc;
       const [d1, d2] = await Promise.all([
-        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=1`),
-        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=2`).catch(() => ({ results: [] }))
+        this._callApi("GET", `arr_stack/${svc}/${endpoint}?page=1`),
+        this._callApi("GET", `arr_stack/${svc}/${endpoint}?page=2`).catch(() => ({ results: [] }))
       ]);
       this[dataKey] = [...d1.results || [], ...d2.results || []];
       this._overlayApiTotalPages[section] = d1.totalPages || 1;
       this._overlayApiPage[section] = 2;
     } catch (e) {
-      console.error(`[arr-card] Overseerr ${section} fetch error:`, e);
+      console.error(`[arr-card] ${section} fetch error:`, e);
     }
   }
   async _fetchTrending() {
@@ -3673,7 +3759,14 @@ var _FetchMethods = class {
           }
         }
         if (!seasons.length) {
-          const tvdbId = m.externalIds?.tvdbId || m.tvdbId;
+          let tvdbId = m.externalIds?.tvdbId || m.tvdbId;
+          if (!tvdbId && this._overseerrConfigured === false) {
+            try {
+              const ext = await this._callApi("GET", `arr_stack/tmdb/tv/${m.id}`);
+              tvdbId = ext?.externalIds?.tvdbId;
+            } catch (_) {
+            }
+          }
           if (tvdbId) {
             try {
               const lookup = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
@@ -4253,7 +4346,7 @@ var _FetchMethods = class {
         }
         this._searchResults = merged;
       } else {
-        const data = await this._callApi("POST", "arr_stack/overseerr/search", { query });
+        const data = await this._callApi("POST", `arr_stack/${this._discoverSvc}/search`, { query });
         this._searchResults = (data?.results || []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
       }
     } catch (e) {
@@ -4834,10 +4927,10 @@ var _RenderRight = class {
       sonarr: () => this._renderSonarr(),
       recentlyAdded: () => this._renderRecentlyAdded(),
       recentlyRequested: () => this._renderRecentlyRequested(),
-      upcoming: this._overseerrConfigured !== false ? () => this._renderUpcoming() : null,
-      tvUpcoming: this._overseerrConfigured !== false ? () => this._renderTvUpcoming() : null,
-      trending: this._overseerrConfigured !== false ? () => this._renderTrending() : null,
-      popular: this._overseerrConfigured !== false ? () => this._renderPopular() : null,
+      upcoming: () => this._renderUpcoming(),
+      tvUpcoming: () => this._renderTvUpcoming(),
+      trending: () => this._renderTrending(),
+      popular: () => this._renderPopular(),
       calendar: hasCalendar ? () => this._renderCalendar() : null,
       streams: hasActiveStreams ? () => this._renderStreams() : null,
       tautulli: this._tautulliConfigured !== false ? () => this._renderTautulli() : null
@@ -5508,12 +5601,13 @@ var _RenderRight = class {
     </div>`;
   }
   // ─────────────────────────────────────────────
-  // Active Streams (Plex / Jellyfin via hass.states)
+  // Active Streams (Plex via proxy poll + Jellyfin via hass.states)
   // ─────────────────────────────────────────────
   _renderStreams() {
     const states = this._hass?.states || {};
-    const streams = Object.entries(states).filter(([id, s]) => {
-      if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) return false;
+    const plexStreams = (this._plexSessions || []).filter((s) => !this._streamsEnded.has(s.id));
+    const jellyfinStreams = Object.entries(states).filter(([id, s]) => {
+      if (!id.startsWith("media_player.jellyfin_")) return false;
       if (s.state !== "playing" && s.state !== "paused") {
         this._streamsEnded.delete(id);
         return false;
@@ -5524,7 +5618,8 @@ var _RenderRight = class {
       const pos = attr.media_position || 0;
       if (dur > 0 && pos >= dur - 2) return false;
       return true;
-    }).map(([id, s]) => ({ id, state: s.state, attr: s.attributes || {} }));
+    }).map(([id, s]) => ({ id, source: "jellyfin", state: s.state, attr: s.attributes || {} }));
+    const streams = [...plexStreams, ...jellyfinStreams];
     this._streams = streams;
     this._startStreamsTimer(streams);
     this._syncStreamPopup();
@@ -5569,21 +5664,29 @@ var _RenderRight = class {
       if (anyNewlyEnded) this._reRenderSection("streams");
       let anyRestarted = false;
       for (const endedId of this._streamsEnded) {
-        const s = this._hass?.states?.[endedId];
-        if (!s) continue;
-        if (s.state !== "playing" && s.state !== "paused") continue;
-        const hassPos = s.attributes?.media_position || 0;
-        const hassDur = s.attributes?.media_duration || 0;
-        if (hassDur > 0 && hassPos < hassDur - 5) {
-          this._streamsEnded.delete(endedId);
-          anyRestarted = true;
+        if (endedId.startsWith("plex:")) {
+          const ps = (this._plexSessions || []).find((s) => s.id === endedId);
+          if (ps && ps.attr.media_position < ps.attr.media_duration - 5) {
+            this._streamsEnded.delete(endedId);
+            anyRestarted = true;
+          }
+        } else {
+          const s = this._hass?.states?.[endedId];
+          if (!s) continue;
+          if (s.state !== "playing" && s.state !== "paused") continue;
+          const hassPos = s.attributes?.media_position || 0;
+          const hassDur = s.attributes?.media_duration || 0;
+          if (hassDur > 0 && hassPos < hassDur - 5) {
+            this._streamsEnded.delete(endedId);
+            anyRestarted = true;
+          }
         }
       }
       if (anyRestarted) this._reRenderSection("streams");
     }, 1e3);
   }
-  _renderStreamCard({ id, state, attr }) {
-    const isPlex = id.startsWith("media_player.plex_");
+  _renderStreamCard({ id, source, state, attr }) {
+    const isPlex = source === "plex" || id.startsWith("plex:");
     const isPlaying = state === "playing";
     const contentType = attr.media_content_type || "";
     const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
@@ -7773,25 +7876,32 @@ var _PopupMethods = class {
   // ─────────────────────────────────────────────
   // Stream popup — open from stream card click
   // ─────────────────────────────────────────────
+  // Helper: get stream state+attr from Plex sessions or HA entity
+  _getStreamData(entityId) {
+    if (entityId.startsWith("plex:")) {
+      const ps = (this._plexSessions || []).find((s2) => s2.id === entityId);
+      return { streamState: ps?.state || "idle", attr: ps?.attr || {}, _machineIdentifier: ps?._machineIdentifier || null, _playerUrl: ps?._playerUrl || null };
+    }
+    const s = this._hass?.states?.[entityId];
+    return { streamState: s?.state || "idle", attr: s?.attributes || {}, _machineIdentifier: null, _playerUrl: null };
+  }
   async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
     const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
-    const streamAttr = this._hass?.states?.[entityId]?.attributes || {};
+    const { streamState, attr: streamAttr, _machineIdentifier, _playerUrl } = this._getStreamData(entityId);
     const isLiveTV = contentType === "channel" || !!streamAttr.media_channel || streamAttr.media_library_title === "Live TV";
     const isTV = isLiveTV || contentType === "tvshow" || contentType === "episode" || !!seriesTitle || !!streamAttr.media_series_title;
     if (isMusic) {
-      const s = this._hass?.states?.[entityId];
-      const attr = s?.attributes || {};
       this._popup = {
         _type: POPUP_TYPE.STREAM,
         _streamEntity: entityId,
-        _streamState: s?.state || "idle",
-        title: attr.media_title || "",
-        _artist: attr.media_artist || "",
-        _album: attr.media_album_name || "",
-        _duration: attr.media_duration || 0,
-        _position: attr.media_position || 0,
-        _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
-        _poster: attr.entity_picture || null
+        _streamState: streamState,
+        title: streamAttr.media_title || "",
+        _artist: streamAttr.media_artist || "",
+        _album: streamAttr.media_album_name || "",
+        _duration: streamAttr.media_duration || 0,
+        _position: streamAttr.media_position || 0,
+        _updatedAt: streamAttr.media_position_updated_at ? new Date(streamAttr.media_position_updated_at).getTime() : Date.now(),
+        _poster: streamAttr.entity_picture || null
       };
       this._renderPopupEl();
       return;
@@ -7825,19 +7935,17 @@ var _PopupMethods = class {
         this._renderPopupEl();
       }
     } else {
-      const s = this._hass?.states?.[entityId];
-      const attr = s?.attributes || {};
       this._popup = {
         _type: POPUP_TYPE.STREAM,
         _streamEntity: entityId,
-        _streamState: s?.state || "idle",
+        _streamState: streamState,
         title: trackTitle,
         _artist: "",
         _album: "",
-        _duration: attr.media_duration || 0,
-        _position: attr.media_position || 0,
-        _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
-        _poster: attr.entity_picture || null,
+        _duration: streamAttr.media_duration || 0,
+        _position: streamAttr.media_position || 0,
+        _updatedAt: streamAttr.media_position_updated_at ? new Date(streamAttr.media_position_updated_at).getTime() : Date.now(),
+        _poster: streamAttr.entity_picture || null,
         _noIS: false
       };
       this._renderPopupEl();
@@ -7846,15 +7954,28 @@ var _PopupMethods = class {
   // Attach live stream data to current popup (called after _openPopup for movie/TV from stream card)
   _attachStreamData(entityId) {
     if (!this._popup) return;
-    const s = this._hass?.states?.[entityId];
-    const attr = s?.attributes || {};
     this._popup._streamEntity = entityId;
-    this._popup._streamState = s?.state || "idle";
-    this._popup._duration = attr.media_duration || 0;
-    this._popup._position = attr.media_position || 0;
-    this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
     this._popup._plexMachineId = null;
-    if (entityId.startsWith("media_player.plex_")) this._fetchPlexMachineId(entityId);
+    this._popup._plexPlayerUrl = null;
+    if (entityId.startsWith("plex:")) {
+      const ps = (this._plexSessions || []).find((s) => s.id === entityId);
+      const attr = ps?.attr || {};
+      this._popup._streamState = ps?.state || "idle";
+      this._popup._duration = attr.media_duration || 0;
+      this._popup._position = attr.media_position || 0;
+      this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+      if (ps?._machineIdentifier) {
+        this._popup._plexMachineId = ps._machineIdentifier;
+        this._popup._plexPlayerUrl = ps._playerUrl || null;
+      }
+    } else {
+      const s = this._hass?.states?.[entityId];
+      const attr = s?.attributes || {};
+      this._popup._streamState = s?.state || "idle";
+      this._popup._duration = attr.media_duration || 0;
+      this._popup._position = attr.media_position || 0;
+      this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    }
   }
   async _fetchPlexMachineId(entityId) {
     try {
@@ -7888,23 +8009,25 @@ var _PopupMethods = class {
     } catch (_) {
     }
   }
-  // Seek via HA media_seek, or fall back to Plex direct API when HA seek unsupported
+  // Seek via Plex direct API (for plex: IDs) or HA media_seek (for Jellyfin)
   _doSeek(entityId, newPos) {
+    if (entityId.startsWith("plex:")) {
+      const machineId = this._popup?._plexMachineId;
+      if (machineId) {
+        this._hass.callApi("POST", "arr_stack/plex/player", {
+          action: "seekTo",
+          machineIdentifier: machineId,
+          offset: Math.round(newPos * 1e3),
+          playerUrl: this._popup?._plexPlayerUrl || null
+        }).catch(() => {
+        });
+      }
+      return;
+    }
     const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
     const canSeek = !!(supported & 2);
     if (canSeek) {
       this._hass.callService("media_player", "media_seek", { entity_id: entityId, seek_position: newPos });
-      return;
-    }
-    const machineId = this._popup?._plexMachineId;
-    if (machineId) {
-      this._hass.callApi("POST", "arr_stack/plex/player", {
-        action: "seekTo",
-        machineIdentifier: machineId,
-        offset: Math.round(newPos * 1e3),
-        playerUrl: this._popup?._plexPlayerUrl || null
-      }).catch(() => {
-      });
     }
   }
   // Update all progress fills for an entity across card + popup (call after seek)
@@ -7921,14 +8044,23 @@ var _PopupMethods = class {
   _syncStreamPopup() {
     const d = this._popup;
     if (!d || !d._streamEntity) return;
-    const s = this._hass?.states?.[d._streamEntity];
-    if (!s) return;
-    const attr = s.attributes || {};
+    let s_state, attr;
+    if (d._streamEntity.startsWith("plex:")) {
+      const ps = (this._plexSessions || []).find((ps2) => ps2.id === d._streamEntity);
+      if (!ps) return;
+      s_state = ps.state;
+      attr = ps.attr || {};
+    } else {
+      const s = this._hass?.states?.[d._streamEntity];
+      if (!s) return;
+      s_state = s.state;
+      attr = s.attributes || {};
+    }
     if (d._type === POPUP_TYPE.STREAM) {
-      if (attr.media_title === d.title && s.state === d._streamState) return;
+      if (attr.media_title === d.title && s_state === d._streamState) return;
       this._popup = {
         ...d,
-        _streamState: s.state,
+        _streamState: s_state,
         title: attr.media_title || d.title,
         _artist: attr.media_artist || "",
         _album: attr.media_album_name || "",
@@ -7940,15 +8072,15 @@ var _PopupMethods = class {
       this._renderPopupEl();
       return;
     }
-    if (s.state !== d._streamState) {
-      d._streamState = s.state;
+    if (s_state !== d._streamState) {
+      d._streamState = s_state;
       d._position = attr.media_position || 0;
       d._duration = attr.media_duration || 0;
       d._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
       const root = this.shadowRoot?.getElementById("popup-root");
       const btn = root?.querySelector('[data-action="stream-playpause"]');
       if (btn) {
-        const playing = s.state === "playing";
+        const playing = s_state === "playing";
         btn.innerHTML = playing ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
       }
     }
@@ -8393,8 +8525,9 @@ var _PopupMethods = class {
       }
       if (t.dataset.action === "stream-playpause") {
         const entityId = t.dataset.entity;
-        const curState = this._hass?.states?.[entityId]?.state;
-        const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
+        const isPlex = entityId.startsWith("plex:");
+        const curState = isPlex ? this._popup?._streamState || "playing" : this._hass?.states?.[entityId]?.state || "playing";
+        const supported = isPlex ? 0 : this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
         const canPause = supported & 1;
         const canPlay = supported & 16384;
         let svc;
@@ -10377,6 +10510,9 @@ var ArrStackCard = class extends HTMLElement {
     this._radarrQueueActive = /* @__PURE__ */ new Set();
     this._radarr2QueueFailed = /* @__PURE__ */ new Set();
     this._radarr2QueueActive = /* @__PURE__ */ new Set();
+    this._plexSessions = [];
+    this._plexConfigured = null;
+    this._plexLastFetch = 0;
     this._overseerrConfigured = null;
     this._seerrRadarr = null;
     this._seerrRadarr2 = null;
@@ -10485,7 +10621,7 @@ var ArrStackCard = class extends HTMLElement {
       const cur = hass.states || {};
       const old = prev.states || {};
       for (const id of Object.keys(cur)) {
-        if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) continue;
+        if (!id.startsWith("media_player.jellyfin_")) continue;
         const nowActive = cur[id]?.state === "playing" || cur[id]?.state === "paused";
         const wasActive = old[id]?.state === "playing" || old[id]?.state === "paused";
         if (nowActive && !wasActive) {
@@ -10495,6 +10631,7 @@ var ArrStackCard = class extends HTMLElement {
         }
       }
       for (const id of this._streamsEnded) {
+        if (!id.startsWith("media_player.jellyfin_")) continue;
         const curS = cur[id];
         if (!curS) {
           this._streamsEnded.delete(id);
@@ -10586,7 +10723,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_trending",
         icon: "mdi:trending-up",
         titleKey: "trendingMovies",
-        apiEndpoint: "overseerr/trending",
+        apiEndpoint: `${this._discoverSvc}/trending`,
         hasTvPending: true,
         renderCard: (m, i) => this._renderTrendingCard(m, i),
         getPosterUrl: (m) => tmdbUrl(m.posterPath || m.poster_path),
@@ -10596,7 +10733,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_popular",
         icon: "mdi:fire",
         titleKey: "popularMovies",
-        apiEndpoint: "overseerr/popular",
+        apiEndpoint: `${this._discoverSvc}/popular`,
         hasTvPending: false,
         renderCard: (m, i) => this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex: i }),
         getPosterUrl: (m) => tmdbUrl(m.posterPath),
@@ -10616,7 +10753,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_tvUpcoming",
         icon: "mdi:television-play",
         titleKey: "newShows",
-        apiEndpoint: "overseerr/tv_upcoming",
+        apiEndpoint: `${this._discoverSvc}/tv_upcoming`,
         hasTvPending: true,
         renderCard: (m, i) => this._renderTvUpcomingCard(m, { showRating: true, overlayIndex: i }),
         getPosterUrl: (m) => tmdbUrl(m.posterPath),
