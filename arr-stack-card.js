@@ -2968,8 +2968,17 @@ var _InteractiveSearch = class {
         if (!tmdbId) throw new Error(this._t("isMissingTmdb"));
         await this._fetchOverseerrRadarrSettings();
         const seerr = instance === "radarr2" ? this._seerrRadarr2 : this._seerrRadarr;
-        const profileId = seerr?.profileId ?? (this._radarrProfiles[0]?.id ?? 1);
-        const rootFolder = seerr?.rootFolder ?? "/movies";
+        if (instance === "radarr2") {
+          if (!this._radarr2Profiles?.length) await this._fetchRadarr2Profiles();
+          if (!this._radarr2RootFolders?.length) await this._fetchRadarr2RootFolders();
+        } else {
+          if (!this._radarrProfiles?.length) await this._fetchRadarrProfiles();
+          if (!this._radarrRootFolders?.length) await this._fetchRadarrRootFolders();
+        }
+        const profiles = instance === "radarr2" ? this._radarr2Profiles : this._radarrProfiles;
+        const rootFolders = instance === "radarr2" ? this._radarr2RootFolders : this._radarrRootFolders;
+        const profileId = seerr?.profileId ?? (profiles?.[0]?.id ?? 1);
+        const rootFolder = seerr?.rootFolder ?? rootFolders?.[0]?.path ?? "/movies";
         let addedMovie;
         try {
           addedMovie = await this._hass.callApi("POST", `arr_stack/${svc}/movie`, {
@@ -3519,10 +3528,12 @@ var _FetchMethods = class {
       await this._fetchOverseerrRadarrSettings();
     }
     await Promise.allSettled([
+      this._fetchRadarr2(),
+      this._fetchSonarr2()
+    ]);
+    await Promise.allSettled([
       this._fetchRadarr(),
       this._fetchSonarr(),
-      this._fetchRadarr2(),
-      this._fetchSonarr2(),
       this._fetchCalendar(),
       this._fetchOverseerr(),
       this._fetchTvUpcoming(),
