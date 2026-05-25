@@ -4493,6 +4493,24 @@ var _FetchMethods = class {
     } catch (e) {
     }
   }
+  async _fetchSonarr2Profiles() {
+    if (this._sonarr2Configured === false) return;
+    if (this._sonarr2Profiles?.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr2/profiles");
+      if (Array.isArray(data)) this._sonarr2Profiles = data;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarr2RootFolders() {
+    if (this._sonarr2Configured === false) return;
+    if (this._sonarr2RootFolders?.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr2/rootfolders");
+      if (Array.isArray(data)) this._sonarr2RootFolders = data;
+    } catch (e) {
+    }
+  }
   // ─────────────────────────────────────────────
   // Sonarr Interactive Search
   // ─────────────────────────────────────────────
@@ -4886,10 +4904,17 @@ var _FetchMethods = class {
         profileId = seerr.profileId ?? 1;
         rootFolder = seerr.rootFolder ?? "/tv";
       } else {
-        await this._fetchSonarrProfiles();
-        await this._fetchSonarrRootFolders();
-        profileId = this._sonarrProfiles?.[0]?.id ?? 1;
-        rootFolder = this._sonarrRootFolders?.[0]?.path ?? "/tv";
+        if (instance === "sonarr2") {
+          if (!this._sonarr2Profiles?.length) await this._fetchSonarr2Profiles();
+          if (!this._sonarr2RootFolders?.length) await this._fetchSonarr2RootFolders();
+          profileId = this._sonarr2Profiles?.[0]?.id ?? 1;
+          rootFolder = this._sonarr2RootFolders?.[0]?.path ?? "/tv";
+        } else {
+          await this._fetchSonarrProfiles();
+          await this._fetchSonarrRootFolders();
+          profileId = this._sonarrProfiles?.[0]?.id ?? 1;
+          rootFolder = this._sonarrRootFolders?.[0]?.path ?? "/tv";
+        }
       }
       let added;
       try {
@@ -11453,6 +11478,8 @@ var ArrStackCard = class extends HTMLElement {
     this._radarr2Profiles = [];
     this._radarr2Tags = [];
     this._radarr2RootFolders = [];
+    this._sonarr2Profiles = [];
+    this._sonarr2RootFolders = [];
     this._tvRequestPending = null;
     this._overlay = { section: null, page: 0, tvPending: null };
     this._overlayApiPage = {};
