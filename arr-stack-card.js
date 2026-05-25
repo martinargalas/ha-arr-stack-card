@@ -4492,13 +4492,10 @@ var _FetchMethods = class {
   }
   async _ackTautulliSharing() {
     if (!this._tautulli) return;
-    const { sharingUsers, ackedIps: prev } = this._tautulli;
-    const act = this._tautulli.activity || {};
-    const sessions = act.sessions || [];
+    const { sharingUsers, ackedIps: prev, ipReport } = this._tautulli;
     const updated = { ...prev };
     sharingUsers.forEach((name) => {
-      const userSessions = sessions.filter((s) => (s.friendly_name || s.username) === name);
-      const ips = userSessions.map((s) => s.ip_address).filter(Boolean);
+      const ips = (ipReport?.[name] || []).map((e) => e.ip);
       const existing = new Set(prev[name] || []);
       ips.forEach((ip) => existing.add(ip));
       updated[name] = [...existing];
@@ -4910,7 +4907,7 @@ var _RenderLeft = class {
     const typeLabel = isMovie ? this._t("typeMovie") : this._t("typeTv");
     const icon = isMovie ? "\u{1F3AC}" : "\u{1F4FA}";
     const tmdbId = media.tmdbId ?? 0;
-    const imgHtml = poster ? `<img src="https://image.tmdb.org/t/p/w342${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(req.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${icon}</div>`;
+    const imgHtml = poster ? `<img src="${poster.startsWith("http") ? poster : `https://image.tmdb.org/t/p/w342${poster}`}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(req.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${icon}</div>`;
     return `
     <div class="mc" data-popup="${isMovie ? "movie" : "tv"}" data-tmdbid="${tmdbId}" data-title="${title}">
       ${imgHtml}
@@ -5064,7 +5061,7 @@ var _RenderRight = class {
       const tmdbId = m.id;
       const popupType = isMovie ? POPUP_TYPE.MOVIE : POPUP_TYPE.TV;
       const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-      const poster = m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
+      const poster = m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
       const radarrEntry = isMovie && Array.isArray(this._radarr) ? this._radarr.find((r) => r.tmdbId === tmdbId) : null;
       const sonarrEntry = !isMovie && Array.isArray(this._sonarr) ? this._sonarr.find((s) => tmdbId && s.tmdbId === tmdbId) || this._sonarr.find((s) => m.tvdbId && s.tvdbId === m.tvdbId) : null;
       const mediaStatus = m.mediaInfo?.status;
@@ -5375,7 +5372,7 @@ var _RenderRight = class {
     const dotsHtml = multiPage ? `<div class="sv-dots">${pages.map(
       (_, i) => `<span class="sv-dot${i === 0 ? " sv-dot-active" : ""}" data-pg="${i}"></span>`
     ).join("")}</div>` : "";
-    const poster = p.show.posterPath ? `<img src="https://image.tmdb.org/t/p/w92${p.show.posterPath}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
+    const poster = p.show.posterPath ? `<img src="${p.show.posterPath.startsWith("http") ? p.show.posterPath : `https://image.tmdb.org/t/p/w92${p.show.posterPath}`}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
     return `
     <div class="req-overlay tv-req-overlay">
       <div class="tv-req-inner">
@@ -5561,7 +5558,7 @@ var _RenderRight = class {
     const dotsHtml = multiPage ? `<div class="sv-dots">${pages.map(
       (_, i) => `<span class="sv-dot${i === 0 ? " sv-dot-active" : ""}" data-pg="${i}"></span>`
     ).join("")}</div>` : "";
-    const poster = p.show.posterPath ? `<img src="https://image.tmdb.org/t/p/w92${p.show.posterPath}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
+    const poster = p.show.posterPath ? `<img src="${p.show.posterPath.startsWith("http") ? p.show.posterPath : `https://image.tmdb.org/t/p/w92${p.show.posterPath}`}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
     return `
     <div class="tv-req-inner">
       <div class="tv-req-top">
@@ -6123,7 +6120,7 @@ var _MediaCardMethods = class {
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const tagHtml = typeTag ? `<span class="media-type-tag"><span class="b-txt">${typeTag}</span></span>` : "";
-    const img = this._mcImg(m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : null, "\u{1F4FA}", m.id);
+    const img = this._mcImg(m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w342${m.posterPath}` : null, "\u{1F4FA}", m.id);
     return `
     <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
@@ -6196,7 +6193,7 @@ var _MediaCardMethods = class {
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const posterPath = m.posterPath || m.poster_path || null;
-    const img = this._mcImg(posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m.id);
+    const img = this._mcImg(posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m.id);
     const tagHtml = typeTag ? `<span class="media-type-tag"><span class="b-txt">${typeTag}</span></span>` : "";
     return `
     <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
@@ -8189,7 +8186,7 @@ var _PopupMethods = class {
         overview: show.overview || "",
         firstAirDate: show.firstAirDate || "",
         genres: (show.genreIds || []).map((id) => ({ name: String(id) })),
-        _localPosterUrl: show.posterPath ? `https://image.tmdb.org/t/p/w342${show.posterPath}` : null,
+        _localPosterUrl: show.posterPath ? show.posterPath.startsWith("http") ? show.posterPath : `https://image.tmdb.org/t/p/w342${show.posterPath}` : null,
         relatedVideos: []
       };
     }
@@ -8671,7 +8668,7 @@ var _PopupMethods = class {
     const backdropPath = d.backdropPath || null;
     const posterPath = d.posterPath || null;
     const backdropUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : d._localBackdropUrl || "";
-    const posterUrl = posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : d._localPosterUrl || "";
+    const posterUrl = posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : d._localPosterUrl || "";
     const backdropStyle = backdropUrl ? `background-image:url('${backdropUrl}')` : posterUrl ? `background-image:url('${posterUrl}');background-size:cover;background-position:center;filter:blur(6px) brightness(0.4)` : "background:linear-gradient(135deg,rgba(20,20,40,1),rgba(40,20,60,1))";
     const videos = Array.isArray(d.relatedVideos) ? d.relatedVideos : [];
     const trailer = videos.find((v) => v.site === "YouTube" && v.type === "Trailer") || videos.find((v) => v.site === "YouTube");
@@ -10761,7 +10758,7 @@ var ArrStackCard = class extends HTMLElement {
   }
   // Returns config object for a section overlay (icon, data key, render fn, etc.)
   _getSectionOverlayConfig(section) {
-    const tmdbUrl = (path) => path ? `https://image.tmdb.org/t/p/w92${path}` : null;
+    const tmdbUrl = (path) => !path ? null : path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w92${path}`;
     const cfgs = {
       trending: {
         dataKey: "_trending",
