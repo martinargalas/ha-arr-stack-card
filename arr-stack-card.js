@@ -506,6 +506,14 @@ var ARR_I18N = {
     snAddingToSonarr: "P\u0159id\xE1v\xE1m seri\xE1l do Sonarru\u2026",
     snNoSonarrId: "Seri\xE1l se nepoda\u0159ilo p\u0159idat do Sonarru",
     snEpisode: "Epizoda",
+    // Auto Search
+    asSearchMovie: "Search Movie",
+    asSearchSeries: "Search Series",
+    asMovieConfirm: "Film bude p\u0159id\xE1n do Radarru a spust\xED se automatick\xE9 vyhled\xE1v\xE1n\xED.",
+    asSeriesConfirm: "Seri\xE1l bude p\u0159id\xE1n do Sonarru. Vyberte sez\xF3nu pro vyhled\xE1v\xE1n\xED.",
+    asAdding: "P\u0159id\xE1v\xE1m\u2026",
+    asSearching: "Spou\u0161t\xEDm vyhled\xE1v\xE1n\xED\u2026",
+    asSearchDone: "Vyhled\xE1v\xE1n\xED spu\u0161t\u011Bno",
     snSeasonPack: "season pack",
     snBack: "Zp\u011Bt",
     // Search
@@ -610,6 +618,14 @@ var ARR_I18N = {
     snAddingToSonarr: "Adding series to Sonarr\u2026",
     snNoSonarrId: "Failed to add series to Sonarr",
     snEpisode: "Episode",
+    // Auto Search
+    asSearchMovie: "Search Movie",
+    asSearchSeries: "Search Series",
+    asMovieConfirm: "Movie will be added to Radarr and automatic search will start.",
+    asSeriesConfirm: "Series will be added to Sonarr. Select a season to search.",
+    asAdding: "Adding\u2026",
+    asSearching: "Starting search\u2026",
+    asSearchDone: "Search started",
     snSeasonPack: "season pack",
     snBack: "Back",
     // Search
@@ -1908,6 +1924,7 @@ var STYLES = `
       .ic--none        { color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.08); background: transparent; }
 
       .is-open-btn {
+        position: relative;
         display: inline-flex; align-items: center; gap: 5px;
         padding: 0 12px 0 9px; height: 28px; box-sizing: border-box; border-radius: 20px;
         border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg);
@@ -1918,7 +1935,19 @@ var STYLES = `
       }
       .is-open-btn:hover  { background: var(--is-btn-hbg); color: var(--is-btn-hclr); }
       .is-open-btn.active { background: var(--is-btn-abg); border-color: var(--is-btn-abdr); color: var(--is-btn-aclr); }
-      .is-btn-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; margin-top: 4px; height: 28px; overflow: hidden; }
+      .is-open-btn.in-lib { background: rgba(74,222,128,0.10); border-color: rgba(74,222,128,0.38); color: #4ade80; }
+      .is-open-btn.in-lib:hover { background: rgba(74,222,128,0.20); border-color: rgba(74,222,128,0.55); color: #4ade80; }
+      .as-done-icon { color: #4ade80; font-size:13px; font-weight:700; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:26px; }
+      .as-btn-badge { position:absolute; top:-5px; right:-5px; width:13px; height:13px; border-radius:50%; font-size:8px; font-weight:900; display:flex; align-items:center; justify-content:center; z-index:2; line-height:1; pointer-events:none; }
+      .as-btn-badge--ok  { background:#4ade80; color:#000; }
+      .as-btn-badge--err { background:#f87171; color:#fff; }
+      .as-btn-badge--dl  { background:rgba(59,130,246,0.9); color:#fff; }
+      .as-done-icon--dl  { color: rgba(59,130,246,0.9); }
+      .as-dl-bar { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,0.12); overflow:hidden; min-width:30px; max-width:60px; }
+      .as-dl-bar-fill { height:100%; background:rgba(59,130,246,0.8); border-radius:2px; transition:width 0.5s linear; }
+      .popup-day .as-dl-bar { background:rgba(0,0,0,0.10); }
+      .popup-day .as-dl-bar-fill { background:rgba(37,99,235,0.75); }
+      .is-btn-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; margin-top: 4px; height: 28px; overflow: visible; }
       .is-btn-row .is-open-btn { margin-top: 0; height: 28px; box-sizing: border-box; }
       .is-collapse-btn { padding: 0; width: 28px; height: 28px; border-radius: 50%; justify-content: center; flex-shrink: 0; }
 
@@ -1932,6 +1961,20 @@ var STYLES = `
         background: rgba(255,149,0,0.14); border-color: rgba(255,149,0,0.40);
         color: rgba(160,80,0,0.90);
       }
+      .popup-day .ic--none  { color: rgba(0,0,0,0.35); border-color: rgba(0,0,0,0.15); background: rgba(0,0,0,0.04); }
+      .popup-day .ic--added { color: rgba(0,0,0,0.50); border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.04); }
+      .popup-day .action-spinner { border-color: rgba(0,0,0,0.15); border-top-color: rgba(0,0,0,0.65); }
+      .popup-day .popup-ctrl-btn { color: rgba(0,0,0,0.75); background: rgba(0,0,0,0.07); }
+      .popup-day .popup-ctrl-btn:hover { background: rgba(0,0,0,0.13); }
+      .popup-day .popup-ctrl-btn-main { background: rgba(229,160,13,0.25); color: rgba(0,0,0,0.80); }
+      .popup-day .popup-ctrl-btn-main:hover { background: rgba(229,160,13,0.42); }
+      .popup-day .stream-prog-track { background: rgba(0,0,0,0.12); }
+      .popup-day .stream-paused-overlay { color: rgba(0,0,0,0.7); }
+      .stream-popup-track { background: rgba(255,255,255,0.15); }
+      .stream-popup-fill  { background: rgba(255,255,255,0.7); }
+      .popup-day .stream-popup-track { background: rgba(0,0,0,0.12); }
+      .popup-day .stream-popup-fill  { background: rgba(229,160,13,0.9); }
+      .popup-day .stream-popup-time { color: rgba(0,0,0,0.45) !important; }
 
       .remove-lib-btn  { border-color: rgba(255,120,30,0.45); color: rgba(255,150,80,0.9); height: 28px; box-sizing: border-box; }
       .remove-lib-btn:hover  { background: rgba(255,120,30,0.18); border-color: rgba(255,120,30,0.70); color: #ff9640; }
@@ -3000,6 +3043,7 @@ var _InteractiveSearch = class {
       release.movieId = this._isInstance === "radarr2" ? this._popup._radarr2Id : this._popup._radarrId;
       await this._hass.callApi("POST", `arr_stack/${svc}/release`, release);
       this._isGrabbed.add(guid);
+      this._dlTriggeredBy = "is";
     } catch (e) {
       console.error("[arr-card] grab error:", e);
       const prev = this._isError;
@@ -3064,10 +3108,16 @@ var _SonarrIS = class {
       return `<div class="sn-is-section"><div class="is-loading">${this._t("snNotInSonarr")}</div></div>`;
     }
     const seasons = (series.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
-    const rows = seasons.map((s) => this._renderSnSeasonRow(s)).join("");
+    const PER_PAGE = 4;
+    const totalPages = Math.max(1, Math.ceil(seasons.length / PER_PAGE));
+    const page = Math.min(this._snSeasonsPage || 0, totalPages - 1);
+    const sliced = seasons.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+    const rows = sliced.map((s) => this._renderSnSeasonRow(s)).join("");
+    const paginationHtml = this._tlMobPag("sn-spage", page, totalPages);
     return `<div class="sn-is-section">
       <div class="sn-seasons-label">${this._t("snSeasonsLabel")}</div>
-      ${rows}
+      <div style="min-height:156px;display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <div style="padding-bottom:12px">${paginationHtml}</div>
     </div>`;
   }
   _renderSnSeasonRow(season) {
@@ -3311,6 +3361,153 @@ var _SonarrIS = class {
 };
 var sonarrIsMixin = _SonarrIS.prototype;
 
+// src/render/auto-search.js
+var POPUP_TYPE_AS = { RADARR: "radarr", MOVIE: "movie", SONARR: "sonarr", TV: "tv" };
+var _AutoSearchMethods = class {
+  // ─── Entry point ─────────────────────────────────────────────────────────
+  _renderAsSection() {
+    if (!this._asOpen) return "";
+    const d = this._popup;
+    const isMovieType = d._type === POPUP_TYPE_AS.RADARR || d._type === POPUP_TYPE_AS.MOVIE;
+    return isMovieType ? this._renderAsMoviePanel() : this._renderAsSeasonsView();
+  }
+  // ─── Movie panel ─────────────────────────────────────────────────────────
+  _renderAsMoviePanel() {
+    const checkSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const crossSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    if (this._asState === "confirm") {
+      return `<div class="sn-is-section">
+        <div class="is-confirm-wrap">
+          <div class="is-confirm-msg">${this._t("asMovieConfirm")}</div>
+          <div class="is-confirm-actions">
+            <button class="is-confirm-btn is-confirm-yes" data-action="as-confirm-yes">${checkSvg}</button>
+            <button class="is-confirm-btn is-confirm-no" data-action="as-confirm-no">${crossSvg}</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    return "";
+  }
+  // ─── Seasons view (Sonarr) ────────────────────────────────────────────────
+  _renderAsSeasonsView() {
+    const d = this._popup;
+    const series = this._asInstance === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+    const checkSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const crossSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const spinner = `<span class="action-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:var(--is-blue)"></span>`;
+    if (!series) {
+      if (this._asState === "confirm") {
+        return `<div class="sn-is-section">
+          <div class="is-confirm-wrap">
+            <div class="is-confirm-msg">${this._t("asSeriesConfirm")}</div>
+            <div class="is-confirm-actions">
+              <button class="is-confirm-btn is-confirm-yes" data-action="as-confirm-yes">${checkSvg}</button>
+              <button class="is-confirm-btn is-confirm-no" data-action="as-confirm-no">${crossSvg}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+      return "";
+    }
+    const seasons = (series.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
+    const PER_PAGE = 4;
+    const totalPages = Math.max(1, Math.ceil(seasons.length / PER_PAGE));
+    const page = Math.min(this._snSeasonsPage || 0, totalPages - 1);
+    const sliced = seasons.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+    const rows = sliced.map((s) => this._renderAsSeasonRow(s)).join("");
+    const pagination = this._tlMobPag("sn-spage", page, totalPages);
+    return `<div class="sn-is-section">
+      <div class="sn-seasons-label">${this._t("snSeasonsLabel")}</div>
+      <div style="min-height:156px;display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <div style="padding-bottom:12px">${pagination}</div>
+    </div>`;
+  }
+  _renderAsSeasonRow(season) {
+    const n = season.seasonNumber;
+    const exp = this._snExpandedSeasons.has(n);
+    const stat = season.statistics || {};
+    const have = stat.episodeFileCount ?? 0;
+    const tot = stat.totalEpisodeCount ?? stat.episodeCount ?? 0;
+    const pct = tot > 0 ? Math.round(have / tot * 100) : 0;
+    const key = `season:${n}`;
+    const isSearching = this._asSearchingItems.has(key);
+    const isSearched = this._asSearchedItems.has(key);
+    const _series = this._asInstance === "sonarr2" ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
+    const _qSeasons = this._asInstance === "sonarr2" ? this._sonarr2QueueSeasons || /* @__PURE__ */ new Set() : this._sonarrQueueSeasons || /* @__PURE__ */ new Set();
+    const _qSeasonPct = this._asInstance === "sonarr2" ? this._sonarr2QueueSeasonPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeasonPct || /* @__PURE__ */ new Map();
+    const _seasonKey = _series?.id != null ? `${_series.id}:${n}` : null;
+    const isDownloading = this._asDownloadingItems.has(key) || _seasonKey && _qSeasons.has(_seasonKey);
+    const dlPct = isDownloading && _seasonKey ? _qSeasonPct.get(_seasonKey) ?? null : null;
+    const searchSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+    const chevron = `<svg class="sn-season-chevron${exp ? " open" : ""}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    let searchBtn;
+    if (isSearching) {
+      searchBtn = `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`;
+    } else if (isDownloading) {
+      searchBtn = `<span class="as-done-icon as-done-icon--dl"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg></span>`;
+    } else if (isSearched) {
+      searchBtn = `<span class="as-done-icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
+    } else {
+      searchBtn = `<button class="btn-person" data-action="as-season-search" data-season="${n}" title="Search season ${n}">${searchSvg}</button>`;
+    }
+    const episodesHtml = exp ? this._renderAsEpisodesPanel(n) : "";
+    return `<div class="sn-season-row" data-season="${n}">
+      <div class="sn-season-header">
+        <button class="sn-expand" data-action="sn-season-toggle" data-season="${n}" title="${this._t("snExpandEpisodes")}">${chevron}</button>
+        <span class="sn-season-title">${this._t("snSeasonTitle")} ${n}</span>
+        <span class="sn-season-stat">${have}/${tot}</span>
+        <div class="sn-season-bar"><div class="sn-season-bar-fill" style="width:${pct}%"></div></div>
+        ${searchBtn}
+      </div>
+      ${episodesHtml}
+    </div>`;
+  }
+  _renderAsEpisodesPanel(seasonNumber) {
+    const eps = this._snEpisodes.get(seasonNumber);
+    if (!eps) {
+      return `<div class="sn-episodes sn-episodes-loading">
+        <span class="action-spinner" style="width:14px;height:14px;border-width:1.5px"></span>
+      </div>`;
+    }
+    if (eps.length === 0) {
+      return `<div class="sn-episodes"><span style="color:rgba(255,255,255,0.4);font-size:11px">${this._t("snNoEpisodes")}</span></div>`;
+    }
+    return `<div class="sn-episodes">${eps.map((ep) => this._renderAsEpRow(ep)).join("")}</div>`;
+  }
+  _renderAsEpRow(ep) {
+    const key = `ep:${ep.id}`;
+    const isSearching = this._asSearchingItems.has(key);
+    const isSearched = this._asSearchedItems.has(key);
+    const _qEpisodes = this._asInstance === "sonarr2" ? this._sonarr2QueueEpisodes || /* @__PURE__ */ new Set() : this._sonarrQueueEpisodes || /* @__PURE__ */ new Set();
+    const _qEpPct = this._asInstance === "sonarr2" ? this._sonarr2QueueEpPct || /* @__PURE__ */ new Map() : this._sonarrQueueEpPct || /* @__PURE__ */ new Map();
+    const isDownloading = this._asDownloadingItems.has(key) || _qEpisodes.has(ep.id);
+    const dlPct = isDownloading ? _qEpPct.get(ep.id) ?? null : null;
+    const hasFile = !!ep.hasFile;
+    const epNum = `S${String(ep.seasonNumber).padStart(2, "0")}E${String(ep.episodeNumber).padStart(2, "0")}`;
+    const searchSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+    let searchBtn;
+    if (isSearching) {
+      searchBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;
+    } else if (isDownloading) {
+      const bar = dlPct !== null ? `<div class="as-dl-bar" style="max-width:40px"><div class="as-dl-bar-fill" style="width:${dlPct}%"></div></div>` : "";
+      searchBtn = `<span class="as-done-icon as-done-icon--dl" style="display:inline-flex;align-items:center;gap:3px">${bar}<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg></span>`;
+    } else if (isSearched) {
+      searchBtn = `<span class="as-done-icon"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
+    } else {
+      searchBtn = `<button class="btn-person btn-person-sm" data-action="as-ep-search" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Search episode">${searchSvg}</button>`;
+    }
+    return `<div class="sn-ep-item">
+      <div class="sn-ep-row${hasFile ? " has-file" : ""}">
+        <span class="sn-ep-num">${epNum}</span>
+        <span class="sn-ep-title">${this._escHtml(ep.title || "")}</span>
+        ${ep.airDate ? `<span class="sn-ep-date">${ep.airDate.slice(0, 10)}</span>` : ""}
+        ${searchBtn}
+      </div>
+    </div>`;
+  }
+};
+var autoSearchMixin = _AutoSearchMethods.prototype;
+
 // src/fetch/index.js
 var _FetchMethods = class {
   _callApi(method, path, body) {
@@ -3517,6 +3714,10 @@ var _FetchMethods = class {
     if (this._radarr2Configured === false) return;
     try {
       const data = await this._callApi("GET", "arr_stack/radarr2/movies");
+      if (data && data._notConfigured) {
+        this._radarr2Configured = false;
+        return;
+      }
       const filtered = data.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
       this._radarr2 = filtered.sort((a, b) => new Date(b.added) - new Date(a.added));
       this._radarr2Total = filtered.length;
@@ -3532,6 +3733,10 @@ var _FetchMethods = class {
     if (this._sonarr2Configured === false) return;
     try {
       const data = await this._callApi("GET", "arr_stack/sonarr2/series");
+      if (data && data._notConfigured) {
+        this._sonarr2Configured = false;
+        return;
+      }
       const filtered = data.filter((s) => s.added && s.added !== "0001-01-01T00:00:00Z");
       this._sonarr2 = filtered.sort((a, b) => new Date(b.added) - new Date(a.added));
       this._sonarr2Total = filtered.length;
@@ -3961,17 +4166,22 @@ var _FetchMethods = class {
       const records = data.records || data;
       const failed = /* @__PURE__ */ new Set();
       const active = /* @__PURE__ */ new Set();
+      const pct = /* @__PURE__ */ new Map();
       for (const item of Array.isArray(records) ? records : []) {
         if (!item.movieId) continue;
         const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
         if (bad) {
           failed.add(item.movieId);
-        } else {
-          active.add(item.movieId);
+          continue;
         }
+        active.add(item.movieId);
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        pct.set(item.movieId, sz > 0 ? Math.round((sz - sl) / sz * 100) : 0);
       }
       this._radarrQueueFailed = failed;
       this._radarrQueueActive = active;
+      this._radarrQueuePct = pct;
     } catch (e) {
       console.error("[arr-card] Radarr queue fetch error:", e);
     }
@@ -3983,17 +4193,70 @@ var _FetchMethods = class {
       const records = data.records || data;
       const failed = /* @__PURE__ */ new Set();
       const active = /* @__PURE__ */ new Set();
+      const pct = /* @__PURE__ */ new Map();
       for (const item of Array.isArray(records) ? records : []) {
         if (!item.movieId) continue;
         const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
         if (bad) {
           failed.add(item.movieId);
-        } else {
-          active.add(item.movieId);
+          continue;
         }
+        active.add(item.movieId);
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        pct.set(item.movieId, sz > 0 ? Math.round((sz - sl) / sz * 100) : 0);
       }
       this._radarr2QueueFailed = failed;
       this._radarr2QueueActive = active;
+      this._radarr2QueuePct = pct;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarrQueue(instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    const seasonsKey = instance === "sonarr2" ? "_sonarr2QueueSeasons" : "_sonarrQueueSeasons";
+    const episodesKey = instance === "sonarr2" ? "_sonarr2QueueEpisodes" : "_sonarrQueueEpisodes";
+    const epPctKey = instance === "sonarr2" ? "_sonarr2QueueEpPct" : "_sonarrQueueEpPct";
+    const seasonPctKey = instance === "sonarr2" ? "_sonarr2QueueSeasonPct" : "_sonarrQueueSeasonPct";
+    const seriesPctKey = instance === "sonarr2" ? "_sonarr2QueueSeriesPct" : "_sonarrQueueSeriesPct";
+    try {
+      const data = await this._callApi("GET", `arr_stack/${svc}/queue`);
+      const records = Array.isArray(data) ? data : data.records || [];
+      const seasons = /* @__PURE__ */ new Set();
+      const episodes = /* @__PURE__ */ new Set();
+      const epPct = /* @__PURE__ */ new Map();
+      const seasonData = /* @__PURE__ */ new Map();
+      const seriesData = /* @__PURE__ */ new Map();
+      for (const item of records) {
+        const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+        if (bad) continue;
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        const pct = sz > 0 ? Math.round((sz - sl) / sz * 100) : 0;
+        if (item.seriesId != null && item.seasonNumber != null) {
+          const sk = `${item.seriesId}:${item.seasonNumber}`;
+          seasons.add(sk);
+          const prev = seasonData.get(sk) || { size: 0, sizeleft: 0 };
+          seasonData.set(sk, { size: prev.size + sz, sizeleft: prev.sizeleft + sl });
+          const sprev = seriesData.get(item.seriesId) || { size: 0, sizeleft: 0 };
+          seriesData.set(item.seriesId, { size: sprev.size + sz, sizeleft: sprev.sizeleft + sl });
+        }
+        if (item.episodeId != null) {
+          episodes.add(item.episodeId);
+          epPct.set(item.episodeId, pct);
+        }
+      }
+      const seasonPct = /* @__PURE__ */ new Map();
+      for (const [sk, { size, sizeleft }] of seasonData)
+        seasonPct.set(sk, size > 0 ? Math.round((size - sizeleft) / size * 100) : 0);
+      const seriesPct = /* @__PURE__ */ new Map();
+      for (const [sid, { size, sizeleft }] of seriesData)
+        seriesPct.set(sid, size > 0 ? Math.round((size - sizeleft) / size * 100) : 0);
+      this[seasonsKey] = seasons;
+      this[episodesKey] = episodes;
+      this[epPctKey] = epPct;
+      this[seasonPctKey] = seasonPct;
+      this[seriesPctKey] = seriesPct;
     } catch (e) {
     }
   }
@@ -4319,6 +4582,7 @@ var _FetchMethods = class {
       const snSvc = this._snIsInstance === "sonarr2" ? "sonarr2" : "sonarr";
       await this._callApi("POST", `arr_stack/${snSvc}/release`, release);
       this._snIsGrabbed.add(guid);
+      this._dlTriggeredBy = "is";
     } catch (e) {
       console.error("[arr-card] Sonarr grab error:", e);
       const prev = this._snIsError;
@@ -4350,6 +4614,7 @@ var _FetchMethods = class {
           releaseDate: m.year ? `${m.year}-01-01` : "",
           genres: (m.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
           ratings: m.ratings || {},
+          voteAverage: m.ratings?.tmdb?.value || m.ratings?.imdb?.value || 0,
           images: m.images || [],
           youTubeTrailerId: m.youTubeTrailerId || null,
           mediaInfo: null
@@ -4364,6 +4629,7 @@ var _FetchMethods = class {
           firstAirDate: s.year ? `${s.year}-01-01` : "",
           genres: (s.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
           ratings: s.ratings || {},
+          voteAverage: s.ratings?.tmdb?.value || s.ratings?.imdb?.value || s.ratings?.value || 0,
           images: s.images || [],
           youTubeTrailerId: s.youTubeTrailerId || null,
           mediaInfo: null
@@ -4514,6 +4780,222 @@ var _FetchMethods = class {
       this._reRenderRight();
     } catch (e) {
       console.warn("[arr-card] Tautulli ack error:", e);
+    }
+  }
+  // ─────────────────────────────────────────────
+  // Auto Search — Radarr
+  // ─────────────────────────────────────────────
+  async _triggerRadarrAutoSearch(instance = "radarr") {
+    const svc = instance === "radarr2" ? "radarr2" : "radarr";
+    const d = this._popup;
+    const movieId = instance === "radarr2" ? d._radarr2Id : d._radarrId;
+    const _asDelay = (ms) => new Promise((r) => setTimeout(r, ms));
+    this._dlTriggeredBy = "as";
+    if (movieId) {
+      this._asMovieSearching = true;
+      this._renderPopupEl();
+      try {
+        await Promise.all([
+          this._callApi("POST", `arr_stack/${svc}/command`, { name: "MoviesSearch", movieIds: [movieId] }),
+          _asDelay(1e3)
+        ]);
+        this._asMovieSearched = true;
+        this._asState = "done";
+        this._asPollForDownload(`movie:${instance}`, svc, movieId);
+      } catch (e) {
+        this._asState = "error";
+        this._asError = e.message || this._t("isLoadError");
+      }
+      this._asMovieSearching = false;
+      this._renderPopupEl();
+    } else {
+      this._asState = "adding";
+      this._renderPopupEl();
+      try {
+        const tmdbId = d.id || d.tmdbId;
+        if (!tmdbId) throw new Error(this._t("isMissingTmdb"));
+        const seerr = instance === "radarr2" ? this._seerrRadarr2 : this._seerrRadarr;
+        if (instance === "radarr2") {
+          if (!this._radarr2Profiles?.length) await this._fetchRadarr2Profiles();
+          if (!this._radarr2RootFolders?.length) await this._fetchRadarr2RootFolders();
+        } else {
+          if (!this._radarrProfiles?.length) await this._fetchRadarrProfiles();
+          if (!this._radarrRootFolders?.length) await this._fetchRadarrRootFolders();
+        }
+        const profiles = instance === "radarr2" ? this._radarr2Profiles : this._radarrProfiles;
+        const rootFolders = instance === "radarr2" ? this._radarr2RootFolders : this._radarrRootFolders;
+        const pId = seerr?.profileId ? parseInt(seerr.profileId) : profiles?.[0]?.id ?? 1;
+        const rf = seerr?.rootFolder || rootFolders?.[0]?.path || "/movies";
+        const body = { tmdbId: parseInt(tmdbId), qualityProfileId: pId, rootFolderPath: rf, monitored: true, addOptions: { searchForMovie: true } };
+        const [added] = await Promise.all([
+          this._callApi("POST", `arr_stack/${svc}/movie`, body),
+          _asDelay(1e3)
+        ]);
+        if (added?.id) {
+          if (instance === "radarr2") {
+            if (!this._radarr2) this._radarr2 = [];
+            if (!this._radarr2.find((m) => m.id === added.id)) this._radarr2.push(added);
+            d._radarr2Id = added.id;
+          } else {
+            if (!this._radarr) this._radarr = [];
+            if (!this._radarr.find((m) => m.id === added.id)) this._radarr.push(added);
+            d._radarrId = added.id;
+          }
+        }
+        this._asMovieSearched = true;
+        this._asState = "done";
+        const newMovieId = instance === "radarr2" ? d._radarr2Id : d._radarrId;
+        if (newMovieId) this._asPollForDownload(`movie:${instance}`, svc, newMovieId);
+      } catch (e) {
+        this._asState = "error";
+        this._asError = e.message || this._t("isLoadError");
+      }
+      this._renderPopupEl();
+    }
+  }
+  // ─────────────────────────────────────────────
+  // Auto Search — Sonarr (add series + seasons)
+  // ─────────────────────────────────────────────
+  async _addSeriesForAs(instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    this._dlTriggeredBy = "as";
+    this._asState = "adding";
+    this._renderPopupEl();
+    try {
+      const d = this._popup;
+      const tvdbId = d.externalIds?.tvdbId || d._tvdbId;
+      if (!tvdbId) throw new Error(this._t("snNoSonarrId"));
+      const lookupResults = await this._callApi("GET", `arr_stack/${svc}/lookup?tvdbId=${tvdbId}`);
+      const seriesData = Array.isArray(lookupResults) ? lookupResults[0] : lookupResults;
+      if (!seriesData) throw new Error(this._t("snNoSonarrId"));
+      if (this._overseerrConfigured !== false && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      const seerr = instance === "sonarr2" ? this._seerrSonarr2 : this._seerrSonarr;
+      let profileId, rootFolder;
+      if (seerr) {
+        profileId = seerr.profileId ?? 1;
+        rootFolder = seerr.rootFolder ?? "/tv";
+      } else {
+        await this._fetchSonarrProfiles();
+        await this._fetchSonarrRootFolders();
+        profileId = this._sonarrProfiles?.[0]?.id ?? 1;
+        rootFolder = this._sonarrRootFolders?.[0]?.path ?? "/tv";
+      }
+      let added;
+      try {
+        added = await this._callApi("POST", `arr_stack/${svc}/series`, {
+          ...seriesData,
+          qualityProfileId: parseInt(profileId),
+          rootFolderPath: rootFolder,
+          monitored: false,
+          addOptions: { searchForMissingEpisodes: false, searchForCutoffUnmetEpisodes: false, monitor: "none" }
+        });
+      } catch (_) {
+      }
+      if (instance === "sonarr2") {
+        await this._fetchSonarr2();
+        const found = (this._sonarr2 || []).find(
+          (s) => String(s.tvdbId) === String(tvdbId) || added?.id && s.id === added.id
+        ) || added;
+        if (found) d._sonarr2Series = found;
+      } else {
+        await this._fetchSonarr();
+        const found = (this._sonarrAll || []).find(
+          (s) => String(s.tvdbId) === String(tvdbId) || added?.id && s.id === added.id
+        ) || added;
+        if (found) d._sonarrSeries = found;
+      }
+      this._asState = "seasons";
+    } catch (e) {
+      this._asState = "error";
+      this._asError = e.message || this._t("isLoadError");
+    }
+    this._renderPopupEl();
+  }
+  async _triggerSonarrSeasonSearch(seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    const d = this._popup;
+    const series = instance === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+    if (!series?.id) return;
+    const seriesId = series.id;
+    const key = `season:${seasonNumber}`;
+    this._dlTriggeredBy = "as";
+    this._asSearchingItems.add(key);
+    this._renderPopupEl();
+    try {
+      const cache = instance === "sonarr2" ? this._sonarr2 || [] : this._sonarr || [];
+      const full = cache.find((s) => s.id === seriesId) || series;
+      const updated = {
+        ...full,
+        monitored: true,
+        seasons: (full.seasons || []).map(
+          (s) => s.seasonNumber === seasonNumber ? { ...s, monitored: true } : s
+        )
+      };
+      await this._callApi("PUT", `arr_stack/${svc}/series/${seriesId}`, updated);
+      if (instance === "sonarr2") {
+        this._sonarr2 = (this._sonarr2 || []).map((s) => s.id === seriesId ? updated : s);
+        d._sonarr2Series = updated;
+      } else {
+        this._sonarr = (this._sonarr || []).map((s) => s.id === seriesId ? updated : s);
+        d._sonarrSeries = updated;
+      }
+      await Promise.all([
+        this._callApi("POST", `arr_stack/${svc}/command`, { name: "SeasonSearch", seriesId, seasonNumber }),
+        new Promise((r) => setTimeout(r, 1e3))
+      ]);
+      this._asSearchedItems.add(key);
+      this._asPollForDownload(key, svc, seriesId);
+    } catch (e) {
+      console.error("[arr-card] Season search error:", e);
+    }
+    this._asSearchingItems.delete(key);
+    this._renderPopupEl();
+  }
+  async _triggerSonarrEpisodeSearch(episodeId, seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    const d = this._popup;
+    const series = instance === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+    const key = `ep:${episodeId}`;
+    this._asSearchingItems.add(key);
+    this._renderPopupEl();
+    try {
+      await Promise.all([
+        this._callApi("POST", `arr_stack/${svc}/command`, { name: "EpisodeSearch", episodeIds: [episodeId] }),
+        new Promise((r) => setTimeout(r, 1e3))
+      ]);
+      this._asSearchedItems.add(key);
+      if (series?.id) this._asPollForDownload(key, svc, series.id);
+    } catch (e) {
+      console.error("[arr-card] Episode search error:", e);
+    }
+    this._asSearchingItems.delete(key);
+    this._renderPopupEl();
+  }
+  // ─────────────────────────────────────────────
+  // Auto Search — poll queue after search fired
+  // key: 'movie' | 'season:N' | 'ep:ID'
+  // movieOrSeriesId: Radarr movieId or Sonarr seriesId
+  // ─────────────────────────────────────────────
+  async _asPollForDownload(key, svc, movieOrSeriesId) {
+    const isRadarr = svc === "radarr" || svc === "radarr2";
+    const endpoint = `arr_stack/${svc}/queue`;
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r, 3e3));
+      if (!this._asOpen) return;
+      try {
+        const data = await this._callApi("GET", endpoint);
+        const records = Array.isArray(data) ? data : data.records || [];
+        const found = records.some((item) => {
+          if (isRadarr) return item.movieId === movieOrSeriesId;
+          return item.seriesId === movieOrSeriesId;
+        });
+        if (found) {
+          this._asDownloadingItems.add(key);
+          this._renderPopupEl();
+          return;
+        }
+      } catch (_) {
+      }
     }
   }
 };
@@ -5118,7 +5600,7 @@ var _RenderRight = class {
         ${posterHtml}
         <span class="media-type-tag">${typeTag}</span>
         ${statusBadge}
-        ${this._mcGrad(gradColor, `<div style="display:flex;align-items:center;gap:4px">
+        ${this._mcGrad(gradColor, `${m.voteAverage ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${m.voteAverage.toFixed(1)}</span></div>` : ""}<div style="display:flex;align-items:center;gap:4px">
             <div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
             ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
           </div>`)}
@@ -8099,7 +8581,6 @@ var _PopupMethods = class {
   async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = null) {
     this._isState = null;
     this._isInstance = "radarr";
-    this._isExpanded = false;
     this._isResults = [];
     this._isFilters = { protocol: "", indexer: "", quality: "", lang: "" };
     this._isSort = { col: null, dir: 1 };
@@ -8109,7 +8590,6 @@ var _PopupMethods = class {
     this._isError = null;
     this._removeConfirm = false;
     this._removeInstance = null;
-    this._snIsExpanded = false;
     this._snIsInstance = "sonarr";
     this._snIsOpen = false;
     this._snExpandedSeasons = /* @__PURE__ */ new Set();
@@ -8124,6 +8604,16 @@ var _PopupMethods = class {
     this._snIsGrabbing = null;
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
+    this._snSeasonsPage = 0;
+    this._searchExpand = null;
+    this._asOpen = false;
+    this._asInstance = null;
+    this._asState = null;
+    this._asError = null;
+    this._asMovieSearching = false;
+    this._asMovieSearched = false;
+    this._asSearchingItems = /* @__PURE__ */ new Set();
+    this._asSearchedItems = /* @__PURE__ */ new Set();
     let _radarrId = null;
     let _radarr2Id = null;
     if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && (radarrId || radarr2IdHint || tmdbId)) {
@@ -8149,8 +8639,31 @@ var _PopupMethods = class {
     this._renderPopupEl();
     if (this._overseerrConfigured === false) {
       const local = this._localFallbackData(type, tmdbId, tvdbId, title);
-      this._popup = local ? { ...local, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series } : { title, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series };
+      const _popId = tmdbId ? parseInt(tmdbId) : void 0;
+      const _popTvdb = tvdbId ? parseInt(tvdbId) : void 0;
+      this._popup = local ? { ...local, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, id: _popId, _tvdbId: _popTvdb } : { title, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, id: _popId, _tvdbId: _popTvdb };
       this._renderPopupEl();
+      if (tmdbId) {
+        const isMovie = type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE;
+        const tmdbPath = isMovie ? `arr_stack/tmdb/movie/${tmdbId}` : `arr_stack/tmdb/tv/${tmdbId}`;
+        this._callApi("GET", tmdbPath).then((detail) => {
+          if (!this._popup || this._popup._type !== type) return;
+          const prev = this._popup;
+          this._popup = {
+            ...prev,
+            overview: detail.overview || prev.overview || "",
+            posterPath: detail.posterPath || prev.posterPath || null,
+            backdropPath: detail.backdropPath || prev.backdropPath || null,
+            voteAverage: detail.voteAverage || prev.voteAverage || 0,
+            genres: detail.genres?.length ? detail.genres : prev.genres || [],
+            releaseDate: detail.releaseDate || prev.releaseDate || "",
+            firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
+            relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
+          };
+          this._renderPopupEl();
+        }).catch(() => {
+        });
+      }
       return;
     }
     try {
@@ -8176,10 +8689,17 @@ var _PopupMethods = class {
         }
       }
       this._popup = { ...data, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series };
+      if (_sonarrSeries || type === POPUP_TYPE.TV || type === POPUP_TYPE.SONARR) {
+        this._fetchSonarrQueue("sonarr").then(() => this._renderPopupEl());
+        if (this._sonarr2Configured !== false)
+          this._fetchSonarrQueue("sonarr2").then(() => this._renderPopupEl());
+      }
     } catch (e) {
       console.error("[arr-card] popup fetch error:", e);
       const local = this._localFallbackData(type, tmdbId, tvdbId, title);
-      this._popup = local ? { ...local, _radarrId, _sonarrSeries } : { title, _radarrId, _sonarrSeries, _error: e.message };
+      const _popId = tmdbId ? parseInt(tmdbId) : void 0;
+      const _popTvdb = tvdbId ? parseInt(tvdbId) : void 0;
+      this._popup = local ? { ...local, _radarrId, _sonarrSeries, id: _popId, _tvdbId: _popTvdb } : { title, _radarrId, _sonarrSeries, _error: e.message, id: _popId, _tvdbId: _popTvdb };
     }
     this._renderPopupEl();
   }
@@ -8243,7 +8763,14 @@ var _PopupMethods = class {
       }
     }
     if (type === POPUP_TYPE.MOVIE || type === POPUP_TYPE.TV) {
-      const sr = (this._searchResults || []).find(
+      const _allDiscover = [
+        ...this._searchResults || [],
+        ...this._upcoming || [],
+        ...this._trending || [],
+        ...this._popular || [],
+        ...this._tvUpcoming || []
+      ];
+      const sr = _allDiscover.find(
         (m) => tmdbId && String(m.id) === String(tmdbId) || tvdbId && m.tvdbId && String(m.tvdbId) === String(tvdbId)
       );
       if (sr) {
@@ -8257,7 +8784,9 @@ var _PopupMethods = class {
           firstAirDate: sr.firstAirDate || "",
           genres: sr.genres || [],
           ratings: sr.ratings || {},
+          voteAverage: sr.voteAverage || 0,
           images: sr.images || [],
+          _tvdbId: sr.tvdbId || null,
           _localPosterUrl: posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : null,
           relatedVideos: sr.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: sr.youTubeTrailerId }] : []
         };
@@ -8310,36 +8839,244 @@ var _PopupMethods = class {
     }
     if (glass) glass.addEventListener("click", (e) => {
       e.stopPropagation();
-      const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid]");
+      const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid],[data-sn-spage]");
       if (!t) return;
-      if (t.dataset.action === "is-expand") {
-        this._isExpanded = true;
+      const _closeAS = () => {
+        this._asOpen = false;
+        this._asExpanded = false;
+        this._asState = null;
+      };
+      const _closeIS = () => {
         this._isState = null;
-        this._renderPopupEl();
-        return;
-      }
-      if (t.dataset.action === "is-collapse") {
         this._isExpanded = false;
-        this._isState = null;
+      };
+      const _closeSnIS = () => {
+        this._snIsOpen = false;
+        this._snIsExpanded = false;
+        this._snIsState = null;
+        this._snActiveIs = null;
+      };
+      const _closeRemove = () => {
+        this._removeConfirm = false;
+      };
+      if (t.dataset.action === "search-expand") {
+        _closeAS();
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        this._searchExpand = "pick";
         this._renderPopupEl();
         return;
       }
-      if (t.dataset.action === "is-toggle") {
-        const instance = t.dataset.instance || "radarr";
-        const radarrId = instance === "radarr2" ? this._popup._radarr2Id : this._popup._radarrId;
-        if (this._isState && this._isInstance === instance) {
-          this._isState = null;
+      if (t.dataset.action === "search-collapse") {
+        _closeAS();
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        this._searchExpand = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "search-pick-as") {
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        const _isDualAS = _isMovT2 ? !!this._radarr2Configured : !!this._sonarr2Configured;
+        if (_isDualAS) {
+          this._searchExpand = "as-inst";
+          this._renderPopupEl();
+        } else {
+          const inst = _isMovT2 ? dd2._radarrId ? "radarr" : dd2._radarr2Id ? "radarr2" : "radarr" : dd2._sonarrSeries ? "sonarr" : dd2._sonarr2Series ? "sonarr2" : "sonarr";
+          if (this._asOpen && this._asInstance === inst) {
+            this._asOpen = false;
+            this._asState = null;
+            this._renderPopupEl();
+          } else {
+            this._asOpen = true;
+            this._asInstance = inst;
+            this._asState = null;
+            this._asMovieSearching = false;
+            this._asMovieSearched = false;
+            this._asSearchingItems = /* @__PURE__ */ new Set();
+            this._asSearchedItems = /* @__PURE__ */ new Set();
+            this._asError = null;
+            if (_isMovT2) {
+              const mId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+              if (!mId) {
+                this._asState = "confirm";
+                this._renderPopupEl();
+              } else {
+                this._triggerRadarrAutoSearch(inst);
+              }
+            } else {
+              const ss = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+              this._asState = ss ? "seasons" : "confirm";
+              this._renderPopupEl();
+            }
+          }
+        }
+        return;
+      }
+      if (t.dataset.action === "search-pick-is") {
+        _closeAS();
+        _closeRemove();
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        const _isDualIS = _isMovT2 ? !!this._radarr2Configured : !!this._sonarr2Configured;
+        if (_isDualIS) {
+          this._searchExpand = "is-inst";
+          this._renderPopupEl();
+        } else {
+          if (_isMovT2) {
+            const inst = dd2._radarrId ? "radarr" : dd2._radarr2Id ? "radarr2" : "radarr";
+            const radarrId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+            if (this._isState && this._isInstance === inst) {
+              this._isState = null;
+              this._renderPopupEl();
+            } else {
+              _closeSnIS();
+              this._isInstance = inst;
+              this._isState = null;
+              if (!radarrId) {
+                this._isState = "confirm-add";
+                this._renderPopupEl();
+              } else {
+                this._fetchInteractiveSearch(radarrId, inst);
+              }
+            }
+          } else {
+            const inst = dd2._sonarrSeries ? "sonarr" : dd2._sonarr2Series ? "sonarr2" : "sonarr";
+            if (this._snIsOpen && this._snIsInstance === inst) {
+              this._snIsOpen = false;
+              this._snActiveIs = null;
+              this._snIsState = null;
+              this._renderPopupEl();
+            } else {
+              _closeIS();
+              this._snIsInstance = inst;
+              this._snIsOpen = true;
+              this._snActiveIs = null;
+              this._snIsState = null;
+              this._snSeasonsPage = 0;
+              const seriesInInst = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+              if (!seriesInInst) {
+                this._snIsState = "confirm-add";
+              }
+              this._renderPopupEl();
+            }
+          }
+        }
+        return;
+      }
+      if (t.dataset.action === "search-as-inst") {
+        const inst = t.dataset.instance || "radarr";
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        if (this._asOpen && this._asInstance === inst) {
+          this._asOpen = false;
+          this._asState = null;
           this._renderPopupEl();
           return;
         }
-        this._isState = null;
-        this._isInstance = instance;
-        if (!radarrId) {
-          this._isState = "confirm-add";
-          this._renderPopupEl();
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        this._asOpen = true;
+        this._asInstance = inst;
+        this._asState = null;
+        this._asMovieSearching = false;
+        this._asMovieSearched = false;
+        this._asSearchingItems = /* @__PURE__ */ new Set();
+        this._asSearchedItems = /* @__PURE__ */ new Set();
+        this._asError = null;
+        if (_isMovT2) {
+          const mId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+          if (!mId) {
+            this._asState = "confirm";
+            this._renderPopupEl();
+          } else {
+            this._triggerRadarrAutoSearch(inst);
+          }
         } else {
-          this._fetchInteractiveSearch(radarrId, instance);
+          const ss = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+          this._asState = ss ? "seasons" : "confirm";
+          this._renderPopupEl();
         }
+        return;
+      }
+      if (t.dataset.action === "search-is-inst") {
+        const inst = t.dataset.instance || "radarr";
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        if (_isMovT2) {
+          const radarrId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+          if (this._isState && this._isInstance === inst) {
+            this._isState = null;
+            this._renderPopupEl();
+          } else {
+            _closeAS();
+            _closeSnIS();
+            _closeRemove();
+            this._isInstance = inst;
+            this._isState = null;
+            if (!radarrId) {
+              this._isState = "confirm-add";
+              this._renderPopupEl();
+            } else {
+              this._fetchInteractiveSearch(radarrId, inst);
+            }
+          }
+        } else {
+          if (this._snIsOpen && this._snIsInstance === inst) {
+            this._snIsOpen = false;
+            this._snActiveIs = null;
+            this._snIsState = null;
+            this._renderPopupEl();
+          } else {
+            _closeAS();
+            _closeIS();
+            _closeRemove();
+            this._snIsInstance = inst;
+            this._snIsOpen = true;
+            this._snActiveIs = null;
+            this._snIsState = null;
+            this._snSeasonsPage = 0;
+            const seriesInInst = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+            if (!seriesInInst) {
+              this._snIsState = "confirm-add";
+            }
+            this._renderPopupEl();
+          }
+        }
+        return;
+      }
+      if (t.dataset.action === "as-confirm-yes") {
+        const dd = this._popup;
+        const isMovT = dd._type === "radarr" || dd._type === "movie";
+        if (isMovT) {
+          this._triggerRadarrAutoSearch(this._asInstance);
+        } else {
+          this._addSeriesForAs(this._asInstance);
+        }
+        return;
+      }
+      if (t.dataset.action === "as-confirm-no") {
+        this._asOpen = false;
+        this._asState = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "as-season-search") {
+        const n = parseInt(t.dataset.season);
+        this._triggerSonarrSeasonSearch(n, this._asInstance);
+        return;
+      }
+      if (t.dataset.action === "as-ep-search") {
+        const epId = parseInt(t.dataset.epid);
+        const seasonN = parseInt(t.dataset.season);
+        this._triggerSonarrEpisodeSearch(epId, seasonN, this._asInstance);
         return;
       }
       if (t.dataset.action === "is-confirm-yes") {
@@ -8364,40 +9101,6 @@ var _PopupMethods = class {
       }
       if (t.dataset.grab !== void 0) {
         this._grabRelease(t.dataset.grab, parseInt(t.dataset.indexerid));
-        return;
-      }
-      if (t.dataset.action === "sn-is-expand") {
-        this._snIsExpanded = true;
-        this._snIsOpen = false;
-        this._snIsState = null;
-        this._renderPopupEl();
-        return;
-      }
-      if (t.dataset.action === "sn-is-collapse") {
-        this._snIsExpanded = false;
-        this._snIsOpen = false;
-        this._snIsState = null;
-        this._renderPopupEl();
-        return;
-      }
-      if (t.dataset.action === "sn-is-toggle") {
-        const instance = t.dataset.instance || "sonarr";
-        if (this._snIsOpen && this._snIsInstance === instance) {
-          this._snIsOpen = false;
-          this._snActiveIs = null;
-          this._snIsState = null;
-          this._renderPopupEl();
-          return;
-        }
-        this._snIsInstance = instance;
-        this._snIsOpen = true;
-        this._snActiveIs = null;
-        this._snIsState = null;
-        const seriesInInst = instance === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
-        if (!seriesInInst) {
-          this._snIsState = "confirm-add";
-        }
-        this._renderPopupEl();
         return;
       }
       if (t.dataset.action === "sn-confirm-yes") {
@@ -8501,6 +9204,26 @@ var _PopupMethods = class {
         this._sonarrGrab(t.dataset.sngrab, parseInt(t.dataset.indexerid));
         return;
       }
+      {
+        const snSpageBtn = t.closest("[data-sn-spage]") || (t.dataset.snSpage !== void 0 ? t : null);
+        if (snSpageBtn) {
+          const series = this._popup?._sonarrSeries;
+          const total = (series?.seasons || []).filter((s) => s.seasonNumber > 0).length;
+          const totalPages = Math.max(1, Math.ceil(total / 4));
+          const val = snSpageBtn.dataset.snSpage;
+          let p = this._snSeasonsPage || 0;
+          if (val === "first") p = 0;
+          else if (val === "prev") p = Math.max(0, p - 1);
+          else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+          else if (val === "last") p = totalPages - 1;
+          else p = parseInt(val) || 0;
+          if (p !== this._snSeasonsPage) {
+            this._snSeasonsPage = p;
+            this._renderPopupEl();
+          }
+          return;
+        }
+      }
       if (t.dataset.action === "sn-back") {
         this._snActiveIs = null;
         this._snIsState = null;
@@ -8508,9 +9231,10 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "remove-confirm") {
-        this._isExpanded = false;
-        this._snIsExpanded = false;
-        this._isState = null;
+        _closeAS();
+        _closeIS();
+        _closeSnIS();
+        this._searchExpand = null;
         const pd = this._popup;
         const dualR = pd && pd._radarrId && pd._radarr2Id;
         const dualS = pd && pd._sonarrSeries?.id && pd._sonarr2Series?.id;
@@ -8733,62 +9457,176 @@ var _PopupMethods = class {
     const hasDualSonarr = !!this._sonarr2Configured;
     const singleInstance = d._radarrId ? "radarr" : d._radarr2Id ? "radarr2" : "radarr";
     const [isl1, isl2] = this._seerrRadarr2?.is4k ? ["HD", "4K"] : _instLabels(this._seerrRadarr?.name, this._seerrRadarr2?.name, "Radarr 1", "Radarr 2");
-    let isOpenBtn = "";
-    if (isAdmin && isMovieType && !d._noIS) {
-      let innerBtns = "";
-      if (!hasDualRadarr) {
-        innerBtns = `
-        <button class="is-open-btn${isActive ? " active" : ""}" data-action="is-toggle" data-instance="${singleInstance}">
-          ${searchSvg} Interactive Search
-        </button>`;
-      } else if (!this._isExpanded) {
-        innerBtns = `
-        <button class="is-open-btn" data-action="is-expand">
-          ${searchSvg} Interactive Search ${chevRSvg}
-        </button>`;
-      } else {
-        const r1Active = isActive && this._isInstance === "radarr";
-        const r2Active = isActive && this._isInstance === "radarr2";
-        innerBtns = `
-        <button class="is-open-btn${r1Active ? " active" : ""}" data-action="is-toggle" data-instance="radarr">${searchSvg} ${isl1}</button>
-        <button class="is-open-btn${r2Active ? " active" : ""}" data-action="is-toggle" data-instance="radarr2">${searchSvg} ${isl2}</button>
-        <button class="is-open-btn is-collapse-btn" data-action="is-collapse" title="Close">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>`;
+    const _re1 = d._radarrId ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
+    const _re2 = d._radarr2Id ? (this._radarr2 || []).find((m) => m.id === d._radarr2Id) : null;
+    const _se1 = d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
+    const _se2 = d._sonarr2Series?.id ? (this._sonarr2 || []).find((s) => s.id === d._sonarr2Series.id) : null;
+    const rInLib1 = !!_re1?.hasFile;
+    const rInLib2 = !!_re2?.hasFile;
+    const snInLib1 = _se1?.statistics?.episodeFileCount > 0;
+    const snInLib2 = _se2?.statistics?.episodeFileCount > 0;
+    const asActive = this._asOpen;
+    const _asLoading = (inst) => this._asInstance === inst && (this._asMovieSearching || asActive && this._asState === "adding");
+    const _asDone = (inst) => this._asInstance === inst && (this._asState === "done" || this._asMovieSearched);
+    const _asErr = (inst) => this._asInstance === inst && this._asState === "error";
+    const _asSpinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    const _asIconFor = (inst) => _asLoading(inst) ? _asSpinner : searchSvg;
+    const _dlSvg = `<svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>`;
+    const _movieDlPct = (inst, channel) => {
+      if (this._asInstance && this._asInstance !== inst) return null;
+      const triggered = this._dlTriggeredBy;
+      if (channel === "is" && triggered !== "is") return null;
+      if (channel === "as" && triggered === "is") return null;
+      const mId = inst === "radarr2" ? d._radarr2Id : d._radarrId;
+      if (!mId) return null;
+      const qPct = inst === "radarr2" ? this._radarr2QueuePct || /* @__PURE__ */ new Map() : this._radarrQueuePct || /* @__PURE__ */ new Map();
+      return qPct.has(mId) ? qPct.get(mId) : null;
+    };
+    const _dlBtnStyle = (inst, channel) => {
+      const pct = _movieDlPct(inst, channel);
+      if (pct === null) return "";
+      return `style="background:linear-gradient(to right,rgba(59,130,246,0.25) ${pct}%,var(--is-btn-bg) ${pct}%)"`;
+    };
+    const _inLibCls = (inLib, inst) => inLib && _movieDlPct(inst) === null ? " in-lib" : "";
+    const _seriesDlPct = (inst, channel) => {
+      if (this._asInstance && this._asInstance !== inst) return null;
+      const triggered = this._dlTriggeredBy;
+      if (channel === "is" && triggered !== "is") return null;
+      if (channel === "as" && triggered === "is") return null;
+      const series = inst === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+      if (!series?.id) return null;
+      const qPct = inst === "sonarr2" ? this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
+      return qPct.has(series.id) ? qPct.get(series.id) : null;
+    };
+    const _dlSnBtnStyle = (inst, channel) => {
+      const pct = _seriesDlPct(inst, channel);
+      if (pct === null) return "";
+      return `style="background:linear-gradient(to right,rgba(59,130,246,0.25) ${pct}%,var(--is-btn-bg) ${pct}%)"`;
+    };
+    const _snInLibCls = (inLib, inst) => inLib && _seriesDlPct(inst) === null ? " in-lib" : "";
+    const _isMovieDl = (inst) => {
+      if (this._asInstance && this._asInstance !== inst) return false;
+      const mId = inst === "radarr2" ? d._radarr2Id : d._radarrId;
+      const qActive = inst === "radarr2" ? this._radarr2QueueActive || /* @__PURE__ */ new Set() : this._radarrQueueActive || /* @__PURE__ */ new Set();
+      return mId && qActive.has(mId) || this._asDownloadingItems.has(`movie:${inst}`);
+    };
+    const _isSeriesDl = (inst) => {
+      if (this._asInstance && this._asInstance !== inst) return false;
+      const series = inst === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+      if (!series?.id) return false;
+      const qSeasons = inst === "sonarr2" ? this._sonarr2QueueSeasons || /* @__PURE__ */ new Set() : this._sonarrQueueSeasons || /* @__PURE__ */ new Set();
+      return [...qSeasons].some((k) => k.startsWith(`${series.id}:`));
+    };
+    const _asBadgeFor = (inst) => {
+      const isMovie = d._type === "radarr" || d._type === "movie";
+      if (_asLoading(inst)) return "";
+      if (_asErr(inst)) return `<span class="as-btn-badge as-btn-badge--err">\u2717</span>`;
+      const dl = isMovie ? _isMovieDl(inst) : _isSeriesDl(inst);
+      if (dl) return `<span class="as-btn-badge as-btn-badge--dl">${_dlSvg}</span>`;
+      return "";
+    };
+    const _asExpandIcon = () => this._asMovieSearching ? _asSpinner : searchSvg;
+    const _asExpandBadge = () => {
+      if (this._asState === "error") return `<span class="as-btn-badge as-btn-badge--err">\u2717</span>`;
+      const isMovie = d._type === "radarr" || d._type === "movie";
+      const dl = isMovie ? _isMovieDl("radarr") || _isMovieDl("radarr2") : _isSeriesDl("sonarr") || _isSeriesDl("sonarr2");
+      if (dl) return `<span class="as-btn-badge as-btn-badge--dl">${_dlSvg}</span>`;
+      return "";
+    };
+    const collXSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const _gradPct = (p) => p !== null ? `style="background:linear-gradient(to right,rgba(59,130,246,0.25) ${p}%,var(--is-btn-bg) ${p}%)"` : "";
+    let searchBtnHtml = "";
+    if (isAdmin && (isMovieType || isSonarrType) && !d._noIS) {
+      const se = this._searchExpand;
+      const collapseBtn = `<button class="is-open-btn is-collapse-btn" data-action="search-collapse" title="Close">${collXSvg}</button>`;
+      const _collapsedDlStyle = () => {
+        if (isMovieType) {
+          const p1 = d._radarrId ? (this._radarrQueuePct || /* @__PURE__ */ new Map()).get(d._radarrId) ?? null : null;
+          const p2 = d._radarr2Id ? (this._radarr2QueuePct || /* @__PURE__ */ new Map()).get(d._radarr2Id) ?? null : null;
+          return _gradPct(p1 ?? p2);
+        } else {
+          const s1 = d._sonarrSeries, s2 = d._sonarr2Series;
+          const p1 = s1?.id ? (this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map()).get(s1.id) ?? null : null;
+          const p2 = s2?.id ? (this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map()).get(s2.id) ?? null : null;
+          return _gradPct(p1 ?? p2);
+        }
+      };
+      if (!se) {
+        searchBtnHtml = `<div class="is-btn-row">
+        <button class="is-open-btn" data-action="search-expand" ${_collapsedDlStyle()}>
+          ${searchSvg} Search
+        </button>
+      </div>`;
+      } else if (se === "pick") {
+        const asPickActive = this._asOpen;
+        const isPickActive = !!(this._isState || this._snIsOpen);
+        const asPickIcon = this._asMovieSearching || this._asOpen && this._asState === "adding" ? _asSpinner : searchSvg;
+        const _asPickStyle = (() => {
+          if (isMovieType) {
+            const p1 = _movieDlPct("radarr", "as"), p2 = _movieDlPct("radarr2", "as");
+            return _gradPct(p1 ?? p2);
+          } else {
+            const p1 = _seriesDlPct("sonarr", "as"), p2 = _seriesDlPct("sonarr2", "as");
+            return _gradPct(p1 ?? p2);
+          }
+        })();
+        const _isPickStyle = (() => {
+          if (isMovieType) {
+            const p1 = _movieDlPct("radarr", "is"), p2 = _movieDlPct("radarr2", "is");
+            return _gradPct(p1 ?? p2);
+          } else {
+            const p1 = _seriesDlPct("sonarr", "is"), p2 = _seriesDlPct("sonarr2", "is");
+            return _gradPct(p1 ?? p2);
+          }
+        })();
+        searchBtnHtml = `<div class="is-btn-row">
+        <button class="is-open-btn${asPickActive ? " active" : ""}" data-action="search-pick-as" ${_asPickStyle}>
+          ${asPickIcon} Automatic
+        </button>
+        <button class="is-open-btn${isPickActive ? " active" : ""}" data-action="search-pick-is" ${_isPickStyle}>
+          ${personIconSvg} Interactive
+        </button>
+        ${collapseBtn}
+      </div>`;
+      } else if (se === "as-inst") {
+        if (isMovieType) {
+          const as1Active = this._asOpen && this._asInstance === "radarr";
+          const as2Active = this._asOpen && this._asInstance === "radarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${as1Active ? " active" : ""}${_inLibCls(rInLib1, "radarr")}" data-action="search-as-inst" data-instance="radarr" ${_dlBtnStyle("radarr", "as")}>${_asIconFor("radarr")} ${isl1}</button>
+          <button class="is-open-btn${as2Active ? " active" : ""}${_inLibCls(rInLib2, "radarr2")}" data-action="search-as-inst" data-instance="radarr2" ${_dlBtnStyle("radarr2", "as")}>${_asIconFor("radarr2")} ${isl2}</button>
+          ${collapseBtn}
+        </div>`;
+        } else {
+          const [assl1, assl2] = _instLabels(this._seerrSonarr?.name, this._seerrSonarr2?.name, "Sonarr 1", "Sonarr 2");
+          const as1Active = this._asOpen && this._asInstance === "sonarr";
+          const as2Active = this._asOpen && this._asInstance === "sonarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${as1Active ? " active" : ""}${_snInLibCls(snInLib1, "sonarr")}" data-action="search-as-inst" data-instance="sonarr" ${_dlSnBtnStyle("sonarr", "as")}>${_asIconFor("sonarr")} ${assl1}</button>
+          <button class="is-open-btn${as2Active ? " active" : ""}${_snInLibCls(snInLib2, "sonarr2")}" data-action="search-as-inst" data-instance="sonarr2" ${_dlSnBtnStyle("sonarr2", "as")}>${_asIconFor("sonarr2")} ${assl2}</button>
+          ${collapseBtn}
+        </div>`;
+        }
+      } else if (se === "is-inst") {
+        if (isMovieType) {
+          const r1Active = !!this._isState && this._isInstance === "radarr";
+          const r2Active = !!this._isState && this._isInstance === "radarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${r1Active ? " active" : ""}${_inLibCls(rInLib1, "radarr")}" data-action="search-is-inst" data-instance="radarr" ${_dlBtnStyle("radarr", "is")}>${personIconSvg} ${isl1}</button>
+          <button class="is-open-btn${r2Active ? " active" : ""}${_inLibCls(rInLib2, "radarr2")}" data-action="search-is-inst" data-instance="radarr2" ${_dlBtnStyle("radarr2", "is")}>${personIconSvg} ${isl2}</button>
+          ${collapseBtn}
+        </div>`;
+        } else {
+          const [snl1, snl2] = _instLabels(this._seerrSonarr?.name, this._seerrSonarr2?.name, "Sonarr 1", "Sonarr 2");
+          const sn1Active = this._snIsOpen && this._snIsInstance === "sonarr";
+          const sn2Active = this._snIsOpen && this._snIsInstance === "sonarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${sn1Active ? " active" : ""}${_snInLibCls(snInLib1, "sonarr")}" data-action="search-is-inst" data-instance="sonarr" ${_dlSnBtnStyle("sonarr", "is")}>${personIconSvg} ${snl1}</button>
+          <button class="is-open-btn${sn2Active ? " active" : ""}${_snInLibCls(snInLib2, "sonarr2")}" data-action="search-is-inst" data-instance="sonarr2" ${_dlSnBtnStyle("sonarr2", "is")}>${personIconSvg} ${snl2}</button>
+          ${collapseBtn}
+        </div>`;
+        }
       }
-      isOpenBtn = `<div class="is-btn-row">${innerBtns}</div>`;
-    }
-    let snIsOpenBtn = "";
-    if (isAdmin && isSonarrType && !d._noIS) {
-      const [snl1, snl2] = _instLabels(
-        this._seerrSonarr?.name,
-        this._seerrSonarr2?.name,
-        "Sonarr 1",
-        "Sonarr 2"
-      );
-      let snInnerBtns = "";
-      if (!hasDualSonarr) {
-        const snSingleInst = d._sonarrSeries ? "sonarr" : d._sonarr2Series ? "sonarr2" : "sonarr";
-        snInnerBtns = `
-        <button class="is-open-btn${snIsActive ? " active" : ""}" data-action="sn-is-toggle" data-instance="${snSingleInst}">
-          ${personIconSvg} Interactive Search
-        </button>`;
-      } else if (!this._snIsExpanded) {
-        snInnerBtns = `
-        <button class="is-open-btn" data-action="sn-is-expand">
-          ${personIconSvg} Interactive Search ${chevRSvg}
-        </button>`;
-      } else {
-        const sn1Active = snIsActive && this._snIsInstance === "sonarr";
-        const sn2Active = snIsActive && this._snIsInstance === "sonarr2";
-        snInnerBtns = `
-        <button class="is-open-btn${sn1Active ? " active" : ""}" data-action="sn-is-toggle" data-instance="sonarr">${personIconSvg} ${snl1}</button>
-        <button class="is-open-btn${sn2Active ? " active" : ""}" data-action="sn-is-toggle" data-instance="sonarr2">${personIconSvg} ${snl2}</button>
-        <button class="is-open-btn is-collapse-btn" data-action="sn-is-collapse" title="Close">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>`;
-      }
-      snIsOpenBtn = `<div class="is-btn-row">${snInnerBtns}</div>`;
     }
     const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const checkSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -8812,14 +9650,14 @@ var _PopupMethods = class {
     const _instChip = (label, status) => {
       const map = {
         available: { cls: "ic--available", icon: "\u2713" },
-        downloading: { cls: "ic--downloading", icon: "\u2193" },
+        downloading: { cls: "ic--downloading", icon: "" },
         failed: { cls: "ic--failed", icon: "\u2717" },
         missing: { cls: "ic--missing", icon: "\u25CF" },
         added: { cls: "ic--added", icon: "+" },
         none: { cls: "ic--none", icon: "\u2013" }
       };
       const { cls, icon } = map[status] || map.none;
-      return `<span class="inst-chip ${cls}">${label} <span class="ic-icon">${icon}</span></span>`;
+      return `<span class="inst-chip ${cls}">${label}${icon ? ` <span class="ic-icon">${icon}</span>` : ""}</span>`;
     };
     let instanceStatusHtml = "";
     if (isMovieType && this._radarr2Configured) {
@@ -8905,13 +9743,13 @@ var _PopupMethods = class {
               ${overview ? `<p class="popup-overview">${overview}</p>` : `<p class="popup-overview" style="color:rgba(255,255,255,0.35);font-style:italic">${this._t("noDescription")}</p>`}
               ${d._streamEntity ? this._renderPopupStreamControls(d) : ""}
               <div class="popup-actions">
-                ${isOpenBtn}
-                ${snIsOpenBtn}
+                ${searchBtnHtml}
                 ${removeBtn}
               </div>
             </div>
           </div>
-          ${isActive || snIsActive ? "" : !d._streamEntity ? trailerHtml : ""}
+          ${isActive || snIsActive || asActive ? "" : !d._streamEntity ? trailerHtml : ""}
+          ${asActive ? this._renderAsSection() : ""}
           ${isActive ? this._renderIsPanel() : ""}
           ${snIsActive ? this._renderSonarrIsSection() : ""}
         </div>
@@ -8939,8 +9777,8 @@ var _PopupMethods = class {
     const canPlexSeek = !!d._plexMachineId;
     const seekBar = dur > 0 ? `
     <div ${canSeek || canPlexSeek ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${this._escHtml(eid)}" data-dur="${dur}" style="cursor:pointer;padding:6px 0;margin-bottom:2px"` : `style="padding:6px 0;margin-bottom:2px"`}>
-      <div style="position:relative;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden">
-        <div class="stream-prog-fill" data-entity="${this._escHtml(eid)}" data-pos="${pos}" data-dur="${dur}" data-updated="${upd}" style="position:absolute;inset:0 auto 0 0;width:${initPct}%;background:rgba(255,255,255,0.7);border-radius:2px;transition:none"></div>
+      <div class="stream-popup-track" style="position:relative;height:4px;border-radius:2px;overflow:hidden">
+        <div class="stream-prog-fill stream-popup-fill" data-entity="${this._escHtml(eid)}" data-pos="${pos}" data-dur="${dur}" data-updated="${upd}" style="position:absolute;inset:0 auto 0 0;width:${initPct}%;border-radius:2px;transition:none"></div>
       </div>
     </div>
     <div class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:8px">${timeLabel}</div>` : "";
@@ -10636,6 +11474,29 @@ var ArrStackCard = class extends HTMLElement {
     this._snIsGrabbing = null;
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
+    this._searchExpand = null;
+    this._asOpen = false;
+    this._asInstance = null;
+    this._asState = null;
+    this._asError = null;
+    this._asMovieSearching = false;
+    this._asMovieSearched = false;
+    this._asSearchingItems = /* @__PURE__ */ new Set();
+    this._asSearchedItems = /* @__PURE__ */ new Set();
+    this._asDownloadingItems = /* @__PURE__ */ new Set();
+    this._radarrQueuePct = /* @__PURE__ */ new Map();
+    this._radarr2QueuePct = /* @__PURE__ */ new Map();
+    this._dlTriggeredBy = null;
+    this._sonarrQueueSeasons = /* @__PURE__ */ new Set();
+    this._sonarrQueueEpisodes = /* @__PURE__ */ new Set();
+    this._sonarrQueueEpPct = /* @__PURE__ */ new Map();
+    this._sonarrQueueSeasonPct = /* @__PURE__ */ new Map();
+    this._sonarrQueueSeriesPct = /* @__PURE__ */ new Map();
+    this._sonarr2QueueSeasons = /* @__PURE__ */ new Set();
+    this._sonarr2QueueEpisodes = /* @__PURE__ */ new Set();
+    this._sonarr2QueueEpPct = /* @__PURE__ */ new Map();
+    this._sonarr2QueueSeasonPct = /* @__PURE__ */ new Map();
+    this._sonarr2QueueSeriesPct = /* @__PURE__ */ new Map();
     this._searchQuery = "";
     this._searchResults = [];
     this._searchPage = 0;
@@ -11516,6 +12377,7 @@ function applyMixin(target, mixin) {
 }
 applyMixin(ArrStackCard.prototype, interactiveSearchMixin);
 applyMixin(ArrStackCard.prototype, sonarrIsMixin);
+applyMixin(ArrStackCard.prototype, autoSearchMixin);
 applyMixin(ArrStackCard.prototype, fetchMixin);
 applyMixin(ArrStackCard.prototype, renderLeftMixin);
 applyMixin(ArrStackCard.prototype, renderRightMixin);
