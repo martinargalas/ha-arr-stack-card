@@ -4348,6 +4348,10 @@ var _FetchMethods = class {
           posterPath: m.remotePoster || null,
           overview: m.overview || "",
           releaseDate: m.year ? `${m.year}-01-01` : "",
+          genres: (m.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          ratings: m.ratings || {},
+          images: m.images || [],
+          youTubeTrailerId: m.youTubeTrailerId || null,
           mediaInfo: null
         }));
         const shows = (tvRaw.status === "fulfilled" && Array.isArray(tvRaw.value) ? tvRaw.value : []).filter((s) => s.tvdbId).map((s) => ({
@@ -4358,6 +4362,10 @@ var _FetchMethods = class {
           posterPath: s.remotePoster || null,
           overview: s.overview || "",
           firstAirDate: s.year ? `${s.year}-01-01` : "",
+          genres: (s.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          ratings: s.ratings || {},
+          images: s.images || [],
+          youTubeTrailerId: s.youTubeTrailerId || null,
           mediaInfo: null
         }));
         const merged = [];
@@ -8178,7 +8186,7 @@ var _PopupMethods = class {
   // Build popup data from local arrays when Overseerr is unavailable/fails
   _localFallbackData(type, tmdbId, tvdbId, title) {
     if (type === POPUP_TYPE.TV) {
-      const show = this._tvUpcoming?.find((m) => String(m.id) === String(tmdbId));
+      const show = this._tvUpcoming?.find((m) => String(m.id) === String(tmdbId)) || (this._searchResults || []).find((m) => m.mediaType === "tv" && (tmdbId && String(m.id) === String(tmdbId) || tvdbId && String(m.tvdbId) === String(tvdbId)));
       if (show) return {
         _type: POPUP_TYPE.TV,
         _localData: true,
@@ -8186,8 +8194,10 @@ var _PopupMethods = class {
         overview: show.overview || "",
         firstAirDate: show.firstAirDate || "",
         genres: (show.genreIds || []).map((id) => ({ name: String(id) })),
+        ratings: show.ratings || {},
+        images: show.images || [],
         _localPosterUrl: show.posterPath ? show.posterPath.startsWith("http") ? show.posterPath : `https://image.tmdb.org/t/p/w342${show.posterPath}` : null,
-        relatedVideos: []
+        relatedVideos: show.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: show.youTubeTrailerId }] : []
       };
     }
     if (type === POPUP_TYPE.SONARR) {
@@ -8229,6 +8239,27 @@ var _PopupMethods = class {
           _localPosterUrl: this._getRadarrPoster(movie),
           _localBackdropUrl: fanart,
           relatedVideos: movie.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: movie.youTubeTrailerId }] : []
+        };
+      }
+    }
+    if (type === POPUP_TYPE.MOVIE || type === POPUP_TYPE.TV) {
+      const sr = (this._searchResults || []).find(
+        (m) => tmdbId && String(m.id) === String(tmdbId) || tvdbId && m.tvdbId && String(m.tvdbId) === String(tvdbId)
+      );
+      if (sr) {
+        const posterPath = sr.posterPath || null;
+        return {
+          _type: type,
+          _localData: true,
+          title: sr.title || sr.name || title,
+          overview: sr.overview || "",
+          releaseDate: sr.releaseDate || "",
+          firstAirDate: sr.firstAirDate || "",
+          genres: sr.genres || [],
+          ratings: sr.ratings || {},
+          images: sr.images || [],
+          _localPosterUrl: posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : null,
+          relatedVideos: sr.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: sr.youTubeTrailerId }] : []
         };
       }
     }
