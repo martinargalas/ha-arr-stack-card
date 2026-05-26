@@ -447,6 +447,7 @@ var ARR_I18N = {
     next: "Dal\u0161\xED",
     // Odznaky
     badgeDownloading: "Stahov\xE1n\xED",
+    badgeFailed: "Selhalo",
     badgeMissing: "Chyb\xED",
     badgeAvailable: "Dostupn\xE9",
     badgeAdded: "P\u0159id\xE1no",
@@ -505,6 +506,14 @@ var ARR_I18N = {
     snAddingToSonarr: "P\u0159id\xE1v\xE1m seri\xE1l do Sonarru\u2026",
     snNoSonarrId: "Seri\xE1l se nepoda\u0159ilo p\u0159idat do Sonarru",
     snEpisode: "Epizoda",
+    // Auto Search
+    asSearchMovie: "Search Movie",
+    asSearchSeries: "Search Series",
+    asMovieConfirm: "Film bude p\u0159id\xE1n do Radarru a spust\xED se automatick\xE9 vyhled\xE1v\xE1n\xED.",
+    asSeriesConfirm: "Seri\xE1l bude p\u0159id\xE1n do Sonarru. Vyberte sez\xF3nu pro vyhled\xE1v\xE1n\xED.",
+    asAdding: "P\u0159id\xE1v\xE1m\u2026",
+    asSearching: "Spou\u0161t\xEDm vyhled\xE1v\xE1n\xED\u2026",
+    asSearchDone: "Vyhled\xE1v\xE1n\xED spu\u0161t\u011Bno",
     snSeasonPack: "season pack",
     snBack: "Zp\u011Bt",
     // Search
@@ -512,7 +521,16 @@ var ARR_I18N = {
     typeShow: "Seri\xE1l",
     // Pending badges
     fromSeerr: "ze Seerr",
-    fromSonarr: "ze Sonarr"
+    fromSonarr: "ze Sonarr",
+    // Plex terminate overlay
+    terminateTitle: "Zastavit",
+    terminatePrompt: "Zastavit toto p\u0159ehr\xE1v\xE1n\xED?",
+    terminateUserHint: "Zpr\xE1va bude zobrazena u\u017Eivateli",
+    terminateMsgLabel: "ZPR\xC1VA",
+    terminateDefault: "Va\u0161e p\u0159ehr\xE1v\xE1n\xED bylo ukon\u010Deno administr\xE1torem.",
+    terminateCancel: "Zru\u0161it",
+    terminateStop: "Zastavit",
+    stopPlayback: "Stop Playback"
   },
   en: {
     downloads: "Downloads",
@@ -557,6 +575,7 @@ var ARR_I18N = {
     prev: "Previous",
     next: "Next",
     badgeDownloading: "Downloading",
+    badgeFailed: "Failed",
     badgeMissing: "Missing",
     badgeAvailable: "Available",
     badgeAdded: "Added",
@@ -608,6 +627,14 @@ var ARR_I18N = {
     snAddingToSonarr: "Adding series to Sonarr\u2026",
     snNoSonarrId: "Failed to add series to Sonarr",
     snEpisode: "Episode",
+    // Auto Search
+    asSearchMovie: "Search Movie",
+    asSearchSeries: "Search Series",
+    asMovieConfirm: "Movie will be added to Radarr and automatic search will start.",
+    asSeriesConfirm: "Series will be added to Sonarr. Select a season to search.",
+    asAdding: "Adding\u2026",
+    asSearching: "Starting search\u2026",
+    asSearchDone: "Search started",
     snSeasonPack: "season pack",
     snBack: "Back",
     // Search
@@ -615,7 +642,16 @@ var ARR_I18N = {
     typeShow: "Show",
     // Pending badges
     fromSeerr: "from Seerr",
-    fromSonarr: "from Sonarr"
+    fromSonarr: "from Sonarr",
+    // Plex terminate overlay
+    terminateTitle: "Stop",
+    terminatePrompt: "Stop this playback?",
+    terminateUserHint: "A message will be shown to user",
+    terminateMsgLabel: "MESSAGE",
+    terminateDefault: "Your playback has been terminated by an administrator.",
+    terminateCancel: "Cancel",
+    terminateStop: "Stop",
+    stopPlayback: "Stop Playback"
   }
 };
 
@@ -834,6 +870,7 @@ var STYLES = `
       .stream-paused img { filter: brightness(0.55) saturate(0.4); }
       .stream-paused-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2; color: rgba(255,255,255,0.9); }
       .stream-device-tag { position: absolute; top: 6px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.85); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; pointer-events: none; }
+      .stream-user-tag { position: absolute; bottom: 28px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.92); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; pointer-events: none; max-width: calc(100% - 12px); overflow: hidden; }
       .popup-ctrl-btn { background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.85); transition: background 0.15s; }
       .popup-ctrl-btn:hover { background: rgba(255,255,255,0.16); }
       .popup-ctrl-btn-main { width: 56px; height: 56px; background: rgba(229,160,13,0.2); }
@@ -1181,6 +1218,10 @@ var STYLES = `
         container-type: inline-size;
         container-name: mc;
       }
+      @container mc (max-width: 105px) {
+        .media-type-tag .b-txt { display: none; }
+        .badge .b-txt { display: none; }
+      }
 
       .mc-cover {
         width: 100%; height: 80px;
@@ -1398,11 +1439,11 @@ var STYLES = `
         background: rgba(15,15,20,0.88);
         backdrop-filter: blur(8px);
         border-radius: 11px;
-        display: flex; align-items: center; justify-content: center;
+        display: flex; align-items: stretch; justify-content: center;
         animation: fade-in 0.15s ease;
       }
       .req-inner {
-        display: flex; flex-direction: column; gap: 7px;
+        display: flex; flex-direction: column; justify-content: space-between;
         padding: 10px 10px 8px; width: 100%;
       }
       .req-label {
@@ -1418,7 +1459,7 @@ var STYLES = `
       }
       .req-select option { background: #1c1c2e; color: #fff; }
       .req-actions {
-        display: flex; gap: 5px; margin-top: 1px;
+        display: flex; gap: 5px;
       }
       .req-cancel {
         flex: 1; background: rgba(255,255,255,0.08);
@@ -1436,6 +1477,27 @@ var STYLES = `
       }
       .req-confirm:hover { background: rgba(var(--accent-rgb),0.52); }
       .req-confirm:disabled, .req-cancel:disabled { opacity: 0.5; cursor: default; }
+      /* \u2500\u2500 Tab bar \u2500\u2500 */
+      .req-tabs {
+        display: flex; gap: 4px; margin-bottom: 1px;
+      }
+      .req-tab {
+        flex: 1; font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.04em; padding: 4px 0;
+        background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 5px; color: rgba(255,255,255,0.40); cursor: pointer;
+        transition: background 0.12s, color 0.12s, border-color 0.12s;
+      }
+      .req-tab.req-tab--active {
+        background: rgba(var(--accent-rgb),0.20);
+        border-color: rgba(var(--accent-rgb),0.50);
+        color: #fff;
+      }
+      .req-tab:not(.req-tab--active):hover { color: rgba(255,255,255,0.70); background: rgba(255,255,255,0.10); }
+      /* \u2500\u2500 Tab panels \u2500\u2500 */
+      .req-panels-wrap { flex: 1; display: flex; flex-direction: column; padding: 6px 0; }
+      .req-panel { display: flex; flex-direction: column; gap: 7px; }
+      .req-panel--hidden { display: none; }
       @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
       /* \u2500\u2500 \u010Cekaj\xEDc\xED \u017E\xE1dosti (admin) \u2500\u2500 */
@@ -1606,6 +1668,7 @@ var STYLES = `
 
       /* \u2500\u2500 Popup day/night CSS custom properties \u2500\u2500 */
       .popup-overlay {
+        color: var(--is-text);
         --is-blue:       #0a84ff;
         --is-green:      #30d158;
         --is-red:        #ff453a;
@@ -1625,6 +1688,7 @@ var STYLES = `
         --is-divider:    rgba(255,255,255,0.10);
         --is-row-hover:  rgba(255,255,255,0.04);
         --is-hdr-bg:     rgba(10,12,22,0.80);
+        --is-menu-bg:    #18182a;
         --is-hdr-blur:   blur(20px);
         --is-btn-bg:     rgba(255,255,255,0.08);
         --is-btn-bdr:    rgba(255,255,255,0.18);
@@ -1673,6 +1737,7 @@ var STYLES = `
         --is-divider:    rgba(0,0,0,0.08);
         --is-row-hover:  rgba(0,0,0,0.03);
         --is-hdr-bg:     rgba(240,242,255,0.82);
+        --is-menu-bg:    rgba(245,246,255,0.99);
         --is-hdr-blur:   blur(20px);
         --is-btn-bg:     rgba(0,0,0,0.05);
         --is-btn-bdr:    rgba(0,0,0,0.12);
@@ -1729,8 +1794,8 @@ var STYLES = `
       .popup-glass > * { position: relative; z-index: 1; }
       /* Wider modal p\u0159i IS v\xFDsledc\xEDch */
       .popup-glass.is-wide { width: min(900px, 94vw); }
-      /* Extra-wide modal pro Tautulli statistics */
-      .popup-glass.tl-wide { width: min(1100px, 96vw); }
+      /* Extra-wide modal pro Tautulli statistics \u2014 pevn\xE1 v\xFD\u0161ka eliminuje skok p\u0159i p\u0159ep\xEDn\xE1n\xED tab\u016F */
+      .popup-glass.tl-wide { width: min(1100px, 96vw); height: 88vh; }
 
       /* Scrollable body below the backdrop */
       .popup-body {
@@ -1798,6 +1863,10 @@ var STYLES = `
       }
 
       .popup-meta { flex: 1; min-width: 0; }
+      .popup-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+      .popup-actions .is-btn-row { margin-top: 0; }
+      .popup-actions .is-open-btn { margin-top: 0; }
+      .popup-actions .remove-confirm-row { margin-top: 0; }
 
       /* Trailer \u2014 YouTube thumbnail link */
       .popup-yt-thumb {
@@ -1856,12 +1925,27 @@ var STYLES = `
          POPUP \u2014 IS BUTTON + ADMIN BADGE
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
       .popup-title   { font-size: 18px; font-weight: 800; color: var(--is-text); margin: 0 0 5px; line-height: 1.2; }
-      .popup-sub     { font-size: 11px; color: var(--is-text-sec); margin-bottom: 10px; }
+      .popup-sub     { font-size: 11px; color: var(--is-text-sec); margin-bottom: 8px; }
       .popup-overview { font-size: 11px; color: var(--is-text-body); line-height: 1.65; margin: 0 0 12px; }
 
+      .instance-status-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+      .inst-chip {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 10px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
+        padding: 2px 7px 2px 6px; border-radius: 10px; border: 1px solid; line-height: 1;
+      }
+      .ic-icon { font-size: 11px; font-weight: 900; line-height: 1; }
+      .ic--available   { color: #4ade80; border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.08); }
+      .ic--downloading { color: #60a5fa; border-color: rgba(96,165,250,0.35); background: rgba(96,165,250,0.08); }
+      .ic--failed      { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
+      .ic--missing     { color: #fb923c; border-color: rgba(251,146,60,0.35);  background: rgba(251,146,60,0.08); }
+      .ic--added       { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+      .ic--none        { color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.08); background: transparent; }
+
       .is-open-btn {
+        position: relative;
         display: inline-flex; align-items: center; gap: 5px;
-        padding: 5px 12px 5px 9px; border-radius: 20px;
+        padding: 0 12px 0 9px; height: 28px; box-sizing: border-box; border-radius: 20px;
         border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg);
         color: var(--is-btn-clr); font-size: 11px; font-weight: 600;
         cursor: pointer; backdrop-filter: blur(8px);
@@ -1870,6 +1954,21 @@ var STYLES = `
       }
       .is-open-btn:hover  { background: var(--is-btn-hbg); color: var(--is-btn-hclr); }
       .is-open-btn.active { background: var(--is-btn-abg); border-color: var(--is-btn-abdr); color: var(--is-btn-aclr); }
+      .is-open-btn.in-lib { background: rgba(74,222,128,0.10); border-color: rgba(74,222,128,0.38); color: #4ade80; }
+      .is-open-btn.in-lib:hover { background: rgba(74,222,128,0.20); border-color: rgba(74,222,128,0.55); color: #4ade80; }
+      .as-done-icon { color: #4ade80; font-size:13px; font-weight:700; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:26px; }
+      .as-btn-badge { position:absolute; top:-5px; right:-5px; width:13px; height:13px; border-radius:50%; font-size:8px; font-weight:900; display:flex; align-items:center; justify-content:center; z-index:2; line-height:1; pointer-events:none; }
+      .as-btn-badge--ok  { background:#4ade80; color:#000; }
+      .as-btn-badge--err { background:#f87171; color:#fff; }
+      .as-btn-badge--dl  { background:rgba(59,130,246,0.9); color:#fff; }
+      .as-done-icon--dl  { color: rgba(59,130,246,0.9); }
+      .as-dl-bar { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,0.12); overflow:hidden; min-width:30px; max-width:60px; }
+      .as-dl-bar-fill { height:100%; background:rgba(59,130,246,0.8); border-radius:2px; transition:width 0.5s linear; }
+      .popup-day .as-dl-bar { background:rgba(0,0,0,0.10); }
+      .popup-day .as-dl-bar-fill { background:rgba(37,99,235,0.75); }
+      .is-btn-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; margin-top: 4px; height: 28px; overflow: visible; }
+      .is-btn-row .is-open-btn { margin-top: 0; height: 28px; box-sizing: border-box; }
+      .is-collapse-btn { padding: 0; width: 28px; height: 28px; border-radius: 50%; justify-content: center; flex-shrink: 0; }
 
       .is-admin-badge {
         font-size: 8px; font-weight: 800; text-transform: uppercase;
@@ -1881,8 +1980,22 @@ var STYLES = `
         background: rgba(255,149,0,0.14); border-color: rgba(255,149,0,0.40);
         color: rgba(160,80,0,0.90);
       }
+      .popup-day .ic--none  { color: rgba(0,0,0,0.35); border-color: rgba(0,0,0,0.15); background: rgba(0,0,0,0.04); }
+      .popup-day .ic--added { color: rgba(0,0,0,0.50); border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.04); }
+      .popup-day .action-spinner { border-color: rgba(0,0,0,0.15); border-top-color: rgba(0,0,0,0.65); }
+      .popup-day .popup-ctrl-btn { color: rgba(0,0,0,0.75); background: rgba(0,0,0,0.07); }
+      .popup-day .popup-ctrl-btn:hover { background: rgba(0,0,0,0.13); }
+      .popup-day .popup-ctrl-btn-main { background: rgba(229,160,13,0.25); color: rgba(0,0,0,0.80); }
+      .popup-day .popup-ctrl-btn-main:hover { background: rgba(229,160,13,0.42); }
+      .popup-day .stream-prog-track { background: rgba(0,0,0,0.12); }
+      .popup-day .stream-paused-overlay { color: rgba(0,0,0,0.7); }
+      .stream-popup-track { background: rgba(255,255,255,0.15); }
+      .stream-popup-fill  { background: rgba(255,255,255,0.7); }
+      .popup-day .stream-popup-track { background: rgba(0,0,0,0.12); }
+      .popup-day .stream-popup-fill  { background: rgba(229,160,13,0.9); }
+      .popup-day .stream-popup-time { color: rgba(0,0,0,0.45) !important; }
 
-      .remove-lib-btn  { border-color: rgba(255,120,30,0.45); color: rgba(255,150,80,0.9); height: 26px; box-sizing: border-box; }
+      .remove-lib-btn  { border-color: rgba(255,120,30,0.45); color: rgba(255,150,80,0.9); height: 28px; box-sizing: border-box; }
       .remove-lib-btn:hover  { background: rgba(255,120,30,0.18); border-color: rgba(255,120,30,0.70); color: #ff9640; }
       .remove-disc-btn, .remove-excl-btn { border-color: rgba(255,69,58,0.55); color: rgba(255,90,80,0.95); }
       .remove-disc-btn:hover, .remove-excl-btn:hover { background: rgba(255,69,58,0.20); border-color: rgba(255,69,58,0.80); color: #ff453a; }
@@ -1890,14 +2003,14 @@ var STYLES = `
         display: inline-flex; align-items: center; flex-wrap: nowrap; gap: 6px; margin-top: 4px;
       }
       .remove-confirm-row .is-open-btn {
-        margin-top: 0; height: 26px; box-sizing: border-box; flex-shrink: 1; min-width: 0;
+        margin-top: 0; height: 28px; box-sizing: border-box; flex-shrink: 1; min-width: 0;
       }
       @media (max-width: 480px) {
         .remove-confirm-row { flex-wrap: wrap; }
       }
       .remove-ic-btn {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 26px; height: 26px; box-sizing: border-box;
+        width: 28px; height: 28px; box-sizing: border-box;
         border-radius: 50%; border: 1px solid currentColor;
         background: transparent; cursor: pointer; padding: 0; flex-shrink: 0;
         transition: background 0.15s;
@@ -2535,15 +2648,41 @@ var STYLES = `
 
       /* Tautulli modal */
       /* tl-modal-* removed \u2014 now uses popup-overlay / popup-glass / popup-close / is-panel-hdr */
-      .tl-graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-      .tl-graph-card { background: var(--is-row-hover, rgba(255,255,255,0.03)); border: 1px solid var(--is-divider, rgba(255,255,255,0.07)); border-radius: 12px; padding: 14px; }
-      .tl-graph-card.full { grid-column: 1 / -1; }
-      .tl-graph-title { font-size: 11px; font-weight: 700; color: var(--is-text-label, rgba(255,255,255,0.45)); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
-      .tl-bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 72px; }
-      .tl-bar-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-      .tl-bar-chart-bar { width: 100%; border-radius: 2px 2px 0 0; background: rgba(250,180,50,0.5); min-height: 2px; transition: background .15s; cursor: pointer; }
-      .tl-bar-chart-bar:hover { background: rgba(250,180,50,0.85); }
-      .tl-bar-chart-label { font-size: 7px; color: var(--is-text-muted, rgba(255,255,255,0.25)); }
+      /* \u2500\u2500 Tautulli Graphs \u2500\u2500 */
+      .tl-graph-title { font-size: 10px; font-weight: 700; color: var(--is-text-label); text-transform: uppercase; letter-spacing: .06em; }
+      .tl-g-card { background: var(--is-row-hover); border: 1px solid var(--is-divider); border-radius: 10px; padding: 12px 12px 10px 12px; --tl-wknd: rgba(255,255,255,0.035); --tl-col-hlt: rgba(255,255,255,0.06); }
+      .popup-day .tl-g-card { --tl-wknd: rgba(0,0,0,0.03); --tl-col-hlt: rgba(0,0,0,0.05); }
+      .tl-g-svg { width: 100%; display: block; overflow: visible; }
+
+      /* Bar animation: scale up from bottom of each bar's own bbox */
+      @keyframes tl-g-bar-up {
+        from { transform: scaleY(0); opacity: 0.4; }
+        to   { transform: scaleY(1); opacity: 1; }
+      }
+      .tl-g-anim-bar {
+        transform-box: fill-box;
+        transform-origin: center bottom;
+        animation: tl-g-bar-up 0.38s cubic-bezier(.22,.61,.36,1) both;
+      }
+      /* Hover highlight for column groups */
+      .tl-g-col:hover .tl-g-anim-bar { opacity: 1 !important; filter: brightness(1.15); }
+
+      /* Line animation: draw left\u2192right via stroke-dashoffset (large dasharray, no pathLength) */
+      @keyframes tl-g-line-draw {
+        from { stroke-dashoffset: 4000; }
+        to   { stroke-dashoffset: 0; }
+      }
+      .tl-g-anim-line {
+        stroke-dasharray: 4000;
+        animation: tl-g-line-draw 0.75s ease-out both;
+      }
+
+      /* HTML x-axis label row below SVG \u2014 avoids font stretching from preserveAspectRatio:none */
+      .tl-g-x-labels { position: relative; height: 16px; margin-top: 2px; overflow: visible; }
+      .tl-g-x-labels span { white-space: nowrap; font-size: 10px; color: var(--is-text-muted); line-height: 1; }
+
+      /* HTML y-axis label \u2014 consistent size regardless of chart width */
+      .tl-g-ylabel { position: absolute; top: 2px; left: 2px; font-size: 10px; color: var(--is-text-muted); line-height: 1; pointer-events: none; z-index: 1; white-space: nowrap; }
       .tl-hist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
       .tl-hist-table th { text-align: left; padding: 6px 8px; color: var(--is-text-label); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--is-divider); }
       .tl-hist-table td { padding: 9px 8px; border-bottom: 1px solid var(--is-divider); color: var(--is-text-body); vertical-align: middle; }
@@ -2559,13 +2698,13 @@ var STYLES = `
       .tl-ack-btn { margin-left: auto; flex-shrink: 0; align-self: center; background: rgba(255,60,60,0.18); border: 1px solid rgba(255,60,60,0.35); border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; color: rgba(255,120,120,0.9); cursor: pointer; transition: all .15s; white-space: nowrap; }
       .tl-ack-btn:hover { background: rgba(255,60,60,0.3); color: #fff; }
       .tl-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
-      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg); color: var(--is-btn-clr); cursor: pointer; font-size: 12px; transition: all .15s; }
+      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg); color: var(--is-btn-clr); cursor: pointer; font-size: 12px; line-height: 1.4; transition: all .15s; }
       .tl-page-btn:disabled { opacity: 0.3; pointer-events: none; }
       .tl-page-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
       .tl-page-btn.active { background: rgba(10,132,255,0.28); border-color: rgba(10,132,255,0.55); color: #fff; }
       .tl-col-item { display: flex; align-items: center; gap: 8px; padding: 6px 14px; cursor: pointer; font-size: 12px; color: var(--is-text-body,rgba(255,255,255,0.8)); white-space: nowrap; transition: background .1s; }
       .tl-col-item:hover { background: var(--is-row-hover,rgba(255,255,255,0.05)); }
-      .tl-col-chk { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); background: transparent; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
+      .tl-col-chk { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--is-btn-bdr); background: transparent; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
       .tl-col-chk.on { background: rgba(10,132,255,0.85); border-color: rgba(10,132,255,0.9); }
       .tl-col-chk.on::after { content: "\u2713"; font-size: 9px; color: #fff; font-weight: 900; line-height: 1; }
       .tl-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
@@ -2586,7 +2725,7 @@ var STYLES = `
       .tl-mob-card:last-child { border-bottom: none; }
       .tl-mob-card:hover { background: var(--is-row-hover); }
       .tl-mob-r1 { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; min-width: 0; }
-      .tl-mob-name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tl-mob-name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--is-text); }
       .tl-mob-meta { display: flex; gap: 10px; font-size: 11px; color: var(--is-text-label); flex-wrap: wrap; }
       .tl-mob-edit { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
       .tl-icon-btn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
@@ -2834,22 +2973,34 @@ var _InteractiveSearch = class {
   // ─────────────────────────────────────────────
   // Interactive Search — fetch + grab
   // ─────────────────────────────────────────────
-  async _fetchInteractiveSearch(radarrId) {
+  async _fetchInteractiveSearch(radarrId, instance = "radarr") {
+    this._isInstance = instance;
     this._isState = "loading";
     this._isResults = [];
     this._isError = null;
     this._renderPopupEl();
+    const svc = instance === "radarr2" ? "radarr2" : "radarr";
     try {
       if (!radarrId) {
         const tmdbId = this._popup?.tmdbId || this._popup?.id;
         const title = this._popup?.title || this._popup?.originalTitle || "";
         if (!tmdbId) throw new Error(this._t("isMissingTmdb"));
         await this._fetchOverseerrRadarrSettings();
-        const profileId = this._seerrRadarr?.profileId ?? (this._radarrProfiles[0]?.id ?? 1);
-        const rootFolder = this._seerrRadarr?.rootFolder ?? "/movies";
+        const seerr = instance === "radarr2" ? this._seerrRadarr2 : this._seerrRadarr;
+        if (instance === "radarr2") {
+          if (!this._radarr2Profiles?.length) await this._fetchRadarr2Profiles();
+          if (!this._radarr2RootFolders?.length) await this._fetchRadarr2RootFolders();
+        } else {
+          if (!this._radarrProfiles?.length) await this._fetchRadarrProfiles();
+          if (!this._radarrRootFolders?.length) await this._fetchRadarrRootFolders();
+        }
+        const profiles = instance === "radarr2" ? this._radarr2Profiles : this._radarrProfiles;
+        const rootFolders = instance === "radarr2" ? this._radarr2RootFolders : this._radarrRootFolders;
+        const profileId = seerr?.profileId ?? (profiles?.[0]?.id ?? 1);
+        const rootFolder = seerr?.rootFolder ?? rootFolders?.[0]?.path ?? "/movies";
         let addedMovie;
         try {
-          addedMovie = await this._hass.callApi("POST", "arr_stack/radarr/movie", {
+          addedMovie = await this._hass.callApi("POST", `arr_stack/${svc}/movie`, {
             tmdbId: parseInt(tmdbId),
             title,
             qualityProfileId: parseInt(profileId),
@@ -2858,17 +3009,31 @@ var _InteractiveSearch = class {
             addOptions: { searchForMovie: false, monitor: "none" }
           });
         } catch (addErr) {
-          const movies = await this._hass.callApi("GET", "arr_stack/radarr/movies").catch(() => []);
-          if (Array.isArray(movies)) this._radarr = movies;
-          addedMovie = (this._radarr || []).find((m) => String(m.tmdbId) === String(tmdbId));
+          const movies = await this._hass.callApi("GET", `arr_stack/${svc}/movies`).catch(() => []);
+          if (instance === "radarr2") {
+            if (Array.isArray(movies)) {
+              const filtered = movies.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
+              this._radarr2 = filtered;
+              const map = /* @__PURE__ */ new Map();
+              filtered.forEach((m) => {
+                if (m.tmdbId) map.set(String(m.tmdbId), m);
+              });
+              this._radarr2ByTmdb = map;
+            }
+          } else {
+            if (Array.isArray(movies)) this._radarr = movies;
+          }
+          const pool = instance === "radarr2" ? this._radarr2 : this._radarr;
+          addedMovie = (pool || []).find((m) => String(m.tmdbId) === String(tmdbId));
         }
         radarrId = addedMovie?.id ?? null;
         if (!radarrId) throw new Error(this._t("isNoRadarrId"));
-        this._popup._radarrId = radarrId;
+        if (instance === "radarr2") this._popup._radarr2Id = radarrId;
+        else this._popup._radarrId = radarrId;
       }
       const [data, histRaw] = await Promise.all([
-        this._hass.callApi("GET", `arr_stack/radarr/release?movieId=${radarrId}`),
-        this._hass.callApi("GET", `arr_stack/radarr/history?movieId=${radarrId}`).catch(() => null)
+        this._hass.callApi("GET", `arr_stack/${svc}/release?movieId=${radarrId}`),
+        this._hass.callApi("GET", `arr_stack/${svc}/history?movieId=${radarrId}`).catch(() => null)
       ]);
       const records = histRaw?.records ?? (Array.isArray(histRaw) ? histRaw : []);
       const dlIdOutcome = {};
@@ -2901,11 +3066,12 @@ var _InteractiveSearch = class {
     this._isGrabbing = guid;
     this._renderPopupEl();
     try {
+      const svc = this._isInstance === "radarr2" ? "radarr2" : "radarr";
       const release = this._isResults.find((r) => r.guid === guid) || { guid, indexerId };
-      release.movieId = this._popup._radarrId;
-      const result = await this._hass.callApi("POST", "arr_stack/radarr/release", release);
-      console.log("[arr-card] grab result:", result);
+      release.movieId = this._isInstance === "radarr2" ? this._popup._radarr2Id : this._popup._radarrId;
+      await this._hass.callApi("POST", `arr_stack/${svc}/release`, release);
       this._isGrabbed.add(guid);
+      this._dlTriggeredBy = "is";
     } catch (e) {
       console.error("[arr-card] grab error:", e);
       const prev = this._isError;
@@ -2970,10 +3136,16 @@ var _SonarrIS = class {
       return `<div class="sn-is-section"><div class="is-loading">${this._t("snNotInSonarr")}</div></div>`;
     }
     const seasons = (series.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
-    const rows = seasons.map((s) => this._renderSnSeasonRow(s)).join("");
+    const PER_PAGE = 4;
+    const totalPages = Math.max(1, Math.ceil(seasons.length / PER_PAGE));
+    const page = Math.min(this._snSeasonsPage || 0, totalPages - 1);
+    const sliced = seasons.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+    const rows = sliced.map((s) => this._renderSnSeasonRow(s)).join("");
+    const paginationHtml = this._tlMobPag("sn-spage", page, totalPages);
     return `<div class="sn-is-section">
       <div class="sn-seasons-label">${this._t("snSeasonsLabel")}</div>
-      ${rows}
+      <div style="min-height:156px;display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <div style="padding-bottom:12px">${paginationHtml}</div>
     </div>`;
   }
   _renderSnSeasonRow(season) {
@@ -3217,6 +3389,153 @@ var _SonarrIS = class {
 };
 var sonarrIsMixin = _SonarrIS.prototype;
 
+// src/render/auto-search.js
+var POPUP_TYPE_AS = { RADARR: "radarr", MOVIE: "movie", SONARR: "sonarr", TV: "tv" };
+var _AutoSearchMethods = class {
+  // ─── Entry point ─────────────────────────────────────────────────────────
+  _renderAsSection() {
+    if (!this._asOpen) return "";
+    const d = this._popup;
+    const isMovieType = d._type === POPUP_TYPE_AS.RADARR || d._type === POPUP_TYPE_AS.MOVIE;
+    return isMovieType ? this._renderAsMoviePanel() : this._renderAsSeasonsView();
+  }
+  // ─── Movie panel ─────────────────────────────────────────────────────────
+  _renderAsMoviePanel() {
+    const checkSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const crossSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    if (this._asState === "confirm") {
+      return `<div class="sn-is-section">
+        <div class="is-confirm-wrap">
+          <div class="is-confirm-msg">${this._t("asMovieConfirm")}</div>
+          <div class="is-confirm-actions">
+            <button class="is-confirm-btn is-confirm-yes" data-action="as-confirm-yes">${checkSvg}</button>
+            <button class="is-confirm-btn is-confirm-no" data-action="as-confirm-no">${crossSvg}</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    return "";
+  }
+  // ─── Seasons view (Sonarr) ────────────────────────────────────────────────
+  _renderAsSeasonsView() {
+    const d = this._popup;
+    const series = this._asInstance === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+    const checkSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const crossSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const spinner = `<span class="action-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:var(--is-blue)"></span>`;
+    if (!series) {
+      if (this._asState === "confirm") {
+        return `<div class="sn-is-section">
+          <div class="is-confirm-wrap">
+            <div class="is-confirm-msg">${this._t("asSeriesConfirm")}</div>
+            <div class="is-confirm-actions">
+              <button class="is-confirm-btn is-confirm-yes" data-action="as-confirm-yes">${checkSvg}</button>
+              <button class="is-confirm-btn is-confirm-no" data-action="as-confirm-no">${crossSvg}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+      return "";
+    }
+    const seasons = (series.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
+    const PER_PAGE = 4;
+    const totalPages = Math.max(1, Math.ceil(seasons.length / PER_PAGE));
+    const page = Math.min(this._snSeasonsPage || 0, totalPages - 1);
+    const sliced = seasons.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+    const rows = sliced.map((s) => this._renderAsSeasonRow(s)).join("");
+    const pagination = this._tlMobPag("sn-spage", page, totalPages);
+    return `<div class="sn-is-section">
+      <div class="sn-seasons-label">${this._t("snSeasonsLabel")}</div>
+      <div style="min-height:156px;display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <div style="padding-bottom:12px">${pagination}</div>
+    </div>`;
+  }
+  _renderAsSeasonRow(season) {
+    const n = season.seasonNumber;
+    const exp = this._snExpandedSeasons.has(n);
+    const stat = season.statistics || {};
+    const have = stat.episodeFileCount ?? 0;
+    const tot = stat.totalEpisodeCount ?? stat.episodeCount ?? 0;
+    const pct = tot > 0 ? Math.round(have / tot * 100) : 0;
+    const key = `season:${n}`;
+    const isSearching = this._asSearchingItems.has(key);
+    const isSearched = this._asSearchedItems.has(key);
+    const _series = this._asInstance === "sonarr2" ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
+    const _qSeasons = this._asInstance === "sonarr2" ? this._sonarr2QueueSeasons || /* @__PURE__ */ new Set() : this._sonarrQueueSeasons || /* @__PURE__ */ new Set();
+    const _qSeasonPct = this._asInstance === "sonarr2" ? this._sonarr2QueueSeasonPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeasonPct || /* @__PURE__ */ new Map();
+    const _seasonKey = _series?.id != null ? `${_series.id}:${n}` : null;
+    const isDownloading = this._asDownloadingItems.has(key) || _seasonKey && _qSeasons.has(_seasonKey);
+    const dlPct = isDownloading && _seasonKey ? _qSeasonPct.get(_seasonKey) ?? null : null;
+    const searchSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+    const chevron = `<svg class="sn-season-chevron${exp ? " open" : ""}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    let searchBtn;
+    if (isSearching) {
+      searchBtn = `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`;
+    } else if (isDownloading) {
+      searchBtn = `<span class="as-done-icon as-done-icon--dl"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg></span>`;
+    } else if (isSearched) {
+      searchBtn = `<span class="as-done-icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
+    } else {
+      searchBtn = `<button class="btn-person" data-action="as-season-search" data-season="${n}" title="Search season ${n}">${searchSvg}</button>`;
+    }
+    const episodesHtml = exp ? this._renderAsEpisodesPanel(n) : "";
+    return `<div class="sn-season-row" data-season="${n}">
+      <div class="sn-season-header">
+        <button class="sn-expand" data-action="sn-season-toggle" data-season="${n}" title="${this._t("snExpandEpisodes")}">${chevron}</button>
+        <span class="sn-season-title">${this._t("snSeasonTitle")} ${n}</span>
+        <span class="sn-season-stat">${have}/${tot}</span>
+        <div class="sn-season-bar"><div class="sn-season-bar-fill" style="width:${pct}%"></div></div>
+        ${searchBtn}
+      </div>
+      ${episodesHtml}
+    </div>`;
+  }
+  _renderAsEpisodesPanel(seasonNumber) {
+    const eps = this._snEpisodes.get(seasonNumber);
+    if (!eps) {
+      return `<div class="sn-episodes sn-episodes-loading">
+        <span class="action-spinner" style="width:14px;height:14px;border-width:1.5px"></span>
+      </div>`;
+    }
+    if (eps.length === 0) {
+      return `<div class="sn-episodes"><span style="color:rgba(255,255,255,0.4);font-size:11px">${this._t("snNoEpisodes")}</span></div>`;
+    }
+    return `<div class="sn-episodes">${eps.map((ep) => this._renderAsEpRow(ep)).join("")}</div>`;
+  }
+  _renderAsEpRow(ep) {
+    const key = `ep:${ep.id}`;
+    const isSearching = this._asSearchingItems.has(key);
+    const isSearched = this._asSearchedItems.has(key);
+    const _qEpisodes = this._asInstance === "sonarr2" ? this._sonarr2QueueEpisodes || /* @__PURE__ */ new Set() : this._sonarrQueueEpisodes || /* @__PURE__ */ new Set();
+    const _qEpPct = this._asInstance === "sonarr2" ? this._sonarr2QueueEpPct || /* @__PURE__ */ new Map() : this._sonarrQueueEpPct || /* @__PURE__ */ new Map();
+    const isDownloading = this._asDownloadingItems.has(key) || _qEpisodes.has(ep.id);
+    const dlPct = isDownloading ? _qEpPct.get(ep.id) ?? null : null;
+    const hasFile = !!ep.hasFile;
+    const epNum = `S${String(ep.seasonNumber).padStart(2, "0")}E${String(ep.episodeNumber).padStart(2, "0")}`;
+    const searchSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+    let searchBtn;
+    if (isSearching) {
+      searchBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;
+    } else if (isDownloading) {
+      const bar = dlPct !== null ? `<div class="as-dl-bar" style="max-width:40px"><div class="as-dl-bar-fill" style="width:${dlPct}%"></div></div>` : "";
+      searchBtn = `<span class="as-done-icon as-done-icon--dl" style="display:inline-flex;align-items:center;gap:3px">${bar}<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg></span>`;
+    } else if (isSearched) {
+      searchBtn = `<span class="as-done-icon"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
+    } else {
+      searchBtn = `<button class="btn-person btn-person-sm" data-action="as-ep-search" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Search episode">${searchSvg}</button>`;
+    }
+    return `<div class="sn-ep-item">
+      <div class="sn-ep-row${hasFile ? " has-file" : ""}">
+        <span class="sn-ep-num">${epNum}</span>
+        <span class="sn-ep-title">${this._escHtml(ep.title || "")}</span>
+        ${ep.airDate ? `<span class="sn-ep-date">${ep.airDate.slice(0, 10)}</span>` : ""}
+        ${searchBtn}
+      </div>
+    </div>`;
+  }
+};
+var autoSearchMixin = _AutoSearchMethods.prototype;
+
 // src/fetch/index.js
 var _FetchMethods = class {
   _callApi(method, path, body) {
@@ -3224,6 +3543,13 @@ var _FetchMethods = class {
     return this._hass.callApi(method, p, body);
   }
   async _fetchAll() {
+    if (this._overseerrConfigured === null) {
+      await this._fetchOverseerrRadarrSettings();
+    }
+    await Promise.allSettled([
+      this._fetchRadarr2(),
+      this._fetchSonarr2()
+    ]);
     await Promise.allSettled([
       this._fetchRadarr(),
       this._fetchSonarr(),
@@ -3237,15 +3563,131 @@ var _FetchMethods = class {
       this._fetchQbit(),
       this._fetchBazarr(),
       this._fetchRadarrQueue(),
+      this._fetchRadarr2Queue(),
       this._fetchPendingRequests(),
       this._fetchMyPendingRequests(),
       this._fetchRadarrTags(),
       this._fetchSonarrTags(),
       this._fetchRadarrRootFolders(),
       this._fetchSonarrRootFolders(),
-      this._fetchTautulli()
+      this._fetchRadarr2Profiles(),
+      this._fetchRadarr2Tags(),
+      this._fetchRadarr2RootFolders(),
+      this._fetchTautulli(),
+      this._fetchPlexSessions()
     ]);
     this._render();
+  }
+  async _fetchPlexSessions() {
+    const now = Date.now();
+    if (now - (this._plexLastFetch || 0) < 5e3) return;
+    this._plexLastFetch = now;
+    try {
+      const raw = await this._callApi("GET", "arr_stack/plex/sessions");
+      if (Array.isArray(raw)) {
+        this._plexConfigured = false;
+        this._plexSessions = [];
+        return;
+      }
+      this._plexConfigured = true;
+      const sessions = raw?.MediaContainer?.Metadata || [];
+      this._plexSessions = sessions.filter((s) => s.Player?.machineIdentifier && (s.Player.state === "playing" || s.Player.state === "paused")).map((s) => this._normalizePlexSession(s));
+    } catch (_) {
+      this._plexConfigured = false;
+      this._plexSessions = [];
+    }
+  }
+  _normalizePlexSession(s) {
+    const player = s.Player || {};
+    const type = s.type || "";
+    const isTV = type === "episode";
+    const isMusic = type === "track";
+    const poster = null;
+    const productStr = (player.product || "").toLowerCase();
+    const deviceStr = (player.device || "").toLowerCase();
+    const platformStr = (player.platform || "").toLowerCase();
+    const nl = `${productStr} ${deviceStr} ${platformStr}`;
+    let deviceIcon = "mdi:television";
+    let deviceName = "TV";
+    if (/plexamp/i.test(productStr)) {
+      if (/ipad|ipados/i.test(nl)) {
+        deviceIcon = "mdi:tablet";
+        deviceName = "iPad";
+      } else if (/iphone|ios/i.test(nl)) {
+        deviceIcon = "mdi:cellphone";
+        deviceName = "iPhone";
+      } else if (/android/i.test(nl)) {
+        deviceIcon = "mdi:cellphone";
+        deviceName = "Phone";
+      } else if (/mac|macos/i.test(nl)) {
+        deviceIcon = "mdi:laptop";
+        deviceName = "Mac";
+      } else if (/windows/i.test(nl)) {
+        deviceIcon = "mdi:monitor";
+        deviceName = "PC";
+      } else {
+        deviceIcon = "mdi:music";
+        deviceName = "Plexamp";
+      }
+    } else if (/iphone|for ios/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    } else if (/ipad|ipados/i.test(nl)) {
+      deviceIcon = "mdi:tablet";
+      deviceName = "Tablet";
+    } else if (/macbook|for mac\b|mac desktop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Mac";
+    } else if (/laptop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Notebook";
+    } else if (/windows|for windows|desktop|pc\b/i.test(nl)) {
+      deviceIcon = "mdi:monitor";
+      deviceName = "PC";
+    } else if (/web|chrome|browser|safari|firefox/i.test(nl)) {
+      deviceIcon = "mdi:web";
+      deviceName = "Browser";
+    } else if (/apple\s*tv|android\s*tv|fire\s*tv|roku|shield/i.test(nl)) {
+      deviceIcon = "mdi:television";
+      deviceName = "TV";
+    } else if (/android/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    }
+    const port = player.port || (player.secure ? 32433 : 32500);
+    const protocol = player.secure ? "https" : "http";
+    const playerUrl = player.address ? `${protocol}://${player.address}:${port}` : null;
+    return {
+      id: `plex:${player.machineIdentifier}`,
+      source: "plex",
+      state: player.state || "playing",
+      attr: {
+        media_content_type: isTV ? "episode" : isMusic ? "music" : "movie",
+        media_title: s.title || "",
+        // episode title / movie title / track title
+        media_series_title: isTV ? s.grandparentTitle || "" : "",
+        media_season: isTV ? s.parentIndex || 0 : 0,
+        media_episode: isTV ? s.index || 0 : 0,
+        media_artist: isMusic ? s.grandparentTitle || "" : "",
+        media_album_name: isMusic ? s.parentTitle || "" : "",
+        media_channel: "",
+        media_library_title: "",
+        entity_picture: null,
+        // Plex poster built fresh at render via _plexThumb
+        _plexThumb: s.thumb || s.parentThumb || s.grandparentThumb || "",
+        media_duration: Math.round((s.duration || 0) / 1e3),
+        media_position: Math.round((s.viewOffset || 0) / 1e3),
+        media_position_updated_at: (/* @__PURE__ */ new Date()).toISOString(),
+        friendly_name: player.product || player.title || "",
+        supported_features: 0
+      },
+      _machineIdentifier: player.machineIdentifier,
+      _playerUrl: playerUrl,
+      _plexUser: s.User?.title || "",
+      _plexUserThumb: s.User?.thumb || "",
+      _plexSessionId: s.Session?.id || s.sessionKey || "",
+      _plexSessionKey: s.sessionKey || ""
+    };
   }
   async _fetchDownloadsAndRender() {
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
@@ -3297,6 +3739,47 @@ var _FetchMethods = class {
       await this._fetchBazarrEpisodes();
     } catch (e) {
       console.error("[arr-card] Sonarr fetch error:", e);
+    }
+  }
+  _is503(e) {
+    return e?.status === 503 || Number(e?.statusCode) === 503 || typeof e?.message === "string" && e.message.includes("503");
+  }
+  async _fetchRadarr2() {
+    if (this._radarr2Configured === false) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr2/movies");
+      if (data && data._notConfigured) {
+        this._radarr2Configured = false;
+        return;
+      }
+      const filtered = data.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
+      this._radarr2 = filtered.sort((a, b) => new Date(b.added) - new Date(a.added));
+      this._radarr2Total = filtered.length;
+      this._radarr2Configured = true;
+      const map = /* @__PURE__ */ new Map();
+      for (const m of filtered) if (m.tmdbId) map.set(String(m.tmdbId), m);
+      this._radarr2ByTmdb = map;
+    } catch (e) {
+      if (this._radarr2Configured === null) this._radarr2Configured = false;
+    }
+  }
+  async _fetchSonarr2() {
+    if (this._sonarr2Configured === false) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr2/series");
+      if (data && data._notConfigured) {
+        this._sonarr2Configured = false;
+        return;
+      }
+      const filtered = data.filter((s) => s.added && s.added !== "0001-01-01T00:00:00Z");
+      this._sonarr2 = filtered.sort((a, b) => new Date(b.added) - new Date(a.added));
+      this._sonarr2Total = filtered.length;
+      this._sonarr2Configured = true;
+      const map = /* @__PURE__ */ new Map();
+      for (const s of filtered) if (s.tvdbId) map.set(String(s.tvdbId), s);
+      this._sonarr2ByTvdb = map;
+    } catch (e) {
+      if (this._sonarr2Configured === null) this._sonarr2Configured = false;
     }
   }
   async _fetchSonarrRecentImports() {
@@ -3358,31 +3841,39 @@ var _FetchMethods = class {
       console.error("[arr-card] Sonarr calendar fetch error:", e);
     }
   }
+  // Returns discover service prefix — 'overseerr' when configured, 'tmdb' as fallback
+  get _discoverSvc() {
+    return this._overseerrConfigured === false ? "tmdb" : "overseerr";
+  }
   async _fetchOverseerr() {
+    if (this._overseerrConfigured === null) return;
     try {
+      const svc = this._discoverSvc;
       const [d1, d2] = await Promise.all([
-        this._callApi("GET", "arr_stack/overseerr/upcoming?page=1"),
-        this._callApi("GET", "arr_stack/overseerr/upcoming?page=2")
+        this._callApi("GET", `arr_stack/${svc}/upcoming?page=1`),
+        this._callApi("GET", `arr_stack/${svc}/upcoming?page=2`).catch(() => ({ results: [] }))
       ]);
       this._upcoming = [...d1.results || [], ...d2.results || []];
       this._upcomingError = null;
     } catch (e) {
       this._upcomingError = e.message;
-      console.error("[arr-card] Overseerr fetch error:", e);
+      console.error("[arr-card] Upcoming fetch error:", e);
     }
   }
-  // Společný helper pro stránkované Overseerr fetche (trending/popular/tvUpcoming)
+  // Společný helper pro stránkované fetche (trending/popular/tvUpcoming)
   async _fetchOverseerrPaged(endpoint, dataKey, section) {
+    if (this._overseerrConfigured === null) return;
     try {
+      const svc = this._discoverSvc;
       const [d1, d2] = await Promise.all([
-        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=1`),
-        this._callApi("GET", `arr_stack/overseerr/${endpoint}?page=2`).catch(() => ({ results: [] }))
+        this._callApi("GET", `arr_stack/${svc}/${endpoint}?page=1`),
+        this._callApi("GET", `arr_stack/${svc}/${endpoint}?page=2`).catch(() => ({ results: [] }))
       ]);
       this[dataKey] = [...d1.results || [], ...d2.results || []];
       this._overlayApiTotalPages[section] = d1.totalPages || 1;
       this._overlayApiPage[section] = 2;
     } catch (e) {
-      console.error(`[arr-card] Overseerr ${section} fetch error:`, e);
+      console.error(`[arr-card] ${section} fetch error:`, e);
     }
   }
   async _fetchTrending() {
@@ -3426,12 +3917,22 @@ var _FetchMethods = class {
     try {
       const servers = await this._callApi("GET", "arr_stack/overseerr/sonarr_settings");
       if (!Array.isArray(servers) || servers.length === 0) return;
-      const server = servers.find((s) => s.isDefault) || servers[0];
+      const primary = servers.find((s) => s.isDefault) || servers[0];
       this._seerrSonarr = {
-        serverId: server.id,
-        profileId: server.activeProfileId,
-        rootFolder: server.activeDirectory
+        serverId: primary.id,
+        profileId: primary.activeProfileId,
+        rootFolder: primary.activeDirectory,
+        name: primary.name || ""
       };
+      const secondary = servers.find((s) => s.id !== primary.id);
+      if (secondary) {
+        this._seerrSonarr2 = {
+          serverId: secondary.id,
+          profileId: secondary.activeProfileId,
+          rootFolder: secondary.activeDirectory,
+          name: secondary.name || ""
+        };
+      }
     } catch (e) {
       console.error("[arr-card] Overseerr Sonarr settings fetch error:", e);
     }
@@ -3447,7 +3948,7 @@ var _FetchMethods = class {
   }
   async _oneClickTvRequest(show) {
     try {
-      if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      if (this._overseerrConfigured !== false && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
       const profileName = this._cfgGet("discover", "oneClickDefaultShowProfile", "");
       let profileId = this._seerrSonarr?.profileId ?? null;
       if (profileName) {
@@ -3462,13 +3963,28 @@ var _FetchMethods = class {
         if (tagMatch) tagId = tagMatch.id;
       }
       const cfgRootFolder = this._cfgGet("discover", "oneClickDefaultShowRootFolder", "") || null;
-      const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
-      const season1 = (detail.seasons || []).find((s) => s.seasonNumber === 1);
-      const seasons = season1 ? [1] : [(detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0]?.seasonNumber].filter(Boolean);
+      let seasons = [];
+      if (this._overseerrConfigured !== false) {
+        const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
+        const season1 = (detail.seasons || []).find((s) => s.seasonNumber === 1);
+        seasons = season1 ? [1] : [(detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0]?.seasonNumber].filter(Boolean);
+      } else {
+        const tvdbId = show.externalIds?.tvdbId || show.tvdbId;
+        if (tvdbId) {
+          const lookup = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
+          const s = Array.isArray(lookup) ? lookup[0] : lookup;
+          const allSeasons = (s?.seasons || []).filter((x) => x.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
+          seasons = allSeasons.length ? [allSeasons[0].seasonNumber] : [];
+        }
+      }
       if (seasons.length === 0) return;
       this._optimisticRequested.add(show.id);
       this._withdrawnIds.delete(show.id);
       this._reRenderRight();
+      if (this._overseerrConfigured === false) {
+        await this._addDirectTvRequest(show, seasons, profileId, tagId, cfgRootFolder);
+        return;
+      }
       const body = { mediaType: "tv", mediaId: show.id, seasons };
       if (this._seerrSonarr) {
         body.serverId = this._seerrSonarr.serverId;
@@ -3495,16 +4011,41 @@ var _FetchMethods = class {
     this._reRenderRight();
     await Promise.allSettled([
       (async () => {
-        const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${m.id}`);
-        const seasons = (detail.seasons || []).filter((s) => s.seasonNumber > 0).map((s) => s.seasonNumber).sort((a, b) => a - b);
+        let seasons = [];
+        if (this._overseerrConfigured !== false) {
+          try {
+            const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${m.id}`);
+            seasons = (detail.seasons || []).filter((s) => s.seasonNumber > 0).map((s) => s.seasonNumber).sort((a, b) => a - b);
+          } catch (_) {
+          }
+        }
+        if (!seasons.length) {
+          let tvdbId = m.externalIds?.tvdbId || m.tvdbId;
+          if (!tvdbId && this._overseerrConfigured === false) {
+            try {
+              const ext = await this._callApi("GET", `arr_stack/tmdb/tv/${m.id}`);
+              tvdbId = ext?.externalIds?.tvdbId;
+            } catch (_) {
+            }
+          }
+          if (tvdbId) {
+            try {
+              const lookup = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
+              const s = Array.isArray(lookup) ? lookup[0] : lookup;
+              seasons = (s?.seasons || []).filter((s2) => s2.seasonNumber > 0).map((s2) => s2.seasonNumber).sort((a, b) => a - b);
+            } catch (_) {
+            }
+          }
+        }
         if (this._tvRequestPending) {
           this._tvRequestPending.seasons = seasons;
           this._tvRequestPending.selected = new Set(seasons);
         }
       })(),
       this._fetchSonarrProfiles(),
+      this._fetchSonarrRootFolders(),
       (async () => {
-        if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+        if (this._overseerrConfigured !== false && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
       })()
     ]);
     if (this._tvRequestPending) {
@@ -3547,6 +4088,69 @@ var _FetchMethods = class {
       console.error("[arr-card] Overseerr TV request error:", e);
     }
   }
+  // ─── Direct add (bez Overseerr) ────────────────────────────────────────────
+  async _addDirectMovieRequest(tmdbId, profileId, tagId, rootFolder, instance = "radarr") {
+    const svc = instance === "radarr2" ? "radarr2" : "radarr";
+    const profiles = instance === "radarr2" ? this._radarr2Profiles : this._radarrProfiles;
+    const rootFolders = instance === "radarr2" ? this._radarr2RootFolders : this._radarrRootFolders;
+    this._optimisticRequested.add(tmdbId);
+    this._withdrawnIds?.delete(tmdbId);
+    this._requestPending = null;
+    this._reRenderRight();
+    try {
+      const rf = rootFolder || rootFolders?.[0]?.path || "/movies";
+      const pId = profileId ? parseInt(profileId) : profiles?.[0]?.id ?? 1;
+      const body = { tmdbId: parseInt(tmdbId), qualityProfileId: pId, rootFolderPath: rf, monitored: true, addOptions: { searchForMovie: true } };
+      if (tagId) body.tags = [parseInt(tagId)];
+      await this._callApi("POST", `arr_stack/${svc}/movie`, body);
+      setTimeout(() => {
+        (svc === "radarr2" ? this._fetchRadarr2() : this._fetchRadarr()).then(() => this._reRenderRight());
+      }, 2e3);
+    } catch (e) {
+      this._optimisticRequested.delete(tmdbId);
+      this._reRenderRight();
+      console.error("[arr-card] Direct Radarr add error:", e);
+    }
+  }
+  async _addDirectTvRequest(show, seasons, profileId, tagId, rootFolder) {
+    const showId = show?.id;
+    const tvdbId = show?.externalIds?.tvdbId || show?.tvdbId;
+    if (!tvdbId) return;
+    if (showId) {
+      this._optimisticRequested.add(showId);
+      this._withdrawnIds?.delete(showId);
+    }
+    this._tvRequestPending = null;
+    this._reRenderRight();
+    try {
+      await this._fetchSonarrProfiles();
+      await this._fetchSonarrRootFolders();
+      const lookupResults = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
+      const seriesData = Array.isArray(lookupResults) ? lookupResults[0] : lookupResults;
+      if (!seriesData) throw new Error("Series not found");
+      const rf = rootFolder || this._sonarrRootFolders?.[0]?.path || "/tv";
+      const pId = profileId ? parseInt(profileId) : this._sonarrProfiles?.[0]?.id ?? 1;
+      const seasonObjs = (seriesData.seasons || []).map((s) => ({ ...s, monitored: seasons.includes(s.seasonNumber) }));
+      try {
+        await this._callApi("POST", "arr_stack/sonarr/series", {
+          ...seriesData,
+          seasons: seasonObjs,
+          qualityProfileId: pId,
+          rootFolderPath: rf,
+          monitored: true,
+          addOptions: { searchForMissingEpisodes: true, searchForCutoffUnmetEpisodes: false, monitor: "none" },
+          ...tagId ? { tags: [parseInt(tagId)] } : {}
+        });
+      } catch (_) {
+      }
+      setTimeout(() => this._fetchSonarr().then(() => this._reRenderRight()), 2e3);
+    } catch (e) {
+      if (showId) this._optimisticRequested.delete(showId);
+      this._reRenderRight();
+      console.error("[arr-card] Direct Sonarr add error:", e);
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
   async _fetchBazarr() {
     try {
       const data = await this._callApi("GET", "arr_stack/bazarr/movies");
@@ -3596,19 +4200,98 @@ var _FetchMethods = class {
       const records = data.records || data;
       const failed = /* @__PURE__ */ new Set();
       const active = /* @__PURE__ */ new Set();
+      const pct = /* @__PURE__ */ new Map();
       for (const item of Array.isArray(records) ? records : []) {
         if (!item.movieId) continue;
         const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
         if (bad) {
           failed.add(item.movieId);
-        } else {
-          active.add(item.movieId);
+          continue;
         }
+        active.add(item.movieId);
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        pct.set(item.movieId, sz > 0 ? Math.round((sz - sl) / sz * 100) : 0);
       }
       this._radarrQueueFailed = failed;
       this._radarrQueueActive = active;
+      this._radarrQueuePct = pct;
     } catch (e) {
       console.error("[arr-card] Radarr queue fetch error:", e);
+    }
+  }
+  async _fetchRadarr2Queue() {
+    if (this._radarr2Configured === false) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr2/queue");
+      const records = data.records || data;
+      const failed = /* @__PURE__ */ new Set();
+      const active = /* @__PURE__ */ new Set();
+      const pct = /* @__PURE__ */ new Map();
+      for (const item of Array.isArray(records) ? records : []) {
+        if (!item.movieId) continue;
+        const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+        if (bad) {
+          failed.add(item.movieId);
+          continue;
+        }
+        active.add(item.movieId);
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        pct.set(item.movieId, sz > 0 ? Math.round((sz - sl) / sz * 100) : 0);
+      }
+      this._radarr2QueueFailed = failed;
+      this._radarr2QueueActive = active;
+      this._radarr2QueuePct = pct;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarrQueue(instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    const seasonsKey = instance === "sonarr2" ? "_sonarr2QueueSeasons" : "_sonarrQueueSeasons";
+    const episodesKey = instance === "sonarr2" ? "_sonarr2QueueEpisodes" : "_sonarrQueueEpisodes";
+    const epPctKey = instance === "sonarr2" ? "_sonarr2QueueEpPct" : "_sonarrQueueEpPct";
+    const seasonPctKey = instance === "sonarr2" ? "_sonarr2QueueSeasonPct" : "_sonarrQueueSeasonPct";
+    const seriesPctKey = instance === "sonarr2" ? "_sonarr2QueueSeriesPct" : "_sonarrQueueSeriesPct";
+    try {
+      const data = await this._callApi("GET", `arr_stack/${svc}/queue`);
+      const records = Array.isArray(data) ? data : data.records || [];
+      const seasons = /* @__PURE__ */ new Set();
+      const episodes = /* @__PURE__ */ new Set();
+      const epPct = /* @__PURE__ */ new Map();
+      const seasonData = /* @__PURE__ */ new Map();
+      const seriesData = /* @__PURE__ */ new Map();
+      for (const item of records) {
+        const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+        if (bad) continue;
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        const pct = sz > 0 ? Math.round((sz - sl) / sz * 100) : 0;
+        if (item.seriesId != null && item.seasonNumber != null) {
+          const sk = `${item.seriesId}:${item.seasonNumber}`;
+          seasons.add(sk);
+          const prev = seasonData.get(sk) || { size: 0, sizeleft: 0 };
+          seasonData.set(sk, { size: prev.size + sz, sizeleft: prev.sizeleft + sl });
+          const sprev = seriesData.get(item.seriesId) || { size: 0, sizeleft: 0 };
+          seriesData.set(item.seriesId, { size: sprev.size + sz, sizeleft: sprev.sizeleft + sl });
+        }
+        if (item.episodeId != null) {
+          episodes.add(item.episodeId);
+          epPct.set(item.episodeId, pct);
+        }
+      }
+      const seasonPct = /* @__PURE__ */ new Map();
+      for (const [sk, { size, sizeleft }] of seasonData)
+        seasonPct.set(sk, size > 0 ? Math.round((size - sizeleft) / size * 100) : 0);
+      const seriesPct = /* @__PURE__ */ new Map();
+      for (const [sid, { size, sizeleft }] of seriesData)
+        seriesPct.set(sid, size > 0 ? Math.round((size - sizeleft) / size * 100) : 0);
+      this[seasonsKey] = seasons;
+      this[episodesKey] = episodes;
+      this[epPctKey] = epPct;
+      this[seasonPctKey] = seasonPct;
+      this[seriesPctKey] = seriesPct;
+    } catch (e) {
     }
   }
   async _fetchSab() {
@@ -3739,15 +4422,30 @@ var _FetchMethods = class {
   async _fetchOverseerrRadarrSettings() {
     try {
       const servers = await this._callApi("GET", "arr_stack/overseerr/radarr_settings");
-      if (!Array.isArray(servers) || servers.length === 0) return;
-      const server = servers.find((s) => s.isDefault) || servers[0];
+      if (!Array.isArray(servers) || servers.length === 0) {
+        this._overseerrConfigured = false;
+        return;
+      }
+      this._overseerrConfigured = true;
+      const primary = servers.find((s) => s.isDefault && !s.is4k) || servers.find((s) => !s.is4k) || servers[0];
       this._seerrRadarr = {
-        serverId: server.id,
-        profileId: server.activeProfileId,
-        rootFolder: server.activeDirectory
+        serverId: primary.id,
+        profileId: primary.activeProfileId,
+        rootFolder: primary.activeDirectory,
+        name: primary.name || ""
       };
+      const secondary = servers.find((s) => s.id !== primary.id && s.is4k) || servers.find((s) => s.id !== primary.id);
+      if (secondary) {
+        this._seerrRadarr2 = {
+          serverId: secondary.id,
+          profileId: secondary.activeProfileId,
+          rootFolder: secondary.activeDirectory,
+          is4k: !!secondary.is4k,
+          name: secondary.name || ""
+        };
+      }
     } catch (e) {
-      console.error("[arr-card] Overseerr Radarr settings fetch error:", e);
+      this._overseerrConfigured = false;
     }
   }
   async _fetchRadarrProfiles() {
@@ -3783,6 +4481,33 @@ var _FetchMethods = class {
     } catch (e) {
     }
   }
+  async _fetchRadarr2Profiles() {
+    if (this._radarr2Configured === false) return;
+    if (this._radarr2Profiles.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr2/profiles");
+      if (Array.isArray(data)) this._radarr2Profiles = data;
+    } catch (e) {
+    }
+  }
+  async _fetchRadarr2Tags() {
+    if (this._radarr2Configured === false) return;
+    if (this._radarr2Tags.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr2/tags");
+      if (Array.isArray(data)) this._radarr2Tags = data;
+    } catch (e) {
+    }
+  }
+  async _fetchRadarr2RootFolders() {
+    if (this._radarr2Configured === false) return;
+    if (this._radarr2RootFolders.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr2/rootfolders");
+      if (Array.isArray(data)) this._radarr2RootFolders = data;
+    } catch (e) {
+    }
+  }
   async _fetchSonarrRootFolders() {
     if (this._sonarrRootFolders.length > 0) return;
     try {
@@ -3791,12 +4516,31 @@ var _FetchMethods = class {
     } catch (e) {
     }
   }
+  async _fetchSonarr2Profiles() {
+    if (this._sonarr2Configured === false) return;
+    if (this._sonarr2Profiles?.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr2/profiles");
+      if (Array.isArray(data)) this._sonarr2Profiles = data;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarr2RootFolders() {
+    if (this._sonarr2Configured === false) return;
+    if (this._sonarr2RootFolders?.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr2/rootfolders");
+      if (Array.isArray(data)) this._sonarr2RootFolders = data;
+    } catch (e) {
+    }
+  }
   // ─────────────────────────────────────────────
   // Sonarr Interactive Search
   // ─────────────────────────────────────────────
-  async _fetchSonarrEpisodes(seriesId, seasonNumber) {
+  async _fetchSonarrEpisodes(seriesId, seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
     try {
-      const data = await this._callApi("GET", `arr_stack/sonarr/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
+      const data = await this._callApi("GET", `arr_stack/${svc}/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
       const eps = (Array.isArray(data) ? data : []).sort((a, b) => a.episodeNumber - b.episodeNumber);
       this._snEpisodes.set(seasonNumber, eps);
     } catch (e) {
@@ -3805,7 +4549,8 @@ var _FetchMethods = class {
     }
     this._renderPopupEl();
   }
-  async _fetchSonarrSeasonIS(seriesId, seasonNumber) {
+  async _fetchSonarrSeasonIS(seriesId, seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
     this._snIsState = "loading";
     this._snIsResults = [];
     this._snIsError = null;
@@ -3816,15 +4561,15 @@ var _FetchMethods = class {
     try {
       let eps = this._snEpisodes.get(seasonNumber);
       if (!eps || eps.length === 0) {
-        const epData = await this._callApi("GET", `arr_stack/sonarr/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
+        const epData = await this._callApi("GET", `arr_stack/${svc}/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
         eps = (Array.isArray(epData) ? epData : []).sort((a, b) => a.episodeNumber - b.episodeNumber);
         if (eps.length > 0) this._snEpisodes.set(seasonNumber, eps);
       }
       const firstEp = eps[0];
       if (!firstEp) throw new Error(this._t("snNoEpisodes"));
       const [data, histRaw] = await Promise.all([
-        this._callApi("GET", `arr_stack/sonarr/release?episodeId=${firstEp.id}`),
-        this._callApi("GET", `arr_stack/sonarr/history?seriesId=${seriesId}`).catch(() => null)
+        this._callApi("GET", `arr_stack/${svc}/release?episodeId=${firstEp.id}`),
+        this._callApi("GET", `arr_stack/${svc}/history?seriesId=${seriesId}`).catch(() => null)
       ]);
       this._snIsHistory = this._buildSnHistoryMap(histRaw);
       this._snIsResults = this._sortIsResults(Array.isArray(data) ? data : []);
@@ -3835,7 +4580,8 @@ var _FetchMethods = class {
     }
     this._renderPopupEl();
   }
-  async _fetchSonarrEpIS(episodeId, seriesId) {
+  async _fetchSonarrEpIS(episodeId, seriesId, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
     this._snIsState = "loading";
     this._snIsResults = [];
     this._snIsError = null;
@@ -3845,8 +4591,8 @@ var _FetchMethods = class {
     this._renderPopupEl();
     try {
       const [data, histRaw] = await Promise.all([
-        this._callApi("GET", `arr_stack/sonarr/release?episodeId=${episodeId}`),
-        this._callApi("GET", `arr_stack/sonarr/history?seriesId=${seriesId}`).catch(() => null)
+        this._callApi("GET", `arr_stack/${svc}/release?episodeId=${episodeId}`),
+        this._callApi("GET", `arr_stack/${svc}/history?seriesId=${seriesId}`).catch(() => null)
       ]);
       this._snIsHistory = this._buildSnHistoryMap(histRaw);
       this._snIsResults = this._sortIsResults(Array.isArray(data) ? data : []);
@@ -3885,8 +4631,10 @@ var _FetchMethods = class {
     this._renderPopupEl();
     try {
       const release = this._snIsResults.find((r) => r.guid === guid) || { guid, indexerId };
-      await this._callApi("POST", "arr_stack/sonarr/release", release);
+      const snSvc = this._snIsInstance === "sonarr2" ? "sonarr2" : "sonarr";
+      await this._callApi("POST", `arr_stack/${snSvc}/release`, release);
       this._snIsGrabbed.add(guid);
+      this._dlTriggeredBy = "is";
     } catch (e) {
       console.error("[arr-card] Sonarr grab error:", e);
       const prev = this._snIsError;
@@ -3904,8 +4652,51 @@ var _FetchMethods = class {
   async _fetchSearch(query) {
     this._searchLoading = true;
     try {
-      const data = await this._callApi("POST", "arr_stack/overseerr/search", { query });
-      this._searchResults = (data?.results || []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
+      if (this._overseerrConfigured === false) {
+        const [movieRaw, tvRaw] = await Promise.allSettled([
+          this._callApi("GET", `arr_stack/radarr/lookup?term=${encodeURIComponent(query)}`),
+          this._callApi("GET", `arr_stack/sonarr/lookup?term=${encodeURIComponent(query)}`)
+        ]);
+        const movies = (movieRaw.status === "fulfilled" && Array.isArray(movieRaw.value) ? movieRaw.value : []).filter((m) => m.tmdbId).map((m) => ({
+          id: m.tmdbId,
+          mediaType: "movie",
+          title: m.title || "",
+          posterPath: m.remotePoster || null,
+          overview: m.overview || "",
+          releaseDate: m.year ? `${m.year}-01-01` : "",
+          genres: (m.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          ratings: m.ratings || {},
+          voteAverage: m.ratings?.tmdb?.value || m.ratings?.imdb?.value || 0,
+          images: m.images || [],
+          youTubeTrailerId: m.youTubeTrailerId || null,
+          mediaInfo: null
+        }));
+        const shows = (tvRaw.status === "fulfilled" && Array.isArray(tvRaw.value) ? tvRaw.value : []).filter((s) => s.tvdbId).map((s) => ({
+          id: s.tmdbId || null,
+          tvdbId: s.tvdbId,
+          mediaType: "tv",
+          name: s.title || "",
+          posterPath: s.remotePoster || null,
+          overview: s.overview || "",
+          firstAirDate: s.year ? `${s.year}-01-01` : "",
+          genres: (s.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          ratings: s.ratings || {},
+          voteAverage: s.ratings?.tmdb?.value || s.ratings?.imdb?.value || s.ratings?.value || 0,
+          images: s.images || [],
+          youTubeTrailerId: s.youTubeTrailerId || null,
+          mediaInfo: null
+        }));
+        const merged = [];
+        const max = Math.max(movies.length, shows.length);
+        for (let i = 0; i < max; i++) {
+          if (movies[i]) merged.push(movies[i]);
+          if (shows[i]) merged.push(shows[i]);
+        }
+        this._searchResults = merged;
+      } else {
+        const data = await this._callApi("POST", `arr_stack/${this._discoverSvc}/search`, { query });
+        this._searchResults = (data?.results || []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
+      }
     } catch (e) {
       this._searchResults = [];
       console.error("[arr-card] Search fetch error:", e);
@@ -3921,18 +4712,19 @@ var _FetchMethods = class {
       }
     }, 80);
   }
-  async _addOverseerrRequest(mediaId, profileId = null, tagId = null, rootFolder = null) {
+  async _addOverseerrRequest(mediaId, profileId = null, tagId = null, rootFolder = null, use4k = false) {
     this._optimisticRequested.add(mediaId);
     this._withdrawnIds.delete(mediaId);
     this._requestPending = null;
     this._reRenderRight();
     try {
       if (!this._seerrRadarr) await this._fetchOverseerrRadarrSettings();
+      const seerr = use4k && this._seerrRadarr2 ? this._seerrRadarr2 : this._seerrRadarr;
       const body = { mediaId, mediaType: "movie" };
-      if (this._seerrRadarr) {
-        body.serverId = this._seerrRadarr.serverId;
-        body.profileId = profileId !== null ? parseInt(profileId) : this._seerrRadarr.profileId;
-        body.rootFolder = rootFolder || this._seerrRadarr.rootFolder;
+      if (seerr) {
+        body.serverId = seerr.serverId;
+        body.profileId = profileId !== null ? parseInt(profileId) : seerr.profileId;
+        body.rootFolder = rootFolder || seerr.rootFolder;
       }
       if (tagId !== null) body.tags = [parseInt(tagId)];
       if (!this._hass.user.is_admin) body.userMode = "family";
@@ -3945,6 +4737,7 @@ var _FetchMethods = class {
       }
       this._fetchOverseerr().then(() => this._reRenderRight());
       setTimeout(() => this._fetchRadarr().then(() => this._reRenderRight()), 2e3);
+      if (use4k) setTimeout(() => this._fetchRadarr2().then(() => this._reRenderRight()), 2e3);
     } catch (e) {
       this._optimisticRequested.delete(mediaId);
       this._reRenderRight();
@@ -3963,7 +4756,7 @@ var _FetchMethods = class {
         this._hass.callApi("GET", "arr_stack/tautulli/get_plays_by_date?time_range=7&y_axis=plays").catch(() => null),
         this._hass.callApi("GET", "arr_stack/tautulli/sharing_ack").catch(() => null),
         this._hass.callApi("GET", "arr_stack/tautulli/get_libraries_table?length=20&start=0").catch(() => null),
-        this._hass.callApi("GET", "arr_stack/tautulli/get_history?length=3&order_column=date&order_dir=desc").catch(() => null)
+        this._hass.callApi("GET", `arr_stack/tautulli/get_history?length=${this._config?.security?.ip_history_depth ?? 200}&order_column=date&order_dir=desc`).catch(() => null)
       ]);
       if (actRaw === null && statsRaw === null) {
         this._tautulliConfigured = false;
@@ -3984,21 +4777,28 @@ var _FetchMethods = class {
         show: (showSeries?.data || [])[i] || 0,
         music: (musicSeries?.data || [])[i] || 0
       }));
-      const sessions = act.sessions || [];
+      const threshold = this._config?.security?.ip_sharing_threshold ?? 2;
+      const histRows = histRaw?.response?.data?.data || [];
       const byUser = {};
-      sessions.forEach((s) => {
-        const uid = s.user_id || s.username || s.friendly_name;
-        if (!uid) return;
-        if (!byUser[uid]) byUser[uid] = { name: s.friendly_name || s.username || String(uid), ips: /* @__PURE__ */ new Set() };
-        if (s.ip_address) byUser[uid].ips.add(s.ip_address);
+      histRows.forEach((h) => {
+        const name = h.friendly_name || h.user || h.username;
+        if (!name || !h.ip_address) return;
+        if (!byUser[name]) byUser[name] = {};
+        const ip = h.ip_address;
+        if (!byUser[name][ip]) byUser[name][ip] = { ip, lastSeen: h.date || h.stopped || 0, count: 0 };
+        byUser[name][ip].count++;
+        if ((h.date || h.stopped || 0) > byUser[name][ip].lastSeen) byUser[name][ip].lastSeen = h.date || h.stopped || 0;
       });
       const ackedIps = ackRaw?.ackedIps || {};
       const sharingUsers = [];
-      for (const [uid, info] of Object.entries(byUser)) {
-        if (info.ips.size <= 1) continue;
-        const knownIps = new Set(ackedIps[info.name] || []);
-        const newIps = [...info.ips].filter((ip) => !knownIps.has(ip));
-        if (newIps.length > 0) sharingUsers.push(info.name);
+      const ipReport = {};
+      for (const [name, ipMap] of Object.entries(byUser)) {
+        const knownIps = new Set(ackedIps[name] || []);
+        const newIps = Object.values(ipMap).filter((e) => !knownIps.has(e.ip));
+        if (newIps.length >= threshold) {
+          sharingUsers.push(name);
+          ipReport[name] = Object.values(ipMap).sort((a, b) => b.lastSeen - a.lastSeen);
+        }
       }
       this._tautulli = {
         activity: act,
@@ -4009,7 +4809,8 @@ var _FetchMethods = class {
         sharingDetected: sharingUsers.length > 0,
         sharingAcked: false,
         sharingUsers,
-        ackedIps
+        ackedIps,
+        ipReport
       };
     } catch (e) {
       console.warn("[arr-card] Tautulli fetch error:", e);
@@ -4017,13 +4818,10 @@ var _FetchMethods = class {
   }
   async _ackTautulliSharing() {
     if (!this._tautulli) return;
-    const { sharingUsers, ackedIps: prev } = this._tautulli;
-    const act = this._tautulli.activity || {};
-    const sessions = act.sessions || [];
+    const { sharingUsers, ackedIps: prev, ipReport } = this._tautulli;
     const updated = { ...prev };
     sharingUsers.forEach((name) => {
-      const userSessions = sessions.filter((s) => (s.friendly_name || s.username) === name);
-      const ips = userSessions.map((s) => s.ip_address).filter(Boolean);
+      const ips = (ipReport?.[name] || []).map((e) => e.ip);
       const existing = new Set(prev[name] || []);
       ips.forEach((ip) => existing.add(ip));
       updated[name] = [...existing];
@@ -4034,6 +4832,229 @@ var _FetchMethods = class {
       this._reRenderRight();
     } catch (e) {
       console.warn("[arr-card] Tautulli ack error:", e);
+    }
+  }
+  // ─────────────────────────────────────────────
+  // Auto Search — Radarr
+  // ─────────────────────────────────────────────
+  async _triggerRadarrAutoSearch(instance = "radarr") {
+    const svc = instance === "radarr2" ? "radarr2" : "radarr";
+    const d = this._popup;
+    const movieId = instance === "radarr2" ? d._radarr2Id : d._radarrId;
+    const _asDelay = (ms) => new Promise((r) => setTimeout(r, ms));
+    this._dlTriggeredBy = "as";
+    if (movieId) {
+      this._asMovieSearching = true;
+      this._renderPopupEl();
+      try {
+        await Promise.all([
+          this._callApi("POST", `arr_stack/${svc}/command`, { name: "MoviesSearch", movieIds: [movieId] }),
+          _asDelay(1e3)
+        ]);
+        this._asMovieSearched = true;
+        this._asState = "done";
+        this._asPollForDownload(`movie:${instance}`, svc, movieId);
+      } catch (e) {
+        this._asState = "error";
+        this._asError = e.message || this._t("isLoadError");
+      }
+      this._asMovieSearching = false;
+      this._renderPopupEl();
+    } else {
+      this._asState = "adding";
+      this._renderPopupEl();
+      try {
+        const tmdbId = d.id || d.tmdbId;
+        if (!tmdbId) throw new Error(this._t("isMissingTmdb"));
+        const seerr = instance === "radarr2" ? this._seerrRadarr2 : this._seerrRadarr;
+        if (instance === "radarr2") {
+          if (!this._radarr2Profiles?.length) await this._fetchRadarr2Profiles();
+          if (!this._radarr2RootFolders?.length) await this._fetchRadarr2RootFolders();
+        } else {
+          if (!this._radarrProfiles?.length) await this._fetchRadarrProfiles();
+          if (!this._radarrRootFolders?.length) await this._fetchRadarrRootFolders();
+        }
+        const profiles = instance === "radarr2" ? this._radarr2Profiles : this._radarrProfiles;
+        const rootFolders = instance === "radarr2" ? this._radarr2RootFolders : this._radarrRootFolders;
+        const pId = seerr?.profileId ? parseInt(seerr.profileId) : profiles?.[0]?.id ?? 1;
+        const rf = seerr?.rootFolder || rootFolders?.[0]?.path || "/movies";
+        const body = { tmdbId: parseInt(tmdbId), qualityProfileId: pId, rootFolderPath: rf, monitored: true, addOptions: { searchForMovie: true } };
+        const [added] = await Promise.all([
+          this._callApi("POST", `arr_stack/${svc}/movie`, body),
+          _asDelay(1e3)
+        ]);
+        if (added?.id) {
+          if (instance === "radarr2") {
+            if (!this._radarr2) this._radarr2 = [];
+            if (!this._radarr2.find((m) => m.id === added.id)) this._radarr2.push(added);
+            d._radarr2Id = added.id;
+          } else {
+            if (!this._radarr) this._radarr = [];
+            if (!this._radarr.find((m) => m.id === added.id)) this._radarr.push(added);
+            d._radarrId = added.id;
+          }
+        }
+        this._asMovieSearched = true;
+        this._asState = "done";
+        const newMovieId = instance === "radarr2" ? d._radarr2Id : d._radarrId;
+        if (newMovieId) this._asPollForDownload(`movie:${instance}`, svc, newMovieId);
+      } catch (e) {
+        this._asState = "error";
+        this._asError = e.message || this._t("isLoadError");
+      }
+      this._renderPopupEl();
+    }
+  }
+  // ─────────────────────────────────────────────
+  // Auto Search — Sonarr (add series + seasons)
+  // ─────────────────────────────────────────────
+  async _addSeriesForAs(instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    this._dlTriggeredBy = "as";
+    this._asState = "adding";
+    this._renderPopupEl();
+    try {
+      const d = this._popup;
+      const tvdbId = d.externalIds?.tvdbId || d._tvdbId;
+      if (!tvdbId) throw new Error(this._t("snNoSonarrId"));
+      const lookupResults = await this._callApi("GET", `arr_stack/${svc}/lookup?tvdbId=${tvdbId}`);
+      const seriesData = Array.isArray(lookupResults) ? lookupResults[0] : lookupResults;
+      if (!seriesData) throw new Error(this._t("snNoSonarrId"));
+      if (this._overseerrConfigured !== false && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      const seerr = instance === "sonarr2" ? this._seerrSonarr2 : this._seerrSonarr;
+      let profileId, rootFolder;
+      if (seerr) {
+        profileId = seerr.profileId ?? 1;
+        rootFolder = seerr.rootFolder ?? "/tv";
+      } else {
+        if (instance === "sonarr2") {
+          if (!this._sonarr2Profiles?.length) await this._fetchSonarr2Profiles();
+          if (!this._sonarr2RootFolders?.length) await this._fetchSonarr2RootFolders();
+          profileId = this._sonarr2Profiles?.[0]?.id ?? 1;
+          rootFolder = this._sonarr2RootFolders?.[0]?.path ?? "/tv";
+        } else {
+          await this._fetchSonarrProfiles();
+          await this._fetchSonarrRootFolders();
+          profileId = this._sonarrProfiles?.[0]?.id ?? 1;
+          rootFolder = this._sonarrRootFolders?.[0]?.path ?? "/tv";
+        }
+      }
+      let added;
+      try {
+        added = await this._callApi("POST", `arr_stack/${svc}/series`, {
+          ...seriesData,
+          qualityProfileId: parseInt(profileId),
+          rootFolderPath: rootFolder,
+          monitored: false,
+          addOptions: { searchForMissingEpisodes: false, searchForCutoffUnmetEpisodes: false, monitor: "none" }
+        });
+      } catch (_) {
+      }
+      if (instance === "sonarr2") {
+        await this._fetchSonarr2();
+        const found = (this._sonarr2 || []).find(
+          (s) => String(s.tvdbId) === String(tvdbId) || added?.id && s.id === added.id
+        ) || added;
+        if (found) d._sonarr2Series = found;
+      } else {
+        await this._fetchSonarr();
+        const found = (this._sonarrAll || []).find(
+          (s) => String(s.tvdbId) === String(tvdbId) || added?.id && s.id === added.id
+        ) || added;
+        if (found) d._sonarrSeries = found;
+      }
+      this._asState = "seasons";
+    } catch (e) {
+      this._asState = "error";
+      this._asError = e.message || this._t("isLoadError");
+    }
+    this._renderPopupEl();
+  }
+  async _triggerSonarrSeasonSearch(seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    const d = this._popup;
+    const series = instance === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+    if (!series?.id) return;
+    const seriesId = series.id;
+    const key = `season:${seasonNumber}`;
+    this._dlTriggeredBy = "as";
+    this._asSearchingItems.add(key);
+    this._renderPopupEl();
+    try {
+      const cache = instance === "sonarr2" ? this._sonarr2 || [] : this._sonarr || [];
+      const full = cache.find((s) => s.id === seriesId) || series;
+      const updated = {
+        ...full,
+        monitored: true,
+        seasons: (full.seasons || []).map(
+          (s) => s.seasonNumber === seasonNumber ? { ...s, monitored: true } : s
+        )
+      };
+      await this._callApi("PUT", `arr_stack/${svc}/series/${seriesId}`, updated);
+      if (instance === "sonarr2") {
+        this._sonarr2 = (this._sonarr2 || []).map((s) => s.id === seriesId ? updated : s);
+        d._sonarr2Series = updated;
+      } else {
+        this._sonarr = (this._sonarr || []).map((s) => s.id === seriesId ? updated : s);
+        d._sonarrSeries = updated;
+      }
+      await Promise.all([
+        this._callApi("POST", `arr_stack/${svc}/command`, { name: "SeasonSearch", seriesId, seasonNumber }),
+        new Promise((r) => setTimeout(r, 1e3))
+      ]);
+      this._asSearchedItems.add(key);
+      this._asPollForDownload(key, svc, seriesId);
+    } catch (e) {
+      console.error("[arr-card] Season search error:", e);
+    }
+    this._asSearchingItems.delete(key);
+    this._renderPopupEl();
+  }
+  async _triggerSonarrEpisodeSearch(episodeId, seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    const d = this._popup;
+    const series = instance === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+    const key = `ep:${episodeId}`;
+    this._asSearchingItems.add(key);
+    this._renderPopupEl();
+    try {
+      await Promise.all([
+        this._callApi("POST", `arr_stack/${svc}/command`, { name: "EpisodeSearch", episodeIds: [episodeId] }),
+        new Promise((r) => setTimeout(r, 1e3))
+      ]);
+      this._asSearchedItems.add(key);
+      if (series?.id) this._asPollForDownload(key, svc, series.id);
+    } catch (e) {
+      console.error("[arr-card] Episode search error:", e);
+    }
+    this._asSearchingItems.delete(key);
+    this._renderPopupEl();
+  }
+  // ─────────────────────────────────────────────
+  // Auto Search — poll queue after search fired
+  // key: 'movie' | 'season:N' | 'ep:ID'
+  // movieOrSeriesId: Radarr movieId or Sonarr seriesId
+  // ─────────────────────────────────────────────
+  async _asPollForDownload(key, svc, movieOrSeriesId) {
+    const isRadarr = svc === "radarr" || svc === "radarr2";
+    const endpoint = `arr_stack/${svc}/queue`;
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r, 3e3));
+      if (!this._asOpen) return;
+      try {
+        const data = await this._callApi("GET", endpoint);
+        const records = Array.isArray(data) ? data : data.records || [];
+        const found = records.some((item) => {
+          if (isRadarr) return item.movieId === movieOrSeriesId;
+          return item.seriesId === movieOrSeriesId;
+        });
+        if (found) {
+          this._asDownloadingItems.add(key);
+          this._renderPopupEl();
+          return;
+        }
+      } catch (_) {
+      }
     }
   }
 };
@@ -4435,7 +5456,7 @@ var _RenderLeft = class {
     const typeLabel = isMovie ? this._t("typeMovie") : this._t("typeTv");
     const icon = isMovie ? "\u{1F3AC}" : "\u{1F4FA}";
     const tmdbId = media.tmdbId ?? 0;
-    const imgHtml = poster ? `<img src="https://image.tmdb.org/t/p/w342${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(req.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${icon}</div>`;
+    const imgHtml = poster ? `<img src="${poster.startsWith("http") ? poster : `https://image.tmdb.org/t/p/w342${poster}`}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(req.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${icon}</div>`;
     return `
     <div class="mc" data-popup="${isMovie ? "movie" : "tv"}" data-tmdbid="${tmdbId}" data-title="${title}">
       ${imgHtml}
@@ -4589,9 +5610,9 @@ var _RenderRight = class {
       const tmdbId = m.id;
       const popupType = isMovie ? POPUP_TYPE.MOVIE : POPUP_TYPE.TV;
       const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-      const poster = m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
+      const poster = m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
       const radarrEntry = isMovie && Array.isArray(this._radarr) ? this._radarr.find((r) => r.tmdbId === tmdbId) : null;
-      const sonarrEntry = !isMovie && Array.isArray(this._sonarr) ? this._sonarr.find((s) => s.tmdbId === tmdbId) : null;
+      const sonarrEntry = !isMovie && Array.isArray(this._sonarr) ? this._sonarr.find((s) => tmdbId && s.tmdbId === tmdbId) || this._sonarr.find((s) => m.tvdbId && s.tvdbId === m.tvdbId) : null;
       const mediaStatus = m.mediaInfo?.status;
       const _inOptimistic = this._optimisticRequested.has(tmdbId);
       const _withdrawn = this._withdrawnIds.has(tmdbId);
@@ -4604,11 +5625,12 @@ var _RenderRight = class {
       const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(tmdbId);
       const searchReqKey = "search-" + tmdbId;
       const _isAdmin = this._hass.user.is_admin;
+      const _noSeerr = this._overseerrConfigured === false;
       let actionBtn = "";
       if (_isAvail) {
         actionBtn = "";
       } else if (_isReq) {
-        if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+        if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
           actionBtn = "";
         } else {
           const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${tmdbId}">\u2715</button>` : "";
@@ -4623,7 +5645,7 @@ var _RenderRight = class {
       if (_isAvail) {
         statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
       } else if (_isReq) {
-        if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+        if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
           statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
         } else {
           statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
@@ -4631,12 +5653,13 @@ var _RenderRight = class {
       }
       const posterHtml = poster ? `<img src="${poster}" alt="${title}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : `<div class="search-mc-ph ${this._grad(tmdbId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
       const reqOverlay = isMovie && this._requestPending?.reqKey === searchReqKey ? this._renderRequestOverlay(tmdbId, tmdbId) : "";
+      const tvdbAttr = !isMovie && m.tvdbId ? ` data-tvdbid="${m.tvdbId}"` : "";
       return `
-      <div class="mc" data-popup="${popupType}" data-tmdbid="${tmdbId}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""} style="position:relative">
+      <div class="mc" data-popup="${popupType}" data-tmdbid="${tmdbId}"${tvdbAttr} data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""} style="position:relative">
         ${posterHtml}
         <span class="media-type-tag">${typeTag}</span>
         ${statusBadge}
-        ${this._mcGrad(gradColor, `<div style="display:flex;align-items:center;gap:4px">
+        ${this._mcGrad(gradColor, `${m.voteAverage ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${m.voteAverage.toFixed(1)}</span></div>` : ""}<div style="display:flex;align-items:center;gap:4px">
             <div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
             ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
           </div>`)}
@@ -4712,32 +5735,68 @@ var _RenderRight = class {
     </div>`;
   }
   _renderRequestOverlay(movieId, tmdbId) {
-    const defProfileId = Number(this._seerrRadarr?.profileId ?? 0);
-    const profiles = this._radarrProfiles;
-    const profileOptions = profiles.length > 0 ? profiles.map(
-      (p) => `<option value="${p.id}" ${Number(p.id) === defProfileId ? "selected" : ""}>${this._escHtml(p.name)}</option>`
-    ).join("") : `<option value="${defProfileId}">${this._t("defaultProfile")}</option>`;
     const isAdmin = this._hass?.user?.is_admin;
-    const tagHtml = isAdmin && this._radarrTags.length > 0 ? `
-    <span class="req-label">Tag</span>
-    <select class="req-select" id="req-tag-${movieId}">
-      <option value="">\u2014 no tag \u2014</option>
-      ${this._radarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
-    </select>` : "";
-    const rootFolderHtml = isAdmin && this._radarrRootFolders.length > 1 ? `
-    <span class="req-label">Root folder</span>
-    <select class="req-select" id="req-rootfolder-${movieId}">
-      ${this._radarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
-    </select>` : "";
+    const hasDual = this._radarr2Configured && (this._seerrRadarr2 || this._overseerrConfigured === false);
+    const tab1Name = hasDual && this._seerrRadarr2?.is4k ? "HD" : "Radarr";
+    const tab2Name = hasDual && this._seerrRadarr2?.is4k ? "4K" : "Radarr 2";
+    const buildPanel = (panelId, profiles, defProfileId, tags, rootFolders, selectId, tagId, rfId, hidden = false) => {
+      const profileOptions = profiles.length > 0 ? profiles.map(
+        (p) => `<option value="${p.id}" ${Number(p.id) === defProfileId ? "selected" : ""}>${this._escHtml(p.name)}</option>`
+      ).join("") : `<option value="${defProfileId}">${this._t("defaultProfile")}</option>`;
+      const tagHtml = isAdmin && tags.length > 0 ? `
+      <span class="req-label">Tag</span>
+      <select class="req-select" id="${tagId}">
+        <option value="">\u2014 no tag \u2014</option>
+        ${tags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
+      </select>` : "";
+      const rfHtml = isAdmin && rootFolders.length > 1 ? `
+      <span class="req-label">Root folder</span>
+      <select class="req-select" id="${rfId}">
+        ${rootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
+      </select>` : "";
+      return `
+      <div class="req-panel${hidden ? " req-panel--hidden" : ""}" data-panel="${panelId}">
+        <span class="req-label">${this._t("downloadQuality")}</span>
+        <select class="req-select" id="${selectId}">${profileOptions}</select>
+        ${tagHtml}
+        ${rfHtml}
+      </div>`;
+    };
+    const panel1 = buildPanel(
+      "r1",
+      this._radarrProfiles,
+      Number(this._seerrRadarr?.profileId ?? 0),
+      this._radarrTags,
+      this._radarrRootFolders,
+      `req-select-${movieId}`,
+      `req-tag-${movieId}`,
+      `req-rootfolder-${movieId}`
+    );
+    const panel2 = hasDual ? buildPanel(
+      "r2",
+      this._radarr2Profiles,
+      Number(this._seerrRadarr2?.profileId ?? 0),
+      this._radarr2Tags,
+      this._radarr2RootFolders,
+      `req-select2-${movieId}`,
+      `req-tag2-${movieId}`,
+      `req-rootfolder2-${movieId}`,
+      true
+      // hidden initially
+    ) : "";
+    const tabBar = hasDual ? `
+    <div class="req-tabs">
+      <button class="req-tab req-tab--active" data-tab="r1">${tab1Name}</button>
+      <button class="req-tab" data-tab="r2">${tab2Name}</button>
+    </div>` : "";
     return `
     <div class="req-overlay">
       <div class="req-inner">
-        <span class="req-label">${this._t("downloadQuality")}</span>
-        <select class="req-select" id="req-select-${movieId}">
-          ${profileOptions}
-        </select>
-        ${tagHtml}
-        ${rootFolderHtml}
+        ${tabBar}
+        <div class="req-panels-wrap">
+          ${panel1}
+          ${panel2}
+        </div>
         <div class="req-actions">
           <button class="req-cancel" data-req="cancel">${this._t("cancel")}</button>
           <button class="req-confirm" data-req="confirm" data-movieid="${movieId}" data-tmdb="${tmdbId}">
@@ -4862,7 +5921,7 @@ var _RenderRight = class {
     const dotsHtml = multiPage ? `<div class="sv-dots">${pages.map(
       (_, i) => `<span class="sv-dot${i === 0 ? " sv-dot-active" : ""}" data-pg="${i}"></span>`
     ).join("")}</div>` : "";
-    const poster = p.show.posterPath ? `<img src="https://image.tmdb.org/t/p/w92${p.show.posterPath}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
+    const poster = p.show.posterPath ? `<img src="${p.show.posterPath.startsWith("http") ? p.show.posterPath : `https://image.tmdb.org/t/p/w92${p.show.posterPath}`}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
     return `
     <div class="req-overlay tv-req-overlay">
       <div class="tv-req-inner">
@@ -5048,7 +6107,7 @@ var _RenderRight = class {
     const dotsHtml = multiPage ? `<div class="sv-dots">${pages.map(
       (_, i) => `<span class="sv-dot${i === 0 ? " sv-dot-active" : ""}" data-pg="${i}"></span>`
     ).join("")}</div>` : "";
-    const poster = p.show.posterPath ? `<img src="https://image.tmdb.org/t/p/w92${p.show.posterPath}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
+    const poster = p.show.posterPath ? `<img src="${p.show.posterPath.startsWith("http") ? p.show.posterPath : `https://image.tmdb.org/t/p/w92${p.show.posterPath}`}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">\u{1F4FA}</span>`;
     return `
     <div class="tv-req-inner">
       <div class="tv-req-top">
@@ -5255,6 +6314,37 @@ var _RenderRight = class {
     );
     const pausedOverlay = !isPlaying ? `<div class="stream-paused-overlay"><ha-icon icon="mdi:pause-circle" style="--mdc-icon-size:32px;opacity:0.85"></ha-icon></div>` : "";
     const deviceTag = `<span class="stream-device-tag"><ha-icon icon="${deviceIcon}" style="--mdc-icon-size:9px"></ha-icon> ${this._escHtml(deviceName)}</span>`;
+    let userName = "";
+    let userThumb = "";
+    if (isPlex) {
+      const match = (this._plexSessions || []).find((s) => {
+        const sTitle = s.attr.media_title || "";
+        const hTitle = attr.media_title || "";
+        const titleMatch = hTitle === sTitle || hTitle.startsWith(sTitle + " (") || sTitle.startsWith(hTitle + " (");
+        const seriesMatch = (s.attr.media_series_title || "") === (attr.media_series_title || "");
+        return titleMatch && seriesMatch;
+      });
+      if (match?._plexUser) {
+        userName = match._plexUser;
+        userThumb = match._plexUserThumb || "";
+      } else {
+        const fn = attr.friendly_name || "";
+        const m = fn.match(/^Plex\s+(.+?)\s*\(/);
+        userName = m ? m[1].trim() : "";
+      }
+    } else {
+      const fn = attr.friendly_name || "";
+      const jf = fn.replace(/^jellyfin\s*/i, "").trim();
+      const parts = jf.split(/\s+/);
+      userName = parts.length > 1 ? parts.slice(0, -1).join(" ") : jf;
+    }
+    const initials = userName ? userName.split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
+    const hue = userName ? [...userName].reduce((a, c) => a + c.charCodeAt(0), 0) % 360 : 200;
+    const avatarEl = userThumb ? `<img src="${this._escHtml(userThumb)}" style="width:16px;height:16px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.2)" loading="lazy" onerror="this.style.display='none'">` : "";
+    const userBadge = userName ? `<div class="stream-user-tag">
+        ${avatarEl}
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${this._escHtml(userName)}</span>
+      </div>` : "";
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb,255,255,255),1)";
     const sub = subtitle ? `<div style="font-size:10px;color:rgba(var(--arr-pt-rgb,255,255,255),0.6);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(subtitle)}</div>` : "";
@@ -5264,6 +6354,7 @@ var _RenderRight = class {
       ${deviceTag}
       ${svcBadge}
       ${pausedOverlay}
+      ${userBadge}
       ${this._mcGrad(grad, `
         ${epLabel ? `<div style="margin-bottom:3px"><span class="imdb">${epLabel}</span></div>` : ""}
         ${isLiveTV && channel ? `<div style="margin-bottom:3px"><span class="imdb">${this._escHtml(channel)}</span></div>` : ""}
@@ -5341,6 +6432,17 @@ var _MediaCardMethods = class {
     const img = s.images.find((i) => i.coverType === "poster");
     return img ? img.remoteUrl : null;
   }
+  _qualityBadge2(m) {
+    if (!this._radarr2Configured) return "";
+    const m2 = m.tmdbId ? this._radarr2ByTmdb.get(String(m.tmdbId)) : null;
+    if (!m2) return "";
+    const inR2 = m2.hasFile;
+    const inR1 = m.hasFile;
+    const style = "font-size:8px;padding:1px 4px;border-radius:3px;color:#fff;font-weight:700;letter-spacing:.3px";
+    if (inR1 && inR2) return `<span class="badge b-r2" style="background:linear-gradient(90deg,rgba(0,120,255,0.85),rgba(140,40,220,0.85));${style}">R+R2</span>`;
+    if (inR2) return `<span class="badge b-r2" style="background:rgba(140,40,220,0.85);${style}">R2</span>`;
+    return "";
+  }
   _renderRadarrCard(m) {
     const poster = this._getRadarrPoster(m);
     const title = this._escHtml(m.title || "Unknown");
@@ -5358,13 +6460,14 @@ var _MediaCardMethods = class {
     } else if (hasFile) {
       badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
     } else if (dlFailed) {
-      badgeHtml = this._badge("b-missing", "\u2717", "Selhalo");
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeFailed"));
     } else if (dlActive) {
       badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
     } else {
       badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     }
     const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
+    const qualBadge4k = this._qualityBadge2(m);
     let audioBadge = "";
     let subBadge = "";
     if (hasFile) {
@@ -5395,7 +6498,7 @@ var _MediaCardMethods = class {
       ${img}
       ${statusBadge}
       ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
-        ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
+        ${audioBadge || subBadge || qualBadge4k ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}${qualBadge4k}</div>` : ""}
         <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
@@ -5530,12 +6633,14 @@ var _MediaCardMethods = class {
     const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id);
     const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
-    const radarrAttr = isMovie ? ` data-radarrid="${item.id}"` : "";
+    const radarrAttr = isMovie ? item._isRadarr2 ? ` data-radarr2id="${item.id}"` : ` data-radarrid="${item.id}"` : "";
     let badgeHtml = "";
     if (isMovie) {
-      const dlActive = this._radarrQueueActive?.has(item.id);
-      const dlFailed = this._radarrQueueFailed?.has(item.id);
-      if (dlFailed) badgeHtml = this._badge("b-missing", "\u2717", "Selhalo");
+      const qActive = item._isRadarr2 ? this._radarr2QueueActive : this._radarrQueueActive;
+      const qFailed = item._isRadarr2 ? this._radarr2QueueFailed : this._radarrQueueFailed;
+      const dlActive = qActive?.has(item.id);
+      const dlFailed = qFailed?.has(item.id);
+      if (dlFailed) badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeFailed"));
       else if (dlActive) badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
       else badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     } else {
@@ -5569,11 +6674,12 @@ var _MediaCardMethods = class {
     const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inSonarr) && !_withdrawn && !inSonarrAvail && !_stale;
     const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m.id);
     const _isAdmin = this._hass.user.is_admin;
+    const _noSeerr = this._overseerrConfigured === false;
     let actionBtn = "";
     if (_isAvail) {
       actionBtn = "";
     } else if (_isReq) {
-      if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+      if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         actionBtn = "";
       } else {
         const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
@@ -5586,7 +6692,7 @@ var _MediaCardMethods = class {
     if (_isAvail) {
       statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
     } else if (_isReq) {
-      if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+      if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
       } else {
         statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
@@ -5594,8 +6700,8 @@ var _MediaCardMethods = class {
     }
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
-    const img = this._mcImg(m.posterPath ? `https://image.tmdb.org/t/p/w342${m.posterPath}` : null, "\u{1F4FA}", m.id);
+    const tagHtml = typeTag ? `<span class="media-type-tag"><span class="b-txt">${typeTag}</span></span>` : "";
+    const img = this._mcImg(m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w342${m.posterPath}` : null, "\u{1F4FA}", m.id);
     return `
     <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
@@ -5622,22 +6728,28 @@ var _MediaCardMethods = class {
     const inRadarr = !!radarrEntry;
     const inRadarrAvail = !!(radarrEntry && radarrEntry.hasFile);
     const inRadarrDownloading = !!(radarrEntry && !radarrEntry.hasFile && this._radarrQueueActive.has(radarrEntry.id));
+    const radarr2Entry = this._radarr2ByTmdb?.get(String(m.id));
+    const inRadarr2 = !!radarr2Entry;
+    const inRadarr2Avail = !!(radarr2Entry && radarr2Entry.hasFile);
+    const inRadarr2Downloading = !!(radarr2Entry && !radarr2Entry.hasFile && this._radarr2QueueActive?.has(radarr2Entry.id));
     const mediaStatus = m.mediaInfo?.status;
     const _inOptimistic = this._optimisticRequested.has(m.id);
     const _withdrawn = this._withdrawnIds.has(m.id);
     const _hasPending = this._familyPendingIds.has(m.id);
-    const _stale = mediaStatus >= 3 && !inRadarr && !_inOptimistic && !_hasPending;
-    const _isAvail = (inRadarrAvail || mediaStatus === 5) && !_withdrawn && !_stale;
-    const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inRadarr) && !_withdrawn && !inRadarrAvail && !_stale;
+    const _stale = mediaStatus >= 3 && !inRadarr && !inRadarr2 && !_inOptimistic && !_hasPending;
+    const _isAvail = (inRadarrAvail || inRadarr2Avail || mediaStatus === 5) && !_withdrawn && !_stale;
+    const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inRadarr || inRadarr2) && !_withdrawn && !inRadarrAvail && !inRadarr2Avail && !_stale;
+    const _isDownloading = inRadarrDownloading || inRadarr2Downloading;
     const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m.id);
     const _isAdmin = this._hass.user.is_admin;
+    const _noSeerr2 = this._overseerrConfigured === false;
     let actionBtn = "";
     if (_isAvail) {
       actionBtn = "";
     } else if (_isReq) {
-      if (inRadarrDownloading) {
+      if (_isDownloading) {
         actionBtn = "";
-      } else if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+      } else if (_isAdmin || _noSeerr2 || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         actionBtn = "";
       } else {
         const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
@@ -5650,9 +6762,9 @@ var _MediaCardMethods = class {
     if (_isAvail) {
       statusBadge = this._statusBadge(this._badge("b-st-avail", "\u2713", this._t("badgeAvailable")));
     } else if (_isReq) {
-      if (inRadarrDownloading) {
+      if (_isDownloading) {
         statusBadge = this._statusBadge(this._badge("b-dl", "\u2193", this._t("badgeDownloading")));
-      } else if (_isAdmin || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
+      } else if (_isAdmin || _noSeerr2 || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         statusBadge = this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")));
       } else {
         statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
@@ -5662,8 +6774,8 @@ var _MediaCardMethods = class {
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const posterPath = m.posterPath || m.poster_path || null;
-    const img = this._mcImg(posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m.id);
-    const tagHtml = typeTag ? `<span class="media-type-tag">${typeTag}</span>` : "";
+    const img = this._mcImg(posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m.id);
+    const tagHtml = typeTag ? `<span class="media-type-tag"><span class="b-txt">${typeTag}</span></span>` : "";
     return `
     <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
@@ -5993,12 +7105,16 @@ var _WireMethods = class {
             if (tm) movieTagId = tm.id;
           }
           const cfgMovieRootFolder = this._cfgGet("discover", "oneClickDefaultMovieRootFolder", "") || null;
-          await this._addOverseerrRequest(tmdbId, profileId, movieTagId, cfgMovieRootFolder);
+          if (this._overseerrConfigured === false) {
+            await this._addDirectMovieRequest(tmdbId, profileId, movieTagId, cfgMovieRootFolder, "radarr");
+          } else {
+            await this._addOverseerrRequest(tmdbId, profileId, movieTagId, cfgMovieRootFolder);
+          }
         } else {
           await Promise.all([this._fetchRadarrProfiles(), this._fetchRadarrTags(), this._fetchRadarrRootFolders()]);
           const reqKey = btn.dataset.reqkey || String(tmdbId);
           this._requestPending = { movieId, tmdbId, reqKey };
-          this._reRenderRight();
+          this._reRenderRight(true);
         }
       });
     });
@@ -6006,7 +7122,17 @@ var _WireMethods = class {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         this._requestPending = null;
-        this._reRenderRight();
+        this._reRenderRight(true);
+      });
+    });
+    this.shadowRoot.querySelectorAll(".req-tab").forEach((tab) => {
+      tab.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const overlay = tab.closest(".req-overlay");
+        if (!overlay) return;
+        const targetPanel = tab.dataset.tab;
+        overlay.querySelectorAll(".req-tab").forEach((t) => t.classList.toggle("req-tab--active", t.dataset.tab === targetPanel));
+        overlay.querySelectorAll(".req-panel").forEach((p) => p.classList.toggle("req-panel--hidden", p.dataset.panel !== targetPanel));
       });
     });
     this.shadowRoot.querySelectorAll(".req-confirm:not(.tv-req-confirm)").forEach((btn) => {
@@ -6014,19 +7140,26 @@ var _WireMethods = class {
         e.stopPropagation();
         const movieId = parseInt(btn.dataset.movieid, 10);
         const tmdbId = parseInt(btn.dataset.tmdb, 10);
-        const sel = this.shadowRoot.getElementById(`req-select-${movieId}`);
-        const tagSel = this.shadowRoot.getElementById(`req-tag-${movieId}`);
-        const rfSel = this.shadowRoot.getElementById(`req-rootfolder-${movieId}`);
+        const overlay = btn.closest(".req-overlay");
+        const activeTab = overlay?.querySelector(".req-tab--active")?.dataset.tab ?? "r1";
+        const use2 = activeTab === "r2";
+        const suffix = use2 ? "2" : "";
+        const sel = this.shadowRoot.getElementById(`req-select${suffix}-${movieId}`);
+        const tagSel = this.shadowRoot.getElementById(`req-tag${suffix}-${movieId}`);
+        const rfSel = this.shadowRoot.getElementById(`req-rootfolder${suffix}-${movieId}`);
         const profileId = sel ? sel.value : null;
         const tagId = tagSel ? tagSel.value : null;
         const rootFolder = rfSel?.value || null;
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
-        await this._addOverseerrRequest(tmdbId, profileId, tagId || null, rootFolder);
+        if (this._overseerrConfigured === false) {
+          await this._addDirectMovieRequest(tmdbId, profileId, tagId || null, rootFolder, use2 ? "radarr2" : "radarr");
+        } else {
+          await this._addOverseerrRequest(tmdbId, profileId, tagId || null, rootFolder, use2);
+        }
       });
     });
     const tvBtns = this.shadowRoot.querySelectorAll(".tv-req-open");
-    console.log("[arr-card] wiring tv-req-open count=", tvBtns.length);
     tvBtns.forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -6060,7 +7193,7 @@ var _WireMethods = class {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         this._tvRequestPending = null;
-        this._reRenderRight();
+        this._reRenderRight(true);
       });
     });
     this.shadowRoot.querySelectorAll(".tv-req-confirm").forEach((btn) => {
@@ -6078,7 +7211,11 @@ var _WireMethods = class {
         const rootFolder = rfSel?.value || null;
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
-        await this._addOverseerrTvRequest(mediaId, seasons, profileId, tagId, rootFolder);
+        if (this._overseerrConfigured === false) {
+          await this._addDirectTvRequest(this._tvRequestPending?.show, seasons, profileId, tagId, rootFolder);
+        } else {
+          await this._addOverseerrTvRequest(mediaId, seasons, profileId, tagId, rootFolder);
+        }
       });
     });
     this.shadowRoot.querySelectorAll(".req-withdraw").forEach((btn) => {
@@ -6387,7 +7524,7 @@ var _WireMethods = class {
       if (!q) {
         this._searchActive = false;
         this._searchResults = [];
-        this._reRenderRight();
+        this._reRenderRight(true);
         return;
       }
       this._searchActive = true;
@@ -6400,7 +7537,7 @@ var _WireMethods = class {
         this._searchActive = false;
         this._searchPage = 0;
         this._searchResults = [];
-        this._reRenderRight();
+        this._reRenderRight(true);
       }
     }, { signal: sig });
   }
@@ -6642,7 +7779,7 @@ var _WireMethods = class {
         } else {
           return;
         }
-        this._reRenderRight();
+        this._reRenderRight(true);
       }, { passive: true, signal: sig });
     }
   }
@@ -6678,64 +7815,155 @@ var _WireTautulliMethods = class {
     });
   }
   _wireTautulliModalBody(body) {
+    body.querySelector("#tl-ip-report-toggle")?.addEventListener("click", async () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.ipReportOpen = !this._tautulliModal.ipReportOpen;
+      const m = this._tautulliModal;
+      const r2 = await this._tlApiFetch("get_users_table", `length=50&start=${(m.usersPage || 0) * 50}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`).catch(() => null);
+      body.innerHTML = this._tlBodyUsers(r2?.response?.data?.data);
+      this._wireTautulliModalBody(body);
+    });
     body.querySelector("#tl-ack-btn")?.addEventListener("click", async () => {
       await this._ackTautulliSharing();
       const r = await this._hass.callApi("GET", "arr_stack/tautulli/get_users_table?length=50&start=0&order_column=plays&order_dir=desc").catch(() => null);
       body.innerHTML = this._tlBodyUsers(r?.response?.data?.data);
       this._wireTautulliModalBody(body);
     });
-    body.querySelector("#tl-hist-prev")?.addEventListener("click", async () => {
-      if (!this._tautulliModal || this._tautulliModal.histPage <= 0) return;
-      this._tautulliModal.histPage--;
-      this._tautulliModal.histLoading = true;
-      body.innerHTML = this._tlBodyHistory();
-      const data = await this._tlFetchHistory(this._tautulliModal.histPage, this._tautulliModal.histUser, this._tautulliModal.histMedia);
+    {
+      let _histSearchTimer = null;
+      body.querySelector("#tl-hist-search")?.addEventListener("input", (e) => {
+        if (!this._tautulliModal) return;
+        this._tautulliModal.histSearch = e.target.value || "";
+        this._tautulliModal.histPage = 0;
+        clearTimeout(_histSearchTimer);
+        _histSearchTimer = setTimeout(async () => {
+          const inp0 = body.querySelector("#tl-hist-search");
+          const sel0 = inp0?.selectionStart ?? null;
+          await this._tlRefetchHistory(body);
+          const inp = body.querySelector("#tl-hist-search");
+          if (inp && sel0 !== null) {
+            inp.focus();
+            inp.setSelectionRange(sel0, sel0);
+          }
+        }, 400);
+      });
+    }
+    body.querySelector("#tl-hist-user-sel")?.addEventListener("change", async (e) => {
       if (!this._tautulliModal) return;
-      this._tautulliModal.histData = data.data || [];
-      this._tautulliModal.histTotal = data.recordsFiltered || 0;
-      this._tautulliModal.histLoading = false;
-      body.innerHTML = this._tlBodyHistory();
-      this._wireTautulliModalBody(body);
-    });
-    body.querySelector("#tl-hist-next")?.addEventListener("click", async () => {
-      if (!this._tautulliModal) return;
-      const totalPages = Math.ceil(this._tautulliModal.histTotal / 25);
-      if (this._tautulliModal.histPage >= totalPages - 1) return;
-      this._tautulliModal.histPage++;
-      this._tautulliModal.histLoading = true;
-      body.innerHTML = this._tlBodyHistory();
-      const data = await this._tlFetchHistory(this._tautulliModal.histPage, this._tautulliModal.histUser, this._tautulliModal.histMedia);
-      if (!this._tautulliModal) return;
-      this._tautulliModal.histData = data.data || [];
-      this._tautulliModal.histTotal = data.recordsFiltered || 0;
-      this._tautulliModal.histLoading = false;
-      body.innerHTML = this._tlBodyHistory();
-      this._wireTautulliModalBody(body);
+      this._tautulliModal.histUser = e.target.value || null;
+      this._tautulliModal.histPage = 0;
+      await this._tlRefetchHistory(body);
     });
     body.querySelectorAll("[data-tl-hist-media]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const media = btn.dataset.tlHistMedia;
-        this._tautulliModal.histMedia = media === "all" ? null : media;
+        const v = btn.dataset.tlHistMedia;
+        this._tautulliModal.histMedia = this._tautulliModal.histMedia === v ? null : v;
         this._tautulliModal.histPage = 0;
-        this._tautulliModal.histLoading = true;
-        body.innerHTML = this._tlBodyHistory();
-        const data = await this._tlFetchHistory(0, this._tautulliModal.histUser, this._tautulliModal.histMedia);
+        await this._tlRefetchHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-hist-play]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        this._tautulliModal.histData = data.data || [];
-        this._tautulliModal.histTotal = data.recordsFiltered || 0;
-        this._tautulliModal.histLoading = false;
+        const v = btn.dataset.tlHistPlay;
+        this._tautulliModal.histPlayback = this._tautulliModal.histPlayback === v ? null : v;
+        this._tautulliModal.histPage = 0;
+        await this._tlRefetchHistory(body);
+      });
+    });
+    body.querySelector("#tl-hist-perpage")?.addEventListener("change", async (e) => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histPerPage = parseInt(e.target.value) || 25;
+      this._tautulliModal.histPage = 0;
+      await this._tlRefetchHistory(body);
+    });
+    body.querySelector("#tl-hist-del-mode")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histDeleteMode = !this._tautulliModal.histDeleteMode;
+      body.innerHTML = this._tlBodyHistory();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("#tl-hist-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histColsOpen = !this._tautulliModal.histColsOpen;
+      const menu = body.querySelector("#tl-hist-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.histColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-hist-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("histHiddenCols", ["ip", "paused", "stopped"]);
+        const col = item.dataset.tlHistCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tlSaveColPrefs();
+        this._tautulliModal.histColsOpen = true;
         body.innerHTML = this._tlBodyHistory();
         this._wireTautulliModalBody(body);
       });
     });
-    body.querySelectorAll("[data-tl-graph-sub]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+    body.querySelector("#tl-hist-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.histMobColsOpen = !this._tautulliModal.histMobColsOpen;
+      const menu = body.querySelector("#tl-hist-mob-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.histMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-hist-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
         if (!this._tautulliModal) return;
-        this._tautulliModal.graphsSub = btn.dataset.tlGraphSub;
-        body.innerHTML = this._tlBodyGraphs();
+        const hidden = this._tlHidden("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
+        const col = item.dataset.tlHistMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tlSaveColPrefs();
+        this._tautulliModal.histMobColsOpen = true;
+        body.innerHTML = this._tlBodyHistory();
         this._wireTautulliModalBody(body);
       });
+    });
+    body.querySelectorAll("[data-tl-hpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m.histTotal / (m.histPerPage || 25)));
+        const val = btn.dataset.tlHpage;
+        let p = m.histPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.histPage) return;
+        m.histPage = p;
+        await this._tlRefetchHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-hist-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const rid = btn.dataset.tlHistDelete;
+        if (!confirm("Delete this history entry? This cannot be undone.")) return;
+        btn.disabled = true;
+        await this._tlApiFetch("delete_history", `row_id=${rid}`);
+        await this._tlRefetchHistory(body);
+      });
+    });
+    this._wireGraphControls(body);
+    body.querySelector("#tl-libs-search")?.addEventListener("input", (e) => {
+      if (!this._tautulliModal) return;
+      const pos = e.target.selectionStart;
+      this._tautulliModal.libsSearch = e.target.value || "";
+      this._tautulliModal.libsPage = 0;
+      body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
+      this._wireTautulliModalBody(body);
+      const inp = body.querySelector("#tl-libs-search");
+      if (inp) {
+        inp.focus();
+        inp.setSelectionRange(pos, pos);
+      }
     });
     body.querySelector("#tl-libs-perpage")?.addEventListener("change", async (e) => {
       if (!this._tautulliModal) return;
@@ -6794,6 +8022,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlLibCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.libsColsOpen = true;
         body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
         this._wireTautulliModalBody(body);
@@ -6813,6 +8042,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlLibMobCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.libsMobColsOpen = true;
         body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
         this._wireTautulliModalBody(body);
@@ -6841,6 +8071,19 @@ var _WireTautulliMethods = class {
         await this._tlApiFetch("delete_all_library_history", `section_id=${sid}`);
         await this._tlRefetchLibraries(body);
       });
+    });
+    body.querySelector("#tl-users-search")?.addEventListener("input", (e) => {
+      if (!this._tautulliModal) return;
+      const pos = e.target.selectionStart;
+      this._tautulliModal.usersSearch = e.target.value || "";
+      this._tautulliModal.usersPage = 0;
+      body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
+      this._wireTautulliModalBody(body);
+      const inp = body.querySelector("#tl-users-search");
+      if (inp) {
+        inp.focus();
+        inp.setSelectionRange(pos, pos);
+      }
     });
     body.querySelector("#tl-users-perpage")?.addEventListener("change", async (e) => {
       if (!this._tautulliModal) return;
@@ -6899,6 +8142,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.usersColsOpen = true;
         body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
         this._wireTautulliModalBody(body);
@@ -6918,6 +8162,7 @@ var _WireTautulliMethods = class {
         const col = item.dataset.tlUsrMobCol;
         if (hidden.has(col)) hidden.delete(col);
         else hidden.add(col);
+        this._tlSaveColPrefs();
         this._tautulliModal.usersMobColsOpen = true;
         body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
         this._wireTautulliModalBody(body);
@@ -6970,6 +8215,240 @@ var _WireTautulliMethods = class {
       });
     });
   }
+  // ── Graph controls wiring ─────────────────────────────────────────────────
+  // Called after body render when graphs tab is active.
+  // Also called from _wireTautulliModalBody for all tabs (no-ops if no els).
+  _wireGraphControls(body) {
+    if (!body) return;
+    body.querySelectorAll("[data-tl-graph-sub]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const newSub = btn.dataset.tlGraphSub;
+        if (newSub === m.graphsSub) return;
+        m.graphsSub = newSub;
+        m.graphsData = null;
+        if (newSub === "totals") {
+          if (m.graphsRange > 60) m.graphsRange = 12;
+        } else {
+          if (m.graphsRange <= 60 && m.graphsSub === "totals") m.graphsRange = 30;
+        }
+        await this._tlRefetchGraphs(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-g-metric]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const v = btn.dataset.tlGMetric;
+        if (v === m.graphsMetric) return;
+        m.graphsMetric = v;
+        m.graphsData = null;
+        await this._tlRefetchGraphs(body);
+      });
+    });
+    {
+      let _gRangeTimer = null;
+      const doRangeRefetch = async (inputEl) => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const v = Math.max(1, parseInt(inputEl.value) || 1);
+        m.graphsRange = v;
+        m.graphsData = null;
+        await this._tlRefetchGraphs(body);
+      };
+      const rangeEl = body.querySelector("#tl-g-range");
+      if (rangeEl) {
+        rangeEl.addEventListener("input", (e) => {
+          clearTimeout(_gRangeTimer);
+          _gRangeTimer = setTimeout(() => doRangeRefetch(e.target), 700);
+        });
+        rangeEl.addEventListener("change", (e) => {
+          clearTimeout(_gRangeTimer);
+          doRangeRefetch(e.target);
+        });
+      }
+    }
+    body.querySelector("#tl-g-dd-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const m = this._tautulliModal;
+      if (!m) return;
+      m.graphsDdOpen = !m.graphsDdOpen;
+      const panel = body.querySelector("#tl-g-dd-panel");
+      if (panel) panel.style.display = m.graphsDdOpen ? "block" : "none";
+    });
+    body.addEventListener("click", (e) => {
+      const m = this._tautulliModal;
+      if (!m || !m.graphsDdOpen) return;
+      if (!e.target.closest("#tl-g-dd-wrap")) {
+        m.graphsDdOpen = false;
+        const panel = body.querySelector("#tl-g-dd-panel");
+        if (panel) panel.style.display = "none";
+      }
+    });
+    body.querySelector("#tl-g-dd-all")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const m = this._tautulliModal;
+      if (!m) return;
+      m.graphsSelectedUsers = null;
+      m.graphsData = null;
+      await this._tlRefetchGraphs(body);
+    });
+    body.querySelector("#tl-g-dd-none")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const m = this._tautulliModal;
+      if (!m) return;
+      m.graphsSelectedUsers = /* @__PURE__ */ new Set();
+      m.graphsData = null;
+      await this._tlRefetchGraphs(body);
+    });
+    body.querySelectorAll("[data-tl-g-uid]").forEach((item) => {
+      item.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const m = this._tautulliModal;
+        if (!m) return;
+        const uid = item.dataset.tlGUid;
+        const sel = m.graphsSelectedUsers;
+        if (sel && sel.size === 1 && sel.has(uid)) {
+          m.graphsSelectedUsers = null;
+        } else {
+          m.graphsSelectedUsers = /* @__PURE__ */ new Set([uid]);
+        }
+        m.graphsData = null;
+        m.graphsDdOpen = true;
+        await this._tlRefetchGraphs(body);
+        const panel = body.querySelector("#tl-g-dd-panel");
+        if (panel) panel.style.display = "block";
+      });
+    });
+    const _tlGVBW = 1e3, _tlGSVH = 200;
+    const _tlGRoundedTopJS = (x, y, w, h, rx, ry) => {
+      rx = Math.min(rx, w / 2);
+      ry = Math.min(ry, h / 2);
+      if (rx < 0.5 || ry < 0.5) return `M${x},${y + h} L${x},${y} L${x + w},${y} L${x + w},${y + h} Z`;
+      const f = (n) => n.toFixed(2);
+      return `M${f(x)},${f(y + h)} L${f(x)},${f(y + ry)} Q${f(x)},${f(y)} ${f(x + rx)},${f(y)} L${f(x + w - rx)},${f(y)} Q${f(x + w)},${f(y)} ${f(x + w)},${f(y + ry)} L${f(x + w)},${f(y + h)} Z`;
+    };
+    const fixSvgDots = (svg) => {
+      const svgW = svg.getBoundingClientRect().width;
+      if (!svgW) return;
+      const scaleX = svgW / _tlGVBW;
+      svg.querySelectorAll("circle").forEach((c) => {
+        const r = parseFloat(c.getAttribute("r")) || 0;
+        const el = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+        el.setAttribute("cx", c.getAttribute("cx") || "0");
+        el.setAttribute("cy", c.getAttribute("cy") || "0");
+        el.setAttribute("rx", String(r));
+        el.setAttribute("ry", String(r * scaleX));
+        el.setAttribute("data-tl-dot-r", String(r));
+        const fill = c.getAttribute("fill");
+        if (fill) el.setAttribute("fill", fill);
+        const styl = c.getAttribute("style");
+        if (styl) el.setAttribute("style", styl);
+        c.parentNode.replaceChild(el, c);
+      });
+      svg.querySelectorAll("ellipse[data-tl-dot-r]").forEach((el) => {
+        const r = parseFloat(el.getAttribute("data-tl-dot-r")) || 0;
+        el.setAttribute("ry", String(r * scaleX));
+      });
+      svg.querySelectorAll("path[data-tl-rr]").forEach((p) => {
+        const rr = parseFloat(p.getAttribute("data-tl-rr")) || 0;
+        const bx = parseFloat(p.getAttribute("data-tl-bx")) || 0;
+        const by = parseFloat(p.getAttribute("data-tl-by")) || 0;
+        const bw = parseFloat(p.getAttribute("data-tl-bw")) || 0;
+        const bh = parseFloat(p.getAttribute("data-tl-bh")) || 0;
+        p.setAttribute("d", _tlGRoundedTopJS(bx, by, bw, bh, rr, rr * scaleX));
+      });
+    };
+    requestAnimationFrame(() => {
+      body.querySelectorAll(".tl-g-svg").forEach((svg) => {
+        fixSvgDots(svg);
+        if (typeof ResizeObserver !== "undefined") {
+          const ro = new ResizeObserver(() => fixSvgDots(svg));
+          ro.observe(svg);
+        }
+      });
+    });
+    body.querySelectorAll(".tl-g-card").forEach((card) => {
+      let activeCol = null;
+      const tipEl = card.querySelector(".tl-g-tip");
+      if (!tipEl) return;
+      const showColTip = (colData, eClientX, eClientY) => {
+        if (!colData.vals || !colData.vals.length) return;
+        const lbl = colData.lbl || "";
+        const rows = colData.vals.map((v) => {
+          const disp = v.fv != null ? v.fv : v.v;
+          return `<div style="display:flex;align-items:center;gap:6px;padding:1px 0">
+            <span style="width:6px;height:6px;border-radius:1px;background:${v.hex || "var(--is-text-muted)"};flex-shrink:0"></span>
+            <span style="color:var(--is-text-muted)">${v.n}</span>
+            <span style="font-weight:600;color:var(--is-text);margin-left:auto;padding-left:10px">${disp}</span>
+          </div>`;
+        }).join("");
+        const totDisp = colData.ftot != null ? colData.ftot : colData.tot;
+        const totRow = totDisp != null ? `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--is-divider);margin-top:4px;padding-top:4px">
+               <span style="color:var(--is-text-muted);font-weight:600">Total</span>
+               <span style="font-weight:700;color:var(--is-text)">${totDisp}</span>
+             </div>` : "";
+        tipEl.innerHTML = `<div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px">${lbl}</div>${rows}${totRow}`;
+        const cardRect = tipEl.parentElement.getBoundingClientRect();
+        let tipLeft = eClientX - cardRect.left;
+        let tipTop = eClientY - cardRect.top - 8;
+        tipEl.style.display = "block";
+        tipEl.style.left = "0";
+        tipEl.style.top = "0";
+        const tipW = tipEl.offsetWidth, tipH = tipEl.offsetHeight, contW = cardRect.width;
+        tipLeft = Math.max(4, Math.min(tipLeft - tipW / 2, contW - tipW - 4));
+        tipTop = Math.max(4, tipTop - tipH);
+        tipEl.style.left = tipLeft + "px";
+        tipEl.style.top = tipTop + "px";
+      };
+      const clearHighlights = () => card.querySelectorAll(".tl-g-lhlt").forEach((r) => r.style.opacity = "0");
+      const hideTip = () => {
+        tipEl.style.display = "none";
+        activeCol = null;
+        clearHighlights();
+      };
+      card.addEventListener("click", (e) => {
+        const lcol = e.target.closest(".tl-g-lcol");
+        if (lcol) {
+          if (lcol === activeCol) {
+            hideTip();
+            return;
+          }
+          clearHighlights();
+          activeCol = lcol;
+          const hlt = lcol.querySelector(".tl-g-lhlt");
+          if (hlt) hlt.style.opacity = "1";
+          let colData2;
+          try {
+            colData2 = JSON.parse(lcol.dataset.tlGCol);
+          } catch {
+            return;
+          }
+          showColTip(colData2, e.clientX, e.clientY);
+          return;
+        }
+        const col = e.target.closest(".tl-g-col");
+        if (!col || !col.dataset.tlGCol) {
+          hideTip();
+          return;
+        }
+        if (col === activeCol) {
+          hideTip();
+          return;
+        }
+        clearHighlights();
+        activeCol = col;
+        let colData;
+        try {
+          colData = JSON.parse(col.dataset.tlGCol);
+        } catch {
+          return;
+        }
+        showColTip(colData, e.clientX, e.clientY);
+      });
+    });
+  }
 };
 var wireTautulliMixin = _WireTautulliMethods.prototype;
 
@@ -6985,7 +8464,8 @@ var _PopupMethods = class {
         const tvdbId = card.dataset.tvdbid;
         const title = card.dataset.title || "";
         const radarrId = card.dataset.radarrid ? parseInt(card.dataset.radarrid, 10) : null;
-        this._openPopup(type, tmdbId, tvdbId, title, radarrId);
+        const radarr2Id = card.dataset.radarr2id ? parseInt(card.dataset.radarr2id, 10) : null;
+        this._openPopup(type, tmdbId, tvdbId, title, radarrId, radarr2Id);
       });
     });
     this.shadowRoot.querySelectorAll(".mc[data-stream-entity]").forEach((card) => {
@@ -7023,53 +8503,84 @@ var _PopupMethods = class {
         _poster: attr.entity_picture || null
       };
       this._renderPopupEl();
+      if (entityId.startsWith("media_player.plex_")) this._fetchPlexMachineId(entityId);
       return;
     }
     if (isTV) {
       const lookupTitle = seriesTitle || trackTitle;
-      const s = (this._sonarr || []).find(
-        (s2) => s2.title?.toLowerCase() === lookupTitle?.toLowerCase()
-      );
-      if (s) {
-        await this._openPopup(POPUP_TYPE.SONARR, s.tmdbId ? String(s.tmdbId) : null, s.tvdbId ? String(s.tvdbId) : null, s.title);
+      const lt = lookupTitle.toLowerCase();
+      const _snMatch = (arr) => (arr || []).find((s3) => {
+        const st = s3.title?.toLowerCase() || "";
+        return st === lt || st.includes(lt) || lt.includes(st);
+      });
+      const s = _snMatch(this._sonarr);
+      const s2 = !s && _snMatch(this._sonarr2);
+      const snHit = s || s2;
+      if (snHit) {
+        const popType = snHit === s ? POPUP_TYPE.SONARR : POPUP_TYPE.SONARR;
+        await this._openPopup(popType, snHit.tmdbId ? String(snHit.tmdbId) : null, snHit.tvdbId ? String(snHit.tvdbId) : null, snHit.title);
+      } else if (this._overseerrConfigured !== false) {
+        let tvTmdbId = null;
+        try {
+          const sr = await this._hass.callApi("POST", "arr_stack/overseerr/search", { query: lookupTitle, page: 1 });
+          const hit2 = (sr?.results || []).find((r) => r.mediaType === "tv");
+          if (hit2?.id) tvTmdbId = String(hit2.id);
+        } catch (_) {
+        }
+        await this._openPopup(POPUP_TYPE.TV, tvTmdbId, null, lookupTitle);
       } else {
         await this._openPopup(POPUP_TYPE.TV, null, null, lookupTitle);
       }
       if (this._popup) {
-        this._popup._noIS = true;
+        this._popup._noIS = isLiveTV;
         this._attachStreamData(entityId);
         this._renderPopupEl();
       }
       return;
     }
     const titleNoYear = trackTitle.replace(/\s*\(\d{4}\)\s*$/, "").trim();
-    const m = (this._radarr || []).find((m2) => {
-      const t = m2.title?.toLowerCase() || "";
-      return t === trackTitle.toLowerCase() || t === titleNoYear.toLowerCase();
-    });
-    if (m) {
-      await this._openPopup(POPUP_TYPE.RADARR, String(m.tmdbId), null, m.title, m.id);
+    const _titleMatch = (t) => t === trackTitle.toLowerCase() || t === titleNoYear.toLowerCase();
+    const m = (this._radarr || []).find((m3) => _titleMatch(m3.title?.toLowerCase() || ""));
+    const m2 = !m && (this._radarr2 || []).find((m3) => _titleMatch(m3.title?.toLowerCase() || ""));
+    const hit = m || m2;
+    if (hit) {
+      await this._openPopup(POPUP_TYPE.RADARR, String(hit.tmdbId), null, hit.title, m?.id ?? null, m2?.id ?? null);
       if (this._popup) {
         this._attachStreamData(entityId);
         this._renderPopupEl();
       }
     } else {
-      const s = this._hass?.states?.[entityId];
-      const attr = s?.attributes || {};
-      this._popup = {
-        _type: POPUP_TYPE.STREAM,
-        _streamEntity: entityId,
-        _streamState: s?.state || "idle",
-        title: trackTitle,
-        _artist: "",
-        _album: "",
-        _duration: attr.media_duration || 0,
-        _position: attr.media_position || 0,
-        _updatedAt: attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now(),
-        _poster: attr.entity_picture || null,
-        _noIS: false
-      };
-      this._renderPopupEl();
+      let movieTmdbId = null;
+      if (this._overseerrConfigured !== false) {
+        try {
+          const sr = await this._hass.callApi("POST", "arr_stack/overseerr/search", { query: titleNoYear, page: 1 });
+          const oh = (sr?.results || []).find((r) => r.mediaType === "movie");
+          if (oh?.id) movieTmdbId = String(oh.id);
+        } catch (_) {
+        }
+      }
+      if (movieTmdbId) {
+        await this._openPopup(POPUP_TYPE.MOVIE, movieTmdbId, null, titleNoYear);
+        if (this._popup) {
+          this._attachStreamData(entityId);
+          this._renderPopupEl();
+        }
+      } else {
+        this._popup = {
+          _type: POPUP_TYPE.STREAM,
+          _streamEntity: entityId,
+          _streamState: this._hass?.states?.[entityId]?.state || "idle",
+          title: trackTitle,
+          _artist: "",
+          _album: "",
+          _duration: streamAttr.media_duration || 0,
+          _position: streamAttr.media_position || 0,
+          _updatedAt: streamAttr.media_position_updated_at ? new Date(streamAttr.media_position_updated_at).getTime() : Date.now(),
+          _poster: streamAttr.entity_picture || null,
+          _noIS: false
+        };
+        this._renderPopupEl();
+      }
     }
   }
   // Attach live stream data to current popup (called after _openPopup for movie/TV from stream card)
@@ -7107,11 +8618,15 @@ var _PopupMethods = class {
       if (!match) match = sessions.find((s) => rawTitle && (s.title || "").toLowerCase() === rawTitle);
       if (!match && sessions.length === 1 && sessions[0].Player?.machineIdentifier) match = sessions[0];
       const p = match?.Player;
-      if (p && this._popup && p.platform === "tvOS") {
+      if (p && this._popup) {
         this._popup._plexMachineId = p.machineIdentifier;
+        this._popup._plexSessionId = match?.Session?.id || match?.sessionKey || "";
+        this._popup._plexSessionKey = match?.sessionKey || "";
+        this._popup._plexUser = match?.User?.title || "";
+        this._popup._plexUserThumb = match?.User?.thumb || "";
         const port = p.port || (p.secure ? 32433 : 32500);
         const protocol = p.secure ? "https" : "http";
-        this._popup._plexPlayerUrl = p.address ? `${protocol}://${p.address}:${port}` : null;
+        this._popup._plexPlayerUrl = p.platform === "tvOS" && p.address ? `${protocol}://${p.address}:${port}` : null;
         this._renderPopupEl();
       }
     } catch (_) {
@@ -7154,6 +8669,7 @@ var _PopupMethods = class {
     if (!s) return;
     const attr = s.attributes || {};
     if (d._type === POPUP_TYPE.STREAM) {
+      if (d._plexTerminated) return;
       if (attr.media_title === d.title && s.state === d._streamState) return;
       this._popup = {
         ...d,
@@ -7169,6 +8685,7 @@ var _PopupMethods = class {
       this._renderPopupEl();
       return;
     }
+    if (d._plexTerminated) return;
     if (s.state !== d._streamState) {
       d._streamState = s.state;
       d._position = attr.media_position || 0;
@@ -7191,8 +8708,9 @@ var _PopupMethods = class {
   get _isDaytime() {
     return this._hass?.states?.["sun.sun"]?.state === "above_horizon";
   }
-  async _openPopup(type, tmdbId, tvdbId, title, radarrId = null) {
+  async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = null) {
     this._isState = null;
+    this._isInstance = "radarr";
     this._isResults = [];
     this._isFilters = { protocol: "", indexer: "", quality: "", lang: "" };
     this._isSort = { col: null, dir: 1 };
@@ -7201,6 +8719,8 @@ var _PopupMethods = class {
     this._isHistory = {};
     this._isError = null;
     this._removeConfirm = false;
+    this._removeInstance = null;
+    this._snIsInstance = "sonarr";
     this._snIsOpen = false;
     this._snExpandedSeasons = /* @__PURE__ */ new Set();
     this._snEpisodes = /* @__PURE__ */ new Map();
@@ -7214,19 +8734,68 @@ var _PopupMethods = class {
     this._snIsGrabbing = null;
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
+    this._snSeasonsPage = 0;
+    this._searchExpand = null;
+    this._asOpen = false;
+    this._asInstance = null;
+    this._asState = null;
+    this._asError = null;
+    this._asMovieSearching = false;
+    this._asMovieSearched = false;
+    this._asSearchingItems = /* @__PURE__ */ new Set();
+    this._asSearchedItems = /* @__PURE__ */ new Set();
     let _radarrId = null;
-    if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && (radarrId || tmdbId)) {
-      _radarrId = radarrId ?? (this._radarr || []).find((m) => String(m.tmdbId) === String(tmdbId))?.id ?? null;
+    let _radarr2Id = null;
+    if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && (radarrId || radarr2IdHint || tmdbId)) {
+      if (!radarr2IdHint) {
+        _radarrId = radarrId ?? (this._radarr || []).find((m) => String(m.tmdbId) === String(tmdbId))?.id ?? null;
+      }
+      _radarr2Id = radarr2IdHint ?? (tmdbId ? this._radarr2ByTmdb?.get(String(tmdbId))?.id ?? null : null);
     }
     let _sonarrSeries = null;
+    let _sonarr2Series = null;
     if ((type === POPUP_TYPE.SONARR || type === POPUP_TYPE.TV) && (tvdbId || tmdbId)) {
       const sonarrPool = this._sonarrAll || this._sonarr || [];
       _sonarrSeries = sonarrPool.find(
         (s) => tvdbId && String(s.tvdbId) === String(tvdbId) || tmdbId && String(s.tmdbId) === String(tmdbId)
       ) ?? null;
+      if (this._sonarr2Configured) {
+        _sonarr2Series = (this._sonarr2 || []).find(
+          (s) => tvdbId && String(s.tvdbId) === String(tvdbId) || tmdbId && String(s.tmdbId) === String(tmdbId)
+        ) ?? null;
+      }
     }
-    this._popup = { _loading: true, title, _radarrId, _sonarrSeries };
+    this._popup = { _loading: true, title, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series };
     this._renderPopupEl();
+    if (this._overseerrConfigured === false) {
+      const local = this._localFallbackData(type, tmdbId, tvdbId, title);
+      const _popId = tmdbId ? parseInt(tmdbId) : void 0;
+      const _popTvdb = tvdbId ? parseInt(tvdbId) : void 0;
+      this._popup = local ? { ...local, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, id: _popId, _tvdbId: _popTvdb } : { title, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, id: _popId, _tvdbId: _popTvdb };
+      this._renderPopupEl();
+      if (tmdbId) {
+        const isMovie = type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE;
+        const tmdbPath = isMovie ? `arr_stack/tmdb/movie/${tmdbId}` : `arr_stack/tmdb/tv/${tmdbId}`;
+        this._callApi("GET", tmdbPath).then((detail) => {
+          if (!this._popup || this._popup._type !== type) return;
+          const prev = this._popup;
+          this._popup = {
+            ...prev,
+            overview: detail.overview || prev.overview || "",
+            posterPath: detail.posterPath || prev.posterPath || null,
+            backdropPath: detail.backdropPath || prev.backdropPath || null,
+            voteAverage: detail.voteAverage || prev.voteAverage || 0,
+            genres: detail.genres?.length ? detail.genres : prev.genres || [],
+            releaseDate: detail.releaseDate || prev.releaseDate || "",
+            firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
+            relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
+          };
+          this._renderPopupEl();
+        }).catch(() => {
+        });
+      }
+      return;
+    }
     try {
       let apiPath = "";
       if (type === POPUP_TYPE.TV && tmdbId) {
@@ -7249,18 +8818,25 @@ var _PopupMethods = class {
           _sonarrSeries = sonarrPool.find((s) => String(s.tvdbId) === tvdbFromDetail) ?? null;
         }
       }
-      this._popup = { ...data, _type: type, _radarrId, _sonarrSeries };
+      this._popup = { ...data, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series };
+      if (_sonarrSeries || type === POPUP_TYPE.TV || type === POPUP_TYPE.SONARR) {
+        this._fetchSonarrQueue("sonarr").then(() => this._renderPopupEl());
+        if (this._sonarr2Configured !== false)
+          this._fetchSonarrQueue("sonarr2").then(() => this._renderPopupEl());
+      }
     } catch (e) {
       console.error("[arr-card] popup fetch error:", e);
       const local = this._localFallbackData(type, tmdbId, tvdbId, title);
-      this._popup = local ? { ...local, _radarrId, _sonarrSeries } : { title, _radarrId, _sonarrSeries, _error: e.message };
+      const _popId = tmdbId ? parseInt(tmdbId) : void 0;
+      const _popTvdb = tvdbId ? parseInt(tvdbId) : void 0;
+      this._popup = local ? { ...local, _radarrId, _sonarrSeries, id: _popId, _tvdbId: _popTvdb } : { title, _radarrId, _sonarrSeries, _error: e.message, id: _popId, _tvdbId: _popTvdb };
     }
     this._renderPopupEl();
   }
   // Build popup data from local arrays when Overseerr is unavailable/fails
   _localFallbackData(type, tmdbId, tvdbId, title) {
     if (type === POPUP_TYPE.TV) {
-      const show = this._tvUpcoming?.find((m) => String(m.id) === String(tmdbId));
+      const show = this._tvUpcoming?.find((m) => String(m.id) === String(tmdbId)) || (this._searchResults || []).find((m) => m.mediaType === "tv" && (tmdbId && String(m.id) === String(tmdbId) || tvdbId && String(m.tvdbId) === String(tvdbId)));
       if (show) return {
         _type: POPUP_TYPE.TV,
         _localData: true,
@@ -7268,8 +8844,10 @@ var _PopupMethods = class {
         overview: show.overview || "",
         firstAirDate: show.firstAirDate || "",
         genres: (show.genreIds || []).map((id) => ({ name: String(id) })),
-        _localPosterUrl: show.posterPath ? `https://image.tmdb.org/t/p/w342${show.posterPath}` : null,
-        relatedVideos: []
+        ratings: show.ratings || {},
+        images: show.images || [],
+        _localPosterUrl: show.posterPath ? show.posterPath.startsWith("http") ? show.posterPath : `https://image.tmdb.org/t/p/w342${show.posterPath}` : null,
+        relatedVideos: show.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: show.youTubeTrailerId }] : []
       };
     }
     if (type === POPUP_TYPE.SONARR) {
@@ -7281,6 +8859,7 @@ var _PopupMethods = class {
         if (ep?.series) series = ep.series;
       }
       if (series) {
+        const fanart = series.images?.find((i) => i.coverType === "fanart")?.remoteUrl || null;
         return {
           _type: POPUP_TYPE.SONARR,
           _localData: true,
@@ -7288,14 +8867,17 @@ var _PopupMethods = class {
           overview: series.overview || "",
           firstAirDate: series.firstAired || "",
           genres: (series.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          voteAverage: series.ratings?.tmdb?.value || series.ratings?.imdb?.value || 0,
           _localPosterUrl: this._getSonarrPoster(series),
-          relatedVideos: []
+          _localBackdropUrl: fanart,
+          relatedVideos: series.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: series.youTubeTrailerId }] : []
         };
       }
     }
     if (type === POPUP_TYPE.RADARR) {
       const movie = this._radarr.find((m) => tmdbId && String(m.tmdbId) === String(tmdbId));
       if (movie) {
+        const fanart = movie.images?.find((i) => i.coverType === "fanart")?.remoteUrl || null;
         return {
           _type: POPUP_TYPE.RADARR,
           _localData: true,
@@ -7303,8 +8885,40 @@ var _PopupMethods = class {
           overview: movie.overview || "",
           releaseDate: movie.digitalRelease || movie.physicalRelease || movie.inCinemas || "",
           genres: (movie.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          voteAverage: movie.ratings?.tmdb?.value || movie.ratings?.imdb?.value || 0,
           _localPosterUrl: this._getRadarrPoster(movie),
-          relatedVideos: []
+          _localBackdropUrl: fanart,
+          relatedVideos: movie.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: movie.youTubeTrailerId }] : []
+        };
+      }
+    }
+    if (type === POPUP_TYPE.MOVIE || type === POPUP_TYPE.TV) {
+      const _allDiscover = [
+        ...this._searchResults || [],
+        ...this._upcoming || [],
+        ...this._trending || [],
+        ...this._popular || [],
+        ...this._tvUpcoming || []
+      ];
+      const sr = _allDiscover.find(
+        (m) => tmdbId && String(m.id) === String(tmdbId) || tvdbId && m.tvdbId && String(m.tvdbId) === String(tvdbId)
+      );
+      if (sr) {
+        const posterPath = sr.posterPath || null;
+        return {
+          _type: type,
+          _localData: true,
+          title: sr.title || sr.name || title,
+          overview: sr.overview || "",
+          releaseDate: sr.releaseDate || "",
+          firstAirDate: sr.firstAirDate || "",
+          genres: sr.genres || [],
+          ratings: sr.ratings || {},
+          voteAverage: sr.voteAverage || 0,
+          images: sr.images || [],
+          _tvdbId: sr.tvdbId || null,
+          _localPosterUrl: posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : null,
+          relatedVideos: sr.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: sr.youTubeTrailerId }] : []
         };
       }
     }
@@ -7314,6 +8928,7 @@ var _PopupMethods = class {
   // Popup: render popup HTML into popup-root
   // ─────────────────────────────────────────────
   _renderPopupEl() {
+    if (this._terminateActive) return;
     const root = this.shadowRoot.getElementById("popup-root");
     if (!root) return;
     if (this._streamPopupTimer) {
@@ -7355,21 +8970,249 @@ var _PopupMethods = class {
     }
     if (glass) glass.addEventListener("click", (e) => {
       e.stopPropagation();
-      const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid]");
+      const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid],[data-sn-spage]");
       if (!t) return;
-      if (t.dataset.action === "is-toggle") {
-        if (this._isState) {
-          this._isState = null;
-        } else if (this._popup._type === POPUP_TYPE.MOVIE && !this._popup._radarrId) {
-          this._isState = "confirm-add";
-        } else {
-          this._fetchInteractiveSearch(this._popup._radarrId);
-        }
+      const _closeAS = () => {
+        this._asOpen = false;
+        this._asExpanded = false;
+        this._asState = null;
+      };
+      const _closeIS = () => {
+        this._isState = null;
+        this._isExpanded = false;
+      };
+      const _closeSnIS = () => {
+        this._snIsOpen = false;
+        this._snIsExpanded = false;
+        this._snIsState = null;
+        this._snActiveIs = null;
+      };
+      const _closeRemove = () => {
+        this._removeConfirm = false;
+      };
+      if (t.dataset.action === "search-expand") {
+        _closeAS();
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        this._searchExpand = "pick";
         this._renderPopupEl();
         return;
       }
+      if (t.dataset.action === "search-collapse") {
+        _closeAS();
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        this._searchExpand = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "search-pick-as") {
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        const _isDualAS = _isMovT2 ? !!this._radarr2Configured : !!this._sonarr2Configured;
+        if (_isDualAS) {
+          this._searchExpand = "as-inst";
+          this._renderPopupEl();
+        } else {
+          const inst = _isMovT2 ? dd2._radarrId ? "radarr" : dd2._radarr2Id ? "radarr2" : "radarr" : dd2._sonarrSeries ? "sonarr" : dd2._sonarr2Series ? "sonarr2" : "sonarr";
+          if (this._asOpen && this._asInstance === inst) {
+            this._asOpen = false;
+            this._asState = null;
+            this._renderPopupEl();
+          } else {
+            this._asOpen = true;
+            this._asInstance = inst;
+            this._asState = null;
+            this._asMovieSearching = false;
+            this._asMovieSearched = false;
+            this._asSearchingItems = /* @__PURE__ */ new Set();
+            this._asSearchedItems = /* @__PURE__ */ new Set();
+            this._asError = null;
+            if (_isMovT2) {
+              const mId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+              if (!mId) {
+                this._asState = "confirm";
+                this._renderPopupEl();
+              } else {
+                this._triggerRadarrAutoSearch(inst);
+              }
+            } else {
+              const ss = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+              this._asState = ss ? "seasons" : "confirm";
+              this._renderPopupEl();
+            }
+          }
+        }
+        return;
+      }
+      if (t.dataset.action === "search-pick-is") {
+        _closeAS();
+        _closeRemove();
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        const _isDualIS = _isMovT2 ? !!this._radarr2Configured : !!this._sonarr2Configured;
+        if (_isDualIS) {
+          this._searchExpand = "is-inst";
+          this._renderPopupEl();
+        } else {
+          if (_isMovT2) {
+            const inst = dd2._radarrId ? "radarr" : dd2._radarr2Id ? "radarr2" : "radarr";
+            const radarrId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+            if (this._isState && this._isInstance === inst) {
+              this._isState = null;
+              this._renderPopupEl();
+            } else {
+              _closeSnIS();
+              this._isInstance = inst;
+              this._isState = null;
+              if (!radarrId) {
+                this._isState = "confirm-add";
+                this._renderPopupEl();
+              } else {
+                this._fetchInteractiveSearch(radarrId, inst);
+              }
+            }
+          } else {
+            const inst = dd2._sonarrSeries ? "sonarr" : dd2._sonarr2Series ? "sonarr2" : "sonarr";
+            if (this._snIsOpen && this._snIsInstance === inst) {
+              this._snIsOpen = false;
+              this._snActiveIs = null;
+              this._snIsState = null;
+              this._renderPopupEl();
+            } else {
+              _closeIS();
+              this._snIsInstance = inst;
+              this._snIsOpen = true;
+              this._snActiveIs = null;
+              this._snIsState = null;
+              this._snSeasonsPage = 0;
+              const seriesInInst = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+              if (!seriesInInst) {
+                this._snIsState = "confirm-add";
+              }
+              this._renderPopupEl();
+            }
+          }
+        }
+        return;
+      }
+      if (t.dataset.action === "search-as-inst") {
+        const inst = t.dataset.instance || "radarr";
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        if (this._asOpen && this._asInstance === inst) {
+          this._asOpen = false;
+          this._asState = null;
+          this._renderPopupEl();
+          return;
+        }
+        _closeIS();
+        _closeSnIS();
+        _closeRemove();
+        this._asOpen = true;
+        this._asInstance = inst;
+        this._asState = null;
+        this._asMovieSearching = false;
+        this._asMovieSearched = false;
+        this._asSearchingItems = /* @__PURE__ */ new Set();
+        this._asSearchedItems = /* @__PURE__ */ new Set();
+        this._asError = null;
+        if (_isMovT2) {
+          const mId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+          if (!mId) {
+            this._asState = "confirm";
+            this._renderPopupEl();
+          } else {
+            this._triggerRadarrAutoSearch(inst);
+          }
+        } else {
+          const ss = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+          this._asState = ss ? "seasons" : "confirm";
+          this._renderPopupEl();
+        }
+        return;
+      }
+      if (t.dataset.action === "search-is-inst") {
+        const inst = t.dataset.instance || "radarr";
+        const dd2 = this._popup;
+        const _isMovT2 = dd2._type === "radarr" || dd2._type === "movie";
+        if (_isMovT2) {
+          const radarrId = inst === "radarr2" ? dd2._radarr2Id : dd2._radarrId;
+          if (this._isState && this._isInstance === inst) {
+            this._isState = null;
+            this._renderPopupEl();
+          } else {
+            _closeAS();
+            _closeSnIS();
+            _closeRemove();
+            this._isInstance = inst;
+            this._isState = null;
+            if (!radarrId) {
+              this._isState = "confirm-add";
+              this._renderPopupEl();
+            } else {
+              this._fetchInteractiveSearch(radarrId, inst);
+            }
+          }
+        } else {
+          if (this._snIsOpen && this._snIsInstance === inst) {
+            this._snIsOpen = false;
+            this._snActiveIs = null;
+            this._snIsState = null;
+            this._renderPopupEl();
+          } else {
+            _closeAS();
+            _closeIS();
+            _closeRemove();
+            this._snIsInstance = inst;
+            this._snIsOpen = true;
+            this._snActiveIs = null;
+            this._snIsState = null;
+            this._snSeasonsPage = 0;
+            const seriesInInst = inst === "sonarr2" ? dd2._sonarr2Series : dd2._sonarrSeries;
+            if (!seriesInInst) {
+              this._snIsState = "confirm-add";
+            }
+            this._renderPopupEl();
+          }
+        }
+        return;
+      }
+      if (t.dataset.action === "as-confirm-yes") {
+        const dd = this._popup;
+        const isMovT = dd._type === "radarr" || dd._type === "movie";
+        if (isMovT) {
+          this._triggerRadarrAutoSearch(this._asInstance);
+        } else {
+          this._addSeriesForAs(this._asInstance);
+        }
+        return;
+      }
+      if (t.dataset.action === "as-confirm-no") {
+        this._asOpen = false;
+        this._asState = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "as-season-search") {
+        const n = parseInt(t.dataset.season);
+        this._triggerSonarrSeasonSearch(n, this._asInstance);
+        return;
+      }
+      if (t.dataset.action === "as-ep-search") {
+        const epId = parseInt(t.dataset.epid);
+        const seasonN = parseInt(t.dataset.season);
+        this._triggerSonarrEpisodeSearch(epId, seasonN, this._asInstance);
+        return;
+      }
       if (t.dataset.action === "is-confirm-yes") {
-        this._fetchInteractiveSearch(this._popup._radarrId);
+        const radarrId = this._isInstance === "radarr2" ? this._popup._radarr2Id : this._popup._radarrId;
+        this._fetchInteractiveSearch(radarrId, this._isInstance);
         return;
       }
       if (t.dataset.action === "is-confirm-no") {
@@ -7391,24 +9234,8 @@ var _PopupMethods = class {
         this._grabRelease(t.dataset.grab, parseInt(t.dataset.indexerid));
         return;
       }
-      if (t.dataset.action === "sn-is-toggle") {
-        if (this._snIsOpen) {
-          this._snIsOpen = false;
-          this._snActiveIs = null;
-          this._snIsState = null;
-        } else {
-          this._snIsOpen = true;
-          this._snActiveIs = null;
-          this._snIsState = null;
-          if (!this._popup._sonarrSeries) {
-            this._snIsState = "confirm-add";
-          }
-        }
-        this._renderPopupEl();
-        return;
-      }
       if (t.dataset.action === "sn-confirm-yes") {
-        this._addSeriesToSonarr();
+        this._addSeriesToSonarr(this._snIsInstance);
         return;
       }
       if (t.dataset.action === "sn-confirm-no") {
@@ -7427,8 +9254,9 @@ var _PopupMethods = class {
           this._snActiveIs = null;
           this._snIsState = null;
           if (!this._snEpisodes.has(n)) {
-            const sid = this._popup._sonarrSeries?.id;
-            if (sid) this._fetchSonarrEpisodes(sid, n);
+            const activeSeries = this._snIsInstance === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
+            const sid = activeSeries?.id;
+            if (sid) this._fetchSonarrEpisodes(sid, n, this._snIsInstance);
           }
         }
         this._renderPopupEl();
@@ -7443,13 +9271,14 @@ var _PopupMethods = class {
         } else {
           this._snActiveIs = { type: "season", key: n };
           this._snExpandedSeasons.clear();
-          const sid = this._popup._sonarrSeries?.id;
+          const activeSn = this._snIsInstance === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
+          const sid = activeSn?.id;
           if (sid) {
             if (isMobile) {
               this._renderPopupEl();
-              this._fetchSonarrSeasonIS(sid, n);
+              this._fetchSonarrSeasonIS(sid, n, this._snIsInstance);
             } else {
-              this._fetchSonarrSeasonIS(sid, n);
+              this._fetchSonarrSeasonIS(sid, n, this._snIsInstance);
             }
           }
         }
@@ -7473,13 +9302,14 @@ var _PopupMethods = class {
             epNum: ep?.episodeNumber ?? 0,
             label: ep?.title || ""
           };
-          const sid = this._popup._sonarrSeries?.id;
+          const activeSnEp = this._snIsInstance === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
+          const sid = activeSnEp?.id;
           if (sid) {
             if (isMobile) {
               this._renderPopupEl();
-              this._fetchSonarrEpIS(epId, sid);
+              this._fetchSonarrEpIS(epId, sid, this._snIsInstance);
             } else {
-              this._fetchSonarrEpIS(epId, sid);
+              this._fetchSonarrEpIS(epId, sid, this._snIsInstance);
             }
           }
         }
@@ -7505,6 +9335,26 @@ var _PopupMethods = class {
         this._sonarrGrab(t.dataset.sngrab, parseInt(t.dataset.indexerid));
         return;
       }
+      {
+        const snSpageBtn = t.closest("[data-sn-spage]") || (t.dataset.snSpage !== void 0 ? t : null);
+        if (snSpageBtn) {
+          const series = this._popup?._sonarrSeries;
+          const total = (series?.seasons || []).filter((s) => s.seasonNumber > 0).length;
+          const totalPages = Math.max(1, Math.ceil(total / 4));
+          const val = snSpageBtn.dataset.snSpage;
+          let p = this._snSeasonsPage || 0;
+          if (val === "first") p = 0;
+          else if (val === "prev") p = Math.max(0, p - 1);
+          else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+          else if (val === "last") p = totalPages - 1;
+          else p = parseInt(val) || 0;
+          if (p !== this._snSeasonsPage) {
+            this._snSeasonsPage = p;
+            this._renderPopupEl();
+          }
+          return;
+        }
+      }
       if (t.dataset.action === "sn-back") {
         this._snActiveIs = null;
         this._snIsState = null;
@@ -7512,6 +9362,25 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "remove-confirm") {
+        _closeAS();
+        _closeIS();
+        _closeSnIS();
+        this._searchExpand = null;
+        const pd = this._popup;
+        const dualR = pd && pd._radarrId && pd._radarr2Id;
+        const dualS = pd && pd._sonarrSeries?.id && pd._sonarr2Series?.id;
+        if (dualR || dualS) {
+          this._removeConfirm = "instance";
+        } else {
+          if (pd?._radarr2Id && !pd?._radarrId) this._removeInstance = "radarr2";
+          else if (pd?._sonarr2Series?.id && !pd?._sonarrSeries?.id) this._removeInstance = "sonarr2";
+          this._removeConfirm = "choose";
+        }
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "remove-instance") {
+        this._removeInstance = t.dataset.instance;
         this._removeConfirm = "choose";
         this._renderPopupEl();
         return;
@@ -7526,6 +9395,7 @@ var _PopupMethods = class {
       }
       if (t.dataset.action === "remove-no") {
         this._removeConfirm = false;
+        this._removeInstance = null;
         this._renderPopupEl();
         return;
       }
@@ -7539,6 +9409,7 @@ var _PopupMethods = class {
         const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
         const canPause = supported & 1;
         const canPlay = supported & 16384;
+        const plexAction = curState === "playing" ? "pause" : "play";
         let svc;
         if (curState === "playing") {
           svc = canPause ? "media_pause" : canPlay ? "media_play_pause" : null;
@@ -7546,9 +9417,12 @@ var _PopupMethods = class {
           svc = canPlay ? "media_play" : canPause ? "media_play_pause" : null;
         }
         if (svc) {
-          this._hass.callService("media_player", svc, { entity_id: entityId });
-        } else if (this._popup?._plexMachineId) {
-          const plexAction = curState === "playing" ? "pause" : "play";
+          try {
+            this._hass.callService("media_player", svc, { entity_id: entityId });
+          } catch (_) {
+          }
+        }
+        if (!svc && this._popup?._plexMachineId) {
           this._hass.callApi("POST", "arr_stack/plex/player", {
             action: plexAction,
             machineIdentifier: this._popup._plexMachineId,
@@ -7568,7 +9442,13 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "stream-prev") {
-        this._hass.callService("media_player", "media_previous_track", { entity_id: t.dataset.entity });
+        const _plexPrev = () => this._popup?._plexMachineId && this._hass.callApi("POST", "arr_stack/plex/player", {
+          action: "skipPrevious",
+          machineIdentifier: this._popup._plexMachineId,
+          playerUrl: this._popup._plexPlayerUrl || null
+        }).catch(() => {
+        });
+        this._hass.callService("media_player", "media_previous_track", { entity_id: t.dataset.entity }).catch(() => _plexPrev());
         setTimeout(() => {
           this._syncStreamPopup();
           this._reRenderSection("streams");
@@ -7576,11 +9456,107 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "stream-next") {
-        this._hass.callService("media_player", "media_next_track", { entity_id: t.dataset.entity });
+        const _plexNext = () => this._popup?._plexMachineId && this._hass.callApi("POST", "arr_stack/plex/player", {
+          action: "skipNext",
+          machineIdentifier: this._popup._plexMachineId,
+          playerUrl: this._popup._plexPlayerUrl || null
+        }).catch(() => {
+        });
+        this._hass.callService("media_player", "media_next_track", { entity_id: t.dataset.entity }).catch(() => _plexNext());
         setTimeout(() => {
           this._syncStreamPopup();
           this._reRenderSection("streams");
         }, 2e3);
+        return;
+      }
+      if (t.dataset.action === "stream-terminate-show") {
+        const glass2 = this.shadowRoot?.querySelector(".popup-glass");
+        if (!glass2) return;
+        glass2.querySelector(".plex-terminate-modal")?.remove();
+        const d = this._popup;
+        const sessionId = t.dataset.sessionId;
+        const userName = d?._plexUser || "";
+        const userThumb = d?._plexUserThumb || "";
+        const title = d?.title || "";
+        const isDay = this._isDaytime && this._config?.styles?.dayNightMode !== false;
+        const fg = isDay ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.9)";
+        const fgSub = isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
+        const bg = isDay ? "rgba(235,235,240,0.97)" : "rgba(16,16,26,0.97)";
+        const inputBg = isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.07)";
+        const inputBd = isDay ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.12)";
+        const avatarEl = userThumb ? `<img src="${this._escHtml(userThumb)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(255,255,255,0.15)">` : "";
+        const modal = document.createElement("div");
+        modal.className = "plex-terminate-modal";
+        modal.style.cssText = `position:absolute;inset:0;background:${bg};backdrop-filter:blur(12px);border-radius:inherit;z-index:50;display:flex;flex-direction:column;padding:20px 24px;gap:14px;overflow:auto`;
+        modal.innerHTML = `
+        <div style="font-size:15px;font-weight:700;color:${fg}">${this._t("terminateTitle")} \u2014 ${this._escHtml(title)}</div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          ${avatarEl}
+          <div style="font-size:13px;color:${fgSub};line-height:1.5">
+            ${this._t("terminatePrompt")}
+            ${userName ? `<br>${this._t("terminateUserHint")} <strong style="color:${fg}">${this._escHtml(userName)}</strong>.` : ""}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:800;color:${fgSub};letter-spacing:0.1em;margin-bottom:6px">${this._t("terminateMsgLabel")}</div>
+          <textarea id="stream-terminate-reason" rows="3" placeholder="${this._t("terminateDefault")}"
+            style="width:100%;box-sizing:border-box;background:${inputBg};border:1px solid ${inputBd};border-radius:8px;padding:8px 10px;font-size:12px;color:${fg};outline:none;resize:none;font-family:inherit"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:auto">
+          <button data-action="stream-terminate-cancel" class="is-open-btn" style="justify-content:center;padding:0 12px;min-width:74px">${this._t("terminateCancel")}</button>
+          <button data-action="stream-terminate-confirm" data-session-id="${this._escHtml(sessionId)}"
+            class="is-open-btn remove-disc-btn" style="justify-content:center;padding:0 12px;min-width:74px">${this._t("terminateStop")}</button>
+        </div>`;
+        this._terminateActive = true;
+        glass2.appendChild(modal);
+        return;
+      }
+      if (t.dataset.action === "stream-terminate-cancel") {
+        this._terminateActive = false;
+        this.shadowRoot?.querySelector(".plex-terminate-modal")?.remove();
+        return;
+      }
+      if (t.dataset.action === "stream-terminate-confirm") {
+        const sessionId = t.dataset.sessionId;
+        if (!sessionId) return;
+        const modal = this.shadowRoot?.querySelector(".plex-terminate-modal");
+        const reason = (modal?.querySelector("#stream-terminate-reason")?.value || "").trim() || this._t("terminateDefault");
+        const stopBtn = this.shadowRoot?.querySelector('[data-action="stream-terminate-show"]');
+        const stopSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
+        const checkSvgInline = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        this._terminateActive = false;
+        modal?.remove();
+        t.disabled = true;
+        if (this._popup) {
+          const d = this._popup;
+          if (d._streamState === "playing") {
+            const elapsed = (Date.now() - (d._updatedAt || Date.now())) / 1e3;
+            d._position = Math.min((d._position || 0) + elapsed, d._duration || 0);
+            d._updatedAt = Date.now();
+            d._streamState = "paused";
+          }
+          d._plexTerminated = true;
+        }
+        this._callApi("DELETE", "arr_stack/plex/session/terminate", { sessionId, reason }).catch(() => {
+        });
+        if (stopBtn) {
+          stopBtn.innerHTML = `<ha-icon icon="mdi:loading" style="--mdc-icon-size:14px;animation:btn-spin 0.65s linear infinite"></ha-icon> ${this._t("stopPlayback")}`;
+          stopBtn.disabled = true;
+          setTimeout(() => {
+            if (stopBtn) stopBtn.innerHTML = `${checkSvgInline} ${this._t("stopPlayback")}`;
+            setTimeout(() => {
+              if (this._popup) this._popup._plexSessionId = null;
+              this._renderPopupEl();
+              this._reRenderSection?.("streams");
+            }, 600);
+          }, 1e3);
+        } else {
+          setTimeout(() => {
+            if (this._popup) this._popup._plexSessionId = null;
+            this._renderPopupEl();
+            this._reRenderSection?.("streams");
+          }, 1e3);
+        }
         return;
       }
       if (t.dataset.action === "stream-seek") {
@@ -7683,8 +9659,8 @@ var _PopupMethods = class {
     const subLine = [year, genres, rating ? `\u2B50 ${rating}` : ""].filter(Boolean).join(" \xB7 ");
     const backdropPath = d.backdropPath || null;
     const posterPath = d.posterPath || null;
-    const backdropUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : "";
-    const posterUrl = posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : d._localPosterUrl || "";
+    const backdropUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : d._localBackdropUrl || "";
+    const posterUrl = posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : d._localPosterUrl || "";
     const backdropStyle = backdropUrl ? `background-image:url('${backdropUrl}')` : posterUrl ? `background-image:url('${posterUrl}');background-size:cover;background-position:center;filter:blur(6px) brightness(0.4)` : "background:linear-gradient(135deg,rgba(20,20,40,1),rgba(40,20,60,1))";
     const videos = Array.isArray(d.relatedVideos) ? d.relatedVideos : [];
     const trailer = videos.find((v) => v.site === "YouTube" && v.type === "Trailer") || videos.find((v) => v.site === "YouTube");
@@ -7707,39 +9683,277 @@ var _PopupMethods = class {
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
     <circle cx="12" cy="7" r="4"/>
   </svg>`;
-    const isOpenBtn = isAdmin && isMovieType && !d._noIS ? `
-    <button class="is-open-btn${isActive ? " active" : ""}" data-action="is-toggle">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      Interactive Search
-    </button>` : "";
-    const snIsOpenBtn = isAdmin && isSonarrType && !d._noIS ? `
-    <button class="is-open-btn${snIsActive ? " active" : ""}" data-action="sn-is-toggle">
-      ${personIconSvg}
-      Interactive Search
-    </button>` : "";
+    const searchSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+    const chevRSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
+    const MAX_INST_LBL = 10;
+    const _instLabels = (n1, n2, fb1, fb2) => {
+      const use = n1 && n2 && n1.length <= MAX_INST_LBL && n2.length <= MAX_INST_LBL;
+      return use ? [n1, n2] : [fb1, fb2];
+    };
+    const hasDualRadarr = !!this._radarr2Configured;
+    const hasDualSonarr = !!this._sonarr2Configured;
+    const singleInstance = d._radarrId ? "radarr" : d._radarr2Id ? "radarr2" : "radarr";
+    const [isl1, isl2] = this._seerrRadarr2?.is4k ? ["HD", "4K"] : _instLabels(this._seerrRadarr?.name, this._seerrRadarr2?.name, "Radarr 1", "Radarr 2");
+    const _re1 = d._radarrId ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
+    const _re2 = d._radarr2Id ? (this._radarr2 || []).find((m) => m.id === d._radarr2Id) : null;
+    const _se1 = d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
+    const _se2 = d._sonarr2Series?.id ? (this._sonarr2 || []).find((s) => s.id === d._sonarr2Series.id) : null;
+    const rInLib1 = !!_re1?.hasFile;
+    const rInLib2 = !!_re2?.hasFile;
+    const snInLib1 = _se1?.statistics?.episodeFileCount > 0;
+    const snInLib2 = _se2?.statistics?.episodeFileCount > 0;
+    const asActive = this._asOpen;
+    const _asLoading = (inst) => this._asInstance === inst && (this._asMovieSearching || asActive && this._asState === "adding");
+    const _asDone = (inst) => this._asInstance === inst && (this._asState === "done" || this._asMovieSearched);
+    const _asErr = (inst) => this._asInstance === inst && this._asState === "error";
+    const _asSpinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    const _asIconFor = (inst) => _asLoading(inst) ? _asSpinner : searchSvg;
+    const _dlSvg = `<svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>`;
+    const _movieDlPct = (inst, channel) => {
+      if (this._asInstance && this._asInstance !== inst) return null;
+      const triggered = this._dlTriggeredBy;
+      if (channel === "is" && triggered !== "is") return null;
+      if (channel === "as" && triggered === "is") return null;
+      const mId = inst === "radarr2" ? d._radarr2Id : d._radarrId;
+      if (!mId) return null;
+      const qPct = inst === "radarr2" ? this._radarr2QueuePct || /* @__PURE__ */ new Map() : this._radarrQueuePct || /* @__PURE__ */ new Map();
+      return qPct.has(mId) ? qPct.get(mId) : null;
+    };
+    const _dlBtnStyle = (inst, channel) => {
+      const pct = _movieDlPct(inst, channel);
+      if (pct === null) return "";
+      return `style="background:linear-gradient(to right,rgba(59,130,246,0.25) ${pct}%,var(--is-btn-bg) ${pct}%)"`;
+    };
+    const _inLibCls = (inLib, inst) => inLib && _movieDlPct(inst) === null ? " in-lib" : "";
+    const _seriesDlPct = (inst, channel) => {
+      if (this._asInstance && this._asInstance !== inst) return null;
+      const triggered = this._dlTriggeredBy;
+      if (channel === "is" && triggered !== "is") return null;
+      if (channel === "as" && triggered === "is") return null;
+      const series = inst === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+      if (!series?.id) return null;
+      const qPct = inst === "sonarr2" ? this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
+      return qPct.has(series.id) ? qPct.get(series.id) : null;
+    };
+    const _dlSnBtnStyle = (inst, channel) => {
+      const pct = _seriesDlPct(inst, channel);
+      if (pct === null) return "";
+      return `style="background:linear-gradient(to right,rgba(59,130,246,0.25) ${pct}%,var(--is-btn-bg) ${pct}%)"`;
+    };
+    const _snInLibCls = (inLib, inst) => inLib && _seriesDlPct(inst) === null ? " in-lib" : "";
+    const _isMovieDl = (inst) => {
+      if (this._asInstance && this._asInstance !== inst) return false;
+      const mId = inst === "radarr2" ? d._radarr2Id : d._radarrId;
+      const qActive = inst === "radarr2" ? this._radarr2QueueActive || /* @__PURE__ */ new Set() : this._radarrQueueActive || /* @__PURE__ */ new Set();
+      return mId && qActive.has(mId) || this._asDownloadingItems.has(`movie:${inst}`);
+    };
+    const _isSeriesDl = (inst) => {
+      if (this._asInstance && this._asInstance !== inst) return false;
+      const series = inst === "sonarr2" ? d._sonarr2Series : d._sonarrSeries;
+      if (!series?.id) return false;
+      const qSeasons = inst === "sonarr2" ? this._sonarr2QueueSeasons || /* @__PURE__ */ new Set() : this._sonarrQueueSeasons || /* @__PURE__ */ new Set();
+      return [...qSeasons].some((k) => k.startsWith(`${series.id}:`));
+    };
+    const _asBadgeFor = (inst) => {
+      const isMovie = d._type === "radarr" || d._type === "movie";
+      if (_asLoading(inst)) return "";
+      if (_asErr(inst)) return `<span class="as-btn-badge as-btn-badge--err">\u2717</span>`;
+      const dl = isMovie ? _isMovieDl(inst) : _isSeriesDl(inst);
+      if (dl) return `<span class="as-btn-badge as-btn-badge--dl">${_dlSvg}</span>`;
+      return "";
+    };
+    const _asExpandIcon = () => this._asMovieSearching ? _asSpinner : searchSvg;
+    const _asExpandBadge = () => {
+      if (this._asState === "error") return `<span class="as-btn-badge as-btn-badge--err">\u2717</span>`;
+      const isMovie = d._type === "radarr" || d._type === "movie";
+      const dl = isMovie ? _isMovieDl("radarr") || _isMovieDl("radarr2") : _isSeriesDl("sonarr") || _isSeriesDl("sonarr2");
+      if (dl) return `<span class="as-btn-badge as-btn-badge--dl">${_dlSvg}</span>`;
+      return "";
+    };
+    const collXSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const _gradPct = (p) => p !== null ? `style="background:linear-gradient(to right,rgba(59,130,246,0.25) ${p}%,var(--is-btn-bg) ${p}%)"` : "";
+    let searchBtnHtml = "";
+    if (isAdmin && (isMovieType || isSonarrType) && !d._noIS) {
+      const se = this._searchExpand;
+      const collapseBtn = `<button class="is-open-btn is-collapse-btn" data-action="search-collapse" title="Close">${collXSvg}</button>`;
+      const _collapsedDlStyle = () => {
+        if (isMovieType) {
+          const p1 = d._radarrId ? (this._radarrQueuePct || /* @__PURE__ */ new Map()).get(d._radarrId) ?? null : null;
+          const p2 = d._radarr2Id ? (this._radarr2QueuePct || /* @__PURE__ */ new Map()).get(d._radarr2Id) ?? null : null;
+          return _gradPct(p1 ?? p2);
+        } else {
+          const s1 = d._sonarrSeries, s2 = d._sonarr2Series;
+          const p1 = s1?.id ? (this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map()).get(s1.id) ?? null : null;
+          const p2 = s2?.id ? (this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map()).get(s2.id) ?? null : null;
+          return _gradPct(p1 ?? p2);
+        }
+      };
+      if (!se) {
+        searchBtnHtml = `<div class="is-btn-row">
+        <button class="is-open-btn" data-action="search-expand" ${_collapsedDlStyle()}>
+          ${searchSvg} Search
+        </button>
+      </div>`;
+      } else if (se === "pick") {
+        const asPickActive = this._asOpen;
+        const isPickActive = !!(this._isState || this._snIsOpen);
+        const asPickIcon = this._asMovieSearching || this._asOpen && this._asState === "adding" ? _asSpinner : searchSvg;
+        const _asPickStyle = (() => {
+          if (isMovieType) {
+            const p1 = _movieDlPct("radarr", "as"), p2 = _movieDlPct("radarr2", "as");
+            return _gradPct(p1 ?? p2);
+          } else {
+            const p1 = _seriesDlPct("sonarr", "as"), p2 = _seriesDlPct("sonarr2", "as");
+            return _gradPct(p1 ?? p2);
+          }
+        })();
+        const _isPickStyle = (() => {
+          if (isMovieType) {
+            const p1 = _movieDlPct("radarr", "is"), p2 = _movieDlPct("radarr2", "is");
+            return _gradPct(p1 ?? p2);
+          } else {
+            const p1 = _seriesDlPct("sonarr", "is"), p2 = _seriesDlPct("sonarr2", "is");
+            return _gradPct(p1 ?? p2);
+          }
+        })();
+        searchBtnHtml = `<div class="is-btn-row">
+        <button class="is-open-btn${asPickActive ? " active" : ""}" data-action="search-pick-as" ${_asPickStyle}>
+          ${asPickIcon} Automatic
+        </button>
+        <button class="is-open-btn${isPickActive ? " active" : ""}" data-action="search-pick-is" ${_isPickStyle}>
+          ${personIconSvg} Interactive
+        </button>
+        ${collapseBtn}
+      </div>`;
+      } else if (se === "as-inst") {
+        if (isMovieType) {
+          const as1Active = this._asOpen && this._asInstance === "radarr";
+          const as2Active = this._asOpen && this._asInstance === "radarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${as1Active ? " active" : ""}${_inLibCls(rInLib1, "radarr")}" data-action="search-as-inst" data-instance="radarr" ${_dlBtnStyle("radarr", "as")}>${_asIconFor("radarr")} ${isl1}</button>
+          <button class="is-open-btn${as2Active ? " active" : ""}${_inLibCls(rInLib2, "radarr2")}" data-action="search-as-inst" data-instance="radarr2" ${_dlBtnStyle("radarr2", "as")}>${_asIconFor("radarr2")} ${isl2}</button>
+          ${collapseBtn}
+        </div>`;
+        } else {
+          const [assl1, assl2] = _instLabels(this._seerrSonarr?.name, this._seerrSonarr2?.name, "Sonarr 1", "Sonarr 2");
+          const as1Active = this._asOpen && this._asInstance === "sonarr";
+          const as2Active = this._asOpen && this._asInstance === "sonarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${as1Active ? " active" : ""}${_snInLibCls(snInLib1, "sonarr")}" data-action="search-as-inst" data-instance="sonarr" ${_dlSnBtnStyle("sonarr", "as")}>${_asIconFor("sonarr")} ${assl1}</button>
+          <button class="is-open-btn${as2Active ? " active" : ""}${_snInLibCls(snInLib2, "sonarr2")}" data-action="search-as-inst" data-instance="sonarr2" ${_dlSnBtnStyle("sonarr2", "as")}>${_asIconFor("sonarr2")} ${assl2}</button>
+          ${collapseBtn}
+        </div>`;
+        }
+      } else if (se === "is-inst") {
+        if (isMovieType) {
+          const r1Active = !!this._isState && this._isInstance === "radarr";
+          const r2Active = !!this._isState && this._isInstance === "radarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${r1Active ? " active" : ""}${_inLibCls(rInLib1, "radarr")}" data-action="search-is-inst" data-instance="radarr" ${_dlBtnStyle("radarr", "is")}>${personIconSvg} ${isl1}</button>
+          <button class="is-open-btn${r2Active ? " active" : ""}${_inLibCls(rInLib2, "radarr2")}" data-action="search-is-inst" data-instance="radarr2" ${_dlBtnStyle("radarr2", "is")}>${personIconSvg} ${isl2}</button>
+          ${collapseBtn}
+        </div>`;
+        } else {
+          const [snl1, snl2] = _instLabels(this._seerrSonarr?.name, this._seerrSonarr2?.name, "Sonarr 1", "Sonarr 2");
+          const sn1Active = this._snIsOpen && this._snIsInstance === "sonarr";
+          const sn2Active = this._snIsOpen && this._snIsInstance === "sonarr2";
+          searchBtnHtml = `<div class="is-btn-row">
+          <button class="is-open-btn${sn1Active ? " active" : ""}${_snInLibCls(snInLib1, "sonarr")}" data-action="search-is-inst" data-instance="sonarr" ${_dlSnBtnStyle("sonarr", "is")}>${personIconSvg} ${snl1}</button>
+          <button class="is-open-btn${sn2Active ? " active" : ""}${_snInLibCls(snInLib2, "sonarr2")}" data-action="search-is-inst" data-instance="sonarr2" ${_dlSnBtnStyle("sonarr2", "is")}>${personIconSvg} ${snl2}</button>
+          ${collapseBtn}
+        </div>`;
+        }
+      }
+    }
     const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const stopSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
     const checkSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     const crossSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-    const canRemoveRadarr = isAdmin && (d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE) && d._radarrId;
-    const canRemoveSonarr = isAdmin && (d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id;
-    const radarrEntry = canRemoveRadarr ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
-    const sonarrEntry = canRemoveSonarr ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
-    const hasFiles = !!(radarrEntry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0);
+    const canRemoveRadarr = isAdmin && isMovieType && (d._radarrId || d._radarr2Id);
+    const canRemoveSonarr = isAdmin && isSonarrType && (d._sonarrSeries?.id || d._sonarr2Series?.id);
+    const radarrEntry = d._radarrId ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
+    const radarr2Entry = d._radarr2Id ? (this._radarr2 || []).find((m) => m.id === d._radarr2Id) : null;
+    const sonarrEntry = d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
+    const sonarr2Entry = d._sonarr2Series?.id ? (this._sonarr2 || []).find((s) => s.id === d._sonarr2Series.id) : null;
+    const hasFiles = !!(radarrEntry?.hasFile || radarr2Entry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0 || sonarr2Entry?.statistics?.episodeFileCount > 0);
+    const _instStatus = (entry, qActive, qFailed) => {
+      if (!entry) return "none";
+      const hasF = entry.hasFile || entry.statistics?.episodeFileCount > 0;
+      if (hasF) return "available";
+      if (qFailed?.has(entry.id)) return "failed";
+      if (qActive?.has(entry.id)) return "downloading";
+      if (entry.monitored) return "missing";
+      return "added";
+    };
+    const _instChip = (label, status) => {
+      const map = {
+        available: { cls: "ic--available", icon: "\u2713" },
+        downloading: { cls: "ic--downloading", icon: "" },
+        failed: { cls: "ic--failed", icon: "\u2717" },
+        missing: { cls: "ic--missing", icon: "\u25CF" },
+        added: { cls: "ic--added", icon: "+" },
+        none: { cls: "ic--none", icon: "\u2013" }
+      };
+      const { cls, icon } = map[status] || map.none;
+      return `<span class="inst-chip ${cls}">${label}${icon ? ` <span class="ic-icon">${icon}</span>` : ""}</span>`;
+    };
+    let instanceStatusHtml = "";
+    if (isMovieType && this._radarr2Configured) {
+      const is4k = this._seerrRadarr2?.is4k;
+      let lbl1, lbl2;
+      if (is4k) {
+        [lbl1, lbl2] = ["HD", "4K"];
+      } else {
+        [lbl1, lbl2] = _instLabels(
+          this._seerrRadarr?.name,
+          this._seerrRadarr2?.name,
+          "Radarr 1",
+          "Radarr 2"
+        );
+      }
+      const st1 = _instStatus(radarrEntry, this._radarrQueueActive, this._radarrQueueFailed);
+      const st2 = _instStatus(radarr2Entry, this._radarr2QueueActive, this._radarr2QueueFailed);
+      instanceStatusHtml = `<div class="instance-status-row">${_instChip(lbl1, st1)}${_instChip(lbl2, st2)}</div>`;
+    } else if (isSonarrType && this._sonarr2Configured) {
+      const [lbl1, lbl2] = _instLabels(
+        this._seerrSonarr?.name,
+        this._seerrSonarr2?.name,
+        "Sonarr 1",
+        "Sonarr 2"
+      );
+      const st1 = _instStatus(sonarrEntry, null, null);
+      const st2 = _instStatus(sonarr2Entry, null, null);
+      instanceStatusHtml = `<div class="instance-status-row">${_instChip(lbl1, st1)}${_instChip(lbl2, st2)}</div>`;
+    }
     const _popupRadarrEntry = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
     const _popupSonarrEntry = (d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const _popupTags = _popupRadarrEntry ? (_popupRadarrEntry.tags || []).map((id) => (this._radarrTags || []).find((t) => t.id === id)?.label).filter(Boolean) : _popupSonarrEntry ? (_popupSonarrEntry.tags || []).map((id) => (this._sonarrTags || []).find((t) => t.id === id)?.label).filter(Boolean) : [];
     const _tagIconSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:0.7"><path d="M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M17.41,11.58C17.77,11.94 18,12.44 18,13C18,13.55 17.78,14.05 17.41,14.41L12.41,19.41C12.05,19.78 11.55,20 11,20C10.45,20 9.95,19.78 9.58,19.41L2.59,12.42C2.22,12.05 2,11.55 2,11V6C2,4.89 2.89,4 4,4H9C9.55,4 10.05,4.22 10.41,4.58L17.41,11.58Z"/></svg>`;
     const popupTagHtml = _popupTags.length > 0 ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:-6px;margin-bottom:10px">${_popupTags.map((l) => `<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:3px;padding:0 4px 0 3px;line-height:1.7">${_tagIconSvg}${this._escHtml(l)}</span>`).join("")}</div>` : "";
     const removeLabel = canRemoveSonarr ? "Remove Series \u203A" : "Remove \u203A";
+    const _rmIs4k = this._seerrRadarr2?.is4k;
+    const [_rmLbl1R, _rmLbl2R] = _rmIs4k ? ["HD", "4K"] : _instLabels(this._seerrRadarr?.name, this._seerrRadarr2?.name, "Radarr 1", "Radarr 2");
+    const _rmDualR = canRemoveRadarr && !!(d._radarrId && d._radarr2Id);
+    const _rmDualS = canRemoveSonarr && !!(d._sonarrSeries?.id && d._sonarr2Series?.id);
+    const chevronSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
     const removeBtn = canRemoveRadarr || canRemoveSonarr ? (() => {
       const rc = this._removeConfirm;
       if (!rc) return `
       <button class="is-open-btn remove-lib-btn" data-action="remove-confirm">
-        ${trashSvg} ${removeLabel}
+        ${trashSvg} ${removeLabel}${_rmDualR || _rmDualS ? ` ${chevronSvg}` : ""}
       </button>`;
+      if (rc === "instance") {
+        const i1 = canRemoveSonarr ? "sonarr" : "radarr";
+        const i2 = canRemoveSonarr ? "sonarr2" : "radarr2";
+        const l1 = canRemoveSonarr ? "Sonarr" : _rmLbl1R;
+        const l2 = canRemoveSonarr ? "Sonarr 2" : _rmLbl2R;
+        return `
+        <div class="remove-confirm-row">
+          <button class="is-open-btn remove-lib-btn" data-action="remove-instance" data-instance="${i1}">${trashSvg} ${l1}</button>
+          <button class="is-open-btn remove-lib-btn" data-action="remove-instance" data-instance="${i2}">${trashSvg} ${l2}</button>
+          <button class="remove-ic-btn remove-ic-no" data-action="remove-no">${crossSvg}</button>
+        </div>`;
+      }
       return `
       <div class="remove-confirm-row">
         <button class="is-open-btn remove-lib-btn" data-action="remove-choose-lib">${trashSvg} Remove from library</button>
@@ -7747,6 +9961,12 @@ var _PopupMethods = class {
         <button class="remove-ic-btn remove-ic-no" data-action="remove-no">${crossSvg}</button>
       </div>`;
     })() : "";
+    const canTerminate = !!(d._streamEntity && d._plexSessionId) && !!this._hass?.user?.is_admin;
+    const terminateActionBtn = canTerminate ? `
+    <button class="is-open-btn remove-disc-btn" data-action="stream-terminate-show"
+      data-session-id="${this._escHtml(d._plexSessionId)}">
+      ${stopSvg} ${this._t("stopPlayback")} ${chevronSvg}
+    </button>` : "";
     const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
     const wideClass = isActive || snIsActive ? " is-wide" : "";
     return `
@@ -7762,15 +9982,19 @@ var _PopupMethods = class {
             <div class="popup-meta">
               <h2 class="popup-title">${title}</h2>
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
+              ${instanceStatusHtml}
               ${popupTagHtml}
               ${overview ? `<p class="popup-overview">${overview}</p>` : `<p class="popup-overview" style="color:rgba(255,255,255,0.35);font-style:italic">${this._t("noDescription")}</p>`}
               ${d._streamEntity ? this._renderPopupStreamControls(d) : ""}
-              ${isOpenBtn}
-              ${snIsOpenBtn}
-              ${removeBtn}
+              <div class="popup-actions">
+                ${searchBtnHtml}
+                ${removeBtn}
+                ${terminateActionBtn}
+              </div>
             </div>
           </div>
-          ${isActive || snIsActive ? "" : !d._streamEntity ? trailerHtml : ""}
+          ${isActive || snIsActive || asActive ? "" : !d._streamEntity ? trailerHtml : ""}
+          ${asActive ? this._renderAsSection() : ""}
           ${isActive ? this._renderIsPanel() : ""}
           ${snIsActive ? this._renderSonarrIsSection() : ""}
         </div>
@@ -7791,29 +10015,17 @@ var _PopupMethods = class {
     const initPct = dur > 0 ? (current / dur * 100).toFixed(2) : 0;
     const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
     const timeLabel = dur > 0 ? `${fmt(current)} / ${fmt(dur)}` : "";
-    const isTV = d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV;
-    const supported = this._hass?.states?.[eid]?.attributes?.supported_features || 0;
-    const canControl = !!(supported & 1) || !!(supported & 16384) || !!d._plexMachineId;
-    const canSeek = !!(supported & 2);
-    const canPlexSeek = !!d._plexMachineId;
+    const canSeek = false;
+    const canPlexSeek = false;
     const seekBar = dur > 0 ? `
     <div ${canSeek || canPlexSeek ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${this._escHtml(eid)}" data-dur="${dur}" style="cursor:pointer;padding:6px 0;margin-bottom:2px"` : `style="padding:6px 0;margin-bottom:2px"`}>
-      <div style="position:relative;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden">
-        <div class="stream-prog-fill" data-entity="${this._escHtml(eid)}" data-pos="${pos}" data-dur="${dur}" data-updated="${upd}" style="position:absolute;inset:0 auto 0 0;width:${initPct}%;background:rgba(255,255,255,0.7);border-radius:2px;transition:none"></div>
+      <div class="stream-popup-track" style="position:relative;height:4px;border-radius:2px;overflow:hidden">
+        <div class="stream-prog-fill stream-popup-fill" data-entity="${this._escHtml(eid)}" data-pos="${pos}" data-dur="${dur}" data-updated="${upd}" style="position:absolute;inset:0 auto 0 0;width:${initPct}%;border-radius:2px;transition:none"></div>
       </div>
     </div>
     <div class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:8px">${timeLabel}</div>` : "";
-    const controls = canControl ? `
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:6px">
-      ${isTV ? `<button class="popup-ctrl-btn" data-action="stream-prev" data-entity="${this._escHtml(eid)}"><ha-icon icon="mdi:skip-previous" style="--mdc-icon-size:26px"></ha-icon></button>` : ""}
-      <button class="popup-ctrl-btn popup-ctrl-btn-main" data-action="stream-playpause" data-entity="${this._escHtml(eid)}">
-        <ha-icon icon="mdi:${playing ? "pause" : "play"}" style="--mdc-icon-size:32px"></ha-icon>
-      </button>
-      ${isTV ? `<button class="popup-ctrl-btn" data-action="stream-next" data-entity="${this._escHtml(eid)}"><ha-icon icon="mdi:skip-next" style="--mdc-icon-size:26px"></ha-icon></button>` : ""}
-    </div>` : "";
     return `<div style="margin-top:10px;margin-bottom:2px">
     ${seekBar}
-    ${controls}
   </div>`;
   }
   // ─────────────────────────────────────────────
@@ -7824,11 +10036,18 @@ var _PopupMethods = class {
     if (!d) return;
     const df = deleteFiles ? "true" : "false";
     const ex = addExclusion ? "true" : "false";
+    const inst = this._removeInstance || (d._radarrId ? "radarr" : d._radarr2Id ? "radarr2" : d._sonarrSeries?.id ? "sonarr" : "sonarr2");
     try {
-      if ((d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE) && d._radarrId) {
+      if (inst === "radarr2" && d._radarr2Id) {
+        await this._hass.callApi("DELETE", `arr_stack/radarr2/movie/${d._radarr2Id}?deleteFiles=${df}&addExclusion=${ex}`);
+        this._radarr2 = (this._radarr2 || []).filter((m) => m.id !== d._radarr2Id);
+      } else if ((inst === "radarr" || !inst.startsWith("sonarr")) && d._radarrId) {
         await this._hass.callApi("DELETE", `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}&addExclusion=${ex}`);
         this._radarr = (this._radarr || []).filter((m) => m.id !== d._radarrId);
-      } else if ((d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id) {
+      } else if (inst === "sonarr2" && d._sonarr2Series?.id) {
+        await this._hass.callApi("DELETE", `arr_stack/sonarr2/series/${d._sonarr2Series.id}?deleteFiles=${df}&addExclusion=${ex}`);
+        this._sonarr2 = (this._sonarr2 || []).filter((s) => s.id !== d._sonarr2Series.id);
+      } else if (d._sonarrSeries?.id) {
         await this._hass.callApi("DELETE", `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}&addExclusion=${ex}`);
         this._sonarr = (this._sonarr || []).filter((s) => s.id !== d._sonarrSeries.id);
       }
@@ -7837,6 +10056,7 @@ var _PopupMethods = class {
     }
     this._popup = null;
     this._removeConfirm = false;
+    this._removeInstance = null;
     this._render();
     this._fetchAll();
   }
@@ -7907,22 +10127,31 @@ var _PopupMethods = class {
       </div>
     </div>`;
   }
-  async _addSeriesToSonarr() {
+  async _addSeriesToSonarr(instance = "sonarr") {
     this._snIsState = "adding";
     this._renderPopupEl();
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
     try {
       const d = this._popup;
       const tvdbId = d.externalIds?.tvdbId || d._tvdbId;
       if (!tvdbId) throw new Error(this._t("snNoSonarrId"));
-      const lookupResults = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
+      const lookupResults = await this._callApi("GET", `arr_stack/${svc}/lookup?tvdbId=${tvdbId}`);
       const seriesData = Array.isArray(lookupResults) ? lookupResults[0] : lookupResults;
       if (!seriesData) throw new Error(this._t("snNoSonarrId"));
-      if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
-      const profileId = this._seerrSonarr?.profileId ?? 1;
-      const rootFolder = this._seerrSonarr?.rootFolder ?? "/tv";
+      if (this._overseerrConfigured !== false && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      let profileId, rootFolder;
+      if (this._seerrSonarr) {
+        profileId = this._seerrSonarr.profileId ?? 1;
+        rootFolder = this._seerrSonarr.rootFolder ?? "/tv";
+      } else {
+        await this._fetchSonarrProfiles();
+        await this._fetchSonarrRootFolders();
+        profileId = this._sonarrProfiles?.[0]?.id ?? 1;
+        rootFolder = this._sonarrRootFolders?.[0]?.path ?? "/tv";
+      }
       let added;
       try {
-        added = await this._callApi("POST", "arr_stack/sonarr/series", {
+        added = await this._callApi("POST", `arr_stack/${svc}/series`, {
           ...seriesData,
           qualityProfileId: parseInt(profileId),
           rootFolderPath: rootFolder,
@@ -7952,10 +10181,13 @@ var popupMixin = _PopupMethods.prototype;
 // src/render/tautulli-shared.js
 var _TL_COLS_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
 var _TL_EDIT_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+var _TL_TRASH_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
 var _TL_CHEV_L = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
 var _TL_CHEV_R = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
-var _TL_SEL_STY = `margin:0 4px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:4px;color:var(--is-text,#fff);padding:2px 4px;font-size:12px`;
-var _TL_MENU_STY = `position:absolute;right:0;top:calc(100% + 4px);background:var(--popup-bg,#18182a);border:1px solid var(--is-divider,rgba(255,255,255,0.12));border-radius:8px;padding:6px 0;min-width:190px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.5)`;
+var _TL_CHEV_LL = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 18 12 12 18 6"/><polyline points="12 18 6 12 12 6"/></svg>`;
+var _TL_CHEV_RR = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 18 12 12 6 6"/><polyline points="12 18 18 12 12 6"/></svg>`;
+var _TL_SEL_STY = `margin:0 4px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;color:var(--is-text,#fff);padding:4px 8px;font-size:12px`;
+var _TL_MENU_STY = `position:absolute;right:0;top:calc(100% + 4px);background:var(--is-menu-bg,#18182a);border:1px solid var(--is-divider,rgba(255,255,255,0.12));border-radius:8px;padding:6px 0;min-width:190px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.18)`;
 var _TautulliSharedMethods = class {
   // ── State helper ──────────────────────────────────────────────────────────
   _tlHidden(key, defaults) {
@@ -7964,28 +10196,46 @@ var _TautulliSharedMethods = class {
     if (!m[key]) m[key] = new Set(defaults);
     return m[key];
   }
+  // ── Column prefs — HA user data (cross-device) ────────────────────────────
+  async _tlLoadColPrefs() {
+    try {
+      const r = await this._hass.callWS({ type: "frontend/get_user_data", key: "arr-tl-cols" });
+      return r?.value || {};
+    } catch {
+      return {};
+    }
+  }
+  _tlSaveColPrefs() {
+    const m = this._tautulliModal;
+    if (!m) return;
+    const KEYS = ["libsHiddenCols", "libsMobHiddenCols", "usersHiddenCols", "usersMobHiddenCols", "histHiddenCols", "histMobHiddenCols"];
+    const value = {};
+    for (const k of KEYS) if (m[k]) value[k] = [...m[k]];
+    this._hass.callWS({ type: "frontend/store_user_data", key: "arr-tl-cols", value }).catch(() => {
+    });
+  }
   // ── Icons ─────────────────────────────────────────────────────────────────
   _tlLibSvgIcon(type, name, size) {
     const sm = size !== "md";
     const sz = sm ? 10 : 15;
-    const sc = sm ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.75)";
-    const sty = sm ? "flex-shrink:0" : "vertical-align:middle;margin-right:7px;flex-shrink:0";
+    const clr = "var(--is-text-sec)";
+    const sty = sm ? `flex-shrink:0;color:${clr}` : `vertical-align:middle;margin-right:7px;flex-shrink:0;color:${clr}`;
     const isPodcast = type === "podcast" || (name || "").toLowerCase().includes("podcast");
-    const s = `stroke="${sc}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+    const s = `stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
     const w = (p) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}">${p}</svg>`;
     if (type === "movie") return w('<rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/>');
-    if (type === "show") return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="${sc}" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
+    if (type === "show") return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
     if (isPodcast) return w('<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>');
     if (type === "artist") return w('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>');
     return w('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>');
   }
   _tlMediaIcon(type, size) {
     const sz = size || 11;
-    const col = "rgba(255,255,255,0.45)";
-    const s = `stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
-    if (type === "movie") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="flex-shrink:0;vertical-align:middle"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`;
-    if (type === "episode") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="${col}" style="flex-shrink:0;vertical-align:middle"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
-    if (type === "track") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="flex-shrink:0;vertical-align:middle"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    const s = `stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+    const sty = `flex-shrink:0;vertical-align:middle;color:var(--is-text-muted)`;
+    if (type === "movie") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`;
+    if (type === "episode") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
+    if (type === "track") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
     return "";
   }
   // ── Toolbar building blocks ───────────────────────────────────────────────
@@ -7996,7 +10246,8 @@ var _TautulliSharedMethods = class {
   }
   _tlEditBtn(id, active, label) {
     label = label || "Edit";
-    return `<button id="${id}" class="tl-page-btn${active ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px">${_TL_EDIT_SVG}${label}</button>`;
+    const icon = label === "Delete" ? _TL_TRASH_SVG : _TL_EDIT_SVG;
+    return `<button id="${id}" class="tl-page-btn${active ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px">${icon}${label}</button>`;
   }
   _tlColsMenu(btnId, menuId, items, isOpen) {
     return `<div style="position:relative"><button id="${btnId}" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px">${_TL_COLS_SVG}Columns</button><div id="${menuId}" style="display:${isOpen ? "block" : "none"};${_TL_MENU_STY}">${items}</div></div>`;
@@ -8010,12 +10261,33 @@ var _TautulliSharedMethods = class {
   _tlToolbar(opts) {
     const { isMobile, select, editBtn, colsBtn, banner } = opts;
     const b = banner || "";
-    const label = isMobile ? `Show ${select}` : `Show ${select} entries per page`;
-    return `${b}<div class="tl-toolbar"><span style="font-size:12px;color:var(--is-text-label)">${label}</span><div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+    const showLabel = select ? `<span style="font-size:12px;color:var(--is-text-label)">${isMobile ? `Show ${select}` : `Show ${select} entries per page`}</span>` : "";
+    return `${b}<div class="tl-toolbar">${showLabel}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
   }
   // ── Pagination ────────────────────────────────────────────────────────────
   _tlMobPag(attr, page, totalPages) {
-    return `<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px"><button class="tl-page-btn tl-icon-btn" data-${attr}="prev"${page === 0 ? " disabled" : ""}>${_TL_CHEV_L}</button><span style="font-size:13px;font-weight:600;color:var(--is-text);min-width:44px;text-align:center">${page + 1}/${totalPages}</span><button class="tl-page-btn tl-icon-btn" data-${attr}="next"${page >= totalPages - 1 ? " disabled" : ""}>${_TL_CHEV_R}</button></div>`;
+    if (totalPages <= 1) return "";
+    const DOT_LIMIT = 15;
+    let center;
+    if (totalPages <= DOT_LIMIT) {
+      const dots = Array.from(
+        { length: totalPages },
+        (_, i) => i === page ? `<button data-${attr}="${i}" style="width:18px;height:6px;border-radius:3px;background:var(--is-text);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none;cursor:default;outline:none" disabled></button>` : `<button class="tl-page-btn" data-${attr}="${i}" style="width:6px;height:6px;border-radius:50%;background:var(--is-text-muted);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none"></button>`
+      ).join("");
+      center = `<div style="display:flex;align-items:center;gap:5px">${dots}</div>`;
+    } else {
+      center = `<span style="font-size:13px;font-weight:600;color:var(--is-text,#fff);min-width:44px;text-align:center">${page + 1}/${totalPages}</span>`;
+    }
+    const first = page === 0;
+    const last = page >= totalPages - 1;
+    const btnSty = "display:inline-flex;align-items:center;gap:4px;padding:5px 10px";
+    return `<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px">
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="first" style="${btnSty}"${first ? " disabled" : ""}>${_TL_CHEV_LL}</button>
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="prev" style="${btnSty}"${first ? " disabled" : ""}>${_TL_CHEV_L}</button>
+      ${center}
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="next" style="${btnSty}"${last ? " disabled" : ""}>${_TL_CHEV_R}</button>
+      <button class="tl-page-btn tl-icon-btn" data-${attr}="last" style="${btnSty}"${last ? " disabled" : ""}>${_TL_CHEV_RR}</button>
+    </div>`;
   }
   _tlDeskPag(attr, page, perPage, total, label) {
     label = label || "entries";
@@ -8034,11 +10306,37 @@ var _TautulliSharedMethods = class {
     return `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px"><span style="font-size:12px;color:var(--is-text-label)">${showing}</span><div style="display:flex;gap:4px;flex-wrap:wrap">${btns.join("")}</div></div>`;
   }
   // ── Formatters ────────────────────────────────────────────────────────────
+  // Dynamický počet řádků/karet = (88vh − overhead) / výška řádku
+  // hasFilter: true pro history (filter bar +44px)
+  _tlCalcPerPage(opts) {
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const modalH = window.innerHeight * 0.88;
+    const hdr = isMob ? 90 : 68;
+    const pad = 34;
+    const bar = 44;
+    const filter = opts && opts.hasFilter ? 44 : 0;
+    const thead = isMob ? 0 : 36;
+    const pag = isMob ? 56 : 52;
+    const rowH = isMob ? 62 : 38;
+    return Math.max(3, Math.floor((modalH - hdr - pad - bar - filter - thead - pag) / rowH));
+  }
   _tlFmtDuration(secs) {
     if (!secs) return "0m";
     const h = Math.floor(secs / 3600);
     const m = Math.floor(secs % 3600 / 60);
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+  _tlFmtTime(ts) {
+    if (!ts) return "\u2014";
+    const d = new Date(typeof ts === "number" ? ts * 1e3 : ts);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  _tlUserSelect(id, users, selUser) {
+    const opts = [
+      `<option value="">All users</option>`,
+      ...(users || []).map((u) => `<option value="${u.user_id ?? ""}"${String(selUser ?? "") === String(u.user_id ?? "") ? " selected" : ""}>${u.friendly_name || u.user || "?"}</option>`)
+    ].join("");
+    return `<select id="${id}" style="${_TL_SEL_STY};max-width:130px">${opts}</select>`;
   }
   _tlFmtDate(ts) {
     if (!ts) return "\u2014";
@@ -8049,6 +10347,13 @@ var _TautulliSharedMethods = class {
     if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
     if (sec < 604800) return Math.floor(sec / 86400) + "d ago";
     return d.toLocaleDateString();
+  }
+  _tlSearchInput(id, value) {
+    const SEARCH_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--is-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+    return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:4px;padding:4px 7px">
+      ${SEARCH_SVG}
+      <input id="${id}" type="search" value="${this._escHtml(value || "")}" placeholder="Search\u2026" autocomplete="off" style="background:none;border:none;outline:none;color:var(--is-text,#fff);font-size:12px;width:110px;min-width:60px">
+    </div>`;
   }
 };
 var tautulliSharedMixin = _TautulliSharedMethods.prototype;
@@ -8065,13 +10370,15 @@ var _TautulliTableMethods = class {
     const isMobile = window.matchMedia("(max-width:600px)").matches;
     const m = this._tautulliModal || {};
     const page = m.libsPage || 0;
-    const perPage = m.libsPerPage || 25;
+    const perPage = this._tlCalcPerPage();
     const sortCol = m.libsSortCol || "plays";
     const sortDir = m.libsSortDir || "desc";
     const editMode = m.libsEditMode || false;
+    const search = (m.libsSearch || "").toLowerCase().trim();
     const hidden = this._tlHidden("libsHiddenCols", ["type"]);
     const mobHidden = this._tlHidden("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]);
-    const tot = total || 0;
+    const filtered = search ? (data || []).filter((l) => (l.section_name || "").toLowerCase().includes(search)) : data || [];
+    const tot = filtered.length;
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const COLS = [
       { key: "name", label: "Library", sort: "section_name", right: false },
@@ -8097,11 +10404,15 @@ var _TautulliTableMethods = class {
     ];
     const mobColItems = this._tlColItems(MOB_LIB_COLS, mobHidden, "data-tl-lib-mob-col");
     const mobColsBtn = this._tlColsMenu("tl-libs-mob-cols-btn", "tl-libs-mob-cols-menu", mobColItems, m.libsMobColsOpen);
-    const select = this._tlPerPageSelect("tl-libs-perpage", perPage);
     const editBtn = this._tlEditBtn("tl-libs-edit-btn", editMode);
-    const toolbar = this._tlToolbar({ isMobile, select, editBtn, colsBtn: isMobile ? mobColsBtn : deskColsBtn });
+    const searchEl = this._tlSearchInput("tl-libs-search", m.libsSearch);
+    const colsBtn = isMobile ? mobColsBtn : deskColsBtn;
+    const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const toolbar = `<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+    const page2 = Math.min(page, totalPages - 1);
+    const sliced = filtered.slice(page2 * perPage, (page2 + 1) * perPage);
     if (isMobile) {
-      const cards = (data || []).map((lib) => {
+      const cards = sliced.map((lib) => {
         const type = (lib.section_type || "").toLowerCase();
         const icon = this._tlLibSvgIcon(type, lib.section_name || "", "sm");
         const sid = lib.section_id || "";
@@ -8117,23 +10428,23 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("children") && lib.child_count != null) mp.push(`<span>${lib.child_count} ep/trk</span>`);
         if (!mobHidden.has("lastStream") && lib.last_accessed) mp.push(`<span>${this._tlFmtDate(lib.last_accessed)}</span>`);
         return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">
-          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.07)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
+          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
           <div style="flex:1;min-width:0"><div class="tl-mob-name">${lib.section_name || "\u2014"}</div>${mp.length ? `<div class="tl-mob-meta">${mp.join("")}</div>` : ""}</div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">${lib.count ?? "\u2014"}</div>
             ${lib.duration ? `<div style="font-size:11px;color:var(--is-text-label)">${this._tlFmtDuration(lib.duration)}</div>` : ""}
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data</div>';
+      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</div>';
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-lpage", page, totalPages);
     }
     const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
     const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-lib-sort")).join("");
-    const rows = (data || []).map((lib) => {
+    const rows = sliced.map((lib) => {
       const type = (lib.section_type || "").toLowerCase();
       const icon = this._tlLibSvgIcon(type, lib.section_name || "", "md");
-      const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : '<span style="color:rgba(255,255,255,0.2)">never</span>';
-      const lPly = lib.last_played ? `<span style="font-size:11px;color:rgba(255,255,255,0.55)">${lib.last_played}</span>` : '<span style="color:rgba(255,255,255,0.2)">n/a</span>';
+      const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : '<span style="color:var(--is-text-muted)">never</span>';
+      const lPly = lib.last_played ? `<span style="font-size:11px;color:var(--is-text-sec)">${lib.last_played}</span>` : '<span style="color:var(--is-text-muted)">n/a</span>';
       const cm = {
         name: `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lib.section_name || "\u2014"}</strong></span></td>`,
         type: `<td style="text-transform:capitalize;color:var(--is-text-label);white-space:nowrap">${lib.section_type || "\u2014"}</td>`,
@@ -8152,22 +10463,71 @@ var _TautulliTableMethods = class {
       </div></td>` : "";
       return `<tr>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No library data</td></tr>`}</tbody></table></div>` + this._tlDeskPag("tl-lpage", page, perPage, tot, "libraries");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-lpage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Users
   // ──────────────────────────────────────────────────────────────────────────
+  _tlIpReport() {
+    const tl = this._tautulli || {};
+    const m = this._tautulliModal || {};
+    if (!tl.sharingDetected || tl.sharingAcked) return "";
+    const open = m.ipReportOpen !== false;
+    const threshold = this._config?.security?.ip_sharing_threshold ?? 2;
+    const users = tl.sharingUsers || [];
+    const report = tl.ipReport || {};
+    const rows = users.map((name) => {
+      const ips = report[name] || [];
+      const ipRows = ips.map((e) => {
+        const d = e.lastSeen ? new Date(e.lastSeen * 1e3) : null;
+        const dateStr = d ? d.toLocaleDateString(void 0, { month: "short", day: "numeric", year: "numeric" }) : "\u2014";
+        return `<tr>
+          <td style="padding:4px 8px;font-size:11px;font-family:monospace;color:var(--is-text)">${e.ip}</td>
+          <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted)">${dateStr}</td>
+          <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted);text-align:right">${e.count}</td>
+        </tr>`;
+      }).join("");
+      return `<div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:rgba(255,150,150,0.9);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          ${name}
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">IP Address</th>
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">Last Seen</th>
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:right">Plays</th>
+            </tr>
+          </thead>
+          <tbody>${ipRows}</tbody>
+        </table>
+      </div>`;
+    }).join("");
+    const chevron = open ? `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>` : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`;
+    return `<div style="background:rgba(180,30,30,0.12);border:1px solid rgba(255,100,100,0.2);border-radius:8px;margin-bottom:10px;overflow:hidden">
+      <div id="tl-ip-report-toggle" style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="rgba(255,150,150,0.9)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size:12px;font-weight:700;color:rgba(255,150,150,0.95);flex:1">Account sharing detected \xB7 ${users.length} user${users.length !== 1 ? "s" : ""} \xB7 ${threshold}+ unique IPs</span>
+        <button class="tl-ack-btn" id="tl-ack-btn" style="font-size:10px;padding:3px 10px;margin-right:4px" onclick="event.stopPropagation()">Acknowledge</button>
+        ${chevron}
+      </div>
+      ${open ? `<div style="padding:0 12px 12px">${rows}</div>` : ""}
+    </div>`;
+  }
   _tlBodyUsers(data, total) {
     const isMobile = window.matchMedia("(max-width:600px)").matches;
     const m = this._tautulliModal || {};
     const page = m.usersPage || 0;
-    const perPage = m.usersPerPage || 25;
+    const perPage = this._tlCalcPerPage();
     const sortCol = m.usersSortCol || "plays";
     const sortDir = m.usersSortDir || "desc";
     const editMode = m.usersEditMode || false;
+    const search = (m.usersSearch || "").toLowerCase().trim();
     const hidden = this._tlHidden("usersHiddenCols", ["username", "fullname", "email"]);
     const mobHidden = this._tlHidden("usersMobHiddenCols", ["lastPlayed", "platform", "player", "ip", "username", "email"]);
-    const tot = total || 0;
+    const filtered = search ? (data || []).filter((u) => [u.friendly_name || "", u.username || "", u.email || ""].some((v) => v.toLowerCase().includes(search))) : data || [];
+    const tot = filtered.length;
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const COLS = [
       { key: "user", label: "User", sort: "friendly_name", right: false },
@@ -8186,7 +10546,7 @@ var _TautulliTableMethods = class {
     const tl2 = this._tautulli || {};
     const showBanner = tl2.sharingDetected && !tl2.sharingAcked;
     const wU = tl2.sharingUsers || [];
-    const banner = showBanner ? `<div class="tl-warn-banner"><div style="flex:1"><strong>Account sharing detected</strong><br>${wU.length ? "Affected: " + wU.join(", ") : "Multiple IPs detected for the same account."} Review IPs below and acknowledge if expected.</div><button class="tl-ack-btn" id="tl-ack-btn">Acknowledge</button></div>` : "";
+    const banner = "";
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "user"), hidden, "data-tl-col");
     const deskColsBtn = this._tlColsMenu("tl-users-cols-btn", "tl-users-cols-menu", deskColItems, m.usersColsOpen);
     const MOB_USR_COLS = [
@@ -8200,15 +10560,20 @@ var _TautulliTableMethods = class {
     ];
     const mobColItems = this._tlColItems(MOB_USR_COLS, mobHidden, "data-tl-usr-mob-col");
     const mobColsBtn = this._tlColsMenu("tl-users-mob-cols-btn", "tl-users-mob-cols-menu", mobColItems, m.usersMobColsOpen);
-    const select = this._tlPerPageSelect("tl-users-perpage", perPage);
     const editBtn = this._tlEditBtn("tl-users-edit-btn", editMode);
-    const toolbar = this._tlToolbar({ isMobile, select, editBtn, colsBtn: isMobile ? mobColsBtn : deskColsBtn, banner });
+    const searchEl = this._tlSearchInput("tl-users-search", m.usersSearch);
+    const colsBtn = isMobile ? mobColsBtn : deskColsBtn;
+    const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const ipReport = this._tlIpReport();
+    const toolbar = `${ipReport}<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
+    const page2 = Math.min(page, totalPages - 1);
+    const sliced = filtered.slice(page2 * perPage, (page2 + 1) * perPage);
     if (isMobile) {
       const warnUsers2 = wU;
-      const cards = (data || []).map((u) => {
+      const cards = sliced.map((u) => {
         const name = u.friendly_name || u.username || "\u2014";
         const thumb = u.user_thumb || "";
-        const av = thumb ? `<img src="${thumb}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,0.35);font-size:13px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
+        const av = thumb ? `<img src="${thumb}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--is-divider)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
         const uid = u.user_id || "";
         const kh = u.keep_history != null ? Number(u.keep_history) : 1;
         const ag = u.allow_guest != null ? Number(u.allow_guest) : 0;
@@ -8234,28 +10599,28 @@ var _TautulliTableMethods = class {
             <div style="font-size:11px;color:var(--is-text-label)">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</div>
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data</div>';
+      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</div>';
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-upage", page, totalPages);
     }
     const warnUsers = wU;
     const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
     const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-sort")).join("");
-    const rows = (data || []).map((u) => {
+    const rows = sliced.map((u) => {
       const name = u.friendly_name || u.username || "\u2014";
       const isW = warnUsers.includes(name) || warnUsers.includes(u.username);
       const thumb = u.user_thumb || "";
-      const av = thumb ? `<img src="${thumb}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,0.35);font-size:12px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
+      const av = thumb ? `<img src="${thumb}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--is-divider)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
       const mIco = u.last_played ? this._tlMediaIcon(u.media_type) : "";
       const cm = {
         user: `<td><div style="display:flex;align-items:center;gap:8px">${av}<span style="font-weight:600">${this._escHtml(name)}</span></div></td>`,
         username: `<td style="color:var(--is-text-label)">${this._escHtml(u.username || "\u2014")}</td>`,
         fullname: `<td style="color:var(--is-text-label)">${this._escHtml(u.full_name || "\u2014")}</td>`,
         email: `<td style="color:var(--is-text-label);font-size:11px">${this._escHtml(u.email || "\u2014")}</td>`,
-        lastSeen: `<td>${u.last_seen ? this._tlFmtDate(u.last_seen) : '<span style="color:rgba(255,255,255,0.25)">never</span>'}</td>`,
+        lastSeen: `<td>${u.last_seen ? this._tlFmtDate(u.last_seen) : '<span style="color:var(--is-text-muted)">never</span>'}</td>`,
         ip: `<td style="font-family:monospace;font-size:11px">${this._escHtml(u.ip_address || "n/a")}</td>`,
         platform: `<td>${this._escHtml(u.platform || "n/a")}</td>`,
-        player: `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="rgba(255,255,255,0.45)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : '<span style="color:rgba(255,255,255,0.25)">n/a</span>'}</td>`,
-        lastPlayed: `<td style="max-width:160px"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.last_played ? mIco + '<span style="overflow:hidden;text-overflow:ellipsis">' + this._escHtml(u.last_played) + "</span>" : '<span style="color:rgba(255,255,255,0.25)">n/a</span>'}</div></td>`,
+        player: `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="color:var(--is-text-muted)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : '<span style="color:var(--is-text-muted)">n/a</span>'}</td>`,
+        lastPlayed: `<td style="max-width:160px"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.last_played ? mIco + '<span style="overflow:hidden;text-overflow:ellipsis">' + this._escHtml(u.last_played) + "</span>" : '<span style="color:var(--is-text-muted)">n/a</span>'}</div></td>`,
         plays: `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${u.plays ?? 0}</td>`,
         duration: `<td style="text-align:right">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</td>`
       };
@@ -8270,7 +10635,7 @@ var _TautulliTableMethods = class {
       </div></td>` : "";
       return `<tr${isW ? ' class="tl-row-warn"' : ""}>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No user data</td></tr>`}</tbody></table></div>` + this._tlDeskPag("tl-upage", page, perPage, tot, "active users");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-upage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Refetch
@@ -8278,9 +10643,10 @@ var _TautulliTableMethods = class {
   async _tlRefetchLibraries(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const start = (m.libsPage || 0) * (m.libsPerPage || 25);
-    const r = await this._tlApiFetch("get_libraries_table", `length=${m.libsPerPage || 25}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
+    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const pp = this._tlCalcPerPage();
+    const start = (m.libsPage || 0) * pp;
+    const r = await this._tlApiFetch("get_libraries_table", `length=${pp}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
     if (!this._tautulliModal) return;
     m.libsData = r?.response?.data?.data || [];
     m.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.libsData.length;
@@ -8290,13 +10656,150 @@ var _TautulliTableMethods = class {
   async _tlRefetchUsers(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const start = (m.usersPage || 0) * (m.usersPerPage || 25);
-    const r = await this._tlApiFetch("get_users_table", `length=${m.usersPerPage || 25}&start=${start}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`);
+    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const pp = this._tlCalcPerPage();
+    const start = (m.usersPage || 0) * pp;
+    const r = await this._tlApiFetch("get_users_table", `length=${pp}&start=${start}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`);
     if (!this._tautulliModal) return;
     m.usersData = r?.response?.data?.data || [];
     m.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.usersData.length;
     body.innerHTML = this._tlBodyUsers(m.usersData, m.usersTotal);
+    this._wireTautulliModalBody(body);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // History
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyHistory() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    if (m.histLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const page = m.histPage || 0;
+    const perPage = this._tlCalcPerPage({ hasFilter: true });
+    const tot = m.histTotal || 0;
+    const data = m.histData || [];
+    const media = m.histMedia || null;
+    const playback = m.histPlayback || null;
+    const delMode = m.histDeleteMode || false;
+    const users = m.histUsers || [];
+    const selUser = m.histUser || "";
+    const hidden = this._tlHidden("histHiddenCols", ["ip", "paused", "stopped"]);
+    const mobHidden = this._tlHidden("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const HIST_COLS = [
+      { key: "date", label: "Date", right: false },
+      { key: "user", label: "User", right: false },
+      { key: "ip", label: "IP", right: false },
+      { key: "platform", label: "Platform", right: false },
+      { key: "product", label: "Product", right: false },
+      { key: "player", label: "Player", right: false },
+      { key: "title", label: "Title", right: false },
+      { key: "started", label: "Started", right: false },
+      { key: "paused", label: "Paused", right: true },
+      { key: "stopped", label: "Stopped", right: false },
+      { key: "duration", label: "Duration", right: true }
+    ];
+    const userSel = this._tlUserSelect("tl-hist-user-sel", users, selUser);
+    const mediaBtns = [
+      { v: "movie", l: "Movies" },
+      { v: "episode", l: "TV Shows" },
+      { v: "track", l: "Music" },
+      { v: "live", l: "Live TV" }
+    ].map((f) => `<button class="tl-page-btn${media === f.v ? " active" : ""}" data-tl-hist-media="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
+    const playBtns = [
+      { v: "direct play", l: "Direct Play" },
+      { v: "direct stream", l: "Direct Stream" },
+      { v: "transcode", l: "Transcode" }
+    ].map((f) => `<button class="tl-page-btn${playback === f.v ? " active" : ""}" data-tl-hist-play="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
+    const delBtn = this._tlEditBtn("tl-hist-del-mode", delMode, "Delete");
+    const MOB_HIST_PICKER = [
+      { key: "platform", label: "Platform" },
+      { key: "player", label: "Player" },
+      { key: "started", label: "Started" },
+      { key: "duration", label: "Duration" },
+      { key: "ip", label: "IP" },
+      { key: "paused", label: "Paused" },
+      { key: "stopped", label: "Stopped" }
+    ];
+    const colsBtn = isMob ? this._tlColsMenu("tl-hist-mob-cols-btn", "tl-hist-mob-cols-menu", this._tlColItems(MOB_HIST_PICKER, mobHidden, "data-tl-hist-mob-col"), m.histMobColsOpen) : this._tlColsMenu("tl-hist-cols-btn", "tl-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-hist-col"), m.histColsOpen);
+    const histSearchEl = this._tlSearchInput("tl-hist-search", m.histSearch);
+    const histSearchElFlex = histSearchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    let toolbar;
+    if (isMob) {
+      const row1 = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">${histSearchElFlex}<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${delBtn}${colsBtn}</div></div>`;
+      const userSelFull = userSel.replace("max-width:130px", "width:100%;max-width:none").replace("margin:0 4px", "margin:0");
+      const row2s = `<div style="margin-bottom:6px">${userSelFull}</div>`;
+      const row3 = `<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">${mediaBtns}${playBtns}</div>`;
+      toolbar = row1 + row2s + row3;
+    } else {
+      const filterRow = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">${userSel.replace("margin:0 4px", "margin:0")}<div style="display:flex;gap:4px;flex-wrap:wrap">${mediaBtns}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${playBtns}</div></div>`;
+      toolbar = `<div class="tl-toolbar">${histSearchElFlex}<div class="tl-toolbar-actions">${delBtn}${colsBtn}</div></div>${filterRow}`;
+    }
+    const _wRing = '<circle cx="7" cy="7" r="5.5" fill="none" style="stroke:var(--is-text-muted)" stroke-width="1.5"/>';
+    const _wSvg = (inner) => `<svg width="14" height="14" viewBox="0 0 14 14">${inner}</svg>`;
+    const _wArc = (d) => `<path d="${d}" style="fill:var(--is-text-body)"/>`;
+    const watchSvg = (ws) => ws === 4 ? _wSvg('<circle cx="7" cy="7" r="5.5" style="fill:var(--is-text-body)"/>') : ws === 3 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,1,1 1.5,7 Z")}`) : ws === 2 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 7,12.5 Z")}`) : ws === 1 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 12.5,7 Z")}`) : _wSvg(_wRing);
+    if (!data.length) {
+      return toolbar + '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No history</div>';
+    }
+    if (isMob) {
+      const cards = data.map((h) => {
+        const icon = this._tlMediaIcon(h.media_type || "", 12);
+        const title = this._escHtml(h.full_title || h.title || "\u2014");
+        const user = this._escHtml(h.friendly_name || h.user || "\u2014");
+        const ago = h.date ? this._tlFmtDate(h.date) : "\u2014";
+        const dur = h.duration ? this._tlFmtDuration(h.duration) : "\u2014";
+        const pct = h.percent_complete ?? 0;
+        const ws = pct >= 85 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 10 ? 1 : 0;
+        const mp = [];
+        if (!mobHidden.has("platform") && h.platform) mp.push(this._escHtml(h.platform));
+        if (!mobHidden.has("player") && h.player) mp.push(this._escHtml(h.player));
+        if (!mobHidden.has("started") && h.started) mp.push(this._tlFmtTime(h.started));
+        if (!mobHidden.has("ip") && h.ip_address) mp.push(h.ip_address);
+        if (!mobHidden.has("paused") && h.paused_counter) mp.push("paused " + this._tlFmtDuration(h.paused_counter));
+        const meta = `<div class="tl-mob-meta"><span>${user}</span><span style="color:var(--is-text-muted)"> &middot; </span><span>${ago}</span>${mp.map((v) => `<span style="color:var(--is-text-muted)"> &middot; </span><span>${v}</span>`).join("")}</div>`;
+        const delEl = delMode ? `<button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${h.row_id}" style="margin-top:6px;font-size:10px">Delete</button>` : "";
+        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>${meta}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div></div>${delEl}</div>`;
+      }).join("");
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-hpage", page, totalPages);
+    }
+    const vis = HIST_COLS.filter((c) => !hidden.has(c.key));
+    const thead = vis.map((c) => `<th style="${c.right ? "text-align:right;" : ""}white-space:nowrap">${c.label}</th>`).join("") + "<th></th>";
+    const delHdr = delMode ? '<th style="width:1px"></th>' : "";
+    const rows = data.map((h) => {
+      const icon = this._tlMediaIcon(h.media_type || "", 11);
+      const pct = h.percent_complete ?? 0;
+      const ws = pct >= 85 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 10 ? 1 : 0;
+      const rid = h.row_id || "";
+      const esc = (s) => this._escHtml(s || "");
+      const cm = {
+        date: `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td>`,
+        user: `<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.friendly_name || h.user)}</td>`,
+        ip: `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.ip_address || "\u2014"}</td>`,
+        platform: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.platform)}</td>`,
+        product: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.product)}</td>`,
+        player: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.player)}</td>`,
+        title: `<td style="max-width:240px"><div style="display:flex;align-items:center;gap:5px;min-width:0">${icon}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1" title="${esc(h.full_title || h.title)}">${esc(h.full_title || h.title)}</span></div></td>`,
+        started: `<td style="white-space:nowrap;font-size:11px">${h.started ? this._tlFmtTime(h.started) : "\u2014"}</td>`,
+        paused: `<td style="text-align:right;white-space:nowrap;font-size:11px">${h.paused_counter ? this._tlFmtDuration(h.paused_counter) : "0m"}</td>`,
+        stopped: `<td style="white-space:nowrap;font-size:11px">${h.stopped ? this._tlFmtTime(h.stopped) : "\u2014"}</td>`,
+        duration: `<td style="text-align:right;white-space:nowrap;font-weight:600">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td>`
+      };
+      const watchCell = `<td style="text-align:right;padding-right:8px;white-space:nowrap">${watchSvg(ws)}</td>`;
+      const delCell = delMode ? `<td style="padding:0 4px;white-space:nowrap"><button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${rid}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>` : "";
+      return `<tr>${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchCell}${delCell}</tr>`;
+    }).join("");
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" style="text-align:center;color:var(--is-text-muted);padding:30px">No history</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-hpage", page, totalPages);
+  }
+  async _tlRefetchHistory(body) {
+    const m = this._tautulliModal;
+    if (!m) return;
+    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const data = await this._tlFetchHistory(m.histPage, m.histUser, m.histMedia, m.histPlayback, this._tlCalcPerPage({ hasFilter: true }), m.histSearch);
+    if (!this._tautulliModal) return;
+    m.histData = data.data || [];
+    m.histTotal = data.recordsFiltered || 0;
+    body.innerHTML = this._tlBodyHistory();
     this._wireTautulliModalBody(body);
   }
 };
@@ -8332,41 +10835,44 @@ var _TautulliMethods = class {
       </div>`;
   }
   _tlLibCard(data) {
-    const libs = data.libraries || [];
-    const rows = libs.map((lib) => {
+    const libs = (data.libraries || []).filter((lib) => (lib.section_type || "").toLowerCase() !== "live");
+    const rows = libs.map((lib, i) => {
       const type = (lib.section_type || "").toLowerCase();
-      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">` + this._tlLibSvgIcon(type, lib.section_name, "sm") + `<span style="font-size:9px;color:rgba(255,255,255,0.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:2px">${lib.section_name || "\u2014"}</span><span style="font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${lib.count ?? lib.plays ?? 0}</span></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>`;
-    const sectTag = libs.length > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${libs.length}</span>` : "";
-    return `<div class="tl-card" data-tl-open="libraries">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-      <span class="media-type-tag">Libraries</span>${sectTag}
-      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${rows}</div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Libraries</div>
+      const count = lib.count ?? lib.plays ?? 0;
+      const dim = count === 0 ? ";opacity:0.28" : "";
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return `<div style="${sep}display:flex;align-items:center;gap:5px;padding:4px 0">` + this._tlLibSvgIcon(type, lib.section_name, "sm") + `<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:1px">${lib.section_name || "\u2014"}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0${dim}">${count}</span></div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No data</div>`;
+    const sectTag = libs.length > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${libs.length}</span>` : "";
+    return `<div class="tl-card" data-tl-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Libraries</span>
+        ${sectTag}
       </div>
+      <div style="flex:1;position:relative;z-index:2">${rows}</div>
     </div>`;
   }
   _tlUsersCard(stats, act, data) {
     const userRows = (stats || []).find((s) => s.stat_id === "top_users")?.rows || [];
-    const streams = act?.stream_count ?? 0;
+    const sessions = act?.sessions || [];
+    const activeUsers = new Set(sessions.map((s) => s.user_id || s.user)).size;
     const items = userRows.slice(0, 5).map((r) => {
       const name = r.friendly_name || r.user || "\u2014";
       const plays = r.total_plays ?? 0;
       const thumb = r.user_thumb || "";
       const av = thumb ? `<img src="${thumb}" style="width:14px;height:14px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.18)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.14);display:inline-block;flex-shrink:0"></span>`;
-      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${av}<span style="font-size:9px;color:rgba(255,255,255,0.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:9px;font-weight:600;color:#fff;flex-shrink:0">${plays}</span></div>`;
+      const sep = userRows.indexOf(r) > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return `<div style="${sep}display:flex;align-items:center;gap:6px;padding:4px 0">${av}<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${plays}</span></div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>`;
-    const activeTag = streams > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(48,209,88,0.30);border:1px solid rgba(48,209,88,0.62)">${streams} active</span>` : "";
-    return `<div class="tl-card" data-tl-open="users">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      <span class="media-type-tag">Users</span>${activeTag}
-      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${items}</div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Top 5 users</div>
+    const activeTag = activeUsers > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${activeUsers} active</span>` : "";
+    return `<div class="tl-card" data-tl-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Users</span>
+        ${activeTag}
       </div>
+      <div style="flex:1;position:relative;z-index:2">${items}</div>
     </div>`;
   }
   _tlSharingCard(data) {
@@ -8382,21 +10888,21 @@ var _TautulliMethods = class {
   _tlHistoryCard(data) {
     const hist = (data.recentHistory || []).slice(0, 3);
     const streams = (data.activity || {}).stream_count ?? 0;
-    const items = hist.map((h) => {
+    const items = hist.map((h, i) => {
       const title = h.full_title || h.title || "\u2014";
       const user = h.friendly_name || h.user || "";
       const ago = h.date ? this._tlFmtDate(h.date) : "";
-      return `<div style="margin-bottom:4px"><div style="font-size:9px;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:8px;color:rgba(255,255,255,0.4)">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No history</div>`;
-    const streamTag = streams > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${streams} now</span>` : "";
-    return `<div class="tl-card" data-tl-open="history">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <span class="media-type-tag">History</span>${streamTag}
-      <div style="position:absolute;top:73px;bottom:50px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 8px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.95),0 0 8px rgba(0,0,0,0.8)">${items}</div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Latest streams</div>
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return `<div style="${sep}padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No history</div>`;
+    const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} now</span>` : "";
+    return `<div class="tl-card" data-tl-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>
+        ${streamTag}
       </div>
+      <div style="flex:1;position:relative;z-index:2">${items}</div>
     </div>`;
   }
   _tlActivityCard(playsData) {
@@ -8405,62 +10911,84 @@ var _TautulliMethods = class {
     const total = days.reduce((s, d) => s + (d.value || 0), 0);
     const bars = days.map((d) => {
       const h = Math.max(d.value ? 2 : 0, Math.round((d.value || 0) / max * 100));
-      return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end"><div style="width:100%;height:${h}%;background:rgba(255,255,255,0.5);border-radius:2px 2px 0 0;min-height:${d.value ? 2 : 0}px"></div></div>`;
+      const gap = 100 - h;
+      return `<div style="flex:1;display:flex;flex-direction:column"><div style="flex:${gap}"></div><div style="flex:${h};background:rgba(255,255,255,0.55);border-radius:2px 2px 0 0${d.value ? "" : ";display:none"}"></div></div>`;
     }).join("");
     const labels = days.map(
       (d) => `<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">${(d.date || "").slice(-2)}</div>`
     ).join("");
-    const playsTag = total > 0 ? `<span class="media-type-tag" style="left:auto;right:6px;background:rgba(10,132,255,0.30);border:1px solid rgba(10,132,255,0.62)">${total} plays</span>` : "";
-    return `<div class="tl-card" data-tl-open="graphs">
-      <div style="position:absolute;top:-6px;right:-6px;opacity:0.09;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
-      <span class="media-type-tag">Charts</span>${playsTag}
-      <div style="position:absolute;top:33%;left:8px;right:8px;bottom:38px;z-index:2;display:flex;flex-direction:column">
-        <div style="flex:1;display:flex;gap:2px;">${bars || ""}</div>
-        <div style="display:flex;gap:2px;margin-top:2px">${labels}</div>
+    const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} plays</span>` : "";
+    return `<div class="tl-card" data-tl-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Charts</span>
+          <span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">last 7 days</span>
+        </div>
+        ${playsTag}
       </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 80%);padding:28px 6px 6px;z-index:1">
-        <div style="font-size:10px;margin-bottom:2px">&nbsp;</div>
-        <div style="font-size:10px;font-weight:700;color:rgba(var(--arr-pt-rgb,255,255,255),1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Play Activity</div>
+      <div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0">
+        <div style="flex:1;display:flex;gap:2px">${bars || ""}</div>
+        <div style="display:flex;gap:2px;margin-top:2px">${labels}</div>
       </div>
     </div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Modal — open / close / shell HTML
   // ──────────────────────────────────────────────────────────────────────────
-  _openTautulliModal(tab) {
+  async _openTautulliModal(tab) {
     tab = tab || "libraries";
+    const prefs = await this._tlLoadColPrefs();
+    const hSet = (key, defs) => prefs[key] ? new Set(prefs[key]) : new Set(defs);
     this._tautulliModal = {
       tab,
+      ipReportOpen: true,
       histPage: 0,
+      histPerPage: 10,
+      histSearch: "",
       histUser: null,
       histMedia: null,
+      histPlayback: null,
       histTotal: 0,
       histData: [],
+      histUsers: [],
       histLoading: false,
+      histDeleteMode: false,
+      histColsOpen: false,
+      histMobColsOpen: false,
+      histHiddenCols: hSet("histHiddenCols", ["ip", "paused", "stopped"]),
+      histMobHiddenCols: hSet("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]),
       graphsSub: "media",
       graphsData: null,
       graphsLoading: false,
+      graphsMetric: "plays",
+      graphsRange: window.matchMedia("(max-width:600px)").matches ? 7 : 30,
+      graphsSelectedUsers: null,
+      graphsUserList: [],
+      graphsDdOpen: false,
       usersPage: 0,
-      usersPerPage: 25,
+      usersPerPage: 10,
       usersSortCol: "plays",
       usersSortDir: "desc",
+      usersSearch: "",
       usersData: [],
       usersTotal: 0,
-      usersHiddenCols: /* @__PURE__ */ new Set(["username", "fullname", "email"]),
+      usersHiddenCols: hSet("usersHiddenCols", ["username", "fullname", "email"]),
       usersColsOpen: false,
-      usersMobHiddenCols: /* @__PURE__ */ new Set(["lastPlayed", "platform", "player", "ip", "username", "email"]),
+      usersMobHiddenCols: hSet("usersMobHiddenCols", ["lastPlayed", "platform", "player", "ip", "username", "email"]),
       usersMobColsOpen: false,
       usersEditMode: false,
       libsPage: 0,
-      libsPerPage: 25,
+      libsPerPage: 10,
       libsSortCol: "plays",
       libsSortDir: "desc",
+      libsSearch: "",
       libsData: [],
       libsTotal: 0,
       libsEditMode: false,
-      libsHiddenCols: /* @__PURE__ */ new Set(["type"]),
+      libsHiddenCols: hSet("libsHiddenCols", ["type"]),
       libsColsOpen: false,
-      libsMobHiddenCols: /* @__PURE__ */ new Set(["type", "parents", "children", "lastStream"]),
+      libsMobHiddenCols: hSet("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]),
       libsMobColsOpen: false
     };
     this.shadowRoot.querySelector("[data-tl-modal]")?.remove();
@@ -8519,7 +11047,7 @@ var _TautulliMethods = class {
     return { libraries: "All Libraries", users: "All Users", history: "Recent History", graphs: "Play Statistics" }[t] || "";
   }
   _tlTabSubtitle(t) {
-    return { libraries: "", users: "", history: "Last played items across all users", graphs: "7-day play activity breakdown" }[t] || "";
+    return { libraries: "", users: "", history: "", graphs: "" }[t] || "";
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Tab loader
@@ -8531,7 +11059,8 @@ var _TautulliMethods = class {
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
       const ml = this._tautulliModal;
       if (!ml) return;
-      const r = await this._tlApiFetch("get_libraries_table", `length=${ml.libsPerPage || 25}&start=${(ml.libsPage || 0) * (ml.libsPerPage || 25)}&order_column=${ml.libsSortCol || "plays"}&order_dir=${ml.libsSortDir || "desc"}`);
+      const _pp = this._tlCalcPerPage();
+      const r = await this._tlApiFetch("get_libraries_table", `length=${_pp}&start=${(ml.libsPage || 0) * _pp}&order_column=${ml.libsSortCol || "plays"}&order_dir=${ml.libsSortDir || "desc"}`);
       if (!this._tautulliModal) return;
       ml.libsData = r?.response?.data?.data || [];
       ml.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || ml.libsData.length;
@@ -8541,7 +11070,8 @@ var _TautulliMethods = class {
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
       const m2 = this._tautulliModal;
       if (!m2) return;
-      const r = await this._tlApiFetch("get_users_table", `length=${m2.usersPerPage || 25}&start=${(m2.usersPage || 0) * (m2.usersPerPage || 25)}&order_column=${m2.usersSortCol || "plays"}&order_dir=${m2.usersSortDir || "desc"}`);
+      const _pp2 = this._tlCalcPerPage();
+      const r = await this._tlApiFetch("get_users_table", `length=${_pp2}&start=${(m2.usersPage || 0) * _pp2}&order_column=${m2.usersSortCol || "plays"}&order_dir=${m2.usersSortDir || "desc"}`);
       if (!this._tautulliModal) return;
       m2.usersData = r?.response?.data?.data || [];
       m2.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m2.usersData.length;
@@ -8551,107 +11081,35 @@ var _TautulliMethods = class {
       if (!this._tautulliModal) return;
       this._tautulliModal.histLoading = true;
       body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-      const data = await this._tlFetchHistory(0, null, null);
+      const [data, usersR] = await Promise.all([
+        this._tlFetchHistory(0, null, null, null, this._tlCalcPerPage({ hasFilter: true })),
+        this._tlApiFetch("get_users_table", "length=100&start=0&order_column=friendly_name&order_dir=asc")
+      ]);
       if (!this._tautulliModal) return;
       this._tautulliModal.histData = data.data || [];
       this._tautulliModal.histTotal = data.recordsFiltered || 0;
       this._tautulliModal.histLoading = false;
+      this._tautulliModal.histUsers = usersR?.response?.data?.data || [];
       body.innerHTML = this._tlBodyHistory();
       this._wireTautulliModalBody(body);
     } else if (tab === "graphs") {
-      if (!this._tautulliModal) return;
-      this._tautulliModal.graphsLoading = true;
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const mg = this._tautulliModal;
+      if (!mg) return;
+      if (!mg.graphsUserList?.length) {
+        const ur = await this._tlApiFetch("get_users_table", "length=100&start=0&order_column=friendly_name&order_dir=asc");
+        if (!this._tautulliModal) return;
+        mg.graphsUserList = ur?.response?.data?.data || [];
+      }
+      mg.graphsLoading = true;
+      body.innerHTML = this._tlBodyGraphs();
       const gd = await this._tlFetchGraphs();
       if (!this._tautulliModal) return;
-      this._tautulliModal.graphsData = gd;
-      this._tautulliModal.graphsLoading = false;
+      mg.graphsData = gd;
+      mg.graphsLoading = false;
       body.innerHTML = this._tlBodyGraphs();
-      this._wireTautulliModalBody(body);
+      this._wireGraphControls(body);
+      this._tlGTriggerAnim(body);
     }
-  }
-  // ──────────────────────────────────────────────────────────────────────────
-  // History tab renderer
-  // ──────────────────────────────────────────────────────────────────────────
-  _tlBodyHistory() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    if (m.histLoading) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const { histData: data, histTotal: total, histPage: page, histMedia: media } = m;
-    const perPage = 25;
-    const totalPages = Math.max(1, Math.ceil(total / perPage));
-    const filters = ["all", "movie", "episode", "track"].map((v) => {
-      const lbl = v === "all" ? "All" : v === "episode" ? "TV" : v === "track" ? "Music" : "Movies";
-      const active = !media && v === "all" || media === v;
-      return `<button class="is-f-btn${active ? " active" : ""}" data-tl-hist-media="${v}">${lbl}</button>`;
-    }).join("");
-    if (!data || !data.length) {
-      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div><div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>`;
-    }
-    const rows = data.map((h) => {
-      const type = h.media_type || "";
-      const bdg = type === "movie" ? '<span class="tl-badge-movie">Movie</span> ' : type === "episode" ? '<span class="tl-badge-tv">TV</span> ' : type === "track" ? '<span class="tl-badge-music">Music</span> ' : "";
-      return `<tr><td>${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td><td>${bdg}${h.full_title || h.title || "\u2014"}</td><td>${h.friendly_name || h.user || "\u2014"}</td><td>${h.player || "\u2014"}</td><td style="text-align:right">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td><td style="font-size:10px;color:rgba(255,255,255,0.45)">${h.transcode_decision || "\u2014"}</td></tr>`;
-    }).join("");
-    const isMobile = window.matchMedia("(max-width: 600px)").matches;
-    const pagination = totalPages > 1 ? isMobile ? `<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px"><button class="tl-page-btn tl-icon-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><span style="font-size:13px;font-weight:600;color:var(--is-text);min-width:44px;text-align:center">${page + 1}/${totalPages}</span><button class="tl-page-btn tl-icon-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button></div>` : `<div class="tl-pagination"><button class="tl-page-btn" id="tl-hist-prev"${page === 0 ? " disabled" : ""}>\u2039 Prev</button><span class="tl-page-counter">Page ${page + 1} / ${totalPages} &nbsp;(${total} total)</span><button class="tl-page-btn" id="tl-hist-next"${page >= totalPages - 1 ? " disabled" : ""}>Next \u203A</button></div>` : "";
-    if (isMobile) {
-      const mobCards = data.map((h) => {
-        const type = h.media_type || "";
-        const bdg = type === "movie" ? '<span class="tl-badge-movie">Movie</span> ' : type === "episode" ? '<span class="tl-badge-tv">TV</span> ' : type === "track" ? '<span class="tl-badge-music">Music</span> ' : "";
-        const dur = h.duration ? this._tlFmtDuration(h.duration) : "\u2014";
-        const ago = h.date ? this._tlFmtDate(h.date) : "\u2014";
-        const meta = [h.player, h.transcode_decision].filter(Boolean);
-        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name">${bdg}${this._escHtml(h.full_title || h.title || "\u2014")}</div><div class="tl-mob-meta"><span style="color:var(--is-text-label)">${this._escHtml(h.friendly_name || h.user || "\u2014")}</span><span style="color:rgba(255,255,255,0.25)">\xB7</span><span style="color:var(--is-text-label)">${ago}</span>${meta.map((v) => `<span style="color:rgba(255,255,255,0.25)">\xB7</span><span style="color:var(--is-text-label)">${this._escHtml(v)}</span>`).join("")}</div></div><div style="text-align:right;flex-shrink:0;color:rgba(255,255,255,0.7);font-size:12px;font-weight:600">${dur}</div></div></div>`;
-      }).join("") || '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No history</div>';
-      return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div>${mobCards}${pagination}`;
-    }
-    return `<div style="display:flex;gap:6px;margin-bottom:12px">${filters}</div><table class="tl-hist-table"><thead><tr><th>Date</th><th>Title</th><th>User</th><th>Player</th><th style="text-align:right">Duration</th><th>Stream</th></tr></thead><tbody>${rows}</tbody></table>${pagination}`;
-  }
-  // ──────────────────────────────────────────────────────────────────────────
-  // Graphs tab renderer
-  // ──────────────────────────────────────────────────────────────────────────
-  _tlBodyGraphs() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    if (m.graphsLoading || !m.graphsData) return '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
-    const sub = m.graphsSub || "media";
-    const subDefs = [{ id: "media", lbl: "Media Type" }, { id: "stream", lbl: "Stream Type" }, { id: "totals", lbl: "Play Totals" }];
-    const subTabs = subDefs.map(
-      (s) => `<button class="is-f-btn${s.id === sub ? " active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
-    ).join("");
-    let body = "";
-    if (sub === "media") {
-      body = `<div class="tl-graphs-grid">${this._tlGraphCard("Daily Play Count by Media Type", m.graphsData.byDate, true)}${this._tlGraphCard("Plays by Day of Week", m.graphsData.byDow, false)}${this._tlGraphCard("Plays by Hour of Day", m.graphsData.byHod, false)}</div>`;
-    } else if (sub === "stream") {
-      body = '<div style="color:rgba(255,255,255,0.3);padding:20px;text-align:center">Stream type graphs coming soon</div>';
-    } else {
-      body = '<div style="color:rgba(255,255,255,0.3);padding:20px;text-align:center">Play totals coming soon</div>';
-    }
-    return `<div style="display:flex;gap:6px;margin-bottom:16px">${subTabs}</div>${body}`;
-  }
-  _tlGraphCard(title, rawData, full) {
-    const clsFull = full ? " full" : "";
-    const d = rawData?.response?.data;
-    if (!d) return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div><div style="color:rgba(255,255,255,0.2);font-size:11px;text-align:center;padding:20px">No data</div></div>`;
-    const cats = d.categories || [];
-    const series = d.series || [];
-    const colors = ["rgba(250,180,50,0.7)", "rgba(99,180,255,0.7)", "rgba(100,220,150,0.7)", "rgba(250,120,50,0.7)"];
-    const allVals = series.flatMap((s) => s.data || []);
-    const maxV = Math.max(...allVals, 1);
-    const bars = cats.map((cat, i) => {
-      const stacked = series.map((s, si) => {
-        const v = (s.data || [])[i] || 0;
-        const h = Math.max(1, Math.round(v / maxV * 60));
-        return `<div class="tl-bar-chart-bar" style="height:${h}px;background:${colors[si % colors.length]}" title="${s.name}: ${v}"></div>`;
-      }).reverse().join("");
-      const lbl = full ? (cat || "").slice(-5) : (cat || "").slice(0, 3);
-      return `<div class="tl-bar-chart-col">${stacked}<div class="tl-bar-chart-label">${lbl}</div></div>`;
-    }).join("");
-    const legend = series.map(
-      (s, i) => `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:10px;color:rgba(255,255,255,0.5)"><span style="width:8px;height:8px;border-radius:2px;background:${colors[i % colors.length]};display:inline-block;flex-shrink:0"></span>${s.name}</span>`
-    ).join("");
-    return `<div class="tl-graph-card${clsFull}"><div class="tl-graph-title">${title}</div><div class="tl-bar-chart">${bars}</div>${legend ? `<div style="margin-top:8px">${legend}</div>` : ""}</div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
   // API helpers
@@ -8664,21 +11122,16 @@ var _TautulliMethods = class {
       return null;
     }
   }
-  async _tlFetchHistory(page, user, media) {
-    const start = (page || 0) * 25;
-    let p = `length=25&start=${start}&order_column=date&order_dir=desc`;
+  async _tlFetchHistory(page, user, media, playback, perPage, search) {
+    perPage = perPage || 10;
+    const start = (page || 0) * perPage;
+    let p = `length=${perPage}&start=${start}&order_column=date&order_dir=desc`;
     if (user) p += `&user_id=${encodeURIComponent(user)}`;
     if (media) p += `&media_type=${encodeURIComponent(media)}`;
+    if (playback) p += `&transcode_decision=${encodeURIComponent(playback)}`;
+    if (search) p += `&search=${encodeURIComponent(search)}`;
     const r = await this._tlApiFetch("get_history", p);
     return r?.response?.data || { data: [], recordsFiltered: 0 };
-  }
-  async _tlFetchGraphs() {
-    const [byDate, byDow, byHod] = await Promise.all([
-      this._tlApiFetch("get_plays_by_date", "time_range=7&y_axis=plays"),
-      this._tlApiFetch("get_plays_by_dayofweek", "time_range=7&y_axis=plays"),
-      this._tlApiFetch("get_plays_by_hourofday", "time_range=7&y_axis=plays")
-    ]);
-    return { byDate, byDow, byHod };
   }
   // ──────────────────────────────────────────────────────────────────────────
   // SVG icons (16px, tab icons)
@@ -8701,6 +11154,455 @@ var _TautulliMethods = class {
 };
 var tautulliMixin = _TautulliMethods.prototype;
 
+// src/render/tautulli-graphs.js
+var _TL_G_HEX = {
+  "Movies": "#FF9F0A",
+  "TV": "#32ADE6",
+  "Music": "#4CD964",
+  "Live TV": "#FF375F",
+  "Direct Play": "#30D158",
+  "Direct Stream": "#007AFF",
+  "Transcode": "#FF3B30"
+};
+var _TL_G_VBW = 1e3;
+var _TL_G_SVH = 200;
+var _TL_G_DISP = 200;
+var _P = { l: 12, r: 6, t: 18, b: 6 };
+function _tlGHex(n) {
+  return _TL_G_HEX[n] || "#8888aa";
+}
+function _tlGAttr(v) {
+  return String(v).replace(/"/g, "&quot;");
+}
+function _tlGFmtDur(sec) {
+  if (!sec || sec <= 0) return "0";
+  const m = Math.floor(sec / 60);
+  if (m < 1) return sec + "s";
+  const h = Math.floor(m / 60);
+  if (h < 1) return m + "m";
+  const d = Math.floor(h / 24);
+  if (d < 1) return h + "h " + (m % 60 > 0 ? m % 60 + "m" : "");
+  const mo = Math.floor(d / 30);
+  if (mo < 1) return d + "d " + (h % 24 > 0 ? h % 24 + "h" : "");
+  return mo + "mo " + (d % 30 > 0 ? d % 30 + "d" : "");
+}
+function _tlGFmtDurShort(sec) {
+  if (!sec || sec <= 0) return "0";
+  const m = Math.floor(sec / 60);
+  if (m < 1) return sec + "s";
+  const h = Math.floor(m / 60);
+  if (h < 1) return m + "m";
+  const d = Math.floor(h / 24);
+  if (d < 1) return h + "h";
+  return d + "d";
+}
+function _tlGPrep(rawData, opts) {
+  opts = opts || {};
+  const d = rawData?.response?.data;
+  if (!d) return null;
+  let cats = d.categories || [];
+  let series = (d.series || []).filter((s) => s.name !== "Total");
+  if (!cats.length || !series.length) return null;
+  if (opts.isDate && opts.range && cats.length < opts.range) {
+    const today = /* @__PURE__ */ new Date(), full = [];
+    for (let i = opts.range - 1; i >= 0; i--) {
+      const dd = new Date(today - i * 864e5);
+      full.push(dd.toISOString().slice(0, 10));
+    }
+    const map = {};
+    cats.forEach((c, ci) => {
+      map[c] = {};
+      series.forEach((s, si) => {
+        map[c][si] = (s.data || [])[ci] || 0;
+      });
+    });
+    cats = full;
+    series = series.map((s, si) => ({
+      ...s,
+      data: full.map((dt) => map[dt]?.[si] || 0)
+    }));
+  }
+  const maxV = Math.max(1, ...cats.map(
+    (_, i) => series.reduce((s, ser) => s + ((ser.data || [])[i] || 0), 0)
+  ));
+  return { cats, series, maxV };
+}
+function _tlGXLabels(visibleLabels) {
+  if (!visibleLabels.length) return "";
+  return '<div class="tl-g-x-labels">' + visibleLabels.map((l) => {
+    let style;
+    if (l.first) {
+      style = `left:${l.pct.toFixed(1)}%;transform:translateX(0)`;
+    } else if (l.last) {
+      style = `left:${l.pct.toFixed(1)}%;transform:translateX(-100%)`;
+    } else {
+      style = `left:${l.pct.toFixed(1)}%;transform:translateX(-50%)`;
+    }
+    return `<span style="position:absolute;${style};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${l.lbl}</span>`;
+  }).join("") + "</div>";
+}
+var _TautulliGraphsMethods = class {
+  _tlBodyGraphs() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    if (m.graphsLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading&hellip;</div>';
+    const sub = m.graphsSub || "media";
+    const metric = m.graphsMetric || "plays";
+    const range = m.graphsRange || 30;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isTot = sub === "totals";
+    const subTabBar = `
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        ${[{ id: "media", lbl: "Media Type" }, { id: "stream", lbl: "Stream Type" }, { id: "totals", lbl: "Play Totals" }].map(
+      (s) => `<button class="tl-page-btn${s.id === sub ? " active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
+    ).join("")}
+      </div>`;
+    const metricBtns = `
+      <div style="display:inline-flex;gap:2px;flex-shrink:0">
+        <button class="tl-page-btn${metric === "plays" ? " active" : ""}" data-tl-g-metric="plays"   >${isMob ? "Plays" : "Play Count"}</button>
+        <button class="tl-page-btn${metric === "duration" ? " active" : ""}" data-tl-g-metric="duration">${isMob ? "Duration" : "Play Duration"}</button>
+      </div>`;
+    const rangeUnit = isTot ? "months" : "days";
+    const rangeCtrl = `
+      <div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--is-text-muted);flex-shrink:0">
+        <span>Last</span>
+        <input id="tl-g-range" type="number" value="${range}" min="1" max="${isTot ? 60 : 365}"
+          style="width:38px;background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-text);padding:4px 4px;font-size:12px;line-height:1.4;text-align:center;font-family:inherit;outline:none;box-sizing:border-box;-webkit-appearance:none;appearance:none">
+        <span>${rangeUnit}</span>
+      </div>`;
+    const rightControls = `
+      <div style="display:flex;align-items:center;gap:${isMob ? "4" : "6"}px;flex-wrap:nowrap;justify-content:${isMob ? "flex-start" : "flex-end"}">
+        ${this._tlGUserDropdown()}${metricBtns}${rangeCtrl}
+      </div>`;
+    const controls = isMob ? `<div style="margin-bottom:8px">${rightControls}</div>
+         <div style="margin-bottom:12px">${subTabBar}</div>` : `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+           ${subTabBar}${rightControls}
+         </div>`;
+    const gd = m.graphsData || {};
+    const isDur = metric === "duration";
+    const BASE = { range, isDate: true, isDuration: isDur, isMob };
+    let body = "";
+    if (sub === "media") {
+      const lineSvg = this._tlGLineSvg(gd.byDate, { ...BASE, chartId: "md", xLabel: (d) => d.slice(-5) });
+      const barOpts = { isDuration: isDur, isMob };
+      const dowSvg = this._tlGBarSvg(gd.byDow, { ...barOpts, chartId: "dw", xLabel: (d) => d.slice(0, 3) });
+      const hodSvg = this._tlGBarSvg(gd.byHod, { ...barOpts, chartId: "hd", xLabel: (_, i) => i % 4 === 0 ? `${i}h` : "" });
+      const halfRow = isMob ? `<div style="margin-bottom:10px">${this._tlGCard("By Day of Week", gd.byDow, dowSvg)}</div>
+           <div style="margin-bottom:10px">${this._tlGCard("By Hour of Day", gd.byHod, hodSvg)}</div>` : `<div style="display:flex;gap:10px;margin-bottom:10px">
+             <div style="flex:1;min-width:0">${this._tlGCard("By Day of Week", gd.byDow, dowSvg)}</div>
+             <div style="flex:1;min-width:0">${this._tlGCard("By Hour of Day", gd.byHod, hodSvg)}</div>
+           </div>`;
+      body = `<div style="margin-bottom:10px">${this._tlGCard("Daily Play Count by Media Type", gd.byDate, lineSvg)}</div>${halfRow}`;
+    } else if (sub === "stream") {
+      const lineSvg = this._tlGLineSvg(gd.streamByDate, { ...BASE, chartId: "st", xLabel: (d) => d.slice(-5) });
+      const concSvg = this._tlGLineSvg(gd.concurrentByDate, { ...BASE, chartId: "cc", isDuration: false, xLabel: (d) => d.slice(-5) });
+      body = `<div style="margin-bottom:10px">${this._tlGCard("Daily Play Count by Stream Type", gd.streamByDate, lineSvg)}</div>
+              <div>${this._tlGCard("Daily Concurrent Streams by Stream Type", gd.concurrentByDate, concSvg)}</div>`;
+    } else {
+      const barSvg = this._tlGBarSvg(gd.monthly, { isDuration: isDur, isMob, chartId: "mo", xLabel: (d) => d.slice(0, 3) });
+      body = `<div style="margin-bottom:10px">${this._tlGCard("Total Play Count by Month", gd.monthly, barSvg)}</div>`;
+    }
+    return controls + body;
+  }
+  // ── Card wrapper ──────────────────────────────────────────────────────────
+  _tlGCard(title, rawData, chartHtml) {
+    const series = (rawData?.response?.data?.series || []).filter((s) => s.name !== "Total");
+    const legend = series.map(
+      (s) => `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)"><span style="width:7px;height:7px;border-radius:2px;background:${_tlGHex(s.name)};flex-shrink:0;display:inline-block;opacity:0.9"></span>${s.name}</span>`
+    ).join("");
+    return `<div class="tl-g-card" style="position:relative">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span class="tl-graph-title">${title}</span>
+        ${legend ? `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${legend}</div>` : ""}
+      </div>
+      <div style="position:relative">
+        ${chartHtml}
+        <div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+      </div>
+    </div>`;
+  }
+  _tlGSvgEl(inner) {
+    return `<svg class="tl-g-svg" viewBox="0 0 ${_TL_G_VBW} ${_TL_G_SVH}" width="100%" height="${_TL_G_DISP}" preserveAspectRatio="none">${inner}</svg>`;
+  }
+  // HTML y-label + SVG wrapper — avoids font distortion from preserveAspectRatio:none
+  _tlGWrap(svgHtml, labelsHtml, yLblTxt) {
+    return `<div style="position:relative">
+      <span class="tl-g-ylabel">${yLblTxt}</span>
+      ${svgHtml}
+    </div>${labelsHtml}`;
+  }
+  // ── Stacked bar chart ─────────────────────────────────────────────────────
+  // Returns svgHtml + x-labels HTML div
+  _tlGBarSvg(rawData, opts) {
+    opts = opts || {};
+    const prep = _tlGPrep(rawData, opts);
+    const VBW = _TL_G_VBW, SVH = _TL_G_SVH;
+    const noData = this._tlGWrap(
+      this._tlGSvgEl(`<text x="${VBW / 2}" y="${SVH / 2}" text-anchor="middle" dominant-baseline="middle" style="fill:var(--is-text-muted);font-size:22">No data</text>`),
+      "",
+      ""
+    );
+    if (!prep) return noData;
+    const { cats, series, maxV } = prep;
+    const n = cats.length;
+    const cW = VBW - _P.l - _P.r;
+    const cH = SVH - _P.t - _P.b;
+    const baseY = _P.t + cH;
+    const cid = opts.chartId || "g";
+    const isDur = !!opts.isDuration;
+    const defs = "<defs>" + series.map((s, si) => {
+      const h = _tlGHex(s.name);
+      return `<linearGradient id="tl-gb-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.92"/><stop offset="100%" stop-color="${h}" stop-opacity="0.42"/></linearGradient>`;
+    }).join("") + "</defs>";
+    const serGrad = {};
+    series.forEach((s, si) => {
+      serGrad[s.name] = `url(#tl-gb-${cid}-${si})`;
+    });
+    const slotW = cW / n;
+    const bwFrac = n <= 7 ? 0.5 : n <= 14 ? 0.55 : Math.min(0.65, Math.max(0.14, 42 / slotW));
+    const bw = Math.max(4, slotW * bwFrac);
+    const rr = Math.min(bw * 0.38, 10);
+    const labelW = opts.isMob ? 110 : 62;
+    const showEvery = Math.max(1, Math.ceil(labelW / slotW));
+    let bars = "", delay = 0;
+    const visibleLabels = [];
+    cats.forEach((cat, i) => {
+      const x = _P.l + i * slotW + (slotW - bw) / 2;
+      const total = series.reduce((s, ser) => s + ((ser.data || [])[i] || 0), 0);
+      const sorted = series.slice().sort((a, b) => ((a.data || [])[i] || 0) - ((b.data || [])[i] || 0));
+      const tipVals = sorted.filter((s) => ((s.data || [])[i] || 0) > 0).reverse().map((s) => {
+        const v = (s.data || [])[i] || 0;
+        return { n: s.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(s.name) };
+      });
+      const tipData = _tlGAttr(JSON.stringify({
+        lbl: cat,
+        tot: total,
+        ftot: isDur ? _tlGFmtDur(total) : null,
+        vals: tipVals
+      }));
+      let colPaths = "", curY = baseY;
+      if (total > 0) {
+        sorted.forEach((ser, si2) => {
+          const v = (ser.data || [])[i] || 0;
+          if (!v) return;
+          const h = v / maxV * cH;
+          const fill = serGrad[ser.name] || _tlGHex(ser.name);
+          const isTop = si2 === sorted.length - 1 || sorted.slice(si2 + 1).every((s2) => !((s2.data || [])[i] || 0));
+          curY -= h;
+          const pathD = isTop ? this._tlGRoundedTop(x, curY, bw, h, rr) : `M${x},${curY + h} L${x},${curY} L${x + bw},${curY} L${x + bw},${curY + h} Z`;
+          const rrAttr = isTop && rr >= 0.5 ? ` data-tl-rr="${rr.toFixed(2)}" data-tl-bx="${x.toFixed(2)}" data-tl-by="${curY.toFixed(2)}" data-tl-bw="${bw.toFixed(2)}" data-tl-bh="${h.toFixed(2)}"` : "";
+          colPaths += `<path d="${pathD}"${rrAttr} style="fill:${fill}" class="tl-g-anim-bar" data-d="${(delay * 0.012).toFixed(2)}"/>`;
+        });
+        delay++;
+      }
+      bars += `<g class="tl-g-col" data-tl-g-col="${tipData}" style="cursor:${total > 0 ? "pointer" : "default"}"><rect x="${(_P.l + i * slotW).toFixed(1)}" y="${_P.t}" width="${slotW.toFixed(1)}" height="${cH}" fill="transparent"/>` + colPaths + `</g>`;
+      const lbl = typeof opts.xLabel === "function" ? opts.xLabel(cat, i, n) : cat || "";
+      if (lbl) {
+        const lr = Math.floor((n - 2) / showEvery) * showEvery;
+        if (i % showEvery === 0 || i === n - 1 && (n - 1 - lr) * slotW >= labelW * 0.8) {
+          visibleLabels.push({ pct: (_P.l + i * slotW + slotW / 2) / VBW * 100, lbl, first: i === 0, last: i === n - 1 });
+        }
+      }
+    });
+    const yLblTxt = isDur ? _tlGFmtDurShort(maxV) : String(maxV);
+    return this._tlGWrap(this._tlGSvgEl(defs + bars), _tlGXLabels(visibleLabels), yLblTxt);
+  }
+  _tlGRoundedTop(x, y, w, h, r) {
+    r = Math.min(r, h / 2, w / 2);
+    if (r < 0.5) return `M${x},${y + h} L${x},${y} L${x + w},${y} L${x + w},${y + h} Z`;
+    const f = (n) => n.toFixed(2);
+    return `M${f(x)},${f(y + h)} L${f(x)},${f(y + r)} Q${f(x)},${f(y)} ${f(x + r)},${f(y)} L${f(x + w - r)},${f(y)} Q${f(x + w)},${f(y)} ${f(x + w)},${f(y + r)} L${f(x + w)},${f(y + h)} Z`;
+  }
+  // ── Line chart ────────────────────────────────────────────────────────────
+  // Dots: filled with card bg color (var(--is-row-hover)) so line underneath is hidden,
+  //       stroke ring drawn on top → line visually ends at dot edge, never passes through
+  _tlGLineSvg(rawData, opts) {
+    opts = opts || {};
+    const prep = _tlGPrep(rawData, opts);
+    const VBW = _TL_G_VBW, SVH = _TL_G_SVH;
+    const noDt = this._tlGWrap(
+      this._tlGSvgEl(`<text x="${VBW / 2}" y="${SVH / 2}" text-anchor="middle" dominant-baseline="middle" style="fill:var(--is-text-muted);font-size:22">No data</text>`),
+      "",
+      ""
+    );
+    if (!prep) return noDt;
+    const { cats, series, maxV } = prep;
+    const n = cats.length;
+    const cW = VBW - _P.l - _P.r;
+    const cH = SVH - _P.t - _P.b;
+    const baseY = _P.t + cH;
+    const cid = opts.chartId || "l";
+    const isDur = !!opts.isDuration;
+    const dotR = n <= 12 ? 4 : n <= 30 ? 3 : 2;
+    const slotW2 = cW / Math.max(n, 1);
+    const ptX = (i) => _P.l + (i + 0.5) * slotW2;
+    const colL = (i) => _P.l + i * slotW2;
+    const colR = (i) => _P.l + (i + 1) * slotW2;
+    const seriesPts = series.map((ser) => {
+      const vals = ser.data || [];
+      return vals.map((v, i) => ({
+        x: ptX(i),
+        y: _P.t + cH - v / maxV * cH,
+        v,
+        cat: cats[i]
+      }));
+    });
+    let di = series.map((s, si) => {
+      const h = _tlGHex(s.name);
+      return `<linearGradient id="tl-gl-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.18"/><stop offset="100%" stop-color="${h}" stop-opacity="0"/></linearGradient>`;
+    }).join("");
+    series.forEach((ser, si) => {
+      const circles = seriesPts[si].filter((p) => p.v > 0).map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${dotR}" fill="black"/>`).join("");
+      di += `<mask id="tl-lmask-${cid}-${si}" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="${VBW}" height="${SVH}" fill="white"/>` + circles + `</mask>`;
+    });
+    const defs = `<defs>${di}</defs>`;
+    let out = defs;
+    if (opts.isDate) {
+      cats.forEach((cat, i) => {
+        const dow = (/* @__PURE__ */ new Date(cat + "T12:00:00")).getDay();
+        if (dow !== 0 && dow !== 6) return;
+        const rx = colL(i), rw = colR(i) - rx;
+        out += `<rect x="${rx.toFixed(1)}" y="${_P.t}" width="${rw.toFixed(1)}" height="${cH}" style="fill:var(--tl-wknd)"/>`;
+      });
+    }
+    series.forEach((ser, si) => {
+      const pts = seriesPts[si];
+      if (!pts.some((p) => p.v > 0)) return;
+      const hex = _tlGHex(ser.name);
+      out += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tl-gl-${cid}-${si})"/>`;
+      out += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line" mask="url(#tl-lmask-${cid}-${si})"/>`;
+    });
+    series.forEach((ser, si) => {
+      const pts = seriesPts[si];
+      const hex = _tlGHex(ser.name);
+      pts.forEach((p) => {
+        if (!p.v) return;
+        const tipJson = _tlGAttr(JSON.stringify({ lbl: p.cat, name: ser.name, val: p.v, hex }));
+        out += `<circle class="tl-g-dot" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${dotR}" style="fill:transparent;stroke:${hex};stroke-width:2.5;cursor:pointer" vector-effect="non-scaling-stroke" data-tl-g-dot="${tipJson}"/>`;
+      });
+    });
+    cats.forEach((cat, i) => {
+      const rx = colL(i), rw = colR(i) - rx;
+      const tipVals = series.map((ser) => {
+        const v = (ser.data || [])[i] || 0;
+        return { n: ser.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(ser.name) };
+      }).filter((v) => v.v > 0).sort((a, b) => b.v - a.v);
+      const tot = tipVals.reduce((s, v) => s + v.v, 0);
+      const td = _tlGAttr(JSON.stringify({ lbl: cat, tot, ftot: isDur ? _tlGFmtDur(tot) : null, vals: tipVals }));
+      out += `<g class="tl-g-lcol" data-tl-g-col="${td}" style="cursor:pointer"><rect class="tl-g-lhlt" x="${rx.toFixed(1)}" y="${_P.t}" width="${rw.toFixed(1)}" height="${cH}" style="fill:var(--tl-col-hlt);opacity:0"/><rect x="${rx.toFixed(1)}" y="${_P.t}" width="${rw.toFixed(1)}" height="${cH}" fill="transparent"/></g>`;
+    });
+    const labelW = opts.isMob ? 110 : 62;
+    const showEvery = Math.max(1, Math.ceil(labelW / slotW2));
+    const visibleLabels = [];
+    cats.forEach((cat, i) => {
+      const lbl = typeof opts.xLabel === "function" ? opts.xLabel(cat, i, n) : (cat || "").slice(-5);
+      if (!lbl) return;
+      const lr = Math.floor((n - 2) / showEvery) * showEvery;
+      if (i % showEvery === 0 || i === n - 1 && (n - 1 - lr) * slotW2 >= labelW * 0.8) {
+        visibleLabels.push({ pct: ptX(i) / VBW * 100, lbl, first: i === 0, last: i === n - 1 });
+      }
+    });
+    const yLblTxt = isDur ? _tlGFmtDurShort(maxV) : String(maxV);
+    return this._tlGWrap(this._tlGSvgEl(out), _tlGXLabels(visibleLabels), yLblTxt);
+  }
+  _tlGSmoothLine(pts) {
+    if (pts.length < 2) return pts.length === 1 ? `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}` : "";
+    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = pts[i - 1], p1 = pts[i];
+      const cx1 = p0.x + (p1.x - p0.x) / 4;
+      const cx2 = p1.x - (p1.x - p0.x) / 4;
+      d += ` C${cx1.toFixed(1)},${p0.y.toFixed(1)} ${cx2.toFixed(1)},${p1.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+    }
+    return d;
+  }
+  _tlGSmoothArea(pts, baseY) {
+    const lp = pts[pts.length - 1], fp = pts[0];
+    return this._tlGSmoothLine(pts) + ` L${lp.x.toFixed(1)},${baseY.toFixed(1)} L${fp.x.toFixed(1)},${baseY.toFixed(1)} Z`;
+  }
+  // ── User dropdown ─────────────────────────────────────────────────────────
+  _tlGUserDropdown() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    const users = m.graphsUserList || [], sel = m.graphsSelectedUsers;
+    let btnLabel = "All Users";
+    if (sel && sel.size === 1) {
+      const u = users.find((u2) => sel.has(String(u2.user_id)));
+      btnLabel = u ? u.friendly_name || u.username || "1 User" : "1 User";
+    }
+    const chevron = `<svg viewBox="0 0 10 6" width="8" height="5" style="position:absolute;right:7px;top:50%;transform:translateY(-50%)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><polyline points="1,1 5,5 9,1"/></svg>`;
+    const chkSvg = `<svg viewBox="0 0 14 14" width="12" height="12"><polyline points="2,7 5.5,10.5 12,3" fill="none" stroke="var(--is-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const items = users.map((u) => {
+      const uid = String(u.user_id), checked = !sel || sel.has(uid);
+      const name = u.friendly_name || u.username || uid;
+      return `<div class="tl-g-dd-item" data-tl-g-uid="${uid}"
+        style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px;cursor:pointer;font-size:11px;color:var(--is-text-body)">
+        <span>${name}</span>
+        <span style="width:14px;height:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center">${checked ? chkSvg : ""}</span>
+      </div>`;
+    }).join("");
+    return `<div style="position:relative;flex-shrink:0" id="tl-g-dd-wrap">
+      <button id="tl-g-dd-btn" class="tl-page-btn" style="white-space:nowrap;padding:4px 24px 4px 10px;position:relative">
+        ${btnLabel}${chevron}
+      </button>
+      <div id="tl-g-dd-panel" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:8px;min-width:160px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.35);overflow:hidden">
+        <div style="display:flex;gap:6px;padding:6px 8px 8px;border-bottom:1px solid var(--is-divider)">
+          <button id="tl-g-dd-all"  class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">Select All</button>
+          <button id="tl-g-dd-none" class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">Deselect All</button>
+        </div>
+        <div style="max-height:160px;overflow-y:auto">${items || '<div style="padding:8px 12px;font-size:11px;color:var(--is-text-muted)">No users</div>'}</div>
+      </div>
+    </div>`;
+  }
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+  async _tlFetchGraphs() {
+    const m = this._tautulliModal;
+    const metric = m?.graphsMetric || "plays";
+    const range = m?.graphsRange || 30;
+    const sub = m?.graphsSub || "media";
+    const yAxis = metric === "duration" ? "duration" : "plays";
+    const sel = m?.graphsSelectedUsers;
+    const userParam = sel && sel.size === 1 ? `&user_id=${[...sel][0]}` : "";
+    const base = `time_range=${range}&y_axis=${yAxis}${userParam}`;
+    if (sub === "media") {
+      const [byDate, byDow, byHod] = await Promise.all([
+        this._tlApiFetch("get_plays_by_date", base),
+        this._tlApiFetch("get_plays_by_dayofweek", base),
+        this._tlApiFetch("get_plays_by_hourofday", base)
+      ]);
+      return { byDate, byDow, byHod };
+    } else if (sub === "stream") {
+      const [streamByDate, concurrentByDate] = await Promise.all([
+        this._tlApiFetch("get_plays_by_stream_type", base),
+        this._tlApiFetch("get_concurrent_streams_by_stream_type", `time_range=${range}${userParam}`)
+      ]);
+      return { streamByDate, concurrentByDate };
+    } else {
+      const monthly = await this._tlApiFetch("get_plays_per_month", base);
+      return { monthly };
+    }
+  }
+  async _tlRefetchGraphs(body) {
+    const m = this._tautulliModal;
+    if (!m || !body) return;
+    m.graphsLoading = true;
+    body.innerHTML = this._tlBodyGraphs();
+    const gd = await this._tlFetchGraphs();
+    if (!this._tautulliModal) return;
+    m.graphsData = gd;
+    m.graphsLoading = false;
+    body.innerHTML = this._tlBodyGraphs();
+    this._wireGraphControls(body);
+    this._tlGTriggerAnim(body);
+  }
+  _tlGTriggerAnim(body) {
+    body.querySelectorAll(".tl-g-anim-bar").forEach((el) => {
+      el.style.animationDelay = (el.getAttribute("data-d") || "0") + "s";
+    });
+  }
+};
+var tautulliGraphsMixin = _TautulliGraphsMethods.prototype;
+
 // src/card.js
 var ArrStackCard = class extends HTMLElement {
   constructor() {
@@ -8715,9 +11617,17 @@ var ArrStackCard = class extends HTMLElement {
     this._sort = "progress_desc";
     this._radarr = [];
     this._radarrTotal = 0;
+    this._radarr2 = [];
+    this._radarr2Total = 0;
+    this._radarr2Configured = null;
+    this._radarr2ByTmdb = /* @__PURE__ */ new Map();
     this._sonarr = [];
     this._sonarrAll = [];
     this._sonarrTotal = 0;
+    this._sonarr2 = [];
+    this._sonarr2Total = 0;
+    this._sonarr2Configured = null;
+    this._sonarr2ByTvdb = /* @__PURE__ */ new Map();
     this._calendar = [];
     this._upcoming = [];
     this._tvUpcoming = [];
@@ -8743,7 +11653,14 @@ var ArrStackCard = class extends HTMLElement {
     this._bazarr = {};
     this._radarrQueueFailed = /* @__PURE__ */ new Set();
     this._radarrQueueActive = /* @__PURE__ */ new Set();
+    this._radarr2QueueFailed = /* @__PURE__ */ new Set();
+    this._radarr2QueueActive = /* @__PURE__ */ new Set();
+    this._plexSessions = [];
+    this._plexConfigured = null;
+    this._plexLastFetch = 0;
+    this._overseerrConfigured = null;
     this._seerrRadarr = null;
+    this._seerrRadarr2 = null;
     this._confirmRemove = null;
     this._requestPending = null;
     this._pendingRequests = [];
@@ -8756,11 +11673,17 @@ var ArrStackCard = class extends HTMLElement {
     this._sonarrTags = [];
     this._radarrRootFolders = [];
     this._sonarrRootFolders = [];
+    this._radarr2Profiles = [];
+    this._radarr2Tags = [];
+    this._radarr2RootFolders = [];
+    this._sonarr2Profiles = [];
+    this._sonarr2RootFolders = [];
     this._tvRequestPending = null;
     this._overlay = { section: null, page: 0, tvPending: null };
     this._overlayApiPage = {};
     this._overlayApiTotalPages = {};
     this._seerrSonarr = null;
+    this._seerrSonarr2 = null;
     this._sonarrProfiles = [];
     this._qbitBusy = false;
     this._sabBusy = false;
@@ -8787,6 +11710,29 @@ var ArrStackCard = class extends HTMLElement {
     this._snIsGrabbing = null;
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
+    this._searchExpand = null;
+    this._asOpen = false;
+    this._asInstance = null;
+    this._asState = null;
+    this._asError = null;
+    this._asMovieSearching = false;
+    this._asMovieSearched = false;
+    this._asSearchingItems = /* @__PURE__ */ new Set();
+    this._asSearchedItems = /* @__PURE__ */ new Set();
+    this._asDownloadingItems = /* @__PURE__ */ new Set();
+    this._radarrQueuePct = /* @__PURE__ */ new Map();
+    this._radarr2QueuePct = /* @__PURE__ */ new Map();
+    this._dlTriggeredBy = null;
+    this._sonarrQueueSeasons = /* @__PURE__ */ new Set();
+    this._sonarrQueueEpisodes = /* @__PURE__ */ new Set();
+    this._sonarrQueueEpPct = /* @__PURE__ */ new Map();
+    this._sonarrQueueSeasonPct = /* @__PURE__ */ new Map();
+    this._sonarrQueueSeriesPct = /* @__PURE__ */ new Map();
+    this._sonarr2QueueSeasons = /* @__PURE__ */ new Set();
+    this._sonarr2QueueEpisodes = /* @__PURE__ */ new Set();
+    this._sonarr2QueueEpPct = /* @__PURE__ */ new Map();
+    this._sonarr2QueueSeasonPct = /* @__PURE__ */ new Map();
+    this._sonarr2QueueSeriesPct = /* @__PURE__ */ new Map();
     this._searchQuery = "";
     this._searchResults = [];
     this._searchPage = 0;
@@ -8832,7 +11778,6 @@ var ArrStackCard = class extends HTMLElement {
       this._initialized = true;
       this._buildShell();
       this._loadPendingFromStorage();
-      this._fetchOverseerrRadarrSettings();
       this._fetchAll();
       this._interval = setInterval(() => this._fetchAll(), 3e4);
       this._fastInterval = setInterval(() => this._fetchDownloadsAndRender(), 5e3);
@@ -8941,13 +11886,13 @@ var ArrStackCard = class extends HTMLElement {
   }
   // Returns config object for a section overlay (icon, data key, render fn, etc.)
   _getSectionOverlayConfig(section) {
-    const tmdbUrl = (path) => path ? `https://image.tmdb.org/t/p/w92${path}` : null;
+    const tmdbUrl = (path) => !path ? null : path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w92${path}`;
     const cfgs = {
       trending: {
         dataKey: "_trending",
         icon: "mdi:trending-up",
         titleKey: "trendingMovies",
-        apiEndpoint: "overseerr/trending",
+        apiEndpoint: `${this._discoverSvc}/trending`,
         hasTvPending: true,
         renderCard: (m, i) => this._renderTrendingCard(m, i),
         getPosterUrl: (m) => tmdbUrl(m.posterPath || m.poster_path),
@@ -8957,7 +11902,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_popular",
         icon: "mdi:fire",
         titleKey: "popularMovies",
-        apiEndpoint: "overseerr/popular",
+        apiEndpoint: `${this._discoverSvc}/popular`,
         hasTvPending: false,
         renderCard: (m, i) => this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex: i }),
         getPosterUrl: (m) => tmdbUrl(m.posterPath),
@@ -8977,7 +11922,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_tvUpcoming",
         icon: "mdi:television-play",
         titleKey: "newShows",
-        apiEndpoint: "overseerr/tv_upcoming",
+        apiEndpoint: `${this._discoverSvc}/tv_upcoming`,
         hasTvPending: true,
         renderCard: (m, i) => this._renderTvUpcomingCard(m, { showRating: true, overlayIndex: i }),
         getPosterUrl: (m) => tmdbUrl(m.posterPath),
@@ -9196,8 +12141,9 @@ var ArrStackCard = class extends HTMLElement {
   }
   get recentlyRequested() {
     const movies = (this._radarr || []).filter((m) => m.monitored && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.added || "" }));
+    const movies2 = (this._radarr2 || []).filter((m) => m.monitored && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _isRadarr2: true, _sortDate: m.added || "" }));
     const shows = (this._sonarr || []).filter((s) => s.monitored && (s.statistics?.episodeFileCount ?? 0) === 0).map((s) => ({ ...s, _mediaType: "tv", _sortDate: s.added || "" }));
-    return [...movies, ...shows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+    return [...movies, ...movies2, ...shows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
   }
   // Paginated vertical list (for download items)
   _pagedList(items, section, renderFn, perPage = 4) {
@@ -9339,9 +12285,10 @@ var ArrStackCard = class extends HTMLElement {
     }
     return document.documentElement;
   }
-  _reRenderRight() {
+  _reRenderRight(force = false) {
     const right = this.shadowRoot.getElementById("col-right");
     if (!right) return;
+    if (!force && this._requestPending) return;
     if (!this._searchActive) this._blurActive();
     if (this._searchActive && this._rightMaxH) right.style.minHeight = this._rightMaxH + "px";
     right.innerHTML = this._renderRight();
@@ -9424,6 +12371,10 @@ var ArrStackCard = class extends HTMLElement {
   }
   async _fetchPendingRequests() {
     if (!this._hass.user.is_admin) return;
+    if (this._overseerrConfigured === false) {
+      this._pendingRequests = [];
+      return;
+    }
     try {
       const data = await this._hass.callApi("GET", "arr_stack/overseerr/pending");
       this._pendingRequests = data?.results ?? [];
@@ -9462,6 +12413,7 @@ var ArrStackCard = class extends HTMLElement {
   }
   async _fetchMyPendingRequests() {
     if (this._hass.user.is_admin) return;
+    if (this._overseerrConfigured === false) return;
     try {
       const data = await this._hass.callApi("GET", "arr_stack/overseerr/my_pending");
       const results = data?.results || [];
@@ -9606,6 +12558,7 @@ var ArrStackCard = class extends HTMLElement {
     if (!left || !right) return;
     const layout = this._cfg?.layout || "both";
     if (layout !== "right") left.innerHTML = this._renderLeft();
+    if (this._requestPending) return;
     if (layout !== "left") right.innerHTML = this._renderRight();
     this._wireSort();
     this._wireActionButtons();
@@ -9660,6 +12613,7 @@ function applyMixin(target, mixin) {
 }
 applyMixin(ArrStackCard.prototype, interactiveSearchMixin);
 applyMixin(ArrStackCard.prototype, sonarrIsMixin);
+applyMixin(ArrStackCard.prototype, autoSearchMixin);
 applyMixin(ArrStackCard.prototype, fetchMixin);
 applyMixin(ArrStackCard.prototype, renderLeftMixin);
 applyMixin(ArrStackCard.prototype, renderRightMixin);
@@ -9671,6 +12625,7 @@ applyMixin(ArrStackCard.prototype, popupMixin);
 applyMixin(ArrStackCard.prototype, tautulliSharedMixin);
 applyMixin(ArrStackCard.prototype, tautulliTableMixin);
 applyMixin(ArrStackCard.prototype, tautulliMixin);
+applyMixin(ArrStackCard.prototype, tautulliGraphsMixin);
 customElements.define("arr-stack-card", ArrStackCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
