@@ -10,7 +10,7 @@
 
 <a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, and Bazarr — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, and Tautulli — directly from Home Assistant with a single unified dashboard card.
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -43,23 +43,28 @@ The card auto-detects all configured services. No YAML configuration required to
 ## How it works
 
 ```
-HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Sonarr / SABnzbd / …
+HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Sonarr / Plex / …
 ```
 
-The card never calls your ARR services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
+The card never calls your services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
 
 ---
 
 ## Supported services
 
-| Service | Role |
-|---------|------|
-| Radarr | Movie library, downloads, interactive search |
-| Sonarr | TV library, episode calendar, downloads |
-| qBittorrent | Torrent download management |
-| SABnzbd | Usenet download management |
-| Overseerr / Jellyseerr | Media requests, discovery, approvals |
-| Bazarr | Subtitle status per movie/show |
+| Service | Role | Required |
+|---------|------|----------|
+| Radarr | Movie library, downloads, interactive search | ✅ Yes |
+| Sonarr | TV library, episode calendar, downloads | ✅ Yes |
+| Radarr 2 | Second Radarr instance — HD + 4K workflow | Optional |
+| Sonarr 2 | Second Sonarr instance — HD + 4K workflow | Optional |
+| qBittorrent | Torrent download management | Optional |
+| SABnzbd | Usenet download management | Optional |
+| Overseerr / Jellyseerr | Media requests, discovery, approvals | Optional |
+| Bazarr | Subtitle status per movie/show | Optional |
+| Plex | Active stream monitoring and playback control | Optional |
+| Jellyfin | Active stream monitoring | Optional |
+| Tautulli | Watch history, statistics, and usage graphs | Optional |
 
 Services not configured in the integration are hidden automatically.
 
@@ -67,24 +72,50 @@ Services not configured in the integration are hidden automatically.
 
 ## Features
 
-### Library
+### Downloads (left panel)
+
+The left panel shows your download managers. Each section only appears if that service is configured in the integration — if you only use qBittorrent, SABnzbd won't show up, and vice versa.
+
+- **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed.
+- **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
+- **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Root folders on the same physical disk are automatically deduplicated (by free space) and their paths combined (e.g. `movies · tv`). If your media is spread across multiple disks, each disk appears as a separate card — use the chevron arrows to page through them. The card defaults to showing the disk that matches your SABnzbd download directory.
+
+### Right panel — configurable sections
+
+The right panel is a modular dashboard. You choose which sections appear and in what order via the visual editor. Each section is powered by a different service and can be enabled or disabled independently.
+
+#### Library (Radarr / Sonarr)
 
 - **Recently Added** — mixed movies + TV shows with files, sorted by download date. TV shows show the most recently downloaded episode badge (e.g. `S04E04`).
 - **Recently Requested** — monitored movies and shows not yet downloaded, with download status (downloading / missing / failed). Auto-refreshes when a download completes.
-- **Movies (Radarr)** — full library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup detail with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
-- **TV Shows (Sonarr)** — library with per-season episode counts and progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
+- **Movies** — full Radarr library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
+- **TV Shows** — full Sonarr library with per-season progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
 
-### Downloads
+#### Library — dual instances (Radarr 2 / Sonarr 2)
 
-- **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Shows free disk space.
-- **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. Shows free/total disk space with usage bar. **VPN shield indicator** — green when VPN tunnel is active, red when off.
+Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popup shows per-instance status chips (available / downloading / missing) and lets you choose which instance to search or remove from.
 
-### Discovery (Overseerr / Jellyseerr)
+#### Discovery
 
-- Trending, popular, and upcoming movies and TV shows
-- One-click or profile-based media requests
-- **Admin:** approve and decline pending requests with poster-style cards
-- **Family accounts:** view and withdraw own requests
+- **Trending, popular, upcoming** — movies and TV shows, always available
+- One-click or profile-based media requests directly to Radarr/Sonarr
+- **With Overseerr / Jellyseerr (optional):** approve and decline pending requests, family accounts with per-user request management
+
+#### Now Playing (Plex / Jellyfin)
+
+The card reads active sessions from `media_player.plex_*` and `media_player.jellyfin_*` entities created by the official [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integrations. Plex playback control additionally requires Plex to be configured in the Arr Stack Integration (step 5).
+
+- Live view of active streams — title, user, media type, and playback progress
+- Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
+- Auto-hidden when no streams are active
+
+#### Statistics (Tautulli)
+
+- Watch history with search and filters
+- Play count and duration charts by day, day of week, hour, and media type
+- Stream type breakdown and concurrent stream graph
+- Per-user and per-library statistics
+- **Account sharing detection** — warns when the same account streams from multiple IPs; configurable threshold and history depth; acknowledge known IPs per user
 
 ### Appearance & UX
 
@@ -102,7 +133,24 @@ Services not configured in the integration are hidden automatically.
 
 1. Home Assistant 2024.1+ with HACS installed
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
-3. At minimum: **Radarr**, **Sonarr**, and **Overseerr** (or Jellyseerr)
+3. At minimum: **Radarr** and **Sonarr** — everything else is optional
+
+All other services are optional — unconfigured services are hidden automatically.
+
+**With Overseerr / Jellyseerr** you additionally get:
+- Request approval workflow — admin can approve and decline pending requests
+- Family accounts — household members can request and withdraw their own media
+
+### Now Playing (Plex / Jellyfin)
+
+Both Plex and Jellyfin read from standard HA `media_player` entities:
+
+- **Plex** — install the [Plex integration](https://www.home-assistant.io/integrations/plex/) in HA. It creates `media_player.plex_*` entities automatically for each active session.
+- **Jellyfin** — install the [Jellyfin integration](https://www.home-assistant.io/integrations/jellyfin/) in HA. It creates `media_player.jellyfin_*` entities automatically.
+
+The Now Playing section auto-hides when nothing is playing.
+
+Playback control (pause, resume, stop) is available for Plex. This requires Plex to also be configured in the Arr Stack Integration (step 5). Works for most clients — Android phones and web browsers are not supported.
 
 ---
 
@@ -130,7 +178,7 @@ Services not configured in the integration are hidden automatically.
 
 ## Full Configuration
 
-> **Visual editor** — most settings are available via the HA dashboard editor (click the pencil icon). Only `styles.*` keys require manual YAML editing.
+> **Visual editor** — most settings are available via the HA dashboard editor (click the pencil icon). Only `styles.*` and `security.*` keys require manual YAML editing.
 
 ```yaml
 type: custom:arr-stack-card
@@ -174,6 +222,15 @@ categories:
     enabled: true
   - id: calendar
     enabled: true
+  - id: streams
+    enabled: true
+  - id: tautulli
+    enabled: true
+
+# Security
+security:
+  ip_sharing_threshold: 2    # unique IPs per user before sharing warning appears  (default: 2)
+  ip_history_depth: 200      # number of history records scanned for IP detection  (default: 200)
 
 # Appearance
 styles:
@@ -215,6 +272,19 @@ styles:
 | `trending` | Trending |
 | `popular` | Popular Movies |
 | `calendar` | Sonarr episode calendar |
+| `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
+| `tautulli` | Statistics (Tautulli) |
+
+### Security
+
+Account sharing detection is available when Tautulli is configured.
+
+| Key | Description |
+|-----|-------------|
+| `security.ip_sharing_threshold` | Number of unique IPs per user that triggers the sharing warning. Default: `2` |
+| `security.ip_history_depth` | Number of recent history records scanned per fetch to collect IP data. Default: `200` |
+
+When sharing is detected, a warning card appears in the Statistics section. Clicking it opens the Users tab with a collapsible IP report — showing each flagged user, their IP addresses, last seen date, and play count. You can acknowledge known IPs per user to dismiss the warning.
 
 ### Style notes
 
@@ -225,7 +295,9 @@ styles:
 
 ---
 
-## Multi-user setup (Overseerr / Jellyseerr)
+## Multi-user setup (Overseerr / Jellyseerr — optional)
+
+> This section only applies if you have Overseerr or Jellyseerr configured. Without it, all HA users (admin and non-admin) can add media directly to Radarr/Sonarr.
 
 | HA account | What they can do |
 |------------|-----------------|
