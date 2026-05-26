@@ -257,7 +257,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "popular", enabled: true },
       { id: "calendar", enabled: true },
       { id: "streams", enabled: true },
-      { id: "tautulli", enabled: true }
+      { id: "tautulli", enabled: true },
+      { id: "jellystat", enabled: true }
     ];
   }
   _getCats() {
@@ -279,7 +280,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       popular: "Popular Movies",
       calendar: "Calendar",
       streams: "Now Playing (Plex / Jellyfin) \u2014 auto-hidden when nothing plays",
-      tautulli: "Statistics"
+      tautulli: "Statistics",
+      jellystat: "Statistics (Jellyfin)"
     }[id] || id;
   }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
@@ -870,7 +872,7 @@ var STYLES = `
       .stream-paused img { filter: brightness(0.55) saturate(0.4); }
       .stream-paused-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2; color: rgba(255,255,255,0.9); }
       .stream-device-tag { position: absolute; top: 6px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.85); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; pointer-events: none; }
-      .stream-user-tag { position: absolute; bottom: 28px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.92); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; pointer-events: none; max-width: calc(100% - 12px); overflow: hidden; }
+      .stream-user-tag { position: absolute; top: 28px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.92); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; pointer-events: none; max-width: calc(100% - 12px); overflow: hidden; }
       .popup-ctrl-btn { background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.85); transition: background 0.15s; }
       .popup-ctrl-btn:hover { background: rgba(255,255,255,0.16); }
       .popup-ctrl-btn-main { width: 56px; height: 56px; background: rgba(229,160,13,0.2); }
@@ -3574,6 +3576,7 @@ var _FetchMethods = class {
       this._fetchRadarr2Tags(),
       this._fetchRadarr2RootFolders(),
       this._fetchTautulli(),
+      this._fetchJellystat(),
       this._fetchPlexSessions()
     ]);
     this._render();
@@ -4835,6 +4838,47 @@ var _FetchMethods = class {
     }
   }
   // ─────────────────────────────────────────────
+  // Jellystat
+  // ─────────────────────────────────────────────
+  async _fetchJellystat() {
+    if (!this._jellystatConfigured) return;
+    try {
+      const [libsRaw, usersRaw, histRaw, playsRaw] = await Promise.all([
+        this._hass.callApi("GET", "arr_stack/jellystat/getLibraries").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/jellystat/stats/getAllUserActivity").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/jellystat/getHistory?page=1&size=5").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/jellystat/stats/getViewsOverTime").catch(() => null)
+      ]);
+      if (libsRaw === null && usersRaw === null) {
+        this._jellystatConfigured = false;
+        return;
+      }
+      const libraries = Array.isArray(libsRaw) ? libsRaw : libsRaw?.data || libsRaw?.items || [];
+      const users = Array.isArray(usersRaw) ? usersRaw : usersRaw?.data || usersRaw?.users || [];
+      const recentHistory = (histRaw?.results || histRaw?.data || (Array.isArray(histRaw) ? histRaw : [])).slice(0, 5);
+      const statsArr = playsRaw?.stats || [];
+      const today = /* @__PURE__ */ new Date();
+      const playsData = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today - (6 - i) * 864e5);
+        const dateStr = d.toISOString().slice(0, 10);
+        const entry = statsArr.find((r) => {
+          try {
+            return new Date(r.Key).toISOString().slice(0, 10) === dateStr;
+          } catch {
+            return false;
+          }
+        });
+        if (!entry) return { date: dateStr, value: 0 };
+        const value = Object.values(entry).filter((v) => v && typeof v === "object" && "count" in v).reduce((s, v) => s + (v.count || 0), 0);
+        return { date: dateStr, value };
+      });
+      users.sort((a, b) => (b.Plays ?? b.TotalPlays ?? 0) - (a.Plays ?? a.TotalPlays ?? 0));
+      this._jellystat = { libraries, users, recentHistory, activity: {}, playsData };
+    } catch (e) {
+      console.warn("[arr-card] Jellystat fetch error:", e);
+    }
+  }
+  // ─────────────────────────────────────────────
   // Auto Search — Radarr
   // ─────────────────────────────────────────────
   async _triggerRadarrAutoSearch(instance = "radarr") {
@@ -5490,7 +5534,7 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar", "tautulli"];
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar", "tautulli", "jellystat"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
     const hasActiveStreams = Object.keys(states).some((id) => {
@@ -5509,7 +5553,8 @@ var _RenderRight = class {
       popular: () => this._renderPopular(),
       calendar: hasCalendar ? () => this._renderCalendar() : null,
       streams: hasActiveStreams ? () => this._renderStreams() : null,
-      tautulli: this._tautulliConfigured !== false ? () => this._renderTautulli() : null
+      tautulli: this._tautulliConfigured !== false ? () => this._renderTautulli() : null,
+      jellystat: this._jellystatConfigured !== false ? () => this._renderJellystat() : null
     };
     const regularCategories = [
       ...hasPending ? [() => this._renderPendingRequests()] : [],
@@ -6327,10 +6372,6 @@ var _RenderRight = class {
       if (match?._plexUser) {
         userName = match._plexUser;
         userThumb = match._plexUserThumb || "";
-      } else {
-        const fn = attr.friendly_name || "";
-        const m = fn.match(/^Plex\s+(.+?)\s*\(/);
-        userName = m ? m[1].trim() : "";
       }
     } else {
       const fn = attr.friendly_name || "";
@@ -6340,7 +6381,7 @@ var _RenderRight = class {
     }
     const initials = userName ? userName.split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
     const hue = userName ? [...userName].reduce((a, c) => a + c.charCodeAt(0), 0) % 360 : 200;
-    const avatarEl = userThumb ? `<img src="${this._escHtml(userThumb)}" style="width:16px;height:16px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.2)" loading="lazy" onerror="this.style.display='none'">` : "";
+    const avatarEl = userThumb ? `<img src="${this._escHtml(userThumb)}" style="width:12px;height:12px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.2)" loading="lazy" onerror="this.style.display='none'">` : "";
     const userBadge = userName ? `<div class="stream-user-tag">
         ${avatarEl}
         <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${this._escHtml(userName)}</span>
@@ -8451,6 +8492,459 @@ var _WireTautulliMethods = class {
   }
 };
 var wireTautulliMixin = _WireTautulliMethods.prototype;
+
+// src/wire/jellystat.js
+var _WireJellystatMethods = class {
+  _wireJellystatPosters(right) {
+    right.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-js-open]");
+      if (!card) return;
+      this._openJellystatModal(card.dataset.jsOpen);
+    });
+  }
+  _wireJellystatModal(el) {
+    el.querySelector("#js-close")?.addEventListener("click", () => this._closeJellystatModal());
+    el.addEventListener("click", (e) => {
+      if (e.target === el) this._closeJellystatModal();
+    });
+    el.querySelectorAll("[data-js-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const t = btn.dataset.jsTab;
+        if (!t || !this._jellystatModal) return;
+        el.querySelectorAll("[data-js-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        this._jellystatModal.tab = t;
+        const titleEl = el.querySelector("#js-hdr-title");
+        if (titleEl) titleEl.textContent = this._jsTabTitle(t);
+        this._jsLoadTab(t, el);
+      });
+    });
+  }
+  _wireJellystatModalBody(body) {
+    body.querySelector("#js-libs-search")?.addEventListener("input", (e) => {
+      if (!this._jellystatModal) return;
+      const pos = e.target.selectionStart;
+      this._jellystatModal.libsSearch = e.target.value || "";
+      this._jellystatModal.libsPage = 0;
+      body.innerHTML = this._jsBodyLibraries();
+      this._wireJellystatModalBody(body);
+      const inp = body.querySelector("#js-libs-search");
+      if (inp) {
+        inp.focus();
+        inp.setSelectionRange(pos, pos);
+      }
+    });
+    body.querySelectorAll("[data-js-lib-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const col = th.dataset.jsLibSort;
+        if (this._jellystatModal.libsSortCol === col) {
+          this._jellystatModal.libsSortDir = this._jellystatModal.libsSortDir === "asc" ? "desc" : "asc";
+        } else {
+          this._jellystatModal.libsSortCol = col;
+          this._jellystatModal.libsSortDir = "desc";
+        }
+        this._jellystatModal.libsPage = 0;
+        body.innerHTML = this._jsBodyLibraries();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-js-lpage]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const m = this._jellystatModal;
+        const perPage = this._tlCalcPerPage();
+        const totalPages = Math.max(1, Math.ceil((m.libsData?.length || 0) / perPage));
+        const val = btn.dataset.jsLpage;
+        let p = m.libsPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.libsPage) return;
+        m.libsPage = p;
+        body.innerHTML = this._jsBodyLibraries();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelector("#js-libs-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._jellystatModal) return;
+      this._jellystatModal.libsColsOpen = !this._jellystatModal.libsColsOpen;
+      const menu = body.querySelector("#js-libs-cols-menu");
+      if (menu) menu.style.display = this._jellystatModal.libsColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-js-lib-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const hidden = this._jsHidden("libsHiddenCols", ["type"]);
+        const col = item.dataset.jsLibCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._jsSaveColPrefs();
+        this._jellystatModal.libsColsOpen = true;
+        body.innerHTML = this._jsBodyLibraries();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelector("#js-libs-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._jellystatModal) return;
+      this._jellystatModal.libsMobColsOpen = !this._jellystatModal.libsMobColsOpen;
+      const menu = body.querySelector("#js-libs-mob-cols-menu");
+      if (menu) menu.style.display = this._jellystatModal.libsMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-js-lib-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const hidden = this._jsHidden("libsMobHiddenCols", ["type"]);
+        const col = item.dataset.jsLibMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._jsSaveColPrefs();
+        this._jellystatModal.libsMobColsOpen = true;
+        body.innerHTML = this._jsBodyLibraries();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelector("#js-users-search")?.addEventListener("input", (e) => {
+      if (!this._jellystatModal) return;
+      const pos = e.target.selectionStart;
+      this._jellystatModal.usersSearch = e.target.value || "";
+      this._jellystatModal.usersPage = 0;
+      body.innerHTML = this._jsBodyUsers();
+      this._wireJellystatModalBody(body);
+      const inp = body.querySelector("#js-users-search");
+      if (inp) {
+        inp.focus();
+        inp.setSelectionRange(pos, pos);
+      }
+    });
+    body.querySelectorAll("[data-js-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const col = th.dataset.jsSort;
+        if (this._jellystatModal.usersSortCol === col) {
+          this._jellystatModal.usersSortDir = this._jellystatModal.usersSortDir === "asc" ? "desc" : "asc";
+        } else {
+          this._jellystatModal.usersSortCol = col;
+          this._jellystatModal.usersSortDir = "desc";
+        }
+        this._jellystatModal.usersPage = 0;
+        body.innerHTML = this._jsBodyUsers();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-js-upage]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const m = this._jellystatModal;
+        const perPage = this._tlCalcPerPage();
+        const totalPages = Math.max(1, Math.ceil((m.usersData?.length || 0) / perPage));
+        const val = btn.dataset.jsUpage;
+        let p = m.usersPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.usersPage) return;
+        m.usersPage = p;
+        body.innerHTML = this._jsBodyUsers();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelector("#js-users-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._jellystatModal) return;
+      this._jellystatModal.usersColsOpen = !this._jellystatModal.usersColsOpen;
+      const menu = body.querySelector("#js-users-cols-menu");
+      if (menu) menu.style.display = this._jellystatModal.usersColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-js-usr-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const hidden = this._jsHidden("usersHiddenCols", ["userId"]);
+        const col = item.dataset.jsUsrCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._jsSaveColPrefs();
+        this._jellystatModal.usersColsOpen = true;
+        body.innerHTML = this._jsBodyUsers();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelector("#js-users-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._jellystatModal) return;
+      this._jellystatModal.usersMobColsOpen = !this._jellystatModal.usersMobColsOpen;
+      const menu = body.querySelector("#js-users-mob-cols-menu");
+      if (menu) menu.style.display = this._jellystatModal.usersMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-js-usr-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const hidden = this._jsHidden("usersMobHiddenCols", ["lastSeen", "userId"]);
+        const col = item.dataset.jsUsrMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._jsSaveColPrefs();
+        this._jellystatModal.usersMobColsOpen = true;
+        body.innerHTML = this._jsBodyUsers();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelector("#js-hist-user-sel")?.addEventListener("change", async (e) => {
+      if (!this._jellystatModal) return;
+      this._jellystatModal.histUser = e.target.value || null;
+      this._jellystatModal.histPage = 0;
+      await this._jsRefetchHistory(body);
+    });
+    body.querySelectorAll("[data-js-hist-pm]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._jellystatModal) return;
+        this._jellystatModal.histPlayMethod = btn.dataset.jsHistPm || null;
+        this._jellystatModal.histPage = 0;
+        await this._jsRefetchHistory(body);
+      });
+    });
+    {
+      let _jsHistTimer = null;
+      body.querySelector("#js-hist-search")?.addEventListener("input", (e) => {
+        if (!this._jellystatModal) return;
+        this._jellystatModal.histSearch = e.target.value || "";
+        this._jellystatModal.histPage = 0;
+        clearTimeout(_jsHistTimer);
+        _jsHistTimer = setTimeout(async () => {
+          const inp0 = body.querySelector("#js-hist-search");
+          const sel0 = inp0?.selectionStart ?? null;
+          await this._jsRefetchHistory(body);
+          const inp = body.querySelector("#js-hist-search");
+          if (inp && sel0 !== null) {
+            inp.focus();
+            inp.setSelectionRange(sel0, sel0);
+          }
+        }, 400);
+      });
+    }
+    body.querySelectorAll("[data-js-hpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._jellystatModal) return;
+        const m = this._jellystatModal;
+        const perPage = this._tlCalcPerPage({ hasFilter: true });
+        const totalPages = Math.max(1, Math.ceil(m.histTotal / perPage));
+        const val = btn.dataset.jsHpage;
+        let p = m.histPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.histPage) return;
+        m.histPage = p;
+        await this._jsRefetchHistory(body);
+      });
+    });
+    body.querySelector("#js-hist-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._jellystatModal) return;
+      this._jellystatModal.histColsOpen = !this._jellystatModal.histColsOpen;
+      const menu = body.querySelector("#js-hist-cols-menu");
+      if (menu) menu.style.display = this._jellystatModal.histColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-js-hist-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const hidden = this._jsHidden("histHiddenCols", ["playMethod"]);
+        const col = item.dataset.jsHistCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._jsSaveColPrefs();
+        this._jellystatModal.histColsOpen = true;
+        body.innerHTML = this._jsBodyHistory();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    body.querySelector("#js-hist-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._jellystatModal) return;
+      this._jellystatModal.histMobColsOpen = !this._jellystatModal.histMobColsOpen;
+      const menu = body.querySelector("#js-hist-mob-cols-menu");
+      if (menu) menu.style.display = this._jellystatModal.histMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-js-hist-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._jellystatModal) return;
+        const hidden = this._jsHidden("histMobHiddenCols", ["client", "device", "playMethod"]);
+        const col = item.dataset.jsHistMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._jsSaveColPrefs();
+        this._jellystatModal.histMobColsOpen = true;
+        body.innerHTML = this._jsBodyHistory();
+        this._wireJellystatModalBody(body);
+      });
+    });
+    this._wireJsGraphControls(body);
+  }
+  // ── Graph controls ────────────────────────────────────────────────────────
+  _wireJsGraphControls(body) {
+    if (!body) return;
+    body.querySelectorAll("[data-js-g-metric]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._jellystatModal;
+        if (!m) return;
+        const v = btn.dataset.jsGMetric;
+        if (v === m.graphsMetric) return;
+        m.graphsMetric = v;
+        m.graphsData = null;
+        await this._jsRefetchGraphs(body);
+      });
+    });
+    {
+      let _jsRangeTimer = null;
+      const doRangeRefetch = async (inputEl) => {
+        const m = this._jellystatModal;
+        if (!m) return;
+        m.graphsRange = Math.max(1, parseInt(inputEl.value) || 1);
+        m.graphsData = null;
+        await this._jsRefetchGraphs(body);
+      };
+      const rangeEl = body.querySelector("#js-g-range");
+      if (rangeEl) {
+        rangeEl.addEventListener("input", (e) => {
+          clearTimeout(_jsRangeTimer);
+          _jsRangeTimer = setTimeout(() => doRangeRefetch(e.target), 700);
+        });
+        rangeEl.addEventListener("change", (e) => {
+          clearTimeout(_jsRangeTimer);
+          doRangeRefetch(e.target);
+        });
+      }
+    }
+    const _VBW = 1e3, _SVH = 200;
+    const _fixTop = (x, y, w, h, rx, ry) => {
+      rx = Math.min(rx, w / 2);
+      ry = Math.min(ry, h / 2);
+      if (rx < 0.5 || ry < 0.5) return "M" + x + "," + (y + h) + " L" + x + "," + y + " L" + (x + w) + "," + y + " L" + (x + w) + "," + (y + h) + " Z";
+      const f = (n) => n.toFixed(2);
+      return "M" + f(x) + "," + f(y + h) + " L" + f(x) + "," + f(y + ry) + " Q" + f(x) + "," + f(y) + " " + f(x + rx) + "," + f(y) + " L" + f(x + w - rx) + "," + f(y) + " Q" + f(x + w) + "," + f(y) + " " + f(x + w) + "," + f(y + ry) + " L" + f(x + w) + "," + f(y + h) + " Z";
+    };
+    const fixSvg = (svg) => {
+      const svgW = svg.getBoundingClientRect().width;
+      if (!svgW) return;
+      const scaleX = svgW / _VBW;
+      svg.querySelectorAll("circle").forEach((c) => {
+        const r = parseFloat(c.getAttribute("r")) || 0;
+        const el = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+        el.setAttribute("cx", c.getAttribute("cx") || "0");
+        el.setAttribute("cy", c.getAttribute("cy") || "0");
+        el.setAttribute("rx", String(r));
+        el.setAttribute("ry", String(r * scaleX));
+        el.setAttribute("data-js-dot-r", String(r));
+        const fill = c.getAttribute("fill");
+        if (fill) el.setAttribute("fill", fill);
+        const styl = c.getAttribute("style");
+        if (styl) el.setAttribute("style", styl);
+        c.parentNode.replaceChild(el, c);
+      });
+      svg.querySelectorAll("ellipse[data-js-dot-r]").forEach((el) => {
+        const r = parseFloat(el.getAttribute("data-js-dot-r")) || 0;
+        el.setAttribute("ry", String(r * scaleX));
+      });
+      svg.querySelectorAll("path[data-tl-rr]").forEach((p) => {
+        const rr = parseFloat(p.getAttribute("data-tl-rr")) || 0;
+        const bx = parseFloat(p.getAttribute("data-tl-bx")) || 0;
+        const by = parseFloat(p.getAttribute("data-tl-by")) || 0;
+        const bw = parseFloat(p.getAttribute("data-tl-bw")) || 0;
+        const bh = parseFloat(p.getAttribute("data-tl-bh")) || 0;
+        p.setAttribute("d", _fixTop(bx, by, bw, bh, rr, rr * scaleX));
+      });
+    };
+    requestAnimationFrame(() => {
+      body.querySelectorAll(".tl-g-svg").forEach((svg) => {
+        fixSvg(svg);
+        if (typeof ResizeObserver !== "undefined") {
+          const ro = new ResizeObserver(() => fixSvg(svg));
+          ro.observe(svg);
+        }
+      });
+    });
+    body.querySelectorAll(".tl-g-card").forEach((card) => {
+      let activeCol = null;
+      const tipEl = card.querySelector(".tl-g-tip");
+      if (!tipEl) return;
+      const showColTip = (colData, eClientX, eClientY) => {
+        if (!colData.vals || !colData.vals.length) return;
+        const lbl = colData.lbl || "";
+        const rows = colData.vals.map((v) => {
+          const disp = v.fv != null ? v.fv : v.v;
+          return '<div style="display:flex;align-items:center;gap:6px;padding:1px 0"><span style="width:6px;height:6px;border-radius:1px;background:' + (v.hex || "var(--is-text-muted)") + ';flex-shrink:0"></span><span style="color:var(--is-text-muted)">' + v.n + '</span><span style="font-weight:600;color:var(--is-text);margin-left:auto;padding-left:10px">' + disp + "</span></div>";
+        }).join("");
+        const totDisp = colData.ftot != null ? colData.ftot : colData.tot;
+        const totRow = totDisp != null ? '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--is-divider);margin-top:4px;padding-top:4px"><span style="color:var(--is-text-muted);font-weight:600">Total</span><span style="font-weight:700;color:var(--is-text)">' + totDisp + "</span></div>" : "";
+        tipEl.innerHTML = '<div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px">' + lbl + "</div>" + rows + totRow;
+        const cardRect = tipEl.parentElement.getBoundingClientRect();
+        let tipLeft = eClientX - cardRect.left;
+        let tipTop = eClientY - cardRect.top - 8;
+        tipEl.style.display = "block";
+        tipEl.style.left = "0";
+        tipEl.style.top = "0";
+        const tipW = tipEl.offsetWidth, tipH = tipEl.offsetHeight, contW = cardRect.width;
+        tipLeft = Math.max(4, Math.min(tipLeft - tipW / 2, contW - tipW - 4));
+        tipTop = Math.max(4, tipTop - tipH);
+        tipEl.style.left = tipLeft + "px";
+        tipEl.style.top = tipTop + "px";
+      };
+      const clearHighlights = () => card.querySelectorAll(".tl-g-lhlt").forEach((r) => r.style.opacity = "0");
+      const hideTip = () => {
+        tipEl.style.display = "none";
+        activeCol = null;
+        clearHighlights();
+      };
+      card.addEventListener("click", (e) => {
+        const lcol = e.target.closest(".tl-g-lcol");
+        if (lcol) {
+          if (lcol === activeCol) {
+            hideTip();
+            return;
+          }
+          clearHighlights();
+          activeCol = lcol;
+          const hlt = lcol.querySelector(".tl-g-lhlt");
+          if (hlt) hlt.style.opacity = "1";
+          let colData2;
+          try {
+            colData2 = JSON.parse(lcol.dataset.tlGCol);
+          } catch {
+            return;
+          }
+          showColTip(colData2, e.clientX, e.clientY);
+          return;
+        }
+        const col = e.target.closest(".tl-g-col");
+        if (!col || !col.dataset.tlGCol) {
+          hideTip();
+          return;
+        }
+        if (col === activeCol) {
+          hideTip();
+          return;
+        }
+        clearHighlights();
+        activeCol = col;
+        let colData;
+        try {
+          colData = JSON.parse(col.dataset.tlGCol);
+        } catch {
+          return;
+        }
+        showColTip(colData, e.clientX, e.clientY);
+      });
+    });
+  }
+};
+var wireJellystatMixin = _WireJellystatMethods.prototype;
 
 // src/popup/index.js
 var _PopupMethods = class {
@@ -11156,20 +11650,25 @@ var tautulliMixin = _TautulliMethods.prototype;
 
 // src/render/tautulli-graphs.js
 var _TL_G_HEX = {
-  "Movies": "#FF9F0A",
-  "TV": "#32ADE6",
-  "Music": "#4CD964",
-  "Live TV": "#FF375F",
-  "Direct Play": "#30D158",
+  "Movies": "#FF9500",
+  "TV": "#007AFF",
+  "Music": "#34C759",
+  "Live TV": "#FF2D55",
+  "Direct Play": "#34C759",
   "Direct Stream": "#007AFF",
   "Transcode": "#FF3B30"
 };
+var _TL_G_FALLBACK = ["#007AFF", "#FF9500", "#34C759", "#FF2D55", "#BF5AF2", "#FF3B30", "#5AC8FA", "#FFCC00"];
 var _TL_G_VBW = 1e3;
 var _TL_G_SVH = 200;
 var _TL_G_DISP = 200;
 var _P = { l: 12, r: 6, t: 18, b: 6 };
-function _tlGHex(n) {
-  return _TL_G_HEX[n] || "#8888aa";
+function _tlGHex(n, si) {
+  if (_TL_G_HEX[n]) return _TL_G_HEX[n];
+  if (si !== void 0) return _TL_G_FALLBACK[si % _TL_G_FALLBACK.length];
+  let h = 0;
+  for (let i = 0; i < n.length; i++) h = h * 31 + n.charCodeAt(i) & 65535;
+  return _TL_G_FALLBACK[h % _TL_G_FALLBACK.length];
 }
 function _tlGAttr(v) {
   return String(v).replace(/"/g, "&quot;");
@@ -11308,7 +11807,7 @@ var _TautulliGraphsMethods = class {
   _tlGCard(title, rawData, chartHtml) {
     const series = (rawData?.response?.data?.series || []).filter((s) => s.name !== "Total");
     const legend = series.map(
-      (s) => `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)"><span style="width:7px;height:7px;border-radius:2px;background:${_tlGHex(s.name)};flex-shrink:0;display:inline-block;opacity:0.9"></span>${s.name}</span>`
+      (s, si) => `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)"><span style="width:7px;height:7px;border-radius:2px;background:${_tlGHex(s.name, si)};flex-shrink:0;display:inline-block;opacity:0.9"></span>${s.name}</span>`
     ).join("");
     return `<div class="tl-g-card" style="position:relative">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
@@ -11351,7 +11850,7 @@ var _TautulliGraphsMethods = class {
     const cid = opts.chartId || "g";
     const isDur = !!opts.isDuration;
     const defs = "<defs>" + series.map((s, si) => {
-      const h = _tlGHex(s.name);
+      const h = _tlGHex(s.name, si);
       return `<linearGradient id="tl-gb-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.92"/><stop offset="100%" stop-color="${h}" stop-opacity="0.42"/></linearGradient>`;
     }).join("") + "</defs>";
     const serGrad = {};
@@ -11370,9 +11869,9 @@ var _TautulliGraphsMethods = class {
       const x = _P.l + i * slotW + (slotW - bw) / 2;
       const total = series.reduce((s, ser) => s + ((ser.data || [])[i] || 0), 0);
       const sorted = series.slice().sort((a, b) => ((a.data || [])[i] || 0) - ((b.data || [])[i] || 0));
-      const tipVals = sorted.filter((s) => ((s.data || [])[i] || 0) > 0).reverse().map((s) => {
+      const tipVals = sorted.filter((s) => ((s.data || [])[i] || 0) > 0).reverse().map((s, si) => {
         const v = (s.data || [])[i] || 0;
-        return { n: s.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(s.name) };
+        return { n: s.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(s.name, si) };
       });
       const tipData = _tlGAttr(JSON.stringify({
         lbl: cat,
@@ -11386,7 +11885,7 @@ var _TautulliGraphsMethods = class {
           const v = (ser.data || [])[i] || 0;
           if (!v) return;
           const h = v / maxV * cH;
-          const fill = serGrad[ser.name] || _tlGHex(ser.name);
+          const fill = serGrad[ser.name] || _tlGHex(ser.name, series.indexOf(ser));
           const isTop = si2 === sorted.length - 1 || sorted.slice(si2 + 1).every((s2) => !((s2.data || [])[i] || 0));
           curY -= h;
           const pathD = isTop ? this._tlGRoundedTop(x, curY, bw, h, rr) : `M${x},${curY + h} L${x},${curY} L${x + bw},${curY} L${x + bw},${curY + h} Z`;
@@ -11448,7 +11947,7 @@ var _TautulliGraphsMethods = class {
       }));
     });
     let di = series.map((s, si) => {
-      const h = _tlGHex(s.name);
+      const h = _tlGHex(s.name, si);
       return `<linearGradient id="tl-gl-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.18"/><stop offset="100%" stop-color="${h}" stop-opacity="0"/></linearGradient>`;
     }).join("");
     series.forEach((ser, si) => {
@@ -11468,13 +11967,13 @@ var _TautulliGraphsMethods = class {
     series.forEach((ser, si) => {
       const pts = seriesPts[si];
       if (!pts.some((p) => p.v > 0)) return;
-      const hex = _tlGHex(ser.name);
+      const hex = _tlGHex(ser.name, si);
       out += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tl-gl-${cid}-${si})"/>`;
       out += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line" mask="url(#tl-lmask-${cid}-${si})"/>`;
     });
     series.forEach((ser, si) => {
       const pts = seriesPts[si];
-      const hex = _tlGHex(ser.name);
+      const hex = _tlGHex(ser.name, si);
       pts.forEach((p) => {
         if (!p.v) return;
         const tipJson = _tlGAttr(JSON.stringify({ lbl: p.cat, name: ser.name, val: p.v, hex }));
@@ -11483,9 +11982,9 @@ var _TautulliGraphsMethods = class {
     });
     cats.forEach((cat, i) => {
       const rx = colL(i), rw = colR(i) - rx;
-      const tipVals = series.map((ser) => {
+      const tipVals = series.map((ser, si) => {
         const v = (ser.data || [])[i] || 0;
-        return { n: ser.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(ser.name) };
+        return { n: ser.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(ser.name, si) };
       }).filter((v) => v.v > 0).sort((a, b) => b.v - a.v);
       const tot = tipVals.reduce((s, v) => s + v.v, 0);
       const td = _tlGAttr(JSON.stringify({ lbl: cat, tot, ftot: isDur ? _tlGFmtDur(tot) : null, vals: tipVals }));
@@ -11603,6 +12102,775 @@ var _TautulliGraphsMethods = class {
 };
 var tautulliGraphsMixin = _TautulliGraphsMethods.prototype;
 
+// src/render/jellystat-shared.js
+var _JellystatSharedMethods = class {
+  _jsHidden(key, defaults) {
+    const m = this._jellystatModal;
+    if (!m) return new Set(defaults);
+    if (!m[key]) m[key] = new Set(defaults);
+    return m[key];
+  }
+  async _jsLoadColPrefs() {
+    try {
+      const r = await this._hass.callWS({ type: "frontend/get_user_data", key: "arr-js-cols" });
+      return r?.value || {};
+    } catch {
+      return {};
+    }
+  }
+  _jsSaveColPrefs() {
+    const m = this._jellystatModal;
+    if (!m) return;
+    const KEYS = ["libsHiddenCols", "libsMobHiddenCols", "usersHiddenCols", "usersMobHiddenCols", "histHiddenCols", "histMobHiddenCols"];
+    const value = {};
+    for (const k of KEYS) if (m[k]) value[k] = [...m[k]];
+    this._hass.callWS({ type: "frontend/store_user_data", key: "arr-js-cols", value }).catch(() => {
+    });
+  }
+  _jsUserSelect(id, users, selUser) {
+    const _TL_SEL_STY2 = "margin:0 4px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;color:var(--is-text,#fff);padding:4px 8px;font-size:12px";
+    const opts = [
+      '<option value="">All users</option>',
+      ...(users || []).map((u) => {
+        const name = u.UserName || u.Name || u.UserId || "";
+        return '<option value="' + name + '"' + (String(selUser || "") === String(name) ? " selected" : "") + ">" + name + "</option>";
+      })
+    ].join("");
+    return '<select id="' + id + '" style="' + _TL_SEL_STY2 + ';max-width:130px">' + opts + "</select>";
+  }
+  _jsMediaTypeBadge(t) {
+    t = (t || "").toLowerCase();
+    if (t === "movie") return "Movie";
+    if (t === "episode") return "Episode";
+    if (t === "audio" || t === "musicvideo") return "Music";
+    return t || "";
+  }
+};
+var jellystatSharedMixin = _JellystatSharedMethods.prototype;
+
+// src/render/jellystat-table.js
+var _jsSortTh = (c, sortCol, sortDir, dataAttr) => "<th data-" + dataAttr + '="' + c.sort + '" style="' + (c.right ? "text-align:right;" : "") + 'cursor:pointer;user-select:none"><span style="white-space:nowrap">' + c.label + ' <span style="opacity:' + (c.sort === sortCol ? 1 : 0.3) + ';font-size:9px">' + (c.sort === sortCol ? sortDir === "asc" ? "&#8593;" : "&#8595;" : "&#8597;") + "</span></span></th>";
+var _JellystatTableMethods = class {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Libraries
+  // ──────────────────────────────────────────────────────────────────────────
+  _jsBodyLibraries() {
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const m = this._jellystatModal || {};
+    const page = m.libsPage || 0;
+    const perPage = this._tlCalcPerPage();
+    const sortCol = m.libsSortCol || "plays";
+    const sortDir = m.libsSortDir || "desc";
+    const search = (m.libsSearch || "").toLowerCase().trim();
+    const data = m.libsData || [];
+    const hasSeasons = data.some((l) => l.Season_Count > 0);
+    const hasEpisodes = data.some((l) => l.Episode_Count > 0);
+    const hasStreamed = data.some((l) => l.LastActivity);
+    const hasLastPlayed = data.some((l) => l.ItemName);
+    const defaultHidden = /* @__PURE__ */ new Set();
+    if (!hasSeasons) defaultHidden.add("seasons");
+    if (!hasEpisodes) defaultHidden.add("episodes");
+    if (!hasStreamed) defaultHidden.add("streamed");
+    if (!hasLastPlayed) defaultHidden.add("lastPlayed");
+    const hidden = this._jsHidden("libsHiddenCols", [...defaultHidden]);
+    const mobH = this._jsHidden("libsMobHiddenCols", ["seasons", "episodes", "streamed", "lastPlayed", "duration"]);
+    const fmtInterval = (iv) => {
+      if (!iv) return null;
+      const s = String(iv);
+      const dayM = s.match(/^(\d+)\s+days?/);
+      const days = dayM ? parseInt(dayM[1]) : 0;
+      const timeM = s.match(/(\d+):(\d+):/);
+      const hours = timeM ? parseInt(timeM[1]) : 0;
+      const mins = timeM ? parseInt(timeM[2]) : 0;
+      const totalH = days * 24 + hours;
+      if (totalH >= 48) return Math.floor(totalH / 24) + "d ago";
+      if (totalH >= 1) return totalH + "h ago";
+      if (mins >= 1) return mins + "m ago";
+      return "just now";
+    };
+    const filtered = search ? data.filter((l) => (l.Name || "").toLowerCase().includes(search)) : data;
+    const sorted = filtered.slice().sort((a, b) => {
+      let av, bv;
+      if (sortCol === "plays") {
+        av = Number(a.Plays) || 0;
+        bv = Number(b.Plays) || 0;
+      } else if (sortCol === "duration") {
+        av = a.total_playback_duration || 0;
+        bv = b.total_playback_duration || 0;
+      } else if (sortCol === "count") {
+        av = a.Library_Count || 0;
+        bv = b.Library_Count || 0;
+      } else if (sortCol === "seasons") {
+        av = a.Season_Count || 0;
+        bv = b.Season_Count || 0;
+      } else if (sortCol === "episodes") {
+        av = a.Episode_Count || 0;
+        bv = b.Episode_Count || 0;
+      } else if (sortCol === "lastPlayed") {
+        av = (a.ItemName || "").toLowerCase();
+        bv = (b.ItemName || "").toLowerCase();
+      } else {
+        av = (a.Name || "").toLowerCase();
+        bv = (b.Name || "").toLowerCase();
+      }
+      return sortDir === "asc" ? av > bv ? 1 : -1 : av < bv ? 1 : -1;
+    });
+    const tot = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const page2 = Math.min(page, totalPages - 1);
+    const sliced = sorted.slice(page2 * perPage, (page2 + 1) * perPage);
+    const COLS = [
+      { key: "name", label: "Library", sort: "name", right: false },
+      { key: "count", label: "Items", sort: "count", right: true },
+      { key: "seasons", label: "Seasons / Albums", sort: "seasons", right: true },
+      { key: "episodes", label: "Episodes / Tracks", sort: "episodes", right: true },
+      { key: "streamed", label: "Streamed", sort: "streamed", right: false },
+      { key: "lastPlayed", label: "Last Played", sort: "lastPlayed", right: false },
+      { key: "plays", label: "Plays", sort: "plays", right: true },
+      { key: "duration", label: "Duration", sort: "duration", right: true }
+    ];
+    const vis = COLS.filter((c) => !hidden.has(c.key));
+    const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "name"), hidden, "data-js-lib-col");
+    const deskColsBtn = this._tlColsMenu("js-libs-cols-btn", "js-libs-cols-menu", deskColItems, m.libsColsOpen);
+    const MOB_LIB_COLS = [
+      { key: "seasons", label: "Seasons/Albums" },
+      { key: "episodes", label: "Episodes/Tracks" },
+      { key: "streamed", label: "Streamed" },
+      { key: "lastPlayed", label: "Last Played" },
+      { key: "duration", label: "Duration" }
+    ];
+    const mobColItems = this._tlColItems(MOB_LIB_COLS, mobH, "data-js-lib-mob-col");
+    const mobColsBtn = this._tlColsMenu("js-libs-mob-cols-btn", "js-libs-mob-cols-menu", mobColItems, m.libsMobColsOpen);
+    const colsBtn = isMob ? mobColsBtn : deskColsBtn;
+    const searchEl = this._tlSearchInput("js-libs-search", m.libsSearch);
+    const searchFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const toolbar = '<div class="tl-toolbar">' + searchFlex + '<div class="tl-toolbar-actions">' + colsBtn + "</div></div>";
+    const _libIcon = (lib) => {
+      const ct = (lib.CollectionType || lib.Type || "").toLowerCase();
+      const t = ct.includes("movie") ? "movie" : ct.includes("tv") || ct.includes("show") ? "show" : ct.includes("music") || ct.includes("audio") ? "artist" : ct;
+      return t;
+    };
+    if (isMob) {
+      const cards = sliced.map((lib) => {
+        const icon = this._tlLibSvgIcon(_libIcon(lib), lib.Name || "", "sm");
+        const plays = Number(lib.Plays) || 0;
+        const dur = lib.total_playback_duration ? this._tlFmtDuration(lib.total_playback_duration) : null;
+        const mp = [];
+        if (!mobH.has("streamed") && lib.LastActivity) mp.push("<span>" + (fmtInterval(lib.LastActivity) || "&#x2014;") + "</span>");
+        if (!mobH.has("seasons") && lib.Season_Count > 0) mp.push('<span style="color:var(--is-text-label)">' + lib.Season_Count + " seasons</span>");
+        if (!mobH.has("episodes") && lib.Episode_Count > 0) mp.push('<span style="color:var(--is-text-label)">' + lib.Episode_Count + " episodes</span>");
+        if (!mobH.has("lastPlayed") && lib.ItemName) mp.push('<span style="color:var(--is-text-muted)">' + lib.ItemName + "</span>");
+        if (!mobH.has("duration") && dur) mp.push('<span style="color:var(--is-text-label)">' + dur + "</span>");
+        return '<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">' + icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"') + '</div><div style="flex:1;min-width:0"><div class="tl-mob-name">' + (lib.Name || "&#x2014;") + "</div>" + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + "</div>" : "") + '</div><div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">' + (lib.Library_Count ?? "&#x2014;") + '</div><div style="font-size:11px;color:var(--is-text-label)">&#9654; ' + plays + "</div></div></div></div>";
+      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</div>';
+      return toolbar + "<div>" + cards + "</div>" + this._tlMobPag("js-lpage", page2, totalPages);
+    }
+    const thead = vis.map((c) => _jsSortTh(c, sortCol, sortDir, "js-lib-sort")).join("");
+    const rows = sliced.map((lib) => {
+      const icon = this._tlLibSvgIcon(_libIcon(lib), lib.Name || "", "md");
+      const dur = lib.total_playback_duration ? this._tlFmtDuration(lib.total_playback_duration) : "&#x2014;";
+      const streamedStr = fmtInterval(lib.LastActivity);
+      const cm = {
+        name: '<td style="max-width:180px"><span style="display:flex;align-items:center;min-width:0">' + icon + '<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (lib.Name || "&#x2014;") + "</strong></span></td>",
+        count: '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (lib.Library_Count ?? "&#x2014;") + "</td>",
+        seasons: '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Season_Count > 0 ? lib.Season_Count : "&#x2014;") + "</td>",
+        episodes: '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Episode_Count > 0 ? lib.Episode_Count : "&#x2014;") + "</td>",
+        streamed: '<td style="white-space:nowrap;font-size:11px">' + (streamedStr || '<span style="color:var(--is-text-muted)">never</span>') + "</td>",
+        lastPlayed: '<td style="max-width:200px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--is-text-label)">' + (lib.ItemName || '<span style="color:var(--is-text-muted)">n/a</span>') + "</div></td>",
+        plays: '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (Number(lib.Plays) || 0) + "</td>",
+        duration: '<td style="text-align:right">' + dur + "</td>"
+      };
+      return "<tr>" + vis.map((c) => cm[c.key] || "<td>&#x2014;</td>").join("") + "</tr>";
+    }).join("");
+    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-lpage", page2, perPage, tot, "libraries");
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Users
+  // ──────────────────────────────────────────────────────────────────────────
+  _jsBodyUsers() {
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const m = this._jellystatModal || {};
+    const page = m.usersPage || 0;
+    const perPage = this._tlCalcPerPage();
+    const sortCol = m.usersSortCol || "plays";
+    const sortDir = m.usersSortDir || "desc";
+    const search = (m.usersSearch || "").toLowerCase().trim();
+    const data = m.usersData || [];
+    const hasStreamed = data.some((u) => u.LastActivityDate);
+    const hasClient = data.some((u) => u.LastClient);
+    const hasLastPlayed = data.some((u) => u.LastWatched);
+    const defaultHidden = /* @__PURE__ */ new Set(["player"]);
+    if (!hasClient) {
+      defaultHidden.add("platform");
+      defaultHidden.add("player");
+    }
+    if (!hasStreamed) defaultHidden.add("lastStreamed");
+    if (!hasLastPlayed) defaultHidden.add("lastPlayed");
+    const hidden = this._jsHidden("usersHiddenCols", [...defaultHidden]);
+    const mobH = this._jsHidden("usersMobHiddenCols", ["lastStreamed", "platform", "player", "lastPlayed"]);
+    const splitClient = (raw) => {
+      if (!raw) return ["", ""];
+      const idx = raw.indexOf(" - ");
+      return idx >= 0 ? [raw.slice(0, idx), raw.slice(idx + 3)] : [raw, ""];
+    };
+    const filtered = search ? data.filter((u) => (u.UserName || u.Name || "").toLowerCase().includes(search) || (u.LastWatched || "").toLowerCase().includes(search)) : data;
+    const sorted = filtered.slice().sort((a, b) => {
+      let av, bv;
+      if (sortCol === "plays") {
+        av = a.TotalPlays ?? 0;
+        bv = b.TotalPlays ?? 0;
+      } else if (sortCol === "duration") {
+        av = a.TotalWatchTime ?? 0;
+        bv = b.TotalWatchTime ?? 0;
+      } else if (sortCol === "lastStreamed") {
+        av = a.LastActivityDate || "";
+        bv = b.LastActivityDate || "";
+      } else if (sortCol === "lastPlayed") {
+        av = (a.LastWatched || "").toLowerCase();
+        bv = (b.LastWatched || "").toLowerCase();
+      } else if (sortCol === "platform") {
+        av = splitClient(a.LastClient)[0].toLowerCase();
+        bv = splitClient(b.LastClient)[0].toLowerCase();
+      } else {
+        av = (a.UserName || a.Name || "").toLowerCase();
+        bv = (b.UserName || b.Name || "").toLowerCase();
+      }
+      return sortDir === "asc" ? av > bv ? 1 : -1 : av < bv ? 1 : -1;
+    });
+    const tot = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const page2 = Math.min(page, totalPages - 1);
+    const sliced = sorted.slice(page2 * perPage, (page2 + 1) * perPage);
+    const COLS = [
+      { key: "user", label: "User", sort: "user", right: false },
+      { key: "lastStreamed", label: "Last Streamed", sort: "lastStreamed", right: false },
+      { key: "platform", label: "Platform", sort: "platform", right: false },
+      { key: "player", label: "Player", sort: "player", right: false },
+      { key: "lastPlayed", label: "Last Played", sort: "lastPlayed", right: false },
+      { key: "plays", label: "Total Plays", sort: "plays", right: true },
+      { key: "duration", label: "Total Duration", sort: "duration", right: true }
+    ];
+    const vis = COLS.filter((c) => !hidden.has(c.key));
+    const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "user"), hidden, "data-js-usr-col");
+    const deskColsBtn = this._tlColsMenu("js-users-cols-btn", "js-users-cols-menu", deskColItems, m.usersColsOpen);
+    const MOB_USR_COLS = [
+      { key: "lastStreamed", label: "Last Streamed" },
+      { key: "platform", label: "Platform" },
+      { key: "player", label: "Player" },
+      { key: "lastPlayed", label: "Last Played" }
+    ];
+    const mobColItems = this._tlColItems(MOB_USR_COLS, mobH, "data-js-usr-mob-col");
+    const mobColsBtn = this._tlColsMenu("js-users-mob-cols-btn", "js-users-mob-cols-menu", mobColItems, m.usersMobColsOpen);
+    const colsBtn = isMob ? mobColsBtn : deskColsBtn;
+    const searchEl = this._tlSearchInput("js-users-search", m.usersSearch);
+    const searchFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const toolbar = '<div class="tl-toolbar">' + searchFlex + '<div class="tl-toolbar-actions">' + colsBtn + "</div></div>";
+    if (isMob) {
+      const cards = sliced.map((u) => {
+        const name = u.UserName || u.Name || "&#x2014;";
+        const plays = u.TotalPlays ?? 0;
+        const dur = u.TotalWatchTime ? this._tlFmtDuration(u.TotalWatchTime) : "&#x2014;";
+        const [platform, player] = splitClient(u.LastClient);
+        const mp = [];
+        if (!mobH.has("lastStreamed") && u.LastActivityDate) mp.push("<span>" + this._tlFmtDate(u.LastActivityDate) + "</span>");
+        if (!mobH.has("platform") && platform) mp.push('<span style="color:var(--is-text-label)">' + platform + "</span>");
+        if (!mobH.has("player") && player) mp.push('<span style="color:var(--is-text-label)">' + player + "</span>");
+        if (!mobH.has("lastPlayed") && u.LastWatched) mp.push('<span style="color:var(--is-text-muted)">' + u.LastWatched + "</span>");
+        const av = '<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">' + (name[0] || "?").toUpperCase() + "</span>";
+        return '<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">' + av + '<div style="flex:1;min-width:0"><div class="tl-mob-name">' + name + "</div>" + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + "</div>" : "") + '</div><div style="text-align:right;flex-shrink:0"><div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ' + plays + '</div><div style="font-size:11px;color:var(--is-text-label)">' + dur + "</div></div></div></div>";
+      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</div>';
+      return toolbar + "<div>" + cards + "</div>" + this._tlMobPag("js-upage", page2, totalPages);
+    }
+    const thead = vis.map((c) => _jsSortTh(c, sortCol, sortDir, "js-sort")).join("");
+    const rows = sliced.map((u) => {
+      const name = u.UserName || u.Name || "&#x2014;";
+      const av = '<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">' + (name[0] || "?").toUpperCase() + "</span>";
+      const dur = u.TotalWatchTime ? this._tlFmtDuration(u.TotalWatchTime) : "&#x2014;";
+      const [platform, player] = splitClient(u.LastClient);
+      const cm = {
+        user: '<td><div style="display:flex;align-items:center;gap:8px">' + av + '<span style="font-weight:600">' + name + "</span></div></td>",
+        lastStreamed: '<td style="white-space:nowrap;font-size:11px">' + (u.LastActivityDate ? this._tlFmtDate(u.LastActivityDate) : '<span style="color:var(--is-text-muted)">never</span>') + "</td>",
+        platform: '<td style="color:var(--is-text-label)">' + (platform || "&#x2014;") + "</td>",
+        player: '<td style="color:var(--is-text-label)">' + (player || "&#x2014;") + "</td>",
+        lastPlayed: '<td style="max-width:200px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (u.LastWatched || "&#x2014;") + "</div></td>",
+        plays: '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (u.TotalPlays ?? 0) + "</td>",
+        duration: '<td style="text-align:right">' + dur + "</td>"
+      };
+      return "<tr>" + vis.map((c) => cm[c.key] || "<td>&#x2014;</td>").join("") + "</tr>";
+    }).join("");
+    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-upage", page2, perPage, tot, "users");
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // History
+  // ──────────────────────────────────────────────────────────────────────────
+  _jsBodyHistory() {
+    const m = this._jellystatModal;
+    if (!m) return "";
+    if (m.histLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const page = m.histPage || 0;
+    const perPage = this._tlCalcPerPage({ hasFilter: true });
+    const tot = m.histTotal || 0;
+    const data = m.histData || [];
+    const users = m.histUsers || [];
+    const selUser = m.histUser || "";
+    const selMethod = m.histPlayMethod || "";
+    const hidden = this._jsHidden("histHiddenCols", ["product", "player", "ip"]);
+    const mobH = this._jsHidden("histMobHiddenCols", ["product", "player", "started", "ip"]);
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const HIST_COLS = [
+      { key: "date", label: "Date" },
+      { key: "user", label: "User" },
+      { key: "product", label: "Product" },
+      { key: "player", label: "Player" },
+      { key: "title", label: "Title" },
+      { key: "started", label: "Started", right: true },
+      { key: "duration", label: "Duration", right: true },
+      { key: "ip", label: "IP", right: false }
+    ];
+    const vis = HIST_COLS.filter((c) => !hidden.has(c.key));
+    const userSel = this._jsUserSelect("js-hist-user-sel", users, selUser);
+    const pmBtns = ["", "DirectPlay", "DirectStream", "Transcode"].map((pm) => {
+      const label = pm === "" ? "All" : pm === "DirectPlay" ? "Direct Play" : pm === "DirectStream" ? "Direct Stream" : pm;
+      const active = selMethod === pm;
+      return '<button class="tl-page-btn' + (active ? " active" : "") + '" data-js-hist-pm="' + pm + '" style="white-space:nowrap">' + label + "</button>";
+    }).join("");
+    const colsBtn = isMob ? this._tlColsMenu(
+      "js-hist-mob-cols-btn",
+      "js-hist-mob-cols-menu",
+      this._tlColItems([{ key: "product", label: "Product" }, { key: "player", label: "Player" }, { key: "started", label: "Started" }, { key: "ip", label: "IP" }], mobH, "data-js-hist-mob-col"),
+      m.histMobColsOpen
+    ) : this._tlColsMenu(
+      "js-hist-cols-btn",
+      "js-hist-cols-menu",
+      this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-js-hist-col"),
+      m.histColsOpen
+    );
+    const srchEl = this._tlSearchInput("js-hist-search", m.histSearch);
+    const srchFlex = srchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    let toolbar;
+    if (isMob) {
+      toolbar = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' + srchFlex + '<div style="flex-shrink:0">' + colsBtn + '</div></div><div style="margin-bottom:6px">' + userSel.replace("max-width:130px", "width:100%;max-width:none").replace("margin:0 4px", "margin:0") + '</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">' + pmBtns + "</div>";
+    } else {
+      toolbar = '<div class="tl-toolbar">' + srchFlex + '<div class="tl-toolbar-actions">' + colsBtn + '</div></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' + userSel.replace("margin:0 4px", "margin:0") + pmBtns + "</div>";
+    }
+    if (!data.length) {
+      return toolbar + '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No history</div>';
+    }
+    const _fmtStarted = (ts) => {
+      if (!ts) return "\u2014";
+      try {
+        return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } catch {
+        return "\u2014";
+      }
+    };
+    const _titleHtml = (h) => {
+      const item = h.NowPlayingItemName || "\u2014";
+      if (!h.SeriesName) return item;
+      const ep = h.SeasonNumber != null && h.EpisodeNumber != null ? " S" + String(h.SeasonNumber).padStart(2, "0") + "E" + String(h.EpisodeNumber).padStart(2, "0") + " " : " \u2013 ";
+      return '<span style="color:var(--is-text-muted)">' + h.SeriesName + ep + "</span>" + item;
+    };
+    if (isMob) {
+      const cards = data.map((h) => {
+        const dur = h.PlaybackDuration ? this._tlFmtDuration(h.PlaybackDuration) : "\u2014";
+        const ago = h.ActivityDateInserted ? this._tlFmtDate(h.ActivityDateInserted) : "\u2014";
+        const mp = ["<span>" + (h.UserName || "\u2014") + "</span>", "<span>" + ago + "</span>"];
+        if (!mobH.has("product") && h.Client) mp.push('<span style="color:var(--is-text-label)">' + h.Client + "</span>");
+        if (!mobH.has("player") && h.DeviceName) mp.push('<span style="color:var(--is-text-label)">' + h.DeviceName + "</span>");
+        if (!mobH.has("started")) mp.push('<span style="color:var(--is-text-muted)">' + _fmtStarted(h.ActivityDateInserted) + "</span>");
+        return '<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _titleHtml(h) + '</div><div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + '</div></div><div style="text-align:right;flex-shrink:0;font-weight:600">' + dur + "</div></div></div>";
+      }).join("");
+      return toolbar + "<div>" + cards + "</div>" + this._tlMobPag("js-hpage", page, totalPages);
+    }
+    const thead = vis.map((c) => '<th style="' + (c.right ? "text-align:right;" : "") + 'white-space:nowrap">' + c.label + "</th>").join("");
+    const rows = data.map((h) => {
+      const cm = {
+        date: '<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">' + (h.ActivityDateInserted ? this._tlFmtDate(h.ActivityDateInserted) : "\u2014") + "</td>",
+        user: '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">' + (h.UserName || "\u2014") + "</td>",
+        product: '<td style="color:var(--is-text-label);white-space:nowrap">' + (h.Client || "\u2014") + "</td>",
+        player: '<td style="color:var(--is-text-label);white-space:nowrap">' + (h.DeviceName || "\u2014") + "</td>",
+        title: '<td style="max-width:260px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _titleHtml(h) + "</div></td>",
+        started: '<td style="text-align:right;white-space:nowrap;color:var(--is-text-label);font-size:12px">' + _fmtStarted(h.ActivityDateInserted) + "</td>",
+        duration: '<td style="text-align:right;white-space:nowrap;font-weight:600">' + (h.PlaybackDuration ? this._tlFmtDuration(h.PlaybackDuration) : "\u2014") + "</td>",
+        ip: '<td style="font-family:monospace;font-size:11px;color:var(--is-text-muted)">' + (h.RemoteEndPoint || "\u2014") + "</td>"
+      };
+      return "<tr>" + vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("") + "</tr>";
+    }).join("");
+    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" style="text-align:center;color:var(--is-text-muted);padding:30px">No history</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-hpage", page, perPage, tot, "history");
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Refetch helpers
+  // ──────────────────────────────────────────────────────────────────────────
+  async _jsRefetchHistory(body) {
+    const m = this._jellystatModal;
+    if (!m) return;
+    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    const perPage = this._tlCalcPerPage({ hasFilter: true });
+    const filters = [];
+    if (m.histUser) filters.push({ field: "UserName", value: m.histUser.toLowerCase() });
+    if (m.histPlayMethod) filters.push({ field: "PlayMethod", value: m.histPlayMethod.toLowerCase() });
+    let endpoint = "getHistory?page=" + ((m.histPage || 0) + 1) + "&size=" + perPage;
+    if (m.histSearch) endpoint += "&search=" + encodeURIComponent(m.histSearch);
+    if (filters.length) endpoint += "&filters=" + encodeURIComponent(JSON.stringify(filters));
+    const raw = await this._jsApiFetch(endpoint);
+    if (!this._jellystatModal) return;
+    m.histData = raw?.results || (Array.isArray(raw) ? raw : []);
+    m.histTotal = raw?.pages != null ? raw.pages * perPage : raw?.totalCount ?? m.histData.length;
+    body.innerHTML = this._jsBodyHistory();
+    this._wireJellystatModalBody(body);
+  }
+};
+var jellystatTableMixin = _JellystatTableMethods.prototype;
+
+// src/render/jellystat.js
+var _JellystatMethods = class {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Poster row — 4 cards in right panel
+  // ──────────────────────────────────────────────────────────────────────────
+  _renderJellystat() {
+    const data = this._jellystat || {};
+    return `
+      <div class="sec-card">
+        <div class="col-hdr" style="margin-bottom:5px">
+          <ha-icon icon="mdi:chart-bar" style="--mdc-icon-size:24px"></ha-icon>
+          <span class="col-hdr-title">Statistics (Jellyfin)</span>
+          <div class="col-hdr-line"></div>
+        </div>
+        <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8249;</button>
+          <div class="tl-row">
+            ${this._jsLibCard(data)}
+            ${this._jsUsersCard(data)}
+            ${this._jsHistoryCard(data)}
+            ${this._jsActivityCard(data.playsData)}
+          </div>
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8250;</button>
+        </div>
+      </div>`;
+  }
+  _jsLibCard(data) {
+    const libs = data.libraries || [];
+    const rows = libs.slice(0, 5).map((lib, i) => {
+      const ct = (lib.CollectionType || lib.Type || "").toLowerCase();
+      const type = ct.includes("movie") ? "movie" : ct.includes("tv") || ct.includes("show") ? "show" : ct.includes("music") || ct.includes("audio") ? "artist" : ct;
+      const count = lib.item_count ?? lib.ItemCount ?? lib.count ?? 0;
+      const dim = count === 0 ? ";opacity:0.28" : "";
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return '<div style="' + sep + 'display:flex;align-items:center;gap:5px;padding:4px 0">' + this._tlLibSvgIcon(type, lib.Name || "", "sm") + '<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:1px">' + (lib.Name || "&#x2014;") + '</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0' + dim + '">' + count + "</span></div>";
+    }).join("") || '<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No data</div>';
+    const sectTag = libs.length > 0 ? '<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + libs.length + "</span>" : "";
+    return '<div class="tl-card" data-js-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Libraries</span>' + sectTag + '</div><div style="flex:1;position:relative;z-index:2">' + rows + "</div></div>";
+  }
+  _jsUsersCard(data) {
+    const users = (data.users || []).slice(0, 5);
+    const active = (data.activity?.Sessions || []).length;
+    const items = users.map((u, i) => {
+      const name = u.Name || u.UserName || "&#x2014;";
+      const plays = u.Plays ?? u.TotalPlays ?? u.PlayCount ?? 0;
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      const av = '<span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:7px;font-weight:700;color:#fff">' + (name[0] || "?").toUpperCase() + "</span>";
+      return '<div style="' + sep + 'display:flex;align-items:center;gap:6px;padding:4px 0">' + av + '<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">' + name + '</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">' + plays + "</span></div>";
+    }).join("") || '<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>';
+    const activeTag = active > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + active + " active</span>" : "";
+    return '<div class="tl-card" data-js-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Users</span>' + activeTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
+  }
+  _jsHistoryCard(data) {
+    const hist = (data.recentHistory || []).slice(0, 3);
+    const streams = (data.activity?.Sessions || []).length;
+    const items = hist.map((h, i) => {
+      const title = h.NowPlayingItemName || h.ItemName || "&#x2014;";
+      const series = h.SeriesName ? " &middot; " + h.SeriesName : "";
+      const user = h.UserName || "";
+      const ago = h.ActivityDateInserted ? this._tlFmtDate(h.ActivityDateInserted) : "";
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return '<div style="' + sep + 'padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + series + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">' + user + (ago ? " &middot; " + ago : "") + "</div></div>";
+    }).join("") || '<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No history</div>';
+    const streamTag = streams > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + streams + " now</span>" : "";
+    return '<div class="tl-card" data-js-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>' + streamTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
+  }
+  _jsActivityCard(playsData) {
+    const days = (playsData || []).slice(-7);
+    const max = Math.max(...days.map((d) => d.value || 0), 1);
+    const total = days.reduce((s, d) => s + (d.value || 0), 0);
+    const bars = days.map((d) => {
+      const h = Math.max(d.value ? 2 : 0, Math.round((d.value || 0) / max * 100));
+      const gap = 100 - h;
+      return '<div style="flex:1;display:flex;flex-direction:column"><div style="flex:' + gap + '"></div><div style="flex:' + h + ";background:rgba(255,255,255,0.55);border-radius:2px 2px 0 0" + (d.value ? "" : ";display:none") + '"></div></div>';
+    }).join("");
+    const labels = days.map(
+      (d) => '<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">' + (d.date || "").slice(-2) + "</div>"
+    ).join("");
+    const playsTag = total > 0 ? '<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + total + " plays</span>" : "";
+    return '<div class="tl-card" data-js-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Charts</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">last 7 days</span></div>' + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:2px">' + (bars || "") + '</div><div style="display:flex;gap:2px;margin-top:2px">' + labels + "</div></div></div>";
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Modal
+  // ──────────────────────────────────────────────────────────────────────────
+  async _openJellystatModal(tab) {
+    tab = tab || "libraries";
+    const prefs = await this._jsLoadColPrefs();
+    const hSet = (key, defs) => prefs[key] ? new Set(prefs[key]) : new Set(defs);
+    this._jellystatModal = {
+      tab,
+      histPage: 0,
+      histSearch: "",
+      histUser: null,
+      histPlayMethod: null,
+      histTotal: 0,
+      histData: [],
+      histUsers: [],
+      histLoading: false,
+      histColsOpen: false,
+      histMobColsOpen: false,
+      histHiddenCols: hSet("histHiddenCols", ["playMethod"]),
+      histMobHiddenCols: hSet("histMobHiddenCols", ["client", "device", "playMethod"]),
+      graphsSub: "media",
+      graphsData: null,
+      graphsLoading: false,
+      graphsMetric: "plays",
+      graphsRange: window.matchMedia("(max-width:600px)").matches ? 7 : 30,
+      usersPage: 0,
+      usersSearch: "",
+      usersData: [],
+      usersTotal: 0,
+      usersHiddenCols: hSet("usersHiddenCols", ["userId"]),
+      usersMobHiddenCols: hSet("usersMobHiddenCols", ["lastSeen", "userId"]),
+      usersColsOpen: false,
+      usersMobColsOpen: false,
+      libsPage: 0,
+      libsSearch: "",
+      libsData: [],
+      libsTotal: 0,
+      libsHiddenCols: hSet("libsHiddenCols", ["type"]),
+      libsMobHiddenCols: hSet("libsMobHiddenCols", ["type"]),
+      libsColsOpen: false,
+      libsMobColsOpen: false
+    };
+    this.shadowRoot.querySelector("[data-js-modal]")?.remove();
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._jsModalHtml(tab);
+    const el = wrap.firstElementChild;
+    this.shadowRoot.appendChild(el);
+    this._wireJellystatModal(el);
+    this._jsLoadTab(tab, el);
+  }
+  _closeJellystatModal() {
+    this.shadowRoot.querySelector("[data-js-modal]")?.remove();
+    this._jellystatModal = null;
+  }
+  _jsModalHtml(tab) {
+    const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
+    const isMobile = window.matchMedia("(max-width: 600px)").matches;
+    const allTabs = ["libraries", "users", "history", "graphs"];
+    const tabBtns = allTabs.map(
+      (t) => '<button class="is-f-btn' + (t === tab ? " active" : "") + '" data-js-tab="' + t + '">' + this._jsTabLabel(t) + "</button>"
+    ).join("");
+    const closeSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    const hdrInner = isMobile ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0">' + closeSvg + '</button></div><div class="is-filter">' + tabBtns + "</div>" : '<div style="flex:1;min-width:0"><div id="js-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div></div><div class="is-filter" style="flex-shrink:0">' + tabBtns + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">' + closeSvg + "</button>";
+    const hdrStyle = isMobile ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
+    return '<div class="popup-overlay' + dayClass + '" data-js-modal><div class="popup-glass tl-wide"><div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div><div class="popup-body" id="js-body" style="padding:' + (isMobile ? "12px 14px 16px" : "14px 22px 20px") + '"><div class="is-loading"><span>Loading\u2026</span></div></div></div></div>';
+  }
+  _jsTabLabel(t) {
+    return { libraries: "Libraries", users: "Users", history: "History", graphs: "Graphs" }[t] || t;
+  }
+  _jsTabTitle(t) {
+    return { libraries: "All Libraries", users: "All Users", history: "Recent History", graphs: "Play Statistics" }[t] || "";
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tab loader
+  // ──────────────────────────────────────────────────────────────────────────
+  async _jsLoadTab(tab, modal) {
+    const body = modal.querySelector("#js-body");
+    if (!body) return;
+    if (tab === "libraries") {
+      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const m = this._jellystatModal;
+      if (!m) return;
+      const raw = await this._jsApiFetch("stats/getLibraryCardStats");
+      if (!this._jellystatModal) return;
+      m.libsData = Array.isArray(raw) ? raw : raw?.data || [];
+      m.libsTotal = m.libsData.length;
+      body.innerHTML = this._jsBodyLibraries();
+      this._wireJellystatModalBody(body);
+    } else if (tab === "users") {
+      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const m = this._jellystatModal;
+      if (!m) return;
+      const raw = await this._jsApiFetch("stats/getAllUserActivity");
+      if (!this._jellystatModal) return;
+      m.usersData = Array.isArray(raw) ? raw : raw?.data || raw?.users || [];
+      m.usersTotal = m.usersData.length;
+      body.innerHTML = this._jsBodyUsers();
+      this._wireJellystatModalBody(body);
+    } else if (tab === "history") {
+      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      const m = this._jellystatModal;
+      if (!m) return;
+      m.histLoading = true;
+      const perPage = this._tlCalcPerPage({ hasFilter: true });
+      const [histRaw, usersRaw] = await Promise.all([
+        this._jsApiFetch("getHistory?page=1&size=" + perPage),
+        this._jsApiFetch("stats/getAllUserActivity")
+      ]);
+      if (!this._jellystatModal) return;
+      m.histData = histRaw?.results || (Array.isArray(histRaw) ? histRaw : []);
+      m.histTotal = histRaw?.pages != null ? histRaw.pages * perPage : histRaw?.totalCount ?? m.histData.length;
+      m.histUsers = Array.isArray(usersRaw) ? usersRaw : usersRaw?.data || [];
+      m.histLoading = false;
+      body.innerHTML = this._jsBodyHistory();
+      this._wireJellystatModalBody(body);
+    } else if (tab === "graphs") {
+      const mg = this._jellystatModal;
+      if (!mg) return;
+      mg.graphsLoading = true;
+      body.innerHTML = this._jsBodyGraphs();
+      const gd = await this._jsFetchGraphs();
+      if (!this._jellystatModal) return;
+      mg.graphsData = gd;
+      mg.graphsLoading = false;
+      body.innerHTML = this._jsBodyGraphs();
+      this._wireJsGraphControls(body);
+      this._tlGTriggerAnim(body);
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // API helper
+  // ──────────────────────────────────────────────────────────────────────────
+  async _jsApiFetch(endpoint, body) {
+    try {
+      const method = body !== void 0 ? "POST" : "GET";
+      return await this._hass.callApi(method, "arr_stack/jellystat/" + endpoint, body);
+    } catch (e) {
+      console.warn("[arr-card] Jellystat fetch error:", endpoint, e);
+      return null;
+    }
+  }
+};
+var jellystatMixin = _JellystatMethods.prototype;
+
+// src/render/jellystat-graphs.js
+var _JS_DOW_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function _jsLibData(stats, libName, field) {
+  return stats.map((entry) => {
+    const v = entry[libName];
+    return v && typeof v === "object" ? v[field] || 0 : 0;
+  });
+}
+function _jsLibChart(raw, cats, dataFn) {
+  if (!raw?.stats?.length) return null;
+  const libs = raw.libraries || [];
+  const mk = (field) => {
+    const series = libs.map((lib) => ({
+      name: lib.Name,
+      data: dataFn(raw.stats, lib.Name, field)
+    })).filter((s) => s.data.some((v) => v > 0));
+    if (!series.length) return null;
+    return { response: { data: { categories: cats, series } } };
+  };
+  return { plays: mk("count"), duration: mk("duration") };
+}
+function _jsPrepByDate(raw) {
+  if (!raw?.stats?.length) return null;
+  const cats = raw.stats.map((r) => r.Key.replace(/,?\s*\d{4}$/, ""));
+  return _jsLibChart(raw, cats, _jsLibData);
+}
+var _JS_DOW_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+function _jsPrepByDow(raw) {
+  if (!raw?.stats?.length) return null;
+  const libs = raw.libraries || [];
+  const mk = (field) => {
+    const series = libs.map((lib) => ({
+      name: lib.Name,
+      data: _JS_DOW_NAMES.map((_, i) => {
+        const entry = raw.stats.find(
+          (s) => s.Key === _JS_DOW_FULL[i] || // "Sunday" etc.
+          Number(s.Key) === i || // 0-indexed numeric
+          Number(s.Key) === i + 1
+          // 1-indexed numeric
+        );
+        const v = entry?.[lib.Name];
+        return v && typeof v === "object" ? v[field] || 0 : 0;
+      })
+    })).filter((s) => s.data.some((v) => v > 0));
+    if (!series.length) return null;
+    return { response: { data: { categories: _JS_DOW_NAMES, series } } };
+  };
+  return { plays: mk("count"), duration: mk("duration") };
+}
+function _jsPrepByHod(raw) {
+  if (!raw?.stats?.length) return null;
+  const cats = Array.from({ length: 24 }, (_, i) => String(i));
+  const libs = raw.libraries || [];
+  const mk = (field) => {
+    const series = libs.map((lib) => ({
+      name: lib.Name,
+      data: cats.map((h) => {
+        const entry = raw.stats.find((s) => Number(s.Key) === Number(h));
+        const v = entry?.[lib.Name];
+        return v && typeof v === "object" ? v[field] || 0 : 0;
+      })
+    })).filter((s) => s.data.some((v) => v > 0));
+    if (!series.length) return null;
+    return { response: { data: { categories: cats, series } } };
+  };
+  return { plays: mk("count"), duration: mk("duration") };
+}
+var _JellystatGraphsMethods = class {
+  _jsBodyGraphs() {
+    const m = this._jellystatModal;
+    if (!m) return "";
+    if (m.graphsLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading&hellip;</div>';
+    const metric = m.graphsMetric || "plays";
+    const range = m.graphsRange || 30;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isDur = metric === "duration";
+    const metricBtns = '<div style="display:inline-flex;gap:2px"><button class="tl-page-btn' + (metric === "plays" ? " active" : "") + '" data-js-g-metric="plays">Count</button><button class="tl-page-btn' + (metric === "duration" ? " active" : "") + '" data-js-g-metric="duration">Duration</button></div>';
+    const rangeCtrl = '<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--is-text-muted)"><span>Last</span><input id="js-g-range" type="number" value="' + range + '" min="1" max="365" style="width:38px;background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-text);padding:4px;font-size:12px;text-align:center;font-family:inherit;outline:none;box-sizing:border-box;-webkit-appearance:none;appearance:none"><span>Days</span></div>';
+    const controls = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;flex-wrap:wrap">' + metricBtns + rangeCtrl + "</div>";
+    const gd = m.graphsData || {};
+    const BASE = { range, isDate: false, isDuration: isDur, isMob };
+    const barO = { isDuration: isDur, isMob };
+    const pick = (obj) => isDur ? obj?.duration : obj?.plays;
+    const dateLabel = (d, _i, n) => isMob || n > 20 ? d.split(" ")[1] || d : d;
+    const lineSvg = this._tlGLineSvg(pick(gd.byDate), { ...BASE, chartId: "jd", xLabel: dateLabel });
+    const dowSvg = this._tlGBarSvg(pick(gd.byDow), { ...barO, chartId: "jw", xLabel: (d) => d });
+    const hodSvg = this._tlGBarSvg(pick(gd.byHod), { ...barO, chartId: "jh", xLabel: (_, i) => i % 4 === 0 ? i + "h" : "" });
+    const lineTitle = isDur ? "Daily Play Duration Per Library \u2014 Last " + range + " Days" : "Daily Play Count Per Library \u2014 Last " + range + " Days";
+    const dowTitle = isDur ? "Play Duration By Day \u2014 Last " + range + " Days" : "Play Count By Day \u2014 Last " + range + " Days";
+    const hodTitle = isDur ? "Play Duration By Hour \u2014 Last " + range + " Days" : "Play Count By Hour \u2014 Last " + range + " Days";
+    const halfRow = isMob ? '<div style="margin-bottom:10px">' + this._tlGCard(dowTitle, pick(gd.byDow), dowSvg) + '</div><div style="margin-bottom:10px">' + this._tlGCard(hodTitle, pick(gd.byHod), hodSvg) + "</div>" : '<div style="display:flex;gap:10px;margin-bottom:10px"><div style="flex:1;min-width:0">' + this._tlGCard(dowTitle, pick(gd.byDow), dowSvg) + '</div><div style="flex:1;min-width:0">' + this._tlGCard(hodTitle, pick(gd.byHod), hodSvg) + "</div></div>";
+    return controls + '<div style="margin-bottom:10px">' + this._tlGCard(lineTitle, pick(gd.byDate), lineSvg) + "</div>" + halfRow;
+  }
+  async _jsFetchGraphs() {
+    const days = this._jellystatModal?.graphsRange || 30;
+    const [byDateRaw, byDowRaw, byHodRaw] = await Promise.all([
+      this._jsApiFetch("stats/getViewsOverTime?days=" + days),
+      this._jsApiFetch("stats/getViewsByDays?days=" + days),
+      this._jsApiFetch("stats/getViewsByHour?days=" + days)
+    ]);
+    return {
+      byDate: _jsPrepByDate(byDateRaw),
+      byDow: _jsPrepByDow(byDowRaw),
+      byHod: _jsPrepByHod(byHodRaw)
+    };
+  }
+  async _jsRefetchGraphs(body) {
+    const m = this._jellystatModal;
+    if (!m || !body) return;
+    m.graphsLoading = true;
+    body.innerHTML = this._jsBodyGraphs();
+    const gd = await this._jsFetchGraphs();
+    if (!this._jellystatModal) return;
+    m.graphsData = gd;
+    m.graphsLoading = false;
+    body.innerHTML = this._jsBodyGraphs();
+    this._wireJsGraphControls(body);
+    this._tlGTriggerAnim(body);
+  }
+};
+var jellystatGraphsMixin = _JellystatGraphsMethods.prototype;
+
 // src/card.js
 var ArrStackCard = class extends HTMLElement {
   constructor() {
@@ -11650,6 +12918,9 @@ var ArrStackCard = class extends HTMLElement {
     this._tautulliConfigured = true;
     this._tautulli = null;
     this._tautulliModal = null;
+    this._jellystatConfigured = true;
+    this._jellystat = null;
+    this._jellystatModal = null;
     this._bazarr = {};
     this._radarrQueueFailed = /* @__PURE__ */ new Set();
     this._radarrQueueActive = /* @__PURE__ */ new Set();
@@ -12297,6 +13568,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wireOverseerrButtons();
     this._wireSearch();
     this._wireTautulliPosters(right);
+    this._wireJellystatPosters(right);
     if (this._searchActive) {
       requestAnimationFrame(() => {
         const inp = this.shadowRoot.querySelector(".search-bar-input");
@@ -12567,6 +13839,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wirePopup();
     this._wireSearch();
     if (right) this._wireTautulliPosters(right);
+    if (right) this._wireJellystatPosters(right);
     this._renderPopupEl();
     requestAnimationFrame(() => {
       if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
@@ -12621,11 +13894,16 @@ applyMixin(ArrStackCard.prototype, mediaCardsMixin);
 applyMixin(ArrStackCard.prototype, themeMixin);
 applyMixin(ArrStackCard.prototype, wireMixin);
 applyMixin(ArrStackCard.prototype, wireTautulliMixin);
+applyMixin(ArrStackCard.prototype, wireJellystatMixin);
 applyMixin(ArrStackCard.prototype, popupMixin);
 applyMixin(ArrStackCard.prototype, tautulliSharedMixin);
 applyMixin(ArrStackCard.prototype, tautulliTableMixin);
 applyMixin(ArrStackCard.prototype, tautulliMixin);
 applyMixin(ArrStackCard.prototype, tautulliGraphsMixin);
+applyMixin(ArrStackCard.prototype, jellystatSharedMixin);
+applyMixin(ArrStackCard.prototype, jellystatTableMixin);
+applyMixin(ArrStackCard.prototype, jellystatMixin);
+applyMixin(ArrStackCard.prototype, jellystatGraphsMixin);
 customElements.define("arr-stack-card", ArrStackCard);
 window.customCards = window.customCards || [];
 window.customCards.push({

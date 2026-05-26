@@ -10,7 +10,7 @@
 
 <a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, and Tautulli — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, Tautulli, and Jellystat — directly from Home Assistant with a single unified dashboard card.
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -65,6 +65,7 @@ The card never calls your services directly. All API calls go through the HA int
 | Plex | Active stream monitoring and playback control | Optional |
 | Jellyfin | Active stream monitoring | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
+| Jellystat | Watch history, statistics, and usage graphs | Optional |
 
 Services not configured in the integration are hidden automatically.
 
@@ -105,17 +106,20 @@ Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popu
 
 The card reads active sessions from `media_player.plex_*` and `media_player.jellyfin_*` entities created by the official [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integrations. Plex playback control additionally requires Plex to be configured in the Arr Stack Integration (step 5).
 
-- Live view of active streams — title, user, media type, and playback progress
+- Live view of active streams — title, media type, and playback progress
+- Active user displayed on the stream card — requires Plex configured in the Arr Stack Integration (step 5)
 - Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
 - Auto-hidden when no streams are active
 
-#### Statistics (Tautulli)
+#### Statistics (Tautulli / Jellystat)
 
 - Watch history with search and filters
 - Play count and duration charts by day, day of week, hour, and media type
 - Stream type breakdown and concurrent stream graph
 - Per-user and per-library statistics
 - **Account sharing detection** — warns when the same account streams from multiple IPs; configurable threshold and history depth; acknowledge known IPs per user
+
+Both Tautulli and Jellystat are supported — configure either or both in the integration.
 
 ### Appearance & UX
 
@@ -273,7 +277,7 @@ styles:
 | `popular` | Popular Movies |
 | `calendar` | Sonarr episode calendar |
 | `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
-| `tautulli` | Statistics (Tautulli) |
+| `tautulli` | Statistics (Tautulli / Jellystat) |
 
 ### Security
 
