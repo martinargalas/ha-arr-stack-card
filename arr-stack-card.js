@@ -9137,28 +9137,109 @@ var _PopupMethods = class {
       return;
     }
     const titleNoYear = trackTitle.replace(/\s*\(\d{4}\)\s*$/, "").trim();
-    const _titleMatch = (t) => t === trackTitle.toLowerCase() || t === titleNoYear.toLowerCase();
-    const m = (this._radarr || []).find((m3) => _titleMatch(m3.title?.toLowerCase() || ""));
-    const m2 = !m && (this._radarr2 || []).find((m3) => _titleMatch(m3.title?.toLowerCase() || ""));
+    const _normT = (s) => (s || "").toLowerCase().replace(/\s*\(\d{4}\)\s*$/, "").trim();
+    this._popup = { _loading: true, title: trackTitle };
+    this._renderPopupEl();
+    let sessionTmdbId = null;
+    if (entityId.startsWith("media_player.plex_") || entityId.startsWith("media_player.plex ")) {
+      try {
+        const raw = await this._hass.callApi("GET", "arr_stack/plex/sessions");
+        const sessions = raw?.MediaContainer?.Metadata || [];
+        const attr = this._hass?.states?.[entityId]?.attributes || {};
+        const rawTitle = (attr.media_title || "").replace(/\s*\(\d{4}\)\s*$/, "").toLowerCase().trim();
+        const mediaPos = attr.media_position || 0;
+        let match = sessions.find((s) => {
+          if (!rawTitle) return false;
+          const st = (s.title || "").toLowerCase();
+          const titleOk = st === rawTitle;
+          const posOk = Math.abs((s.viewOffset || 0) / 1e3 - mediaPos) < 60;
+          return titleOk && posOk;
+        });
+        if (!match) match = sessions.find((s) => rawTitle && (s.title || "").toLowerCase() === rawTitle);
+        if (!match && sessions.length === 1) match = sessions[0];
+        if (match?.Guid) {
+          for (const g of Array.isArray(match.Guid) ? match.Guid : []) {
+            if (g.id?.startsWith("tmdb://")) sessionTmdbId = g.id.replace("tmdb://", "");
+          }
+        }
+      } catch (_) {
+      }
+    }
+    if (sessionTmdbId) {
+      const radarrByTmdb = (this._radarr || []).find((m3) => m3.tmdbId && String(m3.tmdbId) === sessionTmdbId);
+      const radarr2ByTmdb = !radarrByTmdb && (this._radarr2 || []).find((m3) => m3.tmdbId && String(m3.tmdbId) === sessionTmdbId);
+      await this._openPopup(
+        radarrByTmdb || radarr2ByTmdb ? POPUP_TYPE.RADARR : POPUP_TYPE.MOVIE,
+        sessionTmdbId,
+        null,
+        titleNoYear,
+        radarrByTmdb?.id ?? null,
+        radarr2ByTmdb?.id ?? null
+      );
+      if (this._popup) {
+        this._attachStreamData(entityId);
+        this._renderPopupEl();
+      }
+      return;
+    }
+    const _titleMatch = (entry) => {
+      const ql = _normT(trackTitle);
+      const qn = _normT(titleNoYear);
+      return [entry.title, entry.sortTitle, entry.originalTitle].some((t) => {
+        const tl = _normT(t);
+        return tl && (tl === ql || tl === qn);
+      });
+    };
+    const m = (this._radarr || []).find((m3) => _titleMatch(m3));
+    const m2 = !m && (this._radarr2 || []).find((m3) => _titleMatch(m3));
     const hit = m || m2;
     if (hit) {
-      await this._openPopup(POPUP_TYPE.RADARR, String(hit.tmdbId), null, hit.title, m?.id ?? null, m2?.id ?? null);
+      let hitTmdbId = hit.tmdbId ? String(hit.tmdbId) : null;
+      if (!hitTmdbId && this._overseerrConfigured !== false) {
+        try {
+          const sr = await this._hass.callApi("POST", "arr_stack/overseerr/search", { query: titleNoYear, page: 1 });
+          const qt = _normT(titleNoYear);
+          const oh = (sr?.results || []).find((r) => {
+            if (r.mediaType !== "movie") return false;
+            const rt = _normT(r.title);
+            const ort = _normT(r.originalTitle || "");
+            return rt === qt || ort === qt || rt.includes(qt) || qt.includes(rt);
+          });
+          if (oh?.id) hitTmdbId = String(oh.id);
+        } catch (_) {
+        }
+      }
+      await this._openPopup(POPUP_TYPE.RADARR, hitTmdbId, null, hit.title, m?.id ?? null, m2?.id ?? null);
       if (this._popup) {
         this._attachStreamData(entityId);
         this._renderPopupEl();
       }
     } else {
+      const _trackYear = trackTitle.match(/\((\d{4})\)/)?.[1] || null;
       let movieTmdbId = null;
       if (this._overseerrConfigured !== false) {
         try {
           const sr = await this._hass.callApi("POST", "arr_stack/overseerr/search", { query: titleNoYear, page: 1 });
-          const oh = (sr?.results || []).find((r) => r.mediaType === "movie");
+          const qt = _normT(titleNoYear);
+          const oh = (sr?.results || []).find((r) => {
+            if (r.mediaType !== "movie") return false;
+            const rt = _normT(r.title);
+            const ort = _normT(r.originalTitle || "");
+            if (rt === qt || ort === qt || rt.includes(qt) || qt.includes(rt)) return true;
+            return !!(_trackYear && r.releaseDate?.startsWith(_trackYear));
+          });
           if (oh?.id) movieTmdbId = String(oh.id);
         } catch (_) {
         }
       }
       if (movieTmdbId) {
-        await this._openPopup(POPUP_TYPE.MOVIE, movieTmdbId, null, titleNoYear);
+        const radarrByTmdb = (this._radarr || []).find((m3) => m3.tmdbId && String(m3.tmdbId) === movieTmdbId);
+        const radarr2ByTmdb = !radarrByTmdb && (this._radarr2 || []).find((m3) => m3.tmdbId && String(m3.tmdbId) === movieTmdbId);
+        if (radarrByTmdb || radarr2ByTmdb) {
+          await this._openPopup(POPUP_TYPE.RADARR, movieTmdbId, null, titleNoYear, radarrByTmdb?.id ?? null, radarr2ByTmdb?.id ?? null);
+        } else {
+          await this._openPopup(POPUP_TYPE.MOVIE, movieTmdbId, null, titleNoYear);
+        }
         if (this._popup) {
           this._attachStreamData(entityId);
           this._renderPopupEl();
@@ -9423,12 +9504,55 @@ var _PopupMethods = class {
         if (this._sonarr2Configured !== false)
           this._fetchSonarrQueue("sonarr2").then(() => this._renderPopupEl());
       }
+      if (tmdbId && (!data.overview || !data.relatedVideos?.length)) {
+        const _isMovie = type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE;
+        const _tmdbPath = _isMovie ? `arr_stack/tmdb/movie/${tmdbId}` : `arr_stack/tmdb/tv/${tmdbId}`;
+        this._callApi("GET", _tmdbPath).then((detail) => {
+          if (!this._popup || this._popup._type !== type) return;
+          const prev = this._popup;
+          this._popup = {
+            ...prev,
+            overview: detail.overview || prev.overview || "",
+            posterPath: detail.posterPath || prev.posterPath || null,
+            backdropPath: detail.backdropPath || prev.backdropPath || null,
+            voteAverage: detail.voteAverage || prev.voteAverage || 0,
+            genres: detail.genres?.length ? detail.genres : prev.genres || [],
+            releaseDate: detail.releaseDate || prev.releaseDate || "",
+            firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
+            relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
+          };
+          this._renderPopupEl();
+        }).catch(() => {
+        });
+      }
     } catch (e) {
       console.error("[arr-card] popup fetch error:", e);
       const local = this._localFallbackData(type, tmdbId, tvdbId, title);
       const _popId = tmdbId ? parseInt(tmdbId) : void 0;
       const _popTvdb = tvdbId ? parseInt(tvdbId) : void 0;
-      this._popup = local ? { ...local, _radarrId, _sonarrSeries, id: _popId, _tvdbId: _popTvdb } : { title, _radarrId, _sonarrSeries, _error: e.message, id: _popId, _tvdbId: _popTvdb };
+      this._popup = local ? { ...local, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, id: _popId, _tvdbId: _popTvdb } : { title, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, _error: e.message, id: _popId, _tvdbId: _popTvdb };
+      if (tmdbId) {
+        const _isMovie = type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE;
+        const _tmdbPath = _isMovie ? `arr_stack/tmdb/movie/${tmdbId}` : `arr_stack/tmdb/tv/${tmdbId}`;
+        const _snapType = type;
+        this._callApi("GET", _tmdbPath).then((detail) => {
+          if (!this._popup || this._popup._type !== _snapType) return;
+          const prev = this._popup;
+          this._popup = {
+            ...prev,
+            overview: detail.overview || prev.overview || "",
+            posterPath: detail.posterPath || prev.posterPath || null,
+            backdropPath: detail.backdropPath || prev.backdropPath || null,
+            voteAverage: detail.voteAverage || prev.voteAverage || 0,
+            genres: detail.genres?.length ? detail.genres : prev.genres || [],
+            releaseDate: detail.releaseDate || prev.releaseDate || "",
+            firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
+            relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
+          };
+          this._renderPopupEl();
+        }).catch(() => {
+        });
+      }
     }
     this._renderPopupEl();
   }
@@ -10453,7 +10577,7 @@ var _PopupMethods = class {
               </div>
             </div>
           </div>
-          ${isActive || snIsActive || asActive ? "" : !d._streamEntity ? trailerHtml : ""}
+          ${isActive || snIsActive || asActive ? "" : trailerHtml}
           ${asActive ? this._renderAsSection() : ""}
           ${isActive ? this._renderIsPanel() : ""}
           ${snIsActive ? this._renderSonarrIsSection() : ""}
