@@ -145,6 +145,12 @@ All other services are optional — unconfigured services are hidden automatical
 - Request approval workflow — admin can approve and decline pending requests
 - Family accounts — household members can request and withdraw their own media
 
+### Self-signed certificates / reverse proxies
+
+If any of your services sit behind a reverse proxy with a self-signed or untrusted certificate, enable **Skip SSL certificate verification** in the integration's **Global Settings** step (step 1 of 7). This applies to all services at once — qBittorrent, SABnzbd, Radarr, Sonarr, Overseerr, Bazarr, Plex, Tautulli, Jellystat.
+
+> Mixed setups work fine — you can enable the toggle even if only one service uses a self-signed cert and all others use standard HTTP or valid HTTPS.
+
 ### Now Playing (Plex / Jellyfin)
 
 Both Plex and Jellyfin read from standard HA `media_player` entities:
@@ -154,7 +160,9 @@ Both Plex and Jellyfin read from standard HA `media_player` entities:
 
 The Now Playing section auto-hides when nothing is playing.
 
-Playback control (pause, resume, stop) is available for Plex. This requires Plex to also be configured in the Arr Stack Integration (step 5). Works for most clients — Android phones and web browsers are not supported.
+Playback control (pause, resume, stop) is available for Plex. This requires Plex to also be configured in the Arr Stack Integration (step 6). Works for most clients — Android phones and web browsers are not supported.
+
+**Plex Server URL** — during integration setup the Arr Stack integration auto-detects your Plex server address by probing each connection reported by plex.tv. If HA runs on a different machine or VLAN than Plex (e.g. a VM with its own IP), auto-detection may pick an unreachable local address. In that case, fill in **Plex Server URL** on the Plex step with the address HA can actually reach — for example your external domain (`https://plex.yourdomain.com`) or the server's local IP (`http://192.168.1.10:32400`). Leave it empty to use auto-detection.
 
 ---
 
