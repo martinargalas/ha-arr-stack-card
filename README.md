@@ -104,10 +104,10 @@ Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popu
 
 #### Now Playing (Plex / Jellyfin)
 
-The card reads active sessions from `media_player.plex_*` and `media_player.jellyfin_*` entities created by the official [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integrations. Plex playback control additionally requires Plex to be configured in the Arr Stack Integration (step 5).
+The card reads active sessions from `media_player.plex_*` and `media_player.jellyfin_*` entities created by the official [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integrations. Plex playback control additionally requires Plex to be configured in the Arr Stack Integration (step 6).
 
 - Live view of active streams — title, media type, and playback progress
-- Active user displayed on the stream card — requires Plex configured in the Arr Stack Integration (step 5)
+- Active user displayed on the stream card — requires Plex configured in the Arr Stack Integration (step 6)
 - Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
 - Auto-hidden when no streams are active
 
