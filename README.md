@@ -104,12 +104,22 @@ Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popu
 
 #### Now Playing (Plex / Jellyfin)
 
-The card reads active sessions from `media_player.plex_*` and `media_player.jellyfin_*` entities created by the official [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integrations. Plex playback control additionally requires Plex to be configured in the Arr Stack Integration (step 5).
+The card reads active sessions from `media_player.plex_*` and `media_player.jellyfin_*` entities created by the official [Plex](https://www.home-assistant.io/integrations/plex/) and [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integrations. Plex playback control additionally requires Plex to be configured in the Arr Stack Integration (step 6).
 
 - Live view of active streams — title, media type, and playback progress
-- Active user displayed on the stream card — requires Plex configured in the Arr Stack Integration (step 5)
+- Active user displayed on the stream card — requires Plex configured in the Arr Stack Integration (step 6)
 - Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
 - Auto-hidden when no streams are active
+
+#### Activity Queue
+
+Live view of your download queue, history, and blocklist across Radarr and Sonarr.
+
+- **Queue** — active downloads with progress, quality, size, time left, custom formats, and status. Manual Import for stuck items, one-click remove with optional blocklist.
+- **History** — completed and failed grabs with search and filters by source, quality, and custom formats.
+- **Blocklist** — blocked releases with source, indexer, and quality info. Remove individual entries.
+
+Column visibility is configurable per tab. All tables support sorting and search. Only visible to HA admins.
 
 #### Statistics (Tautulli / Jellystat)
 
@@ -145,6 +155,12 @@ All other services are optional — unconfigured services are hidden automatical
 - Request approval workflow — admin can approve and decline pending requests
 - Family accounts — household members can request and withdraw their own media
 
+### Self-signed certificates / reverse proxies
+
+If any of your services sit behind a reverse proxy with a self-signed or untrusted certificate, enable **Skip SSL certificate verification** in the integration's **Global Settings** step (step 1 of 7). This applies to all services at once — qBittorrent, SABnzbd, Radarr, Sonarr, Overseerr, Bazarr, Plex, Tautulli, Jellystat.
+
+> Mixed setups work fine — you can enable the toggle even if only one service uses a self-signed cert and all others use standard HTTP or valid HTTPS.
+
 ### Now Playing (Plex / Jellyfin)
 
 Both Plex and Jellyfin read from standard HA `media_player` entities:
@@ -154,7 +170,9 @@ Both Plex and Jellyfin read from standard HA `media_player` entities:
 
 The Now Playing section auto-hides when nothing is playing.
 
-Playback control (pause, resume, stop) is available for Plex. This requires Plex to also be configured in the Arr Stack Integration (step 5). Works for most clients — Android phones and web browsers are not supported.
+Playback control (pause, resume, stop) is available for Plex. This requires Plex to also be configured in the Arr Stack Integration (step 6). Works for most clients — Android phones and web browsers are not supported.
+
+**Plex Server URL** — during integration setup the Arr Stack integration auto-detects your Plex server address by probing each connection reported by plex.tv. If HA runs on a different machine or VLAN than Plex (e.g. a VM with its own IP), auto-detection may pick an unreachable local address. In that case, fill in **Plex Server URL** on the Plex step with the address HA can actually reach — for example your external domain (`https://plex.yourdomain.com`) or the server's local IP (`http://192.168.1.10:32400`). Leave it empty to use auto-detection.
 
 ---
 
@@ -277,7 +295,9 @@ styles:
 | `popular` | Popular Movies |
 | `calendar` | Sonarr episode calendar |
 | `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
-| `tautulli` | Statistics (Tautulli / Jellystat) |
+| `tautulli` | Statistics (Plex / Tautulli) |
+| `jellystat` | Statistics (Jellyfin / Jellystat) |
+| `activity` | Activity Queue (admin only) |
 
 ### Security
 
