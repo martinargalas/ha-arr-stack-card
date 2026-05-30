@@ -8,7 +8,7 @@
 
 <a href="https://buymeacoffee.com/argii" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>
 
-<a href="https://discord.gg/SUfDr52G" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
+<a href="https://discord.gg/CA83tqYZ" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
 Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, Tautulli, and Jellystat — directly from Home Assistant with a single unified dashboard card.
 
