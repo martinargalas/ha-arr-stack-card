@@ -539,7 +539,195 @@ var ARR_I18N = {
     terminateDefault: "Va\u0161e p\u0159ehr\xE1v\xE1n\xED bylo ukon\u010Deno administr\xE1torem.",
     terminateCancel: "Zru\u0161it",
     terminateStop: "Zastavit",
-    stopPlayback: "Zastavit p\u0159ehr\xE1v\xE1n\xED"
+    stopPlayback: "Zastavit p\u0159ehr\xE1v\xE1n\xED",
+    // Tautulli / Jellystat — poster cards
+    tlLibraries: "Knihovny",
+    tlUsers: "U\u017Eivatel\xE9",
+    tlHistory: "Historie",
+    tlCharts: "Grafy",
+    tlGraphs: "Grafy",
+    tlActive: "aktivn\xED",
+    tlPlays: "p\u0159ehr\xE1n\xED",
+    tlNow: "nyn\xED",
+    tlNoData: "\u017D\xE1dn\xE1 data",
+    tlNoHistory: "\u017D\xE1dn\xE1 historie",
+    tlSharing: "! Sd\xEDlen\xED",
+    tlSharingHint: "V\xEDce IP \xB7 Klikni pro detail",
+    tlLast7Days: "posledn\xEDch 7 dn\xED",
+    tlUnknown: "Nezn\xE1m\xFD",
+    // Tautulli — modal tab titles
+    tlAllLibraries: "V\u0161echny knihovny",
+    tlAllUsers: "V\u0161ichni u\u017Eivatel\xE9",
+    tlRecentHistory: "Ned\xE1vn\xE1 historie",
+    tlPlayStatistics: "Statistiky p\u0159ehr\xE1v\xE1n\xED",
+    // Tautulli — table column labels
+    tlColLibrary: "Knihovna",
+    tlColType: "Typ",
+    tlColItems: "Polo\u017Eky",
+    tlColSeasonsAlbums: "Sez\xF3ny/Alba",
+    tlColEpisodesTracks: "Epizody/Skladby",
+    tlColStreamed: "Streamov\xE1no",
+    tlColLastPlayed: "Naposledy hr\xE1no",
+    tlColPlays: "P\u0159ehr\xE1n\xED",
+    tlColDuration: "D\xE9lka",
+    tlColUser: "U\u017Eivatel",
+    tlColUsername: "P\u0159ezd\xEDvka",
+    tlColFullName: "Cel\xE9 jm\xE9no",
+    tlColEmail: "Email",
+    tlColLastStreamed: "Posledn\xED stream",
+    tlColLastKnownIP: "Posledn\xED IP",
+    tlColLastPlatform: "Posledn\xED platforma",
+    tlColLastPlayer: "Posledn\xED p\u0159ehr\xE1va\u010D",
+    tlColTotalPlays: "Celkem p\u0159ehr\xE1n\xED",
+    tlColTotalDuration: "Celkov\xE1 d\xE9lka",
+    tlColEpsTracks: "Ep/Sk",
+    tlColLastSeen: "Naposledy vid\u011Bn",
+    tlColLastIP: "Posledn\xED IP",
+    tlColDate: "Datum",
+    tlColIP: "IP",
+    tlColPlatform: "Platforma",
+    tlColProduct: "Produkt",
+    tlColPlayer: "P\u0159ehr\xE1va\u010D",
+    tlColTitle: "Titulek",
+    tlColStarted: "Za\u010D\xE1tek",
+    tlColPaused: "Pozastaveno",
+    tlColStopped: "Konec",
+    tlColIPAddress: "IP Adresa",
+    tlColLastStreamedMob: "Pos. stream",
+    // Tautulli — filter buttons
+    tlFilterMovies: "Filmy",
+    tlFilterTvShows: "Seri\xE1ly",
+    tlFilterMusic: "Hudba",
+    tlFilterLiveTV: "\u017Div\xE9 TV",
+    tlFilterDirectPlay: "P\u0159\xEDm\xE9 p\u0159ehr\xE1n\xED",
+    tlFilterDirectStream: "P\u0159\xEDm\xFD stream",
+    tlFilterTranscode: "P\u0159ek\xF3dov\xE1n\xED",
+    // Tautulli — sharing banner
+    tlSharingDetected: "Sd\xEDlen\xED \xFA\u010Dtu detekov\xE1no",
+    tlAcknowledge: "Potvrdit",
+    tlNeverSeen: "Nikdy vid\u011Bn",
+    tlNever: "nikdy",
+    tlNA: "n/a",
+    // Tautulli — empty states
+    tlNoLibraryData: "\u017D\xE1dn\xE1 data o knihovn\xE1ch",
+    tlNoUserData: "\u017D\xE1dn\xE1 data o u\u017Eivatel\xEDch",
+    // Tautulli — buttons / headers
+    tlDelete: "Smazat",
+    tlPurge: "Vy\u010Distit",
+    tlEdit: "\xDApravy",
+    // Tautulli — graphs sub-tabs
+    tlGSubMedia: "Typ m\xE9dia",
+    tlGSubStream: "Typ streamu",
+    tlGSubTotals: "Celkem p\u0159ehr\xE1n\xED",
+    tlGMetricPlays: "P\u0159ehr\xE1n\xED",
+    tlGMetricDuration: "D\xE9lka",
+    tlGMetricPlayCount: "Po\u010Det p\u0159ehr\xE1n\xED",
+    tlGMetricPlayDuration: "D\xE9lka p\u0159ehr\xE1n\xED",
+    tlGLast: "Posledn\xED",
+    tlGDays: "dn\xED",
+    tlGMonths: "m\u011Bs\xEDc\u016F",
+    tlGAllUsers: "V\u0161ichni u\u017Eivatel\xE9",
+    tlGSelectAll: "Vybrat v\u0161e",
+    tlGDeselectAll: "Zru\u0161it v\xFDb\u011Br",
+    tlGNoUsers: "\u017D\xE1dn\xED u\u017Eivatel\xE9",
+    // Tautulli — graph titles
+    tlGDailyByMedia: "Denn\xED po\u010Det p\u0159ehr\xE1n\xED dle typu m\xE9dia",
+    tlGByDow: "Dle dne v t\xFDdnu",
+    tlGByHod: "Dle hodiny dne",
+    tlGDailyByStream: "Denn\xED po\u010Det p\u0159ehr\xE1n\xED dle typu streamu",
+    tlGConcurrent: "Soub\u011B\u017En\xE9 streamy dle typu streamu (denn\u011B)",
+    tlGTotalByMonth: "Celkov\xFD po\u010Det p\u0159ehr\xE1n\xED dle m\u011Bs\xEDce",
+    // Activity Queue — poster cards
+    actQueue: "Fronta",
+    actHistory: "Historie",
+    actBlocklist: "Blocklist",
+    actActivity: "Aktivita",
+    actFailed: "selhalo",
+    actNoDownloads: "\u017D\xE1dn\xE1 aktivn\xED stahov\xE1n\xED",
+    actNoHistory: "\u017D\xE1dn\xE1 historie",
+    actNoBlocked: "\u017D\xE1dn\xE9 blokovan\xE9 releasy",
+    // Activity Queue — modal
+    actQueueEmpty: "Fronta je pr\xE1zdn\xE1",
+    actHistoryEmpty: "\u017D\xE1dn\xE1 nalezen\xE1 historie",
+    actBlocklistEmpty: "Blocklist je pr\xE1zdn\xFD",
+    // Activity Queue — column labels
+    actColSource: "Zdroj",
+    actColQuality: "Kvalita",
+    actColSize: "Velikost",
+    actColTimeLeft: "Zb\xFDv\xE1",
+    actColFormats: "Form\xE1ty",
+    actColProtocol: "Protokol",
+    actColIndexer: "Indexer",
+    actColClient: "Klient",
+    actColStatus: "Stav",
+    actColEvent: "Ud\xE1lost",
+    actColLangs: "Jazyky",
+    actColDate: "Datum",
+    actColDlClient: "Download klient",
+    actColRelgroup: "Release skupina",
+    actColSrcTitle: "Zdrojov\xFD n\xE1zev",
+    actColCfScore: "CF sk\xF3re",
+    actColTitle: "N\xE1zev",
+    // Activity Queue — filter labels
+    actAllSources: "V\u0161echny zdroje",
+    actAllStatus: "V\u0161echny stavy",
+    actAllQualities: "V\u0161echny kvality",
+    actAllProtocols: "V\u0161echny protokoly",
+    actAllIndexers: "V\u0161echny indexery",
+    actAllClients: "V\u0161ichni klienti",
+    actAllEvents: "V\u0161echny ud\xE1losti",
+    actAllLanguages: "V\u0161echny jazyky",
+    actAllFormats: "V\u0161echny form\xE1ty",
+    actAllGroups: "V\u0161echny skupiny",
+    actDownloading: "Stahov\xE1n\xED",
+    actEvtGrabbed: "Grabbov\xE1no",
+    actEvtImported: "Importov\xE1no",
+    actEvtFailed: "Selhalo",
+    actEvtImportFailed: "Import selhal",
+    actEvtIgnored: "Ignorov\xE1no",
+    actEvtDeleted: "Smaz\xE1no",
+    // Activity Queue — buttons
+    actDelete: "Smazat",
+    actColumns: "Sloupce",
+    // Activity Modal — tab titles
+    actTabQueue: "Fronta",
+    actTabHistory: "Historie",
+    actTabBlocklist: "Blocklist",
+    // Manual Import modal
+    actManualImport: "Ru\u010Dn\xED import",
+    actNoFiles: "\u017D\xE1dn\xE9 importovateln\xE9 soubory nenalezeny",
+    actNoFilesHint: "Zkontrolujte, zda je stahov\xE1n\xED dokon\u010Deno a soubory existuj\xED",
+    actImport: "Importovat",
+    actImporting: "Importuji\u2026",
+    actSelectMedia: "Vybrat\u2026",
+    actSelectQuality: "Vybrat kvalitu\u2026",
+    actSelectLanguage: "Vybrat jazyk\u2026",
+    actReleaseGroup: "Release skupina",
+    actSize: "Velikost",
+    actError: "Chyba",
+    actLanguages: "Jazyky",
+    actQuality: "Kvalita",
+    actSource: "Zdroj",
+    // Remove queue modal
+    actRemoveTitle: "Odebrat",
+    actRemoveConfirm: "Opravdu chcete odebrat",
+    actRemoveFromQueue: "z fronty?",
+    actRemovalMethod: "Zp\u016Fsob odebr\xE1n\xED",
+    actRemoveFromClient: "Odebrat z Download klienta",
+    actRemoveFromQueueOnly: "Odebrat pouze z fronty",
+    actRemoveClientWarn: '\u201EOdebrat z Download klienta" odstran\xED stahov\xE1n\xED a soubory z klienta.',
+    actBlocklistRelease: "Zablokovat release",
+    actDoNotBlocklist: "Nezablokovat",
+    actBlocklistSearch: "Zablokovat a hledat",
+    actBlocklistOnly: "Pouze zablokovat",
+    actClose: "Zav\u0159\xEDt",
+    actRemove: "Odebrat",
+    // Statistics section headers
+    tlStatisticsPlex: "Statistiky (Plex)",
+    tlStatisticsJellyfin: "Statistiky (Jellyfin)",
+    actActivityQueue: "Fronta aktivit",
+    // Columns picker header
+    actColPickerHdr: "Sloupce"
   },
   en: {
     downloads: "Downloads",
@@ -660,7 +848,195 @@ var ARR_I18N = {
     terminateDefault: "Your playback has been terminated by an administrator.",
     terminateCancel: "Cancel",
     terminateStop: "Stop",
-    stopPlayback: "Stop Playback"
+    stopPlayback: "Stop Playback",
+    // Tautulli / Jellystat — poster cards
+    tlLibraries: "Libraries",
+    tlUsers: "Users",
+    tlHistory: "History",
+    tlCharts: "Charts",
+    tlGraphs: "Graphs",
+    tlActive: "active",
+    tlPlays: "plays",
+    tlNow: "now",
+    tlNoData: "No data",
+    tlNoHistory: "No history",
+    tlSharing: "! Sharing",
+    tlSharingHint: "Multiple IPs \xB7 Click to review",
+    tlLast7Days: "last 7 days",
+    tlUnknown: "Unknown",
+    // Tautulli — modal tab titles
+    tlAllLibraries: "All Libraries",
+    tlAllUsers: "All Users",
+    tlRecentHistory: "Recent History",
+    tlPlayStatistics: "Play Statistics",
+    // Tautulli — table column labels
+    tlColLibrary: "Library",
+    tlColType: "Type",
+    tlColItems: "Items",
+    tlColSeasonsAlbums: "Seasons/Albums",
+    tlColEpisodesTracks: "Episodes/Tracks",
+    tlColStreamed: "Streamed",
+    tlColLastPlayed: "Last Played",
+    tlColPlays: "Plays",
+    tlColDuration: "Duration",
+    tlColUser: "User",
+    tlColUsername: "Username",
+    tlColFullName: "Full Name",
+    tlColEmail: "Email",
+    tlColLastStreamed: "Last Streamed",
+    tlColLastKnownIP: "Last Known IP",
+    tlColLastPlatform: "Last Platform",
+    tlColLastPlayer: "Last Player",
+    tlColTotalPlays: "Total Plays",
+    tlColTotalDuration: "Total Duration",
+    tlColEpsTracks: "Eps/Tracks",
+    tlColLastSeen: "Last Seen",
+    tlColLastIP: "Last IP",
+    tlColDate: "Date",
+    tlColIP: "IP",
+    tlColPlatform: "Platform",
+    tlColProduct: "Product",
+    tlColPlayer: "Player",
+    tlColTitle: "Title",
+    tlColStarted: "Started",
+    tlColPaused: "Paused",
+    tlColStopped: "Stopped",
+    tlColIPAddress: "IP Address",
+    tlColLastStreamedMob: "Last Streamed",
+    // Tautulli — filter buttons
+    tlFilterMovies: "Movies",
+    tlFilterTvShows: "TV Shows",
+    tlFilterMusic: "Music",
+    tlFilterLiveTV: "Live TV",
+    tlFilterDirectPlay: "Direct Play",
+    tlFilterDirectStream: "Direct Stream",
+    tlFilterTranscode: "Transcode",
+    // Tautulli — sharing banner
+    tlSharingDetected: "Account sharing detected",
+    tlAcknowledge: "Acknowledge",
+    tlNeverSeen: "Never seen",
+    tlNever: "never",
+    tlNA: "n/a",
+    // Tautulli — empty states
+    tlNoLibraryData: "No library data",
+    tlNoUserData: "No user data",
+    // Tautulli — buttons / headers
+    tlDelete: "Delete",
+    tlPurge: "Purge",
+    tlEdit: "Edit",
+    // Tautulli — graphs sub-tabs
+    tlGSubMedia: "Media Type",
+    tlGSubStream: "Stream Type",
+    tlGSubTotals: "Play Totals",
+    tlGMetricPlays: "Plays",
+    tlGMetricDuration: "Duration",
+    tlGMetricPlayCount: "Play Count",
+    tlGMetricPlayDuration: "Play Duration",
+    tlGLast: "Last",
+    tlGDays: "days",
+    tlGMonths: "months",
+    tlGAllUsers: "All Users",
+    tlGSelectAll: "Select All",
+    tlGDeselectAll: "Deselect All",
+    tlGNoUsers: "No users",
+    // Tautulli — graph titles
+    tlGDailyByMedia: "Daily Play Count by Media Type",
+    tlGByDow: "By Day of Week",
+    tlGByHod: "By Hour of Day",
+    tlGDailyByStream: "Daily Play Count by Stream Type",
+    tlGConcurrent: "Daily Concurrent Streams by Stream Type",
+    tlGTotalByMonth: "Total Play Count by Month",
+    // Activity Queue — poster cards
+    actQueue: "Queue",
+    actHistory: "History",
+    actBlocklist: "Blocklist",
+    actActivity: "Activity",
+    actFailed: "failed",
+    actNoDownloads: "No active downloads",
+    actNoHistory: "No history",
+    actNoBlocked: "No blocked releases",
+    // Activity Queue — modal
+    actQueueEmpty: "Queue is empty",
+    actHistoryEmpty: "No history found",
+    actBlocklistEmpty: "Blocklist is empty",
+    // Activity Queue — column labels
+    actColSource: "Source",
+    actColQuality: "Quality",
+    actColSize: "Size",
+    actColTimeLeft: "Time Left",
+    actColFormats: "Formats",
+    actColProtocol: "Protocol",
+    actColIndexer: "Indexer",
+    actColClient: "Client",
+    actColStatus: "Status",
+    actColEvent: "Event",
+    actColLangs: "Languages",
+    actColDate: "Date",
+    actColDlClient: "Download Client",
+    actColRelgroup: "Release Group",
+    actColSrcTitle: "Source Title",
+    actColCfScore: "CF Score",
+    actColTitle: "Title",
+    // Activity Queue — filter labels
+    actAllSources: "All Sources",
+    actAllStatus: "All Status",
+    actAllQualities: "All Qualities",
+    actAllProtocols: "All Protocols",
+    actAllIndexers: "All Indexers",
+    actAllClients: "All Clients",
+    actAllEvents: "All Events",
+    actAllLanguages: "All Languages",
+    actAllFormats: "All Formats",
+    actAllGroups: "All Groups",
+    actDownloading: "Downloading",
+    actEvtGrabbed: "Grabbed",
+    actEvtImported: "Imported",
+    actEvtFailed: "Failed",
+    actEvtImportFailed: "Import Failed",
+    actEvtIgnored: "Ignored",
+    actEvtDeleted: "Deleted",
+    // Activity Queue — buttons
+    actDelete: "Delete",
+    actColumns: "Columns",
+    // Activity Modal — tab titles
+    actTabQueue: "Queue",
+    actTabHistory: "History",
+    actTabBlocklist: "Blocklist",
+    // Manual Import modal
+    actManualImport: "Manual Import",
+    actNoFiles: "No importable files found",
+    actNoFilesHint: "Check that download is complete and files exist",
+    actImport: "Import",
+    actImporting: "Importing\u2026",
+    actSelectMedia: "Select\u2026",
+    actSelectQuality: "Select quality\u2026",
+    actSelectLanguage: "Select language\u2026",
+    actReleaseGroup: "Release Group",
+    actSize: "Size",
+    actError: "Error",
+    actLanguages: "Languages",
+    actQuality: "Quality",
+    actSource: "Source",
+    // Remove queue modal
+    actRemoveTitle: "Remove",
+    actRemoveConfirm: "Are you sure you want to remove",
+    actRemoveFromQueue: "from the queue?",
+    actRemovalMethod: "Removal Method",
+    actRemoveFromClient: "Remove from Download Client",
+    actRemoveFromQueueOnly: "Remove from Queue Only",
+    actRemoveClientWarn: "'Remove from Download Client' will remove the download and the file(s) from the download client.",
+    actBlocklistRelease: "Blocklist Release",
+    actDoNotBlocklist: "Do not Blocklist",
+    actBlocklistSearch: "Blocklist and Search",
+    actBlocklistOnly: "Blocklist Only",
+    actClose: "Close",
+    actRemove: "Remove",
+    // Statistics section headers
+    tlStatisticsPlex: "Statistics (Plex)",
+    tlStatisticsJellyfin: "Statistics (Jellyfin)",
+    actActivityQueue: "Activity Queue",
+    // Columns picker header
+    actColPickerHdr: "Columns"
   }
 };
 
@@ -11144,26 +11520,26 @@ var _TautulliTableMethods = class {
     const tot = filtered.length;
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const COLS = [
-      { key: "name", label: "Library", sort: "section_name", right: false },
-      { key: "type", label: "Type", sort: "section_type", right: false },
-      { key: "count", label: "Items", sort: "count", right: true },
-      { key: "parents", label: "Seasons/Albums", sort: "parent_count", right: true },
-      { key: "children", label: "Episodes/Tracks", sort: "child_count", right: true },
-      { key: "lastStream", label: "Streamed", sort: "last_accessed", right: false },
-      { key: "lastPlayed", label: "Last Played", sort: "last_played", right: false },
-      { key: "plays", label: "Plays", sort: "plays", right: true },
-      { key: "duration", label: "Duration", sort: "duration", right: true }
+      { key: "name", label: this._t("tlColLibrary"), sort: "section_name", right: false },
+      { key: "type", label: this._t("tlColType"), sort: "section_type", right: false },
+      { key: "count", label: this._t("tlColItems"), sort: "count", right: true },
+      { key: "parents", label: this._t("tlColSeasonsAlbums"), sort: "parent_count", right: true },
+      { key: "children", label: this._t("tlColEpisodesTracks"), sort: "child_count", right: true },
+      { key: "lastStream", label: this._t("tlColStreamed"), sort: "last_accessed", right: false },
+      { key: "lastPlayed", label: this._t("tlColLastPlayed"), sort: "last_played", right: false },
+      { key: "plays", label: this._t("tlColPlays"), sort: "plays", right: true },
+      { key: "duration", label: this._t("tlColDuration"), sort: "duration", right: true }
     ];
     const vis = COLS.filter((c) => !hidden.has(c.key));
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "name"), hidden, "data-tl-lib-col");
     const deskColsBtn = this._tlColsMenu("tl-libs-cols-btn", "tl-libs-cols-menu", deskColItems, m.libsColsOpen);
     const MOB_LIB_COLS = [
-      { key: "plays", label: "Plays" },
-      { key: "lastPlayed", label: "Last Played" },
-      { key: "type", label: "Type" },
-      { key: "parents", label: "Seasons/Albums" },
-      { key: "children", label: "Eps/Tracks" },
-      { key: "lastStream", label: "Last Streamed" }
+      { key: "plays", label: this._t("tlColPlays") },
+      { key: "lastPlayed", label: this._t("tlColLastPlayed") },
+      { key: "type", label: this._t("tlColType") },
+      { key: "parents", label: this._t("tlColSeasonsAlbums") },
+      { key: "children", label: this._t("tlColEpsTracks") },
+      { key: "lastStream", label: this._t("tlColLastStreamedMob") }
     ];
     const mobColItems = this._tlColItems(MOB_LIB_COLS, mobHidden, "data-tl-lib-mob-col");
     const mobColsBtn = this._tlColsMenu("tl-libs-mob-cols-btn", "tl-libs-mob-cols-menu", mobColItems, m.libsMobColsOpen);
@@ -11198,16 +11574,16 @@ var _TautulliTableMethods = class {
             ${lib.duration ? `<div style="font-size:11px;color:var(--is-text-label)">${this._tlFmtDuration(lib.duration)}</div>` : ""}
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</div>';
+      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoLibraryData")}</div>`;
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-lpage", page, totalPages);
     }
-    const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
+    const editThHdr = editMode ? `<th style="white-space:nowrap;width:1px;padding-right:12px">${this._t("tlEdit")}</th>` : "";
     const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-lib-sort")).join("");
     const rows = sliced.map((lib) => {
       const type = (lib.section_type || "").toLowerCase();
       const icon = this._tlLibSvgIcon(type, lib.section_name || "", "md");
-      const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : '<span style="color:var(--is-text-muted)">never</span>';
-      const lPly = lib.last_played ? `<span style="font-size:11px;color:var(--is-text-sec)">${lib.last_played}</span>` : '<span style="color:var(--is-text-muted)">n/a</span>';
+      const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : `<span style="color:var(--is-text-muted)">${this._t("tlNever")}</span>`;
+      const lPly = lib.last_played ? `<span style="font-size:11px;color:var(--is-text-sec)">${lib.last_played}</span>` : `<span style="color:var(--is-text-muted)">${this._t("tlNA")}</span>`;
       const cm = {
         name: `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lib.section_name || "\u2014"}</strong></span></td>`,
         type: `<td style="text-transform:capitalize;color:var(--is-text-label);white-space:nowrap">${lib.section_type || "\u2014"}</td>`,
@@ -11226,7 +11602,7 @@ var _TautulliTableMethods = class {
       </div></td>` : "";
       return `<tr>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-lpage", page, totalPages);
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoLibraryData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-lpage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Users
@@ -11258,9 +11634,9 @@ var _TautulliTableMethods = class {
         <table style="width:100%;border-collapse:collapse">
           <thead>
             <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
-              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">IP Address</th>
-              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">Last Seen</th>
-              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:right">Plays</th>
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">${this._t("tlColIPAddress")}</th>
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">${this._t("tlColLastSeen")}</th>
+              <th style="padding:3px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:right">${this._t("tlColPlays")}</th>
             </tr>
           </thead>
           <tbody>${ipRows}</tbody>
@@ -11271,8 +11647,8 @@ var _TautulliTableMethods = class {
     return `<div style="background:rgba(180,30,30,0.12);border:1px solid rgba(255,100,100,0.2);border-radius:8px;margin-bottom:10px;overflow:hidden">
       <div id="tl-ip-report-toggle" style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="rgba(255,150,150,0.9)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span style="font-size:12px;font-weight:700;color:rgba(255,150,150,0.95);flex:1">Account sharing detected \xB7 ${users.length} user${users.length !== 1 ? "s" : ""} \xB7 ${threshold}+ unique IPs</span>
-        <button class="tl-ack-btn" id="tl-ack-btn" style="font-size:10px;padding:3px 10px;margin-right:4px" onclick="event.stopPropagation()">Acknowledge</button>
+        <span style="font-size:12px;font-weight:700;color:rgba(255,150,150,0.95);flex:1">${this._t("tlSharingDetected")} \xB7 ${users.length} user${users.length !== 1 ? "s" : ""} \xB7 ${threshold}+ unique IPs</span>
+        <button class="tl-ack-btn" id="tl-ack-btn" style="font-size:10px;padding:3px 10px;margin-right:4px" onclick="event.stopPropagation()">${this._t("tlAcknowledge")}</button>
         ${chevron}
       </div>
       ${open ? `<div style="padding:0 12px 12px">${rows}</div>` : ""}
@@ -11293,17 +11669,17 @@ var _TautulliTableMethods = class {
     const tot = filtered.length;
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const COLS = [
-      { key: "user", label: "User", sort: "friendly_name", right: false },
-      { key: "username", label: "Username", sort: "username", right: false },
-      { key: "fullname", label: "Full Name", sort: "full_name", right: false },
-      { key: "email", label: "Email", sort: "email", right: false },
-      { key: "lastSeen", label: "Last Streamed", sort: "last_seen", right: false },
-      { key: "ip", label: "Last Known IP", sort: "ip_address", right: false },
-      { key: "platform", label: "Last Platform", sort: "platform", right: false },
-      { key: "player", label: "Last Player", sort: "player", right: false },
-      { key: "lastPlayed", label: "Last Played", sort: "last_played", right: false },
-      { key: "plays", label: "Total Plays", sort: "plays", right: true },
-      { key: "duration", label: "Total Duration", sort: "duration", right: true }
+      { key: "user", label: this._t("tlColUser"), sort: "friendly_name", right: false },
+      { key: "username", label: this._t("tlColUsername"), sort: "username", right: false },
+      { key: "fullname", label: this._t("tlColFullName"), sort: "full_name", right: false },
+      { key: "email", label: this._t("tlColEmail"), sort: "email", right: false },
+      { key: "lastSeen", label: this._t("tlColLastStreamed"), sort: "last_seen", right: false },
+      { key: "ip", label: this._t("tlColLastKnownIP"), sort: "ip_address", right: false },
+      { key: "platform", label: this._t("tlColLastPlatform"), sort: "platform", right: false },
+      { key: "player", label: this._t("tlColLastPlayer"), sort: "player", right: false },
+      { key: "lastPlayed", label: this._t("tlColLastPlayed"), sort: "last_played", right: false },
+      { key: "plays", label: this._t("tlColTotalPlays"), sort: "plays", right: true },
+      { key: "duration", label: this._t("tlColTotalDuration"), sort: "duration", right: true }
     ];
     const vis = COLS.filter((c) => !hidden.has(c.key));
     const tl2 = this._tautulli || {};
@@ -11313,13 +11689,13 @@ var _TautulliTableMethods = class {
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "user"), hidden, "data-tl-col");
     const deskColsBtn = this._tlColsMenu("tl-users-cols-btn", "tl-users-cols-menu", deskColItems, m.usersColsOpen);
     const MOB_USR_COLS = [
-      { key: "lastSeen", label: "Last Seen" },
-      { key: "lastPlayed", label: "Last Played" },
-      { key: "platform", label: "Platform" },
-      { key: "player", label: "Player" },
-      { key: "ip", label: "Last IP" },
-      { key: "username", label: "Username" },
-      { key: "email", label: "Email" }
+      { key: "lastSeen", label: this._t("tlColLastSeen") },
+      { key: "lastPlayed", label: this._t("tlColLastPlayed") },
+      { key: "platform", label: this._t("tlColPlatform") },
+      { key: "player", label: this._t("tlColPlayer") },
+      { key: "ip", label: this._t("tlColLastIP") },
+      { key: "username", label: this._t("tlColUsername") },
+      { key: "email", label: this._t("tlColEmail") }
     ];
     const mobColItems = this._tlColItems(MOB_USR_COLS, mobHidden, "data-tl-usr-mob-col");
     const mobColsBtn = this._tlColsMenu("tl-users-mob-cols-btn", "tl-users-mob-cols-menu", mobColItems, m.usersMobColsOpen);
@@ -11347,7 +11723,7 @@ var _TautulliTableMethods = class {
           <button class="tl-edit-btn tl-tog-btn${ag ? " on" : ""}" data-tl-toggle-guest="${uid}" data-tl-ag="${ag}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></button>
         </div>` : "";
         const um = [];
-        if (!mobHidden.has("lastSeen")) um.push(`<span>${u.last_seen ? this._tlFmtDate(u.last_seen) : "Never seen"}</span>`);
+        if (!mobHidden.has("lastSeen")) um.push(`<span>${u.last_seen ? this._tlFmtDate(u.last_seen) : this._t("tlNeverSeen")}</span>`);
         if (!mobHidden.has("lastPlayed") && u.last_played) um.push(`<span style="display:inline-flex;align-items:center;gap:3px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._tlMediaIcon(u.media_type, 10)}<span style="overflow:hidden;text-overflow:ellipsis">${this._escHtml(u.last_played)}</span></span>`);
         if (!mobHidden.has("platform") && u.platform) um.push(`<span>${this._escHtml(u.platform)}</span>`);
         if (!mobHidden.has("player") && u.player) um.push(`<span>${this._escHtml(u.player)}</span>`);
@@ -11362,11 +11738,11 @@ var _TautulliTableMethods = class {
             <div style="font-size:11px;color:var(--is-text-label)">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</div>
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</div>';
+      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoUserData")}</div>`;
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-upage", page, totalPages);
     }
     const warnUsers = wU;
-    const editThHdr = editMode ? '<th style="white-space:nowrap;width:1px;padding-right:12px">Edit</th>' : "";
+    const editThHdr = editMode ? `<th style="white-space:nowrap;width:1px;padding-right:12px">${this._t("tlEdit")}</th>` : "";
     const thead = vis.map((c) => _tlSortTh(c, sortCol, sortDir, "tl-sort")).join("");
     const rows = sliced.map((u) => {
       const name = u.friendly_name || u.username || "\u2014";
@@ -11379,10 +11755,10 @@ var _TautulliTableMethods = class {
         username: `<td style="color:var(--is-text-label)">${this._escHtml(u.username || "\u2014")}</td>`,
         fullname: `<td style="color:var(--is-text-label)">${this._escHtml(u.full_name || "\u2014")}</td>`,
         email: `<td style="color:var(--is-text-label);font-size:11px">${this._escHtml(u.email || "\u2014")}</td>`,
-        lastSeen: `<td>${u.last_seen ? this._tlFmtDate(u.last_seen) : '<span style="color:var(--is-text-muted)">never</span>'}</td>`,
-        ip: `<td style="font-family:monospace;font-size:11px">${this._escHtml(u.ip_address || "n/a")}</td>`,
-        platform: `<td>${this._escHtml(u.platform || "n/a")}</td>`,
-        player: `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="color:var(--is-text-muted)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : '<span style="color:var(--is-text-muted)">n/a</span>'}</td>`,
+        lastSeen: `<td>${u.last_seen ? this._tlFmtDate(u.last_seen) : `<span style="color:var(--is-text-muted)">${this._t("tlNever")}</span>`}</td>`,
+        ip: `<td style="font-family:monospace;font-size:11px">${this._escHtml(u.ip_address || this._t("tlNA"))}</td>`,
+        platform: `<td>${this._escHtml(u.platform || this._t("tlNA"))}</td>`,
+        player: `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="color:var(--is-text-muted)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : `<span style="color:var(--is-text-muted)">${this._t("tlNA")}</span>`}</td>`,
         lastPlayed: `<td style="max-width:160px"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.last_played ? mIco + '<span style="overflow:hidden;text-overflow:ellipsis">' + this._escHtml(u.last_played) + "</span>" : '<span style="color:var(--is-text-muted)">n/a</span>'}</div></td>`,
         plays: `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${u.plays ?? 0}</td>`,
         duration: `<td style="text-align:right">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</td>`
@@ -11398,7 +11774,7 @@ var _TautulliTableMethods = class {
       </div></td>` : "";
       return `<tr${isW ? ' class="tl-row-warn"' : ""}>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-upage", page, totalPages);
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoUserData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-upage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Refetch
@@ -11406,7 +11782,7 @@ var _TautulliTableMethods = class {
   async _tlRefetchLibraries(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    body.innerHTML = `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
     const pp = this._tlCalcPerPage();
     const start = (m.libsPage || 0) * pp;
     const r = await this._tlApiFetch("get_libraries_table", `length=${pp}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
@@ -11435,7 +11811,7 @@ var _TautulliTableMethods = class {
   _tlBodyHistory() {
     const m = this._tautulliModal;
     if (!m) return "";
-    if (m.histLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    if (m.histLoading) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
     const isMob = window.matchMedia("(max-width:600px)").matches;
     const page = m.histPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: true });
@@ -11450,39 +11826,39 @@ var _TautulliTableMethods = class {
     const mobHidden = this._tlHidden("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const HIST_COLS = [
-      { key: "date", label: "Date", right: false },
-      { key: "user", label: "User", right: false },
-      { key: "ip", label: "IP", right: false },
-      { key: "platform", label: "Platform", right: false },
-      { key: "product", label: "Product", right: false },
-      { key: "player", label: "Player", right: false },
-      { key: "title", label: "Title", right: false },
-      { key: "started", label: "Started", right: false },
-      { key: "paused", label: "Paused", right: true },
-      { key: "stopped", label: "Stopped", right: false },
-      { key: "duration", label: "Duration", right: true }
+      { key: "date", label: this._t("tlColDate"), right: false },
+      { key: "user", label: this._t("tlColUser"), right: false },
+      { key: "ip", label: this._t("tlColIP"), right: false },
+      { key: "platform", label: this._t("tlColPlatform"), right: false },
+      { key: "product", label: this._t("tlColProduct"), right: false },
+      { key: "player", label: this._t("tlColPlayer"), right: false },
+      { key: "title", label: this._t("tlColTitle"), right: false },
+      { key: "started", label: this._t("tlColStarted"), right: false },
+      { key: "paused", label: this._t("tlColPaused"), right: true },
+      { key: "stopped", label: this._t("tlColStopped"), right: false },
+      { key: "duration", label: this._t("tlColDuration"), right: true }
     ];
     const userSel = this._tlUserSelect("tl-hist-user-sel", users, selUser);
     const mediaBtns = [
-      { v: "movie", l: "Movies" },
-      { v: "episode", l: "TV Shows" },
-      { v: "track", l: "Music" },
-      { v: "live", l: "Live TV" }
+      { v: "movie", l: this._t("tlFilterMovies") },
+      { v: "episode", l: this._t("tlFilterTvShows") },
+      { v: "track", l: this._t("tlFilterMusic") },
+      { v: "live", l: this._t("tlFilterLiveTV") }
     ].map((f) => `<button class="tl-page-btn${media === f.v ? " active" : ""}" data-tl-hist-media="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
     const playBtns = [
-      { v: "direct play", l: "Direct Play" },
-      { v: "direct stream", l: "Direct Stream" },
-      { v: "transcode", l: "Transcode" }
+      { v: "direct play", l: this._t("tlFilterDirectPlay") },
+      { v: "direct stream", l: this._t("tlFilterDirectStream") },
+      { v: "transcode", l: this._t("tlFilterTranscode") }
     ].map((f) => `<button class="tl-page-btn${playback === f.v ? " active" : ""}" data-tl-hist-play="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
-    const delBtn = this._tlEditBtn("tl-hist-del-mode", delMode, "Delete");
+    const delBtn = this._tlEditBtn("tl-hist-del-mode", delMode, this._t("tlDelete"));
     const MOB_HIST_PICKER = [
-      { key: "platform", label: "Platform" },
-      { key: "player", label: "Player" },
-      { key: "started", label: "Started" },
-      { key: "duration", label: "Duration" },
-      { key: "ip", label: "IP" },
-      { key: "paused", label: "Paused" },
-      { key: "stopped", label: "Stopped" }
+      { key: "platform", label: this._t("tlColPlatform") },
+      { key: "player", label: this._t("tlColPlayer") },
+      { key: "started", label: this._t("tlColStarted") },
+      { key: "duration", label: this._t("tlColDuration") },
+      { key: "ip", label: this._t("tlColIP") },
+      { key: "paused", label: this._t("tlColPaused") },
+      { key: "stopped", label: this._t("tlColStopped") }
     ];
     const colsBtn = isMob ? this._tlColsMenu("tl-hist-mob-cols-btn", "tl-hist-mob-cols-menu", this._tlColItems(MOB_HIST_PICKER, mobHidden, "data-tl-hist-mob-col"), m.histMobColsOpen) : this._tlColsMenu("tl-hist-cols-btn", "tl-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-hist-col"), m.histColsOpen);
     const histSearchEl = this._tlSearchInput("tl-hist-search", m.histSearch);
@@ -11503,7 +11879,7 @@ var _TautulliTableMethods = class {
     const _wArc = (d) => `<path d="${d}" style="fill:var(--is-text-body)"/>`;
     const watchSvg = (ws) => ws === 4 ? _wSvg('<circle cx="7" cy="7" r="5.5" style="fill:var(--is-text-body)"/>') : ws === 3 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,1,1 1.5,7 Z")}`) : ws === 2 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 7,12.5 Z")}`) : ws === 1 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 12.5,7 Z")}`) : _wSvg(_wRing);
     if (!data.length) {
-      return toolbar + '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No history</div>';
+      return toolbar + `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
     }
     if (isMob) {
       const cards = data.map((h) => {
@@ -11519,9 +11895,9 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("player") && h.player) mp.push(this._escHtml(h.player));
         if (!mobHidden.has("started") && h.started) mp.push(this._tlFmtTime(h.started));
         if (!mobHidden.has("ip") && h.ip_address) mp.push(h.ip_address);
-        if (!mobHidden.has("paused") && h.paused_counter) mp.push("paused " + this._tlFmtDuration(h.paused_counter));
+        if (!mobHidden.has("paused") && h.paused_counter) mp.push(this._t("tlColPaused") + " " + this._tlFmtDuration(h.paused_counter));
         const meta = `<div class="tl-mob-meta"><span>${user}</span><span style="color:var(--is-text-muted)"> &middot; </span><span>${ago}</span>${mp.map((v) => `<span style="color:var(--is-text-muted)"> &middot; </span><span>${v}</span>`).join("")}</div>`;
-        const delEl = delMode ? `<button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${h.row_id}" style="margin-top:6px;font-size:10px">Delete</button>` : "";
+        const delEl = delMode ? `<button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${h.row_id}" style="margin-top:6px;font-size:10px">${this._t("tlDelete")}</button>` : "";
         return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>${meta}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div></div>${delEl}</div>`;
       }).join("");
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-hpage", page, totalPages);
@@ -11552,7 +11928,7 @@ var _TautulliTableMethods = class {
       const delCell = delMode ? `<td style="padding:0 4px;white-space:nowrap"><button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${rid}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>` : "";
       return `<tr>${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchCell}${delCell}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" style="text-align:center;color:var(--is-text-muted);padding:30px">No history</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-hpage", page, totalPages);
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-hpage", page, totalPages);
   }
   async _tlRefetchHistory(body) {
     const m = this._tautulliModal;
@@ -11582,7 +11958,7 @@ var _TautulliMethods = class {
       <div class="sec-card">
         <div class="col-hdr" style="margin-bottom:5px">
           <ha-icon icon="mdi:chart-bar" style="--mdc-icon-size:24px"></ha-icon>
-          <span class="col-hdr-title">Statistics (Plex)</span>
+          <span class="col-hdr-title">${this._t("tlStatisticsPlex")}</span>
           <div class="col-hdr-line"></div>
         </div>
         <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
@@ -11605,12 +11981,12 @@ var _TautulliMethods = class {
       const dim = count === 0 ? ";opacity:0.28" : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return `<div style="${sep}display:flex;align-items:center;gap:5px;padding:4px 0">` + this._tlLibSvgIcon(type, lib.section_name, "sm") + `<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:1px">${lib.section_name || "\u2014"}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0${dim}">${count}</span></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No data</div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoData")}</div>`;
     const sectTag = libs.length > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${libs.length}</span>` : "";
     return `<div class="tl-card" data-tl-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Libraries</span>
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlLibraries")}</span>
         ${sectTag}
       </div>
       <div style="flex:1;position:relative;z-index:2">${rows}</div>
@@ -11627,24 +12003,24 @@ var _TautulliMethods = class {
       const av = thumb ? `<img src="${thumb}" style="width:14px;height:14px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.18)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.14);display:inline-block;flex-shrink:0"></span>`;
       const sep = userRows.indexOf(r) > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return `<div style="${sep}display:flex;align-items:center;gap:6px;padding:4px 0">${av}<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${plays}</span></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>`;
-    const activeTag = activeUsers > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${activeUsers} active</span>` : "";
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">${this._t("tlNoData")}</div>`;
+    const activeTag = activeUsers > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${activeUsers} ${this._t("tlActive")}</span>` : "";
     return `<div class="tl-card" data-tl-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Users</span>
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>
         ${activeTag}
       </div>
       <div style="flex:1;position:relative;z-index:2">${items}</div>
     </div>`;
   }
   _tlSharingCard(data) {
-    const name = (data.sharingUsers || [])[0] || "Unknown";
+    const name = (data.sharingUsers || [])[0] || this._t("tlUnknown");
     return `<div class="tl-card tl-card-warn" data-tl-open="users">
-      <span class="media-type-tag" style="color:rgba(255,150,150,0.95)">! Sharing</span>
+      <span class="media-type-tag" style="color:rgba(255,150,150,0.95)">${this._t("tlSharing")}</span>
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(70,0,0,0.95) 0%,rgba(40,0,0,0.65) 55%,transparent 100%);padding:48px 8px 8px;z-index:1">
         <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${name}</div>
-        <div style="font-size:9px;color:rgba(255,150,150,0.7)">Multiple IPs \xB7 Click to review</div>
+        <div style="font-size:9px;color:rgba(255,150,150,0.7)">${this._t("tlSharingHint")}</div>
       </div>
     </div>`;
   }
@@ -11657,12 +12033,12 @@ var _TautulliMethods = class {
       const ago = h.date ? this._tlFmtDate(h.date) : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return `<div style="${sep}padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No history</div>`;
-    const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} now</span>` : "";
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>`;
+    const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} ${this._t("tlNow")}</span>` : "";
     return `<div class="tl-card" data-tl-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlHistory")}</span>
         ${streamTag}
       </div>
       <div style="flex:1;position:relative;z-index:2">${items}</div>
@@ -11680,13 +12056,13 @@ var _TautulliMethods = class {
     const labels = days.map(
       (d) => `<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">${(d.date || "").slice(-2)}</div>`
     ).join("");
-    const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} plays</span>` : "";
+    const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("tlPlays")}</span>` : "";
     return `<div class="tl-card" data-tl-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
         <div style="display:flex;flex-direction:column;gap:1px">
-          <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Charts</span>
-          <span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">last 7 days</span>
+          <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlCharts")}</span>
+          <span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span>
         </div>
         ${playsTag}
       </div>
@@ -11790,13 +12166,13 @@ var _TautulliMethods = class {
       <div class="popup-glass tl-wide">
         <div class="is-panel-hdr" style="${hdrStyle}">${hdrInner}</div>
         <div class="popup-body" id="tl-body" style="padding:${isMobile ? "12px 14px 16px" : "14px 22px 20px"}">
-          <div class="is-loading"><span>Loading\u2026</span></div>
+          <div class="is-loading"><span>${this._t("loading")}</span></div>
         </div>
       </div>
     </div>`;
   }
   _tlTabLabel(t) {
-    return { libraries: "Libraries", users: "Users", history: "History", graphs: "Graphs" }[t] || t;
+    return { libraries: this._t("tlLibraries"), users: this._t("tlUsers"), history: this._t("tlHistory"), graphs: this._t("tlGraphs") }[t] || t;
   }
   _tlTabIcon(t) {
     return {
@@ -11807,7 +12183,7 @@ var _TautulliMethods = class {
     }[t] || "";
   }
   _tlTabTitle(t) {
-    return { libraries: "All Libraries", users: "All Users", history: "Recent History", graphs: "Play Statistics" }[t] || "";
+    return { libraries: this._t("tlAllLibraries"), users: this._t("tlAllUsers"), history: this._t("tlRecentHistory"), graphs: this._t("tlPlayStatistics") }[t] || "";
   }
   _tlTabSubtitle(t) {
     return { libraries: "", users: "", history: "", graphs: "" }[t] || "";
@@ -11819,7 +12195,7 @@ var _TautulliMethods = class {
     const body = modal.querySelector("#tl-body");
     if (!body) return;
     if (tab === "libraries") {
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
       const ml = this._tautulliModal;
       if (!ml) return;
       const _pp = this._tlCalcPerPage();
@@ -11830,7 +12206,7 @@ var _TautulliMethods = class {
       body.innerHTML = this._tlBodyLibraries(ml.libsData, ml.libsTotal);
       this._wireTautulliModalBody(body);
     } else if (tab === "users") {
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
       const m2 = this._tautulliModal;
       if (!m2) return;
       const _pp2 = this._tlCalcPerPage();
@@ -11843,7 +12219,7 @@ var _TautulliMethods = class {
     } else if (tab === "history") {
       if (!this._tautulliModal) return;
       this._tautulliModal.histLoading = true;
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
       const [data, usersR] = await Promise.all([
         this._tlFetchHistory(0, null, null, null, this._tlCalcPerPage({ hasFilter: true })),
         this._tlApiFetch("get_users_table", "length=100&start=0&order_column=friendly_name&order_dir=asc")
@@ -12013,7 +12389,7 @@ var _TautulliGraphsMethods = class {
   _tlBodyGraphs() {
     const m = this._tautulliModal;
     if (!m) return "";
-    if (m.graphsLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading&hellip;</div>';
+    if (m.graphsLoading) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
     const sub = m.graphsSub || "media";
     const metric = m.graphsMetric || "plays";
     const range = m.graphsRange || 30;
@@ -12021,19 +12397,19 @@ var _TautulliGraphsMethods = class {
     const isTot = sub === "totals";
     const subTabBar = `
       <div style="display:flex;gap:4px;flex-shrink:0">
-        ${[{ id: "media", lbl: "Media Type" }, { id: "stream", lbl: "Stream Type" }, { id: "totals", lbl: "Play Totals" }].map(
+        ${[{ id: "media", lbl: this._t("tlGSubMedia") }, { id: "stream", lbl: this._t("tlGSubStream") }, { id: "totals", lbl: this._t("tlGSubTotals") }].map(
       (s) => `<button class="tl-page-btn${s.id === sub ? " active" : ""}" data-tl-graph-sub="${s.id}">${s.lbl}</button>`
     ).join("")}
       </div>`;
     const metricBtns = `
       <div style="display:inline-flex;gap:2px;flex-shrink:0">
-        <button class="tl-page-btn${metric === "plays" ? " active" : ""}" data-tl-g-metric="plays"   >${isMob ? "Plays" : "Play Count"}</button>
-        <button class="tl-page-btn${metric === "duration" ? " active" : ""}" data-tl-g-metric="duration">${isMob ? "Duration" : "Play Duration"}</button>
+        <button class="tl-page-btn${metric === "plays" ? " active" : ""}" data-tl-g-metric="plays"   >${isMob ? this._t("tlGMetricPlays") : this._t("tlGMetricPlayCount")}</button>
+        <button class="tl-page-btn${metric === "duration" ? " active" : ""}" data-tl-g-metric="duration">${isMob ? this._t("tlGMetricDuration") : this._t("tlGMetricPlayDuration")}</button>
       </div>`;
-    const rangeUnit = isTot ? "months" : "days";
+    const rangeUnit = isTot ? this._t("tlGMonths") : this._t("tlGDays");
     const rangeCtrl = `
       <div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--is-text-muted);flex-shrink:0">
-        <span>Last</span>
+        <span>${this._t("tlGLast")}</span>
         <input id="tl-g-range" type="number" value="${range}" min="1" max="${isTot ? 60 : 365}"
           style="width:38px;background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-text);padding:4px 4px;font-size:12px;line-height:1.4;text-align:center;font-family:inherit;outline:none;box-sizing:border-box;-webkit-appearance:none;appearance:none">
         <span>${rangeUnit}</span>
@@ -12055,20 +12431,20 @@ var _TautulliGraphsMethods = class {
       const barOpts = { isDuration: isDur, isMob };
       const dowSvg = this._tlGBarSvg(gd.byDow, { ...barOpts, chartId: "dw", xLabel: (d) => d.slice(0, 3) });
       const hodSvg = this._tlGBarSvg(gd.byHod, { ...barOpts, chartId: "hd", xLabel: (_, i) => i % 4 === 0 ? `${i}h` : "" });
-      const halfRow = isMob ? `<div style="margin-bottom:10px">${this._tlGCard("By Day of Week", gd.byDow, dowSvg)}</div>
-           <div style="margin-bottom:10px">${this._tlGCard("By Hour of Day", gd.byHod, hodSvg)}</div>` : `<div style="display:flex;gap:10px;margin-bottom:10px">
+      const halfRow = isMob ? `<div style="margin-bottom:10px">${this._tlGCard(this._t("tlGByDow"), gd.byDow, dowSvg)}</div>
+           <div style="margin-bottom:10px">${this._tlGCard(this._t("tlGByHod"), gd.byHod, hodSvg)}</div>` : `<div style="display:flex;gap:10px;margin-bottom:10px">
              <div style="flex:1;min-width:0">${this._tlGCard("By Day of Week", gd.byDow, dowSvg)}</div>
              <div style="flex:1;min-width:0">${this._tlGCard("By Hour of Day", gd.byHod, hodSvg)}</div>
            </div>`;
-      body = `<div style="margin-bottom:10px">${this._tlGCard("Daily Play Count by Media Type", gd.byDate, lineSvg)}</div>${halfRow}`;
+      body = `<div style="margin-bottom:10px">${this._tlGCard(this._t("tlGDailyByMedia"), gd.byDate, lineSvg)}</div>${halfRow}`;
     } else if (sub === "stream") {
       const lineSvg = this._tlGLineSvg(gd.streamByDate, { ...BASE, chartId: "st", xLabel: (d) => d.slice(-5) });
       const concSvg = this._tlGLineSvg(gd.concurrentByDate, { ...BASE, chartId: "cc", isDuration: false, xLabel: (d) => d.slice(-5) });
-      body = `<div style="margin-bottom:10px">${this._tlGCard("Daily Play Count by Stream Type", gd.streamByDate, lineSvg)}</div>
-              <div>${this._tlGCard("Daily Concurrent Streams by Stream Type", gd.concurrentByDate, concSvg)}</div>`;
+      body = `<div style="margin-bottom:10px">${this._tlGCard(this._t("tlGDailyByStream"), gd.streamByDate, lineSvg)}</div>
+              <div>${this._tlGCard(this._t("tlGConcurrent"), gd.concurrentByDate, concSvg)}</div>`;
     } else {
       const barSvg = this._tlGBarSvg(gd.monthly, { isDuration: isDur, isMob, chartId: "mo", xLabel: (d) => d.slice(0, 3) });
-      body = `<div style="margin-bottom:10px">${this._tlGCard("Total Play Count by Month", gd.monthly, barSvg)}</div>`;
+      body = `<div style="margin-bottom:10px">${this._tlGCard(this._t("tlGTotalByMonth"), gd.monthly, barSvg)}</div>`;
     }
     return controls + body;
   }
@@ -12293,7 +12669,7 @@ var _TautulliGraphsMethods = class {
     const m = this._tautulliModal;
     if (!m) return "";
     const users = m.graphsUserList || [], sel = m.graphsSelectedUsers;
-    let btnLabel = "All Users";
+    let btnLabel = this._t("tlGAllUsers");
     if (sel && sel.size === 1) {
       const u = users.find((u2) => sel.has(String(u2.user_id)));
       btnLabel = u ? u.friendly_name || u.username || "1 User" : "1 User";
@@ -12315,10 +12691,10 @@ var _TautulliGraphsMethods = class {
       </button>
       <div id="tl-g-dd-panel" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:8px;min-width:160px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.35);overflow:hidden">
         <div style="display:flex;gap:6px;padding:6px 8px 8px;border-bottom:1px solid var(--is-divider)">
-          <button id="tl-g-dd-all"  class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">Select All</button>
-          <button id="tl-g-dd-none" class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">Deselect All</button>
+          <button id="tl-g-dd-all"  class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">${this._t("tlGSelectAll")}</button>
+          <button id="tl-g-dd-none" class="tl-page-btn" style="flex:1;height:26px;font-size:10px;padding:0">${this._t("tlGDeselectAll")}</button>
         </div>
-        <div style="max-height:160px;overflow-y:auto">${items || '<div style="padding:8px 12px;font-size:11px;color:var(--is-text-muted)">No users</div>'}</div>
+        <div style="max-height:160px;overflow-y:auto">${items || `<div style="padding:8px 12px;font-size:11px;color:var(--is-text-muted)">${this._t("tlGNoUsers")}</div>`}</div>
       </div>
     </div>`;
   }
@@ -12827,9 +13203,9 @@ var _JellystatMethods = class {
       const dim = count === 0 ? ";opacity:0.28" : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return '<div style="' + sep + 'display:flex;align-items:center;gap:5px;padding:4px 0">' + this._tlLibSvgIcon(type, lib.Name || "", "sm") + '<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:1px">' + (lib.Name || "&#x2014;") + '</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0' + dim + '">' + count + "</span></div>";
-    }).join("") || '<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No data</div>';
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoData")}</div>`;
     const sectTag = libs.length > 0 ? '<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + libs.length + "</span>" : "";
-    return '<div class="tl-card" data-js-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Libraries</span>' + sectTag + '</div><div style="flex:1;position:relative;z-index:2">' + rows + "</div></div>";
+    return `<div class="tl-card" data-js-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlLibraries")}</span>` + sectTag + '</div><div style="flex:1;position:relative;z-index:2">' + rows + "</div></div>";
   }
   _jsUsersCard(data) {
     const users = (data.users || []).slice(0, 5);
@@ -12840,9 +13216,9 @@ var _JellystatMethods = class {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const av = '<span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:7px;font-weight:700;color:#fff">' + (name[0] || "?").toUpperCase() + "</span>";
       return '<div style="' + sep + 'display:flex;align-items:center;gap:6px;padding:4px 0">' + av + '<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">' + name + '</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">' + plays + "</span></div>";
-    }).join("") || '<div style="font-size:9px;color:rgba(255,255,255,0.3)">No data</div>';
-    const activeTag = active > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + active + " active</span>" : "";
-    return '<div class="tl-card" data-js-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Users</span>' + activeTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">${this._t("tlNoData")}</div>`;
+    const activeTag = active > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + active + " " + this._t("tlActive") + "</span>" : "";
+    return `<div class="tl-card" data-js-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>` + activeTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
   }
   _jsHistoryCard(data) {
     const hist = (data.recentHistory || []).slice(0, 3);
@@ -12854,9 +13230,9 @@ var _JellystatMethods = class {
       const ago = h.ActivityDateInserted ? this._tlFmtDate(h.ActivityDateInserted) : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return '<div style="' + sep + 'padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + series + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">' + user + (ago ? " &middot; " + ago : "") + "</div></div>";
-    }).join("") || '<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No history</div>';
-    const streamTag = streams > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + streams + " now</span>" : "";
-    return '<div class="tl-card" data-js-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>' + streamTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>`;
+    const streamTag = streams > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + streams + " " + this._t("tlNow") + "</span>" : "";
+    return `<div class="tl-card" data-js-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlHistory")}</span>` + streamTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
   }
   _jsActivityCard(playsData) {
     const days = (playsData || []).slice(-7);
@@ -12870,8 +13246,8 @@ var _JellystatMethods = class {
     const labels = days.map(
       (d) => '<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">' + (d.date || "").slice(-2) + "</div>"
     ).join("");
-    const playsTag = total > 0 ? '<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + total + " plays</span>" : "";
-    return '<div class="tl-card" data-js-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Charts</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">last 7 days</span></div>' + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:2px">' + (bars || "") + '</div><div style="display:flex;gap:2px;margin-top:2px">' + labels + "</div></div></div>";
+    const playsTag = total > 0 ? '<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + total + " " + this._t("tlPlays") + "</span>" : "";
+    return `<div class="tl-card" data-js-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlCharts")}</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span></div>` + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:2px">' + (bars || "") + '</div><div style="display:flex;gap:2px;margin-top:2px">' + labels + "</div></div></div>";
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Modal
@@ -12941,10 +13317,10 @@ var _JellystatMethods = class {
     return '<div class="popup-overlay' + dayClass + '" data-js-modal><div class="popup-glass tl-wide"><div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div><div class="popup-body" id="js-body" style="padding:' + (isMobile ? "12px 14px 16px" : "14px 22px 20px") + '"><div class="is-loading"><span>Loading\u2026</span></div></div></div></div>';
   }
   _jsTabLabel(t) {
-    return { libraries: "Libraries", users: "Users", history: "History", graphs: "Graphs" }[t] || t;
+    return { libraries: this._t("tlLibraries"), users: this._t("tlUsers"), history: this._t("tlHistory"), graphs: this._t("tlGraphs") }[t] || t;
   }
   _jsTabTitle(t) {
-    return { libraries: "All Libraries", users: "All Users", history: "Recent History", graphs: "Play Statistics" }[t] || "";
+    return { libraries: this._t("tlAllLibraries"), users: this._t("tlAllUsers"), history: this._t("tlRecentHistory"), graphs: this._t("tlPlayStatistics") }[t] || "";
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Tab loader
@@ -12953,7 +13329,7 @@ var _JellystatMethods = class {
     const body = modal.querySelector("#js-body");
     if (!body) return;
     if (tab === "libraries") {
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
       const m = this._jellystatModal;
       if (!m) return;
       const raw = await this._jsApiFetch("stats/getLibraryCardStats");
@@ -13154,7 +13530,7 @@ var _ActivityRenderMethods = class {
       <div class="sec-card">
         <div class="col-hdr" style="margin-bottom:5px">
           <ha-icon icon="mdi:clipboard-list-outline" style="--mdc-icon-size:24px"></ha-icon>
-          <span class="col-hdr-title">Activity Queue</span>
+          <span class="col-hdr-title">${this._t("actActivityQueue")}</span>
           <div class="col-hdr-line"></div>
         </div>
         <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
@@ -13197,23 +13573,23 @@ var _ActivityRenderMethods = class {
       const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
       if (s) rows.push({ title: s.title || "\u2014", type: "show", failed: false, pct, sub });
     }
-    const badge = totalFailed > 0 ? `<span style="font-size:10px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalFailed} failed</span>` : totalActive > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalActive} active</span>` : "";
+    const badge = totalFailed > 0 ? `<span style="font-size:10px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalFailed} ${this._t("actFailed")}</span>` : totalActive > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalActive} ${this._t("tlActive")}</span>` : "";
     const rowsHtml = rows.length > 0 ? rows.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const color = r.failed ? "rgba(248,113,113,0.85)" : "rgba(52,211,153,0.85)";
-      const sub = r.sub ?? (r.type === "movie" ? "Movie" : "Show");
+      const sub = r.sub ?? (r.type === "movie" ? this._t("typeMovie") : this._t("typeTv"));
       const pctBar = r.failed ? "" : `<div style="margin-top:3px;width:100%;height:2px;background:rgba(255,255,255,0.08);border-radius:1px"><div style="width:${r.pct}%;height:100%;background:${color};border-radius:1px"></div></div>`;
-      const pctTxt = r.failed ? ` <span style="font-size:9px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.22);border-radius:10px;padding:1px 6px">failed</span>` : ` \xB7 ${r.pct}%`;
+      const pctTxt = r.failed ? ` <span style="font-size:9px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.22);border-radius:10px;padding:1px 6px">${this._t("actFailed")}</span>` : ` \xB7 ${r.pct}%`;
       return `<div style="${sep}padding:4px 0">
             <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
             <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}${pctTxt}</div>
             ${pctBar}
           </div>`;
-    }).join("") : `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">No active downloads</div>`;
+    }).join("") : `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoDownloads")}</div>`;
     return `<div class="tl-card" data-act-open="queue" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Queue</span>
+        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actQueue")}</span>
         ${badge}
       </div>
       <div style="flex:1;position:relative;z-index:2">${rowsHtml}</div>
@@ -13222,7 +13598,7 @@ var _ActivityRenderMethods = class {
   _actHistoryCard() {
     const cache = this._actHistoryCache;
     const grabbed = cache === null ? null : (cache || []).filter((r) => r.eventType === "grabbed" || r.eventType === "downloadFolderImported").slice(0, 4);
-    const content = grabbed === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">Loading\u2026</div>` : grabbed.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">No history</div>` : grabbed.map((r, i) => {
+    const content = grabbed === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : grabbed.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoHistory")}</div>` : grabbed.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const ago = r.date ? this._tlFmtDate(r.date) : "";
       const sub = [r.svc, ago].filter(Boolean).join(" \xB7 ");
@@ -13234,7 +13610,7 @@ var _ActivityRenderMethods = class {
     return `<div class="tl-card" data-act-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>
+        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actHistory")}</span>
       </div>
       <div style="flex:1;position:relative;z-index:2">${content}</div>
     </div>`;
@@ -13242,7 +13618,7 @@ var _ActivityRenderMethods = class {
   _actBlocklistCard() {
     const cache = this._actBlocklistCache;
     const items = cache === null ? null : (cache || []).slice(0, 4);
-    const content = items === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">Loading\u2026</div>` : items.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">No blocked releases</div>` : items.map((r, i) => {
+    const content = items === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : items.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoBlocked")}</div>` : items.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const ago = r.date ? this._tlFmtDate(r.date) : "";
       const sub = [r.svc, r.quality, ago].filter(Boolean).join(" \xB7 ");
@@ -13254,7 +13630,7 @@ var _ActivityRenderMethods = class {
     return `<div class="tl-card" data-act-open="blocklist" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Blocklist</span>
+        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actBlocklist")}</span>
       </div>
       <div style="flex:1;position:relative;z-index:2">${content}</div>
     </div>`;
@@ -13264,13 +13640,13 @@ var _ActivityRenderMethods = class {
     const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
     const isMobile = window.matchMedia("(max-width:600px)").matches;
     const allTabs = ["queue", "history", "blocklist"];
-    const tabLabels = { queue: "Queue", history: "History", blocklist: "Blocklist" };
+    const tabLabels = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist") };
     const tabBtns = allTabs.map(
       (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-act-tab="${t}">${tabLabels[t]}</button>`
     ).join("");
     const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
     const hdrInner = isMobile ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-           <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">Activity</div>
+           <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${this._t("actActivity")}</div>
            <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0">${closeSvg}</button>
          </div>
          <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
@@ -13283,7 +13659,7 @@ var _ActivityRenderMethods = class {
       <div class="popup-glass tl-wide">
         <div class="is-panel-hdr" style="${hdrStyle}">${hdrInner}</div>
         <div class="popup-body" id="act-body" style="padding:${isMobile ? "12px 14px 16px" : "14px 22px 20px"};overflow:hidden">
-          <div class="is-loading"><span>Loading\u2026</span></div>
+          <div class="is-loading"><span>${this._t("loading")}</span></div>
         </div>
       </div>
     </div>`;
@@ -13335,7 +13711,7 @@ var _ActivityRenderMethods = class {
       return true;
     });
     if (!all.length) {
-      return `<div style="text-align:center;color:var(--is-text-muted);padding:40px 20px">Queue is empty</div>`;
+      return `<div style="text-align:center;color:var(--is-text-muted);padding:40px 20px">${this._t("actQueueEmpty")}</div>`;
     }
     const pp = perPage || 15;
     const pg = Math.min(page || 0, Math.max(0, Math.ceil(filtered.length / pp) - 1));
@@ -13351,28 +13727,28 @@ var _ActivityRenderMethods = class {
     const srcFilmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
     const srcTvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
     const ALL_QUEUE_COLS = [
-      { id: "source", label: "Source" },
-      { id: "quality", label: "Quality" },
-      { id: "size", label: "Size" },
-      { id: "timeleft", label: "Time Left" },
-      { id: "formats", label: "Formats" },
-      { id: "protocol", label: "Protocol" },
-      { id: "indexer", label: "Indexer" },
-      { id: "client", label: "Client" },
-      { id: "status", label: "Status" }
+      { id: "source", label: this._t("actColSource") },
+      { id: "quality", label: this._t("actColQuality") },
+      { id: "size", label: this._t("actColSize") },
+      { id: "timeleft", label: this._t("actColTimeLeft") },
+      { id: "formats", label: this._t("actColFormats") },
+      { id: "protocol", label: this._t("actColProtocol") },
+      { id: "indexer", label: this._t("actColIndexer") },
+      { id: "client", label: this._t("actColClient") },
+      { id: "status", label: this._t("actColStatus") }
     ];
     const C = cols instanceof Set ? cols : /* @__PURE__ */ new Set(["source", "quality", "size", "formats", "status"]);
     const visCols = ALL_QUEUE_COLS.filter((c) => C.has(c.id));
     const selSty = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
-    const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>All ${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
-    const qSvcSel = C.has("source") ? `<select id="act-queue-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>All Sources</option><option value="radarr"${fSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${fSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>` : "";
-    const qStsSel = C.has("status") ? `<select id="act-queue-sts" style="${fSts !== "all" ? selStyA : selSty}"><option value="all"${fSts === "all" ? " selected" : ""}>All Status</option><option value="downloading"${fSts === "downloading" ? " selected" : ""}>Downloading</option><option value="failed"${fSts === "failed" ? " selected" : ""}>Failed</option></select>` : "";
-    const qQualSel = C.has("quality") ? mkSel("act-queue-quality", fQual, uniq(all, (r) => r.quality?.quality?.name), "Qualities") : "";
-    const qProtoSel = C.has("protocol") ? mkSel("act-queue-proto", fProto, ["torrent", "usenet"], "Protocols") : "";
-    const qIdxSel = C.has("indexer") ? mkSel("act-queue-indexer", fIdx, uniq(all, (r) => r.indexer), "Indexers") : "";
-    const qCliSel = C.has("client") ? mkSel("act-queue-client", fCli, uniq(all, (r) => r.downloadClient), "Clients") : "";
+    const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
+    const qSvcSel = C.has("source") ? `<select id="act-queue-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${fSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${fSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>` : "";
+    const qStsSel = C.has("status") ? `<select id="act-queue-sts" style="${fSts !== "all" ? selStyA : selSty}"><option value="all"${fSts === "all" ? " selected" : ""}>${this._t("actAllStatus")}</option><option value="downloading"${fSts === "downloading" ? " selected" : ""}>${this._t("actDownloading")}</option><option value="failed"${fSts === "failed" ? " selected" : ""}>${this._t("actEvtFailed")}</option></select>` : "";
+    const qQualSel = C.has("quality") ? mkSel("act-queue-quality", fQual, uniq(all, (r) => r.quality?.quality?.name), this._t("actAllQualities")) : "";
+    const qProtoSel = C.has("protocol") ? mkSel("act-queue-proto", fProto, ["torrent", "usenet"], this._t("actAllProtocols")) : "";
+    const qIdxSel = C.has("indexer") ? mkSel("act-queue-indexer", fIdx, uniq(all, (r) => r.indexer), this._t("actAllIndexers")) : "";
+    const qCliSel = C.has("client") ? mkSel("act-queue-client", fCli, uniq(all, (r) => r.downloadClient), this._t("actAllClients")) : "";
     const allQSels = [qSvcSel, qStsSel, qQualSel, qProtoSel, qIdxSel, qCliSel].filter(Boolean).join("");
     const qFilters = allQSels ? `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allQSels}</div>` : "";
     const qSearchEl = this._tlSearchInput("act-queue-search", m.queueSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
@@ -13479,8 +13855,8 @@ var _ActivityRenderMethods = class {
       return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
         <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
           ${qSearchEl}
-          <button id="act-queue-del-btn" class="tl-page-btn${delModeMob ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}Delete</button>
-          <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button>
+          <button id="act-queue-del-btn" class="tl-page-btn${delModeMob ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}${this._t("actDelete")}</button>
+          <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
         </div>
         ${qFilters}
         <div style="flex:1;overflow:hidden" data-act-clip>${rows}</div>
@@ -13493,15 +13869,15 @@ var _ActivityRenderMethods = class {
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
       <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
         ${qSearchEl}
-        <button id="act-queue-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}Delete</button>
-        <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button>
+        <button id="act-queue-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}${this._t("actDelete")}</button>
+        <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
       </div>
       ${qFilters}
       <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
           <thead><tr style="border-bottom:1px solid var(--is-divider)">
             <th style="padding:4px 8px 8px 0;width:22px"></th>
-            <th style="padding:4px 8px 8px 0;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;width:300px">Title</th>
+            <th style="padding:4px 8px 8px 0;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;width:300px">${this._t("actColTitle")}</th>
             ${visCols.map((c) => `<th style="${thSt};width:${COL_W[c.id] || 80}px">${c.label}</th>`).join("")}
             <th style="padding:4px 0 8px 8px;width:60px"></th>
           </tr></thead>
@@ -13522,16 +13898,16 @@ var _ActivityRenderMethods = class {
     const histSort = mh.histSort || "date";
     const histSortDir = mh.histSortDir || "desc";
     const ALL_HIST_COLS = [
-      { id: "event", label: "Event" },
-      { id: "quality", label: "Quality" },
-      { id: "langs", label: "Languages" },
-      { id: "formats", label: "Formats" },
-      { id: "date", label: "Date" },
-      { id: "client", label: "Download Client" },
-      { id: "indexer", label: "Indexer" },
-      { id: "relgroup", label: "Release Group" },
-      { id: "srctitle", label: "Source Title" },
-      { id: "cfscore", label: "CF Score" }
+      { id: "event", label: this._t("actColEvent") },
+      { id: "quality", label: this._t("actColQuality") },
+      { id: "langs", label: this._t("actColLangs") },
+      { id: "formats", label: this._t("actColFormats") },
+      { id: "date", label: this._t("actColDate") },
+      { id: "client", label: this._t("actColDlClient") },
+      { id: "indexer", label: this._t("actColIndexer") },
+      { id: "relgroup", label: this._t("actColRelgroup") },
+      { id: "srctitle", label: this._t("actColSrcTitle") },
+      { id: "cfscore", label: this._t("actColCfScore") }
     ];
     const HC = mh.histCols instanceof Set ? mh.histCols : /* @__PURE__ */ new Set(["event", "quality", "date"]);
     const visHistCols = ALL_HIST_COLS.filter((c) => HC.has(c.id));
@@ -13542,26 +13918,26 @@ var _ActivityRenderMethods = class {
     const selSty = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
-    const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>All ${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
+    const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
     const fQual = mh.histFilterQuality || "all";
     const fLang = mh.histFilterLang || "all";
     const fFmt = mh.histFilterFormat || "all";
     const fCli = mh.histFilterClient || "all";
     const fIdx = mh.histFilterIndexer || "all";
     const fRG = mh.histFilterRelgroup || "all";
-    const hEvtSel = HC.has("event") ? `<select id="act-hist-filter" style="${filter && filter !== "all" ? selStyA : selSty}"><option value="all"${(filter || "all") === "all" ? " selected" : ""}>All Events</option><option value="grabbed"${filter === "grabbed" ? " selected" : ""}>Grabbed</option><option value="downloadFolderImported"${filter === "downloadFolderImported" ? " selected" : ""}>Imported</option><option value="downloadFailed"${filter === "downloadFailed" ? " selected" : ""}>Failed</option></select>` : "";
-    const hSvcSel = `<select id="act-hist-svc" style="${hSvc !== "all" ? selStyA : selSty}"><option value="all"${hSvc === "all" ? " selected" : ""}>All Sources</option><option value="radarr"${hSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${hSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
-    const hQualSel = HC.has("quality") ? mkSel("act-hist-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), "Qualities") : "";
-    const hLangSel = HC.has("langs") ? mkSel("act-hist-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), "Languages") : "";
-    const hFmtSel = HC.has("formats") ? mkSel("act-hist-format", fFmt, [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort(), "Formats") : "";
-    const hCliSel = HC.has("client") ? mkSel("act-hist-client", fCli, uniq(allRaw, (r) => r.data?.downloadClient), "Clients") : "";
-    const hIdxSel = HC.has("indexer") ? mkSel("act-hist-indexer", fIdx, uniq(allRaw, (r) => r.data?.indexer), "Indexers") : "";
-    const hRGSel = HC.has("relgroup") ? mkSel("act-hist-relgroup", fRG, uniq(allRaw, (r) => r.data?.releaseGroup), "Groups") : "";
+    const hEvtSel = HC.has("event") ? `<select id="act-hist-filter" style="${filter && filter !== "all" ? selStyA : selSty}"><option value="all"${(filter || "all") === "all" ? " selected" : ""}>${this._t("actAllEvents")}</option><option value="grabbed"${filter === "grabbed" ? " selected" : ""}>${this._t("actEvtGrabbed")}</option><option value="downloadFolderImported"${filter === "downloadFolderImported" ? " selected" : ""}>${this._t("actEvtImported")}</option><option value="downloadFailed"${filter === "downloadFailed" ? " selected" : ""}>${this._t("actEvtFailed")}</option></select>` : "";
+    const hSvcSel = `<select id="act-hist-svc" style="${hSvc !== "all" ? selStyA : selSty}"><option value="all"${hSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${hSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${hSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
+    const hQualSel = HC.has("quality") ? mkSel("act-hist-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), this._t("actAllQualities")) : "";
+    const hLangSel = HC.has("langs") ? mkSel("act-hist-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), this._t("actAllLanguages")) : "";
+    const hFmtSel = HC.has("formats") ? mkSel("act-hist-format", fFmt, [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort(), this._t("actAllFormats")) : "";
+    const hCliSel = HC.has("client") ? mkSel("act-hist-client", fCli, uniq(allRaw, (r) => r.data?.downloadClient), this._t("actAllClients")) : "";
+    const hIdxSel = HC.has("indexer") ? mkSel("act-hist-indexer", fIdx, uniq(allRaw, (r) => r.data?.indexer), this._t("actAllIndexers")) : "";
+    const hRGSel = HC.has("relgroup") ? mkSel("act-hist-relgroup", fRG, uniq(allRaw, (r) => r.data?.releaseGroup), this._t("actAllGroups")) : "";
     const allHSels = [hEvtSel, hSvcSel, hQualSel, hLangSel, hFmtSel, hCliSel, hIdxSel, hRGSel].filter(Boolean).join("");
     const hFilters = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allHSels}</div>`;
     const searchEl = this._tlSearchInput("act-hist-search", mh.histSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
-    const toolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${searchEl}<button id="act-hist-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button></div>${hFilters}`;
+    const toolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${searchEl}<button id="act-hist-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button></div>${hFilters}`;
     const allFiltered = allRaw.filter((r) => {
       if (hSvc !== "all" && r._svc !== hSvc) return false;
       if (hSearch && !r._title.toLowerCase().includes(hSearch)) return false;
@@ -13596,7 +13972,7 @@ var _ActivityRenderMethods = class {
     if (!allRaw.length) {
       return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
         ${toolbar}
-        <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">No history found</div>
+        <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">${this._t("actHistoryEmpty")}</div>
       </div>`;
     }
     const pg = Math.min(page || 0, Math.max(0, Math.ceil(allItems.length / perPage) - 1));
@@ -13610,13 +13986,13 @@ var _ActivityRenderMethods = class {
       return "rgba(255,255,255,0.45)";
     };
     const evLabel = (ev) => ({
-      grabbed: "Grabbed",
-      downloadFolderImported: "Imported",
-      downloadFailed: "Failed",
-      importFailed: "Import\xA0Failed",
-      downloadIgnored: "Ignored",
-      movieDeleted: "Deleted",
-      seriesDeleted: "Deleted"
+      grabbed: this._t("actEvtGrabbed"),
+      downloadFolderImported: this._t("actEvtImported"),
+      downloadFailed: this._t("actEvtFailed"),
+      importFailed: this._t("actEvtImportFailed"),
+      downloadIgnored: this._t("actEvtIgnored"),
+      movieDeleted: this._t("actEvtDeleted"),
+      seriesDeleted: this._t("actEvtDeleted")
     })[ev] || ev || "\u2014";
     const fmtDate = (d) => {
       if (!d) return "\u2014";
@@ -13702,8 +14078,8 @@ var _ActivityRenderMethods = class {
       <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
           <thead><tr style="border-bottom:1px solid var(--is-divider)">
-            ${_sth("title", "Title", true)}
-            <th style="width:70px;padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:center">Source</th>
+            ${_sth("title", this._t("actColTitle"), true)}
+            <th style="width:70px;padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:center">${this._t("actColSource")}</th>
             ${visHistCols.map((c) => _sth(c.id, c.label)).join("")}
           </tr></thead>
           <tbody>${rows}</tbody>
@@ -13725,14 +14101,14 @@ var _ActivityRenderMethods = class {
     const blSortDir = mb.blSortDir || "desc";
     const delMode = mb.blDeleteMode || false;
     const ALL_BL_COLS = [
-      { id: "source", label: "Source" },
-      { id: "srctitle", label: "Source Title" },
-      { id: "langs", label: "Languages" },
-      { id: "quality", label: "Quality" },
-      { id: "formats", label: "Formats" },
-      { id: "date", label: "Date" },
-      { id: "indexer", label: "Indexer" },
-      { id: "protocol", label: "Protocol" }
+      { id: "source", label: this._t("actColSource") },
+      { id: "srctitle", label: this._t("actColSrcTitle") },
+      { id: "langs", label: this._t("actColLangs") },
+      { id: "quality", label: this._t("actColQuality") },
+      { id: "formats", label: this._t("actColFormats") },
+      { id: "date", label: this._t("actColDate") },
+      { id: "indexer", label: this._t("actColIndexer") },
+      { id: "protocol", label: this._t("actColProtocol") }
     ];
     const BC = mb.blCols instanceof Set ? mb.blCols : /* @__PURE__ */ new Set(["quality", "date", "source"]);
     const visBLCols = ALL_BL_COLS.filter((c) => BC.has(c.id));
@@ -13748,18 +14124,18 @@ var _ActivityRenderMethods = class {
     const fLang = mb.blFilterLang || "all";
     const fFmt = mb.blFilterFormat || "all";
     const fIdx = mb.blFilterIndexer || "all";
-    const blSvcSel = `<select id="act-bl-svc" style="${blSvc !== "all" ? selStyA : selSty}"><option value="all"${blSvc === "all" ? " selected" : ""}>All Sources</option><option value="radarr"${blSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${blSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
-    const blProtoSel = `<select id="act-bl-proto" style="${blProto !== "all" ? selStyA : selSty}"><option value="all"${blProto === "all" ? " selected" : ""}>All Protocols</option><option value="torrent"${blProto === "torrent" ? " selected" : ""}>Torrent</option><option value="usenet"${blProto === "usenet" ? " selected" : ""}>Usenet</option></select>`;
-    const blQualSel = BC.has("quality") ? mkSel("act-bl-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), "Qualities") : "";
-    const blLangSel = BC.has("langs") ? mkSel("act-bl-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), "Languages") : "";
-    const blFmtSel = BC.has("formats") ? mkSel("act-bl-format", fFmt, [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort(), "Formats") : "";
+    const blSvcSel = `<select id="act-bl-svc" style="${blSvc !== "all" ? selStyA : selSty}"><option value="all"${blSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${blSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${blSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
+    const blProtoSel = `<select id="act-bl-proto" style="${blProto !== "all" ? selStyA : selSty}"><option value="all"${blProto === "all" ? " selected" : ""}>${this._t("actAllProtocols")}</option><option value="torrent"${blProto === "torrent" ? " selected" : ""}>Torrent</option><option value="usenet"${blProto === "usenet" ? " selected" : ""}>Usenet</option></select>`;
+    const blQualSel = BC.has("quality") ? mkSel("act-bl-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), this._t("actAllQualities")) : "";
+    const blLangSel = BC.has("langs") ? mkSel("act-bl-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), this._t("actAllLanguages")) : "";
+    const blFmtSel = BC.has("formats") ? mkSel("act-bl-format", fFmt, [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort(), this._t("actAllFormats")) : "";
     const blIdxSel = BC.has("indexer") ? mkSel("act-bl-indexer", fIdx, uniq(allRaw, (r) => r.indexer), "Indexers") : "";
     const allBLSels = [blSvcSel, blProtoSel, blQualSel, blLangSel, blFmtSel, blIdxSel].filter(Boolean).join("");
     const blFilters = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allBLSels}</div>`;
     const trashSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
     const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
     const blSearchEl = this._tlSearchInput("act-bl-search", mb.blSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
-    const blToolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${blSearchEl}<button id="act-bl-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}Delete</button><button id="act-bl-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button></div>${blFilters}`;
+    const blToolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${blSearchEl}<button id="act-bl-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}${this._t("actDelete")}</button><button id="act-bl-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button></div>${blFilters}`;
     const allFiltered = allRaw.filter((r) => {
       if (blSvc !== "all" && r._svc !== blSvc) return false;
       if (blProto !== "all" && (r.protocol || "").toLowerCase() !== blProto) return false;
@@ -13791,7 +14167,7 @@ var _ActivityRenderMethods = class {
     if (!allRaw.length) {
       return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
         ${blToolbar}
-        <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">Blocklist is empty</div>
+        <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">${this._t("actBlocklistEmpty")}</div>
       </div>`;
     }
     const pg = Math.min(page || 0, Math.max(0, Math.ceil(allSorted.length / perPage) - 1));
@@ -13889,7 +14265,7 @@ var _ActivityRenderMethods = class {
       <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
           <thead><tr style="border-bottom:1px solid var(--is-divider)">
-            ${_bsth("title", "Title", true)}
+            ${_bsth("title", this._t("actColTitle"), true)}
             ${thRow}
             <th style="padding:4px 0 8px 8px;width:36px"></th>
           </tr></thead>
@@ -13907,13 +14283,13 @@ var _ActivityRenderMethods = class {
       <div class="popup-glass" style="width:min(1100px,98vw);max-height:85vh;display:flex;flex-direction:column">
         <div class="is-panel-hdr" style="padding:14px 20px 12px;gap:10px">
           <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:700;color:var(--is-text)">Manual Import</div>
+            <div style="font-size:14px;font-weight:700;color:var(--is-text)">${this._t("actManualImport")}</div>
             <div style="font-size:11px;color:var(--is-text-sec);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="mi-subtitle">${this._escHtml(title)}</div>
           </div>
           <button class="popup-close" id="mi-close" style="position:relative;top:0;right:0;flex-shrink:0">${closeSvg}</button>
         </div>
         <div id="mi-body" class="popup-body" style="padding:14px 20px 18px;overflow-y:auto;flex:1">
-          <div class="is-loading"><span>Loading\u2026</span></div>
+          <div class="is-loading"><span>${this._t("loading")}</span></div>
         </div>
       </div>
     </div>`;
@@ -13921,8 +14297,8 @@ var _ActivityRenderMethods = class {
   _actManualImportCandidatesHtml(candidates, svc, qDefs, langs) {
     if (!candidates || !candidates.length) {
       return `<div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">
-        <div style="font-size:13px">No importable files found</div>
-        <div style="font-size:11px;margin-top:6px;opacity:0.6">Check that download is complete and files exist</div>
+        <div style="font-size:13px">${this._t("actNoFiles")}</div>
+        <div style="font-size:11px;margin-top:6px;opacity:0.6">${this._t("actNoFilesHint")}</div>
       </div>`;
     }
     const isMobile = window.matchMedia("(max-width:600px)").matches;
@@ -13938,8 +14314,8 @@ var _ActivityRenderMethods = class {
     }).join("");
     const buildLangOpts = (curId) => (langs || []).filter((l) => l.id !== -1).slice().sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((l) => `<option value="${l.id}"${l.id == curId ? " selected" : ""}>${this._escHtml(l.name || "\u2014")}</option>`).join("");
     const allCanImport = candidates.every((c) => isRadarr ? !!c.movie : isSonarr ? !!c.series : true);
-    const importBtn = `<button id="mi-import-all" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;background:${allCanImport ? "rgba(60,200,120,0.18)" : "var(--is-btn-bg)"};color:${allCanImport ? "rgba(80,220,140,0.95)" : "var(--is-text-muted)"};font-size:13px;font-weight:700;cursor:${allCanImport ? "pointer" : "not-allowed"}" ${allCanImport ? "" : "disabled"}>Import</button>`;
-    const mediaLabel = isRadarr ? "Movie" : "Series";
+    const importBtn = `<button id="mi-import-all" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;background:${allCanImport ? "rgba(60,200,120,0.18)" : "var(--is-btn-bg)"};color:${allCanImport ? "rgba(80,220,140,0.95)" : "var(--is-text-muted)"};font-size:13px;font-weight:700;cursor:${allCanImport ? "pointer" : "not-allowed"}" ${allCanImport ? "" : "disabled"}>${this._t("actImport")}</button>`;
+    const mediaLabel = isRadarr ? this._t("typeMovie") : this._t("typeTv");
     const mediaField = isRadarr ? "movie" : "series";
     if (isMobile) {
       const rows2 = candidates.map((c, i) => {
@@ -13956,17 +14332,17 @@ var _ActivityRenderMethods = class {
         const size = c.size ? this._actFmtSize(c.size) : "\u2014";
         const rej = (c.rejections || []).map((r) => r.reason || r).filter(Boolean);
         const lbl = (t) => `<div style="font-size:9px;font-weight:700;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${t}</div>`;
-        const movieSel = `<select class="mi-field-sel" data-field="${mediaField}" data-idx="${i}" style="${selStyle(movieMiss)}"><option value="" disabled${curMovieId === "" ? " selected" : ""}>Select ${mediaLabel.toLowerCase()}\u2026</option>${buildLibOpts(curMovieId)}</select>`;
-        const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${selStyle(qualMiss)}"><option value="" disabled${curQualId === "" || qualMiss ? " selected" : ""}>Select quality\u2026</option>${buildQualOpts(curQualId)}</select>`;
-        const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${selStyle(langMiss)}"><option value="" disabled${curLangId === "" || langMiss ? " selected" : ""}>Select language\u2026</option>${buildLangOpts(curLangId)}</select>`;
+        const movieSel = `<select class="mi-field-sel" data-field="${mediaField}" data-idx="${i}" style="${selStyle(movieMiss)}"><option value="" disabled${curMovieId === "" ? " selected" : ""}>${this._t("actSelectMedia")}</option>${buildLibOpts(curMovieId)}</select>`;
+        const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${selStyle(qualMiss)}"><option value="" disabled${curQualId === "" || qualMiss ? " selected" : ""}>${this._t("actSelectQuality")}</option>${buildQualOpts(curQualId)}</select>`;
+        const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${selStyle(langMiss)}"><option value="" disabled${curLangId === "" || langMiss ? " selected" : ""}>${this._t("actSelectLanguage")}</option>${buildLangOpts(curLangId)}</select>`;
         return `<div data-mi-idx="${i}" style="border:1px solid var(--is-divider);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--is-btn-bg)">
           <div style="display:flex;flex-direction:column;gap:8px">
             <div>${lbl(mediaLabel)}${movieSel}</div>
-            <div>${lbl("Quality")}${qualSel}</div>
-            <div>${lbl("Languages")}${langSel}</div>
-            <div>${lbl("Release Group")}<div style="font-size:11px;color:var(--is-text-sec);padding:5px 0">${this._escHtml(rg)}</div></div>
-            <div>${lbl("Size")}<div style="font-size:11px;color:var(--is-text-sec);padding:5px 0">${size}</div></div>
-            ${rej.length ? `<div>${lbl("Error")}<div style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</div></div>` : ""}
+            <div>${lbl(this._t("actQuality"))}${qualSel}</div>
+            <div>${lbl(this._t("actLanguages"))}${langSel}</div>
+            <div>${lbl(this._t("actReleaseGroup"))}<div style="font-size:11px;color:var(--is-text-sec);padding:5px 0">${this._escHtml(rg)}</div></div>
+            <div>${lbl(this._t("actSize"))}<div style="font-size:11px;color:var(--is-text-sec);padding:5px 0">${size}</div></div>
+            ${rej.length ? `<div>${lbl(this._t("actError"))}<div style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</div></div>` : ""}
           </div>
         </div>`;
       }).join("");
@@ -13985,9 +14361,9 @@ var _ActivityRenderMethods = class {
       const rg = c.releaseGroup || "\u2014";
       const size = c.size ? this._actFmtSize(c.size) : "\u2014";
       const rej = (c.rejections || []).map((r) => r.reason || r).filter(Boolean);
-      const movieSel = `<select class="mi-field-sel" data-field="${mediaField}" data-idx="${i}" style="${selStyle(movieMiss)}"><option value="" disabled${curMovieId === "" ? " selected" : ""}>Select ${mediaLabel.toLowerCase()}\u2026</option>${buildLibOpts(curMovieId)}</select>`;
-      const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${selStyle(qualMiss)}"><option value="" disabled${curQualId === "" || qualMiss ? " selected" : ""}>Select quality\u2026</option>${buildQualOpts(curQualId)}</select>`;
-      const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${selStyle(langMiss)}"><option value="" disabled${curLangId === "" || langMiss ? " selected" : ""}>Select language\u2026</option>${buildLangOpts(curLangId)}</select>`;
+      const movieSel = `<select class="mi-field-sel" data-field="${mediaField}" data-idx="${i}" style="${selStyle(movieMiss)}"><option value="" disabled${curMovieId === "" ? " selected" : ""}>${this._t("actSelectMedia")}</option>${buildLibOpts(curMovieId)}</select>`;
+      const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${selStyle(qualMiss)}"><option value="" disabled${curQualId === "" || qualMiss ? " selected" : ""}>${this._t("actSelectQuality")}</option>${buildQualOpts(curQualId)}</select>`;
+      const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${selStyle(langMiss)}"><option value="" disabled${curLangId === "" || langMiss ? " selected" : ""}>${this._t("actSelectLanguage")}</option>${buildLangOpts(curLangId)}</select>`;
       const rejHtml = rej.length ? `<span style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</span>` : `<span style="color:var(--is-text-muted);font-size:10px">\u2014</span>`;
       return `<tr style="border-bottom:1px solid var(--is-divider)">
         <td style="padding:7px 4px">${movieSel}</td>
@@ -14010,11 +14386,11 @@ var _ActivityRenderMethods = class {
         </colgroup>
         <thead><tr style="border-bottom:1px solid var(--is-divider)">
           <th style="${thStyle}">${mediaLabel}</th>
-          <th style="${thStyle};padding-left:8px">Release Group</th>
-          <th style="${thStyle};padding-left:8px">Quality</th>
-          <th style="${thStyle};padding-left:8px">Languages</th>
-          <th style="${thStyle};padding-left:8px">Size</th>
-          <th style="${thStyle};padding-left:8px">Error</th>
+          <th style="${thStyle};padding-left:8px">${this._t("actReleaseGroup")}</th>
+          <th style="${thStyle};padding-left:8px">${this._t("actQuality")}</th>
+          <th style="${thStyle};padding-left:8px">${this._t("actLanguages")}</th>
+          <th style="${thStyle};padding-left:8px">${this._t("actSize")}</th>
+          <th style="${thStyle};padding-left:8px">${this._t("actError")}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -14165,7 +14541,7 @@ var _WireActivityMethods = class {
         el.querySelectorAll("[data-act-tab]").forEach((b) => b.classList.toggle("active", b === btn));
         this._activityModal.tab = t;
         const subEl = el.querySelector("#act-hdr-sub");
-        if (subEl) subEl.textContent = { queue: "Queue", history: "History", blocklist: "Blocklist" }[t] || t;
+        if (subEl) subEl.textContent = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist") }[t] || t;
         await this._actLoadTab(t, el);
       });
     });
@@ -14176,25 +14552,34 @@ var _WireActivityMethods = class {
     const body = el.querySelector("#act-body");
     if (!body) return;
     body.innerHTML = '<div class="is-loading"><span>Loading\u2026</span></div>';
+    const hasR2 = this._radarr2Configured === true;
+    const hasS2 = this._sonarr2Configured === true;
     if (tab === "queue") {
-      const [rq, sq] = await Promise.allSettled([
+      const calls = [
         this._callApi("GET", "arr_stack/radarr/queue?includeUnknownMovieItems=true"),
-        this._callApi("GET", "arr_stack/sonarr/queue")
-      ]);
+        this._callApi("GET", "arr_stack/sonarr/queue"),
+        hasR2 ? this._callApi("GET", "arr_stack/radarr2/queue?includeUnknownMovieItems=true") : Promise.resolve(null),
+        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/queue") : Promise.resolve(null)
+      ];
+      const [rq, sq, rq2, sq2] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
       const _toArr = (v) => Array.isArray(v) ? v : Array.isArray(v?.records) ? v.records : [];
-      const rRaw = rq.status === "fulfilled" ? _toArr(rq.value) : [];
       const rMovieMap = new Map((this._radarr || []).map((m2) => [m2.id, m2.title]));
-      const rRecords = rRaw.map((r) => ({
-        ...r,
-        _enrichedTitle: rMovieMap.get(r.movieId) || r.movie?.title || r.title || null
-      }));
-      const sRaw = sq.status === "fulfilled" ? _toArr(sq.value) : [];
+      const rMovieMap2 = new Map((this._radarr2 || []).map((m2) => [m2.id, m2.title]));
+      const rRaw = rq.status === "fulfilled" && rq.value ? _toArr(rq.value) : [];
+      const rRaw2 = rq2.status === "fulfilled" && rq2.value ? _toArr(rq2.value) : [];
+      const rRecords = [
+        ...rRaw.map((r) => ({ ...r, _enrichedTitle: rMovieMap.get(r.movieId) || r.movie?.title || r.title || null })),
+        ...rRaw2.map((r) => ({ ...r, _enrichedTitle: rMovieMap2.get(r.movieId) || r.movie?.title || r.title || null }))
+      ];
       const sSeriesMap = new Map((this._sonarr || []).map((s) => [s.id, s.title]));
-      const sRecords = sRaw.map((r) => ({
-        ...r,
-        _enrichedTitle: sSeriesMap.get(r.seriesId) || r.series?.title || r.title || null
-      }));
+      const sSeriesMap2 = new Map((this._sonarr2 || []).map((s) => [s.id, s.title]));
+      const sRaw = sq.status === "fulfilled" && sq.value ? _toArr(sq.value) : [];
+      const sRaw2 = sq2.status === "fulfilled" && sq2.value ? _toArr(sq2.value) : [];
+      const sRecords = [
+        ...sRaw.map((r) => ({ ...r, _enrichedTitle: sSeriesMap.get(r.seriesId) || r.series?.title || r.title || null })),
+        ...sRaw2.map((r) => ({ ...r, _enrichedTitle: sSeriesMap2.get(r.seriesId) || r.series?.title || r.title || null }))
+      ];
       const _isBadItem = (r) => r.trackedDownloadStatus === "warning" || r.trackedDownloadStatus === "error" || r.trackedDownloadState === "importFailed" || r.status === "failed";
       const badItems = [
         ...rRecords.filter((r) => _isBadItem(r) && r.downloadId).map((r) => ({ r, svc: "radarr", qs: `downloadId=${encodeURIComponent(r.downloadId)}&movieId=${r.movieId || ""}` })),
@@ -14215,26 +14600,42 @@ var _WireActivityMethods = class {
       this._wireActBody(body, el, "queue");
     } else if (tab === "history") {
       const et = m.histFilter === "all" ? "" : "&eventType=" + encodeURIComponent(m.histFilter);
-      const [rh, sh] = await Promise.allSettled([
+      const calls = [
         this._callApi("GET", "arr_stack/radarr/activity/history?page=1&pageSize=500&sortKey=date&sortDir=desc" + et),
-        this._callApi("GET", "arr_stack/sonarr/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et)
-      ]);
+        this._callApi("GET", "arr_stack/sonarr/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et),
+        hasR2 ? this._callApi("GET", "arr_stack/radarr2/activity/history?page=1&pageSize=200&sortKey=date&sortDir=desc" + et) : Promise.resolve(null),
+        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et) : Promise.resolve(null)
+      ];
+      const [rh, sh, rh2, sh2] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
+      const _mergeHist = (a, b) => {
+        if (!a && !b) return null;
+        const recs = [...a?.records || [], ...b?.records || []];
+        return { records: recs, totalRecords: recs.length };
+      };
       m.histData = {
-        radarr: rh.status === "fulfilled" ? rh.value : null,
-        sonarr: sh.status === "fulfilled" ? sh.value : null
+        radarr: _mergeHist(rh.status === "fulfilled" ? rh.value : null, rh2.status === "fulfilled" ? rh2.value : null),
+        sonarr: _mergeHist(sh.status === "fulfilled" ? sh.value : null, sh2.status === "fulfilled" ? sh2.value : null)
       };
       this._actSetBodyHtml(body, this._actHistoryTabHtml(m.histData.radarr, m.histData.sonarr, m.histFilter, m.histPage, m.histPerPage));
       this._wireActBody(body, el, "history");
     } else if (tab === "blocklist") {
-      const [rb, sb] = await Promise.allSettled([
+      const calls = [
         this._callApi("GET", "arr_stack/radarr/activity/blocklist?page=1&pageSize=100"),
-        this._callApi("GET", "arr_stack/sonarr/activity/blocklist?page=1&pageSize=100")
-      ]);
+        this._callApi("GET", "arr_stack/sonarr/activity/blocklist?page=1&pageSize=100"),
+        hasR2 ? this._callApi("GET", "arr_stack/radarr2/activity/blocklist?page=1&pageSize=100") : Promise.resolve(null),
+        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/activity/blocklist?page=1&pageSize=100") : Promise.resolve(null)
+      ];
+      const [rb, sb, rb2, sb2] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
+      const _mergeBl = (a, b) => {
+        if (!a && !b) return null;
+        const recs = [...a?.records || [], ...b?.records || []];
+        return { records: recs, totalRecords: recs.length };
+      };
       m.blData = {
-        radarr: rb.status === "fulfilled" ? rb.value : null,
-        sonarr: sb.status === "fulfilled" ? sb.value : null
+        radarr: _mergeBl(rb.status === "fulfilled" ? rb.value : null, rb2.status === "fulfilled" ? rb2.value : null),
+        sonarr: _mergeBl(sb.status === "fulfilled" ? sb.value : null, sb2.status === "fulfilled" ? sb2.value : null)
       };
       this._actSetBodyHtml(body, this._actBlocklistTabHtml(m.blData.radarr, m.blData.sonarr, m.blPage, m.blPerPage));
       this._wireActBody(body, el, "blocklist");
@@ -14619,23 +15020,23 @@ var _WireActivityMethods = class {
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
     const cols = m.histCols;
     const ALL_COLS = [
-      { id: "event", label: "Event" },
-      { id: "quality", label: "Quality" },
-      { id: "langs", label: "Languages" },
-      { id: "formats", label: "Formats" },
-      { id: "date", label: "Date" },
-      { id: "client", label: "Download Client" },
-      { id: "indexer", label: "Indexer" },
-      { id: "relgroup", label: "Release Group" },
-      { id: "srctitle", label: "Source Title" },
-      { id: "cfscore", label: "CF Score" }
+      { id: "event", label: this._t("actColEvent") },
+      { id: "quality", label: this._t("actColQuality") },
+      { id: "langs", label: this._t("actColLangs") },
+      { id: "formats", label: this._t("actColFormats") },
+      { id: "date", label: this._t("actColDate") },
+      { id: "client", label: this._t("actColDlClient") },
+      { id: "indexer", label: this._t("actColIndexer") },
+      { id: "relgroup", label: this._t("actColRelgroup") },
+      { id: "srctitle", label: this._t("actColSrcTitle") },
+      { id: "cfscore", label: this._t("actColCfScore") }
     ];
     const rect = gearBtn.getBoundingClientRect();
     const top = Math.round(rect.bottom + 6);
     const right = Math.round(window.innerWidth - rect.right);
     const wrap = document.createElement("div");
     wrap.innerHTML = `<div data-hist-col-picker style="position:fixed;top:${top}px;right:${right}px;z-index:1200;min-width:175px;background:${pkBg};border:1px solid ${pkBdr};border-radius:9px;padding:10px 14px 12px;box-shadow:0 8px 28px rgba(0,0,0,0.25)">
-      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Columns</div>
+      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${this._t("actColPickerHdr")}</div>
       ${ALL_COLS.map((c) => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;user-select:none"><input type="checkbox" class="hist-col-cb" data-col-id="${c.id}" ${cols.has(c.id) ? "checked" : ""} style="cursor:pointer;accent-color:rgba(99,140,255,1);width:14px;height:14px;flex-shrink:0"><span style="font-size:12px;color:${pkLbl}">${c.label}</span></label>`).join("")}
     </div>`;
     const picker = wrap.firstElementChild;
@@ -14682,21 +15083,21 @@ var _WireActivityMethods = class {
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
     const cols = m.blCols;
     const ALL_COLS = [
-      { id: "source", label: "Source" },
-      { id: "srctitle", label: "Source Title" },
-      { id: "langs", label: "Languages" },
-      { id: "quality", label: "Quality" },
-      { id: "formats", label: "Formats" },
-      { id: "date", label: "Date" },
-      { id: "indexer", label: "Indexer" },
-      { id: "protocol", label: "Protocol" }
+      { id: "source", label: this._t("actColSource") },
+      { id: "srctitle", label: this._t("actColSrcTitle") },
+      { id: "langs", label: this._t("actColLangs") },
+      { id: "quality", label: this._t("actColQuality") },
+      { id: "formats", label: this._t("actColFormats") },
+      { id: "date", label: this._t("actColDate") },
+      { id: "indexer", label: this._t("actColIndexer") },
+      { id: "protocol", label: this._t("actColProtocol") }
     ];
     const rect = gearBtn.getBoundingClientRect();
     const top = Math.round(rect.bottom + 6);
     const right = Math.round(window.innerWidth - rect.right);
     const wrap = document.createElement("div");
     wrap.innerHTML = `<div data-bl-col-picker style="position:fixed;top:${top}px;right:${right}px;z-index:1200;min-width:175px;background:${pkBg};border:1px solid ${pkBdr};border-radius:9px;padding:10px 14px 12px;box-shadow:0 8px 28px rgba(0,0,0,0.25)">
-      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Columns</div>
+      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${this._t("actColPickerHdr")}</div>
       ${ALL_COLS.map((c) => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;user-select:none"><input type="checkbox" class="bl-col-cb" data-col-id="${c.id}" ${cols.has(c.id) ? "checked" : ""} style="cursor:pointer;accent-color:rgba(99,140,255,1);width:14px;height:14px;flex-shrink:0"><span style="font-size:12px;color:${pkLbl}">${c.label}</span></label>`).join("")}
     </div>`;
     const picker = wrap.firstElementChild;
@@ -14824,7 +15225,7 @@ var _WireActivityMethods = class {
       const btn = e.target.closest("#mi-import-all");
       if (btn) {
         btn.disabled = true;
-        btn.textContent = "Importing\u2026";
+        btn.textContent = this._t("actImporting");
         await this._submitManualImport(candidates, candidates.map((_, i) => i), svc, overlay, modalEl);
       }
     };
@@ -14845,22 +15246,22 @@ var _WireActivityMethods = class {
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
     const cols = m.queueCols;
     const ALL_COLS = [
-      { id: "source", label: "Source" },
-      { id: "quality", label: "Quality" },
-      { id: "size", label: "Size" },
-      { id: "timeleft", label: "Time Left" },
-      { id: "formats", label: "Formats" },
-      { id: "protocol", label: "Protocol" },
-      { id: "indexer", label: "Indexer" },
-      { id: "client", label: "Download Client" },
-      { id: "status", label: "Status" }
+      { id: "source", label: this._t("actColSource") },
+      { id: "quality", label: this._t("actColQuality") },
+      { id: "size", label: this._t("actColSize") },
+      { id: "timeleft", label: this._t("actColTimeLeft") },
+      { id: "formats", label: this._t("actColFormats") },
+      { id: "protocol", label: this._t("actColProtocol") },
+      { id: "indexer", label: this._t("actColIndexer") },
+      { id: "client", label: this._t("actColDlClient") },
+      { id: "status", label: this._t("actColStatus") }
     ];
     const rect = gearBtn.getBoundingClientRect();
     const top = Math.round(rect.bottom + 6);
     const right = Math.round(window.innerWidth - rect.right);
     const wrap = document.createElement("div");
     wrap.innerHTML = `<div data-col-picker style="position:fixed;top:${top}px;right:${right}px;z-index:1200;min-width:175px;background:${pkBg};border:1px solid ${pkBdr};border-radius:9px;padding:10px 14px 12px;box-shadow:0 8px 28px rgba(0,0,0,0.25)">
-      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Columns</div>
+      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${this._t("actColPickerHdr")}</div>
       ${ALL_COLS.map((c) => `
         <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;user-select:none">
           <input type="checkbox" class="col-picker-cb" data-col-id="${c.id}" ${cols.has(c.id) ? "checked" : ""} style="cursor:pointer;accent-color:rgba(99,140,255,1);width:14px;height:14px;flex-shrink:0">
