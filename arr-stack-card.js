@@ -5,6 +5,11 @@ var ArrStackCardEditor = class extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = {};
   }
+  set hass(hass) {
+    const wasAdmin = this._hass?.user?.is_admin;
+    this._hass = hass;
+    if (wasAdmin !== hass?.user?.is_admin) this._render();
+  }
   setConfig(config) {
     config = config || {};
     if (Array.isArray(config.categories)) {
@@ -207,7 +212,7 @@ var ArrStackCardEditor = class extends HTMLElement {
         <div class="section-title">Right Panel \u2014 Categories</div>
         <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide.</div>
         <div class="cat-list">
-          ${this._getCats().map((c) => `
+          ${this._getCats().filter((c) => this._hass?.user?.is_admin || !["tautulli", "jellystat", "activity"].includes(c.id)).map((c) => `
             <div class="cat-item${c.enabled === false ? " cat-disabled" : ""}" draggable="true" data-cat-id="${c.id}">
               <ha-icon icon="mdi:drag-vertical" style="--mdc-icon-size:18px;color:var(--secondary-text-color,#9e9e9e);flex-shrink:0;cursor:grab"></ha-icon>
               <span class="cat-label">${this._catLabel(c.id)}</span>
@@ -258,7 +263,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "calendar", enabled: true },
       { id: "streams", enabled: true },
       { id: "tautulli", enabled: true },
-      { id: "jellystat", enabled: true }
+      { id: "jellystat", enabled: true },
+      { id: "activity", enabled: true }
     ];
   }
   _getCats() {
@@ -280,8 +286,9 @@ var ArrStackCardEditor = class extends HTMLElement {
       popular: "Popular Movies",
       calendar: "Calendar",
       streams: "Now Playing (Plex / Jellyfin) \u2014 auto-hidden when nothing plays",
-      tautulli: "Statistics",
-      jellystat: "Statistics (Jellyfin)"
+      tautulli: "Statistics (Plex)",
+      jellystat: "Statistics (Jellyfin)",
+      activity: "Activity (Queue / History / Blocklist)"
     }[id] || id;
   }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
@@ -509,8 +516,8 @@ var ARR_I18N = {
     snNoSonarrId: "Seri\xE1l se nepoda\u0159ilo p\u0159idat do Sonarru",
     snEpisode: "Epizoda",
     // Auto Search
-    asSearchMovie: "Search Movie",
-    asSearchSeries: "Search Series",
+    asSearchMovie: "Hledat film",
+    asSearchSeries: "Hledat seri\xE1l",
     asMovieConfirm: "Film bude p\u0159id\xE1n do Radarru a spust\xED se automatick\xE9 vyhled\xE1v\xE1n\xED.",
     asSeriesConfirm: "Seri\xE1l bude p\u0159id\xE1n do Sonarru. Vyberte sez\xF3nu pro vyhled\xE1v\xE1n\xED.",
     asAdding: "P\u0159id\xE1v\xE1m\u2026",
@@ -532,7 +539,7 @@ var ARR_I18N = {
     terminateDefault: "Va\u0161e p\u0159ehr\xE1v\xE1n\xED bylo ukon\u010Deno administr\xE1torem.",
     terminateCancel: "Zru\u0161it",
     terminateStop: "Zastavit",
-    stopPlayback: "Stop Playback"
+    stopPlayback: "Zastavit p\u0159ehr\xE1v\xE1n\xED"
   },
   en: {
     downloads: "Downloads",
@@ -1808,6 +1815,12 @@ var STYLES = `
         flex-direction: column;
         min-height: 0;
       }
+      /* Search active \u2014 IS panel fills remaining height */
+      .popup-body--search { overflow: hidden; }
+      .popup-body--search .popup-content { flex-shrink: 0; }
+      .popup-body--search .is-panel { flex: 1; max-height: none; min-height: 160px; padding-bottom: 12px; overflow: hidden; }
+      .popup-body--search .is-results-wrap { overflow: hidden; }
+      .popup-body--search .sn-is-panel { flex: 1; max-height: none; min-height: 160px; }
 
       .popup-close {
         position: absolute;
@@ -2364,7 +2377,7 @@ var STYLES = `
         .mgrid   { grid-template-columns: repeat(2, 1fr) !important; }
         .to-grid { grid-template-columns: repeat(2, 1fr) !important; }
         .tl-row  { grid-template-columns: repeat(2, 1fr) !important; }
-        .disk-row    { flex-wrap: wrap; }
+.disk-row    { flex-wrap: wrap; }
         .disk-chip   { min-width: calc(50% - 3px); }
         .col         { border-radius: 24px; padding: 12px; }
         .col::before { border-radius: 24px; }
@@ -2746,6 +2759,8 @@ var STYLES = `
       .tl-icon-btn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
       .tl-mob-pag { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
       .tl-mob-pag-info { flex: 1; text-align: center; font-size: 12px; color: var(--is-text-label); }
+
+      /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
     `;
 
 // src/render/interactive-search.js
@@ -2787,10 +2802,13 @@ var _InteractiveSearch = class {
     if (this._isState !== "results") return "";
     const all = this._isResults;
     const visible = this._applyIsFilters(all);
+    const IS_PER_PAGE = this._isPerPage || 8;
+    const totalPages = Math.max(1, Math.ceil(visible.length / IS_PER_PAGE));
+    const page = Math.min(this._isPage || 0, totalPages - 1);
+    const paged = visible.slice(page * IS_PER_PAGE, (page + 1) * IS_PER_PAGE);
     const isMobile = window.matchMedia("(max-width: 600px)").matches;
-    const rowsHtml = isMobile ? this._renderIsCards(visible) : this._renderIsTable(visible);
+    const rowsHtml = isMobile ? this._renderIsCards(paged) : this._renderIsTable(paged);
     const { protocol, indexer, quality, lang } = this._isFilters;
-    const anyFilter = protocol || indexer || quality || lang;
     const countHtml = visible.length !== all.length ? `<span class="is-count">${visible.length}<span style="opacity:0.45">/${all.length}</span></span>` : `<span class="is-count">${all.length}</span>`;
     const uniqIndexers = [...new Set(all.map((r) => r.indexer).filter(Boolean))].sort();
     const uniqQualities = [...new Set(all.map((r) => this._isQualityLabel(r)).filter(Boolean))];
@@ -2804,6 +2822,7 @@ var _InteractiveSearch = class {
         ${opts}
       </select>`;
     };
+    const paginationHtml = this._tlMobPag("is-page", page, totalPages);
     return `
       <div class="is-panel">
         <div class="is-panel-hdr">
@@ -2817,6 +2836,7 @@ var _InteractiveSearch = class {
           </div>
         </div>
         <div class="is-results-wrap">${rowsHtml}</div>
+        ${paginationHtml ? `<div style="flex-shrink:0">${paginationHtml}</div>` : ""}
       </div>`;
   }
   _isQualityLabel(r) {
@@ -3646,7 +3666,9 @@ var _FetchMethods = class {
       this._fetchRadarr2RootFolders(),
       this._fetchTautulli(),
       this._fetchJellystat(),
-      this._fetchPlexSessions()
+      this._fetchPlexSessions(),
+      this._fetchActivityHistory(),
+      this._fetchActivityBlocklist()
     ]);
     this._render();
   }
@@ -4299,26 +4321,31 @@ var _FetchMethods = class {
   }
   async _fetchRadarrQueue() {
     try {
-      const data = await this._callApi("GET", "arr_stack/radarr/queue");
-      const records = data.records || data;
+      const data = await this._callApi("GET", "arr_stack/radarr/queue?includeUnknownMovieItems=true");
+      const records = Array.isArray(data) ? data : data.records || [];
       const failed = /* @__PURE__ */ new Set();
       const active = /* @__PURE__ */ new Set();
       const pct = /* @__PURE__ */ new Map();
-      for (const item of Array.isArray(records) ? records : []) {
-        if (!item.movieId) continue;
+      const items = [];
+      for (const item of records) {
         const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        const done = item.trackedDownloadState === "importPending" || item.trackedDownloadState === "importBlocked" || item.status === "completed";
+        const p = sz > 0 ? Math.round((sz - sl) / sz * 100) : done ? 100 : 0;
+        items.push({ title: item.movie?.title || item.title || "\u2014", svc: "radarr", failed: bad, pct: p });
+        if (!item.movieId) continue;
         if (bad) {
           failed.add(item.movieId);
           continue;
         }
         active.add(item.movieId);
-        const sz = item.size || 0;
-        const sl = item.sizeleft || 0;
-        pct.set(item.movieId, sz > 0 ? Math.round((sz - sl) / sz * 100) : 0);
+        pct.set(item.movieId, p);
       }
       this._radarrQueueFailed = failed;
       this._radarrQueueActive = active;
       this._radarrQueuePct = pct;
+      this._radarrQueueItems = items;
     } catch (e) {
       console.error("[arr-card] Radarr queue fetch error:", e);
     }
@@ -4326,26 +4353,31 @@ var _FetchMethods = class {
   async _fetchRadarr2Queue() {
     if (this._radarr2Configured === false) return;
     try {
-      const data = await this._callApi("GET", "arr_stack/radarr2/queue");
-      const records = data.records || data;
+      const data = await this._callApi("GET", "arr_stack/radarr2/queue?includeUnknownMovieItems=true");
+      const records = Array.isArray(data) ? data : data.records || [];
       const failed = /* @__PURE__ */ new Set();
       const active = /* @__PURE__ */ new Set();
       const pct = /* @__PURE__ */ new Map();
-      for (const item of Array.isArray(records) ? records : []) {
-        if (!item.movieId) continue;
+      const items = [];
+      for (const item of records) {
         const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+        const sz = item.size || 0;
+        const sl = item.sizeleft || 0;
+        const done = item.trackedDownloadState === "importPending" || item.trackedDownloadState === "importBlocked" || item.status === "completed";
+        const p = sz > 0 ? Math.round((sz - sl) / sz * 100) : done ? 100 : 0;
+        items.push({ title: item.movie?.title || item.title || "\u2014", svc: "radarr2", failed: bad, pct: p });
+        if (!item.movieId) continue;
         if (bad) {
           failed.add(item.movieId);
           continue;
         }
         active.add(item.movieId);
-        const sz = item.size || 0;
-        const sl = item.sizeleft || 0;
-        pct.set(item.movieId, sz > 0 ? Math.round((sz - sl) / sz * 100) : 0);
+        pct.set(item.movieId, p);
       }
       this._radarr2QueueFailed = failed;
       this._radarr2QueueActive = active;
       this._radarr2QueuePct = pct;
+      this._radarr2QueueItems = items;
     } catch (e) {
     }
   }
@@ -4356,6 +4388,7 @@ var _FetchMethods = class {
     const epPctKey = instance === "sonarr2" ? "_sonarr2QueueEpPct" : "_sonarrQueueEpPct";
     const seasonPctKey = instance === "sonarr2" ? "_sonarr2QueueSeasonPct" : "_sonarrQueueSeasonPct";
     const seriesPctKey = instance === "sonarr2" ? "_sonarr2QueueSeriesPct" : "_sonarrQueueSeriesPct";
+    const firstEpKey = instance === "sonarr2" ? "_sonarr2QueueFirstEp" : "_sonarrQueueFirstEp";
     try {
       const data = await this._callApi("GET", `arr_stack/${svc}/queue`);
       const records = Array.isArray(data) ? data : data.records || [];
@@ -4364,6 +4397,7 @@ var _FetchMethods = class {
       const epPct = /* @__PURE__ */ new Map();
       const seasonData = /* @__PURE__ */ new Map();
       const seriesData = /* @__PURE__ */ new Map();
+      const firstEpMap = /* @__PURE__ */ new Map();
       for (const item of records) {
         const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
         if (bad) continue;
@@ -4377,6 +4411,13 @@ var _FetchMethods = class {
           seasonData.set(sk, { size: prev.size + sz, sizeleft: prev.sizeleft + sl });
           const sprev = seriesData.get(item.seriesId) || { size: 0, sizeleft: 0 };
           seriesData.set(item.seriesId, { size: sprev.size + sz, sizeleft: sprev.sizeleft + sl });
+          const epNum = item.episode?.episodeNumber ?? item.episodeNumber;
+          if (epNum != null) {
+            if (!firstEpMap.has(item.seriesId)) {
+              firstEpMap.set(item.seriesId, { season: item.seasonNumber, episode: epNum, count: 0 });
+            }
+            firstEpMap.get(item.seriesId).count++;
+          }
         }
         if (item.episodeId != null) {
           episodes.add(item.episodeId);
@@ -4394,6 +4435,7 @@ var _FetchMethods = class {
       this[epPctKey] = epPct;
       this[seasonPctKey] = seasonPct;
       this[seriesPctKey] = seriesPct;
+      this[firstEpKey] = firstEpMap;
     } catch (e) {
     }
   }
@@ -5201,6 +5243,66 @@ var _FetchMethods = class {
       }
     }
   }
+  async _fetchActivityHistory() {
+    try {
+      const svcs = ["radarr", "sonarr"];
+      const calls = [
+        this._callApi("GET", "arr_stack/radarr/activity/history?page=1&pageSize=30&sortKey=date&sortDir=desc"),
+        this._callApi("GET", "arr_stack/sonarr/activity/history?page=1&pageSize=30&sortKey=date&sortDir=desc")
+      ];
+      if (this._radarr2Configured !== false) {
+        svcs.push("radarr2");
+        calls.push(this._callApi("GET", "arr_stack/radarr2/activity/history?page=1&pageSize=30&sortKey=date&sortDir=desc"));
+      }
+      if (this._sonarr2Configured !== false) {
+        svcs.push("sonarr2");
+        calls.push(this._callApi("GET", "arr_stack/sonarr2/activity/history?page=1&pageSize=30&sortKey=date&sortDir=desc"));
+      }
+      const results = await Promise.allSettled(calls);
+      const all = [];
+      results.forEach((r, i) => {
+        if (r.status !== "fulfilled") return;
+        const isRadarr = svcs[i].startsWith("radarr");
+        for (const rec of r.value?.records || []) {
+          const title = isRadarr ? rec.movie?.title || rec.sourceTitle || "\u2014" : rec.series?.title || rec.sourceTitle || "\u2014";
+          all.push({ title, date: rec.date, eventType: rec.eventType, svc: svcs[i] });
+        }
+      });
+      all.sort((a, b) => new Date(b.date) - new Date(a.date));
+      this._actHistoryCache = all;
+    } catch (e) {
+    }
+  }
+  async _fetchActivityBlocklist() {
+    try {
+      const svcs = ["radarr", "sonarr"];
+      const calls = [
+        this._callApi("GET", "arr_stack/radarr/activity/blocklist?page=1&pageSize=30"),
+        this._callApi("GET", "arr_stack/sonarr/activity/blocklist?page=1&pageSize=30")
+      ];
+      if (this._radarr2Configured !== false) {
+        svcs.push("radarr2");
+        calls.push(this._callApi("GET", "arr_stack/radarr2/activity/blocklist?page=1&pageSize=30"));
+      }
+      if (this._sonarr2Configured !== false) {
+        svcs.push("sonarr2");
+        calls.push(this._callApi("GET", "arr_stack/sonarr2/activity/blocklist?page=1&pageSize=30"));
+      }
+      const results = await Promise.allSettled(calls);
+      const all = [];
+      results.forEach((r, i) => {
+        if (r.status !== "fulfilled") return;
+        const isRadarr = svcs[i].startsWith("radarr");
+        for (const rec of r.value?.records || []) {
+          const title = isRadarr ? rec.movie?.title || rec.sourceTitle || "\u2014" : rec.series?.title || rec.sourceTitle || "\u2014";
+          all.push({ title, date: rec.date, quality: rec.quality?.quality?.name || "", svc: svcs[i] });
+        }
+      });
+      all.sort((a, b) => new Date(b.date) - new Date(a.date));
+      this._actBlocklistCache = all;
+    } catch (e) {
+    }
+  }
 };
 var fetchMixin = _FetchMethods.prototype;
 
@@ -5634,7 +5736,7 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar", "tautulli", "jellystat"];
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar", "tautulli", "jellystat", "activity"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
     const hasActiveStreams = Object.keys(states).some((id) => {
@@ -5653,8 +5755,9 @@ var _RenderRight = class {
       popular: () => this._renderPopular(),
       calendar: hasCalendar ? () => this._renderCalendar() : null,
       streams: hasActiveStreams ? () => this._renderStreams() : null,
-      tautulli: this._tautulliConfigured !== false ? () => this._renderTautulli() : null,
-      jellystat: this._jellystatConfigured !== false ? () => this._renderJellystat() : null
+      tautulli: this._hass?.user?.is_admin && this._tautulliConfigured !== false ? () => this._renderTautulli() : null,
+      jellystat: this._hass?.user?.is_admin && this._jellystatConfigured !== false ? () => this._renderJellystat() : null,
+      activity: this._hass?.user?.is_admin ? () => this._renderActivity() : null
     };
     const regularCategories = [
       ...hasPending ? [() => this._renderPendingRequests()] : [],
@@ -7438,6 +7541,18 @@ var _WireMethods = class {
     });
     const overlay = sr.querySelector(".trending-overlay");
     if (!overlay) return;
+    let _swipeStartX = null;
+    overlay.addEventListener("touchstart", (e) => {
+      _swipeStartX = e.touches[0].clientX;
+    }, { passive: true });
+    overlay.addEventListener("touchend", (e) => {
+      if (_swipeStartX === null) return;
+      const dx = e.changedTouches[0].clientX - _swipeStartX;
+      _swipeStartX = null;
+      if (Math.abs(dx) < 40) return;
+      const action = dx < 0 ? "overlay-next" : "overlay-prev";
+      sr.querySelector(`[data-action="${action}"]`)?.click();
+    }, { passive: true });
     overlay.querySelector('[data-action="overlay-close"]')?.addEventListener("click", (e) => {
       e.stopPropagation();
       const sec = this._overlay?.section;
@@ -9393,6 +9508,8 @@ var _PopupMethods = class {
     this._isResults = [];
     this._isFilters = { protocol: "", indexer: "", quality: "", lang: "" };
     this._isSort = { col: null, dir: 1 };
+    this._isPage = 0;
+    this._isPerPage = 8;
     this._isGrabbing = null;
     this._isGrabbed = /* @__PURE__ */ new Set();
     this._isHistory = {};
@@ -9675,6 +9792,23 @@ var _PopupMethods = class {
       const newBody = root.querySelector(".popup-body");
       if (newBody) newBody.scrollTop = savedBodyScroll;
     }
+    if (this._isState === "results") {
+      requestAnimationFrame(() => {
+        const wrap = this.shadowRoot?.querySelector("#popup-root .is-results-wrap");
+        const firstRow = wrap?.querySelector("tr[data-guid], .is-card");
+        if (wrap && firstRow) {
+          const rowH = Math.max(20, firstRow.getBoundingClientRect().height);
+          const wrapH = wrap.getBoundingClientRect().height;
+          const fits = Math.max(3, Math.floor(wrapH / rowH));
+          if (fits !== this._isPerPage) {
+            this._isPerPage = fits;
+            this._isPage = Math.min(this._isPage, Math.max(0, Math.ceil(this._applyIsFilters(this._isResults || []).length / fits) - 1));
+            root.innerHTML = this._renderPopup();
+            this._wirePopup();
+          }
+        }
+      });
+    }
     const overlay = root.querySelector(".popup-overlay");
     const glass = root.querySelector(".popup-glass");
     const closeBtn = root.querySelector(".popup-close");
@@ -9693,7 +9827,7 @@ var _PopupMethods = class {
     }
     if (glass) glass.addEventListener("click", (e) => {
       e.stopPropagation();
-      const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid],[data-sn-spage]");
+      const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid],[data-sn-spage],[data-is-page]");
       if (!t) return;
       const _closeAS = () => {
         this._asOpen = false;
@@ -9990,6 +10124,25 @@ var _PopupMethods = class {
           return;
         }
       }
+      {
+        const isPageBtn = t.closest("[data-is-page]") || (t.dataset.isPage !== void 0 ? t : null);
+        if (isPageBtn) {
+          const visible = this._applyIsFilters(this._isResults || []);
+          const totalPages = Math.max(1, Math.ceil(visible.length / (this._isPerPage || 8)));
+          const val = isPageBtn.dataset.isPage;
+          let p = this._isPage || 0;
+          if (val === "first") p = 0;
+          else if (val === "prev") p = Math.max(0, p - 1);
+          else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+          else if (val === "last") p = totalPages - 1;
+          else p = parseInt(val) || 0;
+          if (p !== this._isPage) {
+            this._isPage = p;
+            this._renderPopupEl();
+          }
+          return;
+        }
+      }
       if (t.dataset.action === "sn-back") {
         this._snActiveIs = null;
         this._snIsState = null;
@@ -10233,11 +10386,32 @@ var _PopupMethods = class {
         applySeek(e.changedTouches[0].clientX, true);
       }, { passive: false });
     }
+    const isPanel = root.querySelector(".is-panel");
+    if (isPanel) {
+      let _swipeX = null;
+      isPanel.addEventListener("touchstart", (e) => {
+        _swipeX = e.touches[0].clientX;
+      }, { passive: true });
+      isPanel.addEventListener("touchend", (e) => {
+        if (_swipeX === null) return;
+        const dx = e.changedTouches[0].clientX - _swipeX;
+        _swipeX = null;
+        if (Math.abs(dx) < 40) return;
+        const visible = this._applyIsFilters(this._isResults || []);
+        const totalPages = Math.max(1, Math.ceil(visible.length / (this._isPerPage || 8)));
+        const p = dx < 0 ? Math.min(totalPages - 1, (this._isPage || 0) + 1) : Math.max(0, (this._isPage || 0) - 1);
+        if (p !== this._isPage) {
+          this._isPage = p;
+          this._renderPopupEl();
+        }
+      }, { passive: true });
+    }
     if (glass) glass.addEventListener("change", (e) => {
       const sel = e.target.closest("[data-isselect],[data-snisselect]");
       if (!sel) return;
       if (sel.dataset.isselect !== void 0) {
         this._isFilters = { ...this._isFilters, [sel.dataset.isselect]: sel.value };
+        this._isPage = 0;
       } else if (sel.dataset.snisselect !== void 0) {
         this._snIsFilters = { ...this._snIsFilters, [sel.dataset.snisselect]: sel.value };
       }
@@ -10552,16 +10726,21 @@ var _PopupMethods = class {
     </button>` : "";
     const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
     const wideClass = isActive || snIsActive ? " is-wide" : "";
-    return `
-    <div class="popup-overlay${dayClass}">
-      <div class="popup-glass${wideClass}">
-        <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    const searchActive = isActive || snIsActive || asActive;
+    const glassStyle = searchActive ? ' style="height:82vh"' : "";
+    const backdropEl = searchActive ? "" : `
         <div class="popup-backdrop" style="${backdropStyle}">
           <div class="popup-backdrop-fade"></div>
-        </div>
-        <div class="popup-body">
-          <div class="popup-content">
-            ${posterHtml}
+        </div>`;
+    const posterHtmlFinal = posterHtml ? searchActive ? posterHtml.replace('<img class="popup-poster"', '<img class="popup-poster" style="margin-top:0"') : posterHtml : "";
+    return `
+    <div class="popup-overlay${dayClass}">
+      <div class="popup-glass${wideClass}"${glassStyle}>
+        <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        ${backdropEl}
+        <div class="popup-body${searchActive ? " popup-body--search" : ""}">
+          <div class="popup-content"${searchActive ? ' style="padding-top:52px"' : ""}>
+            ${posterHtmlFinal}
             <div class="popup-meta">
               <h2 class="popup-title">${title}</h2>
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
@@ -11403,7 +11582,7 @@ var _TautulliMethods = class {
       <div class="sec-card">
         <div class="col-hdr" style="margin-bottom:5px">
           <ha-icon icon="mdi:chart-bar" style="--mdc-icon-size:24px"></ha-icon>
-          <span class="col-hdr-title">Statistics</span>
+          <span class="col-hdr-title">Statistics (Plex)</span>
           <div class="col-hdr-line"></div>
         </div>
         <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
@@ -12961,6 +13140,1782 @@ var _JellystatGraphsMethods = class {
 };
 var jellystatGraphsMixin = _JellystatGraphsMethods.prototype;
 
+// src/render/activity.js
+var _ActivityRenderMethods = class {
+  // ── Right-panel card row ─────────────────────────────────────────────────
+  _renderActivity() {
+    const rItems = this._radarrQueueItems || [];
+    const r2Items = this._radarr2QueueItems || [];
+    const snPct = this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
+    const sn2Pct = this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map();
+    const totalFailed = rItems.filter((x) => x.failed).length + r2Items.filter((x) => x.failed).length;
+    const totalActive = rItems.filter((x) => !x.failed).length + r2Items.filter((x) => !x.failed).length + snPct.size + sn2Pct.size;
+    return `
+      <div class="sec-card">
+        <div class="col-hdr" style="margin-bottom:5px">
+          <ha-icon icon="mdi:clipboard-list-outline" style="--mdc-icon-size:24px"></ha-icon>
+          <span class="col-hdr-title">Activity Queue</span>
+          <div class="col-hdr-line"></div>
+        </div>
+        <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8249;</button>
+          <div class="tl-row">
+            ${this._actQueueCard(totalActive, totalFailed)}
+            ${this._actHistoryCard()}
+            ${this._actBlocklistCard()}
+          </div>
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8250;</button>
+        </div>
+      </div>`;
+  }
+  _actQueueCard(totalActive, totalFailed) {
+    const rItems = this._radarrQueueItems || [];
+    const r2Items = this._radarr2QueueItems || [];
+    const snSeries = this._sonarr || [];
+    const snPct = this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
+    const snFirstEp = this._sonarrQueueFirstEp || /* @__PURE__ */ new Map();
+    const sn2Series = this._sonarr2 || [];
+    const sn2Pct = this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map();
+    const sn2FirstEp = this._sonarr2QueueFirstEp || /* @__PURE__ */ new Map();
+    const rows = [];
+    const maxRows = 5;
+    for (const item of [...rItems, ...r2Items]) {
+      if (rows.length >= maxRows) break;
+      rows.push({ title: item.title, type: "movie", failed: item.failed, pct: item.pct, sub: null });
+    }
+    for (const [sid, pct] of snPct) {
+      if (rows.length >= maxRows) break;
+      const s = snSeries.find((x) => x.id === sid);
+      const ep = snFirstEp.get(sid);
+      const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
+      if (s) rows.push({ title: s.title || "\u2014", type: "show", failed: false, pct, sub });
+    }
+    for (const [sid, pct] of sn2Pct) {
+      if (rows.length >= maxRows) break;
+      const s = sn2Series.find((x) => x.id === sid);
+      const ep = sn2FirstEp.get(sid);
+      const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
+      if (s) rows.push({ title: s.title || "\u2014", type: "show", failed: false, pct, sub });
+    }
+    const badge = totalFailed > 0 ? `<span style="font-size:10px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalFailed} failed</span>` : totalActive > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalActive} active</span>` : "";
+    const rowsHtml = rows.length > 0 ? rows.map((r, i) => {
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      const color = r.failed ? "rgba(248,113,113,0.85)" : "rgba(52,211,153,0.85)";
+      const sub = r.sub ?? (r.type === "movie" ? "Movie" : "Show");
+      const pctBar = r.failed ? "" : `<div style="margin-top:3px;width:100%;height:2px;background:rgba(255,255,255,0.08);border-radius:1px"><div style="width:${r.pct}%;height:100%;background:${color};border-radius:1px"></div></div>`;
+      const pctTxt = r.failed ? ` <span style="font-size:9px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.22);border-radius:10px;padding:1px 6px">failed</span>` : ` \xB7 ${r.pct}%`;
+      return `<div style="${sep}padding:4px 0">
+            <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}${pctTxt}</div>
+            ${pctBar}
+          </div>`;
+    }).join("") : `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">No active downloads</div>`;
+    return `<div class="tl-card" data-act-open="queue" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Queue</span>
+        ${badge}
+      </div>
+      <div style="flex:1;position:relative;z-index:2">${rowsHtml}</div>
+    </div>`;
+  }
+  _actHistoryCard() {
+    const cache = this._actHistoryCache;
+    const grabbed = cache === null ? null : (cache || []).filter((r) => r.eventType === "grabbed" || r.eventType === "downloadFolderImported").slice(0, 4);
+    const content = grabbed === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">Loading\u2026</div>` : grabbed.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">No history</div>` : grabbed.map((r, i) => {
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      const ago = r.date ? this._tlFmtDate(r.date) : "";
+      const sub = [r.svc, ago].filter(Boolean).join(" \xB7 ");
+      return `<div style="${sep}padding:4px 0">
+              <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}</div>
+            </div>`;
+    }).join("");
+    return `<div class="tl-card" data-act-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>
+      </div>
+      <div style="flex:1;position:relative;z-index:2">${content}</div>
+    </div>`;
+  }
+  _actBlocklistCard() {
+    const cache = this._actBlocklistCache;
+    const items = cache === null ? null : (cache || []).slice(0, 4);
+    const content = items === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">Loading\u2026</div>` : items.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">No blocked releases</div>` : items.map((r, i) => {
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      const ago = r.date ? this._tlFmtDate(r.date) : "";
+      const sub = [r.svc, r.quality, ago].filter(Boolean).join(" \xB7 ");
+      return `<div style="${sep}padding:4px 0">
+              <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}</div>
+            </div>`;
+    }).join("");
+    return `<div class="tl-card" data-act-open="blocklist" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Blocklist</span>
+      </div>
+      <div style="flex:1;position:relative;z-index:2">${content}</div>
+    </div>`;
+  }
+  // ── Modal shell ──────────────────────────────────────────────────────────
+  _actModalHtml(tab) {
+    const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
+    const isMobile = window.matchMedia("(max-width:600px)").matches;
+    const allTabs = ["queue", "history", "blocklist"];
+    const tabLabels = { queue: "Queue", history: "History", blocklist: "Blocklist" };
+    const tabBtns = allTabs.map(
+      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-act-tab="${t}">${tabLabels[t]}</button>`
+    ).join("");
+    const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const hdrInner = isMobile ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+           <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">Activity</div>
+           <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0">${closeSvg}</button>
+         </div>
+         <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
+           <div id="act-hdr-sub" style="font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
+         </div>
+         <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">${closeSvg}</button>`;
+    const hdrStyle = isMobile ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
+    return `<div class="popup-overlay${dayClass}" data-act-modal>
+      <div class="popup-glass tl-wide">
+        <div class="is-panel-hdr" style="${hdrStyle}">${hdrInner}</div>
+        <div class="popup-body" id="act-body" style="padding:${isMobile ? "12px 14px 16px" : "14px 22px 20px"};overflow:hidden">
+          <div class="is-loading"><span>Loading\u2026</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  // ── Queue tab ────────────────────────────────────────────────────────────
+  _actQueueTabHtml(radarrRecords, sonarrRecords, page, perPage, cols) {
+    const isMobile = window.matchMedia("(max-width:600px)").matches;
+    const _epNum = (ep) => ep ? ` S${String(ep.seasonNumber).padStart(2, "0")}E${String(ep.episodeNumber).padStart(2, "0")}` : "";
+    const all = [
+      ...(radarrRecords || []).map((r) => ({
+        ...r,
+        _svc: "radarr",
+        _title: r._enrichedTitle || r.movie?.title || r.title || "\u2014",
+        _episodeTitle: ""
+      })),
+      ...(sonarrRecords || []).map((r) => {
+        const seriesTitle = r._enrichedTitle || r.series?.title || r.title || "\u2014";
+        return {
+          ...r,
+          _svc: "sonarr",
+          _title: seriesTitle + _epNum(r.episode),
+          _episodeTitle: r.episode?.title || ""
+        };
+      })
+    ];
+    const m = this._activityModal || {};
+    const fSvc = m.queueFilterSvc || "all";
+    const fSts = m.queueFilterSts || "all";
+    const fQual = m.queueFilterQuality || "all";
+    const fProto = m.queueFilterProtocol || "all";
+    const fIdx = m.queueFilterIndexer || "all";
+    const fCli = m.queueFilterClient || "all";
+    const qSearch = (m.queueSearch || "").toLowerCase().trim();
+    const filtered = all.filter((item) => {
+      if (qSearch && !item._title.toLowerCase().includes(qSearch)) return false;
+      if (fSvc !== "all" && item._svc !== fSvc) return false;
+      if (fSts === "failed") {
+        const isBadF = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+        if (!isBadF) return false;
+      }
+      if (fSts === "downloading") {
+        const isBadF = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+        if (isBadF) return false;
+      }
+      if (fQual !== "all" && (item.quality?.quality?.name || "") !== fQual) return false;
+      if (fProto !== "all" && (item.protocol || "").toLowerCase() !== fProto) return false;
+      if (fIdx !== "all" && (item.indexer || "") !== fIdx) return false;
+      if (fCli !== "all" && (item.downloadClient || "") !== fCli) return false;
+      return true;
+    });
+    if (!all.length) {
+      return `<div style="text-align:center;color:var(--is-text-muted);padding:40px 20px">Queue is empty</div>`;
+    }
+    const pp = perPage || 15;
+    const pg = Math.min(page || 0, Math.max(0, Math.ceil(filtered.length / pp) - 1));
+    const paged = filtered.slice(pg * pp, (pg + 1) * pp);
+    const totPages = Math.max(1, Math.ceil(filtered.length / pp));
+    const pagHtml = totPages > 1 ? this._tlMobPag("act-queue-page", pg, totPages) : "";
+    const PAG = `<div style="flex-shrink:0;padding-top:8px">${pagHtml}</div>`;
+    const closeSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const importSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    const trashSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
+    const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
+    const dlDoneSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const srcFilmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
+    const srcTvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
+    const ALL_QUEUE_COLS = [
+      { id: "source", label: "Source" },
+      { id: "quality", label: "Quality" },
+      { id: "size", label: "Size" },
+      { id: "timeleft", label: "Time Left" },
+      { id: "formats", label: "Formats" },
+      { id: "protocol", label: "Protocol" },
+      { id: "indexer", label: "Indexer" },
+      { id: "client", label: "Client" },
+      { id: "status", label: "Status" }
+    ];
+    const C = cols instanceof Set ? cols : /* @__PURE__ */ new Set(["source", "quality", "size", "formats", "status"]);
+    const visCols = ALL_QUEUE_COLS.filter((c) => C.has(c.id));
+    const selSty = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+    const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+    const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
+    const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>All ${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
+    const qSvcSel = C.has("source") ? `<select id="act-queue-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>All Sources</option><option value="radarr"${fSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${fSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>` : "";
+    const qStsSel = C.has("status") ? `<select id="act-queue-sts" style="${fSts !== "all" ? selStyA : selSty}"><option value="all"${fSts === "all" ? " selected" : ""}>All Status</option><option value="downloading"${fSts === "downloading" ? " selected" : ""}>Downloading</option><option value="failed"${fSts === "failed" ? " selected" : ""}>Failed</option></select>` : "";
+    const qQualSel = C.has("quality") ? mkSel("act-queue-quality", fQual, uniq(all, (r) => r.quality?.quality?.name), "Qualities") : "";
+    const qProtoSel = C.has("protocol") ? mkSel("act-queue-proto", fProto, ["torrent", "usenet"], "Protocols") : "";
+    const qIdxSel = C.has("indexer") ? mkSel("act-queue-indexer", fIdx, uniq(all, (r) => r.indexer), "Indexers") : "";
+    const qCliSel = C.has("client") ? mkSel("act-queue-client", fCli, uniq(all, (r) => r.downloadClient), "Clients") : "";
+    const allQSels = [qSvcSel, qStsSel, qQualSel, qProtoSel, qIdxSel, qCliSel].filter(Boolean).join("");
+    const qFilters = allQSels ? `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allQSels}</div>` : "";
+    const qSearchEl = this._tlSearchInput("act-queue-search", m.queueSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const rows = paged.map((item) => {
+      const isBad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
+      const pct = item.size > 0 ? Math.round((item.size - (item.sizeleft || 0)) / item.size * 100) : 0;
+      const stCol = isBad ? "rgba(250,160,40,0.9)" : "var(--is-text-muted)";
+      const _sm = item.statusMessages;
+      const _smLines = isBad && item._miRejection ? [item._miRejection] : _sm?.length ? _sm.flatMap((s) => s.messages?.length ? s.messages : s.title ? [s.title] : []).filter(Boolean) : [];
+      const stLbl = isBad ? _smLines[0] || item.trackedDownloadState || item.trackedDownloadStatus || "Error" : `${pct}%`;
+      const svcCol = item._svc === "radarr" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+      const svcLbl = item._svc === "radarr" ? "Radarr" : "Sonarr";
+      const sizLbl = item.size ? this._actFmtSize(item.size) : "\u2014";
+      const qualLbl = item.quality?.quality?.name || "\u2014";
+      const timeLbl = item.timeleft || "\u2014";
+      const protLbl = item.protocol || "\u2014";
+      const idxLbl = item.indexer || "\u2014";
+      const cliLbl = item.downloadClient || "\u2014";
+      const pb = `<div style="width:100%;height:3px;background:var(--is-divider);border-radius:2px;overflow:hidden;margin-top:3px"><div style="width:${isBad ? 100 : pct}%;height:100%;background:rgba(99,140,255,0.65);border-radius:2px"></div></div>`;
+      const delMode2 = m.queueDeleteMode || false;
+      const removeBtn = delMode2 ? `<button class="act-remove-btn" data-id="${item.id}" data-svc="${item._svc}" data-title="${this._escHtml(item._title)}" title="Remove from queue" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;color:rgba(220,80,80,0.9)">${trashSvg}</button>` : "";
+      const canImport = isBad && item.downloadId;
+      const importBtn = canImport ? `<button class="act-mi-btn" data-id="${item.id}" data-svc="${item._svc}" data-download-id="${item.downloadId}" data-movie-id="${item.movieId || ""}" data-series-id="${item.seriesId || ""}" data-title="${this._escHtml(item._title)}" title="Manual Import" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9);margin-right:4px">${importSvg}</button>` : "";
+      const isFullyDl = item.size > 0 && (item.sizeleft === 0 || item.sizeleft === null);
+      const dlIcon = isFullyDl ? `<span style="color:rgba(250,160,40,0.85);display:flex;align-items:center;flex-shrink:0">${dlDoneSvg}</span>` : "";
+      const addedLbl = item.added ? (() => {
+        try {
+          const dt = new Date(item.added);
+          return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" });
+        } catch {
+          return "";
+        }
+      })() : "";
+      const qExtraTags = isMobile ? visCols.filter((c) => !["source", "quality", "size", "status", "formats"].includes(c.id)).map((col) => {
+        let v = "";
+        if (col.id === "timeleft") v = item.timeleft || "";
+        if (col.id === "protocol") v = item.protocol || "";
+        if (col.id === "indexer") v = item.indexer || "";
+        if (col.id === "client") v = item.downloadClient || "";
+        return v && v !== "\u2014" ? `<span style="font-size:9px;color:var(--is-text-muted)">${v}</span>` : "";
+      }).filter(Boolean).join("") : "";
+      if (isMobile) {
+        const subLine = isBad ? _smLines[0] || item.trackedDownloadState || "Error" : item._episodeTitle ? this._escHtml(item._episodeTitle) : null;
+        const subLineClr = isBad ? "rgba(250,160,40,0.85)" : "var(--is-text-muted)";
+        return `<div style="padding:9px 0;border-bottom:1px solid var(--is-divider)">
+          <div style="display:flex;align-items:flex-start;gap:6px">
+            <div style="flex-shrink:0;width:16px;display:flex;justify-content:center;padding-top:2px">${dlIcon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item._title}</div>
+              <div style="font-size:10px;color:${subLineClr};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;visibility:${subLine ? "visible" : "hidden"}">${subLine || "&nbsp;"}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                <span style="color:var(--is-text-muted);display:flex;align-items:center">${item._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
+                <span style="font-size:9px;color:var(--is-text-muted)">${qualLbl}</span>
+                <span style="font-size:9px;color:var(--is-text-muted)">${sizLbl}</span>
+                ${qExtraTags}
+              </div>
+              ${pb}
+            </div>
+            <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:52px">
+              <span style="font-size:14px;font-weight:700;color:var(--is-text-muted)">${pct}%</span>
+              ${addedLbl ? `<span style="font-size:9px;color:var(--is-text-muted)">${addedLbl}</span>` : ""}
+              <div style="display:flex;gap:4px;margin-top:2px">${importBtn}${removeBtn}</div>
+            </div>
+          </div>
+        </div>`;
+      }
+      const colTds = visCols.map((col) => {
+        const tdBase = `style="padding:8px;white-space:nowrap;font-size:10px;"`;
+        if (col.id === "source") return `<td ${tdBase} style="padding:8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-weight:600;color:var(--is-text-sec)">${svcLbl}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${item._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
+        if (col.id === "quality") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${qualLbl}</td>`;
+        if (col.id === "size") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${sizLbl}</td>`;
+        if (col.id === "timeleft") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${timeLbl}</td>`;
+        if (col.id === "formats") {
+          const fmts = (item.customFormats || []).filter((cf) => cf.name);
+          return `<td style="padding:8px;overflow:hidden">${fmts.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px">${fmts.map((cf) => `<span style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+        }
+        if (col.id === "protocol") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${this._escHtml(protLbl)}</td>`;
+        if (col.id === "indexer") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis">${this._escHtml(idxLbl)}</td>`;
+        if (col.id === "client") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${this._escHtml(cliLbl)}</td>`;
+        if (col.id === "status") {
+          const stHtml = isBad && _smLines.length > 1 ? _smLines.map((l) => `<div style="font-size:10px;color:${stCol};line-height:1.4">${this._escHtml(l)}</div>`).join("") : `<span style="font-size:10px;font-weight:${isBad ? "400" : "600"};color:${stCol}">${this._escHtml(stLbl)}</span>`;
+          return `<td style="padding:8px;white-space:normal;min-width:80px;max-width:180px">${stHtml}</td>`;
+        }
+        return "";
+      }).join("");
+      return `<tr style="border-bottom:1px solid var(--is-divider)">
+        <td style="padding:8px 8px 8px 0;width:22px;text-align:center">${dlIcon}</td>
+        <td style="padding:8px 8px 8px 0">
+          <div style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-word">
+            <span style="font-size:12px;font-weight:600;color:var(--is-text)">${item._title}</span>${item._episodeTitle ? `<span style="font-size:10px;color:var(--is-text-muted);margin-left:7px">${this._escHtml(item._episodeTitle)}</span>` : ""}
+          </div>
+          ${pb}
+        </td>
+        ${colTds}
+        <td style="padding:8px 0 8px 8px;text-align:right;white-space:nowrap">
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px">
+            ${importBtn}${removeBtn}
+          </div>
+        </td>
+      </tr>`;
+    }).join("");
+    if (isMobile) {
+      const delModeMob = m.queueDeleteMode || false;
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
+          ${qSearchEl}
+          <button id="act-queue-del-btn" class="tl-page-btn${delModeMob ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}Delete</button>
+          <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button>
+        </div>
+        ${qFilters}
+        <div style="flex:1;overflow:hidden" data-act-clip>${rows}</div>
+        ${PAG}
+      </div>`;
+    }
+    const COL_W = { source: 70, quality: 75, size: 65, timeleft: 75, formats: 130, protocol: 65, indexer: 110, client: 100, status: 95 };
+    const thSt = `padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;white-space:nowrap`;
+    const delMode = m.queueDeleteMode || false;
+    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
+        ${qSearchEl}
+        <button id="act-queue-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}Delete</button>
+        <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button>
+      </div>
+      ${qFilters}
+      <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <thead><tr style="border-bottom:1px solid var(--is-divider)">
+            <th style="padding:4px 8px 8px 0;width:22px"></th>
+            <th style="padding:4px 8px 8px 0;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;width:300px">Title</th>
+            ${visCols.map((c) => `<th style="${thSt};width:${COL_W[c.id] || 80}px">${c.label}</th>`).join("")}
+            <th style="padding:4px 0 8px 8px;width:60px"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${PAG}
+    </div>`;
+  }
+  // ── History tab ──────────────────────────────────────────────────────────
+  _actHistoryTabHtml(radarrData, sonarrData, filter, page, perPage) {
+    const isMobile = window.matchMedia("(max-width:600px)").matches;
+    const rRecords = radarrData?.records || [];
+    const sRecords = sonarrData?.records || [];
+    const mh = this._activityModal || {};
+    const hSvc = mh.histFilterSvc || "all";
+    const hSearch = (mh.histSearch || "").toLowerCase().trim();
+    const histSort = mh.histSort || "date";
+    const histSortDir = mh.histSortDir || "desc";
+    const ALL_HIST_COLS = [
+      { id: "event", label: "Event" },
+      { id: "quality", label: "Quality" },
+      { id: "langs", label: "Languages" },
+      { id: "formats", label: "Formats" },
+      { id: "date", label: "Date" },
+      { id: "client", label: "Download Client" },
+      { id: "indexer", label: "Indexer" },
+      { id: "relgroup", label: "Release Group" },
+      { id: "srctitle", label: "Source Title" },
+      { id: "cfscore", label: "CF Score" }
+    ];
+    const HC = mh.histCols instanceof Set ? mh.histCols : /* @__PURE__ */ new Set(["event", "quality", "date"]);
+    const visHistCols = ALL_HIST_COLS.filter((c) => HC.has(c.id));
+    const allRaw = [
+      ...rRecords.map((r) => ({ ...r, _svc: "radarr", _title: r.movie?.title || r.sourceTitle || "" })),
+      ...sRecords.map((r) => ({ ...r, _svc: "sonarr", _title: r.series?.title || r.sourceTitle || "" }))
+    ];
+    const selSty = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+    const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+    const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
+    const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>All ${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
+    const fQual = mh.histFilterQuality || "all";
+    const fLang = mh.histFilterLang || "all";
+    const fFmt = mh.histFilterFormat || "all";
+    const fCli = mh.histFilterClient || "all";
+    const fIdx = mh.histFilterIndexer || "all";
+    const fRG = mh.histFilterRelgroup || "all";
+    const hEvtSel = HC.has("event") ? `<select id="act-hist-filter" style="${filter && filter !== "all" ? selStyA : selSty}"><option value="all"${(filter || "all") === "all" ? " selected" : ""}>All Events</option><option value="grabbed"${filter === "grabbed" ? " selected" : ""}>Grabbed</option><option value="downloadFolderImported"${filter === "downloadFolderImported" ? " selected" : ""}>Imported</option><option value="downloadFailed"${filter === "downloadFailed" ? " selected" : ""}>Failed</option></select>` : "";
+    const hSvcSel = `<select id="act-hist-svc" style="${hSvc !== "all" ? selStyA : selSty}"><option value="all"${hSvc === "all" ? " selected" : ""}>All Sources</option><option value="radarr"${hSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${hSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
+    const hQualSel = HC.has("quality") ? mkSel("act-hist-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), "Qualities") : "";
+    const hLangSel = HC.has("langs") ? mkSel("act-hist-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), "Languages") : "";
+    const hFmtSel = HC.has("formats") ? mkSel("act-hist-format", fFmt, [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort(), "Formats") : "";
+    const hCliSel = HC.has("client") ? mkSel("act-hist-client", fCli, uniq(allRaw, (r) => r.data?.downloadClient), "Clients") : "";
+    const hIdxSel = HC.has("indexer") ? mkSel("act-hist-indexer", fIdx, uniq(allRaw, (r) => r.data?.indexer), "Indexers") : "";
+    const hRGSel = HC.has("relgroup") ? mkSel("act-hist-relgroup", fRG, uniq(allRaw, (r) => r.data?.releaseGroup), "Groups") : "";
+    const allHSels = [hEvtSel, hSvcSel, hQualSel, hLangSel, hFmtSel, hCliSel, hIdxSel, hRGSel].filter(Boolean).join("");
+    const hFilters = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allHSels}</div>`;
+    const searchEl = this._tlSearchInput("act-hist-search", mh.histSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
+    const toolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${searchEl}<button id="act-hist-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button></div>${hFilters}`;
+    const allFiltered = allRaw.filter((r) => {
+      if (hSvc !== "all" && r._svc !== hSvc) return false;
+      if (hSearch && !r._title.toLowerCase().includes(hSearch)) return false;
+      if (fQual !== "all" && (r.quality?.quality?.name || "") !== fQual) return false;
+      if (fLang !== "all" && !(r.languages || []).some((l) => l.name === fLang)) return false;
+      if (fFmt !== "all" && !(r.customFormats || []).some((cf) => cf.name === fFmt)) return false;
+      if (fCli !== "all" && (r.data?.downloadClient || "") !== fCli) return false;
+      if (fIdx !== "all" && (r.data?.indexer || "") !== fIdx) return false;
+      if (fRG !== "all" && (r.data?.releaseGroup || "") !== fRG) return false;
+      return true;
+    });
+    const _sortFn = {
+      title: (r) => r._title.toLowerCase(),
+      event: (r) => r.eventType || "",
+      quality: (r) => r.quality?.quality?.name || "",
+      langs: (r) => r.languages?.[0]?.name || "",
+      formats: (r) => r.customFormats?.[0]?.name || "",
+      date: (r) => new Date(r.date || 0).getTime(),
+      client: (r) => r.data?.downloadClient || "",
+      indexer: (r) => r.data?.indexer || "",
+      relgroup: (r) => r.data?.releaseGroup || "",
+      srctitle: (r) => r.sourceTitle || "",
+      cfscore: (r) => Number(r.data?.customFormatScore || 0)
+    }[histSort];
+    const allItems = [...allFiltered].sort((a, b) => {
+      if (!_sortFn) return new Date(b.date) - new Date(a.date);
+      const va = _sortFn(a), vb = _sortFn(b);
+      if (va < vb) return histSortDir === "asc" ? -1 : 1;
+      if (va > vb) return histSortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    if (!allRaw.length) {
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+        ${toolbar}
+        <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">No history found</div>
+      </div>`;
+    }
+    const pg = Math.min(page || 0, Math.max(0, Math.ceil(allItems.length / perPage) - 1));
+    const paged = allItems.slice(pg * perPage, (pg + 1) * perPage);
+    const totPages = Math.max(1, Math.ceil(allItems.length / perPage));
+    const pagHtml = totPages > 1 ? this._tlMobPag("act-hist-page", pg, totPages) : "";
+    const evColor = (ev) => {
+      if (ev === "grabbed") return "rgba(99,140,255,0.9)";
+      if (ev === "downloadFolderImported") return "rgba(60,200,120,0.9)";
+      if (ev === "downloadFailed" || ev === "importFailed") return "rgba(255,100,100,0.9)";
+      return "rgba(255,255,255,0.45)";
+    };
+    const evLabel = (ev) => ({
+      grabbed: "Grabbed",
+      downloadFolderImported: "Imported",
+      downloadFailed: "Failed",
+      importFailed: "Import\xA0Failed",
+      downloadIgnored: "Ignored",
+      movieDeleted: "Deleted",
+      seriesDeleted: "Deleted"
+    })[ev] || ev || "\u2014";
+    const fmtDate = (d) => {
+      if (!d) return "\u2014";
+      try {
+        const dt = new Date(d);
+        return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" }) + "\xA0" + dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit" });
+      } catch {
+        return d;
+      }
+    };
+    const srcFilmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
+    const srcTvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
+    const HCOL_W = { title: 300, event: 90, quality: 80, langs: 80, formats: 90, date: 80, client: 100, indexer: 110, relgroup: 90, srctitle: 140, cfscore: 70 };
+    const _sth = (id, label, pad0 = false) => {
+      const active = histSort === id;
+      const arrow = active ? `<span style="margin-left:2px">${histSortDir === "asc" ? "\u2191" : "\u2193"}</span>` : "";
+      const w = HCOL_W[id] ? `width:${HCOL_W[id]}px;` : "";
+      return `<th data-act-hist-sort="${id}" style="${w}padding:4px 8px 8px${pad0 ? " 0" : ""};font-size:10px;font-weight:600;color:${active ? "var(--is-text-body)" : "var(--is-text-muted)"};text-align:left;cursor:pointer;user-select:none;white-space:nowrap">${label}${arrow}</th>`;
+    };
+    if (isMobile) {
+      const rowsHtml = paged.map((r) => {
+        const svcCol = r._svc === "radarr" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+        const qualLblM = r.quality?.quality?.name || "";
+        const hExtraTags = visHistCols.filter((c) => !["source", "quality", "event", "date"].includes(c.id)).map((col) => {
+          let v = "";
+          if (col.id === "langs") v = (r.languages || []).map((l) => l.name).join(", ");
+          if (col.id === "formats") v = (r.customFormats || []).map((cf) => cf.name).join(", ");
+          if (col.id === "client") v = r.data?.downloadClient || "";
+          if (col.id === "indexer") v = r.data?.indexer || "";
+          if (col.id === "relgroup") v = r.data?.releaseGroup || "";
+          if (col.id === "srctitle") v = r.sourceTitle || "";
+          if (col.id === "cfscore") v = r.data?.customFormatScore != null ? String(r.data.customFormatScore) : "";
+          return v ? `<span style="font-size:9px;color:var(--is-text-muted)">${v}</span>` : "";
+        }).filter(Boolean).join("");
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--is-divider)">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div>
+              <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
+                <span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
+                ${qualLblM ? `<span style="font-size:9px;color:var(--is-text-muted)">${qualLblM}</span>` : ""}
+                ${hExtraTags}
+              </div>
+            </div>
+            <div style="flex-shrink:0;text-align:right;min-width:60px">
+              <div style="font-size:11px;font-weight:700;color:var(--is-text)">${evLabel(r.eventType)}</div>
+              <div style="font-size:9px;color:var(--is-text-muted);margin-top:2px">${fmtDate(r.date)}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+        ${toolbar}
+        <div style="flex:1;overflow:hidden" data-act-clip>${rowsHtml}</div>
+        <div style="flex-shrink:0;padding-top:4px">${pagHtml}</div>
+      </div>`;
+    }
+    const rows = paged.map((r) => {
+      const srcCell = `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${r._svc === "radarr" ? "Radarr" : "Sonarr"}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
+      const colTds = visHistCols.map((col) => {
+        if (col.id === "event") return `<td style="padding:7px 8px;white-space:nowrap"><span style="font-size:10px;font-weight:600;color:var(--is-text-body)">${evLabel(r.eventType)}</span></td>`;
+        if (col.id === "quality") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.quality?.quality?.name || "\u2014"}</td>`;
+        if (col.id === "langs") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
+        if (col.id === "formats") {
+          const fmts = (r.customFormats || []).filter((cf) => cf.name);
+          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px">${fmts.map((cf) => `<span style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+        }
+        if (col.id === "date") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-muted)">${fmtDate(r.date)}</td>`;
+        if (col.id === "client") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${this._escHtml(r.data?.downloadClient || "\u2014")}</td>`;
+        if (col.id === "indexer") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.data?.indexer || "\u2014")}</td>`;
+        if (col.id === "relgroup") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${this._escHtml(r.data?.releaseGroup || "\u2014")}</td>`;
+        if (col.id === "srctitle") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.sourceTitle || "\u2014")}</td>`;
+        if (col.id === "cfscore") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.data?.customFormatScore ?? "\u2014"}</td>`;
+        return "";
+      }).join("");
+      return `<tr style="border-bottom:1px solid var(--is-divider)">
+        <td style="padding:7px 8px 7px 0;overflow:hidden"><div style="font-size:12px;font-weight:500;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div></td>
+        ${srcCell}${colTds}
+      </tr>`;
+    }).join("");
+    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      ${toolbar}
+      <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <thead><tr style="border-bottom:1px solid var(--is-divider)">
+            ${_sth("title", "Title", true)}
+            <th style="width:70px;padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:center">Source</th>
+            ${visHistCols.map((c) => _sth(c.id, c.label)).join("")}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="flex-shrink:0;padding-top:4px">${pagHtml}</div>
+    </div>`;
+  }
+  // ── Blocklist tab ────────────────────────────────────────────────────────
+  _actBlocklistTabHtml(radarrData, sonarrData, page, perPage) {
+    const isMobile = window.matchMedia("(max-width:600px)").matches;
+    const rRecords = radarrData?.records || [];
+    const sRecords = sonarrData?.records || [];
+    const mb = this._activityModal || {};
+    const blSvc = mb.blFilterSvc || "all";
+    const blProto = mb.blFilterProto || "all";
+    const blSearch = (mb.blSearch || "").toLowerCase().trim();
+    const blSort = mb.blSort || "date";
+    const blSortDir = mb.blSortDir || "desc";
+    const delMode = mb.blDeleteMode || false;
+    const ALL_BL_COLS = [
+      { id: "source", label: "Source" },
+      { id: "srctitle", label: "Source Title" },
+      { id: "langs", label: "Languages" },
+      { id: "quality", label: "Quality" },
+      { id: "formats", label: "Formats" },
+      { id: "date", label: "Date" },
+      { id: "indexer", label: "Indexer" },
+      { id: "protocol", label: "Protocol" }
+    ];
+    const BC = mb.blCols instanceof Set ? mb.blCols : /* @__PURE__ */ new Set(["quality", "date", "source"]);
+    const visBLCols = ALL_BL_COLS.filter((c) => BC.has(c.id));
+    const allRaw = [
+      ...rRecords.map((r) => ({ ...r, _svc: "radarr", _title: r.movie?.title || r.sourceTitle || "\u2014" })),
+      ...sRecords.map((r) => ({ ...r, _svc: "sonarr", _title: r.series?.title || r.sourceTitle || "\u2014" }))
+    ];
+    const selSty = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+    const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+    const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
+    const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>All ${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
+    const fQual = mb.blFilterQuality || "all";
+    const fLang = mb.blFilterLang || "all";
+    const fFmt = mb.blFilterFormat || "all";
+    const fIdx = mb.blFilterIndexer || "all";
+    const blSvcSel = `<select id="act-bl-svc" style="${blSvc !== "all" ? selStyA : selSty}"><option value="all"${blSvc === "all" ? " selected" : ""}>All Sources</option><option value="radarr"${blSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${blSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
+    const blProtoSel = `<select id="act-bl-proto" style="${blProto !== "all" ? selStyA : selSty}"><option value="all"${blProto === "all" ? " selected" : ""}>All Protocols</option><option value="torrent"${blProto === "torrent" ? " selected" : ""}>Torrent</option><option value="usenet"${blProto === "usenet" ? " selected" : ""}>Usenet</option></select>`;
+    const blQualSel = BC.has("quality") ? mkSel("act-bl-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), "Qualities") : "";
+    const blLangSel = BC.has("langs") ? mkSel("act-bl-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), "Languages") : "";
+    const blFmtSel = BC.has("formats") ? mkSel("act-bl-format", fFmt, [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort(), "Formats") : "";
+    const blIdxSel = BC.has("indexer") ? mkSel("act-bl-indexer", fIdx, uniq(allRaw, (r) => r.indexer), "Indexers") : "";
+    const allBLSels = [blSvcSel, blProtoSel, blQualSel, blLangSel, blFmtSel, blIdxSel].filter(Boolean).join("");
+    const blFilters = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allBLSels}</div>`;
+    const trashSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
+    const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
+    const blSearchEl = this._tlSearchInput("act-bl-search", mb.blSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const blToolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${blSearchEl}<button id="act-bl-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}Delete</button><button id="act-bl-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}Columns</button></div>${blFilters}`;
+    const allFiltered = allRaw.filter((r) => {
+      if (blSvc !== "all" && r._svc !== blSvc) return false;
+      if (blProto !== "all" && (r.protocol || "").toLowerCase() !== blProto) return false;
+      if (blSearch && !r._title.toLowerCase().includes(blSearch)) return false;
+      if (fQual !== "all" && (r.quality?.quality?.name || "") !== fQual) return false;
+      if (fLang !== "all" && !(r.languages || []).some((l) => l.name === fLang)) return false;
+      if (fFmt !== "all" && !(r.customFormats || []).some((cf) => cf.name === fFmt)) return false;
+      if (fIdx !== "all" && (r.indexer || "") !== fIdx) return false;
+      return true;
+    });
+    const _blSortFn = {
+      title: (r) => r._title.toLowerCase(),
+      srctitle: (r) => r.sourceTitle || "",
+      langs: (r) => (r.languages || [])[0]?.name || "",
+      quality: (r) => r.quality?.quality?.name || "",
+      formats: (r) => (r.customFormats || [])[0]?.name || "",
+      date: (r) => new Date(r.date || 0).getTime(),
+      indexer: (r) => r.indexer || "",
+      protocol: (r) => r.protocol || "",
+      source: (r) => r._svc
+    }[blSort];
+    const allSorted = [...allFiltered].sort((a, b) => {
+      if (!_blSortFn) return new Date(b.date) - new Date(a.date);
+      const va = _blSortFn(a), vb = _blSortFn(b);
+      if (va < vb) return blSortDir === "asc" ? -1 : 1;
+      if (va > vb) return blSortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    if (!allRaw.length) {
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+        ${blToolbar}
+        <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">Blocklist is empty</div>
+      </div>`;
+    }
+    const pg = Math.min(page || 0, Math.max(0, Math.ceil(allSorted.length / perPage) - 1));
+    const paged = allSorted.slice(pg * perPage, (pg + 1) * perPage);
+    const totPages = Math.max(1, Math.ceil(allSorted.length / perPage));
+    const pagHtml = totPages > 1 ? this._tlMobPag("act-bl-page", pg, totPages) : "";
+    const fmtDate = (d) => {
+      if (!d) return "\u2014";
+      try {
+        const dt = new Date(d);
+        return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit" });
+      } catch {
+        return d;
+      }
+    };
+    const closeSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const srcFilmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
+    const srcTvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
+    const BCOL_W = { title: 300, source: 70, srctitle: 140, langs: 80, quality: 80, formats: 90, date: 80, indexer: 110, protocol: 65 };
+    const _bsth = (id, label, pad0 = false, center = false) => {
+      const active = blSort === id;
+      const arrow = active ? `<span style="margin-left:2px">${blSortDir === "asc" ? "\u2191" : "\u2193"}</span>` : "";
+      const w = BCOL_W[id] ? `width:${BCOL_W[id]}px;` : "";
+      return `<th data-act-bl-sort="${id}" style="${w}padding:4px 8px 8px${pad0 ? " 0" : ""};font-size:10px;font-weight:600;color:${active ? "var(--is-text-body)" : "var(--is-text-muted)"};text-align:${center ? "center" : "left"};cursor:pointer;user-select:none;white-space:nowrap">${label}${arrow}</th>`;
+    };
+    if (isMobile) {
+      const rowsHtml = paged.map((r) => {
+        const svcCol = r._svc === "radarr" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+        const rmBtn = delMode ? `<button class="act-bl-remove-btn" data-id="${r.id}" data-svc="${r._svc}" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;color:rgba(220,80,80,0.9)">${trashSvg}</button>` : "";
+        const dateShortBl = (() => {
+          try {
+            const dt = new Date(r.date);
+            return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" });
+          } catch {
+            return fmtDate(r.date);
+          }
+        })();
+        const blExtraTags = visBLCols.filter((c) => !["source", "quality", "date"].includes(c.id)).map((col) => {
+          let v = "";
+          if (col.id === "srctitle") v = r.sourceTitle || "";
+          if (col.id === "langs") v = (r.languages || []).map((l) => l.name).join(", ");
+          if (col.id === "formats") v = (r.customFormats || []).map((cf) => cf.name).join(", ");
+          if (col.id === "indexer") v = r.indexer || "";
+          if (col.id === "protocol") v = r.protocol || "";
+          return v ? `<span style="font-size:9px;color:var(--is-text-muted)">${v}</span>` : "";
+        }).filter(Boolean).join("");
+        return `<div style="padding:9px 0;border-bottom:1px solid var(--is-divider)">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div>
+              <div style="display:flex;gap:6px;margin-top:3px">
+                <span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
+                <span style="font-size:9px;color:var(--is-text-muted)">${r.quality?.quality?.name || "\u2014"}</span>
+                ${blExtraTags}
+              </div>
+            </div>
+            <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:44px">
+              <span style="font-size:11px;font-weight:600;color:var(--is-text-sec)">${dateShortBl}</span>
+              ${rmBtn}
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+        ${blToolbar}
+        <div style="flex:1;overflow:hidden" data-act-clip>${rowsHtml}</div>
+        <div style="flex-shrink:0;padding-top:4px">${pagHtml}</div>
+      </div>`;
+    }
+    const rows = paged.map((r) => {
+      const rmBtn = delMode ? `<button class="act-bl-remove-btn" data-id="${r.id}" data-svc="${r._svc}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;color:rgba(220,80,80,0.9)">${trashSvg}</button>` : "";
+      const colTds = visBLCols.map((col) => {
+        if (col.id === "source") return `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${r._svc === "radarr" ? "Radarr" : "Sonarr"}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
+        if (col.id === "srctitle") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.sourceTitle || "\u2014")}</td>`;
+        if (col.id === "langs") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
+        if (col.id === "quality") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.quality?.quality?.name || "\u2014"}</td>`;
+        if (col.id === "formats") {
+          const fmts = (r.customFormats || []).filter((cf) => cf.name);
+          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px">${fmts.map((cf) => `<span style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+        }
+        if (col.id === "date") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-muted)">${fmtDate(r.date)}</td>`;
+        if (col.id === "indexer") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.indexer || "\u2014")}</td>`;
+        if (col.id === "protocol") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.protocol || "\u2014"}</td>`;
+        return "";
+      }).join("");
+      return `<tr style="border-bottom:1px solid var(--is-divider)">
+        <td style="padding:7px 8px 7px 0;overflow:hidden"><div style="font-size:12px;font-weight:500;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div></td>
+        ${colTds}
+        <td style="padding:7px 0 7px 8px;text-align:right">${rmBtn}</td>
+      </tr>`;
+    }).join("");
+    const thRow = visBLCols.map((c) => _bsth(c.id, c.label, false, c.id === "source")).join("");
+    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      ${blToolbar}
+      <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <thead><tr style="border-bottom:1px solid var(--is-divider)">
+            ${_bsth("title", "Title", true)}
+            ${thRow}
+            <th style="padding:4px 0 8px 8px;width:36px"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="flex-shrink:0;padding-top:4px">${pagHtml}</div>
+    </div>`;
+  }
+  // ── Manual Import modal ──────────────────────────────────────────────────
+  _actManualImportModalHtml(title) {
+    const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
+    const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    return `<div class="popup-overlay${dayClass}" data-mi-modal style="z-index:1100">
+      <div class="popup-glass" style="width:min(1100px,98vw);max-height:85vh;display:flex;flex-direction:column">
+        <div class="is-panel-hdr" style="padding:14px 20px 12px;gap:10px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:700;color:var(--is-text)">Manual Import</div>
+            <div style="font-size:11px;color:var(--is-text-sec);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="mi-subtitle">${this._escHtml(title)}</div>
+          </div>
+          <button class="popup-close" id="mi-close" style="position:relative;top:0;right:0;flex-shrink:0">${closeSvg}</button>
+        </div>
+        <div id="mi-body" class="popup-body" style="padding:14px 20px 18px;overflow-y:auto;flex:1">
+          <div class="is-loading"><span>Loading\u2026</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  _actManualImportCandidatesHtml(candidates, svc, qDefs, langs) {
+    if (!candidates || !candidates.length) {
+      return `<div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">
+        <div style="font-size:13px">No importable files found</div>
+        <div style="font-size:11px;margin-top:6px;opacity:0.6">Check that download is complete and files exist</div>
+      </div>`;
+    }
+    const isMobile = window.matchMedia("(max-width:600px)").matches;
+    const isRadarr = svc === "radarr" || svc === "radarr2";
+    const isSonarr = svc === "sonarr" || svc === "sonarr2";
+    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const selStyle = (missing) => `color-scheme:${isDay ? "light" : "dark"};appearance:none;-webkit-appearance:none;padding:5px 24px 5px 8px;border-radius:6px;width:100%;box-sizing:border-box;font-size:11px;font-weight:600;cursor:pointer;outline:none;border:${missing ? "1px dashed rgba(248,113,113,0.8)" : "1px solid var(--is-divider)"};background-color:${missing ? "rgba(248,113,113,0.1)" : "var(--is-btn-bg)"};background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(128,128,128,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;color:${missing ? "rgba(248,113,113,0.95)" : "var(--is-text)"};`;
+    const lib = isRadarr ? this._radarr || [] : isSonarr ? this._sonarr || [] : [];
+    const buildLibOpts = (curId) => lib.slice().sort((a, b) => (a.title || "").localeCompare(b.title || "")).map((m) => `<option value="${m.id}"${m.id == curId ? " selected" : ""}>${this._escHtml(m.title || "\u2014")}${m.year ? ` (${m.year})` : ""}</option>`).join("");
+    const buildQualOpts = (curId) => (qDefs || []).slice().sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).map((d) => {
+      const id = d.quality?.id ?? d.id;
+      return `<option value="${id}"${id == curId ? " selected" : ""}>${this._escHtml(d.quality?.name || d.title || "\u2014")}</option>`;
+    }).join("");
+    const buildLangOpts = (curId) => (langs || []).filter((l) => l.id !== -1).slice().sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((l) => `<option value="${l.id}"${l.id == curId ? " selected" : ""}>${this._escHtml(l.name || "\u2014")}</option>`).join("");
+    const allCanImport = candidates.every((c) => isRadarr ? !!c.movie : isSonarr ? !!c.series : true);
+    const importBtn = `<button id="mi-import-all" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;background:${allCanImport ? "rgba(60,200,120,0.18)" : "var(--is-btn-bg)"};color:${allCanImport ? "rgba(80,220,140,0.95)" : "var(--is-text-muted)"};font-size:13px;font-weight:700;cursor:${allCanImport ? "pointer" : "not-allowed"}" ${allCanImport ? "" : "disabled"}>Import</button>`;
+    const mediaLabel = isRadarr ? "Movie" : "Series";
+    const mediaField = isRadarr ? "movie" : "series";
+    if (isMobile) {
+      const rows2 = candidates.map((c, i) => {
+        const fname = (c.path || "").split(/[/\\]/).pop() || "\u2014";
+        const curMovieId = isRadarr ? c.movie?.id ?? "" : c.series?.id ?? "";
+        const movieMiss = isRadarr ? !c.movie : isSonarr ? !c.series : false;
+        const curQualId = c.quality?.quality?.id ?? "";
+        const qualName = c.quality?.quality?.name;
+        const curLangId = c.languages?.[0]?.id ?? "";
+        const rejLower = (c.rejections || []).map((r) => (r.reason || r || "").toLowerCase());
+        const qualMiss = rejLower.some((r) => r.includes("quality"));
+        const langMiss = rejLower.some((r) => r.includes("language"));
+        const rg = c.releaseGroup || "\u2014";
+        const size = c.size ? this._actFmtSize(c.size) : "\u2014";
+        const rej = (c.rejections || []).map((r) => r.reason || r).filter(Boolean);
+        const lbl = (t) => `<div style="font-size:9px;font-weight:700;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${t}</div>`;
+        const movieSel = `<select class="mi-field-sel" data-field="${mediaField}" data-idx="${i}" style="${selStyle(movieMiss)}"><option value="" disabled${curMovieId === "" ? " selected" : ""}>Select ${mediaLabel.toLowerCase()}\u2026</option>${buildLibOpts(curMovieId)}</select>`;
+        const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${selStyle(qualMiss)}"><option value="" disabled${curQualId === "" || qualMiss ? " selected" : ""}>Select quality\u2026</option>${buildQualOpts(curQualId)}</select>`;
+        const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${selStyle(langMiss)}"><option value="" disabled${curLangId === "" || langMiss ? " selected" : ""}>Select language\u2026</option>${buildLangOpts(curLangId)}</select>`;
+        return `<div data-mi-idx="${i}" style="border:1px solid var(--is-divider);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--is-btn-bg)">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div>${lbl(mediaLabel)}${movieSel}</div>
+            <div>${lbl("Quality")}${qualSel}</div>
+            <div>${lbl("Languages")}${langSel}</div>
+            <div>${lbl("Release Group")}<div style="font-size:11px;color:var(--is-text-sec);padding:5px 0">${this._escHtml(rg)}</div></div>
+            <div>${lbl("Size")}<div style="font-size:11px;color:var(--is-text-sec);padding:5px 0">${size}</div></div>
+            ${rej.length ? `<div>${lbl("Error")}<div style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</div></div>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+      return `<div>${rows2}${importBtn}</div>`;
+    }
+    const thStyle = `padding:4px 8px 8px 0;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;white-space:nowrap`;
+    const rows = candidates.map((c, i) => {
+      const curMovieId = isRadarr ? c.movie?.id ?? "" : c.series?.id ?? "";
+      const movieMiss = isRadarr ? !c.movie : isSonarr ? !c.series : false;
+      const curQualId = c.quality?.quality?.id ?? "";
+      const qualName = c.quality?.quality?.name;
+      const curLangId = c.languages?.[0]?.id ?? "";
+      const rejLower = (c.rejections || []).map((r) => (r.reason || r || "").toLowerCase());
+      const qualMiss = rejLower.some((r) => r.includes("quality"));
+      const langMiss = rejLower.some((r) => r.includes("language"));
+      const rg = c.releaseGroup || "\u2014";
+      const size = c.size ? this._actFmtSize(c.size) : "\u2014";
+      const rej = (c.rejections || []).map((r) => r.reason || r).filter(Boolean);
+      const movieSel = `<select class="mi-field-sel" data-field="${mediaField}" data-idx="${i}" style="${selStyle(movieMiss)}"><option value="" disabled${curMovieId === "" ? " selected" : ""}>Select ${mediaLabel.toLowerCase()}\u2026</option>${buildLibOpts(curMovieId)}</select>`;
+      const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${selStyle(qualMiss)}"><option value="" disabled${curQualId === "" || qualMiss ? " selected" : ""}>Select quality\u2026</option>${buildQualOpts(curQualId)}</select>`;
+      const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${selStyle(langMiss)}"><option value="" disabled${curLangId === "" || langMiss ? " selected" : ""}>Select language\u2026</option>${buildLangOpts(curLangId)}</select>`;
+      const rejHtml = rej.length ? `<span style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</span>` : `<span style="color:var(--is-text-muted);font-size:10px">\u2014</span>`;
+      return `<tr style="border-bottom:1px solid var(--is-divider)">
+        <td style="padding:7px 4px">${movieSel}</td>
+        <td style="padding:7px 8px;font-size:11px;color:var(--is-text-sec);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${this._escHtml(rg)}</td>
+        <td style="padding:7px 4px">${qualSel}</td>
+        <td style="padding:7px 4px">${langSel}</td>
+        <td style="padding:7px 8px;font-size:11px;color:var(--is-text-sec);white-space:nowrap">${size}</td>
+        <td style="padding:7px 8px;overflow:hidden">${rejHtml}</td>
+      </tr>`;
+    }).join("");
+    return `<div style="display:flex;flex-direction:column">
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+        <colgroup>
+          <col style="width:32%">
+          <col style="width:12%">
+          <col style="width:18%">
+          <col style="width:16%">
+          <col style="width:8%">
+          <col style="width:14%">
+        </colgroup>
+        <thead><tr style="border-bottom:1px solid var(--is-divider)">
+          <th style="${thStyle}">${mediaLabel}</th>
+          <th style="${thStyle};padding-left:8px">Release Group</th>
+          <th style="${thStyle};padding-left:8px">Quality</th>
+          <th style="${thStyle};padding-left:8px">Languages</th>
+          <th style="${thStyle};padding-left:8px">Size</th>
+          <th style="${thStyle};padding-left:8px">Error</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${importBtn}
+    </div>`;
+  }
+  // ── Utility ──────────────────────────────────────────────────────────────
+  _actFmtSize(bytes) {
+    if (!bytes) return "\u2014";
+    const gb = bytes / 1073741824;
+    if (gb >= 1) return gb.toFixed(1) + "\xA0GB";
+    return Math.round(bytes / 1048576) + "\xA0MB";
+  }
+};
+var activityRenderMixin = _ActivityRenderMethods.prototype;
+
+// src/wire/activity.js
+var _WireActivityMethods = class {
+  _wireActivityPosters(right) {
+    right.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-act-open]");
+      if (!card) return;
+      this._openActivityModal(card.dataset.actOpen);
+    });
+  }
+  async _openActivityModal(tab) {
+    tab = tab || "queue";
+    const _defaultCols = /* @__PURE__ */ new Set(["source", "quality", "size", "timeleft", "formats", "status"]);
+    const _savedCols = (() => {
+      try {
+        const s = localStorage.getItem("arr-stack-queue-cols");
+        if (s) {
+          const arr = JSON.parse(s);
+          if (arr.length) {
+            const set = new Set(arr);
+            if (!set.has("formats")) {
+              set.add("formats");
+              try {
+                localStorage.setItem("arr-stack-queue-cols", JSON.stringify([...set]));
+              } catch {
+              }
+            }
+            return set;
+          }
+        }
+      } catch {
+      }
+      return null;
+    })();
+    this._activityModal = {
+      tab,
+      queueData: null,
+      histData: null,
+      blData: null,
+      histFilter: "all",
+      queuePage: 0,
+      queuePerPage: 15,
+      histPage: 0,
+      histPerPage: 15,
+      blPage: 0,
+      blPerPage: 15,
+      queueCols: _savedCols || _defaultCols,
+      queueDeleteMode: false,
+      queueSearch: "",
+      queueFilterSvc: "all",
+      queueFilterSts: "all",
+      queueFilterQuality: "all",
+      queueFilterProtocol: "all",
+      queueFilterIndexer: "all",
+      queueFilterClient: "all",
+      histFilterSvc: "all",
+      histFilterQuality: "all",
+      histFilterLang: "all",
+      histFilterFormat: "all",
+      histFilterClient: "all",
+      histFilterIndexer: "all",
+      histFilterRelgroup: "all",
+      histSearch: "",
+      histSort: "date",
+      histSortDir: "desc",
+      histCols: (() => {
+        try {
+          const s = localStorage.getItem("arr-stack-hist-cols");
+          if (s) {
+            const a = JSON.parse(s);
+            if (a.length) return new Set(a);
+          }
+        } catch {
+        }
+        return /* @__PURE__ */ new Set(["event", "quality", "date"]);
+      })(),
+      blFilterSvc: "all",
+      blFilterProto: "all",
+      blSearch: "",
+      blCols: (() => {
+        try {
+          const s = localStorage.getItem("arr-stack-bl-cols");
+          if (s) {
+            const a = JSON.parse(s);
+            if (a.length) return new Set(a);
+          }
+        } catch {
+        }
+        return /* @__PURE__ */ new Set(["quality", "date", "source"]);
+      })(),
+      blSort: "date",
+      blSortDir: "desc",
+      blDeleteMode: false,
+      blFilterQuality: "all",
+      blFilterLang: "all",
+      blFilterFormat: "all",
+      blFilterIndexer: "all"
+    };
+    this.shadowRoot.querySelector("[data-act-modal]")?.remove();
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._actModalHtml(tab);
+    const el = wrap.firstElementChild;
+    this.shadowRoot.appendChild(el);
+    const bodyEl = el.querySelector("#act-body");
+    if (bodyEl) {
+      const bodyH = bodyEl.clientHeight || 500;
+      const mobile = window.matchMedia("(max-width:600px)").matches;
+      const rowH = mobile ? 58 : 40;
+      const ovhFlt = mobile ? 80 : 78;
+      const ovhQ = mobile ? 46 : 68;
+      const perPageFlt = Math.max(4, Math.floor((bodyH - ovhFlt) / rowH));
+      const perPageQueue = Math.max(4, Math.floor((bodyH - ovhQ) / rowH));
+      this._activityModal.histPerPage = perPageFlt;
+      this._activityModal.blPerPage = perPageFlt;
+      this._activityModal.queuePerPage = perPageQueue;
+    }
+    this._wireActivityModal(el);
+    await this._actLoadTab(tab, el);
+  }
+  _closeActivityModal() {
+    this.shadowRoot.querySelector("[data-act-modal]")?.remove();
+    this._activityModal = null;
+  }
+  _wireActivityModal(el) {
+    el.querySelector("#act-close")?.addEventListener("click", () => this._closeActivityModal());
+    el.addEventListener("click", (e) => {
+      if (e.target === el) this._closeActivityModal();
+    });
+    el.querySelectorAll("[data-act-tab]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const t = btn.dataset.actTab;
+        if (!t || !this._activityModal) return;
+        el.querySelectorAll("[data-act-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        this._activityModal.tab = t;
+        const subEl = el.querySelector("#act-hdr-sub");
+        if (subEl) subEl.textContent = { queue: "Queue", history: "History", blocklist: "Blocklist" }[t] || t;
+        await this._actLoadTab(t, el);
+      });
+    });
+  }
+  async _actLoadTab(tab, el) {
+    const m = this._activityModal;
+    if (!m) return;
+    const body = el.querySelector("#act-body");
+    if (!body) return;
+    body.innerHTML = '<div class="is-loading"><span>Loading\u2026</span></div>';
+    if (tab === "queue") {
+      const [rq, sq] = await Promise.allSettled([
+        this._callApi("GET", "arr_stack/radarr/queue?includeUnknownMovieItems=true"),
+        this._callApi("GET", "arr_stack/sonarr/queue")
+      ]);
+      if (!this._activityModal) return;
+      const _toArr = (v) => Array.isArray(v) ? v : Array.isArray(v?.records) ? v.records : [];
+      const rRaw = rq.status === "fulfilled" ? _toArr(rq.value) : [];
+      const rMovieMap = new Map((this._radarr || []).map((m2) => [m2.id, m2.title]));
+      const rRecords = rRaw.map((r) => ({
+        ...r,
+        _enrichedTitle: rMovieMap.get(r.movieId) || r.movie?.title || r.title || null
+      }));
+      const sRaw = sq.status === "fulfilled" ? _toArr(sq.value) : [];
+      const sSeriesMap = new Map((this._sonarr || []).map((s) => [s.id, s.title]));
+      const sRecords = sRaw.map((r) => ({
+        ...r,
+        _enrichedTitle: sSeriesMap.get(r.seriesId) || r.series?.title || r.title || null
+      }));
+      const _isBadItem = (r) => r.trackedDownloadStatus === "warning" || r.trackedDownloadStatus === "error" || r.trackedDownloadState === "importFailed" || r.status === "failed";
+      const badItems = [
+        ...rRecords.filter((r) => _isBadItem(r) && r.downloadId).map((r) => ({ r, svc: "radarr", qs: `downloadId=${encodeURIComponent(r.downloadId)}&movieId=${r.movieId || ""}` })),
+        ...sRecords.filter((r) => _isBadItem(r) && r.downloadId).map((r) => ({ r, svc: "sonarr", qs: `downloadId=${encodeURIComponent(r.downloadId)}&seriesId=${r.seriesId || ""}` }))
+      ];
+      if (badItems.length) {
+        const miResults = await Promise.allSettled(badItems.map((b) => this._callApi("GET", `arr_stack/${b.svc}/manualimport?${b.qs}`)));
+        miResults.forEach((res, i) => {
+          if (res.status === "fulfilled") {
+            const candidates = Array.isArray(res.value) ? res.value : [];
+            const rej = candidates[0]?.rejections?.[0]?.reason;
+            if (rej) badItems[i].r._miRejection = rej;
+          }
+        });
+      }
+      m.queueData = { radarr: rRecords, sonarr: sRecords };
+      this._actSetBodyHtml(body, this._actQueueTabHtml(m.queueData.radarr, m.queueData.sonarr, m.queuePage, m.queuePerPage, m.queueCols));
+      this._wireActBody(body, el, "queue");
+    } else if (tab === "history") {
+      const et = m.histFilter === "all" ? "" : "&eventType=" + encodeURIComponent(m.histFilter);
+      const [rh, sh] = await Promise.allSettled([
+        this._callApi("GET", "arr_stack/radarr/activity/history?page=1&pageSize=500&sortKey=date&sortDir=desc" + et),
+        this._callApi("GET", "arr_stack/sonarr/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et)
+      ]);
+      if (!this._activityModal) return;
+      m.histData = {
+        radarr: rh.status === "fulfilled" ? rh.value : null,
+        sonarr: sh.status === "fulfilled" ? sh.value : null
+      };
+      this._actSetBodyHtml(body, this._actHistoryTabHtml(m.histData.radarr, m.histData.sonarr, m.histFilter, m.histPage, m.histPerPage));
+      this._wireActBody(body, el, "history");
+    } else if (tab === "blocklist") {
+      const [rb, sb] = await Promise.allSettled([
+        this._callApi("GET", "arr_stack/radarr/activity/blocklist?page=1&pageSize=100"),
+        this._callApi("GET", "arr_stack/sonarr/activity/blocklist?page=1&pageSize=100")
+      ]);
+      if (!this._activityModal) return;
+      m.blData = {
+        radarr: rb.status === "fulfilled" ? rb.value : null,
+        sonarr: sb.status === "fulfilled" ? sb.value : null
+      };
+      this._actSetBodyHtml(body, this._actBlocklistTabHtml(m.blData.radarr, m.blData.sonarr, m.blPage, m.blPerPage));
+      this._wireActBody(body, el, "blocklist");
+    }
+  }
+  _wireActBody(body, modalEl, tab) {
+    const m = this._activityModal;
+    if (!m) return;
+    if (body._wireAbort) body._wireAbort.abort();
+    body._wireAbort = new AbortController();
+    const signal = body._wireAbort.signal;
+    const _clipEl = body.querySelector("[data-act-clip]");
+    if (_clipEl && window.matchMedia("(max-width:600px)").matches) {
+      let _tsx = 0;
+      _clipEl.addEventListener("touchstart", (e) => {
+        _tsx = e.touches[0].clientX;
+      }, { signal, passive: true });
+      _clipEl.addEventListener("touchend", (e) => {
+        const dx = e.changedTouches[0].clientX - _tsx;
+        if (Math.abs(dx) < 50) return;
+        const dir = dx < 0 ? "next" : "prev";
+        const attr = tab === "queue" ? "act-queue-page" : tab === "history" ? "act-hist-page" : "act-bl-page";
+        body.querySelector(`[data-${attr}="${dir}"]`)?.click();
+      }, { signal });
+    }
+    if (tab === "queue") {
+      body.querySelector("#act-queue-search")?.addEventListener("input", (e) => {
+        if (!this._activityModal) return;
+        const val = e.target.value;
+        const sel = e.target.selectionStart;
+        this._activityModal.queueSearch = val;
+        this._activityModal.queuePage = 0;
+        const m2 = this._activityModal;
+        this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], 0, m2.queuePerPage, m2.queueCols));
+        this._wireActBody(body, modalEl, "queue");
+        const inp = body.querySelector("#act-queue-search");
+        if (inp) {
+          inp.focus();
+          try {
+            inp.setSelectionRange(sel, sel);
+          } catch {
+          }
+        }
+      });
+      body.querySelector("#act-queue-del-btn")?.addEventListener("click", () => {
+        const m2 = this._activityModal;
+        if (!m2) return;
+        m2.queueDeleteMode = !m2.queueDeleteMode;
+        this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], m2.queuePage, m2.queuePerPage, m2.queueCols));
+        this._wireActBody(body, modalEl, "queue");
+      });
+      body.querySelector("#act-queue-cols-btn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._openQueueColPicker(e.currentTarget, modalEl);
+      });
+      const _qRerender = () => {
+        const m2 = this._activityModal;
+        if (!m2) return;
+        m2.queuePage = 0;
+        this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], 0, m2.queuePerPage, m2.queueCols));
+        this._wireActBody(body, modalEl, "queue");
+      };
+      [
+        ["#act-queue-svc", "queueFilterSvc"],
+        ["#act-queue-sts", "queueFilterSts"],
+        ["#act-queue-quality", "queueFilterQuality"],
+        ["#act-queue-proto", "queueFilterProtocol"],
+        ["#act-queue-indexer", "queueFilterIndexer"],
+        ["#act-queue-client", "queueFilterClient"]
+      ].forEach(([sel, key]) => {
+        body.querySelector(sel)?.addEventListener("change", (e) => {
+          const m2 = this._activityModal;
+          if (!m2) return;
+          m2[key] = e.target.value;
+          _qRerender();
+        });
+      });
+      body.addEventListener("click", async (e) => {
+        if (!this._activityModal) return;
+        const removeBtn = e.target.closest(".act-remove-btn");
+        if (removeBtn) {
+          this._openQueueRemoveModal(removeBtn.dataset, modalEl);
+          return;
+        }
+        const miBtn = e.target.closest(".act-mi-btn");
+        if (miBtn) {
+          await this._openManualImportModal(miBtn, modalEl);
+          return;
+        }
+        const pBtn = e.target.closest("[data-act-queue-page]");
+        if (pBtn) {
+          const m2 = this._activityModal;
+          const all = [...m2.queueData?.radarr || [], ...m2.queueData?.sonarr || []];
+          const tot = Math.max(1, Math.ceil(all.length / m2.queuePerPage));
+          const p = pBtn.dataset.actQueuePage;
+          const cur = m2.queuePage;
+          const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
+          if (np !== cur) {
+            m2.queuePage = np;
+            this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], np, m2.queuePerPage, m2.queueCols));
+            this._wireActBody(body, modalEl, "queue");
+          }
+        }
+      }, { signal });
+    }
+    if (tab === "history") {
+      body.querySelector("#act-hist-search")?.addEventListener("input", (e) => {
+        if (!this._activityModal) return;
+        const val = e.target.value;
+        const sel = e.target.selectionStart;
+        this._activityModal.histSearch = val;
+        this._activityModal.histPage = 0;
+        const m2 = this._activityModal;
+        this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+        this._wireActBody(body, modalEl, "history");
+        const inp = body.querySelector("#act-hist-search");
+        if (inp) {
+          inp.focus();
+          try {
+            inp.setSelectionRange(sel, sel);
+          } catch {
+          }
+        }
+      });
+      body.querySelector("#act-hist-cols-btn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._openHistoryColPicker(e.currentTarget, modalEl);
+      });
+      body.querySelector("#act-hist-svc")?.addEventListener("change", (e) => {
+        const m2 = this._activityModal;
+        if (!m2) return;
+        m2.histFilterSvc = e.target.value;
+        m2.histPage = 0;
+        this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+        this._wireActBody(body, modalEl, "history");
+      });
+      body.querySelector("#act-hist-filter")?.addEventListener("change", async (e) => {
+        const m2 = this._activityModal;
+        if (!m2) return;
+        m2.histFilter = e.target.value;
+        m2.histPage = 0;
+        m2.histData = null;
+        await this._actLoadTab("history", modalEl);
+      });
+      const _hRerender = () => {
+        const m2 = this._activityModal;
+        if (!m2) return;
+        m2.histPage = 0;
+        this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+        this._wireActBody(body, modalEl, "history");
+      };
+      [
+        ["#act-hist-quality", "histFilterQuality"],
+        ["#act-hist-lang", "histFilterLang"],
+        ["#act-hist-format", "histFilterFormat"],
+        ["#act-hist-client", "histFilterClient"],
+        ["#act-hist-indexer", "histFilterIndexer"],
+        ["#act-hist-relgroup", "histFilterRelgroup"]
+      ].forEach(([sel, key]) => {
+        body.querySelector(sel)?.addEventListener("change", (e) => {
+          const m2 = this._activityModal;
+          if (!m2) return;
+          m2[key] = e.target.value;
+          _hRerender();
+        });
+      });
+      body.addEventListener("click", async (e) => {
+        if (!this._activityModal) return;
+        const sortBtn = e.target.closest("[data-act-hist-sort]");
+        if (sortBtn) {
+          const col = sortBtn.dataset.actHistSort;
+          const m2 = this._activityModal;
+          if (m2.histSort === col) {
+            m2.histSortDir = m2.histSortDir === "asc" ? "desc" : "asc";
+          } else {
+            m2.histSort = col;
+            m2.histSortDir = col === "date" ? "desc" : "asc";
+          }
+          m2.histPage = 0;
+          this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+          this._wireActBody(body, modalEl, "history");
+          return;
+        }
+        const pBtn = e.target.closest("[data-act-hist-page]");
+        if (pBtn) {
+          const m2 = this._activityModal;
+          const all = [...m2.histData?.radarr?.records || [], ...m2.histData?.sonarr?.records || []];
+          const tot = Math.max(1, Math.ceil(all.length / m2.histPerPage));
+          const p = pBtn.dataset.actHistPage;
+          const cur = m2.histPage;
+          const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
+          if (np !== cur) {
+            m2.histPage = np;
+            this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, np, m2.histPerPage));
+            this._wireActBody(body, modalEl, "history");
+          }
+        }
+      }, { signal });
+    }
+    if (tab === "blocklist") {
+      body.querySelector("#act-bl-search")?.addEventListener("input", (e) => {
+        if (!this._activityModal) return;
+        const val = e.target.value;
+        const sel = e.target.selectionStart;
+        this._activityModal.blSearch = val;
+        this._activityModal.blPage = 0;
+        const m2 = this._activityModal;
+        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, 0, m2.blPerPage));
+        this._wireActBody(body, modalEl, "blocklist");
+        const inp = body.querySelector("#act-bl-search");
+        if (inp) {
+          inp.focus();
+          try {
+            inp.setSelectionRange(sel, sel);
+          } catch {
+          }
+        }
+      });
+      body.querySelector("#act-bl-del-btn")?.addEventListener("click", () => {
+        const m2 = this._activityModal;
+        if (!m2) return;
+        m2.blDeleteMode = !m2.blDeleteMode;
+        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, m2.blPage, m2.blPerPage));
+        this._wireActBody(body, modalEl, "blocklist");
+      });
+      body.querySelector("#act-bl-cols-btn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._openBlColPicker(e.currentTarget, modalEl);
+      });
+      const _blRerender = () => {
+        const m2 = this._activityModal;
+        if (!m2) return;
+        m2.blPage = 0;
+        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, 0, m2.blPerPage));
+        this._wireActBody(body, modalEl, "blocklist");
+      };
+      [
+        ["#act-bl-svc", "blFilterSvc"],
+        ["#act-bl-proto", "blFilterProto"],
+        ["#act-bl-quality", "blFilterQuality"],
+        ["#act-bl-lang", "blFilterLang"],
+        ["#act-bl-format", "blFilterFormat"],
+        ["#act-bl-indexer", "blFilterIndexer"]
+      ].forEach(([sel, key]) => {
+        body.querySelector(sel)?.addEventListener("change", (e) => {
+          const m2 = this._activityModal;
+          if (!m2) return;
+          m2[key] = e.target.value;
+          _blRerender();
+        });
+      });
+      body.addEventListener("click", async (e) => {
+        if (!this._activityModal) return;
+        const sortBtn = e.target.closest("[data-act-bl-sort]");
+        if (sortBtn) {
+          const col = sortBtn.dataset.actBlSort;
+          const m2 = this._activityModal;
+          if (m2.blSort === col) {
+            m2.blSortDir = m2.blSortDir === "asc" ? "desc" : "asc";
+          } else {
+            m2.blSort = col;
+            m2.blSortDir = col === "date" ? "desc" : "asc";
+          }
+          m2.blPage = 0;
+          this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, 0, m2.blPerPage));
+          this._wireActBody(body, modalEl, "blocklist");
+          return;
+        }
+        const removeBtn = e.target.closest(".act-bl-remove-btn");
+        if (removeBtn) {
+          await this._actRemoveBlocklistItem(Number(removeBtn.dataset.id), removeBtn.dataset.svc, modalEl);
+          return;
+        }
+        const pBtn = e.target.closest("[data-act-bl-page]");
+        if (pBtn) {
+          const m2 = this._activityModal;
+          const all = [...m2.blData?.radarr?.records || [], ...m2.blData?.sonarr?.records || []];
+          const tot = Math.max(1, Math.ceil(all.length / m2.blPerPage));
+          const p = pBtn.dataset.actBlPage;
+          const cur = m2.blPage;
+          const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
+          if (np !== cur) {
+            m2.blPage = np;
+            this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, np, m2.blPerPage));
+            this._wireActBody(body, modalEl, "blocklist");
+          }
+        }
+      }, { signal });
+    }
+  }
+  async _actRemoveQueueItem(id, svc, removeFromClient, blocklist, skipRedownload, modalEl) {
+    if (!this._activityModal) return;
+    try {
+      const qs = `removeFromClient=${removeFromClient ? "true" : "false"}&blocklist=${blocklist ? "true" : "false"}&skipRedownload=${skipRedownload ? "true" : "false"}`;
+      await this._callApi("DELETE", `arr_stack/${svc}/queue/${id}?${qs}`);
+    } catch (e) {
+      console.error("[arr-card] Queue remove error:", e);
+    }
+    await this._actLoadTab("queue", modalEl);
+  }
+  _openQueueRemoveModal(dataset, parentModalEl) {
+    const id = dataset.id;
+    const svc = dataset.svc;
+    const title = dataset.title || "";
+    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const dlgBg = isDay ? "rgba(245,246,255,0.99)" : "#1e2030";
+    const dlgClr = isDay ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.9)";
+    const hdrBdr = isDay ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
+    const descClr = isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.6)";
+    const strgClr = isDay ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.85)";
+    const lblClr = isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
+    const selBg = isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)";
+    const selBdr = isDay ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)";
+    const selClr = isDay ? "rgba(0,0,0,0.82)" : "rgba(255,255,255,0.85)";
+    const selScheme = isDay ? "light" : "dark";
+    const clsBdr = isDay ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.15)";
+    const clsClr = isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.6)";
+    const xClr = isDay ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.4)";
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65)";
+    overlay.innerHTML = `
+      <div style="background:${dlgBg};border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 8px 40px rgba(0,0,0,0.35);color:${dlgClr};font-family:inherit">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;border-bottom:1px solid ${hdrBdr};padding-bottom:12px">
+          <div style="font-size:14px;font-weight:700">Remove</div>
+          <button class="qrm-close" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:${xClr};padding:2px;margin-left:10px;display:flex;align-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <p style="font-size:12px;color:${descClr};margin:0 0 20px">Are you sure you want to remove <strong style="color:${strgClr}">${this._escHtml(title)}</strong> from the queue?</p>
+        <div style="display:grid;grid-template-columns:140px 1fr;align-items:center;gap:10px 12px;margin-bottom:20px">
+          <label style="font-size:12px;font-weight:600;color:${lblClr}">Removal Method</label>
+          <select id="qrm-method" style="background:${selBg};border:1px solid ${selBdr};border-radius:6px;color:${selClr};font-size:12px;padding:6px 10px;color-scheme:${selScheme};width:100%">
+            <option value="client" selected>Remove from Download Client</option>
+            <option value="queue">Remove from Queue Only</option>
+          </select>
+          <div></div>
+          <div id="qrm-method-warn" style="font-size:11px;color:rgba(200,120,0,0.9);margin-top:-4px">'Remove from Download Client' will remove the download and the file(s) from the download client.</div>
+          <label style="font-size:12px;font-weight:600;color:${lblClr}">Blocklist Release</label>
+          <select id="qrm-blocklist" style="background:${selBg};border:1px solid ${selBdr};border-radius:6px;color:${selClr};font-size:12px;padding:6px 10px;color-scheme:${selScheme};width:100%">
+            <option value="none" selected>Do not Blocklist</option>
+            <option value="search">Blocklist and Search</option>
+            <option value="only">Blocklist Only</option>
+          </select>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button class="qrm-close" style="padding:7px 18px;border-radius:6px;border:1px solid ${clsBdr};background:transparent;color:${clsClr};cursor:pointer;font-size:12px;font-weight:600">Close</button>
+          <button class="qrm-remove" style="padding:7px 18px;border-radius:6px;border:none;background:rgba(220,50,50,0.85);color:#fff;cursor:pointer;font-size:12px;font-weight:700">Remove</button>
+        </div>
+      </div>`;
+    const methodSel = overlay.querySelector("#qrm-method");
+    const warn = overlay.querySelector("#qrm-method-warn");
+    methodSel.addEventListener("change", () => {
+      warn.style.display = methodSel.value === "client" ? "block" : "none";
+    });
+    overlay.addEventListener("click", async (e) => {
+      if (e.target.closest(".qrm-close") || e.target === overlay) {
+        overlay.remove();
+        return;
+      }
+      if (e.target.closest(".qrm-remove")) {
+        const removeFromClient = overlay.querySelector("#qrm-method").value === "client";
+        const blVal = overlay.querySelector("#qrm-blocklist").value;
+        const blocklist = blVal !== "none";
+        const skipRedownload = blVal === "only";
+        overlay.remove();
+        await this._actRemoveQueueItem(Number(id), svc, removeFromClient, blocklist, skipRedownload, parentModalEl);
+      }
+    });
+    this.shadowRoot.appendChild(overlay);
+  }
+  _openHistoryColPicker(gearBtn, modalEl) {
+    const existing = this.shadowRoot.querySelector("[data-hist-col-picker]");
+    if (existing) {
+      existing.remove();
+      gearBtn.classList.remove("active");
+      return;
+    }
+    const m = this._activityModal;
+    if (!m) return;
+    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
+    const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
+    const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
+    const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
+    const cols = m.histCols;
+    const ALL_COLS = [
+      { id: "event", label: "Event" },
+      { id: "quality", label: "Quality" },
+      { id: "langs", label: "Languages" },
+      { id: "formats", label: "Formats" },
+      { id: "date", label: "Date" },
+      { id: "client", label: "Download Client" },
+      { id: "indexer", label: "Indexer" },
+      { id: "relgroup", label: "Release Group" },
+      { id: "srctitle", label: "Source Title" },
+      { id: "cfscore", label: "CF Score" }
+    ];
+    const rect = gearBtn.getBoundingClientRect();
+    const top = Math.round(rect.bottom + 6);
+    const right = Math.round(window.innerWidth - rect.right);
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `<div data-hist-col-picker style="position:fixed;top:${top}px;right:${right}px;z-index:1200;min-width:175px;background:${pkBg};border:1px solid ${pkBdr};border-radius:9px;padding:10px 14px 12px;box-shadow:0 8px 28px rgba(0,0,0,0.25)">
+      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Columns</div>
+      ${ALL_COLS.map((c) => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;user-select:none"><input type="checkbox" class="hist-col-cb" data-col-id="${c.id}" ${cols.has(c.id) ? "checked" : ""} style="cursor:pointer;accent-color:rgba(99,140,255,1);width:14px;height:14px;flex-shrink:0"><span style="font-size:12px;color:${pkLbl}">${c.label}</span></label>`).join("")}
+    </div>`;
+    const picker = wrap.firstElementChild;
+    this.shadowRoot.appendChild(picker);
+    gearBtn.classList.add("active");
+    picker.querySelectorAll(".hist-col-cb").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) cols.add(cb.dataset.colId);
+        else cols.delete(cb.dataset.colId);
+        try {
+          localStorage.setItem("arr-stack-hist-cols", JSON.stringify([...cols]));
+        } catch {
+        }
+        const actModal = this.shadowRoot.querySelector("[data-act-modal]");
+        const body = actModal?.querySelector("#act-body");
+        if (body && m.histData) {
+          this._actSetBodyHtml(body, this._actHistoryTabHtml(m.histData.radarr, m.histData.sonarr, m.histFilter, m.histPage, m.histPerPage));
+          this._wireActBody(body, actModal, "history");
+        }
+      });
+    });
+    const closeHandler = (e) => {
+      if (!picker.contains(e.target) && !gearBtn.contains(e.target)) {
+        picker.remove();
+        gearBtn.classList.remove("active");
+        this.shadowRoot.removeEventListener("click", closeHandler, true);
+      }
+    };
+    setTimeout(() => this.shadowRoot.addEventListener("click", closeHandler, true), 0);
+  }
+  _openBlColPicker(gearBtn, modalEl) {
+    const existing = this.shadowRoot.querySelector("[data-bl-col-picker]");
+    if (existing) {
+      existing.remove();
+      gearBtn.classList.remove("active");
+      return;
+    }
+    const m = this._activityModal;
+    if (!m) return;
+    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
+    const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
+    const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
+    const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
+    const cols = m.blCols;
+    const ALL_COLS = [
+      { id: "source", label: "Source" },
+      { id: "srctitle", label: "Source Title" },
+      { id: "langs", label: "Languages" },
+      { id: "quality", label: "Quality" },
+      { id: "formats", label: "Formats" },
+      { id: "date", label: "Date" },
+      { id: "indexer", label: "Indexer" },
+      { id: "protocol", label: "Protocol" }
+    ];
+    const rect = gearBtn.getBoundingClientRect();
+    const top = Math.round(rect.bottom + 6);
+    const right = Math.round(window.innerWidth - rect.right);
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `<div data-bl-col-picker style="position:fixed;top:${top}px;right:${right}px;z-index:1200;min-width:175px;background:${pkBg};border:1px solid ${pkBdr};border-radius:9px;padding:10px 14px 12px;box-shadow:0 8px 28px rgba(0,0,0,0.25)">
+      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Columns</div>
+      ${ALL_COLS.map((c) => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;user-select:none"><input type="checkbox" class="bl-col-cb" data-col-id="${c.id}" ${cols.has(c.id) ? "checked" : ""} style="cursor:pointer;accent-color:rgba(99,140,255,1);width:14px;height:14px;flex-shrink:0"><span style="font-size:12px;color:${pkLbl}">${c.label}</span></label>`).join("")}
+    </div>`;
+    const picker = wrap.firstElementChild;
+    this.shadowRoot.appendChild(picker);
+    gearBtn.classList.add("active");
+    picker.querySelectorAll(".bl-col-cb").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) cols.add(cb.dataset.colId);
+        else cols.delete(cb.dataset.colId);
+        try {
+          localStorage.setItem("arr-stack-bl-cols", JSON.stringify([...cols]));
+        } catch {
+        }
+        const actModal = this.shadowRoot.querySelector("[data-act-modal]");
+        const body = actModal?.querySelector("#act-body");
+        if (body && m.blData) {
+          this._actSetBodyHtml(body, this._actBlocklistTabHtml(m.blData.radarr, m.blData.sonarr, m.blPage, m.blPerPage));
+          this._wireActBody(body, actModal, "blocklist");
+        }
+      });
+    });
+    const closeHandler = (e) => {
+      if (!picker.contains(e.target) && !gearBtn.contains(e.target)) {
+        picker.remove();
+        gearBtn.classList.remove("active");
+        this.shadowRoot.removeEventListener("click", closeHandler, true);
+      }
+    };
+    setTimeout(() => this.shadowRoot.addEventListener("click", closeHandler, true), 0);
+  }
+  // Set body content and clip any partially-visible rows
+  _actSetBodyHtml(body, html) {
+    body.innerHTML = html;
+    requestAnimationFrame(() => {
+      const clip = body.querySelector("[data-act-clip]");
+      if (!clip) return;
+      const clipBottom = clip.getBoundingClientRect().bottom;
+      clip.querySelectorAll("tbody tr").forEach((row) => {
+        if (row.getBoundingClientRect().bottom > clipBottom + 1) row.remove();
+      });
+      if (!clip.querySelector("table")) {
+        [...clip.children].forEach((child) => {
+          if (child.getBoundingClientRect().bottom > clipBottom + 1) child.remove();
+        });
+      }
+    });
+  }
+  async _actRemoveBlocklistItem(id, svc, modalEl) {
+    const m = this._activityModal;
+    if (!m) return;
+    try {
+      await this._callApi("DELETE", "arr_stack/" + svc + "/activity/blocklist/" + id);
+    } catch (e) {
+      console.error("[arr-card] Blocklist remove error:", e);
+    }
+    await this._actLoadTab("blocklist", modalEl);
+  }
+  async _openManualImportModal(btn, modalEl) {
+    const svc = btn.dataset.svc;
+    const downloadId = btn.dataset.downloadId;
+    const movieId = btn.dataset.movieId;
+    const seriesId = btn.dataset.seriesId;
+    const title = btn.dataset.title || "\u2014";
+    this.shadowRoot.querySelector("[data-mi-modal]")?.remove();
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._actManualImportModalHtml(title);
+    const overlay = wrap.firstElementChild;
+    this.shadowRoot.appendChild(overlay);
+    overlay.querySelector("#mi-close")?.addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+    const miBody = overlay.querySelector("#mi-body");
+    try {
+      let qs = `downloadId=${encodeURIComponent(downloadId)}`;
+      if (movieId) qs += `&movieId=${encodeURIComponent(movieId)}`;
+      if (seriesId) qs += `&seriesId=${encodeURIComponent(seriesId)}`;
+      const [candidates, qDefs, langs] = await Promise.all([
+        this._callApi("GET", `arr_stack/${svc}/manualimport?${qs}`),
+        this._callApi("GET", `arr_stack/${svc}/qualitydefs`).catch(() => []),
+        this._callApi("GET", `arr_stack/${svc}/languages`).catch(() => [])
+      ]);
+      this._miRenderAndWire(candidates, svc, qDefs, langs, miBody, overlay, modalEl);
+    } catch (err) {
+      console.error("[arr-card] Manual import fetch error:", err);
+      miBody.innerHTML = `<div style="text-align:center;color:rgba(255,100,100,0.8);padding:32px 20px">Failed to fetch candidates</div>`;
+    }
+  }
+  // Render candidates with select dropdowns and wire change + import buttons
+  _miRenderAndWire(candidates, svc, qDefs, langs, miBody, overlay, modalEl) {
+    const isRadarr = svc === "radarr" || svc === "radarr2";
+    const isSonarr = svc === "sonarr" || svc === "sonarr2";
+    const lib = isRadarr ? this._radarr || [] : isSonarr ? this._sonarr || [] : [];
+    miBody.innerHTML = this._actManualImportCandidatesHtml(candidates, svc, qDefs, langs);
+    miBody.addEventListener("change", (e) => {
+      const sel = e.target.closest("select.mi-field-sel");
+      if (!sel) return;
+      const field = sel.dataset.field;
+      const idx = parseInt(sel.dataset.idx);
+      const c = candidates[idx];
+      if (!c) return;
+      const valStr = sel.value;
+      const valNum = parseInt(valStr);
+      if (field === "movie") {
+        const m = lib.find((x) => x.id === valNum);
+        candidates[idx].movie = m || { id: valNum };
+        candidates[idx].movieId = valNum;
+      } else if (field === "series") {
+        const m = lib.find((x) => x.id === valNum);
+        candidates[idx].series = m || { id: valNum };
+        candidates[idx].seriesId = valNum;
+      } else if (field === "quality") {
+        const def = (qDefs || []).find((d) => (d.quality?.id ?? d.id) === valNum);
+        candidates[idx].quality = {
+          quality: { id: valNum, name: def?.quality?.name || def?.title || "" },
+          revision: candidates[idx].quality?.revision || { version: 1, real: 0 }
+        };
+      } else if (field === "language") {
+        const lang = (langs || []).find((l) => l.id === valNum);
+        candidates[idx].languages = [{ id: valNum, name: lang?.name || "" }];
+      }
+      this._miRenderAndWire(candidates, svc, qDefs, langs, miBody, overlay, modalEl);
+    });
+    miBody.onclick = async (e) => {
+      const btn = e.target.closest("#mi-import-all");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Importing\u2026";
+        await this._submitManualImport(candidates, candidates.map((_, i) => i), svc, overlay, modalEl);
+      }
+    };
+  }
+  _openQueueColPicker(gearBtn, modalEl) {
+    const existing = this.shadowRoot.querySelector("[data-col-picker]");
+    if (existing) {
+      existing.remove();
+      gearBtn.classList.remove("active");
+      return;
+    }
+    const m = this._activityModal;
+    if (!m) return;
+    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
+    const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
+    const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
+    const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
+    const cols = m.queueCols;
+    const ALL_COLS = [
+      { id: "source", label: "Source" },
+      { id: "quality", label: "Quality" },
+      { id: "size", label: "Size" },
+      { id: "timeleft", label: "Time Left" },
+      { id: "formats", label: "Formats" },
+      { id: "protocol", label: "Protocol" },
+      { id: "indexer", label: "Indexer" },
+      { id: "client", label: "Download Client" },
+      { id: "status", label: "Status" }
+    ];
+    const rect = gearBtn.getBoundingClientRect();
+    const top = Math.round(rect.bottom + 6);
+    const right = Math.round(window.innerWidth - rect.right);
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `<div data-col-picker style="position:fixed;top:${top}px;right:${right}px;z-index:1200;min-width:175px;background:${pkBg};border:1px solid ${pkBdr};border-radius:9px;padding:10px 14px 12px;box-shadow:0 8px 28px rgba(0,0,0,0.25)">
+      <div style="font-size:9px;font-weight:700;color:${pkHdr};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Columns</div>
+      ${ALL_COLS.map((c) => `
+        <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;user-select:none">
+          <input type="checkbox" class="col-picker-cb" data-col-id="${c.id}" ${cols.has(c.id) ? "checked" : ""} style="cursor:pointer;accent-color:rgba(99,140,255,1);width:14px;height:14px;flex-shrink:0">
+          <span style="font-size:12px;color:${pkLbl}">${c.label}</span>
+        </label>`).join("")}
+    </div>`;
+    const picker = wrap.firstElementChild;
+    this.shadowRoot.appendChild(picker);
+    gearBtn.classList.add("active");
+    picker.querySelectorAll(".col-picker-cb").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) cols.add(cb.dataset.colId);
+        else cols.delete(cb.dataset.colId);
+        try {
+          localStorage.setItem("arr-stack-queue-cols", JSON.stringify([...cols]));
+        } catch {
+        }
+        const actModal = this.shadowRoot.querySelector("[data-act-modal]");
+        const body = actModal?.querySelector("#act-body");
+        if (body && m.queueData) {
+          this._actSetBodyHtml(body, this._actQueueTabHtml(m.queueData.radarr, m.queueData.sonarr, m.queuePage, m.queuePerPage, cols));
+          this._wireActBody(body, actModal, "queue");
+        }
+      });
+    });
+    const closeHandler = (e) => {
+      if (!picker.contains(e.target) && !gearBtn.contains(e.target)) {
+        picker.remove();
+        gearBtn.classList.remove("active");
+        this.shadowRoot.removeEventListener("click", closeHandler, true);
+      }
+    };
+    setTimeout(() => this.shadowRoot.addEventListener("click", closeHandler, true), 0);
+  }
+  async _submitManualImport(candidates, indices, svc, overlayEl, modalEl) {
+    const isRadarr = svc === "radarr" || svc === "radarr2";
+    const isSonarr = svc === "sonarr" || svc === "sonarr2";
+    const toImport = indices.map((i) => candidates[i]).filter((c) => {
+      if (!c) return false;
+      if (isRadarr && !c.movie) return false;
+      if (isSonarr && !c.series) return false;
+      return true;
+    }).map((c) => ({ ...c, importMode: "auto" }));
+    if (!toImport.length) return;
+    try {
+      await this._callApi("POST", `arr_stack/${svc}/manualimport`, toImport);
+    } catch (err) {
+      console.error("[arr-card] Manual import submit error:", err);
+    }
+    overlayEl.remove();
+    await this._actLoadTab("queue", modalEl);
+  }
+};
+var wireActivityMixin = _WireActivityMethods.prototype;
+
 // src/card.js
 var ArrStackCard = class extends HTMLElement {
   constructor() {
@@ -13011,6 +14966,11 @@ var ArrStackCard = class extends HTMLElement {
     this._jellystatConfigured = true;
     this._jellystat = null;
     this._jellystatModal = null;
+    this._activityModal = null;
+    this._actHistoryCache = null;
+    this._actBlocklistCache = null;
+    this._radarrQueueItems = [];
+    this._radarr2QueueItems = [];
     this._bazarr = {};
     this._radarrQueueFailed = /* @__PURE__ */ new Set();
     this._radarrQueueActive = /* @__PURE__ */ new Set();
@@ -13521,10 +15481,10 @@ var ArrStackCard = class extends HTMLElement {
     const _snQ = this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
     const _snQ2 = this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map();
     const _now = (/* @__PURE__ */ new Date()).toISOString();
-    const movies = (this._radarr || []).filter((m) => m.monitored && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.added || "" }));
-    const movies2 = (this._radarr2 || []).filter((m) => m.monitored && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _isRadarr2: true, _sortDate: m.added || "" }));
-    const shows = (this._sonarr || []).filter((s) => s.monitored && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _sortDate: _snQ.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
-    const shows2 = (this._sonarr2 || []).filter((s) => s.monitored && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ2.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _isSonarr2: true, _sortDate: _snQ2.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
+    const movies = (this._radarr || []).filter((m) => (m.monitored || _rqA.has(m.id)) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.added || "" }));
+    const movies2 = (this._radarr2 || []).filter((m) => (m.monitored || _rq2A.has(m.id)) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _isRadarr2: true, _sortDate: m.added || "" }));
+    const shows = (this._sonarr || []).filter((s) => (s.monitored || _snQ.has(s.id)) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _sortDate: _snQ.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
+    const shows2 = (this._sonarr2 || []).filter((s) => (s.monitored || _snQ2.has(s.id)) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ2.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _isSonarr2: true, _sortDate: _snQ2.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
     const _isDlMovie = (m) => m._isRadarr2 ? _rq2A.has(m.id) : _rqA.has(m.id);
     const _isDlShow = (s) => s._isSonarr2 ? _snQ2.has(s.id) : _snQ.has(s.id);
     const movieMap = /* @__PURE__ */ new Map();
@@ -13711,6 +15671,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wireSearch();
     this._wireTautulliPosters(right);
     this._wireJellystatPosters(right);
+    this._wireActivityPosters(right);
     if (this._searchActive) {
       requestAnimationFrame(() => {
         const inp = this.shadowRoot.querySelector(".search-bar-input");
@@ -13982,6 +15943,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wireSearch();
     if (right) this._wireTautulliPosters(right);
     if (right) this._wireJellystatPosters(right);
+    if (right) this._wireActivityPosters(right);
     this._renderPopupEl();
     requestAnimationFrame(() => {
       if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
@@ -14046,6 +16008,8 @@ applyMixin(ArrStackCard.prototype, jellystatSharedMixin);
 applyMixin(ArrStackCard.prototype, jellystatTableMixin);
 applyMixin(ArrStackCard.prototype, jellystatMixin);
 applyMixin(ArrStackCard.prototype, jellystatGraphsMixin);
+applyMixin(ArrStackCard.prototype, activityRenderMixin);
+applyMixin(ArrStackCard.prototype, wireActivityMixin);
 customElements.define("arr-stack-card", ArrStackCard);
 window.customCards = window.customCards || [];
 window.customCards.push({

@@ -111,6 +111,16 @@ The card reads active sessions from `media_player.plex_*` and `media_player.jell
 - Playback control: pause, resume, stop — works for most Plex clients; Android phones and web browsers are not supported
 - Auto-hidden when no streams are active
 
+#### Activity Queue
+
+Live view of your download queue, history, and blocklist across Radarr and Sonarr.
+
+- **Queue** — active downloads with progress, quality, size, time left, custom formats, and status. Manual Import for stuck items, one-click remove with optional blocklist.
+- **History** — completed and failed grabs with search and filters by source, quality, and custom formats.
+- **Blocklist** — blocked releases with source, indexer, and quality info. Remove individual entries.
+
+Column visibility is configurable per tab. All tables support sorting and search. Only visible to HA admins.
+
 #### Statistics (Tautulli / Jellystat)
 
 - Watch history with search and filters
@@ -285,7 +295,9 @@ styles:
 | `popular` | Popular Movies |
 | `calendar` | Sonarr episode calendar |
 | `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
-| `tautulli` | Statistics (Tautulli / Jellystat) |
+| `tautulli` | Statistics (Plex / Tautulli) |
+| `jellystat` | Statistics (Jellyfin / Jellystat) |
+| `activity` | Activity Queue (admin only) |
 
 ### Security
 
