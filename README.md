@@ -148,32 +148,21 @@ Playback statistics pulled from Tautulli or Jellystat (configure either or both)
 
 1. Home Assistant 2024.1+ with HACS installed
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
-3. At minimum: **Radarr** and **Sonarr** — everything else is optional
+3. **Radarr** and **Sonarr** — required. Everything else is optional and hidden when not configured.
 
-All other services are optional — unconfigured services are hidden automatically.
-
-**With Overseerr / Jellyseerr** you additionally get:
-- Request approval workflow — admin can approve and decline pending requests
-- Family accounts — household members can request and withdraw their own media
+Adding **Overseerr / Jellyseerr** unlocks request management — admins can approve or decline requests, and household members can request and withdraw their own media.
 
 ### Self-signed certificates / reverse proxies
 
-If any of your services sit behind a reverse proxy with a self-signed or untrusted certificate, enable **Skip SSL certificate verification** in the integration's **Global Settings** step (step 1 of 7). This applies to all services at once — qBittorrent, SABnzbd, Radarr, Sonarr, Overseerr, Bazarr, Plex, Tautulli, Jellystat.
-
-> Mixed setups work fine — you can enable the toggle even if only one service uses a self-signed cert and all others use standard HTTP or valid HTTPS.
+Enable **Skip SSL certificate verification** in the integration's Global Settings (step 1) if any service uses a self-signed or untrusted certificate. The toggle covers all services at once — safe to enable even if only one of them needs it.
 
 ### Now Playing (Plex / Jellyfin)
 
-Both Plex and Jellyfin read from standard HA `media_player` entities:
+Reads from standard HA `media_player` entities — install the [Plex](https://www.home-assistant.io/integrations/plex/) or [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration and the card picks up active sessions automatically. The section hides when nothing is playing.
 
-- **Plex** — install the [Plex integration](https://www.home-assistant.io/integrations/plex/) in HA. It creates `media_player.plex_*` entities automatically for each active session.
-- **Jellyfin** — install the [Jellyfin integration](https://www.home-assistant.io/integrations/jellyfin/) in HA. It creates `media_player.jellyfin_*` entities automatically.
+Plex also supports playback control (pause, resume, stop) for most clients — requires Plex configured in the Arr Stack Integration (step 6). Android and web browser clients are not supported.
 
-The Now Playing section auto-hides when nothing is playing.
-
-Playback control (pause, resume, stop) is available for Plex. This requires Plex to also be configured in the Arr Stack Integration (step 6). Works for most clients — Android phones and web browsers are not supported.
-
-**Plex Server URL** — during integration setup the Arr Stack integration auto-detects your Plex server address by probing each connection reported by plex.tv. If HA runs on a different machine or VLAN than Plex (e.g. a VM with its own IP), auto-detection may pick an unreachable local address. In that case, fill in **Plex Server URL** on the Plex step with the address HA can actually reach — for example your external domain (`https://plex.yourdomain.com`) or the server's local IP (`http://192.168.1.10:32400`). Leave it empty to use auto-detection.
+> **Plex Server URL** — the integration auto-detects your server address on setup. If HA is on a different machine or VLAN than Plex, auto-detection may resolve an unreachable address. Set **Plex Server URL** on the Plex step to override it (e.g. `https://plex.yourdomain.com` or `http://192.168.1.10:32400`).
 
 ---
 
