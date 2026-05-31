@@ -13682,7 +13682,7 @@ var _ActivityRenderMethods = class {
         <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actQueue")}</span>
         ${badge}
       </div>
-      <div style="flex:1;position:relative;z-index:2">${rowsHtml}</div>
+      <div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">${rowsHtml}</div>
     </div>`;
   }
   _actHistoryCard() {
@@ -13729,6 +13729,7 @@ var _ActivityRenderMethods = class {
     const BOTTOM_GAP = 12;
     const run = () => {
       const selectors = [
+        '.tl-card[data-act-open="queue"]',
         '.tl-card[data-act-open="history"]',
         '.tl-card[data-act-open="blocklist"]',
         '.tl-card[data-tl-open="history"]',
@@ -14525,6 +14526,7 @@ var _ActivityRenderMethods = class {
     const filmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
     const tvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
     const mkRow = (svg, label, count) => `<div style="display:flex;align-items:center;gap:6px"><span style="opacity:0.6;flex-shrink:0;display:flex">${svg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:10px;font-weight:700;color:#fb923c;flex-shrink:0">${count}</span></div>`;
+    const mkSubRow = (label, count) => `<div style="display:flex;align-items:center;gap:6px;padding-left:16px"><span style="font-size:9px;color:var(--is-text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:9px;font-weight:600;color:#fb923c;flex-shrink:0">${count}</span></div>`;
     let rows = "";
     if (cache && movieCount !== null) {
       const rRecs = cache.rRecs || [];
@@ -14536,13 +14538,23 @@ var _ActivityRenderMethods = class {
         const r2 = rRecs.filter((r) => r._inst === "radarr2").length;
         const s1 = sRecs.filter((s) => s._inst === "sonarr").length;
         const s2 = sRecs.filter((s) => s._inst === "sonarr2").length;
-        if (r1 > 0) rows += mkRow(filmSvg, "Radarr", r1);
-        if (r2 > 0) rows += mkRow(filmSvg, "Radarr 2", r2);
-        if (s1 > 0) rows += mkRow(tvSvg, "Sonarr", s1);
-        if (s2 > 0) rows += mkRow(tvSvg, "Sonarr 2", s2);
+        if (movieCount > 0) {
+          rows += mkRow(filmSvg, this._t("tlFilterMovies"), movieCount);
+          if (hasR2) {
+            if (r1 > 0) rows += mkSubRow("Radarr", r1);
+            if (r2 > 0) rows += mkSubRow("Radarr 2", r2);
+          }
+        }
+        if (seriesCount > 0) {
+          rows += mkRow(tvSvg, this._t("tlFilterTvShows"), seriesCount);
+          if (hasS2) {
+            if (s1 > 0) rows += mkSubRow("Sonarr", s1);
+            if (s2 > 0) rows += mkSubRow("Sonarr 2", s2);
+          }
+        }
       } else {
-        if (movieCount > 0) rows += mkRow(filmSvg, this._t("typeMovie"), movieCount);
-        if (seriesCount > 0) rows += mkRow(tvSvg, this._t("typeTv"), seriesCount);
+        if (movieCount > 0) rows += mkRow(filmSvg, this._t("tlFilterMovies"), movieCount);
+        if (seriesCount > 0) rows += mkRow(tvSvg, this._t("tlFilterTvShows"), seriesCount);
       }
     }
     const content = cache === void 0 || movieCount === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : movieCount + seriesCount === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actMissingEmpty")}</div>` : `<div style="display:flex;flex-direction:column;gap:4px;padding:4px 0">${rows}</div>`;
