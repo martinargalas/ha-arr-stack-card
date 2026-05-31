@@ -160,7 +160,7 @@ Enable **Skip SSL certificate verification** in the integration's Global Setting
 
 Reads from standard HA `media_player` entities — install the [Plex](https://www.home-assistant.io/integrations/plex/) or [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration and the card picks up active sessions automatically. The section hides when nothing is playing.
 
-Plex also supports playback control (pause, resume, stop) for most clients — requires Plex configured in the Arr Stack Integration (step 6). Android and web browser clients are not supported.
+Plex also supports remote stream termination (stop with a message) for all clients — requires Plex configured in the Arr Stack Integration (step 6). Full playback controls (play, pause, next, previous) are only available for Plexamp.
 
 > **Plex Server URL** — the integration auto-detects your server address on setup. If HA is on a different machine or VLAN than Plex, auto-detection may resolve an unreachable address. Set **Plex Server URL** on the Plex step to override it (e.g. `https://plex.yourdomain.com` or `http://192.168.1.10:32400`).
 
