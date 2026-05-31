@@ -680,7 +680,7 @@ var ARR_I18N = {
     actAllFormats: "V\u0161echny form\xE1ty",
     actAllGroups: "V\u0161echny skupiny",
     actAllProfiles: "V\u0161echny profily",
-    actAllMonitored: "V\u0161e",
+    actAllMonitored: "Monitorov\xE1n\xED",
     actColMonitored: "Monitored",
     actMonitored: "Monitorov\xE1no",
     actNotMonitored: "Nemonitorov\xE1no",
@@ -734,7 +734,7 @@ var ARR_I18N = {
     actColYear: "Rok",
     actColProfile: "Profil",
     actColAdded: "P\u0159id\xE1no",
-    actColMissingEps: "Chyb\xED",
+    actColMissingEps: "Epizody",
     actColSeasons: "Sez\xF3ny",
     actUnmonitor: "P\u0159estat sledovat",
     actAutoSearch: "Autom. hled\xE1n\xED",
@@ -1009,7 +1009,7 @@ var ARR_I18N = {
     actAllFormats: "All Formats",
     actAllGroups: "All Groups",
     actAllProfiles: "All Profiles",
-    actAllMonitored: "All",
+    actAllMonitored: "Monitoring",
     actColMonitored: "Monitored",
     actMonitored: "Monitored",
     actNotMonitored: "Unmonitored",
@@ -1063,7 +1063,7 @@ var ARR_I18N = {
     actColYear: "Year",
     actColProfile: "Profile",
     actColAdded: "Added",
-    actColMissingEps: "Missing",
+    actColMissingEps: "Episodes",
     actColSeasons: "Seasons",
     actUnmonitor: "Unmonitor",
     actAutoSearch: "Auto Search",
@@ -2532,7 +2532,7 @@ var STYLES = `
       }
 
       /* Results scroll container */
-      .is-results-wrap { overflow-y: auto; flex: 1; min-height: 0; }
+      .is-results-wrap { overflow-y: auto; overflow-x: hidden; flex: 1; min-height: 0; }
 
       /* \u2500\u2500 TABLE \u2500\u2500 */
       .is-table { width: 100%; border-collapse: collapse; }
@@ -10867,6 +10867,49 @@ var _PopupMethods = class {
       </div>`;
     }
     if (d._type === POPUP_TYPE.STREAM) return this._renderStreamPopup(d);
+    if (d._infoOnly) {
+      const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      const _year = d.releaseDate ? d.releaseDate.slice(0, 4) : d.firstAirDate ? d.firstAirDate.slice(0, 4) : "";
+      const _genres = (d.genres || []).map((g) => this._escHtml(g.name || "")).filter(Boolean).join(" \xB7 ");
+      const _rating = d.voteAverage ? d.voteAverage.toFixed(1) : "";
+      const _overview = this._escHtml(d.overview || "");
+      const _subLine = [_year, _genres, _rating ? `\u2B50 ${_rating}` : ""].filter(Boolean).join(" \xB7 ");
+      const _posterUrl = d.posterPath ? d.posterPath.startsWith("http") ? d.posterPath : `https://image.tmdb.org/t/p/w342${d.posterPath}` : d._localPosterUrl || "";
+      const _backdropUrl = d.backdropPath ? `https://image.tmdb.org/t/p/w1280${d.backdropPath}` : d._localBackdropUrl || "";
+      const _videos = Array.isArray(d.relatedVideos) ? d.relatedVideos : [];
+      const _trailer = _videos.find((v) => v.site === "YouTube" && v.type === "Trailer") || _videos.find((v) => v.site === "YouTube");
+      const _trailerHtml = _trailer ? `<a class="popup-yt-thumb" href="https://www.youtube.com/watch?v=${encodeURIComponent(_trailer.key)}" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/${encodeURIComponent(_trailer.key)}/hqdefault.jpg" loading="lazy" onerror="this.style.display='none'"/><div class="popup-yt-overlay"><div class="popup-yt-btn">\u25B6 ${this._t("watchTrailer")}</div></div></a>` : "";
+      const _hdrStyle = _backdropUrl ? `background-image:url('${_backdropUrl}');background-size:cover;background-position:center top` : _posterUrl ? `background-image:url('${_posterUrl}');background-size:cover;background-position:center;filter:blur(6px) brightness(0.4)` : "background:linear-gradient(135deg,rgba(20,20,40,1),rgba(40,20,60,1))";
+      return `
+      <div class="popup-overlay${this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : ""}">
+        <div class="popup-glass" style="max-width:600px;width:calc(100vw - 32px);padding:0;gap:0;max-height:calc(100vh - 60px);overflow-y:auto;position:relative">
+          <button class="popup-close" style="position:absolute;top:10px;right:10px;z-index:2">${closeSvg}</button>
+          <div style="height:160px;${_hdrStyle};position:relative;flex-shrink:0">
+            ${_posterUrl ? `<img src="${_posterUrl}" style="position:absolute;bottom:-32px;left:16px;width:72px;height:108px;object-fit:cover;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.5)" loading="lazy" onerror="this.style.display='none'"/>` : ""}
+          </div>
+          <div style="padding:${_posterUrl ? "44px" : "16px"} 16px 16px ${_posterUrl ? "100px" : "16px"}">
+            <div style="font-size:15px;font-weight:700;color:var(--is-text);line-height:1.3">${this._escHtml(d.title || d.name || "")}</div>
+            ${_subLine ? `<div style="font-size:11px;color:var(--is-text-muted);margin-top:3px">${_subLine}</div>` : ""}
+          </div>
+          ${_overview ? `<div style="padding:0 16px 12px;font-size:12px;color:var(--is-text-sec);line-height:1.6">${_overview}</div>` : ""}
+          ${_trailerHtml ? `<div style="padding:0 16px 16px">${_trailerHtml}</div>` : ""}
+        </div>
+      </div>`;
+    }
+    if (d._fromActivity) {
+      const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      const actTitle = this._escHtml(d.title || d.name || "");
+      const isPanel = this._isState ? this._renderIsPanel() : "";
+      const snPanel = this._snIsOpen ? this._renderSonarrIsSection() : "";
+      return `
+      <div class="popup-overlay${this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : ""}">
+        <div class="popup-glass" style="width:min(900px, 94vw);padding:0;gap:0;max-height:calc(100vh - 80px);overflow-y:auto;overflow-x:hidden;position:relative">
+          <button class="popup-close" style="position:absolute;top:12px;right:12px">${closeSvg}</button>
+          <div style="font-size:14px;font-weight:600;color:var(--is-text);margin-bottom:12px;padding:16px 48px 0 16px">${actTitle}</div>
+          ${isPanel}${snPanel}
+        </div>
+      </div>`;
+    }
     if (d._error) {
       return `
       <div class="popup-overlay">
@@ -13722,7 +13765,7 @@ var _ActivityRenderMethods = class {
     ).join("");
     const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
     const hdrInner = isMobile ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-           <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${this._t("actActivity")}</div>
+           <div id="act-hdr-title" style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
            <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0">${closeSvg}</button>
          </div>
          <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
@@ -14479,10 +14522,30 @@ var _ActivityRenderMethods = class {
     const movieCount = cache?.movieCount ?? null;
     const seriesCount = cache?.seriesCount ?? null;
     const badge = movieCount !== null ? `<span style="font-size:10px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${movieCount + seriesCount}</span>` : "";
-    const content = cache === void 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : movieCount === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : movieCount + seriesCount === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actMissingEmpty")}</div>` : `<div style="display:flex;flex-direction:column;gap:4px;padding:4px 0">
-               ${movieCount > 0 ? `<div style="display:flex;align-items:center;gap:6px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg><span style="font-size:10px;font-weight:600;color:#fff;flex:1">${this._t("typeMovie")}</span><span style="font-size:10px;font-weight:700;color:#fb923c">${movieCount}</span></div>` : ""}
-               ${seriesCount > 0 ? `<div style="display:flex;align-items:center;gap:6px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg><span style="font-size:10px;font-weight:600;color:#fff;flex:1">${this._t("typeTv")}</span><span style="font-size:10px;font-weight:700;color:#fb923c">${seriesCount}</span></div>` : ""}
-             </div>`;
+    const filmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
+    const tvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
+    const mkRow = (svg, label, count) => `<div style="display:flex;align-items:center;gap:6px"><span style="opacity:0.6;flex-shrink:0;display:flex">${svg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:10px;font-weight:700;color:#fb923c;flex-shrink:0">${count}</span></div>`;
+    let rows = "";
+    if (cache && movieCount !== null) {
+      const rRecs = cache.rRecs || [];
+      const sRecs = cache.sRecs || [];
+      const hasR2 = this._radarr2Configured === true;
+      const hasS2 = this._sonarr2Configured === true;
+      if (hasR2 || hasS2) {
+        const r1 = rRecs.filter((r) => r._inst === "radarr").length;
+        const r2 = rRecs.filter((r) => r._inst === "radarr2").length;
+        const s1 = sRecs.filter((s) => s._inst === "sonarr").length;
+        const s2 = sRecs.filter((s) => s._inst === "sonarr2").length;
+        if (r1 > 0) rows += mkRow(filmSvg, "Radarr", r1);
+        if (r2 > 0) rows += mkRow(filmSvg, "Radarr 2", r2);
+        if (s1 > 0) rows += mkRow(tvSvg, "Sonarr", s1);
+        if (s2 > 0) rows += mkRow(tvSvg, "Sonarr 2", s2);
+      } else {
+        if (movieCount > 0) rows += mkRow(filmSvg, this._t("typeMovie"), movieCount);
+        if (seriesCount > 0) rows += mkRow(tvSvg, this._t("typeTv"), seriesCount);
+      }
+    }
+    const content = cache === void 0 || movieCount === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : movieCount + seriesCount === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actMissingEmpty")}</div>` : `<div style="display:flex;flex-direction:column;gap:4px;padding:4px 0">${rows}</div>`;
     return `<div class="tl-card" data-act-open="missing" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
@@ -14524,6 +14587,8 @@ var _ActivityRenderMethods = class {
         _added: s.added || "",
         _monitored: s.monitored ?? true,
         _missing: s._missingCount || 0,
+        _fileCount: s._fileCount || 0,
+        _totalCount: s._totalCount || 0,
         _seasons: seasonStr,
         _tvdbId: s.tvdbId,
         _raw: s
@@ -14537,7 +14602,7 @@ var _ActivityRenderMethods = class {
     const mSort = m.missingSort || "title";
     const mSortDir = m.missingSortDir || "asc";
     const filtered = all.filter((r) => {
-      if (fSvc !== "all" && (r._displaySvc || r._svc) !== fSvc) return false;
+      if (fSvc !== "all" && r._svc !== fSvc) return false;
       if (fProf !== "all" && r._profile !== fProf) return false;
       if (fMon !== "all" && (fMon === "monitored" ? !r._monitored : r._monitored)) return false;
       if (mSearch && !r._title.toLowerCase().includes(mSearch)) return false;
@@ -14574,22 +14639,28 @@ var _ActivityRenderMethods = class {
     const isSvgSm = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
     const asSvgSm = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
     const ALL_MISSING_COLS = [
+      { id: "monitored", label: this._t("actColMonitored") },
       { id: "source", label: this._t("actColSource") },
       { id: "year", label: this._t("actColYear") },
       { id: "profile", label: this._t("actColProfile") },
       { id: "added", label: this._t("actColAdded") },
-      { id: "missing", label: this._t("actColMissingEps") },
-      { id: "monitored", label: this._t("actColMonitored") }
+      { id: "missing", label: this._t("actColMissingEps") }
     ];
     const C = cols instanceof Set ? cols : /* @__PURE__ */ new Set(["source", "year", "missing"]);
     const visCols = ALL_MISSING_COLS.filter((c) => C.has(c.id));
     const selSty = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
-    const mSvcSel = `<select id="act-missing-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${fSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${fSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
+    const _svcInstances = [
+      { v: "radarr", lbl: "Radarr", has: all.some((r) => r._svc === "radarr") },
+      { v: "radarr2", lbl: "Radarr 2", has: all.some((r) => r._svc === "radarr2") },
+      { v: "sonarr", lbl: "Sonarr", has: all.some((r) => r._svc === "sonarr") },
+      { v: "sonarr2", lbl: "Sonarr 2", has: all.some((r) => r._svc === "sonarr2") }
+    ].filter((x) => x.has);
+    const mSvcSel = `<select id="act-missing-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option>${_svcInstances.map((x) => `<option value="${x.v}"${fSvc === x.v ? " selected" : ""}>${x.lbl}</option>`).join("")}</select>`;
     const profOpts = uniq(all, (r) => r._profile);
-    const mProfSel = profOpts.length < 2 ? "" : `<select id="act-missing-profile" style="${fProf !== "all" ? selStyA : selSty}"><option value="all"${fProf === "all" ? " selected" : ""}>${this._t("actAllProfiles")}</option>${profOpts.map((p) => `<option value="${p}"${fProf === p ? " selected" : ""}>${p}</option>`).join("")}</select>`;
-    const mMonSel = `<select id="act-missing-monitored" style="${fMon !== "all" ? selStyA : selSty}"><option value="all"${fMon === "all" ? " selected" : ""}>${this._t("actAllMonitored")}</option><option value="monitored"${fMon === "monitored" ? " selected" : ""}>\u25CF ${this._t("actMonitored")}</option><option value="unmonitored"${fMon === "unmonitored" ? " selected" : ""}>\u25CF ${this._t("actNotMonitored")}</option></select>`;
+    const mProfSel = profOpts.length < 1 ? "" : `<select id="act-missing-profile" style="${fProf !== "all" ? selStyA : selSty}"><option value="all"${fProf === "all" ? " selected" : ""}>${this._t("actAllProfiles")}</option>${profOpts.map((p) => `<option value="${p}"${fProf === p ? " selected" : ""}>${p}</option>`).join("")}</select>`;
+    const mMonSel = `<select id="act-missing-monitored" style="${fMon !== "all" ? selStyA : selSty}"><option value="all"${fMon === "all" ? " selected" : ""}>${this._t("actAllMonitored")}</option><option value="monitored"${fMon === "monitored" ? " selected" : ""}>${this._t("actMonitored")}</option><option value="unmonitored"${fMon === "unmonitored" ? " selected" : ""}>${this._t("actNotMonitored")}</option></select>`;
     const fmtDate = (d) => {
       if (!d) return "\u2014";
       try {
@@ -14599,7 +14670,6 @@ var _ActivityRenderMethods = class {
       }
     };
     const searchEl = this._tlSearchInput("act-missing-search", m.missingSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
-    const delMode = m.missingUnmonitorMode || false;
     const thSt = `padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;white-space:nowrap`;
     const _mth = (id, label, pad0 = false) => {
       const active = mSort === id;
@@ -14608,34 +14678,41 @@ var _ActivityRenderMethods = class {
     };
     const chevDownSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     const chevRightSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>`;
+    const chevDownSvgLg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const chevRightSvgLg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>`;
     const _seasonSubRows = (r, mobile) => {
       if (!r._raw?.seasons) return "";
-      const seasons = (r._raw.seasons || []).filter((ss) => ss.seasonNumber > 0).map((ss) => ({ n: ss.seasonNumber, monitored: ss.monitored, missing: (ss.statistics?.totalEpisodeCount || 0) - (ss.statistics?.episodeFileCount || 0) })).filter((ss) => ss.missing > 0).sort((a, b) => a.n - b.n);
+      const seasons = (r._raw.seasons || []).filter((ss) => ss.seasonNumber > 0).map((ss) => ({ n: ss.seasonNumber, monitored: ss.monitored, missing: (ss.statistics?.totalEpisodeCount || 0) - (ss.statistics?.episodeFileCount || 0), total: ss.statistics?.totalEpisodeCount || 0 })).filter((ss) => ss.missing > 0).sort((a, b) => a.n - b.n);
       if (!seasons.length) return "";
       if (mobile) {
-        return seasons.map((ss) => `<div style="padding:5px 0 5px 22px;border-bottom:1px solid var(--is-divider)">
+        return seasons.map((ss, i) => `<div data-act-season style="padding:5px 10px 5px 22px;${i < seasons.length - 1 ? "border-bottom:1px solid var(--is-divider)" : ""}">
           <div style="display:flex;align-items:center;gap:6px">
             <span style="font-size:11px;font-weight:700;color:var(--is-text-sec);min-width:28px">S${String(ss.n).padStart(2, "0")}</span>
-            <span style="font-size:10px;font-weight:700;color:#fb923c">${ss.missing} ep</span>
+            <span style="font-size:10px;font-weight:700;color:#fb923c">${ss.total - ss.missing}/${ss.total}</span>
             <span style="flex:1"></span>
+            <select class="act-missing-season-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;color-scheme:light dark"><option value="monitor"${ss.monitored ? " selected" : ""}>Monitor</option><option value="unmonitor"${!ss.monitored ? " selected" : ""}>Unmonitor</option></select>
+            <button class="act-missing-season-is-btn" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" data-title="${this._escHtml(r._title)}" title="IS S${String(ss.n).padStart(2, "0")}" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>
             <button class="act-missing-as-btn" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" title="AS S${String(ss.n).padStart(2, "0")}" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>
           </div>
         </div>`).join("");
       }
-      return seasons.map((ss) => `<tr style="background:rgba(255,255,255,0.015)">
+      return seasons.map((ss) => `<tr data-act-season style="background:rgba(255,255,255,0.015)">
         <td style="padding:0;width:24px"></td>
         <td style="padding:5px 8px;overflow:hidden;max-width:300px">
           <span style="font-size:11px;font-weight:700;color:var(--is-text-sec)">S${String(ss.n).padStart(2, "0")}</span>
         </td>
         ${visCols.map((col) => {
-        if (col.id === "missing") return `<td style="padding:5px 8px;font-size:10px;font-weight:700;color:#fb923c">${ss.missing} ep</td>`;
+        if (col.id === "missing") return `<td style="padding:5px 8px;font-size:10px;font-weight:700;color:#fb923c">${ss.total - ss.missing}/${ss.total}</td>`;
         if (col.id === "monitored") {
-          return `<td style="padding:5px 8px;text-align:center"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ss.monitored ? "rgba(80,200,100,0.85)" : "rgba(251,146,60,0.85)"}" title="${ss.monitored ? this._t("actMonitored") : this._t("actNotMonitored")}"></span></td>`;
+          return `<td style="padding:4px 8px"><select class="act-missing-season-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;width:auto;display:block;margin-left:auto;color-scheme:light dark"><option value="monitor"${ss.monitored ? " selected" : ""}>${this._t("actMonitored")}</option><option value="unmonitor"${!ss.monitored ? " selected" : ""}>${this._t("actNotMonitored")}</option></select></td>`;
         }
         return `<td style="padding:5px 8px"></td>`;
       }).join("")}
-        <td style="padding:5px 0 5px 8px;text-align:right;white-space:nowrap">
-          <button class="act-missing-as-btn" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" title="AS S${String(ss.n).padStart(2, "0")}" style="flex-shrink:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>
+        <td style="padding:5px 10px 5px 8px;text-align:right;white-space:nowrap">
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px">
+            <button class="act-missing-season-is-btn" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" data-title="${this._escHtml(r._title)}" title="IS S${String(ss.n).padStart(2, "0")}" style="flex-shrink:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>
+            <button class="act-missing-as-btn" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" title="AS S${String(ss.n).padStart(2, "0")}" style="flex-shrink:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>
+          </div>
         </td>
       </tr>`).join("");
     };
@@ -14644,26 +14721,29 @@ var _ActivityRenderMethods = class {
         const isSonarr = (r._displaySvc || r._svc) === "sonarr";
         const expandKey = isSonarr ? `${r._svc}_${r._id}` : null;
         const isExpanded = isSonarr && expanded.has(expandKey);
-        const sub2 = [r._profile, r._seasons].filter(Boolean).join(" \xB7 ");
-        const expandBtn = isSonarr ? `<button class="act-missing-expand-btn" data-key="${expandKey}" style="flex-shrink:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--is-text-muted);padding:0">${isExpanded ? chevDownSvg : chevRightSvg}</button>` : "";
+        const expandBtn = isSonarr ? `<button class="act-missing-expand-btn" data-key="${expandKey}" style="flex-shrink:0;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--is-text-muted);padding:0">${isExpanded ? chevDownSvgLg : chevRightSvgLg}</button>` : "";
         const seasonRows = isExpanded ? _seasonSubRows(r, true) : "";
+        const typeIcon = `<span style="flex-shrink:0;color:var(--is-text-muted);display:flex;align-items:center">${isSonarr ? srcTvSvg : srcFilmSvg}</span>`;
+        const subParts = (() => {
+          const lbl = { "radarr2": "Radarr 2", "sonarr2": "Sonarr 2" }[r._svc];
+          const miss = r._missing !== null ? isSonarr ? `<span style="font-weight:700">${r._fileCount || 0}/${r._totalCount || 0}</span>` : `<span style="color:#fb923c;font-weight:700">${r._missing}</span>` : null;
+          return [lbl, r._profile, miss].filter(Boolean);
+        })();
         return `<div style="padding:9px 0;border-bottom:1px solid var(--is-divider)">
           <div style="display:flex;align-items:flex-start;gap:6px">
-            <div style="flex-shrink:0;width:16px;display:flex;justify-content:center;padding-top:3px;color:var(--is-text-muted)">${isSonarr ? srcTvSvg : srcFilmSvg}</div>
+            <div style="flex-shrink:0;width:24px;align-self:stretch;display:flex;align-items:center;justify-content:center">${expandBtn}</div>
             <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:5px">${expandBtn}<span style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}${r._year ? ` <span style="font-size:10px;color:var(--is-text-muted)">(${r._year})</span>` : ""}</span><span style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:${r._monitored ? "rgba(80,200,100,0.85)" : "rgba(251,146,60,0.85)"}" title="${r._monitored ? this._t("actMonitored") : this._t("actNotMonitored")}"></span></div>
-              ${(() => {
-          const lbl = { "radarr2": "Radarr 2", "sonarr2": "Sonarr 2" }[r._svc];
-          const parts = [lbl, ...sub2.split(" \xB7 ").filter(Boolean)].filter(Boolean);
-          return parts.length ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${parts.join(" \xB7 ")}</div>` : "";
-        })()}
+              <div style="display:flex;align-items:center;gap:5px;min-width:0">
+                ${typeIcon}
+                <span class="act-missing-info-btn" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" data-type="${isSonarr ? "sonarr" : "radarr"}" style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;cursor:pointer">${r._title}${r._year ? ` <span style="font-size:10px;color:var(--is-text-muted)">(${r._year})</span>` : ""}</span>
+              </div>
+              ${subParts.length ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${subParts.join(" \xB7 ")}</div>` : ""}
             </div>
-            <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              ${r._missing !== null ? `<span style="font-size:11px;font-weight:700;color:#fb923c">${r._missing} ep</span>` : ""}
-              <div style="display:flex;gap:4px;margin-top:2px">
-                ${`<button class="act-missing-is-btn" data-id="${r._id}" data-svc="${r._svc}" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" title="IS" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>`}
+            <div style="flex-shrink:0;align-self:stretch;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:4px;margin-right:10px">
+              ${!isSonarr ? `<select class="act-missing-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;color-scheme:light dark"><option value="monitor"${r._monitored ? " selected" : ""}>${this._t("actMonitored")}</option><option value="unmonitor"${!r._monitored ? " selected" : ""}>${this._t("actNotMonitored")}</option></select>` : `<select class="act-missing-sonarr-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;color-scheme:light dark"><option value="">No Change</option><option value="all">All Episodes</option><option value="future">Future Eps</option><option value="missing">Missing Eps</option><option value="existing">Existing Eps</option><option value="recent">Recent Eps</option><option value="pilot">Pilot</option><option value="firstSeason">First Season</option><option value="lastSeason">Last Season</option><option value="monitorSpecials">+ Specials</option><option value="unmonitorSpecials">- Specials</option><option value="none">None</option></select>`}
+              <div style="display:flex;gap:4px;align-items:center">
+                <button class="act-missing-is-btn" data-id="${r._id}" data-svc="${r._svc}" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" title="IS" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>
                 <button class="act-missing-as-btn" data-id="${r._id}" data-svc="${r._svc}" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" title="${this._t("actAutoSearch")}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>
-                ${delMode ? `<button class="act-missing-unmonitor-btn" data-id="${r._id}" data-svc="${r._svc}" data-raw='${JSON.stringify({ id: r._id, title: r._title })}' style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;font-size:9px;font-weight:700;color:rgba(220,80,80,0.9)">\u2715</button>` : ""}
               </div>
             </div>
           </div>
@@ -14672,21 +14752,23 @@ var _ActivityRenderMethods = class {
       }).join("");
       const toolbar2 = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
         ${searchEl}
-        <button id="act-missing-unmonitor-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-size:11px">${this._t("actUnmonitor")}</button>
         <button id="act-missing-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${mSvcSel}${mProfSel ? mProfSel : ""}${mMonSel}</div>`;
       return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
         ${toolbar2}
-        <div style="flex:1;overflow:hidden" data-act-clip>${rowsHtml}</div>
+        <div style="flex:1;overflow:hidden" data-act-clip data-act-notrim>${rowsHtml}</div>
         ${PAG}
       </div>`;
     }
-    const COL_W = { source: 70, year: 60, profile: 120, added: 100, missing: 75, monitored: 72 };
+    const COL_W = { source: 70, year: 60, profile: 120, added: 100, missing: 75, monitored: 110 };
+    const COL_ALIGN = { source: "center", monitored: "center", year: "left", profile: "left", added: "left", missing: "left" };
     const rows = paged.flatMap((r) => {
       const isSonarr = (r._displaySvc || r._svc) === "sonarr";
       const expandKey = isSonarr ? `${r._svc}_${r._id}` : null;
       const isExpanded = isSonarr && expanded.has(expandKey);
+      const s0total = isSonarr ? (r._raw?.seasons || []).find((ss) => ss.seasonNumber === 0)?.statistics?.totalEpisodeCount || 0 : 0;
+      const totalEp = isSonarr ? (r._raw?.statistics?.totalEpisodeCount || 0) - s0total : 0;
       const colTds = visCols.map((col) => {
         if (col.id === "source") {
           const lbl = { "radarr": "Radarr", "radarr2": "Radarr 2", "sonarr": "Sonarr", "sonarr2": "Sonarr 2" }[r._svc] || (isSonarr ? "Sonarr" : "Radarr");
@@ -14695,42 +14777,40 @@ var _ActivityRenderMethods = class {
         if (col.id === "year") return `<td style="padding:8px;font-size:10px;color:var(--is-text-sec)">${r._year || "\u2014"}</td>`;
         if (col.id === "profile") return `<td style="padding:8px;font-size:10px;color:var(--is-text-sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${r._profile || "\u2014"}</td>`;
         if (col.id === "added") return `<td style="padding:8px;font-size:10px;color:var(--is-text-muted);white-space:nowrap">${fmtDate(r._added)}</td>`;
-        if (col.id === "missing") return `<td style="padding:8px;font-size:10px;font-weight:700;color:${r._missing ? "#fb923c" : "var(--is-text-muted)"}">${r._missing !== null ? `${r._missing} ep` : "\u2014"}</td>`;
+        if (col.id === "missing") return `<td style="padding:8px;font-size:10px;font-weight:700;color:${r._missing ? "#fb923c" : "var(--is-text-muted)"}">${r._missing !== null ? `${isSonarr ? totalEp - r._missing + "/" + totalEp : r._missing}` : "\u2014"}</td>`;
         if (col.id === "monitored") {
           const mon = r._monitored;
-          return `<td style="padding:8px;text-align:center"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${mon ? "rgba(80,200,100,0.85)" : "rgba(251,146,60,0.85)"};box-shadow:0 0 4px ${mon ? "rgba(80,200,100,0.4)" : "rgba(251,146,60,0.4)"}" title="${mon ? this._t("actMonitored") : this._t("actNotMonitored")}"></span></td>`;
+          return isSonarr ? `<td style="padding:4px 8px"><select class="act-missing-sonarr-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;width:100%;color-scheme:light dark"><option value="">No Change</option><option value="all">All Episodes</option><option value="future">Future Eps</option><option value="missing">Missing Eps</option><option value="existing">Existing Eps</option><option value="recent">Recent Eps</option><option value="pilot">Pilot</option><option value="firstSeason">First Season</option><option value="lastSeason">Last Season</option><option value="monitorSpecials">+ Specials</option><option value="unmonitorSpecials">- Specials</option><option value="none">None</option></select></td>` : `<td style="padding:4px 8px"><select class="act-missing-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;width:100%;color-scheme:light dark"><option value="monitor"${mon ? " selected" : ""}>${this._t("actMonitored")}</option><option value="unmonitor"${!mon ? " selected" : ""}>${this._t("actNotMonitored")}</option></select></td>`;
         }
         return "";
       }).join("");
       const expandBtn = isSonarr ? `<button class="act-missing-expand-btn" data-key="${expandKey}" style="flex-shrink:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--is-text-muted);padding:0">${isExpanded ? chevDownSvg : chevRightSvg}</button>` : "";
       const isBtn = `<button class="act-missing-is-btn" data-id="${r._id}" data-svc="${r._svc}" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" title="IS" style="flex-shrink:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>`;
       const autoSearchBtn = `<button class="act-missing-as-btn" data-id="${r._id}" data-svc="${r._svc}" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" title="${this._t("actAutoSearch")}" style="flex-shrink:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>`;
-      const unmonitorBtn = delMode ? `<button class="act-missing-unmonitor-btn" data-id="${r._id}" data-svc="${r._svc}" title="${this._t("actUnmonitor")}" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;font-size:9px;font-weight:700;color:rgba(220,80,80,0.9)">\u2715</button>` : "";
       const mainRow = `<tr style="border-bottom:${isExpanded ? "none" : "1px solid var(--is-divider)"}">
         <td style="padding:8px 0;width:24px;text-align:center">${expandBtn}</td>
         <td style="padding:8px 8px 8px 0;overflow:hidden;max-width:300px">
-          <div style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}${r._year ? ` <span style="font-size:10px;color:var(--is-text-muted)">(${r._year})</span>` : ""}</div>
+          <div class="act-missing-info-btn" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" data-type="${isSonarr ? "sonarr" : "radarr"}" style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer">${r._title}${r._year ? ` <span style="font-size:10px;color:var(--is-text-muted)">(${r._year})</span>` : ""}</div>
         </td>
         ${colTds}
-        <td style="padding:8px 0 8px 8px;text-align:right;white-space:nowrap"><div style="display:flex;align-items:center;justify-content:flex-end;gap:4px">${isBtn}${autoSearchBtn}${unmonitorBtn}</div></td>
+        <td style="padding:8px 10px 8px 8px;text-align:right;white-space:nowrap"><div style="display:flex;align-items:center;justify-content:flex-end;gap:4px">${isBtn}${autoSearchBtn}</div></td>
       </tr>`;
       const seasonTrs = isExpanded ? _seasonSubRows(r, false) : "";
       return [mainRow, seasonTrs];
     }).join("");
     const toolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
       ${searchEl}
-      <button id="act-missing-unmonitor-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-size:11px">${this._t("actUnmonitor")}</button>
       <button id="act-missing-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${mSvcSel}${mProfSel ? mProfSel : ""}${mMonSel}</div>`;
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
       ${toolbar}
-      <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
+      <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip data-act-notrim>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
           <thead><tr style="border-bottom:1px solid var(--is-divider)">
             <th style="padding:4px 0 8px;width:24px"></th>
             ${_mth("title", this._t("actColTitle"), true)}
-            ${visCols.map((c) => `<th data-act-missing-sort="${c.id}" style="${thSt};width:${COL_W[c.id] || 80}px;cursor:pointer;user-select:none" >${c.label}${mSort === c.id ? `<span style="margin-left:2px">${mSortDir === "asc" ? "\u2191" : "\u2193"}</span>` : ""}</th>`).join("")}
+            ${visCols.map((c) => `<th data-act-missing-sort="${c.id}" style="${thSt};text-align:${COL_ALIGN[c.id] || "left"};width:${COL_W[c.id] || 80}px;cursor:pointer;user-select:none">${c.label}${mSort === c.id ? `<span style="margin-left:2px">${mSortDir === "asc" ? "\u2191" : "\u2193"}</span>` : ""}</th>`).join("")}
             <th style="padding:4px 0 8px 8px;width:60px"></th>
           </tr></thead>
           <tbody>${rows}</tbody>
@@ -14851,9 +14931,8 @@ var _WireActivityMethods = class {
       missingFilterSvc: "all",
       missingFilterProfile: "all",
       missingFilterMonitored: "all",
-      missingSort: "title",
-      missingSortDir: "asc",
-      missingUnmonitorMode: false,
+      missingSort: "added",
+      missingSortDir: "desc",
       missingExpanded: /* @__PURE__ */ new Set(),
       missingCols: (() => {
         try {
@@ -14864,7 +14943,7 @@ var _WireActivityMethods = class {
           }
         } catch {
         }
-        return /* @__PURE__ */ new Set(["source", "year", "missing"]);
+        return /* @__PURE__ */ new Set(["monitored", "source", "year", "missing"]);
       })()
     };
     this.shadowRoot.querySelector("[data-act-modal]")?.remove();
@@ -14879,12 +14958,15 @@ var _WireActivityMethods = class {
       const rowH = mobile ? 58 : 40;
       const ovhFlt = mobile ? 80 : 78;
       const ovhQ = mobile ? 46 : 68;
+      const ovhMissing = mobile ? 130 : 120;
       const perPageFlt = Math.max(4, Math.floor((bodyH - ovhFlt) / rowH));
       const perPageQueue = Math.max(4, Math.floor((bodyH - ovhQ) / rowH));
+      const perPageMissing = Math.max(4, Math.floor((bodyH - ovhMissing) / rowH));
       this._activityModal.histPerPage = perPageFlt;
       this._activityModal.blPerPage = perPageFlt;
       this._activityModal.queuePerPage = perPageQueue;
-      this._activityModal.missingPerPage = perPageFlt;
+      this._activityModal.missingPerPage = perPageMissing;
+      this._activityModal.missingPerPageBase = perPageMissing;
     }
     this._wireActivityModal(el);
     await this._actLoadTab(tab, el);
@@ -14904,8 +14986,11 @@ var _WireActivityMethods = class {
         if (!t || !this._activityModal) return;
         el.querySelectorAll("[data-act-tab]").forEach((b) => b.classList.toggle("active", b === btn));
         this._activityModal.tab = t;
+        const tabLabel = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") }[t] || t;
         const subEl = el.querySelector("#act-hdr-sub");
-        if (subEl) subEl.textContent = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") }[t] || t;
+        if (subEl) subEl.textContent = tabLabel;
+        const titleEl = el.querySelector("#act-hdr-title");
+        if (titleEl) titleEl.textContent = tabLabel;
         await this._actLoadTab(t, el);
       });
     });
@@ -15005,11 +15090,55 @@ var _WireActivityMethods = class {
       this._wireActBody(body, el, "blocklist");
     } else if (tab === "missing") {
       if (!this._activityModal) return;
+      await Promise.allSettled([
+        this._fetchSonarrProfiles(),
+        this._fetchRadarrProfiles()
+      ]);
+      if (!this._activityModal) return;
       this._computeActMissingCache();
-      const c = this._actMissingCache;
-      this._actSetBodyHtml(body, this._actMissingTabHtml(c.rRecs, c.sRecs, m.missingPage, m.missingPerPage, m.missingCols));
-      this._wireActBody(body, el, "missing");
+      this._actRenderMissing(body, el);
     }
+  }
+  _actRenderMissing(body, el, pageOverride, skipBaseReset) {
+    const m = this._activityModal;
+    if (!m) return;
+    if (pageOverride !== void 0) m.missingPage = pageOverride;
+    if (!skipBaseReset && m.missingPerPageBase) m.missingPerPage = m.missingPerPageBase;
+    const c = this._actMissingCache;
+    body.innerHTML = this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], m.missingPage, m.missingPerPage, m.missingCols);
+    requestAnimationFrame(() => {
+      if (!this._activityModal) return;
+      const clip = body.querySelector("[data-act-clip]");
+      if (clip) {
+        const m2 = this._activityModal;
+        const clipB = clip.getBoundingClientRect().bottom;
+        const isMobileClip = !clip.querySelector("table");
+        const items = isMobileClip ? [...clip.children] : [...clip.querySelectorAll("tbody tr:not([data-act-season])")];
+        const isExpandedRow = (el2) => isMobileClip && !!el2.querySelector("[data-act-season]");
+        const hasExpandedRow = isMobileClip ? items.some((el2) => isExpandedRow(el2)) : !!clip.querySelector("[data-act-season]");
+        if (!hasExpandedRow) {
+          const overflowing = items.filter((el2) => el2.getBoundingClientRect().bottom > clipB + 2).length;
+          if (overflowing > 0) {
+            this._activityModal.missingPerPage = Math.max(4, this._activityModal.missingPerPage - overflowing);
+            const m22 = this._activityModal;
+            const c2 = this._actMissingCache;
+            body.innerHTML = this._actMissingTabHtml(c2?.rRecs || [], c2?.sRecs || [], m22.missingPage, m22.missingPerPage, m22.missingCols);
+          }
+        }
+        const expandedOverflow = isMobileClip ? hasExpandedRow && items.some((el2) => isExpandedRow(el2) && el2.getBoundingClientRect().bottom > clipB + 2) : hasExpandedRow && [...clip.querySelectorAll("[data-act-season]")].some((el2) => el2.getBoundingClientRect().bottom > clipB + 2);
+        clip.style.overflowY = expandedOverflow ? "auto" : "";
+        if (isMobileClip) clip.style.paddingRight = expandedOverflow ? "14px" : "";
+        if (expandedOverflow && isMobileClip) {
+          const expandedRowEl = items.find((el2) => isExpandedRow(el2));
+          if (expandedRowEl) {
+            const rowBottom = expandedRowEl.getBoundingClientRect().bottom;
+            const overflow = rowBottom - clipB;
+            if (overflow > 0) clip.scrollTop = overflow + 8;
+          }
+        }
+      }
+      this._wireActBody(body, el, "missing");
+    });
   }
   _computeActMissingCache() {
     const _buildProfMap = (...profArrays) => {
@@ -15024,8 +15153,20 @@ var _WireActivityMethods = class {
       ...(this._radarr2 || []).filter((m) => !m.hasFile).map((m) => ({ ...m, _inst: "radarr2", _profileName: rProfMap.get(m.qualityProfileId) || "" }))
     ];
     const sRecs = [
-      ...(this._sonarr || []).filter((s) => (s.statistics?.totalEpisodeCount || 0) - (s.statistics?.episodeFileCount || 0) > 0).map((s) => ({ ...s, _inst: "sonarr", _profileName: sProfMap.get(s.qualityProfileId) || "", _missingCount: (s.statistics?.totalEpisodeCount || 0) - (s.statistics?.episodeFileCount || 0) })),
-      ...(this._sonarr2 || []).filter((s) => (s.statistics?.totalEpisodeCount || 0) - (s.statistics?.episodeFileCount || 0) > 0).map((s) => ({ ...s, _inst: "sonarr2", _profileName: sProfMap.get(s.qualityProfileId) || "", _missingCount: (s.statistics?.totalEpisodeCount || 0) - (s.statistics?.episodeFileCount || 0) }))
+      ...(this._sonarr || []).map((s) => {
+        const s0 = (s.seasons || []).find((ss) => ss.seasonNumber === 0);
+        const mc = Math.max(0, (s.statistics?.totalEpisodeCount || 0) - (s0?.statistics?.totalEpisodeCount || 0) - ((s.statistics?.episodeFileCount || 0) - (s0?.statistics?.episodeFileCount || 0)));
+        const tc = Math.max(0, (s.statistics?.totalEpisodeCount || 0) - (s0?.statistics?.totalEpisodeCount || 0));
+        const fc = Math.max(0, (s.statistics?.episodeFileCount || 0) - (s0?.statistics?.episodeFileCount || 0));
+        return { ...s, _inst: "sonarr", _profileName: sProfMap.get(s.qualityProfileId) || "", _missingCount: mc, _totalCount: tc, _fileCount: fc };
+      }).filter((s) => s._missingCount > 0),
+      ...(this._sonarr2 || []).map((s) => {
+        const s0 = (s.seasons || []).find((ss) => ss.seasonNumber === 0);
+        const mc = Math.max(0, (s.statistics?.totalEpisodeCount || 0) - (s0?.statistics?.totalEpisodeCount || 0) - ((s.statistics?.episodeFileCount || 0) - (s0?.statistics?.episodeFileCount || 0)));
+        const tc = Math.max(0, (s.statistics?.totalEpisodeCount || 0) - (s0?.statistics?.totalEpisodeCount || 0));
+        const fc = Math.max(0, (s.statistics?.episodeFileCount || 0) - (s0?.statistics?.episodeFileCount || 0));
+        return { ...s, _inst: "sonarr2", _profileName: sProfMap.get(s.qualityProfileId) || "", _missingCount: mc, _totalCount: tc, _fileCount: fc };
+      }).filter((s) => s._missingCount > 0)
     ];
     this._actMissingCache = { movieCount: rRecs.length, seriesCount: sRecs.length, rRecs, sRecs };
   }
@@ -15232,8 +15373,7 @@ var _WireActivityMethods = class {
         this._activityModal.missingPage = 0;
         const m2 = this._activityModal;
         const c = this._actMissingCache;
-        this._actSetBodyHtml(body, this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], 0, m2.missingPerPage, m2.missingCols));
-        this._wireActBody(body, modalEl, "missing");
+        this._actRenderMissing(body, modalEl, 0);
         const inp = body.querySelector("#act-missing-search");
         if (inp) {
           inp.focus();
@@ -15243,25 +15383,13 @@ var _WireActivityMethods = class {
           }
         }
       });
-      body.querySelector("#act-missing-unmonitor-btn")?.addEventListener("click", () => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.missingUnmonitorMode = !m2.missingUnmonitorMode;
-        const c = this._actMissingCache;
-        this._actSetBodyHtml(body, this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], m2.missingPage, m2.missingPerPage, m2.missingCols));
-        this._wireActBody(body, modalEl, "missing");
-      });
       body.querySelector("#act-missing-cols-btn")?.addEventListener("click", (e) => {
         e.stopPropagation();
         this._openMissingColPicker(e.currentTarget, modalEl);
       });
       const _mRerender = () => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.missingPage = 0;
-        const c = this._actMissingCache;
-        this._actSetBodyHtml(body, this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], 0, m2.missingPerPage, m2.missingCols));
-        this._wireActBody(body, modalEl, "missing");
+        if (!this._activityModal) return;
+        this._actRenderMissing(body, modalEl, 0);
       };
       [
         ["#act-missing-svc", "missingFilterSvc"],
@@ -15275,8 +15403,92 @@ var _WireActivityMethods = class {
           _mRerender();
         });
       });
+      body.addEventListener("change", async (e) => {
+        const snMonSel = e.target.closest(".act-missing-sonarr-monitor-sel");
+        if (snMonSel && this._activityModal) {
+          const val = snMonSel.value;
+          if (!val) return;
+          const id2 = Number(snMonSel.dataset.id);
+          const svc2 = snMonSel.dataset.svc;
+          snMonSel.disabled = true;
+          try {
+            await this._callApi("PUT", `arr_stack/${svc2}/series/monitor`, {
+              seriesIds: [id2],
+              monitored: val !== "none",
+              monitoringOptions: { monitor: val }
+            });
+            await this._actLoadTab("missing", modalEl);
+          } catch {
+            snMonSel.disabled = false;
+          }
+          snMonSel.value = "";
+          return;
+        }
+        const seasonMonSel = e.target.closest(".act-missing-season-monitor-sel");
+        if (seasonMonSel && this._activityModal) {
+          const seriesId = Number(seasonMonSel.dataset.id);
+          const svc2 = seasonMonSel.dataset.svc;
+          const seasonNum = Number(seasonMonSel.dataset.season);
+          const monitored2 = seasonMonSel.value === "monitor";
+          seasonMonSel.disabled = true;
+          try {
+            const arr = (svc2 === "sonarr2" ? this._sonarr2 : this._sonarr) || [];
+            const series = arr.find((s) => s.id === seriesId);
+            if (series) {
+              const updatedSeasons = (series.seasons || []).map(
+                (ss) => ss.seasonNumber === seasonNum ? { ...ss, monitored: monitored2 } : ss
+              );
+              const fresh = await this._callApi("PUT", `arr_stack/${svc2}/series/${seriesId}`, { ...series, seasons: updatedSeasons });
+              if (fresh) {
+                const idx2 = arr.findIndex((s) => s.id === seriesId);
+                if (idx2 !== -1) arr[idx2] = { ...arr[idx2], ...fresh };
+              }
+            }
+            await this._actLoadTab("missing", modalEl);
+          } catch {
+            seasonMonSel.disabled = false;
+          }
+          return;
+        }
+        const monSel = e.target.closest(".act-missing-monitor-sel");
+        if (!monSel || !this._activityModal) return;
+        const id = Number(monSel.dataset.id);
+        const svc = monSel.dataset.svc;
+        const monitored = monSel.value === "monitor";
+        monSel.disabled = true;
+        const origOpts = monSel.innerHTML;
+        monSel.innerHTML = `<option>\u2026</option>`;
+        try {
+          const arr = svc === "radarr2" ? this._radarr2 : this._radarr;
+          const movie = (arr || []).find((m2) => m2.id === id) || { id };
+          const fresh = await this._callApi("PUT", `arr_stack/${svc}/movie/${id}`, { ...movie, monitored });
+          if (fresh && arr) {
+            const idx = arr.findIndex((m2) => m2.id === id);
+            if (idx !== -1) arr[idx] = { ...arr[idx], ...fresh };
+          }
+          await this._actLoadTab("missing", modalEl);
+        } catch {
+          monSel.innerHTML = origOpts;
+          monSel.disabled = false;
+        }
+      }, { signal });
       body.addEventListener("click", async (e) => {
         if (!this._activityModal) return;
+        const infoBtn = e.target.closest(".act-missing-info-btn");
+        if (infoBtn) {
+          const tmdb = infoBtn.dataset.tmdb || null;
+          const tvdb = infoBtn.dataset.tvdb || null;
+          const title = infoBtn.dataset.title || "";
+          const type = infoBtn.dataset.type || "radarr";
+          const _pr = this.shadowRoot.getElementById("popup-root");
+          if (_pr) this.shadowRoot.appendChild(_pr);
+          await this._openPopup(type, tmdb || null, tvdb || null, title);
+          if (this._popup) {
+            this._popup._infoOnly = true;
+            this._renderPopupEl();
+          }
+          return;
+        }
         const sortBtn = e.target.closest("[data-act-missing-sort]");
         if (sortBtn) {
           const col = sortBtn.dataset.actMissingSort;
@@ -15287,10 +15499,7 @@ var _WireActivityMethods = class {
             m2.missingSort = col;
             m2.missingSortDir = col === "added" ? "desc" : "asc";
           }
-          m2.missingPage = 0;
-          const c = this._actMissingCache;
-          this._actSetBodyHtml(body, this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], 0, m2.missingPerPage, m2.missingCols));
-          this._wireActBody(body, modalEl, "missing");
+          this._actRenderMissing(body, modalEl, 0);
           return;
         }
         const expandBtn = e.target.closest(".act-missing-expand-btn");
@@ -15298,11 +15507,19 @@ var _WireActivityMethods = class {
           const key = expandBtn.dataset.key;
           const m2 = this._activityModal;
           if (!m2) return;
-          if (m2.missingExpanded.has(key)) m2.missingExpanded.delete(key);
-          else m2.missingExpanded.add(key);
-          const c = this._actMissingCache;
-          this._actSetBodyHtml(body, this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], m2.missingPage, m2.missingPerPage, m2.missingCols));
-          this._wireActBody(body, modalEl, "missing");
+          const isCollapse = m2.missingExpanded.has(key);
+          m2.missingExpanded.clear();
+          if (!isCollapse) m2.missingExpanded.add(key);
+          this._actRenderMissing(body, modalEl, void 0, !isCollapse);
+          return;
+        }
+        const seasonIsBtn = e.target.closest(".act-missing-season-is-btn");
+        if (seasonIsBtn) {
+          const seriesId = Number(seasonIsBtn.dataset.id);
+          const svc = seasonIsBtn.dataset.svc;
+          const seasonNumber = Number(seasonIsBtn.dataset.season);
+          const title = seasonIsBtn.dataset.title || "";
+          await this._openSeasonIsOverlay(seriesId, svc, seasonNumber, title);
           return;
         }
         const isBtn = e.target.closest(".act-missing-is-btn");
@@ -15317,8 +15534,18 @@ var _WireActivityMethods = class {
           const isSonarr = svc === "sonarr" || svc === "sonarr2";
           if (isSonarr) {
             const inst = svc === "sonarr2" ? "sonarr2" : "sonarr";
-            await this._openPopup("sonarr", tmdb, tvdb, title);
+            try {
+              await this._openPopup("sonarr", tmdb, tvdb, title);
+            } catch (err) {
+              if (err?.message !== "no_id") {
+                console.warn("[arr-card] IS open error:", err);
+                return;
+              }
+              if (!this._popup?._sonarrSeries) return;
+              delete this._popup._loading;
+            }
             if (this._popup) {
+              this._popup._fromActivity = true;
               this._snIsInstance = inst;
               this._snIsOpen = true;
               this._snIsState = null;
@@ -15326,15 +15553,20 @@ var _WireActivityMethods = class {
               this._renderPopupEl();
             }
           } else {
-            const radarrLib = svc === "radarr2" ? this._radarr2 || [] : this._radarr || [];
-            const movie = radarrLib.find((m2) => m2.id === id);
-            const radarrId = movie?.id ?? id;
-            const tmdbId = movie?.tmdbId ? String(movie.tmdbId) : tmdb;
-            const inst = svc === "radarr2" ? "radarr2" : "radarr";
-            await this._openPopup("radarr", tmdbId, null, title, radarrId);
-            if (this._popup) {
-              this._isInstance = inst;
-              this._fetchInteractiveSearch(radarrId, inst);
+            try {
+              const radarrLib = svc === "radarr2" ? this._radarr2 || [] : this._radarr || [];
+              const movie = radarrLib.find((m2) => m2.id === id);
+              const radarrId = movie?.id ?? id;
+              const tmdbId = movie?.tmdbId ? String(movie.tmdbId) : tmdb;
+              const inst = svc === "radarr2" ? "radarr2" : "radarr";
+              await this._openPopup("radarr", tmdbId, null, title, radarrId);
+              if (this._popup) {
+                this._popup._fromActivity = true;
+                this._isInstance = inst;
+                this._fetchInteractiveSearch(radarrId, inst);
+              }
+            } catch (err) {
+              if (err?.message !== "no_id") console.warn("[arr-card] IS open error:", err);
             }
           }
           return;
@@ -15363,41 +15595,31 @@ var _WireActivityMethods = class {
           }
           return;
         }
-        const unmonitorBtn = e.target.closest(".act-missing-unmonitor-btn");
-        if (unmonitorBtn) {
-          const id = Number(unmonitorBtn.dataset.id);
-          const svc = unmonitorBtn.dataset.svc;
-          const origHtml = unmonitorBtn.innerHTML;
-          unmonitorBtn.disabled = true;
-          unmonitorBtn.textContent = "\u2026";
-          try {
-            if (svc === "radarr" || svc === "radarr2") {
-              const movie = (this[svc === "radarr2" ? "_radarr2" : "_radarr"] || []).find((m2) => m2.id === id) || { id };
-              await this._callApi("PUT", `arr_stack/${svc}/movie/${id}`, { ...movie, monitored: false });
-            } else {
-              const series = (this[svc === "sonarr2" ? "_sonarr2" : "_sonarr"] || []).find((s) => s.id === id) || { id };
-              await this._callApi("PUT", `arr_stack/${svc}/series/${id}`, { ...series, monitored: false });
-            }
-            await this._actLoadTab("missing", modalEl);
-          } catch {
-            unmonitorBtn.innerHTML = origHtml;
-            unmonitorBtn.disabled = false;
-          }
-          return;
-        }
         const pBtn = e.target.closest("[data-act-missing-page]");
         if (pBtn) {
           const m2 = this._activityModal;
           const c = this._actMissingCache;
-          const all = [...c?.rRecs || [], ...c?.sRecs || []];
-          const tot = Math.max(1, Math.ceil(all.length / m2.missingPerPage));
+          const fSvc = m2.missingFilterSvc || "all";
+          const fProf = m2.missingFilterProfile || "all";
+          const fMon = m2.missingFilterMonitored || "all";
+          const mSrch = (m2.missingSearch || "").toLowerCase().trim();
+          const allRows = [
+            ...(c?.rRecs || []).map((r) => ({ _svc: r._inst || "radarr", _profile: r._profileName || "", _monitored: r.monitored ?? true, _title: r.title || "" })),
+            ...(c?.sRecs || []).map((s) => ({ _svc: s._inst || "sonarr", _profile: s._profileName || "", _monitored: s.monitored ?? true, _title: s.title || "" }))
+          ];
+          const filteredLen = allRows.filter((r) => {
+            if (fSvc !== "all" && r._svc !== fSvc) return false;
+            if (fProf !== "all" && r._profile !== fProf) return false;
+            if (fMon !== "all" && (fMon === "monitored" ? !r._monitored : r._monitored)) return false;
+            if (mSrch && !r._title.toLowerCase().includes(mSrch)) return false;
+            return true;
+          }).length;
+          const tot = Math.max(1, Math.ceil(filteredLen / m2.missingPerPage));
           const p = pBtn.dataset.actMissingPage;
           const cur = m2.missingPage;
           const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
           if (np !== cur) {
-            m2.missingPage = np;
-            this._actSetBodyHtml(body, this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], np, m2.missingPerPage, m2.missingCols));
-            this._wireActBody(body, modalEl, "missing");
+            this._actRenderMissing(body, modalEl, np, true);
           }
         }
       }, { signal });
@@ -15700,9 +15922,10 @@ var _WireActivityMethods = class {
     body.innerHTML = html;
     requestAnimationFrame(() => {
       const clip = body.querySelector("[data-act-clip]");
-      if (!clip) return;
+      if (!clip || clip.hasAttribute("data-act-notrim")) return;
       const clipBottom = clip.getBoundingClientRect().bottom;
       clip.querySelectorAll("tbody tr").forEach((row) => {
+        if (row.dataset.actSeason !== void 0) return;
         if (row.getBoundingClientRect().bottom > clipBottom + 1) row.remove();
       });
       if (!clip.querySelector("table")) {
@@ -15879,6 +16102,7 @@ var _WireActivityMethods = class {
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
     const cols = m.missingCols;
     const ALL_COLS = [
+      { id: "monitored", label: this._t("actColMonitored") },
       { id: "source", label: this._t("actColSource") },
       { id: "year", label: this._t("actColYear") },
       { id: "profile", label: this._t("actColProfile") },
@@ -15908,8 +16132,7 @@ var _WireActivityMethods = class {
         const body = actModal?.querySelector("#act-body");
         const c = this._actMissingCache;
         if (body && c) {
-          this._actSetBodyHtml(body, this._actMissingTabHtml(c.rRecs || [], c.sRecs || [], m.missingPage, m.missingPerPage, cols));
-          this._wireActBody(body, actModal, "missing");
+          this._actRenderMissing(body, actModal);
         }
       });
     });
@@ -15921,6 +16144,158 @@ var _WireActivityMethods = class {
       }
     };
     setTimeout(() => this.shadowRoot.addEventListener("click", closeHandler, true), 0);
+  }
+  async _openSeasonIsOverlay(seriesId, svc, seasonNumber, seriesTitle) {
+    this.shadowRoot.querySelector("[data-season-is-modal]")?.remove();
+    const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
+    const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const seasonLbl = `S${String(seasonNumber).padStart(2, "0")}`;
+    const isSvgSm = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+    const asSvgSm = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `<div class="popup-overlay${dayClass}" data-season-is-modal style="z-index:1100">
+      <div class="popup-glass" style="width:min(900px,94vw);max-height:88vh;display:flex;flex-direction:column">
+        <div class="is-panel-hdr" style="padding:14px 20px 12px;gap:10px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(seriesTitle)} \u2014 ${seasonLbl}</div>
+          </div>
+          <button class="popup-close" id="sis-close" style="position:relative;top:0;right:0;flex-shrink:0">${closeSvg}</button>
+        </div>
+        <div id="sis-body" class="popup-body" style="overflow-y:auto;flex:1;padding:0 20px 18px">
+          <div class="is-loading"><span>${this._t("loading")}</span></div>
+        </div>
+      </div>
+    </div>`;
+    const el = wrap.firstElementChild;
+    this.shadowRoot.appendChild(el);
+    el.querySelector("#sis-close")?.addEventListener("click", () => el.remove());
+    el.addEventListener("click", (e) => {
+      if (e.target === el) el.remove();
+    });
+    const body = el.querySelector("#sis-body");
+    try {
+      const episodes = await this._callApi("GET", `arr_stack/${svc}/episodes?seriesId=${seriesId}&seasonNumber=${seasonNumber}`);
+      const epList = (Array.isArray(episodes) ? episodes : []).sort((a, b) => a.episodeNumber - b.episodeNumber);
+      if (!epList.length) {
+        body.innerHTML = `<div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">${this._t("actNoFiles")}</div>`;
+        return;
+      }
+      const fmtDate = (d) => {
+        if (!d) return "";
+        try {
+          return new Date(d).toLocaleDateString(void 0, { month: "short", day: "numeric", year: "numeric" });
+        } catch {
+          return d;
+        }
+      };
+      const rowsHtml = epList.map((ep) => {
+        const epCode = `S${String(ep.seasonNumber).padStart(2, "0")}E${String(ep.episodeNumber).padStart(2, "0")}`;
+        const epDate = fmtDate(ep.airDate);
+        return `<div data-sis-ep="${ep.id}" style="padding:8px 0;border-bottom:1px solid var(--is-divider)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;font-weight:700;color:${ep.hasFile ? "var(--is-green)" : "var(--is-text-muted)"};min-width:55px;flex-shrink:0">${epCode}</span>
+            <span style="flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(ep.title || "\u2014")}</span>
+            ${epDate ? `<span style="font-size:10px;color:var(--is-text-muted);flex-shrink:0">${epDate}</span>` : ""}
+            <div style="display:flex;gap:4px;flex-shrink:0">
+              <button class="sis-ep-is-btn" data-ep-id="${ep.id}" data-svc="${svc}" title="IS" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>
+              <button class="sis-ep-as-btn" data-ep-id="${ep.id}" data-svc="${svc}" title="AS" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>
+            </div>
+          </div>
+          <div class="sis-ep-releases" data-ep-id="${ep.id}" style="display:none;margin-top:6px;padding:8px;background:rgba(99,140,255,0.06);border-radius:6px"></div>
+        </div>`;
+      }).join("");
+      body.innerHTML = rowsHtml;
+      body.addEventListener("click", async (e) => {
+        const isBtn = e.target.closest(".sis-ep-is-btn");
+        if (isBtn) {
+          const epId = isBtn.dataset.epId;
+          const epSvc = isBtn.dataset.svc;
+          const panel = body.querySelector(`.sis-ep-releases[data-ep-id="${epId}"]`);
+          if (!panel) return;
+          const isOpen = panel.style.display !== "none";
+          body.querySelectorAll(".sis-ep-releases").forEach((p) => {
+            p.style.display = "none";
+            p.innerHTML = "";
+          });
+          if (isOpen) return;
+          panel.style.display = "block";
+          panel.innerHTML = `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
+          try {
+            const releases = await this._callApi("GET", `arr_stack/${epSvc}/release?episodeId=${epId}`);
+            this._renderSisEpReleases(panel, epSvc, releases || []);
+          } catch {
+            panel.innerHTML = `<div style="text-align:center;color:rgba(255,100,100,0.8);padding:12px;font-size:11px">${this._t("actNoFiles")}</div>`;
+          }
+          return;
+        }
+        const asBtn = e.target.closest(".sis-ep-as-btn");
+        if (asBtn) {
+          const epId = Number(asBtn.dataset.epId);
+          const epSvc = asBtn.dataset.svc;
+          const origHtml = asBtn.innerHTML;
+          asBtn.disabled = true;
+          asBtn.textContent = "\u2026";
+          try {
+            await this._callApi("POST", `arr_stack/${epSvc}/command`, { name: "EpisodeSearch", episodeIds: [epId] });
+            asBtn.textContent = "\u2713";
+            asBtn.style.color = "rgba(80,200,100,0.9)";
+          } catch {
+            asBtn.innerHTML = origHtml;
+          } finally {
+            asBtn.disabled = false;
+          }
+          return;
+        }
+        const grabBtn = e.target.closest(".sis-grab-btn");
+        if (grabBtn) {
+          const idx = Number(grabBtn.dataset.idx);
+          const epSvc = grabBtn.dataset.svc;
+          const panel = grabBtn.closest(".sis-ep-releases");
+          if (!panel || !panel._releases || !panel._releases[idx]) return;
+          grabBtn.disabled = true;
+          grabBtn.textContent = "\u2026";
+          try {
+            await this._callApi("POST", `arr_stack/${epSvc}/release`, panel._releases[idx]);
+            grabBtn.textContent = "\u2713";
+            grabBtn.style.color = "rgba(80,200,100,0.9)";
+            grabBtn.style.background = "rgba(80,200,100,0.15)";
+          } catch {
+            grabBtn.textContent = "!";
+            grabBtn.style.color = "rgba(255,100,100,0.9)";
+          }
+        }
+      });
+    } catch (err) {
+      console.error("[arr-card] Season IS error:", err);
+      body.innerHTML = `<div style="text-align:center;color:rgba(255,100,100,0.8);padding:32px 20px">Failed to load episodes</div>`;
+    }
+  }
+  _renderSisEpReleases(panel, svc, releases) {
+    if (!releases.length) {
+      panel.innerHTML = `<div style="text-align:center;color:var(--is-text-muted);font-size:11px;padding:8px">${this._t("actNoFiles")}</div>`;
+      return;
+    }
+    panel._releases = releases;
+    const rows = releases.slice(0, 30).map((rel, i) => {
+      const title = rel.title || rel.releaseTitle || "\u2014";
+      const quality = rel.quality?.quality?.name || "\u2014";
+      const size = rel.size ? this._actFmtSize(rel.size) : "\u2014";
+      const seeders = rel.seeders != null ? rel.seeders : null;
+      const seederHtml = seeders != null ? `<span style="font-size:9px;color:rgba(80,200,100,0.8)">${seeders}S</span>` : "";
+      const sep = i > 0 ? "border-top:1px solid var(--is-divider);" : "";
+      return `<div style="${sep}display:flex;align-items:center;gap:6px;padding:5px 0">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(title)}</div>
+          <div style="display:flex;gap:5px;margin-top:2px">
+            <span style="font-size:9px;color:var(--is-text-muted)">${quality}</span>
+            <span style="font-size:9px;color:var(--is-text-muted)">${size}</span>
+            ${seederHtml}
+          </div>
+        </div>
+        <button class="sis-grab-btn" data-idx="${i}" data-svc="${svc}" style="flex-shrink:0;height:22px;padding:0 8px;font-size:10px;font-weight:700;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">Grab</button>
+      </div>`;
+    }).join("");
+    panel.innerHTML = rows;
   }
   async _submitManualImport(candidates, indices, svc, overlayEl, modalEl) {
     const isRadarr = svc === "radarr" || svc === "radarr2";
