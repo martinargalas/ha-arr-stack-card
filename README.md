@@ -234,6 +234,10 @@ categories:
     enabled: true
   - id: tautulli
     enabled: true
+  - id: jellystat
+    enabled: true
+  - id: activity
+    enabled: true
 
 # Security
 security:
