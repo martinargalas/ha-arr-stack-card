@@ -118,6 +118,7 @@ Live view of your download queue, history, and blocklist across Radarr and Sonar
 - **Queue** — active downloads with progress, quality, size, time left, custom formats, and status. Manual Import for stuck items, one-click remove with optional blocklist.
 - **History** — completed and failed grabs with search and filters by source, quality, and custom formats.
 - **Blocklist** — blocked releases with source, indexer, and quality info. Remove individual entries.
+- **Missing** — movies and series with no file, filterable by instance (Radarr / Radarr 2 / Sonarr / Sonarr 2), quality profile, and monitoring status. Per-series monitoring type dropdown, season-level Monitor/Unmonitor, and Interactive Search / Auto Search per series and season.
 
 Column visibility is configurable per tab. All tables support sorting and search. Only visible to HA admins.
 
