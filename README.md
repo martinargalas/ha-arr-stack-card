@@ -113,14 +113,14 @@ The card reads active sessions from `media_player.plex_*` and `media_player.jell
 
 #### Activity Queue
 
-Live view of your download queue, history, and blocklist across Radarr and Sonarr.
+Four-tab activity panel covering everything happening across your Radarr and Sonarr instances. Admin-only.
 
-- **Queue** — active downloads with progress, quality, size, time left, custom formats, and status. Manual Import for stuck items, one-click remove with optional blocklist.
-- **History** — completed and failed grabs with search and filters by source, quality, and custom formats.
-- **Blocklist** — blocked releases with source, indexer, and quality info. Remove individual entries.
-- **Missing** — movies and series with no file, filterable by instance (Radarr / Radarr 2 / Sonarr / Sonarr 2), quality profile, and monitoring status. Per-series monitoring type dropdown, season-level Monitor/Unmonitor, and Interactive Search / Auto Search per series and season.
+- **Queue** — see what's downloading right now. Progress bars, quality, ETA, custom formats. Stuck item? Manual Import or one-click remove with optional blocklist.
+- **History** — recent grabs and imports. Filter by event type, source, or quality.
+- **Blocklist** — manage blocked releases.
+- **Missing** — everything without a file. Filter by instance, quality profile, or monitoring status. Adjust monitoring per series or per season, and trigger Interactive / Auto Search without leaving the panel.
 
-Column visibility is configurable per tab. All tables support sorting and search. Only visible to HA admins.
+Each tab supports sorting, search, and configurable columns.
 
 #### Statistics (Tautulli / Jellystat)
 
