@@ -124,13 +124,13 @@ Each tab supports sorting, search, and configurable columns.
 
 #### Statistics (Tautulli / Jellystat)
 
+Playback statistics pulled from Tautulli or Jellystat (configure either or both). Admin-only.
+
 - Watch history with search and filters
 - Play count and duration charts by day, day of week, hour, and media type
 - Stream type breakdown and concurrent stream graph
 - Per-user and per-library statistics
-- **Account sharing detection** — warns when the same account streams from multiple IPs; configurable threshold and history depth; acknowledge known IPs per user
-
-Both Tautulli and Jellystat are supported — configure either or both in the integration.
+- **Account sharing detection** — flags when the same account streams from multiple IPs simultaneously; configurable threshold and history depth; acknowledge known IPs per user
 
 ### Appearance & UX
 
