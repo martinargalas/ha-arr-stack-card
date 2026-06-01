@@ -2235,8 +2235,10 @@ var STYLES = `
       .popup-body--search { overflow: hidden; }
       .popup-body--search .popup-content { flex-shrink: 0; }
       .popup-body--search .is-panel { flex: 1; max-height: none; min-height: 160px; padding-bottom: 12px; overflow: hidden; }
-      .popup-body--search .is-results-wrap { overflow: hidden; }
-      .popup-body--search .sn-is-panel { flex: 1; max-height: none; min-height: 160px; }
+      .popup-body--search .is-panel .is-results-wrap { overflow: hidden; }
+      .popup-body--search .sn-is-panel { min-height: 160px; }
+      /* Sonarr IS only \u2014 body scrolls so nested episode IS panel is reachable */
+      .popup-body--sn-is { overflow-y: auto !important; }
 
       .popup-close {
         position: absolute;
@@ -3499,6 +3501,10 @@ var _InteractiveSearch = class {
         if (!radarrId) throw new Error(this._t("isNoRadarrId"));
         if (instance === "radarr2") this._popup._radarr2Id = radarrId;
         else this._popup._radarrId = radarrId;
+        if (tmdbId) {
+          this._pendingRequestedMovies.add(String(tmdbId));
+          this._render();
+        }
       }
       const [data, histRaw] = await Promise.all([
         this._hass.callApi("GET", `arr_stack/${svc}/release?movieId=${radarrId}`),
@@ -3578,7 +3584,8 @@ var _SonarrIS = class {
   // Seasons list
   // ─────────────────────────────────────────────
   _renderSnSeasonsView() {
-    const series = this._popup?._sonarrSeries;
+    const _snInst = this._snIsInstance || "sonarr";
+    const series = _snInst === "sonarr2" ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
     if (!series) {
       const checkSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
       const crossSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
@@ -5566,6 +5573,8 @@ var _FetchMethods = class {
         ) || added;
         if (found) d._sonarrSeries = found;
       }
+      if (tvdbId) this._pendingRequestedShows.add(String(tvdbId));
+      this._render();
       this._asState = "seasons";
     } catch (e) {
       this._asState = "error";
@@ -5601,6 +5610,7 @@ var _FetchMethods = class {
         this._sonarr = (this._sonarr || []).map((s) => s.id === seriesId ? updated : s);
         d._sonarrSeries = updated;
       }
+      this._render();
       await Promise.all([
         this._callApi("POST", `arr_stack/${svc}/command`, { name: "SeasonSearch", seriesId, seasonNumber }),
         new Promise((r) => setTimeout(r, 1e3))
@@ -10442,9 +10452,10 @@ var _PopupMethods = class {
           this._snActiveIs = null;
           this._snIsState = null;
           if (!this._snEpisodes.has(n)) {
-            const activeSeries = this._snIsInstance === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
+            const epInst = this._asOpen ? this._asInstance : this._snIsInstance;
+            const activeSeries = epInst === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
             const sid = activeSeries?.id;
-            if (sid) this._fetchSonarrEpisodes(sid, n, this._snIsInstance);
+            if (sid) this._fetchSonarrEpisodes(sid, n, epInst);
           }
         }
         this._renderPopupEl();
@@ -10459,14 +10470,15 @@ var _PopupMethods = class {
         } else {
           this._snActiveIs = { type: "season", key: n };
           this._snExpandedSeasons.clear();
-          const activeSn = this._snIsInstance === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
+          const snInst_s = this._asOpen ? this._asInstance : this._snIsInstance;
+          const activeSn = snInst_s === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
           const sid = activeSn?.id;
           if (sid) {
             if (isMobile) {
               this._renderPopupEl();
-              this._fetchSonarrSeasonIS(sid, n, this._snIsInstance);
+              this._fetchSonarrSeasonIS(sid, n, snInst_s);
             } else {
-              this._fetchSonarrSeasonIS(sid, n, this._snIsInstance);
+              this._fetchSonarrSeasonIS(sid, n, snInst_s);
             }
           }
         }
@@ -10490,14 +10502,15 @@ var _PopupMethods = class {
             epNum: ep?.episodeNumber ?? 0,
             label: ep?.title || ""
           };
-          const activeSnEp = this._snIsInstance === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
+          const snInst_ep = this._asOpen ? this._asInstance : this._snIsInstance;
+          const activeSnEp = snInst_ep === "sonarr2" ? this._popup._sonarr2Series : this._popup._sonarrSeries;
           const sid = activeSnEp?.id;
           if (sid) {
             if (isMobile) {
               this._renderPopupEl();
-              this._fetchSonarrEpIS(epId, sid, this._snIsInstance);
+              this._fetchSonarrEpIS(epId, sid, snInst_ep);
             } else {
-              this._fetchSonarrEpIS(epId, sid, this._snIsInstance);
+              this._fetchSonarrEpIS(epId, sid, snInst_ep);
             }
           }
         }
@@ -11200,7 +11213,7 @@ var _PopupMethods = class {
       <div class="popup-glass${wideClass}"${glassStyle}>
         <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         ${backdropEl}
-        <div class="popup-body${searchActive ? " popup-body--search" : ""}">
+        <div class="popup-body${searchActive ? " popup-body--search" : ""}${snIsActive && !isActive && !asActive ? " popup-body--sn-is" : ""}">
           <div class="popup-content"${searchActive ? ' style="padding-top:52px"' : ""}>
             ${posterHtmlFinal}
             <div class="popup-meta">
@@ -11393,6 +11406,8 @@ var _PopupMethods = class {
       ) || added;
       if (!refreshed) throw new Error(this._t("snNoSonarrId"));
       this._popup._sonarrSeries = refreshed;
+      if (tvdbId) this._pendingRequestedShows.add(String(tvdbId));
+      this._render();
       this._snIsState = null;
     } catch (e) {
       this._snIsState = "error";
@@ -16471,6 +16486,8 @@ var ArrStackCard = class extends HTMLElement {
     this._sonarr2ImportDates = {};
     this._sonarrImportEps = {};
     this._sonarr2ImportEps = {};
+    this._pendingRequestedShows = /* @__PURE__ */ new Set();
+    this._pendingRequestedMovies = /* @__PURE__ */ new Set();
     this._searchQuery = "";
     this._searchResults = [];
     this._searchPage = 0;
@@ -16894,11 +16911,13 @@ var ArrStackCard = class extends HTMLElement {
     const _rq2A = this._radarr2QueueActive || /* @__PURE__ */ new Set();
     const _snQ = this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
     const _snQ2 = this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map();
+    const _pM = this._pendingRequestedMovies || /* @__PURE__ */ new Set();
+    const _pS = this._pendingRequestedShows || /* @__PURE__ */ new Set();
     const _now = (/* @__PURE__ */ new Date()).toISOString();
-    const movies = (this._radarr || []).filter((m) => (m.monitored || _rqA.has(m.id)) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.added || "" }));
-    const movies2 = (this._radarr2 || []).filter((m) => (m.monitored || _rq2A.has(m.id)) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _isRadarr2: true, _sortDate: m.added || "" }));
-    const shows = (this._sonarr || []).filter((s) => (s.monitored || _snQ.has(s.id)) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _sortDate: _snQ.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
-    const shows2 = (this._sonarr2 || []).filter((s) => (s.monitored || _snQ2.has(s.id)) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ2.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _isSonarr2: true, _sortDate: _snQ2.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
+    const movies = (this._radarr || []).filter((m) => (m.monitored || _rqA.has(m.id) || _pM.has(String(m.tmdbId))) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.added || "" }));
+    const movies2 = (this._radarr2 || []).filter((m) => (m.monitored || _rq2A.has(m.id) || _pM.has(String(m.tmdbId))) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _isRadarr2: true, _sortDate: m.added || "" }));
+    const shows = (this._sonarr || []).filter((s) => (s.monitored || _snQ.has(s.id) || _pS.has(String(s.tvdbId))) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _sortDate: _snQ.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
+    const shows2 = (this._sonarr2 || []).filter((s) => (s.monitored || _snQ2.has(s.id) || _pS.has(String(s.tvdbId))) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ2.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _isSonarr2: true, _sortDate: _snQ2.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
     const _isDlMovie = (m) => m._isRadarr2 ? _rq2A.has(m.id) : _rqA.has(m.id);
     const _isDlShow = (s) => s._isSonarr2 ? _snQ2.has(s.id) : _snQ.has(s.id);
     const movieMap = /* @__PURE__ */ new Map();
