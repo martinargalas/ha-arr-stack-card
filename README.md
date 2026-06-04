@@ -77,7 +77,7 @@ Services not configured in the integration are hidden automatically.
 
 The left panel shows your download managers. Each section only appears if that service is configured in the integration — if you only use qBittorrent, SABnzbd won't show up, and vice versa.
 
-- **qBittorrent** — active torrents with progress, speed, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed.
+- **qBittorrent** — active torrents with download and upload speed, progress, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Total speed chip shows combined download and upload across all active torrents.
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
 - **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Root folders on the same physical disk are automatically deduplicated (by free space) and their paths combined (e.g. `movies · tv`). If your media is spread across multiple disks, each disk appears as a separate card — use the chevron arrows to page through them. The card defaults to showing the disk that matches your SABnzbd download directory.
 
@@ -99,7 +99,7 @@ Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popu
 #### Discovery
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
-- One-click or profile-based media requests directly to Radarr/Sonarr
+- One-click or profile-based media requests directly to Radarr/Sonarr. **Automatic Search** shows a spinner while Radarr searches indexers, then confirms download started or shows "Not found" if nothing was grabbed.
 - **With Overseerr / Jellyseerr (optional):** approve and decline pending requests, family accounts with per-user request management
 
 #### Now Playing (Plex / Jellyfin)
@@ -194,6 +194,8 @@ type: custom:arr-stack-card
 # General
 localisation: en             # en | cs  (default: en)
 layout: both                 # both | left | right  (default: both)
+swap_sides: false            # swap left and right panels  (default: false)
+                             # Note: on mobile, right panel moves above left. Set sticky_nav_offset ~2000 for nav to appear immediately.
 sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (default: 100)
 
 # Download managers (left panel)
@@ -283,7 +285,7 @@ styles:
 | `tvUpcoming` | New Shows |
 | `trending` | Trending |
 | `popular` | Popular Movies |
-| `calendar` | Sonarr episode calendar |
+| `calendar` | New Episodes — upcoming episodes from all Sonarr instances |
 | `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
 | `tautulli` | Statistics (Plex / Tautulli) |
 | `jellystat` | Statistics (Jellyfin / Jellystat) |
