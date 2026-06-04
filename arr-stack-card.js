@@ -152,6 +152,14 @@ var ArrStackCardEditor = class extends HTMLElement {
           </select>
         </div>
         <div class="row">
+          <span class="row-label">Swap sides</span>
+          <label class="toggle">
+            <input type="checkbox" data-key="swap_sides" ${this._val("swap_sides", false) ? "checked" : ""}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        ${this._val("swap_sides", false) ? `<div class="hint">Media panel is taller \u2014 set Sticky nav offset to ~2000 for the nav to appear immediately on mobile.</div>` : ""}
+        <div class="row">
           <span class="row-label">Sticky nav offset (px)</span>
           <input type="number" data-key="sticky_nav_offset" value="${this._val("sticky_nav_offset", 100)}" min="0" max="500" step="10"/>
         </div>
@@ -329,6 +337,9 @@ var ArrStackCardEditor = class extends HTMLElement {
         const existing = this._config[el.dataset.group] || {};
         this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: el.value } });
       });
+    });
+    this.shadowRoot.querySelectorAll('input[type="checkbox"][data-key]').forEach((el) => {
+      el.addEventListener("change", () => this._update({ [el.dataset.key]: el.checked }));
     });
     this.shadowRoot.querySelectorAll('input[type="checkbox"][data-group]').forEach((el) => {
       el.addEventListener("change", () => {
@@ -520,6 +531,7 @@ var ARR_I18N = {
     asSearchSeries: "Hledat seri\xE1l",
     asMovieConfirm: "Film bude p\u0159id\xE1n do Radarru a spust\xED se automatick\xE9 vyhled\xE1v\xE1n\xED.",
     asSeriesConfirm: "Seri\xE1l bude p\u0159id\xE1n do Sonarru. Vyberte sez\xF3nu pro vyhled\xE1v\xE1n\xED.",
+    asNotFound: "Nenalezeno",
     asAdding: "P\u0159id\xE1v\xE1m\u2026",
     asSearching: "Spou\u0161t\xEDm vyhled\xE1v\xE1n\xED\u2026",
     asSearchDone: "Vyhled\xE1v\xE1n\xED spu\u0161t\u011Bno",
@@ -849,6 +861,7 @@ var ARR_I18N = {
     asSearchSeries: "Search Series",
     asMovieConfirm: "Movie will be added to Radarr and automatic search will start.",
     asSeriesConfirm: "Series will be added to Sonarr. Select a season to search.",
+    asNotFound: "Not found",
     asAdding: "Adding\u2026",
     asSearching: "Starting search\u2026",
     asSearchDone: "Search started",
@@ -1152,6 +1165,12 @@ var STYLES = `
         grid-template-columns: 2fr 3fr;
         gap: 12px;
         padding: 0 12px 8px;
+      }
+      .card-body.swap-sides { grid-template-columns: 3fr 2fr; }
+      .card-body.swap-sides .col-left  { order: 2; }
+      .card-body.swap-sides .col-right { order: 1; }
+      @media (max-width: 900px) {
+        .card-body.swap-sides { grid-template-columns: 1fr; }
       }
 
       /* \u2500\u2500 Glass outer panel \u2500\u2500 */
@@ -1568,7 +1587,7 @@ var STYLES = `
       /* Speed value pill (inline in torrent rows) */
       .g { padding: 0 7px; }
       /* Value pill in disk chips */
-      .pill-orange.dc-pill { padding: 1px 9px; font-size: 15px; font-weight: 800; }
+      .pill-orange.dc-pill { padding: 1px 6px; font-size: 13px; font-weight: 800; }
       /* Status pill in torrent rows */
       .status-pill { padding: 1px 8px; font-size: 10px; }
 
@@ -1578,6 +1597,7 @@ var STYLES = `
       .pf-orange { background: linear-gradient(90deg, rgba(255,149,0,0.7), #ffbb50); }
       .pf-red    { background: linear-gradient(90deg, rgba(255,69,58,0.7), #ff6b61); }
       .pf-green  { background: linear-gradient(90deg, rgba(48,209,88,0.7), #a8ffcb); }
+      .pf-teal   { background: linear-gradient(90deg, rgba(90,200,250,0.7), rgba(90,200,250,1)); }
 
       .dl-pct-err { color: var(--mac-red) !important; }
       .dm-err { display: flex; align-items: center; gap: 3px; }
@@ -2402,6 +2422,10 @@ var STYLES = `
       .popup-day .as-dl-bar-fill { background:rgba(37,99,235,0.75); }
       .is-btn-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; margin-top: 4px; height: 28px; overflow: visible; }
       .is-btn-row .is-open-btn { margin-top: 0; height: 28px; box-sizing: border-box; }
+      .is-btn-row .is-open-btn[data-action="search-pick-as"],
+      .is-btn-row .is-open-btn[data-action="search-pick-is"],
+      .is-btn-row .is-open-btn[data-action="search-pick-inst"],
+      .is-btn-row .is-open-btn[data-action="search-expand"] { width: 100px; justify-content: center; }
       .is-collapse-btn { padding: 0; width: 28px; height: 28px; border-radius: 50%; justify-content: center; flex-shrink: 0; }
 
       .is-admin-badge {
@@ -2788,6 +2812,10 @@ var STYLES = `
         /* badges stay on one row \u2014 clip overflow */
         .mc-badges { flex-wrap: nowrap; overflow: hidden; }
         .badge     { font-size: 9px; padding: 0 3px; flex-shrink: 0; }
+        .dl-r2 { gap: 5px; }
+        .status-pill { padding: 1px 6px; }
+        .dm { gap: 1px; }
+        .dm-eta { display: none; }
       }
 
       /* Small phone: mgrid 2 col */
@@ -4376,9 +4404,14 @@ var _FetchMethods = class {
     try {
       const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const end = new Date(Date.now() + 60 * 864e5).toISOString().split("T")[0];
-      const data = await this._callApi("GET", `arr_stack/sonarr/calendar?start=${today}&end=${end}`);
+      const fetches = [this._callApi("GET", `arr_stack/sonarr/calendar?start=${today}&end=${end}`).catch(() => [])];
+      if (this._sonarr2Configured !== false) {
+        fetches.push(this._callApi("GET", `arr_stack/sonarr2/calendar?start=${today}&end=${end}`).catch(() => []));
+      }
+      const results = await Promise.all(fetches);
+      const all = results.flat();
       const seen = /* @__PURE__ */ new Map();
-      for (const ep of data) {
+      for (const ep of all) {
         const sid = ep.seriesId;
         if (!seen.has(sid) || new Date(ep.airDate) < new Date(seen.get(sid).airDate)) {
           seen.set(sid, ep);
@@ -5467,6 +5500,8 @@ var _FetchMethods = class {
       } catch (e) {
         this._asState = "error";
         this._asError = e.message || this._t("isLoadError");
+        this._asOpen = false;
+        this._asState = null;
       }
       this._asMovieSearching = false;
       this._renderPopupEl();
@@ -5511,6 +5546,8 @@ var _FetchMethods = class {
       } catch (e) {
         this._asState = "error";
         this._asError = e.message || this._t("isLoadError");
+        this._asOpen = false;
+        this._asState = null;
       }
       this._renderPopupEl();
     }
@@ -5651,9 +5688,15 @@ var _FetchMethods = class {
   async _asPollForDownload(key, svc, movieOrSeriesId) {
     const isRadarr = svc === "radarr" || svc === "radarr2";
     const endpoint = `arr_stack/${svc}/queue`;
-    for (let i = 0; i < 5; i++) {
-      await new Promise((r) => setTimeout(r, 3e3));
-      if (!this._asOpen) return;
+    this._asPolling.add(key);
+    this._renderPopupEl();
+    const delays = [1e3, 2e3, 2e3, 2e3];
+    for (let i = 0; i < delays.length; i++) {
+      await new Promise((r) => setTimeout(r, delays[i]));
+      if (!this._asOpen) {
+        this._asPolling.delete(key);
+        return;
+      }
       try {
         const data = await this._callApi("GET", endpoint);
         const records = Array.isArray(data) ? data : data.records || [];
@@ -5662,12 +5705,26 @@ var _FetchMethods = class {
           return item.seriesId === movieOrSeriesId;
         });
         if (found) {
+          this._asPolling.delete(key);
           this._asDownloadingItems.add(key);
+          this._asOpen = false;
+          this._asState = null;
           this._renderPopupEl();
           return;
         }
       } catch (_) {
       }
+    }
+    this._asPolling.delete(key);
+    if (this._asOpen) {
+      this._asNotFound.add(key);
+      this._renderPopupEl();
+      setTimeout(() => {
+        this._asNotFound.delete(key);
+        this._asOpen = false;
+        this._asState = null;
+        this._renderPopupEl();
+      }, 5e3);
     }
   }
   async _fetchActivityHistory() {
@@ -5759,10 +5816,12 @@ var _RenderLeft = class {
       return gb >= 1024 ? (gb / 1024).toFixed(1) + " TB" : gb.toFixed(1) + " GB";
     };
     const qbitSpeedBytes = this._qbitConfigured ? this._qbitTransfer.dl_info_speed || 0 : 0;
+    const qbitUpBytes = this._qbitConfigured ? this._qbitTransfer.up_info_speed || 0 : 0;
     const sabKbps = this._sabConfigured ? parseFloat(this._sab.kbpersec) || 0 : 0;
     const sabSpeedBytes = sabKbps * 1024;
     const combinedSpeed = qbitSpeedBytes + sabSpeedBytes;
     const combinedStr = this.fmtSpeed(combinedSpeed);
+    const combinedUpStr = this.fmtSpeed(qbitUpBytes);
     let speedSub = "";
     if (this._qbitConfigured && this._sabConfigured) {
       speedSub = `qBit ${this.fmtSpeed(qbitSpeedBytes)} \xB7 SAB ${this.fmtSpeed(sabSpeedBytes)}`;
@@ -5860,8 +5919,11 @@ var _RenderLeft = class {
     const speedChip = `
     <div class="disk-chip" style="${speedStyle}">
       <div class="dc-label">${this._t("totalSpeed")}</div>
-      <div class="dc-val"><span class="g" style="font-size:15px;font-weight:800;padding:2px 10px"><ha-icon icon="mdi:download" style="--mdc-icon-size:14px"></ha-icon> ${combinedStr}</span></div>
-      <div class="dc-sub">${speedSub}</div>
+      <div class="dc-val" style="display:flex;gap:6px;align-items:center">
+        <span class="g" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:download" style="--mdc-icon-size:13px"></ha-icon> ${combinedStr}</span>
+        ${this._qbitConfigured ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ""}
+      </div>
+      <div class="dc-sub speed-chip-sub">${speedSub}</div>
     </div>`;
     return `<div class="disk-row">${speedChip}${diskChip}</div>`;
   }
@@ -5927,7 +5989,7 @@ var _RenderLeft = class {
     if (isActiveUpload) {
       speedCol = this._pill("pill-teal", "mdi:upload", upSpeed);
     } else if (isStalledSeed) {
-      speedCol = this._pill("pill-teal", "mdi:upload-off", this._t("seeding"), "opacity:0.65");
+      speedCol = this._pill("pill-teal", "mdi:upload", upSpeed);
     } else if (isCompleted) {
       speedCol = this._pill("pill-green", "mdi:check-circle", this._t("complete"));
     } else if (isError) {
@@ -5935,9 +5997,9 @@ var _RenderLeft = class {
     } else if (isStalledDL) {
       speedCol = this._pill("pill-orange", "mdi:alert", this._t("stalled"));
     } else {
-      speedCol = `<span class="dm"><b class="g" style="font-size:13px"><span style="display:inline-block;transform:translateY(-4px)"><ha-icon icon="mdi:download" style="--mdc-icon-size:12px"></ha-icon></span> ${dlSpeed}</b></span>`;
+      speedCol = this._pill("pill-green", "mdi:download", dlSpeed);
     }
-    const pbarClass = isError ? "pf-red" : isStalledDL ? "pf-orange" : isCompleted ? "pf-green" : "pf-blue";
+    const pbarClass = isError ? "pf-red" : isStalledDL ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
     const hash = t.hash || "";
     const isPaused = state === "pausedDL" || state === "pausedUP" || state === "stoppedDL" || state === "stoppedUP";
     let actionBtns = "";
@@ -5966,7 +6028,8 @@ var _RenderLeft = class {
       </div>
       <div class="dl-r2">
         ${speedCol}
-        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        ${!isCompleted && !isError && !isStalledDL ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
+        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
         <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
         <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span>
@@ -6099,7 +6162,7 @@ var _RenderLeft = class {
         ${isDownloading ? `<span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>` : ""}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
       </div>
-      <div class="pbar"><div class="pbar-fill pf-orange" style="width:${pct}%"></div></div>
+      <div class="pbar"><div class="pbar-fill ${status === "Failed" ? "pf-red" : status === "Completed" ? "pf-green" : ["Checking", "Verifying", "Extracting", "Repairing"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange"}" style="width:${pct}%"></div></div>
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -10262,6 +10325,8 @@ var _PopupMethods = class {
         this._asOpen = false;
         this._asExpanded = false;
         this._asState = null;
+        this._asMovieSearched = false;
+        this._asNotFound = /* @__PURE__ */ new Set();
       };
       const _closeIS = () => {
         this._isState = null;
@@ -10987,6 +11052,9 @@ var _PopupMethods = class {
     const snInLib1 = _se1?.statistics?.episodeFileCount > 0;
     const snInLib2 = _se2?.statistics?.episodeFileCount > 0;
     const asActive = this._asOpen;
+    const _isMovieType = d._type === "radarr" || d._type === "movie";
+    const asMovieActive = asActive && _isMovieType;
+    const asSonarrActive = asActive && !_isMovieType;
     const _asLoading = (inst) => this._asInstance === inst && (this._asMovieSearching || asActive && this._asState === "adding");
     const _asDone = (inst) => this._asInstance === inst && (this._asState === "done" || this._asMovieSearched);
     const _asErr = (inst) => this._asInstance === inst && this._asState === "error";
@@ -11012,7 +11080,7 @@ var _PopupMethods = class {
       const collapseBtn = `<button class="is-open-btn is-collapse-btn" data-action="search-collapse" title="Close">${collXSvg}</button>`;
       if (!se) {
         searchBtnHtml = `<div class="is-btn-row">
-        <button class="is-open-btn" data-action="search-expand">
+        <button class="is-open-btn is-search-btn" data-action="search-expand">
           ${searchSvg} Search
         </button>
       </div>`;
@@ -11040,10 +11108,15 @@ var _PopupMethods = class {
         } else {
           const asPickActive = this._asOpen;
           const isPickActive = !!(this._isState || this._snIsOpen);
-          const asPickIcon = this._asMovieSearching || this._asOpen && this._asState === "adding" ? _asSpinner : searchSvg;
+          const _asKey1 = `movie:${this._asInstance || "radarr"}`;
+          const _asPolling1 = this._asPolling.has(_asKey1);
+          const _asIcon1 = _asPolling1 || this._asMovieSearching || this._asOpen && this._asState === "adding" ? _asSpinner : searchSvg;
+          const _asNotFound1 = this._asNotFound.has(_asKey1);
+          const _asDownload1 = this._asDownloadingItems.has(_asKey1);
+          const _asBtnContent1 = _asNotFound1 ? `${searchSvg} <span style="font-size:9px;padding:1px 5px;border-radius:999px;background:rgba(255,149,0,0.25);border:1px solid rgba(255,149,0,0.55);color:rgba(255,149,0,1);white-space:nowrap">${this._t("asNotFound")}</span>` : _asDownload1 ? `${_asIcon1} Automatic <span style="font-size:9px;padding:1px 5px;border-radius:999px;background:rgba(48,209,88,0.3);border:1px solid rgba(48,209,88,0.6);color:rgba(48,209,88,1)">\u2193</span>` : `${_asIcon1} Automatic`;
           searchBtnHtml = `<div class="is-btn-row">
           <button class="is-open-btn${asPickActive ? " active" : ""}" data-action="search-pick-as">
-            ${asPickIcon} Automatic
+            ${_asBtnContent1}
           </button>
           <button class="is-open-btn${isPickActive ? " active" : ""}" data-action="search-pick-is">
             ${personIconSvg} Interactive
@@ -11055,10 +11128,15 @@ var _PopupMethods = class {
         const pickedInst = this._searchPickInst;
         const asPickActive = this._asOpen && this._asInstance === pickedInst;
         const isPickActive = isMovieType ? !!this._isState && this._isInstance === pickedInst : this._snIsOpen && this._snIsInstance === pickedInst;
-        const asPickIcon = this._asMovieSearching || this._asOpen && this._asState === "adding" ? _asSpinner : searchSvg;
+        const _asKey2 = `movie:${pickedInst}`;
+        const _asPolling2 = this._asPolling.has(_asKey2);
+        const _asIcon2 = _asPolling2 || this._asMovieSearching || this._asOpen && this._asState === "adding" ? _asSpinner : searchSvg;
+        const _asNotFound2 = this._asNotFound.has(_asKey2);
+        const _asDownload2 = this._asDownloadingItems.has(_asKey2);
+        const _asBtnContent2 = _asNotFound2 ? `${searchSvg} <span style="font-size:9px;padding:1px 5px;border-radius:999px;background:rgba(255,149,0,0.25);border:1px solid rgba(255,149,0,0.55);color:rgba(255,149,0,1);white-space:nowrap">${this._t("asNotFound")}</span>` : _asDownload2 ? `${_asIcon2} Automatic <span style="font-size:9px;padding:1px 5px;border-radius:999px;background:rgba(48,209,88,0.3);border:1px solid rgba(48,209,88,0.6);color:rgba(48,209,88,1)">\u2193</span>` : `${_asIcon2} Automatic`;
         searchBtnHtml = `<div class="is-btn-row">
         <button class="is-open-btn${asPickActive ? " active" : ""}" data-action="search-pick-as">
-          ${asPickIcon} Automatic
+          ${_asBtnContent2}
         </button>
         <button class="is-open-btn${isPickActive ? " active" : ""}" data-action="search-pick-is">
           ${personIconSvg} Interactive
@@ -11201,7 +11279,7 @@ var _PopupMethods = class {
     </button>` : "";
     const dayClass = this._isDaytime && this._config?.styles?.dayNightMode !== false ? " popup-day" : "";
     const wideClass = isActive || snIsActive ? " is-wide" : "";
-    const searchActive = isActive || snIsActive || asActive;
+    const searchActive = isActive || snIsActive || asSonarrActive;
     const glassStyle = searchActive ? ' style="height:82vh"' : "";
     const backdropEl = searchActive ? "" : `
         <div class="popup-backdrop" style="${backdropStyle}">
@@ -11231,7 +11309,7 @@ var _PopupMethods = class {
               </div>
             </div>
           </div>
-          ${isActive || snIsActive || asActive ? "" : trailerHtml}
+          ${isActive || snIsActive || asSonarrActive ? "" : trailerHtml}
           ${asActive ? this._renderAsSection() : ""}
           ${isActive ? this._renderIsPanel() : ""}
           ${snIsActive ? this._renderSonarrIsSection() : ""}
@@ -16470,6 +16548,8 @@ var ArrStackCard = class extends HTMLElement {
     this._asSearchingItems = /* @__PURE__ */ new Set();
     this._asSearchedItems = /* @__PURE__ */ new Set();
     this._asDownloadingItems = /* @__PURE__ */ new Set();
+    this._asNotFound = /* @__PURE__ */ new Set();
+    this._asPolling = /* @__PURE__ */ new Set();
     this._radarrQueuePct = /* @__PURE__ */ new Map();
     this._radarr2QueuePct = /* @__PURE__ */ new Map();
     this._dlTriggeredBy = null;
@@ -16985,12 +17065,15 @@ var ArrStackCard = class extends HTMLElement {
   // Observer 2 (col-right): záloha pro krátké stránky kde scroll nestačí ke spuštění obs. 1.
   _wireStickyNav() {
     if (window.matchMedia("(min-width: 901px)").matches) return;
-    const left = this.shadowRoot.getElementById("col-left");
-    const right = this.shadowRoot.getElementById("col-right");
-    if (!left) return;
+    const colLeft = this.shadowRoot.getElementById("col-left");
+    const colRight = this.shadowRoot.getElementById("col-right");
+    if (!colLeft) return;
     this._clearNavWatcher();
     const raw = this._cfg.sticky_nav_offset ?? this._cfg.stickyNavOffset;
     const offset = raw != null ? Math.max(0, parseInt(raw)) : 100;
+    const swapped = !!this._cfg?.swap_sides;
+    const left = swapped ? colRight : colLeft;
+    const right = swapped ? colLeft : colRight;
     const syncNav = () => {
       const nav = this.shadowRoot.querySelector(".rp-nav");
       if (!nav) return;
@@ -17032,15 +17115,18 @@ var ArrStackCard = class extends HTMLElement {
   _captureScrollState() {
     if (!window.matchMedia("(max-width: 900px)").matches) return null;
     const sc = this._findScrollContainer();
-    const right = this.shadowRoot.getElementById("col-right");
-    const left = this.shadowRoot.getElementById("col-left");
+    const colLeft = this.shadowRoot.getElementById("col-left");
+    const colRight = this.shadowRoot.getElementById("col-right");
     if (!sc) return null;
+    const swapped = !!this._cfg?.swap_sides;
+    const topCol = swapped ? colRight : colLeft;
+    const bottomCol = swapped ? colLeft : colRight;
     const prevScrollTop = sc.scrollTop;
     const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 60;
     let shortPage = false;
-    if (atBottom && right && left) {
-      const rRect = right.getBoundingClientRect();
-      const lRect = left.getBoundingClientRect();
+    if (atBottom && topCol && bottomCol) {
+      const rRect = bottomCol.getBoundingClientRect();
+      const lRect = topCol.getBoundingClientRect();
       shortPage = rRect.top >= 0 && lRect.top < 0;
     }
     return { sc, prevScrollTop, atBottom, shortPage };
@@ -17057,11 +17143,13 @@ var ArrStackCard = class extends HTMLElement {
         if (!isMobile || !scrollState) return;
         const { sc, prevScrollTop, atBottom, shortPage } = scrollState;
         if (shortPage) {
-          const left = this.shadowRoot.getElementById("col-left");
-          if (left) {
+          const swapped = !!this._cfg?.swap_sides;
+          const topColId = swapped ? "col-right" : "col-left";
+          const topCol = this.shadowRoot.getElementById(topColId);
+          if (topCol) {
             const raw = this._cfg.sticky_nav_offset ?? this._cfg.stickyNavOffset;
             const offset = raw != null ? Math.max(0, parseInt(raw)) : 100;
-            const lRect = left.getBoundingClientRect();
+            const lRect = topCol.getBoundingClientRect();
             sc.scrollTop += lRect.bottom - offset + 1;
           }
         } else if (atBottom) {
@@ -17342,7 +17430,8 @@ var ArrStackCard = class extends HTMLElement {
     wrapper.className = "card";
     const layoutClass = layout === "left" ? " layout-left" : layout === "right" ? " layout-right" : "";
     const perfClass = this._cfg?.styles?.performanceMode || this._cfg?.performanceMode ? " perf-mode" : "";
-    wrapper.innerHTML = `<div class="card-body${layoutClass}${perfClass}">
+    const swapClass = this._cfg?.swap_sides ? " swap-sides" : "";
+    wrapper.innerHTML = `<div class="card-body${layoutClass}${perfClass}${swapClass}">
       <div class="col col-left" id="col-left"></div>
       <div class="col col-right" id="col-right"></div>
     </div>`;
