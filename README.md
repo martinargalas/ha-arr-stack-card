@@ -85,7 +85,7 @@ The right panel is modular. You choose which sections appear and in what order v
 #### Discovery & Recommendations
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
-- **Trakt recommendations** — personalised movie and show suggestions based on your Trakt watch history, movies and shows interleaved for variety. Results are cached for 30 minutes to keep loading fast. For recommendations to reflect what you've actually watched, you need a scrobbler that automatically syncs your plays to Trakt. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) handles this — run it as a Docker container in `watch` mode and it will mark titles as watched on Trakt in real time.
+- **Trakt recommendations** — personalised movie and show suggestions based on your Trakt watch history, movies and shows interleaved for variety. For recommendations to reflect what you've actually watched, you need a scrobbler that automatically syncs your plays to Trakt. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) handles this — run it as a Docker container in `watch` mode and it will mark titles as watched on Trakt in real time.
 - One-click or profile-based requests directly to Radarr/Sonarr, or via Overseerr/Jellyseerr
 - **With Overseerr / Jellyseerr:** approve and decline pending requests, family account support with per-user request management
 
