@@ -10,7 +10,7 @@
 
 <a href="https://discord.gg/CA83tqYZ" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, Tautulli, and Jellystat — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, Bazarr, Plex, Tautulli, Jellystat, and Trakt — directly from Home Assistant with a single unified dashboard card.
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -36,17 +36,7 @@ Manage your full media server stack — Radarr, Sonarr, SABnzbd, qBittorrent, Ov
 type: custom:arr-stack-card
 ```
 
-The card auto-detects all configured services. No YAML configuration required to get started.
-
----
-
-## How it works
-
-```
-HA Dashboard  →  Arr Stack Card  →  Arr Stack Integration  →  Radarr / Sonarr / Plex / …
-```
-
-The card never calls your services directly. All API calls go through the HA integration proxy — your credentials stay in Home Assistant, not in the browser.
+The card automatically shows only the services you have configured. No YAML required to get started.
 
 ---
 
@@ -63,11 +53,11 @@ The card never calls your services directly. All API calls go through the HA int
 | Overseerr / Jellyseerr | Media requests, discovery, approvals | Optional |
 | Bazarr | Subtitle status per movie/show | Optional |
 | Plex | Active stream monitoring and playback control | Optional |
-| Jellyfin | Active stream monitoring | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
 | Jellystat | Watch history, statistics, and usage graphs | Optional |
+| Trakt | Personalised movie & show recommendations | Optional |
 
-Services not configured in the integration are hidden automatically.
+Services not configured in the integration are hidden automatically — no manual configuration needed.
 
 ---
 
@@ -75,90 +65,80 @@ Services not configured in the integration are hidden automatically.
 
 ### Downloads (left panel)
 
-The left panel shows your download managers. Each section only appears if that service is configured in the integration — if you only use qBittorrent, SABnzbd won't show up, and vice versa.
+The left panel appears only when at least one download manager (qBittorrent or SABnzbd) is configured.
 
 - **qBittorrent** — active torrents with download and upload speed, progress, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Total speed chip shows combined download and upload across all active torrents.
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
-- **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Root folders on the same physical disk are automatically deduplicated (by free space) and their paths combined (e.g. `movies · tv`). If your media is spread across multiple disks, each disk appears as a separate card — use the chevron arrows to page through them. The card defaults to showing the disk that matches your SABnzbd download directory.
+- **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Disks are deduplicated automatically. If your media is spread across multiple disks, use the chevron arrows to page through them.
 
 ### Right panel — configurable sections
 
-The right panel is a modular dashboard. You choose which sections appear and in what order via the visual editor. Each section is powered by a different service and can be enabled or disabled independently.
+The right panel is modular. You choose which sections appear and in what order via the visual editor. Each section can be enabled or disabled independently.
 
 #### Library (Radarr / Sonarr)
 
-- **Recently Added** — mixed movies + TV shows with files, sorted by download date. TV shows show the most recently downloaded episode badge (e.g. `S04E04`).
-- **Recently Requested** — monitored movies and shows not yet downloaded, with download status (downloading / missing / failed). Auto-refreshes when a download completes.
-- **Movies** — full Radarr library with download status badges, IMDB rating, audio language tags (`CS | EN`), and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
-- **TV Shows** — full Sonarr library with per-season progress bars, IMDB rating, audio language tags, and Bazarr subtitle status. **Upcoming episodes calendar** with `S01E01` badges and air dates. Interactive Search per season or episode.
+- **Recently Added** — mixed movies + TV shows with files, sorted by download date.
+- **Recently Requested** — monitored movies and shows not yet downloaded, with download status.
+- **Movies** — full Radarr library with download status, IMDB rating, audio language tags, and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
+- **TV Shows** — full Sonarr library with per-season progress bars, ratings, and subtitle status. **Upcoming episodes calendar** with air dates. Interactive Search per season or episode.
 
-#### Library — dual instances (Radarr 2 / Sonarr 2)
-
-Configure a second Radarr and/or Sonarr instance for HD + 4K workflows. The popup shows per-instance status chips (available / downloading / missing) and lets you choose which instance to search or remove from.
-
-#### Discovery
+#### Discovery & Recommendations
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
-- One-click or profile-based media requests directly to Radarr/Sonarr. **Automatic Search** shows a spinner while Radarr searches indexers, then confirms download started or shows "Not found" if nothing was grabbed.
-- **With Overseerr / Jellyseerr (optional):** approve and decline pending requests, family accounts with per-user request management
+- **Trakt recommendations** — personalised movie and show suggestions based on your watch history, interleaved for variety
+- One-click or profile-based requests directly to Radarr/Sonarr, or via Overseerr/Jellyseerr
+- **With Overseerr / Jellyseerr:** approve and decline pending requests, family account support with per-user request management
 
-#### Now Playing (Plex / Jellyfin)
+#### Now Playing (Plex)
 
-Live view of active streams — title, media type, progress, and user. Auto-hidden when nothing is playing.
+Live view of active streams — title, progress, and user. Auto-hidden when nothing is playing.
 
-Requires the official [Plex](https://www.home-assistant.io/integrations/plex/) or [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration — the card reads `media_player.plex_*` / `media_player.jellyfin_*` entities automatically.
-
-**Additionally configuring Plex in the Arr Stack Integration (step 6) enables:**
+Requires the official [Plex](https://www.home-assistant.io/integrations/plex/) HA integration. Configuring Plex in the Arr Stack Integration additionally enables:
 - Active user shown on the stream card
 - Remote stream termination (stop with a message) — works for all clients
 - Full playback controls (play, pause, next, previous) — Plexamp only
 
-> **Plex Server URL** — the integration auto-detects your server address on setup. If HA runs on a different machine or VLAN than Plex, auto-detection may pick an unreachable address. Override it on the Plex step with the address HA can reach (e.g. `https://plex.yourdomain.com` or `http://192.168.1.10:32400`).
+> **Plex Server URL** — the integration auto-detects your server address during setup. If Home Assistant runs on a different machine or VLAN than Plex, you can override it with the address HA can reach (e.g. `http://192.168.1.10:32400`).
 
 #### Activity Queue
 
-Four-tab activity panel covering everything happening across your Radarr and Sonarr instances. Admin-only.
+Four-tab panel covering everything happening across your Radarr and Sonarr instances. Admin-only.
 
-- **Queue** — see what's downloading right now. Progress bars, quality, ETA, custom formats. Stuck item? Manual Import or one-click remove with optional blocklist.
-- **History** — recent grabs and imports. Filter by event type, source, or quality.
+- **Queue** — what's downloading right now with progress, quality, and ETA. Manual Import or one-click remove with blocklist option.
+- **History** — recent grabs and imports, filterable by event type, source, or quality.
 - **Blocklist** — manage blocked releases.
-- **Missing** — everything without a file. Filter by instance, quality profile, or monitoring status. Adjust monitoring per series or per season, and trigger Interactive / Auto Search without leaving the panel.
-
-Each tab supports sorting, search, and configurable columns.
+- **Missing** — everything without a file. Filter, adjust monitoring, and trigger Interactive or Auto Search without leaving the panel.
 
 #### Statistics (Tautulli / Jellystat)
 
-Playback statistics pulled from Tautulli or Jellystat (configure either or both). Admin-only.
+Playback statistics from Tautulli or Jellystat (configure either or both). Admin-only.
 
 - Watch history with search and filters
 - Play count and duration charts by day, day of week, hour, and media type
-- Stream type breakdown and concurrent stream graph
 - Per-user and per-library statistics
-- **Account sharing detection** — flags when the same account streams from multiple IPs simultaneously; configurable threshold and history depth; acknowledge known IPs per user
+- **Account sharing detection** — flags when the same account streams from multiple IPs simultaneously
 
 ### Appearance & UX
 
 - Day / night theming based on `sun.sun`
 - Responsive layout — mobile, tablet, desktop
-- Sticky bottom navigation bar on mobile
+- Sticky navigation bar on mobile
 - Pagination for all sections; configurable columns per category
 - **See More overlay** — full-screen grid for any section
 - Visual card editor in HA (no YAML required for basic setup)
-- Performance mode — disables backdrop blur; configurable card background colour and opacity
+- Performance mode — disables backdrop blur
 
 ---
 
 ## Requirements
 
 1. Home Assistant 2024.1+ with HACS installed
-2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured
-3. **Radarr** and **Sonarr** — required. Everything else is optional and hidden when not configured.
-
-Adding **Overseerr / Jellyseerr** unlocks request management — admins can approve or decline requests, and household members can request and withdraw their own media.
+2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured with at least Radarr and Sonarr
+3. Everything else is optional — unconfigured services are hidden automatically
 
 ### Self-signed certificates / reverse proxies
 
-Enable **Skip SSL certificate verification** in the integration's Global Settings (step 1) if any service uses a self-signed or untrusted certificate. The toggle covers all services at once — safe to enable even if only one of them needs it.
+If any of your services uses a self-signed or untrusted certificate, enable **Skip SSL certificate verification** in the integration's Global Settings. This covers all services at once.
 
 ---
 
@@ -169,7 +149,7 @@ Enable **Skip SSL certificate verification** in the integration's Global Setting
 1. Open HACS → **Frontend**
 2. Click the **⋮** menu (top right) → **Custom repositories**
 3. Add `https://github.com/martinargalas/ha-arr-stack-card` — category **Dashboard**
-4. Click **+ Explore & Download Repositories**, search for **Arr Stack Card** and install
+4. Search for **Arr Stack Card** and install
 5. Hard refresh your browser (Cmd+Shift+R / Ctrl+Shift+R)
 
 ### Manual
@@ -208,13 +188,13 @@ discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
   itemsPerCategory: 4        # columns per category grid  (default: 4)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
-  oneClickRequest: false     # skip request overlay on movie/show request — uses defaults below  (default: false)
-  oneClickDefaultMovieProfile: ""  # quality profile name for one-click movie requests
-  oneClickDefaultMovieTag: ""      # Radarr tag label for one-click movie requests  (optional)
-  oneClickDefaultMovieRootFolder: ""  # Radarr root folder path for one-click movie requests  (optional)
-  oneClickDefaultShowProfile: ""   # quality profile name for one-click TV requests
-  oneClickDefaultShowTag: ""       # Sonarr tag label for one-click TV requests  (optional)
-  oneClickDefaultShowRootFolder: ""   # Sonarr root folder path for one-click TV requests  (optional)
+  oneClickRequest: false     # skip request overlay — uses defaults below  (default: false)
+  oneClickDefaultMovieProfile: ""     # quality profile name for one-click movie requests
+  oneClickDefaultMovieTag: ""         # Radarr tag for one-click movie requests  (optional)
+  oneClickDefaultMovieRootFolder: ""  # Radarr root folder for one-click movie requests  (optional)
+  oneClickDefaultShowProfile: ""      # quality profile name for one-click TV requests
+  oneClickDefaultShowTag: ""          # Sonarr tag for one-click TV requests  (optional)
+  oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
 
 # Category order & visibility
 categories:
@@ -230,6 +210,8 @@ categories:
     enabled: true
   - id: popular
     enabled: true
+  - id: trakt
+    enabled: true
   - id: calendar
     enabled: true
   - id: streams
@@ -244,15 +226,15 @@ categories:
 # Security
 security:
   ip_sharing_threshold: 2    # unique IPs per user before sharing warning appears  (default: 2)
-  ip_history_depth: 200      # number of history records scanned for IP detection  (default: 200)
+  ip_history_depth: 200      # history records scanned for IP detection  (default: 200)
 
 # Appearance
 styles:
-  performanceMode: false          # disable backdrop blur (improves perf on low-end devices)
+  performanceMode: false          # disable backdrop blur
   cardBackground: "#121216"       # card background colour (performance mode only)
-  cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only, default: 90)
-  dayNightMode: true              # auto switch popup colours based on sun.sun — set false to keep night colours always
-  searchBarIconColor: ""          # search bar icon colour when inactive (default: heading colour)
+  cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only)
+  dayNightMode: true              # auto switch popup colours based on sun.sun
+  searchBarIconColor: ""
   headingTextColor: "#ffffff"
   headingColor: "#ffffff"
   primaryTextColor: "#ffffff"
@@ -285,48 +267,29 @@ styles:
 | `tvUpcoming` | New Shows |
 | `trending` | Trending |
 | `popular` | Popular Movies |
-| `calendar` | New Episodes — upcoming episodes from all Sonarr instances |
-| `streams` | Now Playing (Plex / Jellyfin) — auto-hidden when nothing plays |
-| `tautulli` | Statistics (Plex / Tautulli) |
-| `jellystat` | Statistics (Jellyfin / Jellystat) |
+| `trakt` | Trakt Recommendations |
+| `calendar` | Episode Calendar (Sonarr) |
+| `streams` | Now Playing (Plex) — auto-hidden when nothing plays |
+| `tautulli` | Statistics (Tautulli) |
+| `jellystat` | Statistics (Jellystat) |
 | `activity` | Activity Queue (admin only) |
-
-### Security
-
-Account sharing detection is available when Tautulli is configured.
-
-| Key | Description |
-|-----|-------------|
-| `security.ip_sharing_threshold` | Number of unique IPs per user that triggers the sharing warning. Default: `2` |
-| `security.ip_history_depth` | Number of recent history records scanned per fetch to collect IP data. Default: `200` |
-
-When sharing is detected, a warning card appears in the Statistics section. Clicking it opens the Users tab with a collapsible IP report — showing each flagged user, their IP addresses, last seen date, and play count. You can acknowledge known IPs per user to dismiss the warning.
-
-### Style notes
-
-- All colour values accept `#rrggbb` hex or `rgb(r,g,b)`.
-- `dayNightMode: true` (default) — popup follows `sun.sun`. Set `false` to always use dark colours, required when setting custom `modal*` colours so day mode doesn't override them.
-- `performanceMode: true` — disables backdrop blur; `cardBackground` and `cardBackgroundOpacity` apply only in this mode.
-- `modalRemoveButtonBackgroundColor` — affects only the **Remove ›** button, not the sub-buttons (Remove from Library / Remove from Disc).
 
 ---
 
 ## Multi-user setup (Overseerr / Jellyseerr — optional)
 
-> This section only applies if you have Overseerr or Jellyseerr configured. Without it, all HA users (admin and non-admin) can add media directly to Radarr/Sonarr.
+> Without Overseerr/Jellyseerr, all HA users can add media directly to Radarr/Sonarr.
 
 | HA account | What they can do |
 |------------|-----------------|
 | Admin | Browse, request, **approve/decline** pending requests |
 | Non-admin | Browse, request, view and withdraw own requests |
 
-The card detects the HA user role automatically (`hass.user.is_admin`). No extra card config needed.
-
 **Setup:**
 
-1. **Overseerr** — create a non-admin user (Settings → Users → Add User).
-2. **Home Assistant** — create a non-admin HA user for each family member (Settings → People → Add Person → uncheck Administrator).
-3. **Integration** — in the Arr Stack integration config, enter the non-admin Overseerr user's email and password. The proxy forwards requests under that user's identity.
+1. In Overseerr/Jellyseerr — create a non-admin user (Settings → Users → Add User).
+2. In Home Assistant — create a non-admin HA user for each family member (Settings → People → Add Person → uncheck Administrator).
+3. In the Arr Stack integration settings — enter the non-admin Overseerr user's email and password.
 
 ---
 

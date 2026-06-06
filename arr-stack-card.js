@@ -4,11 +4,26 @@ var ArrStackCardEditor = class extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = {};
+    this._caps = null;
   }
   set hass(hass) {
     const wasAdmin = this._hass?.user?.is_admin;
     this._hass = hass;
+    if (!this._caps) this._loadCaps();
     if (wasAdmin !== hass?.user?.is_admin) this._render();
+  }
+  async _loadCaps() {
+    try {
+      this._caps = await this._hass.callApi("GET", "arr_stack/capabilities/info");
+      const hasDownloads = this._caps.qbit || this._caps.sabnzbd;
+      if (!hasDownloads && this._config.layout !== "right") {
+        this._config = { ...this._config, layout: "right" };
+        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
+      }
+      this._render();
+    } catch (_) {
+      this._caps = {};
+    }
   }
   setConfig(config) {
     config = config || {};
@@ -143,6 +158,7 @@ var ArrStackCardEditor = class extends HTMLElement {
             <option value="en" ${this._val("localisation", "en") === "en" ? "selected" : ""}>English</option>
           </select>
         </div>
+        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps === null ? `
         <div class="row">
           <span class="row-label">Layout</span>
           <select data-key="layout">
@@ -150,7 +166,16 @@ var ArrStackCardEditor = class extends HTMLElement {
             <option value="left"  ${this._val("layout", "both") === "left" ? "selected" : ""}>Downloads only</option>
             <option value="right" ${this._val("layout", "both") === "right" ? "selected" : ""}>Media only</option>
           </select>
+        </div>` : ""}
+        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps === null ? `
+        <div class="row">
+          <span class="row-label">Swap sides</span>
+          <label class="toggle">
+            <input type="checkbox" data-key="swap_sides" ${this._val("swap_sides", false) ? "checked" : ""}>
+            <span class="toggle-slider"></span>
+          </label>
         </div>
+        ${this._val("swap_sides", false) ? `<div class="hint">Media panel is taller \u2014 set Sticky nav offset to ~2000 for the nav to appear immediately on mobile.</div>` : ""}` : ""}
         <div class="row">
           <span class="row-label">Swap sides</span>
           <label class="toggle">
@@ -268,6 +293,7 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "tvUpcoming", enabled: true },
       { id: "trending", enabled: true },
       { id: "popular", enabled: true },
+      { id: "trakt", enabled: false },
       { id: "calendar", enabled: true },
       { id: "streams", enabled: true },
       { id: "tautulli", enabled: true },
@@ -292,6 +318,7 @@ var ArrStackCardEditor = class extends HTMLElement {
       tvUpcoming: "New Shows",
       trending: "Trending",
       popular: "Popular Movies",
+      trakt: "Trakt Recommended",
       calendar: "Calendar",
       streams: "Now Playing (Plex / Jellyfin) \u2014 auto-hidden when nothing plays",
       tautulli: "Statistics (Plex)",
@@ -427,6 +454,7 @@ var ARR_I18N = {
     recentlyRequested: "Ned\xE1vno \u017E\xE1dan\xE9",
     upcomingMovies: "Nadch\xE1zej\xEDc\xED filmy",
     newShows: "Nov\xE9 seri\xE1ly",
+    traktRecommended: "Trakt doporu\u010Duje",
     trendingMovies: "Trendy",
     typeMovie: "Film",
     typeTv: "Seri\xE1l",
@@ -771,6 +799,7 @@ var ARR_I18N = {
     recentlyRequested: "Recently Requested",
     upcomingMovies: "Upcoming Movies",
     newShows: "New Shows",
+    traktRecommended: "Trakt Recommended",
     trendingMovies: "Trending",
     typeMovie: "Movie",
     typeTv: "Show",
@@ -1166,6 +1195,8 @@ var STYLES = `
         gap: 12px;
         padding: 0 12px 8px;
       }
+      .card-body.no-downloads { grid-template-columns: 1fr; }
+      .card-body.no-downloads .col-left { display: none; }
       .card-body.swap-sides { grid-template-columns: 3fr 2fr; }
       .card-body.swap-sides .col-left  { order: 2; }
       .card-body.swap-sides .col-right { order: 1; }
@@ -1994,25 +2025,71 @@ var STYLES = `
       /* \u2500\u2500 TV Request Overlay \u2500\u2500 */
       .tv-req-overlay { align-items: stretch; padding: 0; }
       .tv-req-inner {
-        display: flex; flex-direction: column; gap: 8px;
-        padding: 10px 10px 8px; width: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: 1fr auto;
+        gap: 8px; padding: 8px; width: 100%;
       }
-      .tv-req-top {
-        display: flex; gap: 8px; align-items: flex-start;
+      /* Col 1, rows 1-2: poster */
+      .tv-req-col-poster {
+        grid-column: 1; grid-row: 1 / 3; min-height: 0;
       }
       .tv-req-poster {
-        width: 36px; height: 54px; object-fit: cover;
-        border-radius: 4px; flex-shrink: 0;
+        width: 100%; height: 100%; object-fit: cover;
+        border-radius: 6px; display: block; min-height: 80px;
       }
       .tv-req-poster-ph {
-        width: 36px; height: 54px; border-radius: 4px; flex-shrink: 0;
+        width: 100%; height: 100%; min-height: 80px; border-radius: 6px;
         background: rgba(255,255,255,0.08); display: flex;
-        align-items: center; justify-content: center; font-size: 20px;
+        align-items: center; justify-content: center; font-size: 28px;
       }
-      .tv-req-info { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+      /* Col 2-4: tabs + dropdown + seasons stacked, buttons inside at bottom-right */
+      .tv-req-controls {
+        grid-column: 2 / 5; grid-row: 1 / 3;
+        display: flex; flex-direction: column; gap: 5px; min-width: 0;
+      }
       .tv-req-title {
         font-size: 11px; font-weight: 700; color: #fff;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .tv-req-seasons {
+        display: flex; flex-direction: column; gap: 4px; min-width: 0;
+      }
+      /* Actions: inside tv-req-controls, pushed to bottom-right, width = 1 poster column */
+      .tv-req-actions-col {
+        margin-top: auto; align-self: flex-end;
+        display: flex; flex-direction: row;
+        width: calc(100% / 3);
+      }
+      .tv-req-actions-col .req-actions {
+        display: flex; flex-direction: row; gap: 4px; width: 100%;
+      }
+      .tv-req-actions-col .req-cancel  { flex: 1; }
+      .tv-req-actions-col .req-confirm { flex: 2; }
+
+      /* Desktop: mob title hidden, desk title visible */
+      .tv-req-mob-title  { display: none; }
+      .tv-req-desk-title { display: block; }
+      /* Desktop: row2 wrapper transparent \u2014 d\u011Bti se \xFA\u010Dastn\xED gridu p\u0159\xEDmo */
+      .tv-req-row2 { display: contents; }
+
+      /* Mobile: TV overlay \u2014 flex column, v\u0161e full width */
+      @media (max-width: 600px) {
+        .tv-req-mob-title  { display: none; }
+        .tv-req-desk-title { display: block; }
+        .tv-req-row2       { display: contents; }
+        .tv-req-inner {
+          display: flex; flex-direction: column;
+          gap: 6px; padding: 8px; height: 100%;
+        }
+        .tv-req-col-poster  { display: none; }
+        .tv-req-controls    { width: 100%; flex: 1; min-height: 0; }
+        .tv-req-seasons     { width: 100%; }
+        .tv-req-actions-col {
+          width: 100%; margin-top: auto;
+          display: flex; flex-direction: row; align-items: center;
+        }
+        .tv-req-actions-col .req-actions { flex: 1; }
       }
 
       /* Season switches nav */
@@ -2699,12 +2776,12 @@ var STYLES = `
       .rp-sections { flex: 1; }
       .rp-nav {
         position: relative;
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 6px 0 2px; gap: 8px;
+        display: flex; align-items: center; justify-content: center;
+        padding: 6px 0 2px; gap: 4px;
         margin-top: auto;
       }
       .rp-dots {
-        display: flex; align-items: center; gap: 5px; flex: 1; justify-content: center; overflow: hidden; min-width: 0;
+        display: flex; align-items: center; gap: 5px; justify-content: center; overflow: hidden; min-width: 0;
       }
       .rp-page-counter {
         font-size: 12px; font-weight: 600; opacity: 0.7;
@@ -2739,7 +2816,9 @@ var STYLES = `
         background: rgba(255,255,255,0.15);
         color: rgba(var(--arr-pbt-rgb, 255, 255, 255), 0.9);
       }
-      .rp-btn-hidden { visibility: hidden; pointer-events: none; }
+      .rp-btn-hidden { display: none; }
+      .rp-btn:disabled { opacity: 0.25; pointer-events: none; }
+      .rp-btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
       @keyframes rp-ping {
         0%   { box-shadow: 0 0 0 0 rgba(10,132,255,0.85); }
@@ -2802,6 +2881,12 @@ var STYLES = `
         }
         .rp-nav .rp-dot { background: rgba(var(--arr-pd-rgb, 255, 255, 255), 0.30); }
         .rp-nav .rp-dot-active { background: rgba(var(--arr-pda-rgb, 255, 255, 255), 0.90); }
+      }
+
+      /* Mobile: floating nav \u2014 space-between s flex dots (palce na kraj\xEDch) */
+      @media (max-width: 600px) {
+        .rp-nav { justify-content: space-between; }
+        .rp-nav .rp-dots { flex: 1; }
       }
 
       /* Large phone: mgrid 3 col */
@@ -4082,9 +4167,31 @@ var _FetchMethods = class {
     const p = this._debug ? path + (path.includes("?") ? "&" : "?") + "_debug=1" : path;
     return this._hass.callApi(method, p, body);
   }
+  async _fetchCapabilities() {
+    if (this._capsLoaded) return;
+    try {
+      const caps = await this._callApi("GET", "arr_stack/capabilities/info");
+      this._capsLoaded = true;
+      if (!caps.qbit) this._qbitConfigured = false;
+      if (!caps.sabnzbd) this._sabConfigured = false;
+      if (!caps.radarr2) this._radarr2Configured = false;
+      if (!caps.sonarr2) this._sonarr2Configured = false;
+      if (!caps.bazarr) this._bazarrConfigured = false;
+      if (!caps.overseerr) this._overseerrConfigured = false;
+      if (!caps.plex) this._plexConfigured = false;
+      if (!caps.tautulli) this._tautulliConfigured = false;
+      if (!caps.jellystat) this._jellystatConfigured = false;
+      if (!caps.trakt) this._traktConfigured = false;
+    } catch (_) {
+    }
+  }
   async _fetchAll() {
+    await this._fetchCapabilities();
     if (this._overseerrConfigured === null) {
       await this._fetchOverseerrRadarrSettings();
+      if (this._overseerrConfigured !== false) {
+        await this._fetchOverseerrSonarrSettings();
+      }
     }
     await Promise.allSettled([
       this._fetchRadarr2(),
@@ -4098,6 +4205,7 @@ var _FetchMethods = class {
       this._fetchTvUpcoming(),
       this._fetchTrending(),
       this._fetchPopular(),
+      this._fetchTrakt(),
       this._fetchSab(),
       this._fetchSabHistory(),
       this._fetchQbit(),
@@ -4491,6 +4599,20 @@ var _FetchMethods = class {
   async _fetchPopular() {
     await this._fetchOverseerrPaged("popular", "_popular", "popular");
   }
+  async _fetchTrakt() {
+    try {
+      const data = await this._callApi("GET", "arr_stack/trakt/recommendations?limit=20");
+      if (Array.isArray(data)) {
+        this._trakt = data;
+      }
+    } catch (e) {
+      if (e?.status === 503) {
+        this._traktConfigured = false;
+      } else {
+        console.warn("[arr-card] Trakt fetch error:", e);
+      }
+    }
+  }
   async _fetchTvUpcoming() {
     await this._fetchOverseerrPaged("tv_upcoming", "_tvUpcoming", "tvUpcoming");
   }
@@ -4627,6 +4749,14 @@ var _FetchMethods = class {
       this._fetchSonarrRootFolders(),
       (async () => {
         if (this._overseerrConfigured !== false && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      })(),
+      (async () => {
+        if (this._sonarr2Configured !== false) {
+          await Promise.all([
+            this._sonarr2Profiles?.length ? null : this._fetchSonarr2Profiles(),
+            this._sonarr2RootFolders?.length ? null : this._fetchSonarr2RootFolders()
+          ].filter(Boolean));
+        }
       })()
     ]);
     if (this._tvRequestPending) {
@@ -4636,7 +4766,7 @@ var _FetchMethods = class {
       this._wireTvOverlay();
     }
   }
-  async _addOverseerrTvRequest(mediaId, seasons, profileId, tagId = null, rootFolder = null) {
+  async _addOverseerrTvRequest(mediaId, seasons, profileId, tagId = null, rootFolder = null, use2 = false) {
     const showId = this._tvRequestPending?.show?.id;
     if (showId) {
       this._optimisticRequested.add(showId);
@@ -4645,12 +4775,14 @@ var _FetchMethods = class {
     this._tvRequestPending = null;
     this._reRenderRight();
     try {
-      if (!this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
+      const seerrCfg = use2 ? this._seerrSonarr2 : this._seerrSonarr;
+      if (!seerrCfg) await this._fetchOverseerrSonarrSettings();
+      const activeCfg = use2 ? this._seerrSonarr2 : this._seerrSonarr;
       const body = { mediaType: "tv", mediaId, seasons };
-      if (this._seerrSonarr) {
-        body.serverId = this._seerrSonarr.serverId;
-        body.profileId = profileId !== null ? parseInt(profileId) : this._seerrSonarr.profileId;
-        body.rootFolder = rootFolder || this._seerrSonarr.rootFolder;
+      if (activeCfg) {
+        body.serverId = activeCfg.serverId;
+        body.profileId = profileId !== null ? parseInt(profileId) : activeCfg.profileId;
+        body.rootFolder = rootFolder || activeCfg.rootFolder;
       }
       if (tagId !== null) body.tags = [parseInt(tagId)];
       if (!this._hass.user.is_admin) body.userMode = "family";
@@ -4694,10 +4826,11 @@ var _FetchMethods = class {
       console.error("[arr-card] Direct Radarr add error:", e);
     }
   }
-  async _addDirectTvRequest(show, seasons, profileId, tagId, rootFolder) {
+  async _addDirectTvRequest(show, seasons, profileId, tagId, rootFolder, inst = "sonarr") {
     const showId = show?.id;
     const tvdbId = show?.externalIds?.tvdbId || show?.tvdbId;
     if (!tvdbId) return;
+    const use2 = inst === "sonarr2";
     if (showId) {
       this._optimisticRequested.add(showId);
       this._withdrawnIds?.delete(showId);
@@ -4705,16 +4838,24 @@ var _FetchMethods = class {
     this._tvRequestPending = null;
     this._reRenderRight();
     try {
-      await this._fetchSonarrProfiles();
-      await this._fetchSonarrRootFolders();
-      const lookupResults = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
+      if (use2) {
+        await this._fetchSonarr2Profiles();
+        await this._fetchSonarr2RootFolders();
+      } else {
+        await this._fetchSonarrProfiles();
+        await this._fetchSonarrRootFolders();
+      }
+      const svcPath = use2 ? "sonarr2" : "sonarr";
+      const lookupResults = await this._callApi("GET", `arr_stack/${svcPath}/lookup?tvdbId=${tvdbId}`);
       const seriesData = Array.isArray(lookupResults) ? lookupResults[0] : lookupResults;
       if (!seriesData) throw new Error("Series not found");
-      const rf = rootFolder || this._sonarrRootFolders?.[0]?.path || "/tv";
-      const pId = profileId ? parseInt(profileId) : this._sonarrProfiles?.[0]?.id ?? 1;
+      const profiles = use2 ? this._sonarr2Profiles : this._sonarrProfiles;
+      const rootFolders = use2 ? this._sonarr2RootFolders : this._sonarrRootFolders;
+      const rf = rootFolder || rootFolders?.[0]?.path || "/tv";
+      const pId = profileId ? parseInt(profileId) : profiles?.[0]?.id ?? 1;
       const seasonObjs = (seriesData.seasons || []).map((s) => ({ ...s, monitored: seasons.includes(s.seasonNumber) }));
       try {
-        await this._callApi("POST", "arr_stack/sonarr/series", {
+        await this._callApi("POST", `arr_stack/${svcPath}/series`, {
           ...seriesData,
           seasons: seasonObjs,
           qualityProfileId: pId,
@@ -5793,6 +5934,7 @@ var fetchMixin = _FetchMethods.prototype;
 // src/render/left.js
 var _RenderLeft = class {
   _renderLeft() {
+    if (!this._qbitConfigured && !this._sabConfigured) return "";
     const qbit = this._qbitConfigured ? this._renderQbit() : "";
     const sab = this._sabConfigured ? this._renderSab() : "";
     const sep = qbit && sab ? '<div class="spacer"></div>' : "";
@@ -6226,7 +6368,7 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "calendar", "tautulli", "jellystat", "activity"];
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "activity"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
     const hasActiveStreams = Object.keys(states).some((id) => {
@@ -6243,6 +6385,7 @@ var _RenderRight = class {
       tvUpcoming: () => this._renderTvUpcoming(),
       trending: () => this._renderTrending(),
       popular: () => this._renderPopular(),
+      trakt: this._traktConfigured !== false ? () => this._renderTrakt() : null,
       calendar: hasCalendar ? () => this._renderCalendar() : null,
       streams: hasActiveStreams ? () => this._renderStreams() : null,
       tautulli: this._hass?.user?.is_admin && this._tautulliConfigured !== false ? () => this._renderTautulli() : null,
@@ -6255,26 +6398,21 @@ var _RenderRight = class {
     ];
     const totalPages = Math.max(1, Math.ceil(regularCategories.length / regularPerPage));
     const page = Math.max(0, Math.min(this._rightPage || 0, totalPages - 1));
+    this._rightTotalPages = totalPages;
     const regStart = page * regularPerPage;
     const regSlice = regularCategories.slice(regStart, regStart + regularPerPage);
     const pageSlice = [() => this._renderSearch(), ...regSlice];
     const _join = (fns) => fns.map((fn, i) => `${i === 1 ? '<div style="height:3px"></div>' : i > 1 ? '<div class="spacer-sm"></div>' : ""}${fn()}`).join("");
     const hasPrev = page > 0;
     const hasNext = page < totalPages - 1;
-    const dots = totalPages > 1 ? totalPages > 7 ? `<span class="rp-page-counter">${page + 1} / ${totalPages}</span>` : Array.from(
-      { length: totalPages },
-      (_, i) => `<button class="rp-dot${i === page ? " rp-dot-active" : ""}" data-section="right" data-page="${i}"></button>`
-    ).join("") : "";
-    const navBar = hasPrev || hasNext ? `
-    <div class="rp-nav">
-      <button class="rp-btn ${hasPrev ? "" : "rp-btn-hidden"}" data-section="right" data-dir="prev" ${hasPrev ? "" : "disabled"}>
-        <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:16px"></ha-icon> ${this._t("prev")}
-      </button>
-      <div class="rp-dots">${dots}</div>
-      <button class="rp-btn ${hasNext ? "" : "rp-btn-hidden"}" data-section="right" data-dir="next" ${hasNext ? "" : "disabled"}>
-        ${this._t("next")} <ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:16px"></ha-icon>
-      </button>
-    </div>` : "";
+    const navBar = hasPrev || hasNext ? this._rpPag(page, totalPages, {
+      firstAttr: 'data-section="right" data-dir="first"',
+      prevAttr: 'data-section="right" data-dir="prev"',
+      nextAttr: 'data-section="right" data-dir="next"',
+      lastAttr: 'data-section="right" data-dir="last"',
+      dotAttr: "data-page",
+      dotSecAttr: 'data-section="right" '
+    }) : "";
     if (this._overlay?.section) return this._renderSectionOverlay(this._overlay.section) + this._renderSectionOverlayNav(this._overlay.section);
     if (this._searchActive) {
       const _sCols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
@@ -6283,21 +6421,14 @@ var _RenderRight = class {
       const sp = this._searchPage || 0;
       const hasPrevS = sp > 0;
       const hasNextS = sp < searchTotal - 1;
-      const searchNavBar = searchTotal > 1 ? `
-      <div class="rp-nav">
-        <button class="rp-btn ${hasPrevS ? "" : "rp-btn-hidden"}" data-section="right" data-dir="prev" ${hasPrevS ? "" : "disabled"}>
-          <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:16px"></ha-icon> ${this._t("prev")}
-        </button>
-        <div class="rp-dots">
-          ${searchTotal <= 7 ? Array.from(
-        { length: searchTotal },
-        (_, i) => `<button class="rp-dot${i === sp ? " rp-dot-active" : ""}" data-section="right" data-page="${i}"></button>`
-      ).join("") : `<span class="rp-page-counter">${sp + 1} / ${searchTotal}</span>`}
-        </div>
-        <button class="rp-btn ${hasNextS ? "" : "rp-btn-hidden"}" data-section="right" data-dir="next" ${hasNextS ? "" : "disabled"}>
-          ${this._t("next")} <ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:16px"></ha-icon>
-        </button>
-      </div>` : "";
+      const searchNavBar = searchTotal > 1 ? this._rpPag(sp, searchTotal, {
+        firstAttr: 'data-section="right" data-dir="first"',
+        prevAttr: 'data-section="right" data-dir="prev"',
+        nextAttr: 'data-section="right" data-dir="next"',
+        lastAttr: 'data-section="right" data-dir="last"',
+        dotAttr: "data-page",
+        dotSecAttr: 'data-section="right" '
+      }) : "";
       return `<div class="rp-sections">${this._renderSearch()}</div>${searchNavBar}`;
     }
     const filler = Array(Math.max(0, regularPerPage - regSlice.length)).fill('<div class="spacer-sm"></div>').join("");
@@ -6475,8 +6606,8 @@ var _RenderRight = class {
   _renderRequestOverlay(movieId, tmdbId) {
     const isAdmin = this._hass?.user?.is_admin;
     const hasDual = this._radarr2Configured && (this._seerrRadarr2 || this._overseerrConfigured === false);
-    const tab1Name = hasDual && this._seerrRadarr2?.is4k ? "HD" : "Radarr";
-    const tab2Name = hasDual && this._seerrRadarr2?.is4k ? "4K" : "Radarr 2";
+    const tab1Name = hasDual && this._seerrRadarr2?.is4k ? "HD" : this._seerrRadarr?.name || "Radarr";
+    const tab2Name = hasDual && this._seerrRadarr2?.is4k ? "4K" : this._seerrRadarr2?.name || "Radarr 2";
     const buildPanel = (panelId, profiles, defProfileId, tags, rootFolders, selectId, tagId, rfId, hidden = false) => {
       const profileOptions = profiles.length > 0 ? profiles.map(
         (p) => `<option value="${p.id}" ${Number(p.id) === defProfileId ? "selected" : ""}>${this._escHtml(p.name)}</option>`
@@ -6637,10 +6768,20 @@ var _RenderRight = class {
         <span class="action-spinner" style="width:22px;height:22px;border-width:2.5px"></span>
       </div>`;
     }
+    const isAdmin = this._hass?.user?.is_admin;
+    const hasDual = this._sonarr2Configured === true && (this._seerrSonarr2 || this._overseerrConfigured === false);
+    const sn1Name = this._seerrSonarr?.name || this._instLabel?.("sonarr") || "Sonarr";
+    const sn2Name = this._seerrSonarr2?.name || this._instLabel?.("sonarr2") || "Sonarr 2";
+    const buildTvPanel = (panelId, profiles, defProfId, tags, rootFolders, profileSelId, tagSelId, rfSelId, hidden = false) => {
+      const profileOpts = profiles.length > 0 ? profiles.map((pr) => `<option value="${pr.id}" ${Number(pr.id) === defProfId ? "selected" : ""}>${this._escHtml(pr.name)}</option>`).join("") : `<option value="${defProfId}">${this._t("defaultProfile")}</option>`;
+      const tagHtml = isAdmin && tags.length > 0 ? `<span class="req-label">Tag</span><select class="req-select" id="${tagSelId}"><option value="">\u2014 no tag \u2014</option>${tags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}</select>` : "";
+      const rfHtml = isAdmin && rootFolders.length > 1 ? `<span class="req-label">Root folder</span><select class="req-select" id="${rfSelId}">${rootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}</select>` : "";
+      return `<div class="req-panel${hidden ? " req-panel--hidden" : ""}" data-panel="${panelId}" style="display:${hidden ? "none" : "flex"};flex-direction:column;gap:4px"><span class="req-label">${this._t("downloadQuality")}</span><select class="req-select" id="${profileSelId}">${profileOpts}</select>${tagHtml}${rfHtml}</div>`;
+    };
     const defProfileId = Number(p.profileId ?? 0);
-    const profileOptions = this._sonarrProfiles.length > 0 ? this._sonarrProfiles.map(
-      (pr) => `<option value="${pr.id}" ${Number(pr.id) === defProfileId ? "selected" : ""}>${this._escHtml(pr.name)}</option>`
-    ).join("") : `<option value="${defProfileId}">${this._t("defaultProfile")}</option>`;
+    const panel1 = buildTvPanel("s1", this._sonarrProfiles, defProfileId, this._sonarrTags || [], this._sonarrRootFolders || [], "tv-req-profile", "tv-req-tag", "tv-req-rootfolder");
+    const panel2 = hasDual ? buildTvPanel("s2", this._sonarr2Profiles || [], Number(this._seerrSonarr2?.profileId ?? 0), this._sonarrTags || [], this._sonarr2RootFolders || [], "tv-req-profile2", "tv-req-tag2", "tv-req-rootfolder2", true) : "";
+    const tabBar = hasDual ? `<div class="req-tabs"><button class="req-tab req-tab--active" data-tab="s1">${sn1Name}</button><button class="req-tab" data-tab="s2">${sn2Name}</button></div>` : "";
     const seasons = p.seasons;
     const pages = [];
     for (let i = 0; i < seasons.length; i += 4) pages.push(seasons.slice(i, i + 4));
@@ -6661,33 +6802,33 @@ var _RenderRight = class {
     return `
     <div class="req-overlay tv-req-overlay">
       <div class="tv-req-inner">
-        <div class="tv-req-top">
+        <div class="tv-req-col-poster">
           ${poster}
-          <div class="tv-req-info">
-            <div class="tv-req-title">${this._escHtml(p.show.name || p.show.originalName || "")}</div>
-            <select class="req-select" id="tv-req-profile">${profileOptions}</select>
-            ${this._hass?.user?.is_admin && this._sonarrTags.length > 0 ? `
-            <select class="req-select" id="tv-req-tag">
-              <option value="">\u2014 no tag \u2014</option>
-              ${this._sonarrTags.map((t) => `<option value="${t.id}">${this._escHtml(t.label)}</option>`).join("")}
-            </select>` : ""}
-            ${this._hass?.user?.is_admin && this._sonarrRootFolders.length > 1 ? `
-            <select class="req-select" id="tv-req-rootfolder">
-              ${this._sonarrRootFolders.map((f) => `<option value="${this._escHtml(f.path)}">${this._escHtml(f.path)}</option>`).join("")}
-            </select>` : ""}
+          <div class="tv-req-title tv-req-mob-title">${this._escHtml(p.show.name || p.show.originalName || "")}</div>
+        </div>
+        <div class="tv-req-row2">
+          <div class="tv-req-controls">
+            <div class="tv-req-title tv-req-desk-title">${this._escHtml(p.show.name || p.show.originalName || "")}</div>
+            ${tabBar}
+            ${panel1}${panel2}
+            <div class="tv-req-seasons">
+              <span class="req-label" style="display:block;margin-bottom:4px;margin-top:6px">${this._t("seasons")}</span>
+              <div class="sv-nav-wrap">
+                ${multiPage ? `<button class="sv-chev sv-prev" disabled><ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:18px"></ha-icon></button>` : ""}
+                <div class="sv-scroll" id="sv-scroll">${pagesHtml}</div>
+                ${multiPage ? `<button class="sv-chev sv-next"><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:18px"></ha-icon></button>` : ""}
+              </div>
+              ${dotsHtml}
+            </div>
+            <div class="tv-req-actions-col">
+              <div class="req-actions">
+                <button class="req-cancel tv-req-cancel">${this._t("cancel")}</button>
+                <button class="tv-req-confirm req-confirm" data-mediaid="${p.mediaId}">
+                  <ha-icon icon="mdi:download" style="--mdc-icon-size:13px"></ha-icon> ${this._t("confirm")}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="sv-nav-wrap">
-          ${multiPage ? `<button class="sv-chev sv-prev" disabled><ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:18px"></ha-icon></button>` : ""}
-          <div class="sv-scroll" id="sv-scroll">${pagesHtml}</div>
-          ${multiPage ? `<button class="sv-chev sv-next"><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:18px"></ha-icon></button>` : ""}
-        </div>
-        ${dotsHtml}
-        <div class="req-actions">
-          <button class="req-cancel tv-req-cancel">${this._t("cancel")}</button>
-          <button class="tv-req-confirm req-confirm" data-mediaid="${p.mediaId}">
-            <ha-icon icon="mdi:download" style="--mdc-icon-size:13px"></ha-icon> ${this._t("confirm")}
-          </button>
         </div>
       </div>
     </div>`;
@@ -6704,6 +6845,23 @@ var _RenderRight = class {
         <span class="col-hdr-title">${this._t("trendingMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("trending", smpCount)}
+      </div>
+      ${grid}
+      ${p ? this._renderTvRequestOverlay() : ""}
+    </div>`;
+  }
+  _renderTrakt() {
+    const items = this._trakt || [];
+    const smpCount = this._smpPageCount(items, "trakt");
+    const p = this._tvRequestPending?.source === "trakt" ? this._tvRequestPending : null;
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trakt", (m) => this._renderTraktCard(m));
+    return `
+    <div class="sec-card" style="position:relative">
+      <div class="col-hdr" style="margin-bottom:5px">
+        <ha-icon icon="mdi:movie-star-outline" style="--mdc-icon-size:24px"></ha-icon>
+        <span class="col-hdr-title">${this._t("traktRecommended")}</span>
+        <div class="col-hdr-line"></div>
+        ${this._pageIndicator("trakt", smpCount)}
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
@@ -6801,20 +6959,15 @@ var _RenderRight = class {
     const apiTotal = this._overlayApiTotalPages[section] || 1;
     const hasNext = page < totalPages - 1 || cfg.apiEndpoint && apiPage < apiTotal;
     if (!hasPrev && !hasNext) return "";
-    const dots = totalPages > 1 ? totalPages > 7 ? `<span class="rp-page-counter">${page + 1} / ${totalPages}</span>` : Array.from(
-      { length: totalPages },
-      (_, i) => `<button class="rp-dot${i === page ? " rp-dot-active" : ""}" data-topage="${i}"></button>`
-    ).join("") : "";
-    return `
-    <div class="rp-nav">
-      <button class="rp-btn ${hasPrev ? "" : "rp-btn-hidden"}" data-action="overlay-prev" ${hasPrev ? "" : "disabled"}>
-        <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:16px"></ha-icon> ${this._t("prev")}
-      </button>
-      <div class="rp-dots">${dots}</div>
-      <button class="rp-btn ${hasNext ? "" : "rp-btn-hidden"}" data-action="overlay-next" ${hasNext ? "" : "disabled"}>
-        ${this._t("next")} <ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:16px"></ha-icon>
-      </button>
-    </div>`;
+    return this._rpPag(page, totalPages, {
+      firstAttr: 'data-action="overlay-first"',
+      prevAttr: 'data-action="overlay-prev"',
+      nextAttr: 'data-action="overlay-next"',
+      lastAttr: 'data-action="overlay-last"',
+      dotAttr: "data-topage",
+      dotSecAttr: "",
+      hasNext
+    });
   }
   _renderTvOverlayCompact(p) {
     if (!p || p.loading || !p.seasons) {
@@ -7094,8 +7247,44 @@ var _RenderRight = class {
     </div>`;
   }
   // ─────────────────────────────────────────────
-  // qBittorrent action API
+  // Shared pagination helper
   // ─────────────────────────────────────────────
+  /**
+   * Generates rp-nav HTML with first/prev/dots-or-counter/next/last buttons.
+   * @param {number} page - current 0-based page
+   * @param {number} totalPages
+   * @param {object} opts
+   *   firstAttr / prevAttr / nextAttr / lastAttr  — full HTML attribute strings for each button
+   *   dotAttr       — attribute name for dot page index (e.g. 'data-page' or 'data-topage')
+   *   dotSecAttr    — extra attribute prefix for dots (e.g. 'data-section="right" ')
+   *   hasNext       — override for last/next disabled state (for API lazy-load)
+   */
+  _rpPag(page, totalPages, { firstAttr, prevAttr, nextAttr, lastAttr, dotAttr, dotSecAttr = "", hasNext: hasNextOverride } = {}) {
+    const DOT_LIMIT = 10;
+    const first = page === 0;
+    const last = hasNextOverride !== void 0 ? !hasNextOverride : page >= totalPages - 1;
+    let center;
+    if (totalPages > 0 && totalPages <= DOT_LIMIT) {
+      const dots = Array.from(
+        { length: totalPages },
+        (_, i) => `<button class="rp-dot${i === page ? " rp-dot-active" : ""}" ${dotSecAttr}${dotAttr}="${i}"${i === page ? " disabled" : ""}></button>`
+      ).join("");
+      center = `<div class="rp-dots">${dots}</div>`;
+    } else {
+      center = `<div class="rp-dots"><span class="rp-page-counter">${page + 1} / ${Math.max(totalPages, page + 1)}</span></div>`;
+    }
+    const Cll = `<ha-icon icon="mdi:chevron-double-left" style="--mdc-icon-size:20px"></ha-icon>`;
+    const Cl = `<ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:22px"></ha-icon>`;
+    const Cr = `<ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:22px"></ha-icon>`;
+    const Crr = `<ha-icon icon="mdi:chevron-double-right" style="--mdc-icon-size:20px"></ha-icon>`;
+    return `<div class="rp-nav">
+    <button class="rp-btn rp-btn-icon" ${firstAttr}${first ? " disabled" : ""}>${Cll}</button>
+    <button class="rp-btn rp-btn-icon" ${prevAttr}${first ? " disabled" : ""}>${Cl}</button>
+    ${center}
+    <button class="rp-btn rp-btn-icon" ${nextAttr}${last ? " disabled" : ""}>${Cr}</button>
+    <button class="rp-btn rp-btn-icon" ${lastAttr}${last ? " disabled" : ""}>${Crr}</button>
+  </div>`;
+  }
 };
 var renderRightMixin = _RenderRight.prototype;
 
@@ -7451,6 +7640,18 @@ var _MediaCardMethods = class {
           ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
         </div>`)}
     </div>`;
+  }
+  _renderTraktCard(m, overlayIndex = null) {
+    const normalized = Object.assign({}, m, {
+      name: m.name || m.title,
+      originalName: m.originalName || m.title,
+      firstAirDate: m.firstAirDate || m.releaseDate,
+      releaseDate: m.releaseDate
+    });
+    if (m.mediaType === "tv") {
+      return this._renderTvUpcomingCard(normalized, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trakt" });
+    }
+    return this._renderUpcomingCard(normalized, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trakt-" + m.id });
   }
   _renderTrendingCard(m, overlayIndex = null) {
     if (m.mediaType === "tv") {
@@ -7904,7 +8105,7 @@ var _WireMethods = class {
         const showId = parseInt(btn.dataset.showid, 10);
         if (!showId) return;
         const tvSource = btn.dataset.source || "tvUpcoming";
-        const show = tvSource === "trending" ? this._trending.find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "search" ? (this._searchResults || []).find((m) => m.id === showId && m.mediaType === "tv") : (this._tvUpcoming || []).find((m) => m.id === showId);
+        const show = tvSource === "trending" ? this._trending.find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "search" ? (this._searchResults || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "trakt" ? (this._trakt || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "popular" ? (this._popular || []).find((m) => m.id === showId && m.mediaType === "tv") : (this._tvUpcoming || []).find((m) => m.id === showId);
         const fromTrending = tvSource === "trending";
         const fromSearch = tvSource === "search";
         if (!show) return;
@@ -7941,18 +8142,20 @@ var _WireMethods = class {
         const checked = [...this.shadowRoot.querySelectorAll(".sv-input:checked")];
         const seasons = checked.map((el) => parseInt(el.dataset.season, 10)).filter(Boolean);
         if (!seasons.length) return;
-        const profileSel = this.shadowRoot.getElementById("tv-req-profile");
-        const tagSel = this.shadowRoot.getElementById("tv-req-tag");
-        const rfSel = this.shadowRoot.getElementById("tv-req-rootfolder");
+        const activePanel = this.shadowRoot.querySelector(".req-panel:not(.req-panel--hidden)")?.dataset.panel || "s1";
+        const use2 = activePanel === "s2";
+        const profileSel = this.shadowRoot.getElementById(use2 ? "tv-req-profile2" : "tv-req-profile");
+        const tagSel = this.shadowRoot.getElementById(use2 ? "tv-req-tag2" : "tv-req-tag");
+        const rfSel = this.shadowRoot.getElementById(use2 ? "tv-req-rootfolder2" : "tv-req-rootfolder");
         const profileId = profileSel ? profileSel.value : null;
         const tagId = tagSel?.value || null;
         const rootFolder = rfSel?.value || null;
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
         if (this._overseerrConfigured === false) {
-          await this._addDirectTvRequest(this._tvRequestPending?.show, seasons, profileId, tagId, rootFolder);
+          await this._addDirectTvRequest(this._tvRequestPending?.show, seasons, profileId, tagId, rootFolder, use2 ? "sonarr2" : "sonarr");
         } else {
-          await this._addOverseerrTvRequest(mediaId, seasons, profileId, tagId, rootFolder);
+          await this._addOverseerrTvRequest(mediaId, seasons, profileId, tagId, rootFolder, use2);
         }
       });
     });
@@ -8049,6 +8252,13 @@ var _WireMethods = class {
       this._overlay = { section: null, page: 0, tvPending: null };
       this._reRenderSection(sec || "trending");
     });
+    sr.querySelector('[data-action="overlay-first"]')?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this._overlay.page = 0;
+      this._overlay.tvPending = null;
+      this._reRenderSection(this._overlay.section);
+      this._scrollToSectionOverlay();
+    });
     sr.querySelector('[data-action="overlay-prev"]')?.addEventListener("click", (e) => {
       e.stopPropagation();
       this._overlay.page = Math.max(0, (this._overlay.page || 0) - 1);
@@ -8082,6 +8292,21 @@ var _WireMethods = class {
         }
       }
       this._overlay.page = newPage;
+      this._overlay.tvPending = null;
+      this._reRenderSection(this._overlay.section);
+      this._scrollToSectionOverlay();
+    });
+    sr.querySelector('[data-action="overlay-last"]')?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const sec = this._overlay?.section;
+      const cfg = this._getSectionOverlayConfig(sec);
+      if (!cfg) return;
+      const isMobile = window.matchMedia("(max-width: 480px)").matches;
+      const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+      const perPage = isMobile ? cols : cols * 2;
+      const items = this[cfg.dataKey] || [];
+      const totalPages = Math.ceil(items.length / perPage);
+      this._overlay.page = Math.max(0, totalPages - 1);
       this._overlay.tvPending = null;
       this._reRenderSection(this._overlay.section);
       this._scrollToSectionOverlay();
@@ -8353,12 +8578,16 @@ var _WireMethods = class {
           const searchTotal = Math.ceil((this._searchResults || []).length / (_sc * 2));
           const cur = this._searchPage || 0;
           if (dir === "next") this._searchPage = Math.min(cur + 1, searchTotal - 1);
-          else this._searchPage = Math.max(cur - 1, 0);
+          else if (dir === "prev") this._searchPage = Math.max(cur - 1, 0);
+          else if (dir === "first") this._searchPage = 0;
+          else if (dir === "last") this._searchPage = Math.max(0, searchTotal - 1);
         } else {
-          const totalPages = this.shadowRoot.querySelectorAll(".rp-dot").length || 1;
+          const totalPages = this._rightTotalPages || this.shadowRoot.querySelectorAll(".rp-dot").length || 1;
           const cur = typeof this._rightPage === "number" ? this._rightPage : 0;
           if (dir === "next") this._rightPage = Math.min(cur + 1, totalPages - 1);
-          else this._rightPage = Math.max(cur - 1, 0);
+          else if (dir === "prev") this._rightPage = Math.max(cur - 1, 0);
+          else if (dir === "first") this._rightPage = 0;
+          else if (dir === "last") this._rightPage = Math.max(0, totalPages - 1);
         }
         const right = this.shadowRoot.getElementById("col-right");
         if (right) {
@@ -12230,14 +12459,19 @@ var _TautulliMethods = class {
     const days = (playsData || []).slice(-7);
     const max = Math.max(...days.map((d) => d.value || 0), 1);
     const total = days.reduce((s, d) => s + (d.value || 0), 0);
+    const today = (/* @__PURE__ */ new Date()).getDate();
     const bars = days.map((d) => {
-      const h = Math.max(d.value ? 2 : 0, Math.round((d.value || 0) / max * 100));
+      const h = Math.max(d.value ? 4 : 0, Math.round((d.value || 0) / max * 100));
       const gap = 100 - h;
-      return `<div style="flex:1;display:flex;flex-direction:column"><div style="flex:${gap}"></div><div style="flex:${h};background:rgba(255,255,255,0.55);border-radius:2px 2px 0 0${d.value ? "" : ";display:none"}"></div></div>`;
+      const isToday = d.date && parseInt((d.date || "").slice(-2), 10) === today;
+      const bar = d.value ? `<div style="flex:${h};background:linear-gradient(to bottom,rgba(255,255,255,0.75),rgba(255,255,255,0.3));border-radius:3px 3px 0 0"></div>` : `<div style="flex:${h};display:none"></div>`;
+      return `<div style="flex:1;display:flex;flex-direction:column;padding:0 1.5px"><div style="flex:${gap}"></div>${bar}</div>`;
     }).join("");
-    const labels = days.map(
-      (d) => `<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">${(d.date || "").slice(-2)}</div>`
-    ).join("");
+    const labels = days.map((d) => {
+      const day = (d.date || "").slice(-2);
+      const isToday = parseInt(day, 10) === today;
+      return `<div style="flex:1;font-size:7px;font-weight:${isToday ? "700" : "500"};color:${isToday ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)"};text-align:center;padding:2px 0 0">${day}</div>`;
+    }).join("");
     const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("tlPlays")}</span>` : "";
     return `<div class="tl-card" data-tl-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
@@ -12249,8 +12483,9 @@ var _TautulliMethods = class {
         ${playsTag}
       </div>
       <div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0">
-        <div style="flex:1;display:flex;gap:2px">${bars || ""}</div>
-        <div style="display:flex;gap:2px;margin-top:2px">${labels}</div>
+        <div style="flex:1;display:flex;gap:0">${bars || ""}</div>
+        <div style="height:1px;background:rgba(255,255,255,0.08);margin:1px 0"></div>
+        <div style="display:flex;gap:0;margin-top:1px">${labels}</div>
       </div>
     </div>`;
   }
@@ -13420,16 +13655,20 @@ var _JellystatMethods = class {
     const days = (playsData || []).slice(-7);
     const max = Math.max(...days.map((d) => d.value || 0), 1);
     const total = days.reduce((s, d) => s + (d.value || 0), 0);
+    const today = (/* @__PURE__ */ new Date()).getDate();
     const bars = days.map((d) => {
-      const h = Math.max(d.value ? 2 : 0, Math.round((d.value || 0) / max * 100));
+      const h = Math.max(d.value ? 4 : 0, Math.round((d.value || 0) / max * 100));
       const gap = 100 - h;
-      return '<div style="flex:1;display:flex;flex-direction:column"><div style="flex:' + gap + '"></div><div style="flex:' + h + ";background:rgba(255,255,255,0.55);border-radius:2px 2px 0 0" + (d.value ? "" : ";display:none") + '"></div></div>';
+      const bar = d.value ? '<div style="flex:' + h + ';background:linear-gradient(to bottom,rgba(255,255,255,0.75),rgba(255,255,255,0.3));border-radius:3px 3px 0 0"></div>' : '<div style="flex:' + h + ';display:none"></div>';
+      return '<div style="flex:1;display:flex;flex-direction:column;padding:0 1.5px"><div style="flex:' + gap + '"></div>' + bar + "</div>";
     }).join("");
-    const labels = days.map(
-      (d) => '<div style="flex:1;font-size:6px;color:rgba(255,255,255,0.3);text-align:center;padding:1px 0 0">' + (d.date || "").slice(-2) + "</div>"
-    ).join("");
+    const labels = days.map((d) => {
+      const day = (d.date || "").slice(-2);
+      const isToday = parseInt(day, 10) === today;
+      return '<div style="flex:1;font-size:7px;font-weight:' + (isToday ? "700" : "500") + ";color:" + (isToday ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)") + ';text-align:center;padding:2px 0 0">' + day + "</div>";
+    }).join("");
     const playsTag = total > 0 ? '<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + total + " " + this._t("tlPlays") + "</span>" : "";
-    return `<div class="tl-card" data-js-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlCharts")}</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span></div>` + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:2px">' + (bars || "") + '</div><div style="display:flex;gap:2px;margin-top:2px">' + labels + "</div></div></div>";
+    return `<div class="tl-card" data-js-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlCharts")}</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span></div>` + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:0">' + (bars || "") + '</div><div style="height:1px;background:rgba(255,255,255,0.08);margin:1px 0"></div><div style="display:flex;gap:0;margin-top:1px">' + labels + "</div></div></div>";
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Modal
@@ -13956,7 +14195,7 @@ var _ActivityRenderMethods = class {
     const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
     const mkSel = (id, val, opts, ph) => opts.length < 2 ? "" : `<select id="${id}" style="${val !== "all" ? selStyA : selSty}"><option value="all"${val === "all" ? " selected" : ""}>${ph}</option>${opts.map((o) => `<option value="${o}"${val === o ? " selected" : ""}>${o}</option>`).join("")}</select>`;
-    const qSvcSel = C.has("source") ? `<select id="act-queue-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${fSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${fSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>` : "";
+    const qSvcSel = C.has("source") ? `<select id="act-queue-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${fSvc === "radarr" ? " selected" : ""}>${this._instLabel("radarr")}</option><option value="sonarr"${fSvc === "sonarr" ? " selected" : ""}>${this._instLabel("sonarr")}</option></select>` : "";
     const qStsSel = C.has("status") ? `<select id="act-queue-sts" style="${fSts !== "all" ? selStyA : selSty}"><option value="all"${fSts === "all" ? " selected" : ""}>${this._t("actAllStatus")}</option><option value="downloading"${fSts === "downloading" ? " selected" : ""}>${this._t("actDownloading")}</option><option value="failed"${fSts === "failed" ? " selected" : ""}>${this._t("actEvtFailed")}</option></select>` : "";
     const qQualSel = C.has("quality") ? mkSel("act-queue-quality", fQual, uniq(all, (r) => r.quality?.quality?.name), this._t("actAllQualities")) : "";
     const qProtoSel = C.has("protocol") ? mkSel("act-queue-proto", fProto, ["torrent", "usenet"], this._t("actAllProtocols")) : "";
@@ -13972,8 +14211,8 @@ var _ActivityRenderMethods = class {
       const _sm = item.statusMessages;
       const _smLines = isBad && item._miRejection ? [item._miRejection] : _sm?.length ? _sm.flatMap((s) => s.messages?.length ? s.messages : s.title ? [s.title] : []).filter(Boolean) : [];
       const stLbl = isBad ? _smLines[0] || item.trackedDownloadState || item.trackedDownloadStatus || "Error" : `${pct}%`;
-      const svcCol = item._svc === "radarr" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
-      const svcLbl = item._svc === "radarr" ? "Radarr" : "Sonarr";
+      const svcCol = item._svc === "radarr" || item._svc === "radarr2" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+      const svcLbl = this._instLabel(item._svc);
       const sizLbl = item.size ? this._actFmtSize(item.size) : "\u2014";
       const qualLbl = item.quality?.quality?.name || "\u2014";
       const timeLbl = item.timeleft || "\u2014";
@@ -14139,7 +14378,7 @@ var _ActivityRenderMethods = class {
     const fIdx = mh.histFilterIndexer || "all";
     const fRG = mh.histFilterRelgroup || "all";
     const hEvtSel = HC.has("event") ? `<select id="act-hist-filter" style="${filter && filter !== "all" ? selStyA : selSty}"><option value="all"${(filter || "all") === "all" ? " selected" : ""}>${this._t("actAllEvents")}</option><option value="grabbed"${filter === "grabbed" ? " selected" : ""}>${this._t("actEvtGrabbed")}</option><option value="downloadFolderImported"${filter === "downloadFolderImported" ? " selected" : ""}>${this._t("actEvtImported")}</option><option value="downloadFailed"${filter === "downloadFailed" ? " selected" : ""}>${this._t("actEvtFailed")}</option></select>` : "";
-    const hSvcSel = `<select id="act-hist-svc" style="${hSvc !== "all" ? selStyA : selSty}"><option value="all"${hSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${hSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${hSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
+    const hSvcSel = `<select id="act-hist-svc" style="${hSvc !== "all" ? selStyA : selSty}"><option value="all"${hSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${hSvc === "radarr" ? " selected" : ""}>${this._instLabel("radarr")}</option><option value="sonarr"${hSvc === "sonarr" ? " selected" : ""}>${this._instLabel("sonarr")}</option></select>`;
     const hQualSel = HC.has("quality") ? mkSel("act-hist-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), this._t("actAllQualities")) : "";
     const hLangSel = HC.has("langs") ? mkSel("act-hist-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), this._t("actAllLanguages")) : "";
     const hFmtSel = HC.has("formats") ? mkSel("act-hist-format", fFmt, [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort(), this._t("actAllFormats")) : "";
@@ -14264,7 +14503,7 @@ var _ActivityRenderMethods = class {
       </div>`;
     }
     const rows = paged.map((r) => {
-      const srcCell = `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${r._svc === "radarr" ? "Radarr" : "Sonarr"}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
+      const srcCell = `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" || r._svc === "radarr2" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
       const colTds = visHistCols.map((col) => {
         if (col.id === "event") return `<td style="padding:7px 8px;white-space:nowrap"><span style="font-size:10px;font-weight:600;color:var(--is-text-body)">${evLabel(r.eventType)}</span></td>`;
         if (col.id === "quality") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.quality?.quality?.name || "\u2014"}</td>`;
@@ -14337,7 +14576,7 @@ var _ActivityRenderMethods = class {
     const fLang = mb.blFilterLang || "all";
     const fFmt = mb.blFilterFormat || "all";
     const fIdx = mb.blFilterIndexer || "all";
-    const blSvcSel = `<select id="act-bl-svc" style="${blSvc !== "all" ? selStyA : selSty}"><option value="all"${blSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${blSvc === "radarr" ? " selected" : ""}>Radarr</option><option value="sonarr"${blSvc === "sonarr" ? " selected" : ""}>Sonarr</option></select>`;
+    const blSvcSel = `<select id="act-bl-svc" style="${blSvc !== "all" ? selStyA : selSty}"><option value="all"${blSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option><option value="radarr"${blSvc === "radarr" ? " selected" : ""}>${this._instLabel("radarr")}</option><option value="sonarr"${blSvc === "sonarr" ? " selected" : ""}>${this._instLabel("sonarr")}</option></select>`;
     const blProtoSel = `<select id="act-bl-proto" style="${blProto !== "all" ? selStyA : selSty}"><option value="all"${blProto === "all" ? " selected" : ""}>${this._t("actAllProtocols")}</option><option value="torrent"${blProto === "torrent" ? " selected" : ""}>Torrent</option><option value="usenet"${blProto === "usenet" ? " selected" : ""}>Usenet</option></select>`;
     const blQualSel = BC.has("quality") ? mkSel("act-bl-quality", fQual, uniq(allRaw, (r) => r.quality?.quality?.name), this._t("actAllQualities")) : "";
     const blLangSel = BC.has("langs") ? mkSel("act-bl-lang", fLang, [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort(), this._t("actAllLanguages")) : "";
@@ -14453,7 +14692,7 @@ var _ActivityRenderMethods = class {
     const rows = paged.map((r) => {
       const rmBtn = delMode ? `<button class="act-bl-remove-btn" data-id="${r.id}" data-svc="${r._svc}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;color:rgba(220,80,80,0.9)">${trashSvg}</button>` : "";
       const colTds = visBLCols.map((col) => {
-        if (col.id === "source") return `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${r._svc === "radarr" ? "Radarr" : "Sonarr"}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
+        if (col.id === "source") return `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" || r._svc === "radarr2" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
         if (col.id === "srctitle") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.sourceTitle || "\u2014")}</td>`;
         if (col.id === "langs") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
         if (col.id === "quality") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.quality?.quality?.name || "\u2014"}</td>`;
@@ -14634,15 +14873,15 @@ var _ActivityRenderMethods = class {
         if (movieCount > 0) {
           rows += mkRow(filmSvg, this._t("tlFilterMovies"), movieCount);
           if (hasR2) {
-            if (r1 > 0) rows += mkSubRow("Radarr", r1);
-            if (r2 > 0) rows += mkSubRow("Radarr 2", r2);
+            if (r1 > 0) rows += mkSubRow(this._instLabel("radarr"), r1);
+            if (r2 > 0) rows += mkSubRow(this._instLabel("radarr2"), r2);
           }
         }
         if (seriesCount > 0) {
           rows += mkRow(tvSvg, this._t("tlFilterTvShows"), seriesCount);
           if (hasS2) {
-            if (s1 > 0) rows += mkSubRow("Sonarr", s1);
-            if (s2 > 0) rows += mkSubRow("Sonarr 2", s2);
+            if (s1 > 0) rows += mkSubRow(this._instLabel("sonarr"), s1);
+            if (s2 > 0) rows += mkSubRow(this._instLabel("sonarr2"), s2);
           }
         }
       } else {
@@ -14757,10 +14996,10 @@ var _ActivityRenderMethods = class {
     const selStyA = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
     const _svcInstances = [
-      { v: "radarr", lbl: "Radarr", has: all.some((r) => r._svc === "radarr") },
-      { v: "radarr2", lbl: "Radarr 2", has: all.some((r) => r._svc === "radarr2") },
-      { v: "sonarr", lbl: "Sonarr", has: all.some((r) => r._svc === "sonarr") },
-      { v: "sonarr2", lbl: "Sonarr 2", has: all.some((r) => r._svc === "sonarr2") }
+      { v: "radarr", lbl: this._instLabel("radarr"), has: all.some((r) => r._svc === "radarr") },
+      { v: "radarr2", lbl: this._instLabel("radarr2"), has: all.some((r) => r._svc === "radarr2") },
+      { v: "sonarr", lbl: this._instLabel("sonarr"), has: all.some((r) => r._svc === "sonarr") },
+      { v: "sonarr2", lbl: this._instLabel("sonarr2"), has: all.some((r) => r._svc === "sonarr2") }
     ].filter((x) => x.has);
     const mSvcSel = `<select id="act-missing-svc" style="${fSvc !== "all" ? selStyA : selSty}"><option value="all"${fSvc === "all" ? " selected" : ""}>${this._t("actAllSources")}</option>${_svcInstances.map((x) => `<option value="${x.v}"${fSvc === x.v ? " selected" : ""}>${x.lbl}</option>`).join("")}</select>`;
     const profOpts = uniq(all, (r) => r._profile);
@@ -14830,7 +15069,7 @@ var _ActivityRenderMethods = class {
         const seasonRows = isExpanded ? _seasonSubRows(r, true) : "";
         const typeIcon = `<span style="flex-shrink:0;color:var(--is-text-muted);display:flex;align-items:center">${isSonarr ? srcTvSvg : srcFilmSvg}</span>`;
         const subParts = (() => {
-          const lbl = { "radarr2": "Radarr 2", "sonarr2": "Sonarr 2" }[r._svc];
+          const lbl = r._svc === "radarr2" || r._svc === "sonarr2" ? this._instLabel(r._svc) : null;
           const miss = r._missing !== null ? isSonarr ? `<span style="font-weight:700">${r._fileCount || 0}/${r._totalCount || 0}</span>` : `<span style="color:#fb923c;font-weight:700">${r._missing}</span>` : null;
           return [lbl, r._profile, miss].filter(Boolean);
         })();
@@ -14876,7 +15115,7 @@ var _ActivityRenderMethods = class {
       const totalEp = isSonarr ? (r._raw?.statistics?.totalEpisodeCount || 0) - s0total : 0;
       const colTds = visCols.map((col) => {
         if (col.id === "source") {
-          const lbl = { "radarr": "Radarr", "radarr2": "Radarr 2", "sonarr": "Sonarr", "sonarr2": "Sonarr 2" }[r._svc] || (isSonarr ? "Sonarr" : "Radarr");
+          const lbl = this._instLabel(r._svc);
           return `<td style="padding:8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${lbl}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${isSonarr ? srcTvSvg : srcFilmSvg}</span></div></td>`;
         }
         if (col.id === "year") return `<td style="padding:8px;font-size:10px;color:var(--is-text-sec)">${r._year || "\u2014"}</td>`;
@@ -14923,6 +15162,17 @@ var _ActivityRenderMethods = class {
       </div>
       ${PAG}
     </div>`;
+  }
+  // ── Instance label helper ─────────────────────────────────────────────────
+  // Returns seerr server name if configured, else "Radarr" / "Radarr 2" / …
+  _instLabel(svc) {
+    const defaults = { radarr: "Radarr", radarr2: "Radarr 2", sonarr: "Sonarr", sonarr2: "Sonarr 2" };
+    if (this._overseerrConfigured !== false) {
+      const map = { radarr: this._seerrRadarr, radarr2: this._seerrRadarr2, sonarr: this._seerrSonarr, sonarr2: this._seerrSonarr2 };
+      const name = map[svc]?.name;
+      if (name) return name;
+    }
+    return defaults[svc] || svc;
   }
   // ── Utility ──────────────────────────────────────────────────────────────
   _actFmtSize(bytes) {
@@ -16453,6 +16703,8 @@ var ArrStackCard = class extends HTMLElement {
     this._tvUpcoming = [];
     this._trending = [];
     this._popular = [];
+    this._trakt = [];
+    this._traktConfigured = null;
     this._qbit = [];
     this._qbitTransfer = {};
     this._qbitDiskFreeBytes = null;
@@ -16464,6 +16716,7 @@ var ArrStackCard = class extends HTMLElement {
     this._sabRetryBusy = null;
     this._sabDeleteBusy = null;
     this._qbCookies = null;
+    this._capsLoaded = false;
     this._qbitConfigured = true;
     this._sabConfigured = true;
     this._bazarrConfigured = true;
@@ -16723,6 +16976,16 @@ var ArrStackCard = class extends HTMLElement {
   _getSectionOverlayConfig(section) {
     const tmdbUrl = (path) => !path ? null : path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w92${path}`;
     const cfgs = {
+      trakt: {
+        dataKey: "_trakt",
+        icon: "mdi:movie-star-outline",
+        titleKey: "traktRecommended",
+        apiEndpoint: null,
+        hasTvPending: true,
+        renderCard: (m, i) => this._renderTraktCard(m, i),
+        getPosterUrl: (m) => m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w92${m.posterPath}` : null,
+        emoji: (m) => m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
+      },
       trending: {
         dataKey: "_trending",
         icon: "mdi:trending-up",
@@ -17455,7 +17718,12 @@ var ArrStackCard = class extends HTMLElement {
     const right = this.shadowRoot.getElementById("col-right");
     if (!left || !right) return;
     const layout = this._cfg?.layout || "both";
-    if (layout !== "right") left.innerHTML = this._renderLeft();
+    if (layout !== "right") {
+      const leftContent = this._renderLeft();
+      left.innerHTML = leftContent;
+      const body = this.shadowRoot.querySelector(".card-body");
+      if (body) body.classList.toggle("no-downloads", !leftContent);
+    }
     if (this._requestPending) return;
     if (layout !== "left") right.innerHTML = this._renderRight();
     this._wireSort();
