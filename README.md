@@ -85,7 +85,7 @@ The right panel is modular. You choose which sections appear and in what order v
 #### Discovery & Recommendations
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
-- **Trakt recommendations** — personalised movie and show suggestions based on your watch history, interleaved for variety
+- **Trakt recommendations** — personalised movie and show suggestions based on your watch history, interleaved for variety. Requires a scrobbler to sync your watched content to Trakt — e.g. [PlexTraktSync](https://github.com/Taxel/PlexTraktSync)
 - One-click or profile-based requests directly to Radarr/Sonarr, or via Overseerr/Jellyseerr
 - **With Overseerr / Jellyseerr:** approve and decline pending requests, family account support with per-user request management
 
