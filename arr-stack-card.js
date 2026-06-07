@@ -177,14 +177,6 @@ var ArrStackCardEditor = class extends HTMLElement {
         </div>
         ${this._val("swap_sides", false) ? `<div class="hint">Media panel is taller \u2014 set Sticky nav offset to ~2000 for the nav to appear immediately on mobile.</div>` : ""}` : ""}
         <div class="row">
-          <span class="row-label">Swap sides</span>
-          <label class="toggle">
-            <input type="checkbox" data-key="swap_sides" ${this._val("swap_sides", false) ? "checked" : ""}>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        ${this._val("swap_sides", false) ? `<div class="hint">Media panel is taller \u2014 set Sticky nav offset to ~2000 for the nav to appear immediately on mobile.</div>` : ""}
-        <div class="row">
           <span class="row-label">Sticky nav offset (px)</span>
           <input type="number" data-key="sticky_nav_offset" value="${this._val("sticky_nav_offset", 100)}" min="0" max="500" step="10"/>
         </div>
@@ -14123,7 +14115,7 @@ var _ActivityRenderMethods = class {
     const all = [
       ...(radarrRecords || []).map((r) => ({
         ...r,
-        _svc: "radarr",
+        _svc: r._svc || "radarr",
         _title: r._enrichedTitle || r.movie?.title || r.title || "\u2014",
         _episodeTitle: ""
       })),
@@ -14131,7 +14123,7 @@ var _ActivityRenderMethods = class {
         const seriesTitle = r._enrichedTitle || r.series?.title || r.title || "\u2014";
         return {
           ...r,
-          _svc: "sonarr",
+          _svc: r._svc || "sonarr",
           _title: seriesTitle + _epNum(r.episode),
           _episodeTitle: r.episode?.title || ""
         };
@@ -14758,14 +14750,22 @@ var _ActivityRenderMethods = class {
     const isSonarr = svc === "sonarr" || svc === "sonarr2";
     const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
     const selStyle = (missing) => `color-scheme:${isDay ? "light" : "dark"};appearance:none;-webkit-appearance:none;padding:5px 24px 5px 8px;border-radius:6px;width:100%;box-sizing:border-box;font-size:11px;font-weight:600;cursor:pointer;outline:none;border:${missing ? "1px dashed rgba(248,113,113,0.8)" : "1px solid var(--is-divider)"};background-color:${missing ? "rgba(248,113,113,0.1)" : "var(--is-btn-bg)"};background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(128,128,128,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;color:${missing ? "rgba(248,113,113,0.95)" : "var(--is-text)"};`;
-    const lib = isRadarr ? this._radarr || [] : isSonarr ? this._sonarr || [] : [];
+    const lib = svc === "radarr" ? this._radarr || [] : svc === "radarr2" ? this._radarr2 || [] : svc === "sonarr" ? this._sonarr || [] : svc === "sonarr2" ? this._sonarr2 || [] : [];
     const buildLibOpts = (curId) => lib.slice().sort((a, b) => (a.title || "").localeCompare(b.title || "")).map((m) => `<option value="${m.id}"${m.id == curId ? " selected" : ""}>${this._escHtml(m.title || "\u2014")}${m.year ? ` (${m.year})` : ""}</option>`).join("");
     const buildQualOpts = (curId) => (qDefs || []).slice().sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).map((d) => {
       const id = d.quality?.id ?? d.id;
       return `<option value="${id}"${id == curId ? " selected" : ""}>${this._escHtml(d.quality?.name || d.title || "\u2014")}</option>`;
     }).join("");
     const buildLangOpts = (curId) => (langs || []).filter((l) => l.id !== -1).slice().sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((l) => `<option value="${l.id}"${l.id == curId ? " selected" : ""}>${this._escHtml(l.name || "\u2014")}</option>`).join("");
-    const allCanImport = candidates.every((c) => isRadarr ? !!c.movie : isSonarr ? !!c.series : true);
+    const allCanImport = candidates.every((c) => {
+      if (isRadarr && !c.movie) return false;
+      if (isSonarr && !c.series) return false;
+      const qName = c.quality?.quality?.name;
+      if (!qName || qName === "Unknown") return false;
+      const langName = c.languages?.[0]?.name;
+      if (!c.languages?.length || !langName || langName === "Unknown") return false;
+      return true;
+    });
     const importBtn = `<button id="mi-import-all" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;background:${allCanImport ? "rgba(60,200,120,0.18)" : "var(--is-btn-bg)"};color:${allCanImport ? "rgba(80,220,140,0.95)" : "var(--is-text-muted)"};font-size:13px;font-weight:700;cursor:${allCanImport ? "pointer" : "not-allowed"}" ${allCanImport ? "" : "disabled"}>${this._t("actImport")}</button>`;
     const mediaLabel = isRadarr ? this._t("typeMovie") : this._t("typeTv");
     const mediaField = isRadarr ? "movie" : "series";
@@ -14778,8 +14778,8 @@ var _ActivityRenderMethods = class {
         const qualName = c.quality?.quality?.name;
         const curLangId = c.languages?.[0]?.id ?? "";
         const rejLower = (c.rejections || []).map((r) => (r.reason || r || "").toLowerCase());
-        const qualMiss = rejLower.some((r) => r.includes("quality"));
-        const langMiss = rejLower.some((r) => r.includes("language"));
+        const qualMiss = rejLower.some((r) => r.includes("quality")) || !qualName || qualName === "Unknown";
+        const langMiss = rejLower.some((r) => r.includes("language")) || !c.languages?.length || c.languages[0]?.name === "Unknown";
         const rg = c.releaseGroup || "\u2014";
         const size = c.size ? this._actFmtSize(c.size) : "\u2014";
         const rej = (c.rejections || []).map((r) => r.reason || r).filter(Boolean);
@@ -14808,8 +14808,8 @@ var _ActivityRenderMethods = class {
       const qualName = c.quality?.quality?.name;
       const curLangId = c.languages?.[0]?.id ?? "";
       const rejLower = (c.rejections || []).map((r) => (r.reason || r || "").toLowerCase());
-      const qualMiss = rejLower.some((r) => r.includes("quality"));
-      const langMiss = rejLower.some((r) => r.includes("language"));
+      const qualMiss = rejLower.some((r) => r.includes("quality")) || !qualName || qualName === "Unknown";
+      const langMiss = rejLower.some((r) => r.includes("language")) || !c.languages?.length || c.languages[0]?.name === "Unknown";
       const rg = c.releaseGroup || "\u2014";
       const size = c.size ? this._actFmtSize(c.size) : "\u2014";
       const rej = (c.rejections || []).map((r) => r.reason || r).filter(Boolean);
@@ -15373,21 +15373,21 @@ var _WireActivityMethods = class {
       const rRaw = rq.status === "fulfilled" && rq.value ? _toArr(rq.value) : [];
       const rRaw2 = rq2.status === "fulfilled" && rq2.value ? _toArr(rq2.value) : [];
       const rRecords = [
-        ...rRaw.map((r) => ({ ...r, _enrichedTitle: rMovieMap.get(r.movieId) || r.movie?.title || r.title || null })),
-        ...rRaw2.map((r) => ({ ...r, _enrichedTitle: rMovieMap2.get(r.movieId) || r.movie?.title || r.title || null }))
+        ...rRaw.map((r) => ({ ...r, _svc: "radarr", _enrichedTitle: rMovieMap.get(r.movieId) || r.movie?.title || r.title || null })),
+        ...rRaw2.map((r) => ({ ...r, _svc: "radarr2", _enrichedTitle: rMovieMap2.get(r.movieId) || r.movie?.title || r.title || null }))
       ];
       const sSeriesMap = new Map((this._sonarr || []).map((s) => [s.id, s.title]));
       const sSeriesMap2 = new Map((this._sonarr2 || []).map((s) => [s.id, s.title]));
       const sRaw = sq.status === "fulfilled" && sq.value ? _toArr(sq.value) : [];
       const sRaw2 = sq2.status === "fulfilled" && sq2.value ? _toArr(sq2.value) : [];
       const sRecords = [
-        ...sRaw.map((r) => ({ ...r, _enrichedTitle: sSeriesMap.get(r.seriesId) || r.series?.title || r.title || null })),
-        ...sRaw2.map((r) => ({ ...r, _enrichedTitle: sSeriesMap2.get(r.seriesId) || r.series?.title || r.title || null }))
+        ...sRaw.map((r) => ({ ...r, _svc: "sonarr", _enrichedTitle: sSeriesMap.get(r.seriesId) || r.series?.title || r.title || null })),
+        ...sRaw2.map((r) => ({ ...r, _svc: "sonarr2", _enrichedTitle: sSeriesMap2.get(r.seriesId) || r.series?.title || r.title || null }))
       ];
       const _isBadItem = (r) => r.trackedDownloadStatus === "warning" || r.trackedDownloadStatus === "error" || r.trackedDownloadState === "importFailed" || r.status === "failed";
       const badItems = [
-        ...rRecords.filter((r) => _isBadItem(r) && r.downloadId).map((r) => ({ r, svc: "radarr", qs: `downloadId=${encodeURIComponent(r.downloadId)}&movieId=${r.movieId || ""}` })),
-        ...sRecords.filter((r) => _isBadItem(r) && r.downloadId).map((r) => ({ r, svc: "sonarr", qs: `downloadId=${encodeURIComponent(r.downloadId)}&seriesId=${r.seriesId || ""}` }))
+        ...rRecords.filter((r) => _isBadItem(r) && r.downloadId).map((r) => ({ r, svc: r._svc, qs: `downloadId=${encodeURIComponent(r.downloadId)}&movieId=${r.movieId || ""}` })),
+        ...sRecords.filter((r) => _isBadItem(r) && r.downloadId).map((r) => ({ r, svc: r._svc, qs: `downloadId=${encodeURIComponent(r.downloadId)}&seriesId=${r.seriesId || ""}` }))
       ];
       if (badItems.length) {
         const miResults = await Promise.allSettled(badItems.map((b) => this._callApi("GET", `arr_stack/${b.svc}/manualimport?${b.qs}`)));
@@ -15400,8 +15400,7 @@ var _WireActivityMethods = class {
         });
       }
       m.queueData = { radarr: rRecords, sonarr: sRecords };
-      this._actSetBodyHtml(body, this._actQueueTabHtml(m.queueData.radarr, m.queueData.sonarr, m.queuePage, m.queuePerPage, m.queueCols));
-      this._wireActBody(body, el, "queue");
+      this._actRenderQueue(body, el);
     } else if (tab === "history") {
       const et = m.histFilter === "all" ? "" : "&eventType=" + encodeURIComponent(m.histFilter);
       const calls = [
@@ -15453,6 +15452,29 @@ var _WireActivityMethods = class {
       this._computeActMissingCache();
       this._actRenderMissing(body, el);
     }
+  }
+  _actRenderQueue(body, el, pageOverride) {
+    const m = this._activityModal;
+    if (!m) return;
+    if (pageOverride !== void 0) m.queuePage = pageOverride;
+    body.innerHTML = this._actQueueTabHtml(m.queueData?.radarr || [], m.queueData?.sonarr || [], m.queuePage, m.queuePerPage, m.queueCols);
+    requestAnimationFrame(() => {
+      if (!this._activityModal) return;
+      const clip = body.querySelector("[data-act-clip]");
+      if (clip) {
+        const m2 = this._activityModal;
+        const isMob = !clip.querySelector("table");
+        const pagH = isMob ? 44 : 40;
+        const effectiveClipB = clip.getBoundingClientRect().bottom - pagH;
+        const items = isMob ? [...clip.children] : [...clip.querySelectorAll("tbody tr")];
+        const fitting = items.filter((el2) => el2.getBoundingClientRect().bottom <= effectiveClipB + 2).length;
+        if (fitting < items.length && fitting >= 1) {
+          m2.queuePerPage = fitting;
+          body.innerHTML = this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], m2.queuePage, m2.queuePerPage, m2.queueCols);
+        }
+      }
+      this._wireActBody(body, el, "queue");
+    });
   }
   _actRenderMissing(body, el, pageOverride, skipBaseReset) {
     const m = this._activityModal;
@@ -16333,9 +16355,7 @@ var _WireActivityMethods = class {
   }
   // Render candidates with select dropdowns and wire change + import buttons
   _miRenderAndWire(candidates, svc, qDefs, langs, miBody, overlay, modalEl) {
-    const isRadarr = svc === "radarr" || svc === "radarr2";
-    const isSonarr = svc === "sonarr" || svc === "sonarr2";
-    const lib = isRadarr ? this._radarr || [] : isSonarr ? this._sonarr || [] : [];
+    const lib = svc === "radarr" ? this._radarr || [] : svc === "radarr2" ? this._radarr2 || [] : svc === "sonarr" ? this._sonarr || [] : svc === "sonarr2" ? this._sonarr2 || [] : [];
     miBody.innerHTML = this._actManualImportCandidatesHtml(candidates, svc, qDefs, langs);
     miBody.addEventListener("change", (e) => {
       const sel = e.target.closest("select.mi-field-sel");
@@ -16660,15 +16680,64 @@ var _WireActivityMethods = class {
       if (isRadarr && !c.movie) return false;
       if (isSonarr && !c.series) return false;
       return true;
-    }).map((c) => ({ ...c, importMode: "auto" }));
+    }).map((c) => ({
+      // Send only the fields Radarr expects for ManualImportResource.
+      // Sending the full GET response can trigger unwanted reprocessing paths.
+      id: c.id,
+      path: c.path,
+      movieId: isRadarr ? c.movie?.id || c.movieId : void 0,
+      seriesId: isSonarr ? c.series?.id || c.seriesId : void 0,
+      episodeIds: c.episodeIds,
+      quality: c.quality,
+      languages: c.languages,
+      releaseGroup: c.releaseGroup || "",
+      downloadId: c.downloadId || "",
+      indexerFlags: c.indexerFlags || 0,
+      importMode: "auto",
+      disableReleaseSwitching: false
+    }));
     if (!toImport.length) return;
     try {
-      await this._callApi("POST", `arr_stack/${svc}/manualimport`, toImport);
+      await this._callApi("POST", `arr_stack/${svc}/command`, {
+        name: "ManualImport",
+        importMode: "Auto",
+        files: toImport.map((c) => ({
+          path: c.path,
+          movieId: c.movieId,
+          seriesId: c.seriesId,
+          episodeIds: c.episodeIds,
+          quality: c.quality,
+          languages: c.languages,
+          releaseGroup: c.releaseGroup || "",
+          downloadId: c.downloadId || "",
+          indexerFlags: c.indexerFlags || 0,
+          disableReleaseSwitching: false
+        }))
+      });
+      const miBody = overlayEl.querySelector("#mi-body");
+      if (miBody) {
+        miBody.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px 20px">
+          <div class="is-loading"><span>${this._t("actImporting")}</span></div>
+          <div style="font-size:11px;color:var(--is-text-muted)">Radarr is processing the import\u2026</div>
+        </div>`;
+      }
+      await new Promise((r) => setTimeout(r, 3e3));
+      overlayEl.remove();
+      if (this._activityModal) await this._actLoadTab("queue", modalEl);
     } catch (err) {
       console.error("[arr-card] Manual import submit error:", err);
+      const miBody = overlayEl.querySelector("#mi-body");
+      if (miBody) {
+        const msg = err?.body?.message || err?.body?.description?.split("\n")[0] || String(err?.error || err);
+        const isParseErr = msg.toLowerCase().includes("parse") || msg.toLowerCase().includes("augment");
+        const hint = isParseErr ? "Radarr cannot parse the filename (likely special characters). Rename the file or import directly in Radarr." : "";
+        miBody.innerHTML = `<div style="padding:20px 0;color:rgba(255,120,80,0.9)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">Import failed</div>
+          <div style="font-size:11px;opacity:0.8">${this._escHtml(msg)}</div>
+          ${hint ? `<div style="font-size:11px;color:rgba(255,200,100,0.85);margin-top:8px">${hint}</div>` : ""}
+        </div>`;
+      }
     }
-    overlayEl.remove();
-    await this._actLoadTab("queue", modalEl);
   }
 };
 var wireActivityMixin = _WireActivityMethods.prototype;
