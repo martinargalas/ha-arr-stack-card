@@ -14,7 +14,10 @@ Manage your full media server stack — Radarr, Sonarr, qBittorrent, SABnzbd, Ov
 
 ![Arr Stack Card preview](screenshot.png)
 
-![Trakt Seen & Skip](trakt.gif)
+<table><tr>
+<td><img src="trakt.gif" alt="Trakt Seen & Skip"></td>
+<td><img src="mobile.gif" alt="Mobile"></td>
+</tr></table>
 
 ---
 
