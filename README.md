@@ -10,7 +10,7 @@
 
 <a href="https://discord.gg/CA83tqYZ" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, Bazarr, Plex, Tautulli, Jellystat, and Trakt — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, qBittorrent, SABnzbd, Overseerr/Jellyseerr, Bazarr, Plex, Tautulli, Jellystat, Prowlarr, and Trakt — directly from Home Assistant with a single unified dashboard card.
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -55,6 +55,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | Plex | Active stream monitoring and playback control | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
 | Jellystat | Watch history, statistics, and usage graphs | Optional |
+| Prowlarr | Indexer management and search statistics | Optional |
 | Trakt | Personalised movie & show recommendations | Optional |
 
 Services not configured in the integration are hidden automatically — no manual configuration needed.
@@ -85,7 +86,7 @@ The right panel is modular. You choose which sections appear and in what order v
 #### Discovery & Recommendations
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
-- **Trakt recommendations** — personalised movie and show suggestions based on your Trakt watch history, movies and shows interleaved for variety. For recommendations to reflect what you've actually watched, you need a scrobbler that automatically syncs your plays to Trakt. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) handles this — run it as a Docker container in `watch` mode and it will mark titles as watched on Trakt in real time.
+- **Trakt recommendations** — personalised movie and show suggestions based on your Trakt watch history. Movies and shows are mixed together for variety. For recommendations to reflect what you've actually watched, you need a scrobbler that syncs your plays to Trakt automatically. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) handles this — run it as a Docker container in `watch` mode and it will mark titles as watched on Trakt in real time.
 - One-click or profile-based requests directly to Radarr/Sonarr, or via Overseerr/Jellyseerr
 - **With Overseerr / Jellyseerr:** approve and decline pending requests, family account support with per-user request management
 
@@ -109,6 +110,8 @@ Four-tab panel covering everything happening across your Radarr and Sonarr insta
 - **Blocklist** — manage blocked releases.
 - **Missing** — everything without a file. Filter, adjust monitoring, and trigger Interactive or Auto Search without leaving the panel.
 
+The panel fits exactly as many items as your screen allows — no overflow, no scrollbar, clean layout from the first load.
+
 #### Statistics (Tautulli / Jellystat)
 
 Playback statistics from Tautulli or Jellystat (configure either or both). Admin-only.
@@ -117,6 +120,14 @@ Playback statistics from Tautulli or Jellystat (configure either or both). Admin
 - Play count and duration charts by day, day of week, hour, and media type
 - Per-user and per-library statistics
 - **Account sharing detection** — flags when the same account streams from multiple IPs simultaneously
+
+#### Indexers (Prowlarr)
+
+Indexer overview and search statistics from Prowlarr.
+
+- Indexer health and status at a glance
+- Per-indexer search success rate and response time
+- User-agent breakdown — which apps hit your indexers and how often
 
 ### Appearance & UX
 
@@ -197,6 +208,8 @@ discover:
   oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
 
 # Category order & visibility
+# Sections for optional services are disabled by default for a clean first install.
+# Enable them once the corresponding service is configured.
 categories:
   - id: recentlyAdded
     enabled: true
@@ -211,17 +224,19 @@ categories:
   - id: popular
     enabled: true
   - id: trakt
-    enabled: true
+    enabled: false           # enable after configuring Trakt in the integration
   - id: calendar
     enabled: true
   - id: streams
-    enabled: true
+    enabled: false           # enable after configuring Plex in the integration
   - id: tautulli
-    enabled: true
+    enabled: false           # enable after configuring Tautulli
   - id: jellystat
-    enabled: true
+    enabled: false           # enable after configuring Jellystat
   - id: activity
-    enabled: true
+    enabled: false           # admin-only — enable to show the Activity Queue
+  - id: prowlarr
+    enabled: false           # enable after configuring Prowlarr
 
 # Security
 security:
@@ -259,20 +274,23 @@ styles:
 
 ### Category IDs
 
-| id | Section |
-|----|---------|
-| `recentlyAdded` | Recently Added |
-| `recentlyRequested` | Recently Requested |
-| `upcoming` | Upcoming Movies |
-| `tvUpcoming` | New Shows |
-| `trending` | Trending |
-| `popular` | Popular Movies |
-| `trakt` | Trakt Recommendations |
-| `calendar` | Episode Calendar (Sonarr) |
-| `streams` | Now Playing (Plex) — auto-hidden when nothing plays |
-| `tautulli` | Statistics (Tautulli) |
-| `jellystat` | Statistics (Jellystat) |
-| `activity` | Activity Queue (admin only) |
+| id | Section | Enabled by default |
+|----|---------|-------------------|
+| `recentlyAdded` | Recently Added | ✅ |
+| `recentlyRequested` | Recently Requested | ✅ |
+| `upcoming` | Upcoming Movies | ✅ |
+| `tvUpcoming` | New Shows | ✅ |
+| `trending` | Trending | ✅ |
+| `popular` | Popular Movies | ✅ |
+| `trakt` | Trakt Recommendations | — |
+| `calendar` | Episode Calendar (Sonarr) | ✅ |
+| `streams` | Now Playing (Plex) — auto-hidden when nothing plays | — |
+| `tautulli` | Statistics (Tautulli) | — |
+| `jellystat` | Statistics (Jellystat) | — |
+| `activity` | Activity Queue (admin only) | — |
+| `prowlarr` | Indexers (Prowlarr) | — |
+
+Sections marked **—** are disabled for new installs. Enable them via the visual editor once you've configured the corresponding service.
 
 ---
 
