@@ -15,7 +15,7 @@ Manage your full media server stack — Radarr, Sonarr, qBittorrent, SABnzbd, Ov
 ![Arr Stack Card preview](screenshot.png)
 
 <video src="https://github.com/user-attachments/assets/c53692f1-fd07-4c59-b7e3-d4bbf5d1c4c6" controls width="376" title="Mobile"></video>
-<video src="https://github.com/user-attachments/assets/5505e08f-b85e-4ef5-be4a-e5b13b60166a" controls width="800" title="Tablet"></video>
+![Trakt Seen & Skip](trakt.gif)
 
 ---
 
