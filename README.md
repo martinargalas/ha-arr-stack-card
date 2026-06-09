@@ -208,8 +208,6 @@ discover:
   oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
 
 # Category order & visibility
-# Sections for optional services are disabled by default for a clean first install.
-# Enable them once the corresponding service is configured.
 categories:
   - id: recentlyAdded
     enabled: true
@@ -224,19 +222,19 @@ categories:
   - id: popular
     enabled: true
   - id: trakt
-    enabled: false           # enable after configuring Trakt in the integration
+    enabled: false
   - id: calendar
     enabled: true
   - id: streams
-    enabled: false           # enable after configuring Plex in the integration
+    enabled: false
   - id: tautulli
-    enabled: false           # enable after configuring Tautulli
+    enabled: false
   - id: jellystat
-    enabled: false           # enable after configuring Jellystat
+    enabled: false
   - id: activity
-    enabled: false           # admin-only — enable to show the Activity Queue
+    enabled: false
   - id: prowlarr
-    enabled: false           # enable after configuring Prowlarr
+    enabled: false
 
 # Security
 security:
@@ -274,23 +272,21 @@ styles:
 
 ### Category IDs
 
-| id | Section | Enabled by default |
-|----|---------|-------------------|
-| `recentlyAdded` | Recently Added | ✅ |
-| `recentlyRequested` | Recently Requested | ✅ |
-| `upcoming` | Upcoming Movies | ✅ |
-| `tvUpcoming` | New Shows | ✅ |
-| `trending` | Trending | ✅ |
-| `popular` | Popular Movies | ✅ |
-| `trakt` | Trakt Recommendations | — |
-| `calendar` | Episode Calendar (Sonarr) | ✅ |
-| `streams` | Now Playing (Plex) — auto-hidden when nothing plays | — |
-| `tautulli` | Statistics (Tautulli) | — |
-| `jellystat` | Statistics (Jellystat) | — |
-| `activity` | Activity Queue (admin only) | — |
-| `prowlarr` | Indexers (Prowlarr) | — |
-
-Sections marked **—** are disabled for new installs. Enable them via the visual editor once you've configured the corresponding service.
+| id | Section |
+|----|---------|
+| `recentlyAdded` | Recently Added |
+| `recentlyRequested` | Recently Requested |
+| `upcoming` | Upcoming Movies |
+| `tvUpcoming` | New Shows |
+| `trending` | Trending |
+| `popular` | Popular Movies |
+| `trakt` | Trakt Recommendations |
+| `calendar` | Episode Calendar (Sonarr) |
+| `streams` | Now Playing (Plex) — auto-hidden when nothing plays |
+| `tautulli` | Statistics (Tautulli) |
+| `jellystat` | Statistics (Jellystat) |
+| `activity` | Activity Queue (admin only) |
+| `prowlarr` | Indexers (Prowlarr) |
 
 ---
 
