@@ -4582,6 +4582,8 @@ var _FetchMethods = class {
   }
   async _fetchOverseerr() {
     if (this._overseerrConfigured === null) return;
+    const now = Date.now();
+    if (now - (this._discoverLastFetch["upcoming"] || 0) < 6e5) return;
     try {
       const svc = this._discoverSvc;
       const [d1, d2] = await Promise.all([
@@ -4590,6 +4592,7 @@ var _FetchMethods = class {
       ]);
       this._upcoming = [...d1.results || [], ...d2.results || []];
       this._upcomingError = null;
+      this._discoverLastFetch["upcoming"] = now;
     } catch (e) {
       this._upcomingError = e.message;
       console.error("[arr-card] Upcoming fetch error:", e);
@@ -4598,6 +4601,8 @@ var _FetchMethods = class {
   // Společný helper pro stránkované fetche (trending/popular/tvUpcoming)
   async _fetchOverseerrPaged(endpoint, dataKey, section) {
     if (this._overseerrConfigured === null) return;
+    const now = Date.now();
+    if (now - (this._discoverLastFetch[section] || 0) < 6e5) return;
     try {
       const svc = this._discoverSvc;
       const [d1, d2] = await Promise.all([
@@ -4607,6 +4612,7 @@ var _FetchMethods = class {
       this[dataKey] = [...d1.results || [], ...d2.results || []];
       this._overlayApiTotalPages[section] = d1.totalPages || 1;
       this._overlayApiPage[section] = 2;
+      this._discoverLastFetch[section] = now;
     } catch (e) {
       console.error(`[arr-card] ${section} fetch error:`, e);
     }
@@ -8338,11 +8344,6 @@ var _WireMethods = class {
             }
             try {
               await this._fetchTrakt();
-              if (this._traktWatching?.size) {
-                this._trakt = (this._trakt || []).filter(
-                  (m) => !this._traktWatching.has(m._traktSlug || String(m.id))
-                );
-              }
               this._traktAnimateNext = true;
               this._reRenderRight(true);
             } catch (_) {
@@ -8430,7 +8431,13 @@ var _WireMethods = class {
         e.stopPropagation();
         const sec = el.dataset.sec;
         if (!sec) return;
-        this._overlay = { section: sec, page: 0, tvPending: null };
+        const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
+        const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+        const itemsBefore = showMorePage * cols - 1;
+        const isMobile2 = window.matchMedia("(max-width: 480px)").matches;
+        const perPage = isMobile2 ? cols : cols * 2;
+        const startPage = Math.floor(itemsBefore / perPage);
+        this._overlay = { section: sec, page: startPage, tvPending: null };
         this._reRenderSection(sec);
         const cfg = this._getSectionOverlayConfig(sec);
         if (cfg?.apiEndpoint) this._proactiveSectionLoad(sec);
@@ -19386,6 +19393,7 @@ var ArrStackCard = class extends HTMLElement {
     this._overlay = { section: null, page: 0, tvPending: null };
     this._overlayApiPage = {};
     this._overlayApiTotalPages = {};
+    this._discoverLastFetch = {};
     this._seerrSonarr = null;
     this._seerrSonarr2 = null;
     this._sonarrProfiles = [];
