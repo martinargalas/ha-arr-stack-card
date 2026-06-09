@@ -504,6 +504,9 @@ var ARR_I18N = {
     subtitles: "Titulky",
     // Akce
     add: "+ P\u0159idat",
+    watched: "Vid\u011Bno",
+    notInterested: "Nezaj\xEDm\xE1 m\u011B",
+    skip: "P\u0159esko\u010Dit",
     cancel: "Zru\u0161it",
     confirm: "Potvrdit",
     // Profil / kvalita
@@ -843,6 +846,9 @@ var ARR_I18N = {
     missingSubs: "Missing subs",
     subtitles: "Subtitles",
     add: "+ Add",
+    watched: "Seen",
+    notInterested: "Not interested",
+    skip: "Skip",
     cancel: "Cancel",
     confirm: "Confirm",
     defaultProfile: "Default profile",
@@ -1978,6 +1984,41 @@ var STYLES = `
       .req-panel { display: flex; flex-direction: column; gap: 7px; }
       .req-panel--hidden { display: none; }
       @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+      /* \u2500\u2500 Trakt side overlays (Seen / Not interested) \u2500\u2500 */
+      .trakt-seen-ol, .trakt-ni-ol {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        z-index: 2; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; padding: 8px 7px;
+        background: rgba(0,0,0,0.15);
+        border: 1px solid rgba(255,255,255,0.08);
+        transition: background 0.15s;
+      }
+      .trakt-seen-ol { left: 0;  border-radius: 0 6px 6px 0; border-left: none; }
+      .trakt-ni-ol   { right: 0; border-radius: 6px 0 0 6px; border-right: none; }
+      .trakt-seen-ol:hover, .trakt-ni-ol:hover { background: rgba(0,0,0,0.45); }
+      .trakt-seen-ol span, .trakt-ni-ol span {
+        font-size: 9px; font-weight: 800; text-transform: uppercase;
+        color: rgba(255,255,255,0.8); transition: color 0.15s;
+        user-select: none; text-align: center; line-height: 1.4;
+      }
+      .trakt-seen-ol:hover span, .trakt-ni-ol:hover span { color: rgba(255,255,255,1); }
+
+      @keyframes trakt-card-in {
+        from { opacity: 0; transform: translateY(8px) scale(0.94); }
+        to   { opacity: 1; transform: translateY(0)   scale(1); }
+      }
+      .trakt-animate .mc {
+        animation: trakt-card-in 0.28s ease both;
+      }
+      .trakt-animate .mc:nth-child(1)  { animation-delay: 0ms; }
+      .trakt-animate .mc:nth-child(2)  { animation-delay: 35ms; }
+      .trakt-animate .mc:nth-child(3)  { animation-delay: 70ms; }
+      .trakt-animate .mc:nth-child(4)  { animation-delay: 105ms; }
+      .trakt-animate .mc:nth-child(5)  { animation-delay: 140ms; }
+      .trakt-animate .mc:nth-child(6)  { animation-delay: 175ms; }
+      .trakt-animate .mc:nth-child(7)  { animation-delay: 210ms; }
+      .trakt-animate .mc:nth-child(8)  { animation-delay: 245ms; }
 
       /* \u2500\u2500 \u010Cekaj\xEDc\xED \u017E\xE1dosti (admin) \u2500\u2500 */
       .pr-badge {
@@ -4606,9 +4647,9 @@ var _FetchMethods = class {
   }
   async _fetchTrakt() {
     try {
-      const data = await this._callApi("GET", "arr_stack/trakt/recommendations?limit=20");
+      const data = await this._callApi("GET", "arr_stack/trakt/recommendations?limit=40");
       if (Array.isArray(data)) {
-        this._trakt = data;
+        this._trakt = this._traktWatching?.size ? data.filter((m) => !this._traktWatching.has(m._traktSlug || String(m.id))) : data;
       }
     } catch (e) {
       if (e?.status === 503) {
@@ -6920,7 +6961,7 @@ var _RenderRight = class {
     const p = this._tvRequestPending?.source === "trakt" ? this._tvRequestPending : null;
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trakt", (m) => this._renderTraktCard(m));
     return `
-    <div class="sec-card" style="position:relative">
+    <div class="sec-card" data-trakt-sec style="position:relative">
       <div class="col-hdr" style="margin-bottom:5px">
         <ha-icon icon="mdi:movie-star-outline" style="--mdc-icon-size:24px"></ha-icon>
         <span class="col-hdr-title">${this._t("traktRecommended")}</span>
@@ -7352,6 +7393,35 @@ var _RenderRight = class {
 };
 var renderRightMixin = _RenderRight.prototype;
 
+// src/shared/ui.js
+var ICONS = {
+  /** 14×14 close ✕ (stroke-linecap round) */
+  close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  /** 11×11 close ✕ (no stroke-linecap attr) */
+  closeSmall: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  /** Animated spinner */
+  spinner: `<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 0 1 10 10"/></svg>`,
+  /** ✓ check mark */
+  check: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  /** 👁 eye — "seen / watched" */
+  eye: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  /** ⊘ ban/slash — "not interested" */
+  ban: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`,
+  /** 👁 eye large — side overlay */
+  eyeLg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  /** ⊘ ban large — side overlay */
+  banLg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`
+};
+function dayClass(ctx) {
+  return ctx._isDaytime && ctx._config?.styles?.dayNightMode !== false ? " popup-day" : "";
+}
+function isMobile(bp = 600) {
+  return window.matchMedia(`(max-width:${bp}px)`).matches;
+}
+var SEL_STY = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+var SEL_STY_A = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
+var SEL_STY_WIDE = `width:100%;box-sizing:border-box;background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:6px;color:var(--is-text);font-size:12px;padding:6px 10px;outline:none;color-scheme:light dark`;
+
 // src/render/media-cards.js
 var _MediaCardMethods = class {
   _statusBadge(html) {
@@ -7649,7 +7719,7 @@ var _MediaCardMethods = class {
         <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
-  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null, source = "tvUpcoming" } = {}) {
+  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null, source = "tvUpcoming", watchedBtn = "", traktOverlays = "" } = {}) {
     const title = this._escHtml(m.name || m.originalName || "Unknown");
     const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
     const dateStr = this.fmtDate(m.firstAirDate || m.first_air_date);
@@ -7696,6 +7766,7 @@ var _MediaCardMethods = class {
     return `
     <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
+      ${traktOverlays}
       ${tagHtml}
       ${statusBadge}
       ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
@@ -7712,10 +7783,14 @@ var _MediaCardMethods = class {
       firstAirDate: m.firstAirDate || m.releaseDate,
       releaseDate: m.releaseDate
     });
+    const alreadyHidden = this._traktWatching?.has(m._traktSlug || String(m.id));
+    const traktData = `data-trakt-slug="${m._traktSlug || ""}" data-trakt-type="${m.mediaType}" data-trakt-tmdb="${m.id}"`;
+    const _chars = (s) => s.toUpperCase().split("").join("<br>");
+    const traktOverlays = alreadyHidden ? "" : `<div class="trakt-seen-ol" ${traktData}><span>${_chars(this._t("watched"))}</span></div><div class="trakt-ni-ol"   ${traktData}><span>${_chars(this._t("skip"))}</span></div>`;
     if (m.mediaType === "tv") {
-      return this._renderTvUpcomingCard(normalized, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trakt" });
+      return this._renderTvUpcomingCard(normalized, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trakt", traktOverlays });
     }
-    return this._renderUpcomingCard(normalized, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trakt-" + m.id });
+    return this._renderUpcomingCard(normalized, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trakt-" + m.id, traktOverlays });
   }
   _renderTrendingCard(m, overlayIndex = null) {
     if (m.mediaType === "tv") {
@@ -7723,7 +7798,7 @@ var _MediaCardMethods = class {
     }
     return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trending-" + m.id });
   }
-  _renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = "", overlayIndex = null, reqKey = String(m.id) } = {}) {
+  _renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = "", overlayIndex = null, reqKey = String(m.id), watchedBtn = "", traktOverlays = "" } = {}) {
     const title = this._escHtml(m.title || "Unknown");
     const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
     const dateStr = this.fmtDate(m.releaseDate);
@@ -7782,6 +7857,7 @@ var _MediaCardMethods = class {
     return `
     <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
+      ${traktOverlays}
       ${tagHtml}
       ${statusBadge}
       ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
@@ -8075,6 +8151,16 @@ var _WireMethods = class {
   // Wire up Overseerr add buttons
   // ─────────────────────────────────────────────
   _wireOverseerrButtons() {
+    if (this._traktAnimateNext) {
+      this._traktAnimateNext = false;
+      requestAnimationFrame(() => {
+        const sec = this.shadowRoot.querySelector("[data-trakt-sec]");
+        if (!sec) return;
+        sec.classList.remove("trakt-animate");
+        void sec.offsetWidth;
+        sec.classList.add("trakt-animate");
+      });
+    }
     this.shadowRoot.querySelectorAll(".overseerr-add").forEach((btn) => {
       btn.addEventListener("click", () => {
         const mediaId = parseInt(btn.dataset.mediaid, 10);
@@ -8224,6 +8310,59 @@ var _WireMethods = class {
         }
       });
     });
+    const _traktDismiss = (btn, apiCall) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const slug = btn.dataset.traktSlug;
+        const type = btn.dataset.traktType;
+        const tmdbId = parseInt(btn.dataset.traktTmdb, 10);
+        const key = slug || String(tmdbId);
+        btn.disabled = true;
+        btn.innerHTML = '<span class="action-spinner" style="width:8px;height:8px;border-width:1.5px"></span>';
+        const card = btn.closest(".mc");
+        if (card) {
+          card.style.transition = "opacity 0.18s ease, transform 0.18s ease";
+          card.style.opacity = "0";
+          card.style.transform = "scale(0.85)";
+        }
+        setTimeout(() => {
+          if (!this._traktWatching) this._traktWatching = /* @__PURE__ */ new Set();
+          this._traktWatching.add(key);
+          this._trakt = (this._trakt || []).filter((m) => (m._traktSlug || String(m.id)) !== key);
+          this._traktAnimateNext = true;
+          this._reRenderRight(true);
+          (async () => {
+            try {
+              await apiCall(type, slug, tmdbId);
+            } catch (_) {
+            }
+            try {
+              await this._fetchTrakt();
+              if (this._traktWatching?.size) {
+                this._trakt = (this._trakt || []).filter(
+                  (m) => !this._traktWatching.has(m._traktSlug || String(m.id))
+                );
+              }
+              this._traktAnimateNext = true;
+              this._reRenderRight(true);
+            } catch (_) {
+            }
+          })();
+        }, 200);
+      });
+    };
+    this.shadowRoot.querySelectorAll(".trakt-seen-ol").forEach(
+      (btn) => _traktDismiss(
+        btn,
+        (type, slug, tmdbId) => this._callApi("POST", "arr_stack/trakt/history", { mediaType: type, slug, tmdbId })
+      )
+    );
+    this.shadowRoot.querySelectorAll(".trakt-ni-ol").forEach(
+      (btn) => _traktDismiss(btn, (type, slug) => {
+        const mediaType = type === "tv" ? "shows" : "movies";
+        return this._callApi("DELETE", `arr_stack/trakt/recommendations/${mediaType}/${encodeURIComponent(slug)}`);
+      })
+    );
     this.shadowRoot.querySelectorAll(".req-withdraw").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -9953,27 +10092,6 @@ var _WireJellystatMethods = class {
   }
 };
 var wireJellystatMixin = _WireJellystatMethods.prototype;
-
-// src/shared/ui.js
-var ICONS = {
-  /** 14×14 close ✕ (stroke-linecap round) */
-  close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-  /** 11×11 close ✕ (no stroke-linecap attr) */
-  closeSmall: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-  /** Animated spinner */
-  spinner: `<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 0 1 10 10"/></svg>`,
-  /** ✓ check mark */
-  check: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
-};
-function dayClass(ctx) {
-  return ctx._isDaytime && ctx._config?.styles?.dayNightMode !== false ? " popup-day" : "";
-}
-function isMobile(bp = 600) {
-  return window.matchMedia(`(max-width:${bp}px)`).matches;
-}
-var SEL_STY = `background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-btn-clr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
-var SEL_STY_A = `background:var(--is-btn-abg);border:1px solid var(--is-btn-abdr);border-radius:6px;color:var(--is-btn-aclr);font-size:12px;padding:0 10px;cursor:pointer;outline:none;height:28px;box-sizing:border-box;color-scheme:light dark`;
-var SEL_STY_WIDE = `width:100%;box-sizing:border-box;background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:6px;color:var(--is-text);font-size:12px;padding:6px 10px;outline:none;color-scheme:light dark`;
 
 // src/popup/index.js
 var _PopupMethods = class {
@@ -19251,6 +19369,7 @@ var ArrStackCard = class extends HTMLElement {
     this._pendingRequests = [];
     this._optimisticRequested = /* @__PURE__ */ new Set();
     this._withdrawnIds = /* @__PURE__ */ new Set();
+    this._traktWatching = /* @__PURE__ */ new Set();
     this._myRequestIds = /* @__PURE__ */ new Map();
     this._familyPendingIds = /* @__PURE__ */ new Map();
     this._radarrProfiles = [];
