@@ -277,6 +277,24 @@ var ArrStackCardEditor = class extends HTMLElement {
           </label>
         </div>
         <div class="hint">Automatically switches modal (popup) colours based on time of day. Disable if you use custom modal colours.</div>
+
+        <div class="row">
+          <span class="row-label">ARR application icons</span>
+          <select data-style-key="applicationIcons">
+            <option value="real" ${this._styleVal("applicationIcons", "real") === "real" ? "selected" : ""}>Real (app logos)</option>
+            <option value="mdi" ${this._styleVal("applicationIcons", "real") === "mdi" ? "selected" : ""}>MDI icons</option>
+          </select>
+        </div>
+        <div class="hint">Show actual application logos in section headers instead of generic MDI icons.</div>
+
+        <div class="row">
+          <span class="row-label">Category colour overlays</span>
+          <label class="toggle">
+            <input type="checkbox" data-style-key="categoryOverlays" ${this._styleVal("categoryOverlays", true) !== false ? "checked" : ""}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="hint">Show brand-colour background tint behind each section's content.</div>
       </div>
     `;
     this._wireEvents();
@@ -370,6 +388,12 @@ var ArrStackCardEditor = class extends HTMLElement {
       el.addEventListener("change", () => {
         const existing = this._config[el.dataset.group] || {};
         this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: el.checked } });
+      });
+    });
+    this.shadowRoot.querySelectorAll("select[data-style-key]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const existing = this._config.styles || {};
+        this._update({ styles: { ...existing, [el.dataset.styleKey]: el.value } });
       });
     });
     this.shadowRoot.querySelectorAll('input[type="checkbox"][data-style-key]').forEach((el) => {
@@ -1492,6 +1516,11 @@ var STYLES = `
          SECTION GLASS CARD
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
       .sec-card { margin-bottom: 4px; }
+      .has-gradient .col-hdr,
+      .has-gradient .pg-wrap,
+      .has-gradient .tl-row,
+      .trending-overlay .col-hdr,
+      .trending-overlay .pg-wrap { position: relative; z-index: 1; }
 
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          SEARCH BAR
@@ -1764,7 +1793,7 @@ var STYLES = `
       }
 
       /* \u2500\u2500 Full Trending Overlay (nahrazuje obsah col-right) \u2500\u2500\u2500\u2500\u2500 */
-      .trending-overlay { display: flex; flex-direction: column; flex: 1; }
+      .trending-overlay { display: flex; flex-direction: column; flex: 1; position: relative; margin-left: -15px; margin-right: -15px; padding-left: 15px; padding-right: 15px; margin-top: -10px; padding-top: 10px; }
 
       .to-close {
         width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
@@ -1774,6 +1803,15 @@ var STYLES = `
         flex-shrink: 0;
       }
       .to-close:hover { background: rgba(255,255,255,0.16); color: #fff; }
+
+      .smp-hdr-btn {
+        width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.65);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; transition: background 0.15s, color 0.15s;
+      }
+      .smp-hdr-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
 
       .to-grid {
         flex: 1; min-width: 0; position: relative;
@@ -1881,9 +1919,10 @@ var STYLES = `
 
       .btn-add {
         background: rgba(var(--accent-rgb),0.28); color: rgba(var(--arr-tp-rgb, 255, 255, 255), 1);
-        font-size: 10px; font-weight: 800; line-height: 1; padding: 2px 6px;
-        border-radius: 4px; border: 1px solid rgba(var(--accent-rgb),0.50);
+        width: 28px; height: 28px; padding: 0;
+        border-radius: 50%; border: 1px solid rgba(var(--accent-rgb),0.50);
         cursor: pointer; flex-shrink: 0; margin-left: auto;
+        display: flex; align-items: center; justify-content: center;
         backdrop-filter: blur(8px);
       }
 
@@ -1912,7 +1951,7 @@ var STYLES = `
       .badge-compact .b-txt { display: none; }
       @container mc (max-width: 94px) {
         .imdb { padding: 2px 3px; font-size: 9px; }
-        .btn-add { padding: 2px 4px; font-size: 9px; }
+        .btn-add { width: 22px; height: 22px; }
       }
       @container mc (max-width: 78px) {
         .date-lbl { display: none; }
@@ -2388,8 +2427,8 @@ var STYLES = `
         background: var(--accent);
         border: none;
         color: #fff;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         cursor: pointer;
         display: flex;
@@ -3205,6 +3244,8 @@ var STYLES = `
         position: relative; overflow: hidden; aspect-ratio: 2/3;
         display: flex; flex-direction: column;
         transition: transform .15s, box-shadow .15s;
+        backdrop-filter: saturate(0%);
+        -webkit-backdrop-filter: saturate(0%);
       }
       .tl-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
       .tl-card-warn { background: rgba(180,30,30,0.22); }
@@ -4226,6 +4267,7 @@ var _FetchMethods = class {
       if (!caps.jellystat) this._jellystatConfigured = false;
       if (!caps.trakt) this._traktConfigured = false;
       if (!caps.prowlarr) this._prowlarrConfigured = false;
+      this._seerrType = caps.seerrType || "overseerr";
     } catch (_) {
     }
   }
@@ -6427,7 +6469,7 @@ var _RenderLeft = class {
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:bell-ring" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon(this._discoverIconKey(), 24)}
         <span class="col-hdr-title">${this._t("pendingRequests")}</span>
         <span class="pr-badge">${reqs.length}</span>
         <div class="col-hdr-line"></div>
@@ -6524,7 +6566,7 @@ var _RenderRight = class {
       dotAttr: "data-page",
       dotSecAttr: 'data-section="right" '
     }) : "";
-    if (this._overlay?.section) return this._renderSectionOverlay(this._overlay.section) + this._renderSectionOverlayNav(this._overlay.section);
+    if (this._overlay?.section) return `<div class="rp-sections">${this._renderSearch()}<div style="height:3px"></div>${this._renderSectionOverlay(this._overlay.section)}</div>${this._renderSectionOverlayNav(this._overlay.section)}`;
     if (this._searchActive) {
       const _sCols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
       const searchPerPage = _sCols * 2;
@@ -6705,11 +6747,12 @@ var _RenderRight = class {
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:filmstrip" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon("radarr", 24)}
         <span class="col-hdr-title">${this._t("recentMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("radarr", smpCount)}
         <span class="sec-badge" style="background:rgba(0,132,255,0.15);border:1px solid rgba(0,132,255,0.25)">${this._radarrTotal} ${this._t("movies")}</span>
+        ${this._seeMoreBtn("radarr")}
       </div>
       ${grid}
     </div>`;
@@ -6792,11 +6835,12 @@ var _RenderRight = class {
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:television-play" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon("sonarr", 24)}
         <span class="col-hdr-title">${this._t("recentShows")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("sonarr", smpCount)}
         <span class="sec-badge" style="background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.22)">${this._sonarrTotal} ${this._t("shows")}</span>
+        ${this._seeMoreBtn("sonarr")}
       </div>
       ${grid}
     </div>`;
@@ -6806,12 +6850,14 @@ var _RenderRight = class {
     const smpCount = this._smpPageCount(items, "recentlyAdded");
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyAdded", (m) => this._renderRecentlyAddedCard(m));
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:check-circle-outline" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon(this._discoverIconKey(), 24)}
         <span class="col-hdr-title">${this._t("recentlyAdded")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("recentlyAdded", smpCount)}
+        ${this._seeMoreBtn("recentlyAdded")}
       </div>
       ${grid}
     </div>`;
@@ -6821,12 +6867,14 @@ var _RenderRight = class {
     const smpCount = this._smpPageCount(items, "recentlyRequested");
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyRequested", (m) => this._renderRecentlyRequestedCard(m));
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:clock-time-four-outline" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon(this._discoverIconKey(), 24)}
         <span class="col-hdr-title">${this._t("recentlyRequested")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("recentlyRequested", smpCount)}
+        ${this._seeMoreBtn("recentlyRequested")}
       </div>
       ${grid}
     </div>`;
@@ -6843,12 +6891,14 @@ var _RenderRight = class {
       grid = this._pagedGridWithSmp(items, "upcoming", (m) => this._renderUpcomingCard(m, { reqKey: "upcoming-" + m.id }));
     }
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:ticket-outline" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon(this._discoverIconKey(), 24)}
         <span class="col-hdr-title">${this._t("upcomingMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("upcoming", smpCount)}
+        ${this._seeMoreBtn("upcoming")}
       </div>
       ${grid}
     </div>`;
@@ -6859,12 +6909,14 @@ var _RenderRight = class {
     const p = this._tvRequestPending?.source === "tvUpcoming" ? this._tvRequestPending : null;
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "tvUpcoming", (m) => this._renderTvUpcomingCard(m));
     return `
-    <div class="sec-card" style="position:relative">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}position:relative;">
+      ${this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:television-play" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon(this._discoverIconKey(), 24)}
         <span class="col-hdr-title">${this._t("newShows")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("tvUpcoming", smpCount)}
+        ${this._seeMoreBtn("tvUpcoming")}
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
@@ -6950,12 +7002,14 @@ var _RenderRight = class {
     const p = this._tvRequestPending?.source === "trending" ? this._tvRequestPending : null;
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trending", (m) => this._renderTrendingCard(m));
     return `
-    <div class="sec-card" style="position:relative">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}position:relative;">
+      ${this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:trending-up" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon(this._discoverIconKey(), 24)}
         <span class="col-hdr-title">${this._t("trendingMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("trending", smpCount)}
+        ${this._seeMoreBtn("trending")}
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
@@ -6967,16 +7021,28 @@ var _RenderRight = class {
     const p = this._tvRequestPending?.source === "trakt" ? this._tvRequestPending : null;
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trakt", (m) => this._renderTraktCard(m));
     return `
-    <div class="sec-card" data-trakt-sec style="position:relative">
+    <div class="sec-card has-gradient" data-trakt-sec style="${this._sectionStyle()}">
+      ${this._sectionOverlayHtml("trakt", 25, 75, 0.4)}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:movie-star-outline" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon("trakt", 24)}
         <span class="col-hdr-title">${this._t("traktRecommended")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("trakt", smpCount)}
+        ${this._seeMoreBtn("trakt")}
       </div>
       ${grid}
       ${p ? this._renderTvRequestOverlay() : ""}
     </div>`;
+  }
+  // Returns a right-arrow button for the section header that opens the overlay at page 0
+  _seeMoreBtn(section) {
+    if (!this._hasSeeMore(section)) return "";
+    return `<button class="smp-hdr-btn" data-action="overlay-open" data-sec="${section}" data-page="0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+      <path d="M5 12h14M13 6l6 6-6 6"/>
+    </svg>
+  </button>`;
   }
   // Returns item count for _pageIndicator, accounting for SMP card insertion
   _smpPageCount(items, section) {
@@ -7033,14 +7099,19 @@ var _RenderRight = class {
     const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
     const perPage = isMobile2 ? cols : cols * 2;
     const page = this._overlay.page || 0;
+    const totalPages = Math.ceil(items.length / perPage);
     const pageItems = items.slice(page * perPage, (page + 1) * perPage);
     const gridHtml = pageItems.map((m, i) => cfg.renderCard(m, i)).join("");
+    const pageInd = totalPages > 1 ? `<span class="sec-page-ind">${page + 1}<span class="sec-page-sep">/</span>${totalPages}</span>` : "";
+    const [gposL = 15, gposR = 85, go = 0.35] = cfg.gradPos || [];
     return `
     <div class="trending-overlay">
-      <div class="col-hdr" style="margin-bottom:8px">
-        <ha-icon icon="${cfg.icon}" style="--mdc-icon-size:24px"></ha-icon>
+      ${cfg.appKey ? this._sectionOverlayHtmlTop(cfg.appKey, gposL, gposR, go) : ""}
+      <div class="col-hdr" style="margin-bottom:5px;position:relative;z-index:1">
+        ${cfg.appKey ? this._appIcon(cfg.appKey, 24) : `<ha-icon icon="${cfg.icon}" style="--mdc-icon-size:24px"></ha-icon>`}
         <span class="col-hdr-title">${this._t(cfg.titleKey)}</span>
         <div class="col-hdr-line"></div>
+        ${pageInd}
         <button class="to-close" data-action="overlay-close">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
@@ -7048,7 +7119,7 @@ var _RenderRight = class {
           </svg>
         </button>
       </div>
-      <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
+      <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative;z-index:1">
         <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">\u2039</button>
         <div class="to-grid" style="grid-template-columns:repeat(${cols},1fr)">${gridHtml}</div>
         <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">\u203A</button>
@@ -7144,12 +7215,14 @@ var _RenderRight = class {
     const smpCount = this._smpPageCount(items, "popular");
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "popular", (m) => this._renderUpcomingCard(m, { showDate: false, reqKey: "popular-" + m.id }));
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:fire" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon(this._discoverIconKey(), 24)}
         <span class="col-hdr-title">${this._t("popularMovies")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("popular", smpCount)}
+        ${this._seeMoreBtn("popular")}
       </div>
       ${grid}
     </div>`;
@@ -7163,9 +7236,10 @@ var _RenderRight = class {
       grid = this._pagedGrid(this._calendar, "calendar", (ep) => this._renderCalendarCard(ep), cols);
     }
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${this._sectionOverlayHtml("sonarr")}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:calendar-clock" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon("sonarr", 24)}
         <span class="col-hdr-title">${this._t("newEpisodes")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("calendar", this._calendar || [])}
@@ -7196,10 +7270,21 @@ var _RenderRight = class {
     this._syncStreamPopup();
     if (streams.length === 0) return "";
     const grid = this._pagedGridWithSmp(streams, "streams", (s) => this._renderStreamCard(s));
+    const _streamOverlay = (() => {
+      if (!this._categoryOverlaysEnabled) return "";
+      const o = 0.4;
+      if (streams.length <= 2) {
+        const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black 80%,transparent 100%)`;
+        const g = `radial-gradient(circle at 25% 15%,${this._brandColor("plex", o)} 0%,transparent 48%)`;
+        return `<div style="position:absolute;inset:0;background:${g};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>`;
+      }
+      return this._sectionOverlayHtml("plex", 25, 75, o);
+    })();
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${_streamOverlay}
       <div class="col-hdr" style="margin-bottom:5px">
-        <ha-icon icon="mdi:play-network" style="--mdc-icon-size:24px"></ha-icon>
+        ${this._appIcon("plex", 24)}
         <span class="col-hdr-title">${this._t("streamsTitle")}</span>
         <div class="col-hdr-line"></div>
         <span class="sec-badge" style="background:rgba(229,160,13,0.12);border:1px solid rgba(229,160,13,0.25)">${streams.length} ${this._t("streamsActive")}</span>
@@ -7753,7 +7838,7 @@ var _MediaCardMethods = class {
         actionBtn = withdrawBtn;
       }
     } else {
-      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}" data-source="${source}">${this._t("add")}</button>`;
+      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}" data-source="${source}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
     }
     let statusBadge = "";
     if (_isAvail) {
@@ -7840,7 +7925,7 @@ var _MediaCardMethods = class {
         actionBtn = withdrawBtn;
       }
     } else {
-      actionBtn = `<button class="btn-add req-open" data-movieid="${m.id}" data-tmdb="${m.id}" data-reqkey="${reqKey}">${this._t("add")}</button>`;
+      actionBtn = `<button class="btn-add req-open" data-movieid="${m.id}" data-tmdb="${m.id}" data-reqkey="${reqKey}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
     }
     let statusBadge = "";
     if (_isAvail) {
@@ -8431,12 +8516,17 @@ var _WireMethods = class {
         e.stopPropagation();
         const sec = el.dataset.sec;
         if (!sec) return;
-        const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
-        const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
-        const itemsBefore = showMorePage * cols - 1;
-        const isMobile2 = window.matchMedia("(max-width: 480px)").matches;
-        const perPage = isMobile2 ? cols : cols * 2;
-        const startPage = Math.floor(itemsBefore / perPage);
+        let startPage;
+        if (el.dataset.page !== void 0) {
+          startPage = parseInt(el.dataset.page) || 0;
+        } else {
+          const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
+          const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+          const itemsBefore = showMorePage * cols - 1;
+          const isMobile2 = window.matchMedia("(max-width: 480px)").matches;
+          const perPage = isMobile2 ? cols : cols * 2;
+          startPage = Math.floor(itemsBefore / perPage);
+        }
         this._overlay = { section: sec, page: startPage, tvPending: null };
         this._reRenderSection(sec);
         const cfg = this._getSectionOverlayConfig(sec);
@@ -10747,14 +10837,55 @@ var _PopupMethods = class {
     const overlay = root.querySelector(".popup-overlay");
     const glass = root.querySelector(".popup-glass");
     const closeBtn = root.querySelector(".popup-close");
+    const _resetPopupTransient = () => {
+      this._plexCastOpen = false;
+      this._plexCasting = null;
+      this._plexClients = null;
+      this._plexCastBtnRect = null;
+    };
     if (overlay) {
-      overlay.addEventListener("click", () => {
+      overlay.addEventListener("click", (e) => {
+        const playBtn = e.target.closest('[data-action="plex-cast-play"]');
+        if (playBtn) {
+          const castEntity = playBtn.dataset.entity;
+          const dd = this._popup;
+          if (!castEntity || !dd) return;
+          const _isMovT = dd._type === "radarr" || dd._type === "movie";
+          const tmdbId = dd.id || dd.tmdbId || (dd._radarrId ? (this._radarr || []).find((m) => m.id === dd._radarrId)?.tmdbId : null) || (dd._radarr2Id ? (this._radarr2 || []).find((m) => m.id === dd._radarr2Id)?.tmdbId : null);
+          const tvdbId = dd.externalIds?.tvdbId || dd._sonarrSeries?.tvdbId || dd._sonarr2Series?.tvdbId;
+          this._plexCasting = castEntity;
+          this._plexCastOpen = false;
+          this._renderPopupEl();
+          (async () => {
+            try {
+              const lookupParam = _isMovT ? `tmdbId=${tmdbId}` : `tvdbId=${tvdbId}`;
+              const lookup = await this._callApi("GET", `arr_stack/plex/lookup?${lookupParam}`);
+              if (!lookup?.plex_key) throw new Error("Plex item not found");
+              const contentId = {};
+              if (lookup.library) contentId.library_name = lookup.library;
+              if (lookup.title) contentId.title = lookup.title;
+              await this._hass.callService("media_player", "play_media", {
+                entity_id: castEntity,
+                media_content_type: "plex",
+                media_content_id: JSON.stringify(contentId)
+              });
+            } catch (err) {
+              console.warn("[arr-card] Plex cast error:", err);
+            }
+            this._plexCasting = null;
+            this._renderPopupEl();
+          })();
+          return;
+        }
+        if (e.target.closest(".plex-cast-dropdown")) return;
+        _resetPopupTransient();
         this._popup = null;
         this._renderPopupEl();
       });
     }
     if (closeBtn) {
       closeBtn.addEventListener("click", () => {
+        _resetPopupTransient();
         this._popup = null;
         this._isState = null;
         this._renderPopupEl();
@@ -10784,6 +10915,20 @@ var _PopupMethods = class {
       const _closeRemove = () => {
         this._removeConfirm = false;
       };
+      if (t.dataset.action === "plex-cast-open") {
+        if (this._plexCastOpen) {
+          this._plexCastOpen = false;
+          this._renderPopupEl();
+          return;
+        }
+        this._plexCastOpen = true;
+        this._plexClients = null;
+        const rect = t.getBoundingClientRect();
+        this._plexCastBtnRect = { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
+        this._renderPopupEl();
+        this._fetchPlexClients();
+        return;
+      }
       if (t.dataset.action === "search-expand") {
         _closeAS();
         _closeIS();
@@ -11735,7 +11880,10 @@ var _PopupMethods = class {
           <div class="popup-content"${searchActive ? ' style="padding-top:52px"' : ""}>
             ${posterHtmlFinal}
             <div class="popup-meta">
-              <h2 class="popup-title">${title}</h2>
+              <div style="display:flex;align-items:flex-start;gap:8px;margin:0 0 5px">
+                <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${title}</h2>
+                ${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}
+              </div>
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
               ${instanceStatusHtml}
               ${singleDlTag}
@@ -11755,6 +11903,7 @@ var _PopupMethods = class {
           ${snIsActive ? this._renderSonarrIsSection() : ""}
         </div>
       </div>
+      ${this._renderPlexCastDropdown()}
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -11931,6 +12080,82 @@ var _PopupMethods = class {
       this._snIsError = e.message || this._t("isLoadError");
     }
     this._renderPopupEl();
+  }
+  // ─────────────────────────────────────────────
+  // Plex Cast helpers
+  // ─────────────────────────────────────────────
+  async _fetchPlexClients() {
+    const states = this._hass?.states || {};
+    const online = /* @__PURE__ */ new Set(["playing", "paused", "idle", "standby", "on"]);
+    const allPlayers = Object.entries(states).filter(([id, s]) => id.startsWith("media_player.plex_") && s.state !== "unavailable").map(([id, s]) => ({ entityId: id, name: s.attributes?.friendly_name || id }));
+    try {
+      const raw = await this._callApi("GET", "arr_stack/plex/clients");
+      const mc = raw?.MediaContainer || raw || {};
+      const clients = mc.Server || mc.Device || mc.Client || [];
+      const seen = /* @__PURE__ */ new Set();
+      const result = [];
+      for (const c of clients) {
+        const cName = (c.name || c.Name || c.title || "").trim();
+        const cLow = cName.toLowerCase();
+        const ha = allPlayers.find((e) => e.name.toLowerCase().includes(cLow) || cLow.includes(e.name.toLowerCase()));
+        if (ha && !seen.has(ha.entityId)) {
+          seen.add(ha.entityId);
+          result.push({ name: cName, entityId: ha.entityId });
+        }
+      }
+      for (const p of allPlayers) {
+        if (!seen.has(p.entityId)) {
+          seen.add(p.entityId);
+          result.push(p);
+        }
+      }
+      this._plexClients = result;
+    } catch {
+      this._plexClients = allPlayers;
+    }
+    this._renderPopupEl();
+  }
+  _renderPlexCastBtn(d, movieInLib, showInLib) {
+    const isMovieType = d._type === "radarr" || d._type === "movie";
+    const isShowType = d._type === "sonarr" || d._type === "tv";
+    const inLib = isMovieType ? movieInLib : isShowType ? showInLib : false;
+    if (!inLib) return "";
+    const castSvg = `<svg viewBox="0 0 24 24" width="14" height="14" style="display:block"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3m0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7m0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10m20-7H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>`;
+    const spinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    const _btnCommon = `flex-shrink:0;width:36px;height:36px;padding:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:background 0.15s,color 0.15s,border-color 0.15s`;
+    const btnBase = `${_btnCommon};border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-btn-clr)`;
+    const btnActive = `${_btnCommon};border:1px solid var(--is-btn-abdr);background:var(--is-btn-abg);color:var(--is-btn-aclr)`;
+    if (this._plexCasting) {
+      return `<button disabled style="${btnBase};opacity:0.6">${spinner}</button>`;
+    }
+    const btnStyle = this._plexCastOpen ? btnActive : btnBase;
+    return `<button data-action="plex-cast-open" style="${btnStyle}">${castSvg}</button>`;
+  }
+  _renderPlexCastDropdown() {
+    if (!this._plexCastOpen) return "";
+    const r = this._plexCastBtnRect;
+    if (!r) return "";
+    const castSvg = `<svg viewBox="0 0 24 24" width="12" height="12" style="display:block;flex-shrink:0"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3m0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7m0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10m20-7H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>`;
+    const spinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    let dropContent;
+    if (this._plexClients === null) {
+      dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:8px">${spinner} Loading\u2026</div>`;
+    } else if (!this._plexClients.length) {
+      dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.45)">No devices found</div>`;
+    } else {
+      dropContent = this._plexClients.map(
+        (p) => `<button data-action="plex-cast-play" data-entity="${this._escHtml(p.entityId)}"
+        style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;padding:7px 12px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);cursor:pointer;text-align:left;border-radius:6px;transition:background 0.12s"
+        onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"
+      >${castSvg}${this._escHtml(p.name)}</button>`
+      ).join("");
+    }
+    const dropW = 190, dropH = 220, gap = 8;
+    const leftPx = Math.max(8, Math.round(r.left - gap - dropW));
+    const topPx = Math.max(8, Math.min(Math.round(r.top), window.innerHeight - dropH - 8));
+    return `<div class="plex-cast-dropdown" style="position:absolute;left:${leftPx}px;top:${topPx}px;z-index:9999;background:rgba(18,18,28,0.97);border:1px solid rgba(255,255,255,0.12);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.5);min-width:${dropW}px;max-height:${dropH}px;overflow-y:auto;padding:4px;display:flex;flex-direction:column">
+    ${dropContent}
+  </div>`;
   }
 };
 var popupMixin = _PopupMethods.prototype;
@@ -12573,9 +12798,10 @@ var _TautulliMethods = class {
     const stats = data.stats || [];
     const showWarn = data.sharingDetected && !data.sharingAcked;
     return `
-      <div class="sec-card">
+      <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+        ${this._sectionOverlayHtml("tautulli", 25, 75, 0.4)}
         <div class="col-hdr" style="margin-bottom:5px">
-          <ha-icon icon="mdi:chart-bar" style="--mdc-icon-size:24px"></ha-icon>
+          ${this._appIcon("tautulli", 24)}
           <span class="col-hdr-title">${this._t("tlStatisticsPlex")}</span>
           <div class="col-hdr-line"></div>
         </div>
@@ -13801,9 +14027,10 @@ var _JellystatMethods = class {
   _renderJellystat() {
     const data = this._jellystat || {};
     return `
-      <div class="sec-card">
+      <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+        ${this._sectionOverlayHtml("jellystat", 25, 75, 0.4)}
         <div class="col-hdr" style="margin-bottom:5px">
-          <ha-icon icon="mdi:chart-bar" style="--mdc-icon-size:24px"></ha-icon>
+          ${this._appIcon("jellystat", 24)}
           <span class="col-hdr-title">Statistics (Jellyfin)</span>
           <div class="col-hdr-line"></div>
         </div>
@@ -14154,9 +14381,13 @@ var _ActivityRenderMethods = class {
     const totalFailed = rItems.filter((x) => x.failed).length + r2Items.filter((x) => x.failed).length;
     const totalActive = rItems.filter((x) => !x.failed).length + r2Items.filter((x) => !x.failed).length + snPct.size + sn2Pct.size;
     return `
-      <div class="sec-card">
+      <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+        ${this._sectionOverlayHtml("radarr", 25, 75, 0.4)}
         <div class="col-hdr" style="margin-bottom:5px">
-          <ha-icon icon="mdi:clipboard-list-outline" style="--mdc-icon-size:24px"></ha-icon>
+          <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
+            ${this._appIcon("radarr", 24)}
+            ${this._appIcon("sonarr", 24)}
+          </div>
           <span class="col-hdr-title">${this._t("actActivityQueue")}</span>
           <div class="col-hdr-line"></div>
         </div>
@@ -14201,13 +14432,13 @@ var _ActivityRenderMethods = class {
       const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
       if (s) rows.push({ title: s.title || "\u2014", type: "show", failed: false, pct, sub });
     }
-    const badge = totalFailed > 0 ? `<span style="font-size:10px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalFailed} ${this._t("actFailed")}</span>` : totalActive > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalActive} ${this._t("tlActive")}</span>` : "";
+    const badge = totalFailed > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(251,146,60,0.30);border:1px solid rgba(251,146,60,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalFailed} ${this._t("actFailed")}</span>` : totalActive > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalActive} ${this._t("tlActive")}</span>` : "";
     const rowsHtml = rows.length > 0 ? rows.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const color = r.failed ? "rgba(248,113,113,0.85)" : "rgba(52,211,153,0.85)";
       const sub = r.sub ?? (r.type === "movie" ? this._t("typeMovie") : this._t("typeTv"));
       const pctBar = r.failed ? "" : `<div style="margin-top:3px;width:100%;height:2px;background:rgba(255,255,255,0.08);border-radius:1px"><div style="width:${r.pct}%;height:100%;background:${color};border-radius:1px"></div></div>`;
-      const pctTxt = r.failed ? ` <span style="font-size:9px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.22);border-radius:10px;padding:1px 6px">${this._t("actFailed")}</span>` : ` \xB7 ${r.pct}%`;
+      const pctTxt = r.failed ? ` <span style="font-size:9px;font-weight:700;color:#fff;background:rgba(251,146,60,0.30);border:1px solid rgba(251,146,60,0.62);border-radius:10px;padding:1px 6px">${this._t("actFailed")}</span>` : ` \xB7 ${r.pct}%`;
       return `<div style="${sep}padding:4px 0">
             <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
             <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}${pctTxt}</div>
@@ -15106,11 +15337,11 @@ var _ActivityRenderMethods = class {
     const cache = this._actMissingCache;
     const movieCount = cache?.movieCount ?? null;
     const seriesCount = cache?.seriesCount ?? null;
-    const badge = movieCount !== null ? `<span style="font-size:10px;font-weight:700;color:#fb923c;background:rgba(251,146,60,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${movieCount + seriesCount}</span>` : "";
+    const badge = movieCount !== null ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(251,146,60,0.30);border:1px solid rgba(251,146,60,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${movieCount + seriesCount}</span>` : "";
     const filmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
     const tvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
-    const mkRow = (svg, label, count) => `<div style="display:flex;align-items:center;gap:6px"><span style="opacity:0.6;flex-shrink:0;display:flex">${svg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:10px;font-weight:700;color:#fb923c;flex-shrink:0">${count}</span></div>`;
-    const mkSubRow = (label, count) => `<div style="display:flex;align-items:center;gap:6px;padding-left:16px"><span style="font-size:9px;color:var(--is-text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:9px;font-weight:600;color:#fb923c;flex-shrink:0">${count}</span></div>`;
+    const mkRow = (svg, label, count) => `<div style="display:flex;align-items:center;gap:6px"><span style="opacity:0.6;flex-shrink:0;display:flex">${svg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.85);flex-shrink:0">${count}</span></div>`;
+    const mkSubRow = (label, count) => `<div style="display:flex;align-items:center;gap:6px;padding-left:16px"><span style="font-size:9px;color:var(--is-text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:9px;font-weight:600;color:rgba(255,255,255,0.75);flex-shrink:0">${count}</span></div>`;
     let rows = "";
     if (cache && movieCount !== null) {
       const rRecs = cache.rRecs || [];
@@ -16994,9 +17225,10 @@ var wireActivityMixin = _WireActivityMethods.prototype;
 var _ProwlarrRenderMethods = class {
   _renderProwlarr() {
     return `
-      <div class="sec-card">
+      <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+        ${this._sectionOverlayHtml("prowlarr", 25, 75, 0.4)}
         <div class="col-hdr" style="margin-bottom:5px">
-          <ha-icon icon="mdi:radar" style="--mdc-icon-size:24px"></ha-icon>
+          ${this._appIcon("prowlarr", 24)}
           <span class="col-hdr-title">Prowlarr</span>
           <div class="col-hdr-line"></div>
         </div>
@@ -17038,7 +17270,7 @@ var _ProwlarrRenderMethods = class {
         ${errMsg}
       </div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No indexers</div>`;
-    const badge = errors > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,149,0,0.9);background:rgba(255,149,0,0.15);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${errors} error${errors > 1 ? "s" : ""}</span>` : active > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${active} ok</span>` : "";
+    const badge = errors > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,149,0,0.9);background:rgba(255,149,0,0.15);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${errors} error${errors > 1 ? "s" : ""}</span>` : active > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.30);border:1px solid rgba(52,211,153,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${active} ok</span>` : "";
     return `<div class="tl-card" data-pw-open="indexers" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
@@ -17145,7 +17377,7 @@ var _ProwlarrRenderMethods = class {
         </div>
       </div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No apps configured</div>`;
-    const badge = apps.length > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(200,220,255,0.9);background:rgba(99,140,255,0.2);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${apps.length}</span>` : "";
+    const badge = apps.length > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${apps.length}</span>` : "";
     return `<div class="tl-card" data-pw-open="apps" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
@@ -19423,6 +19655,10 @@ var ArrStackCard = class extends HTMLElement {
     this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
     this._searchExpand = null;
+    this._plexCastOpen = false;
+    this._plexCasting = null;
+    this._plexClients = null;
+    this._plexCastBtnRect = null;
     this._asOpen = false;
     this._asInstance = null;
     this._asState = null;
@@ -19618,6 +19854,8 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_trakt",
         icon: "mdi:movie-star-outline",
         titleKey: "traktRecommended",
+        appKey: "trakt",
+        gradPos: [25, 75, 0.6],
         apiEndpoint: null,
         hasTvPending: true,
         renderCard: (m, i) => this._renderTraktCard(m, i),
@@ -19628,6 +19866,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_trending",
         icon: "mdi:trending-up",
         titleKey: "trendingMovies",
+        appKey: this._discoverIconKey(),
         apiEndpoint: `${this._discoverSvc}/trending`,
         hasTvPending: true,
         renderCard: (m, i) => this._renderTrendingCard(m, i),
@@ -19638,6 +19877,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_popular",
         icon: "mdi:fire",
         titleKey: "popularMovies",
+        appKey: this._discoverIconKey(),
         apiEndpoint: `${this._discoverSvc}/popular`,
         hasTvPending: false,
         renderCard: (m, i) => this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex: i }),
@@ -19648,6 +19888,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_upcoming",
         icon: "mdi:ticket-outline",
         titleKey: "upcomingMovies",
+        appKey: this._discoverIconKey(),
         apiEndpoint: null,
         hasTvPending: false,
         renderCard: (m, i) => this._renderUpcomingCard(m, { overlayIndex: i }),
@@ -19658,6 +19899,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_tvUpcoming",
         icon: "mdi:television-play",
         titleKey: "newShows",
+        appKey: this._discoverIconKey(),
         apiEndpoint: `${this._discoverSvc}/tv_upcoming`,
         hasTvPending: true,
         renderCard: (m, i) => this._renderTvUpcomingCard(m, { showRating: true, overlayIndex: i }),
@@ -19668,6 +19910,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_radarr",
         icon: "mdi:filmstrip",
         titleKey: "recentMovies",
+        appKey: "radarr",
         apiEndpoint: null,
         hasTvPending: false,
         renderCard: (m) => this._renderRadarrCard(m),
@@ -19678,6 +19921,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "_sonarr",
         icon: "mdi:television-play",
         titleKey: "recentShows",
+        appKey: "sonarr",
         apiEndpoint: null,
         hasTvPending: false,
         renderCard: (m) => this._renderSonarrCard(m),
@@ -19688,6 +19932,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "recentlyAdded",
         icon: "mdi:check-circle-outline",
         titleKey: "recentlyAdded",
+        appKey: this._discoverIconKey(),
         apiEndpoint: null,
         hasTvPending: false,
         renderCard: (m) => this._renderRecentlyAddedCard(m),
@@ -19698,6 +19943,7 @@ var ArrStackCard = class extends HTMLElement {
         dataKey: "recentlyRequested",
         icon: "mdi:clock-time-four-outline",
         titleKey: "recentlyRequested",
+        appKey: this._discoverIconKey(),
         apiEndpoint: null,
         hasTvPending: false,
         renderCard: (m) => this._renderRecentlyRequestedCard(m),
@@ -19706,6 +19952,16 @@ var ArrStackCard = class extends HTMLElement {
       }
     };
     return cfgs[section] || null;
+  }
+  // Returns true if section has enough items to show the See-More card
+  _hasSeeMore(section) {
+    const cfg = this._getSectionOverlayConfig(section);
+    if (!cfg) return false;
+    const items = (cfg.getItems ? cfg.getItems() : this[cfg.dataKey]) || [];
+    if (items.length === 0) return false;
+    const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
+    const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+    return items.length > showMorePage * cols - 1;
   }
   // Paged grid with automatic See-More card insertion (if items exceed showMoreOnPage threshold)
   _pagedGridWithSmp(items, section, renderFn) {
@@ -19804,20 +20060,109 @@ var ArrStackCard = class extends HTMLElement {
   }
   // App SVG icons (white, 22×22)
   // ─────────────────────────────────────────────
-  _appIcon(app) {
-    const s = 'width="26" height="26" viewBox="0 0 24 24" style="flex-shrink:0;display:block"';
-    if (app === "qbit") {
-      return `<svg ${s} fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="9.25" stroke="white" stroke-width="1.7"/>
-        <path d="M13.8 6.5 9.2 12.1h3.3L10 17.5l5.8-7h-3.4z" fill="white"/>
-      </svg>`;
+  _appIcon(app, size = 26) {
+    const useReal = this._cfgGet("styles", "applicationIcons", "real") !== "mdi";
+    const sz = `width="${size}" height="${size}"`;
+    const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+    const cdnSlugs = {
+      qbit: "qbittorrent",
+      sab: "sabnzbd",
+      radarr: "radarr",
+      sonarr: "sonarr",
+      overseerr: "overseerr",
+      jellyseerr: "jellyseerr",
+      tmdb: "tmdb",
+      trakt: "trakt",
+      plex: "plex",
+      tautulli: "tautulli",
+      prowlarr: "prowlarr",
+      jellystat: "jellystat"
+    };
+    const mdiIcons = {
+      qbit: "mdi:download-network",
+      sab: "mdi:email-arrow-down-outline",
+      radarr: "mdi:filmstrip",
+      sonarr: "mdi:television-play",
+      overseerr: "mdi:movie-open-check-outline",
+      jellyseerr: "mdi:movie-open-check-outline",
+      tmdb: "mdi:movie-open",
+      trakt: "mdi:movie-star-outline",
+      plex: "mdi:plex",
+      tautulli: "mdi:chart-bar",
+      prowlarr: "mdi:magnify-scan",
+      jellystat: "mdi:chart-line"
+    };
+    if (useReal && cdnSlugs[app]) {
+      return `<img src="${CDN}/${cdnSlugs[app]}.svg" ${sz} style="flex-shrink:0;display:block;object-fit:contain" loading="lazy" onerror="this.style.visibility='hidden'">`;
     }
-    if (app === "sab") {
-      return `<svg ${s} fill="white" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15.5 4H9a3 3 0 0 0-1.5 5.6A3 3 0 0 0 9 15h1v2.6l-1.3-1.3-1.4 1.4L12 22l4.7-4.3-1.4-1.4-1.3 1.3V15h1a3 3 0 0 0 1.5-5.6A3 3 0 0 0 15.5 4zM9 7h6.5a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2zm6.5 6H9a1 1 0 0 1 0-2h6.5a1 1 0 0 1 0 2z"/>
-      </svg>`;
+    if (mdiIcons[app]) {
+      return `<ha-icon icon="${mdiIcons[app]}" style="--mdc-icon-size:${size}px"></ha-icon>`;
     }
     return "";
+  }
+  _discoverIconKey() {
+    if (this._overseerrConfigured === false) return "tmdb";
+    return this._seerrType || "overseerr";
+  }
+  _brandColor(app, o = 0.35) {
+    const map = {
+      trakt: `rgba(230,87,99,${o})`,
+      overseerr: `rgba(99,102,241,${o})`,
+      jellyseerr: `rgba(0,164,220,${o})`,
+      tmdb: `rgba(1,180,228,${o})`,
+      radarr: `rgba(255,197,0,${o})`,
+      sonarr: `rgba(53,202,255,${o})`,
+      plex: `rgba(229,160,13,${o})`,
+      tautulli: `rgba(255,111,0,${o})`,
+      jellystat: `rgba(0,164,220,${o})`,
+      prowlarr: `rgba(255,80,0,${o})`,
+      qbit: `rgba(50,178,92,${o})`,
+      sab: `rgba(255,190,0,${o})`
+    };
+    return map[app] || `rgba(255,255,255,${o})`;
+  }
+  _brandColorSecondary(app, o = 0.35) {
+    const map = {
+      trakt: `rgba(236,72,153,${o})`,
+      overseerr: `rgba(124,58,237,${o})`,
+      jellyseerr: `rgba(139,92,246,${o})`,
+      tmdb: `rgba(144,206,161,${o})`,
+      radarr: `rgba(100,200,255,${o})`,
+      sonarr: `rgba(255,255,255,${o})`,
+      plex: `rgba(200,100,0,${o})`,
+      tautulli: `rgba(255,255,255,${o})`,
+      jellystat: `rgba(139,92,246,${o})`,
+      prowlarr: `rgba(255,160,50,${o})`,
+      qbit: `rgba(30,140,70,${o})`,
+      sab: `rgba(200,150,0,${o})`
+    };
+    return map[app] || `rgba(255,255,255,${o})`;
+  }
+  _sectionStyle() {
+    return `position:relative;margin-left:-15px;padding-left:15px;margin-right:-15px;padding-right:15px;margin-top:-10px;padding-top:10px;`;
+  }
+  get _categoryOverlaysEnabled() {
+    return this._cfgGet("styles", "categoryOverlays", true) !== false;
+  }
+  _sectionOverlayHtml(app, posL = 15, posR = 85, o = 0.4, bottomFade = 80) {
+    if (!this._categoryOverlaysEnabled) return "";
+    const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black ${bottomFade}%,transparent 100%)`;
+    const gradL = `radial-gradient(circle at ${posL}% 15%,${this._brandColor(app, o)} 0%,transparent 48%)`;
+    const gradR = `radial-gradient(circle at ${posR}% 15%,${this._brandColorSecondary(app, o)} 0%,transparent 48%)`;
+    return `<div style="position:absolute;inset:0;background:${gradL},${gradR};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>`;
+  }
+  _sectionOverlayHtmlSingle(app, o = 0.4) {
+    if (!this._categoryOverlaysEnabled) return "";
+    const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black 80%,transparent 100%)`;
+    const g = `radial-gradient(circle at 15% 0%,${this._brandColor(app, o)} 0%,transparent 65%)`;
+    return `<div style="position:absolute;left:-15px;right:-15px;top:0;bottom:0;background:${g};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>`;
+  }
+  _sectionOverlayHtmlTop(app, posL = 15, posR = 85, o = 0.4) {
+    if (!this._categoryOverlaysEnabled) return "";
+    const mask = "linear-gradient(to bottom,transparent 0.07%,black 6%,transparent 100%)";
+    const gradL = `radial-gradient(circle at ${posL}% 30%,${this._brandColor(app, o)} 0%,transparent 48%)`;
+    const gradR = `radial-gradient(circle at ${posR}% 30%,${this._brandColorSecondary(app, o)} 0%,transparent 48%)`;
+    return `<div style="position:absolute;top:0;left:0;right:0;height:55%;background:${gradL},${gradR};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>`;
   }
   // ─────────────────────────────────────────────
   // Paginated grid helper
@@ -20462,7 +20807,7 @@ var ArrStackCard = class extends HTMLElement {
       layout: "both",
       downloads: { torrentItems: 3, usenetItems: 3 },
       discover: { categoriesCount: 3, oneClickRequest: false, oneClickDefaultMovieProfile: "", oneClickDefaultShowProfile: "" },
-      styles: { performanceMode: false }
+      styles: { performanceMode: false, applicationIcons: "real", categoryOverlays: true }
     };
   }
 };
