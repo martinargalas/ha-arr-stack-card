@@ -155,8 +155,8 @@ Indexer overview and search statistics from Prowlarr.
 - **See More overlay** — full-screen grid for any section
 - Visual card editor in HA (no YAML required for basic setup)
 - Performance mode — disables backdrop blur
-- Category colour overlays — colour-tinted poster overlays per section (enabled by default, toggle via `styles.categoryOverlays`)
-- Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos instead of MDI icons (default). Switch to MDI icons via `styles.applicationIcons: mdi`
+- Category colour overlays — colour-tinted poster overlays per section, toggle via `styles.categoryOverlays`
+- Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos. Switch to MDI icons via `styles.applicationIcons: mdi`
 
 ---
 
