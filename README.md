@@ -81,8 +81,8 @@ The right panel is modular. You choose which sections appear and in what order v
 
 - **Recently Added** — mixed movies + TV shows with files, sorted by download date.
 - **Recently Requested** — monitored movies and shows not yet downloaded, with download status.
-- **Movies** — full Radarr library with download status, IMDB rating, audio language tags, and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab. **Cast to Plex** — cast directly to any connected Plex device (requires Plex, see below).
-- **TV Shows** — full Sonarr library with per-season progress bars, ratings, and subtitle status. **Upcoming episodes calendar** with air dates. Interactive Search per season or episode. **Cast to Plex** — same as movies.
+- **Movies** — full Radarr library with download status, IMDB rating, audio language tags, and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab. Cast to a Plex device directly from the popup (requires Plex, see below).
+- **TV Shows** — full Sonarr library with per-season progress bars, ratings, and subtitle status. **Upcoming episodes calendar** with air dates. Interactive Search per season or episode. Cast to Plex supported as with movies.
 
 #### Discovery & Recommendations
 
@@ -155,8 +155,8 @@ Indexer overview and search statistics from Prowlarr.
 - **See More overlay** — full-screen grid for any section
 - Visual card editor in HA (no YAML required for basic setup)
 - Performance mode — disables backdrop blur
-- **Category colour overlays** — colour-tinted poster overlays per section (enabled by default, toggle via `styles.categoryOverlays`)
-- **Real app icons** — uses the actual Radarr, Sonarr, qBittorrent, etc. logos instead of MDI icons (default). Switch to MDI icons via `styles.applicationIcons: mdi`
+- Category colour overlays — colour-tinted poster overlays per section (enabled by default, toggle via `styles.categoryOverlays`)
+- Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos instead of MDI icons (default). Switch to MDI icons via `styles.applicationIcons: mdi`
 
 ---
 
