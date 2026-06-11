@@ -81,8 +81,8 @@ The right panel is modular. You choose which sections appear and in what order v
 
 - **Recently Added** — mixed movies + TV shows with files, sorted by download date.
 - **Recently Requested** — monitored movies and shows not yet downloaded, with download status.
-- **Movies** — full Radarr library with download status, IMDB rating, audio language tags, and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab.
-- **TV Shows** — full Sonarr library with per-season progress bars, ratings, and subtitle status. **Upcoming episodes calendar** with air dates. Interactive Search per season or episode.
+- **Movies** — full Radarr library with download status, IMDB rating, audio language tags, and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab. **Cast to Plex** — cast directly to any connected Plex device (requires Plex, see below).
+- **TV Shows** — full Sonarr library with per-season progress bars, ratings, and subtitle status. **Upcoming episodes calendar** with air dates. Interactive Search per season or episode. **Cast to Plex** — same as movies.
 
 #### Discovery & Recommendations
 
@@ -103,21 +103,20 @@ Requires the official [Plex](https://www.home-assistant.io/integrations/plex/) H
 - Active user shown on the stream card
 - Remote stream termination (stop with a message) — works for all clients
 - Full playback controls (play, pause, next, previous) — Plexamp only
-- **Cast to Plex device** — cast any movie or show directly from its popup to a Plex-connected device
 
 > **Plex Server URL** — the integration auto-detects your server address during setup. If Home Assistant runs on a different machine or VLAN than Plex, you can override it with the address HA can reach (e.g. `http://192.168.1.10:32400`).
 
-##### Cast to Plex device
+#### Cast to Plex device
 
-A cast button appears in movie and show popups when the item is found in your Plex library. Clicking it shows a list of your available Plex-connected devices — select one to start playback.
+A cast button appears in movie and show popups when the item exists in your Plex library. Clicking it opens a device picker — select a device to start playback immediately.
 
 **Requirements:**
 
 1. Plex configured in the Arr Stack Integration (token + server URL)
-2. Official [Plex HA integration](https://www.home-assistant.io/integrations/plex/) installed and connected — the card discovers devices via `media_player.plex_*` entities
+2. Official [Plex HA integration](https://www.home-assistant.io/integrations/plex/) installed and connected — devices are discovered via `media_player.plex_*` entities
 3. Target device must be online and reachable by the Plex server
 
-> Cast to the Plex mobile app works only when the app is open and actively streaming or on the player screen. Devices that are fully idle may not respond — this is a Plex limitation, not a card limitation.
+> Cast to the Plex mobile app works only when the app is open and on the player screen. Idle devices may not respond — this is a Plex limitation.
 
 #### Activity Queue
 
