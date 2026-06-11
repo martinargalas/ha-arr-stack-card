@@ -15,7 +15,7 @@ var ArrStackCardEditor = class extends HTMLElement {
   async _loadCaps() {
     try {
       this._caps = await this._hass.callApi("GET", "arr_stack/capabilities/info");
-      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget;
+      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge;
       if (!hasDownloads && this._config.layout !== "right") {
         this._config = { ...this._config, layout: "right" };
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -158,7 +158,7 @@ var ArrStackCardEditor = class extends HTMLElement {
             <option value="en" ${this._val("localisation", "en") === "en" ? "selected" : ""}>English</option>
           </select>
         </div>
-        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps === null ? `
+        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps?.deluge || this._caps === null ? `
         <div class="row">
           <span class="row-label">Layout</span>
           <select data-key="layout">
@@ -240,6 +240,7 @@ var ArrStackCardEditor = class extends HTMLElement {
         if (c.id === "qbit" && !caps?.qbit) return false;
         if (c.id === "sab" && !caps?.sabnzbd) return false;
         if (c.id === "nzbget" && !caps?.nzbget) return false;
+        if (c.id === "deluge" && !caps?.deluge) return false;
         return true;
       });
       if (clients.length === 0) return "";
@@ -382,7 +383,8 @@ var ArrStackCardEditor = class extends HTMLElement {
     return [
       { id: "qbit", enabled: true },
       { id: "sab", enabled: true },
-      { id: "nzbget", enabled: true }
+      { id: "nzbget", enabled: true },
+      { id: "deluge", enabled: true }
     ];
   }
   _getClients() {
@@ -393,7 +395,7 @@ var ArrStackCardEditor = class extends HTMLElement {
     return [...saved, ...missing];
   }
   _clientLabel(id) {
-    return { qbit: "qBittorrent", sab: "SABnzbd", nzbget: "NZBGet" }[id] || id;
+    return { qbit: "qBittorrent", sab: "SABnzbd", nzbget: "NZBGet", deluge: "Deluge" }[id] || id;
   }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
     const stored = this._styleVal(key, null);
@@ -627,6 +629,7 @@ var ARR_I18N = {
     remove: "Odstranit",
     retry: "Zkusit znovu",
     removeFromHist: "Odstranit z historie",
+    paused: "Pozastaveno",
     // Chybové stavy
     errorState: "Chyba",
     missingFiles: "Chyb\xED soubory",
@@ -976,6 +979,7 @@ var ARR_I18N = {
     remove: "Remove",
     retry: "Retry",
     removeFromHist: "Remove from history",
+    paused: "Paused",
     errorState: "Error",
     missingFiles: "Missing files",
     approve: "Approve",
@@ -4380,6 +4384,7 @@ var _FetchMethods = class {
       if (!caps.qbit) this._qbitConfigured = false;
       if (!caps.sabnzbd) this._sabConfigured = false;
       if (!caps.nzbget) this._nzbgetConfigured = false;
+      if (!caps.deluge) this._delugeConfigured = false;
       if (!caps.radarr2) this._radarr2Configured = false;
       if (!caps.sonarr2) this._sonarr2Configured = false;
       if (!caps.bazarr) this._bazarrConfigured = false;
@@ -4419,6 +4424,7 @@ var _FetchMethods = class {
       this._fetchNzbget(),
       this._fetchNzbgetHistory(),
       this._fetchQbit(),
+      this._fetchDeluge(),
       this._fetchBazarr(),
       this._fetchRadarrQueue(),
       this._fetchRadarr2Queue(),
@@ -4558,9 +4564,11 @@ var _FetchMethods = class {
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
     const prevNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
-    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0;
+    const prevDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
+    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0;
     await Promise.allSettled([
       this._fetchQbit(),
+      this._fetchDeluge(),
       this._fetchSab(),
       this._fetchSabHistory(),
       this._fetchNzbget(),
@@ -4570,7 +4578,8 @@ var _FetchMethods = class {
       const currQbit = new Set((this._qbit || []).map((t) => t.hash));
       const currSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
       const currNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
-      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id));
+      const currDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
+      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id)) || [...prevDeluge].some((id) => !currDeluge.has(id));
       if (completed) {
         await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
         this._reRenderRight();
@@ -5451,6 +5460,24 @@ var _FetchMethods = class {
       console.error("[arr-card] qBittorrent fetch error:", e);
     }
   }
+  async _fetchDeluge() {
+    if (this._delugeConfigured === false) return;
+    try {
+      const [torrents, status] = await Promise.all([
+        this._callApi("GET", "arr_stack/deluge/queue"),
+        this._callApi("GET", "arr_stack/deluge/status").catch(() => ({}))
+      ]);
+      this._delugeQueue = Array.isArray(torrents) ? torrents : [];
+      this._delugeStatus = status || {};
+      this._delugeConfigured = true;
+    } catch (e) {
+      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = statusCode === 503 || body.includes("not configured");
+      this._delugeConfigured = !isNotConfigured;
+      console.error("[arr-card] Deluge fetch error:", e);
+    }
+  }
   async _fetchOverseerrRadarrSettings() {
     try {
       const servers = await this._callApi("GET", "arr_stack/overseerr/radarr_settings");
@@ -6281,11 +6308,12 @@ var fetchMixin = _FetchMethods.prototype;
 // src/render/left.js
 var _RenderLeft = class {
   _renderLeft() {
-    if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured) return "";
+    if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured && !this._delugeConfigured) return "";
     const defaultOrder = [
       { id: "qbit", enabled: true },
       { id: "sab", enabled: true },
-      { id: "nzbget", enabled: true }
+      { id: "nzbget", enabled: true },
+      { id: "deluge", enabled: true }
     ];
     const saved = this._config?.downloadClients;
     const cfgList = Array.isArray(saved) ? saved : defaultOrder;
@@ -6294,8 +6322,8 @@ var _RenderLeft = class {
       ...cfgList,
       ...defaultOrder.filter((c) => !savedIds.has(c.id))
     ];
-    const renderers = { qbit: "_renderQbit", sab: "_renderSab", nzbget: "_renderNzbget" };
-    const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured };
+    const renderers = { qbit: "_renderQbit", sab: "_renderSab", nzbget: "_renderNzbget", deluge: "_renderDeluge" };
+    const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured };
     const parts = allClients.filter((c) => c.enabled !== false && configured[c.id]).map((c) => this[renderers[c.id]]()).filter(Boolean);
     if (!parts.length) return "";
     return `
@@ -6322,13 +6350,18 @@ var _RenderLeft = class {
     const sabKbps = this._sabConfigured ? parseFloat(this._sab.kbpersec) || 0 : 0;
     const sabSpeedBytes = sabKbps * 1024;
     const nzbgetSpeedBytes = this._nzbgetConfigured ? this._nzbget?.DownloadRate || 0 : 0;
-    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes;
+    const delugeSpeedBytes = this._delugeConfigured ? this._delugeStatus?.download_rate || 0 : 0;
+    const delugeUpBytes = this._delugeConfigured ? this._delugeStatus?.upload_rate || 0 : 0;
+    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes + delugeSpeedBytes;
+    const combinedUpBytes = qbitUpBytes + delugeUpBytes;
     const combinedStr = this.fmtSpeed(combinedSpeed);
-    const combinedUpStr = this.fmtSpeed(qbitUpBytes);
+    const combinedUpStr = this.fmtSpeed(combinedUpBytes);
+    const hasUpload = this._qbitConfigured || this._delugeConfigured;
     const activeClients = [
       this._qbitConfigured && "qBit",
       this._sabConfigured && "SAB",
-      this._nzbgetConfigured && "NZBGet"
+      this._nzbgetConfigured && "NZBGet",
+      this._delugeConfigured && "Deluge"
     ].filter(Boolean);
     let speedSub = "";
     if (activeClients.length > 1) {
@@ -6336,6 +6369,7 @@ var _RenderLeft = class {
       if (this._qbitConfigured) parts.push(`qBit ${this.fmtSpeed(qbitSpeedBytes)}`);
       if (this._sabConfigured) parts.push(`SAB ${this.fmtSpeed(sabSpeedBytes)}`);
       if (this._nzbgetConfigured) parts.push(`NZBGet ${this.fmtSpeed(nzbgetSpeedBytes)}`);
+      if (this._delugeConfigured) parts.push(`Deluge ${this.fmtSpeed(delugeSpeedBytes)}`);
       speedSub = parts.join(" \xB7 ");
     } else if (this._qbitConfigured) {
       speedSub = `qBittorrent`;
@@ -6343,6 +6377,8 @@ var _RenderLeft = class {
       speedSub = `SABnzbd`;
     } else if (this._nzbgetConfigured) {
       speedSub = `NZBGet`;
+    } else if (this._delugeConfigured) {
+      speedSub = `Deluge`;
     }
     const sabFreeGB = this._sabConfigured ? parseFloat(this._sab.diskspace2) || 0 : 0;
     const sabTotalGB = this._sabConfigured ? parseFloat(this._sab.diskspacetotal2) || 0 : 0;
@@ -6352,6 +6388,8 @@ var _RenderLeft = class {
     const hasNzbgetDisk = nzbgetTotalGB > 0;
     const qbitFreeBytes = this._qbitDiskFreeBytes;
     const hasQbitDisk = typeof qbitFreeBytes === "number" && qbitFreeBytes > 0;
+    const delugeFreeBytes = this._delugeConfigured ? this._delugeStatus?.free_space || 0 : 0;
+    const hasDelugeDisk = delugeFreeBytes > 0;
     const DISK_ROUND = 100 * 1024 * 1024;
     const allRoots = [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
     const diskMap = /* @__PURE__ */ new Map();
@@ -6441,6 +6479,12 @@ var _RenderLeft = class {
         <div class="dc-label">${this._t("storage")}</div>
         <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(qbitFreeBytes)} ${this._t("free")}</span></div>
       </div>`;
+    } else if (hasDelugeDisk) {
+      diskChip = `
+      <div class="disk-chip">
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(delugeFreeBytes)} ${this._t("free")}</span></div>
+      </div>`;
     }
     const speedStyle = diskChip ? "" : "flex:1";
     const speedChip = `
@@ -6448,7 +6492,7 @@ var _RenderLeft = class {
       <div class="dc-label">${this._t("totalSpeed")}</div>
       <div class="dc-val" style="display:flex;gap:6px;align-items:center">
         <span class="g" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:download" style="--mdc-icon-size:13px"></ha-icon> ${combinedStr}</span>
-        ${this._qbitConfigured ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ""}
+        ${hasUpload ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ""}
       </div>
       <div class="dc-sub speed-chip-sub">${speedSub}</div>
     </div>`;
@@ -6560,6 +6604,113 @@ var _RenderLeft = class {
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
         <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
         <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span>
+      </div>
+      <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  _renderDeluge() {
+    if (!this._delugeConfigured) return "";
+    const status = this._delugeStatus || {};
+    const dlSpeed = this.fmtSpeed(status.download_rate || 0);
+    const torrents = Array.isArray(this._delugeQueue) ? [...this._delugeQueue] : [];
+    const [sortField, sortDir] = this._sort.split("_");
+    torrents.sort((a, b) => {
+      const av = sortField === "speed" ? a.download_payload_rate || 0 : a.progress || 0;
+      const bv = sortField === "speed" ? b.download_payload_rate || 0 : b.progress || 0;
+      return sortDir === "asc" ? av - bv : bv - av;
+    });
+    const progressActive = sortField === "progress";
+    const speedActive = sortField === "speed";
+    const dir = sortDir === "asc" ? "\u2191" : "\u2193";
+    const activeTorrents = torrents.filter((t) => {
+      const st = (t.state || "").toLowerCase();
+      return st !== "paused" && t.progress < 100;
+    });
+    const allPaused = torrents.length > 0 && activeTorrents.length === 0;
+    const items = this._pagedList(torrents, "deluge", (t) => this._renderDelugeTorrentItem(t), this._perPage("deluge"));
+    return `
+    <div class="sec-card">
+      <div class="col-hdr" style="margin-bottom:8px">
+        ${this._appIcon("deluge")}
+        <span class="col-hdr-title">Deluge</span>
+        <div class="col-hdr-line"></div>
+        <div class="sort-btns">
+          <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" title="${this._t("sortByProgress")}">
+            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon>${progressActive ? `<span class="sb-dir">${dir}</span>` : ""}
+          </button>
+          <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" title="${this._t("sortBySpeed")}">
+            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon>${speedActive ? `<span class="sb-dir">${dir}</span>` : ""}
+          </button>
+        </div>
+        ${this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+             </button>`}
+      </div>
+      ${items}
+    </div>`;
+  }
+  _renderDelugeTorrentItem(t) {
+    const pct = Math.round(t.progress || 0);
+    const dlSpd = this.fmtSpeed(t.download_payload_rate || 0);
+    const upSpd = this.fmtSpeed(t.upload_payload_rate || 0);
+    const etaRaw = t.eta;
+    const eta = etaRaw && etaRaw > 0 && etaRaw < 86400 * 365 ? this.fmtEta(etaRaw) : "\u2014";
+    const total = this.fmtSize(t.total_size || 0);
+    const done = this.fmtSize(t.total_done || 0);
+    const seeds = t.num_seeds || 0;
+    const peers = t.num_peers || 0;
+    const name = this._escHtml(t.name || "Unknown");
+    const hash = t.hash || "";
+    const state = (t.state || "").toLowerCase();
+    const isCompleted = pct >= 100;
+    const isPaused = state === "paused";
+    const isSeeding = state === "seeding";
+    const isError = state === "error";
+    const isChecking = state === "checking";
+    let speedCol = "";
+    if (isSeeding) {
+      speedCol = this._pill("pill-teal", "mdi:upload", upSpd);
+    } else if (isCompleted) {
+      speedCol = this._pill("pill-green", "mdi:check-circle", this._t("complete"));
+    } else if (isError) {
+      speedCol = this._pill("pill-red", "mdi:alert-circle", this._t("errorState"));
+    } else if (isPaused) {
+      speedCol = this._pill("pill-orange", "mdi:pause-circle", this._t("paused"));
+    } else {
+      speedCol = this._pill("pill-green", "mdi:download", dlSpd);
+    }
+    const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    let actionBtns = "";
+    if (this._delugeItemBusy === hash) {
+      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+    } else if (this._delugeConfirm === hash) {
+      actionBtns = `
+      <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    } else {
+      if (!isCompleted && isPaused)
+        actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (!isCompleted && !isPaused && !isError)
+        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (isSeeding)
+        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    }
+    return `
+    <div class="dl">
+      <div class="dl-r1">
+        <span class="dl-name" title="${name}">${name}</span>
+        <span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>
+        <div class="tb-group">${actionBtns}</div>
+      </div>
+      <div class="dl-r2">
+        ${speedCol}
+        ${!isCompleted && !isError && !isPaused ? this._pill("pill-teal", "mdi:upload", upSpd) : ""}
+        ${isSeeding ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${done} / ${total}</b></span>
+        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
+        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -8480,6 +8631,30 @@ var _WireMethods = class {
     }
   }
   // ─────────────────────────────────────────────
+  // Deluge action API
+  // ─────────────────────────────────────────────
+  async _delugeAction(hash, action, deleteFiles = false) {
+    const isGlobal = action === "pauseAll" || action === "resumeAll";
+    if (isGlobal) {
+      this._delugeBusy = true;
+    } else {
+      this._delugeItemBusy = hash;
+    }
+    this._reRenderLeft();
+    try {
+      await this._hass.callApi("POST", "arr_stack/deluge/action", { action, hash, deleteFiles });
+    } catch (e) {
+      console.error("[arr-card] Deluge action error:", e);
+    } finally {
+      this._delugeConfirm = null;
+      await new Promise((r) => setTimeout(r, 2e3));
+      await this._fetchDeluge();
+      this._delugeBusy = false;
+      this._delugeItemBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  // ─────────────────────────────────────────────
   // SABnzbd action API
   // ─────────────────────────────────────────────
   async _sabAction(mode) {
@@ -8582,6 +8757,35 @@ var _WireMethods = class {
           this._nzbgetItemDelete(nzbId);
         } else if (action === "retry") {
           this._nzbgetRetry(nzbId);
+        }
+      });
+    });
+    const delugeToggle = this.shadowRoot.querySelector(".deluge-global-toggle");
+    if (delugeToggle) {
+      delugeToggle.addEventListener("click", () => {
+        const paused = delugeToggle.classList.contains("paused");
+        this._delugeAction(null, paused ? "resumeAll" : "pauseAll");
+      });
+    }
+    this.shadowRoot.querySelectorAll("[data-dlg-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.dlgAction;
+        const hash = btn.dataset.dlgHash || "";
+        if (action === "pause") {
+          this._delugeAction(hash, "pause");
+        } else if (action === "resume") {
+          this._delugeAction(hash, "resume");
+        } else if (action === "remove-confirm") {
+          this._delugeConfirm = hash;
+          this._reRenderLeft();
+        } else if (action === "cancel-remove") {
+          this._delugeConfirm = null;
+          this._reRenderLeft();
+        } else if (action === "remove-keep") {
+          this._delugeAction(hash, "delete", false);
+        } else if (action === "remove-del") {
+          this._delugeAction(hash, "delete", true);
         }
       });
     });
@@ -19972,6 +20176,12 @@ var ArrStackCard = class extends HTMLElement {
     this._nzbgetItemBusy = null;
     this._nzbgetConfirm = null;
     this._nzbgetRetryBusy = null;
+    this._delugeConfigured = true;
+    this._deluge = null;
+    this._delugeQueue = [];
+    this._delugeBusy = false;
+    this._delugeItemBusy = null;
+    this._delugeConfirm = null;
     this._bazarrConfigured = true;
     this._tautulliConfigured = true;
     this._tautulli = null;
@@ -20087,7 +20297,7 @@ var ArrStackCard = class extends HTMLElement {
     this._searchActive = false;
     this._searchTimer = null;
     this._searchAbort = null;
-    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
+    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "", streams: "" };
     this._streamsTimer = null;
     this._streamPopupTimer = null;
@@ -20377,6 +20587,7 @@ var ArrStackCard = class extends HTMLElement {
     if (section === "qbit") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
     if (section === "sab") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
     if (section === "nzbget") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
+    if (section === "deluge") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
     return 4;
   }
   // Converts "#rrggbb" or "#rgb" to "r,g,b" string for use in rgba()
@@ -20461,6 +20672,7 @@ var ArrStackCard = class extends HTMLElement {
       qbit: "qbittorrent",
       sab: "sabnzbd",
       nzbget: "nzbget",
+      deluge: "deluge",
       radarr: "radarr",
       sonarr: "sonarr",
       overseerr: "overseerr",
@@ -20487,6 +20699,7 @@ var ArrStackCard = class extends HTMLElement {
     const customSvgs = {
       qbit: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="9.5" font-weight="700" font-family="sans-serif">qb</text></svg>`,
       sab: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M5 2h14v10h3L12 22 2 12h3V2z"/></svg>`,
+      deluge: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3l6 5h-4v5H10v-5H6l6-5z"/></svg>`,
       nzbget: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><rect x="5" y="2" width="14" height="2" rx="0.5"/><rect x="5" y="5.5" width="14" height="2" rx="0.5"/><rect x="5" y="9" width="14" height="2" rx="0.5"/><path d="M5 12h14v4h3L12 22 2 16h3v-4z"/></svg>`
     };
     if (useReal && cdnSlugs[app]) {
@@ -20595,6 +20808,7 @@ var ArrStackCard = class extends HTMLElement {
   // Returns the correct data array for a given section key
   _getPageData(section) {
     if (section === "qbit") return Array.isArray(this._qbit) ? this._qbit : [];
+    if (section === "deluge") return Array.isArray(this._delugeQueue) ? this._delugeQueue : [];
     if (section === "nzbget") {
       const queue = Array.isArray(this._nzbgetQueue) ? this._nzbgetQueue : [];
       const completed = (this._nzbgetCompleted || []).map((s) => ({
