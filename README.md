@@ -72,7 +72,7 @@ The left panel appears when at least one download manager is configured. You can
 
 - **qBittorrent** — active torrents with download and upload speed, progress, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Total speed chip shows combined download and upload across all active torrents.
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
-- **NZBGet** — NZB queue with progress, post-processing status, failed items, global pause/resume, per-item delete.
+- **NZBGet** — NZB queue with progress, post-processing status, failed history with retry/delete, global pause/resume.
 - **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Disks are deduplicated automatically. If your media is spread across multiple disks, use the chevron arrows to page through them.
 
 ### Right panel — configurable sections
