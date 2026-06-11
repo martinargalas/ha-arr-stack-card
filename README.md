@@ -103,8 +103,21 @@ Requires the official [Plex](https://www.home-assistant.io/integrations/plex/) H
 - Active user shown on the stream card
 - Remote stream termination (stop with a message) — works for all clients
 - Full playback controls (play, pause, next, previous) — Plexamp only
+- **Cast to Plex device** — cast any movie or show directly from its popup to a Plex-connected device
 
 > **Plex Server URL** — the integration auto-detects your server address during setup. If Home Assistant runs on a different machine or VLAN than Plex, you can override it with the address HA can reach (e.g. `http://192.168.1.10:32400`).
+
+##### Cast to Plex device
+
+A cast button appears in movie and show popups when the item is found in your Plex library. Clicking it shows a list of your available Plex-connected devices — select one to start playback.
+
+**Requirements:**
+
+1. Plex configured in the Arr Stack Integration (token + server URL)
+2. Official [Plex HA integration](https://www.home-assistant.io/integrations/plex/) installed and connected — the card discovers devices via `media_player.plex_*` entities
+3. Target device must be online and reachable by the Plex server
+
+> Cast to the Plex mobile app works only when the app is open and actively streaming or on the player screen. Devices that are fully idle may not respond — this is a Plex limitation, not a card limitation.
 
 #### Activity Queue
 
@@ -143,6 +156,8 @@ Indexer overview and search statistics from Prowlarr.
 - **See More overlay** — full-screen grid for any section
 - Visual card editor in HA (no YAML required for basic setup)
 - Performance mode — disables backdrop blur
+- **Category colour overlays** — colour-tinted poster overlays per section (enabled by default, toggle via `styles.categoryOverlays`)
+- **Real app icons** — uses the actual Radarr, Sonarr, qBittorrent, etc. logos instead of MDI icons (default). Switch to MDI icons via `styles.applicationIcons: mdi`
 
 ---
 
@@ -252,6 +267,8 @@ styles:
   cardBackground: "#121216"       # card background colour (performance mode only)
   cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only)
   dayNightMode: true              # auto switch popup colours based on sun.sun
+  categoryOverlays: true          # colour-tinted overlays on category poster grids  (default: true)
+  applicationIcons: real          # real | mdi — use real app logos or MDI icons  (default: real)
   searchBarIconColor: ""
   headingTextColor: "#ffffff"
   headingColor: "#ffffff"
