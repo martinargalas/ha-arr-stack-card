@@ -20473,9 +20473,6 @@ var ArrStackCard = class extends HTMLElement {
       jellystat: "jellystat"
     };
     const mdiIcons = {
-      qbit: "mdi:download-network",
-      sab: "mdi:email-arrow-down-outline",
-      nzbget: "mdi:email-arrow-down-outline",
       radarr: "mdi:filmstrip",
       sonarr: "mdi:television-play",
       overseerr: "mdi:movie-open-check-outline",
@@ -20487,11 +20484,19 @@ var ArrStackCard = class extends HTMLElement {
       prowlarr: "mdi:magnify-scan",
       jellystat: "mdi:chart-line"
     };
+    const customSvgs = {
+      qbit: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="9.5" font-weight="700" font-family="sans-serif">qb</text></svg>`,
+      sab: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M5 2h14v10h3L12 22 2 12h3V2z"/></svg>`,
+      nzbget: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><rect x="5" y="2" width="14" height="2" rx="0.5"/><rect x="5" y="5.5" width="14" height="2" rx="0.5"/><rect x="5" y="9" width="14" height="2" rx="0.5"/><path d="M5 12h14v4h3L12 22 2 16h3v-4z"/></svg>`
+    };
     if (useReal && cdnSlugs[app]) {
-      return `<img src="${CDN}/${cdnSlugs[app]}.svg" ${sz} style="flex-shrink:0;display:block;object-fit:contain" loading="lazy" onerror="this.style.visibility='hidden'">`;
+      return `<img src="${CDN}/${cdnSlugs[app]}.svg" ${sz} style="flex-shrink:0;display:block;object-fit:contain" onerror="this.style.display='none'">`;
+    }
+    if (customSvgs[app]) {
+      return customSvgs[app];
     }
     if (mdiIcons[app]) {
-      return `<ha-icon icon="${mdiIcons[app]}" style="--mdc-icon-size:${size}px"></ha-icon>`;
+      return `<ha-icon icon="${mdiIcons[app]}" style="--mdc-icon-size:${size}px;flex-shrink:0"></ha-icon>`;
     }
     return "";
   }
