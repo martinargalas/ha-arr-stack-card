@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tautulli Category — Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e0e12;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #fff;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .label { font-size: 11px; color: rgba(255,255,255,0.3); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .08em; }
+
+  /* ── Right panel shell ── */
+  .right-panel { width: 560px; background: #16161e; border-radius: 16px; padding: 14px 16px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 40px; }
+
+  /* ── Section header ── */
+  .col-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .col-hdr-title { font-size: 13px; font-weight: 600; letter-spacing: 0.03em; color: rgba(255,255,255,0.85); }
+  .col-hdr-line { flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+  .sec-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; letter-spacing: 0.03em; background: rgba(250,180,50,0.12); border: 1px solid rgba(250,180,50,0.25); color: rgba(250,180,50,0.9); }
+  .sec-badge-warn { background: rgba(255,60,60,0.12); border: 1px solid rgba(255,60,60,0.3); color: rgba(255,100,100,0.9); }
+
+  /* ── 4 posters in a row ── */
+  .poster-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stat-poster {
+    border-radius: 10px; padding: 11px 10px; cursor: pointer;
+    position: relative; overflow: hidden; aspect-ratio: 2 / 3;
+    display: flex; flex-direction: column;
+    transition: transform .15s, box-shadow .15s;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .stat-poster:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+  .stat-poster:hover .poster-open-hint { opacity: 1; }
+
+  .poster-libraries { background: linear-gradient(160deg, #1a1f3c 0%, #0d1526 100%); }
+  .poster-users     { background: linear-gradient(160deg, #1a2b1f 0%, #0d1e11 100%); }
+  .poster-streams   { background: linear-gradient(160deg, #2b1e0e 0%, #1e1208 100%); }
+  .poster-activity  { background: linear-gradient(160deg, #221330 0%, #150b22 100%); }
+  .poster-warn      { background: linear-gradient(160deg, #2b1212 0%, #1e0909 100%); border-color: rgba(255,60,60,0.3) !important; }
+
+  .poster-accent-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .accent-blue   { background: rgba(99,140,255,0.7); }
+  .accent-green  { background: rgba(60,200,120,0.7); }
+  .accent-orange { background: rgba(250,160,40,0.7); }
+  .accent-purple { background: rgba(180,80,255,0.7); }
+  .accent-red    { background: rgba(255,60,60,0.8); }
+
+  .poster-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; flex-shrink: 0; }
+  .icon-bg-blue   { background: rgba(99,140,255,0.15); }
+  .icon-bg-green  { background: rgba(60,200,120,0.15); }
+  .icon-bg-orange { background: rgba(250,160,40,0.15); }
+  .icon-bg-purple { background: rgba(180,80,255,0.15); }
+  .icon-bg-red    { background: rgba(255,60,60,0.15); }
+
+  .poster-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.3); margin-bottom: 6px; flex-shrink: 0; }
+  .poster-label-warn { color: rgba(255,100,100,0.6); }
+
+  .p-stat-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .p-stat-row:last-of-type { margin-bottom: 0; }
+  .p-stat-name { font-size: 10px; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70px; }
+  .p-stat-val  { font-size: 10px; font-weight: 700; color: rgba(250,180,50,0.9); flex-shrink: 0; margin-left: 4px; }
+
+  .p-big-num  { font-size: 36px; font-weight: 800; color: rgba(250,160,40,0.9); line-height: 1; margin-bottom: 4px; }
+  .p-big-sub  { font-size: 10px; color: rgba(255,255,255,0.35); margin-bottom: 8px; }
+  .p-sub-row  { font-size: 9px; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+  .p-sub-val  { font-weight: 600; color: rgba(255,255,255,0.6); }
+
+  .p-user-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+  .p-user-row:last-of-type { margin-bottom: 0; }
+  .p-avatar   { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.1); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.6); overflow: hidden; }
+  .p-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .p-user-name      { font-size: 10px; color: rgba(255,255,255,0.75); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-user-plays     { font-size: 9px; font-weight: 700; color: rgba(250,180,50,0.85); flex-shrink: 0; }
+  .p-user-name-warn { color: rgba(255,120,120,0.95); }
+  .p-user-plays-warn{ color: rgba(255,80,80,0.8); }
+  .p-warn-ip        { font-size: 8px; color: rgba(255,80,80,0.6); }
+
+  .p-mini-bars { display: flex; align-items: flex-end; gap: 2px; flex: 1; min-height: 0; }
+  .p-bar-col   { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .p-bar       { width: 100%; border-radius: 2px 2px 0 0; background: rgba(180,80,255,0.5); min-height: 2px; transition: background .15s; }
+  .stat-poster:hover .p-bar { background: rgba(180,80,255,0.8); }
+  .p-bar-day   { font-size: 6px; color: rgba(255,255,255,0.2); }
+  .p-chart-sum { font-size: 9px; color: rgba(255,255,255,0.4); margin-top: 4px; flex-shrink: 0; }
+  .p-chart-sum strong { color: rgba(180,80,255,0.9); font-weight: 700; }
+
+  .poster-open-hint  { position: absolute; bottom: 7px; right: 8px; font-size: 8px; color: rgba(255,255,255,0.25); opacity: 0; transition: opacity .15s; }
+  .poster-warn-badge { position: absolute; top: 8px; right: 8px; background: rgba(255,60,60,0.2); border: 1px solid rgba(255,60,60,0.4); border-radius: 4px; padding: 1px 4px; font-size: 8px; color: rgba(255,100,100,0.9); font-weight: 700; }
+
+  /* ── Modal ── */
+  .modal-glass { position: fixed; inset: 0; background: rgba(0,0,0,0.72); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(6px); }
+  .modal-box   { background: #1a1a24; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); width: min(860px, 96vw); max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.7); }
+  .modal-header { display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px 0; flex-shrink: 0; }
+  .modal-icon   { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .modal-icon-blue   { background: rgba(99,140,255,0.15); }
+  .modal-icon-green  { background: rgba(60,200,120,0.15); }
+  .modal-icon-orange { background: rgba(250,160,40,0.15); }
+  .modal-icon-purple { background: rgba(180,80,255,0.15); }
+  .modal-head-text { flex: 1; }
+  .modal-title    { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+  .modal-subtitle { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+  .modal-close    { margin-left: 8px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; color: rgba(255,255,255,0.6); font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background .15s; flex-shrink: 0; }
+  .modal-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+  .modal-tabs { display: flex; gap: 4px; padding: 12px 22px 0; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .tab-btn { padding: 7px 16px; border-radius: 8px 8px 0 0; font-size: 12px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: rgba(255,255,255,0.45); transition: all .15s; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab-btn.active { color: #fff; border-bottom-color: rgba(250,180,50,0.8); }
+  .tab-btn:hover:not(.active) { color: rgba(255,255,255,0.7); }
+
+  .modal-body { flex: 1; overflow-y: auto; padding: 16px 22px 20px; }
+  .modal-body::-webkit-scrollbar { width: 4px; }
+  .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+  /* Libraries */
+  .lib-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .lib-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px; text-align: center; }
+  .lib-card-type  { font-size: 9px; text-transform: uppercase; letter-spacing:.07em; color: rgba(255,255,255,0.35); margin-bottom: 6px; }
+  .lib-card-name  { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.9); margin-bottom: 4px; }
+  .lib-card-count { font-size: 26px; font-weight: 800; color: rgba(250,180,50,0.85); }
+  .lib-card-sub   { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 4px; line-height: 1.5; }
+
+  /* Users */
+  .warn-banner { display: flex; align-items: flex-start; gap: 10px; background: rgba(255,60,60,0.08); border: 1px solid rgba(255,60,60,0.22); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 11px; color: rgba(255,120,120,0.9); line-height: 1.5; }
+  .warn-ack-btn { margin-left: auto; flex-shrink: 0; align-self: center; background: rgba(255,60,60,0.18); border: 1px solid rgba(255,60,60,0.35); border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; color: rgba(255,120,120,0.9); cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .warn-ack-btn:hover { background: rgba(255,60,60,0.3); color: #fff; }
+  .users-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .users-table th { text-align: left; padding: 6px 8px; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .users-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); vertical-align: middle; }
+  .users-table tr:last-child td { border-bottom: none; }
+  .users-table tr.row-warn td { background: rgba(255,60,60,0.04); }
+  .users-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .td-user   { display: flex; align-items: center; gap: 8px; }
+  .td-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.1); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6); }
+  .td-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .td-ip   { font-family: monospace; font-size: 11px; }
+  .td-ip.warn { color: rgba(255,80,80,0.85); }
+  .td-plays { font-weight: 700; color: rgba(250,180,50,0.85); }
+  .ip-multi { display: flex; flex-direction: column; gap: 2px; }
+
+  /* History */
+  .hist-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .filter-chip { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.55); cursor: pointer; transition: all .15s; }
+  .filter-chip.active { background: rgba(250,180,50,0.15); border-color: rgba(250,180,50,0.35); color: rgba(250,180,50,0.9); }
+  .filter-sep  { width: 1px; height: 18px; background: rgba(255,255,255,0.08); }
+  .hist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .hist-table th { text-align: left; padding: 6px 8px; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .hist-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); vertical-align: middle; }
+  .hist-table tr:last-child td { border-bottom: none; }
+  .hist-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .td-title { font-weight: 600; color: rgba(255,255,255,0.92); }
+  .td-sub   { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .badge-media { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; vertical-align: middle; }
+  .badge-movie { background: rgba(99,120,255,0.18); color: rgba(140,155,255,0.9); border: 1px solid rgba(99,120,255,0.28); }
+  .badge-tv    { background: rgba(80,200,120,0.13); color: rgba(100,220,140,0.9); border: 1px solid rgba(80,200,120,0.22); }
+  .badge-music { background: rgba(250,180,50,0.13); color: rgba(250,200,80,0.9); border: 1px solid rgba(250,180,50,0.22); }
+  .dur-bar-wrap { width: 56px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .dur-bar      { height: 3px; border-radius: 2px; background: rgba(250,180,50,0.6); }
+
+  /* Graphs */
+  .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .graph-card  { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 14px; }
+  .graph-card.full { grid-column: 1 / -1; }
+  .graph-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+  .bar-chart   { display: flex; align-items: flex-end; gap: 3px; height: 72px; }
+  .bar-wrap    { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .bar         { width: 100%; border-radius: 3px 3px 0 0; background: rgba(250,180,50,0.5); transition: background .15s; cursor: pointer; min-height: 2px; }
+  .bar:hover   { background: rgba(250,180,50,0.85); }
+  .bar-label   { font-size: 7px; color: rgba(255,255,255,0.25); }
+  .top-row     { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .top-row:last-child { margin-bottom: 0; }
+  .top-name    { font-size: 11px; width: 80px; color: rgba(255,255,255,0.65); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top-bar-wrap{ flex: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; }
+  .top-bar     { height: 6px; border-radius: 3px; }
+  .top-count   { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.45); width: 28px; text-align: right; flex-shrink: 0; }
+  .donut-wrap  { display: flex; align-items: center; gap: 16px; }
+  .donut-legend{ display: flex; flex-direction: column; gap: 7px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: rgba(255,255,255,0.6); }
+  .legend-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- ══ TILE — normal ══ -->
+<p class="label">Category — normal</p>
+<div class="right-panel">
+  <div class="col-hdr">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span class="col-hdr-title">Tautulli</span>
+    <div class="col-hdr-line"></div>
+    <span class="sec-badge">67 plays · 30d</span>
+  </div>
+  <div class="poster-row">
+
+    <!-- 1. Libraries -->
+    <div class="stat-poster poster-libraries" onclick="openModal('libraries')">
+      <div class="poster-accent-line accent-blue"></div>
+      <div class="poster-icon icon-bg-blue">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(99,140,255,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <div class="poster-label">Libraries</div>
+      <div class="p-stat-row"><span class="p-stat-name">Filmy</span><span class="p-stat-val">42</span></div>
+      <div class="p-stat-row"><span class="p-stat-name">Seriály</span><span class="p-stat-val">18</span></div>
+      <div class="p-stat-row"><span class="p-stat-name">Hudba</span><span class="p-stat-val">7</span></div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+    <!-- 2. Users -->
+    <div class="stat-poster poster-users" onclick="openModal('users')">
+      <div class="poster-accent-line accent-green"></div>
+      <div class="poster-icon icon-bg-green">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(60,200,120,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="poster-label">Users</div>
+      <div class="p-user-row">
+        <div class="p-avatar"><img src="https://i.pravatar.cc/18?img=12" alt=""/></div>
+        <span class="p-user-name">martinargala</span><span class="p-user-plays">47</span>
+      </div>
+      <div class="p-user-row">
+        <div class="p-avatar"><img src="https://i.pravatar.cc/18?img=5" alt=""/></div>
+        <span class="p-user-name">Děti</span><span class="p-user-plays">12</span>
+      </div>
+      <div class="p-user-row">
+        <div class="p-avatar" style="font-size:7px">L</div>
+        <span class="p-user-name">Local</span><span class="p-user-plays">8</span>
+      </div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+    <!-- 3. Concurrent -->
+    <div class="stat-poster poster-streams" onclick="openModal('history')">
+      <div class="poster-accent-line accent-orange"></div>
+      <div class="poster-icon icon-bg-orange">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(250,160,40,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="poster-label">Concurrent</div>
+      <div class="p-big-num">2</div>
+      <div class="p-big-sub">streams now</div>
+      <div class="p-sub-row">Direct <span class="p-sub-val">2</span></div>
+      <div class="p-sub-row">Transcode <span class="p-sub-val">0</span></div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+    <!-- 4. Play Activity -->
+    <div class="stat-poster poster-activity" onclick="openModal('graphs')">
+      <div class="poster-accent-line accent-purple"></div>
+      <div class="poster-icon icon-bg-purple">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(180,80,255,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <div class="poster-label">Play Activity</div>
+      <div class="p-mini-bars">
+        <div class="p-bar-col"><div class="p-bar" style="height:18%"></div><span class="p-bar-day">M</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:44%"></div><span class="p-bar-day">T</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:4%"></div><span class="p-bar-day">W</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:72%"></div><span class="p-bar-day">T</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:28%"></div><span class="p-bar-day">F</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:90%"></div><span class="p-bar-day">S</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:36%"></div><span class="p-bar-day">S</span></div>
+      </div>
+      <div class="p-chart-sum">7d · <strong>23 plays</strong></div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══ TILE — sharing detected ══ -->
+<p class="label">Category — sharing detected</p>
+<div class="right-panel">
+  <div class="col-hdr">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span class="col-hdr-title">Tautulli</span>
+    <div class="col-hdr-line"></div>
+    <span class="sec-badge sec-badge-warn">sharing detected</span>
+  </div>
+  <div class="poster-row">
+
+    <div class="stat-poster poster-libraries" onclick="openModal('libraries')">
+      <div class="poster-accent-line accent-blue"></div>
+      <div class="poster-icon icon-bg-blue">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(99,140,255,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <div class="poster-label">Libraries</div>
+      <div class="p-stat-row"><span class="p-stat-name">Filmy</span><span class="p-stat-val">42</span></div>
+      <div class="p-stat-row"><span class="p-stat-name">Seriály</span><span class="p-stat-val">18</span></div>
+      <div class="p-stat-row"><span class="p-stat-name">Hudba</span><span class="p-stat-val">7</span></div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+    <!-- 2. Users — sharing warning card -->
+    <div class="stat-poster poster-warn" onclick="openModal('users')">
+      <div class="poster-accent-line accent-red"></div>
+      <div class="poster-warn-badge">!</div>
+      <div class="poster-icon icon-bg-red">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="poster-label poster-label-warn">Sharing</div>
+      <div class="p-user-row">
+        <div class="p-avatar"><img src="https://i.pravatar.cc/18?img=12" alt=""/></div>
+        <span class="p-user-name">martinargala</span><span class="p-user-plays">47</span>
+      </div>
+      <div class="p-user-row">
+        <div class="p-avatar" style="background:rgba(255,60,60,0.2);color:rgba(255,120,120,0.9)">D</div>
+        <div style="flex:1;min-width:0">
+          <div class="p-user-name p-user-name-warn">Děti</div>
+          <div class="p-warn-ip">3 IPs · 3 streams</div>
+        </div>
+        <span class="p-user-plays p-user-plays-warn">3x</span>
+      </div>
+      <div class="p-user-row">
+        <div class="p-avatar" style="font-size:7px">L</div>
+        <span class="p-user-name">Local</span><span class="p-user-plays">8</span>
+      </div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+    <div class="stat-poster poster-streams" onclick="openModal('history')">
+      <div class="poster-accent-line accent-orange"></div>
+      <div class="poster-icon icon-bg-orange">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(250,160,40,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="poster-label">Concurrent</div>
+      <div class="p-big-num">3</div>
+      <div class="p-big-sub">streams now</div>
+      <div class="p-sub-row">Direct <span class="p-sub-val">3</span></div>
+      <div class="p-sub-row">Transcode <span class="p-sub-val">0</span></div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+    <div class="stat-poster poster-activity" onclick="openModal('graphs')">
+      <div class="poster-accent-line accent-purple"></div>
+      <div class="poster-icon icon-bg-purple">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(180,80,255,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <div class="poster-label">Play Activity</div>
+      <div class="p-mini-bars">
+        <div class="p-bar-col"><div class="p-bar" style="height:18%"></div><span class="p-bar-day">M</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:44%"></div><span class="p-bar-day">T</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:4%"></div><span class="p-bar-day">W</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:72%"></div><span class="p-bar-day">T</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:28%"></div><span class="p-bar-day">F</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:90%"></div><span class="p-bar-day">S</span></div>
+        <div class="p-bar-col"><div class="p-bar" style="height:36%"></div><span class="p-bar-day">S</span></div>
+      </div>
+      <div class="p-chart-sum">7d · <strong>23 plays</strong></div>
+      <div class="poster-open-hint">→</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══ MODAL ══ -->
+<div class="modal-glass" id="modal" style="display:none" onclick="closeOnGlass(event)">
+  <div class="modal-box">
+
+    <div class="modal-header" id="modal-hdr">
+      <div class="modal-icon" id="hdr-icon"></div>
+      <div class="modal-head-text">
+        <div class="modal-title" id="hdr-title"></div>
+        <div class="modal-subtitle" id="hdr-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">x</button>
+    </div>
+
+    <div class="modal-tabs">
+      <button class="tab-btn" id="tab-libraries" onclick="switchTab('libraries')">Libraries</button>
+      <button class="tab-btn" id="tab-users"     onclick="switchTab('users')">Users</button>
+      <button class="tab-btn" id="tab-history"   onclick="switchTab('history')">History</button>
+      <button class="tab-btn" id="tab-graphs"    onclick="switchTab('graphs')">Graphs</button>
+    </div>
+
+    <!-- LIBRARIES -->
+    <div class="modal-body" id="pane-libraries" style="display:none">
+      <div class="lib-grid">
+        <div class="lib-card"><div class="lib-card-type">Movies</div><div class="lib-card-name">Filmy</div><div class="lib-card-count">268</div><div class="lib-card-sub">42 plays · 30d</div></div>
+        <div class="lib-card"><div class="lib-card-type">TV Shows</div><div class="lib-card-name">Serialy</div><div class="lib-card-count">29</div><div class="lib-card-sub">48 seasons · 789 eps<br>18 plays · 30d</div></div>
+        <div class="lib-card"><div class="lib-card-type">Music</div><div class="lib-card-name">Hudba</div><div class="lib-card-count">245</div><div class="lib-card-sub">1 203 albums · 14 538 tracks<br>7 plays · 30d</div></div>
+        <div class="lib-card"><div class="lib-card-type">Music</div><div class="lib-card-name">Podcasty</div><div class="lib-card-count">1</div><div class="lib-card-sub">5 albums · 5 tracks<br>0 plays · 30d</div></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="modal-body" id="pane-users" style="display:none">
+      <div class="warn-banner" id="sharing-warn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><strong>Deti</strong> — 3 simultaneous sessions from 3 different IP addresses. Possible credential sharing.</span>
+        <button class="warn-ack-btn" onclick="acknowledgeSharing()">Acknowledge</button>
+      </div>
+      <table class="users-table">
+        <thead><tr><th>User</th><th>Last IP</th><th>Platform</th><th>Last Played</th><th>Plays</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="td-user"><div class="td-avatar"><img src="https://i.pravatar.cc/28?img=12" alt=""/></div>martinargala</div></td>
+            <td class="td-ip">127.0.0.1</td><td>Plex for Apple TV</td><td>The AI Doc... · 12 min ago</td><td class="td-plays">47</td>
+          </tr>
+          <tr class="row-warn" id="warn-row">
+            <td><div class="td-user"><div class="td-avatar" style="background:rgba(255,60,60,0.18);color:rgba(255,120,120,0.9)">D</div><span style="color:rgba(255,120,120,0.9)">Deti</span></div></td>
+            <td><div class="ip-multi"><span class="td-ip warn">88.102.x.x</span><span class="td-ip warn">91.134.x.x</span><span class="td-ip warn">46.229.x.x</span></div></td>
+            <td style="color:rgba(255,100,100,0.8)">3 active sessions</td>
+            <td>Regular Show... · 2 days ago</td><td class="td-plays" style="color:rgba(255,80,80,0.8)">12</td>
+          </tr>
+          <tr>
+            <td><div class="td-user"><div class="td-avatar">L</div>Local</div></td>
+            <td class="td-ip">127.0.0.1</td><td>Chrome</td><td>Za hranici · S1 E3 · 1 week ago</td><td class="td-plays">8</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="modal-body" id="pane-history" style="display:none">
+      <div class="hist-filters">
+        <span class="filter-chip active">All users</span>
+        <span class="filter-chip">martinargala</span>
+        <span class="filter-chip">Deti</span>
+        <span class="filter-chip">Local</span>
+        <div class="filter-sep"></div>
+        <span class="filter-chip active">All media</span>
+        <span class="filter-chip">Movies</span>
+        <span class="filter-chip">TV</span>
+        <span class="filter-chip">Music</span>
+      </div>
+      <table class="hist-table">
+        <thead><tr><th>Date</th><th>User</th><th>IP</th><th>Platform</th><th>Title</th><th>Duration</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>2026-05-21<br><span class="td-sub">17:33</span></td>
+            <td>martinargala</td><td class="td-ip">127.0.0.1</td>
+            <td>Chrome <span class="badge-media badge-movie">Movie</span></td>
+            <td><div class="td-title">The AI Doc: Or How I...</div><div class="td-sub">2026 · 12 min watched</div></td>
+            <td><div class="dur-bar-wrap"><div class="dur-bar" style="width:20%"></div></div><div class="td-sub" style="margin-top:3px">12 / 90 min</div></td>
+          </tr>
+          <tr>
+            <td>2026-05-19<br><span class="td-sub">20:12</span></td>
+            <td style="color:rgba(255,120,120,0.85)">Deti</td><td class="td-ip warn">88.102.x.x</td>
+            <td>Plex Web <span class="badge-media badge-tv">TV</span></td>
+            <td><div class="td-title">Regular Show: The Last Tapes</div><div class="td-sub">S1 E1 · 22 min watched</div></td>
+            <td><div class="dur-bar-wrap"><div class="dur-bar" style="width:100%;background:rgba(80,200,120,0.6)"></div></div><div class="td-sub" style="margin-top:3px">22 / 22 min</div></td>
+          </tr>
+          <tr>
+            <td>2026-05-18<br><span class="td-sub">22:05</span></td>
+            <td>martinargala</td><td class="td-ip">127.0.0.1</td>
+            <td>Apple TV <span class="badge-media badge-movie">Movie</span></td>
+            <td><div class="td-title">Outer Range</div><div class="td-sub">2026 · 95 min watched</div></td>
+            <td><div class="dur-bar-wrap"><div class="dur-bar" style="width:88%"></div></div><div class="td-sub" style="margin-top:3px">95 / 108 min</div></td>
+          </tr>
+          <tr>
+            <td>2026-05-17<br><span class="td-sub">14:30</span></td>
+            <td>martinargala</td><td class="td-ip">127.0.0.1</td>
+            <td>Apple TV <span class="badge-media badge-music">Music</span></td>
+            <td><div class="td-title">Bohemian Rhapsody</div><div class="td-sub">Queen · A Night at the Opera</div></td>
+            <td><div class="dur-bar-wrap"><div class="dur-bar" style="width:100%;background:rgba(250,180,50,0.6)"></div></div><div class="td-sub" style="margin-top:3px">6 / 6 min</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- GRAPHS -->
+    <div class="modal-body" id="pane-graphs" style="display:none">
+      <div class="graphs-grid">
+        <div class="graph-card full">
+          <div class="graph-title">Plays per day — last 30 days</div>
+          <div class="bar-chart">
+            <div class="bar-wrap"><div class="bar" style="height:6px"></div><span class="bar-label">22/4</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">23</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:22px"></div><span class="bar-label">24</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">25</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:14px"></div><span class="bar-label">26</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:34px"></div><span class="bar-label">27</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">28</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">29</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:18px"></div><span class="bar-label">30</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">1/5</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:28px"></div><span class="bar-label">2</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:10px"></div><span class="bar-label">3</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">4</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:44px"></div><span class="bar-label">5</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">6</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:20px"></div><span class="bar-label">7</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:8px"></div><span class="bar-label">8</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">9</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:38px"></div><span class="bar-label">10</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">11</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:16px"></div><span class="bar-label">12</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">13</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:52px"></div><span class="bar-label">14</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:24px"></div><span class="bar-label">15</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">16</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:12px"></div><span class="bar-label">17</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">18</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:32px"></div><span class="bar-label">19</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:0"></div><span class="bar-label">20</span></div>
+            <div class="bar-wrap"><div class="bar" style="height:14px"></div><span class="bar-label">21</span></div>
+          </div>
+        </div>
+        <div class="graph-card">
+          <div class="graph-title">Top users</div>
+          <div class="top-row"><span class="top-name">martinargala</span><div class="top-bar-wrap"><div class="top-bar" style="width:100%;background:rgba(99,120,255,0.55)"></div></div><span class="top-count">47</span></div>
+          <div class="top-row"><span class="top-name">Deti</span><div class="top-bar-wrap"><div class="top-bar" style="width:26%;background:rgba(99,120,255,0.55)"></div></div><span class="top-count">12</span></div>
+          <div class="top-row"><span class="top-name">Local</span><div class="top-bar-wrap"><div class="top-bar" style="width:17%;background:rgba(99,120,255,0.55)"></div></div><span class="top-count">8</span></div>
+        </div>
+        <div class="graph-card">
+          <div class="graph-title">Media type</div>
+          <div class="donut-wrap">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="28" fill="none" stroke="rgba(99,120,255,0.6)" stroke-width="14" stroke-dasharray="109 66" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+              <circle cx="40" cy="40" r="28" fill="none" stroke="rgba(80,200,120,0.55)" stroke-width="14" stroke-dasharray="48 127" stroke-dashoffset="-109" transform="rotate(-90 40 40)"/>
+              <circle cx="40" cy="40" r="28" fill="none" stroke="rgba(250,180,50,0.55)" stroke-width="14" stroke-dasharray="18 157" stroke-dashoffset="-157" transform="rotate(-90 40 40)"/>
+              <text x="40" y="44" text-anchor="middle" fill="rgba(255,255,255,0.65)" font-size="12" font-weight="700">67</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:rgba(99,120,255,0.7)"></div>Movies 62%</div>
+              <div class="legend-item"><div class="legend-dot" style="background:rgba(80,200,120,0.65)"></div>TV 27%</div>
+              <div class="legend-item"><div class="legend-dot" style="background:rgba(250,180,50,0.65)"></div>Music 11%</div>
+            </div>
+          </div>
+        </div>
+        <div class="graph-card full">
+          <div class="graph-title">Top platforms</div>
+          <div class="top-row"><span class="top-name">Apple TV</span><div class="top-bar-wrap"><div class="top-bar" style="width:75%;background:rgba(255,255,255,0.28)"></div></div><span class="top-count">38</span></div>
+          <div class="top-row"><span class="top-name">Chrome</span><div class="top-bar-wrap"><div class="top-bar" style="width:28%;background:rgba(99,120,255,0.45)"></div></div><span class="top-count">14</span></div>
+          <div class="top-row"><span class="top-name">Plex Web</span><div class="top-bar-wrap"><div class="top-bar" style="width:20%;background:rgba(250,180,50,0.4)"></div></div><span class="top-count">10</span></div>
+          <div class="top-row"><span class="top-name">Android</span><div class="top-bar-wrap"><div class="top-bar" style="width:10%;background:rgba(80,200,120,0.4)"></div></div><span class="top-count">5</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<p style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.25)">
+  Click any poster to open modal · "Acknowledge" in Users tab clears the sharing warning
+</p>
+
+<script>
+  const TABS = ['libraries','users','history','graphs'];
+  const HEADER_DATA = {
+    libraries: { iconCls:'modal-icon-blue',   stroke:'rgba(99,140,255,0.85)',  title:'Tautulli — Libraries', sub:'4 libraries · 268 movies · 29 shows · 245 artists' },
+    users:     { iconCls:'modal-icon-green',  stroke:'rgba(60,200,120,0.85)', title:'Tautulli — Users',     sub:'3 users · 67 plays total · last 30 days' },
+    history:   { iconCls:'modal-icon-orange', stroke:'rgba(250,160,40,0.85)', title:'Tautulli — History',   sub:'Recent play history across all users' },
+    graphs:    { iconCls:'modal-icon-purple', stroke:'rgba(180,80,255,0.85)', title:'Tautulli — Graphs',    sub:'67 plays · last 30 days · 3 users' },
+  };
+
+  function openModal(tab) {
+    document.getElementById('modal').style.display = 'flex';
+    switchTab(tab || 'libraries');
+  }
+  function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+  }
+  function closeOnGlass(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  function switchTab(name) {
+    TABS.forEach(function(t) {
+      document.getElementById('pane-' + t).style.display = t === name ? 'block' : 'none';
+      document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    });
+
+    var h = HEADER_DATA[name];
+    var icon = document.getElementById('hdr-icon');
+    icon.className = 'modal-icon ' + h.iconCls;
+    document.getElementById('hdr-title').textContent = h.title;
+    document.getElementById('hdr-sub').textContent   = h.sub;
+  }
+
+  function acknowledgeSharing() {
+    document.getElementById('sharing-warn').style.display = 'none';
+    var wr = document.getElementById('warn-row');
+    if (wr) wr.classList.remove('row-warn');
+    var warnIps = document.querySelectorAll('.td-ip.warn');
+    for (var i = 0; i < warnIps.length; i++) warnIps[i].classList.remove('warn');
+  }
+</script>
+</body>
+</html>

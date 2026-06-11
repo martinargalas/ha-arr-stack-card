@@ -15,7 +15,7 @@ var ArrStackCardEditor = class extends HTMLElement {
   async _loadCaps() {
     try {
       this._caps = await this._hass.callApi("GET", "arr_stack/capabilities/info");
-      const hasDownloads = this._caps.qbit || this._caps.sabnzbd;
+      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget;
       if (!hasDownloads && this._config.layout !== "right") {
         this._config = { ...this._config, layout: "right" };
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -158,7 +158,7 @@ var ArrStackCardEditor = class extends HTMLElement {
             <option value="en" ${this._val("localisation", "en") === "en" ? "selected" : ""}>English</option>
           </select>
         </div>
-        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps === null ? `
+        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps === null ? `
         <div class="row">
           <span class="row-label">Layout</span>
           <select data-key="layout">
@@ -231,6 +231,36 @@ var ArrStackCardEditor = class extends HTMLElement {
         </div>
         <div class="hint">Quality profile name from Sonarr (Settings \u2192 Profiles \u2192 Name). Leave empty to use Sonarr default.</div>
       </div>
+
+      <!-- Left Panel \u2014 Download Clients -->
+      ${(() => {
+      const caps = this._caps;
+      const clients = this._getClients().filter((c) => {
+        if (caps === null) return true;
+        if (c.id === "qbit" && !caps?.qbit) return false;
+        if (c.id === "sab" && !caps?.sabnzbd) return false;
+        if (c.id === "nzbget" && !caps?.nzbget) return false;
+        return true;
+      });
+      if (clients.length === 0) return "";
+      return `
+      <div class="section">
+        <div class="section-title">Left Panel \u2014 Download Clients</div>
+        <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide. Only configured clients are shown.</div>
+        <div class="cat-list">
+          ${clients.map((c) => `
+            <div class="cat-item${c.enabled === false ? " cat-disabled" : ""}" draggable="true" data-client-id="${c.id}">
+              <ha-icon icon="mdi:drag-vertical" style="--mdc-icon-size:18px;color:var(--secondary-text-color,#9e9e9e);flex-shrink:0;cursor:grab"></ha-icon>
+              <span class="cat-label">${this._clientLabel(c.id)}</span>
+              <label class="toggle">
+                <input type="checkbox" data-client-toggle="${c.id}" ${c.enabled !== false ? "checked" : ""}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          `).join("")}
+        </div>
+      </div>`;
+    })()}
 
       <!-- Right Panel -->
       <div class="section">
@@ -348,6 +378,23 @@ var ArrStackCardEditor = class extends HTMLElement {
       prowlarr: "Prowlarr (Indexers / Stats / History)"
     }[id] || id;
   }
+  _defaultClients() {
+    return [
+      { id: "qbit", enabled: true },
+      { id: "sab", enabled: true },
+      { id: "nzbget", enabled: true }
+    ];
+  }
+  _getClients() {
+    const saved = this._config?.downloadClients;
+    if (!Array.isArray(saved)) return this._defaultClients();
+    const savedIds = new Set(saved.map((c) => c.id));
+    const missing = this._defaultClients().filter((c) => !savedIds.has(c.id));
+    return [...saved, ...missing];
+  }
+  _clientLabel(id) {
+    return { qbit: "qBittorrent", sab: "SABnzbd", nzbget: "NZBGet" }[id] || id;
+  }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
     const stored = this._styleVal(key, null);
     const val = stored != null ? stored : defaultVal;
@@ -445,6 +492,46 @@ var ArrStackCardEditor = class extends HTMLElement {
         this._update({ styles: { ...existing, [el.dataset.styleKey]: el.value } });
       });
     });
+    this.shadowRoot.querySelectorAll("input[data-client-toggle]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const clients = this._getClients().map(
+          (c) => c.id === el.dataset.clientToggle ? { ...c, enabled: el.checked } : c
+        );
+        this._update({ downloadClients: clients });
+      });
+    });
+    let dragClientId = null;
+    this.shadowRoot.querySelectorAll("[data-client-id]").forEach((el) => {
+      el.addEventListener("dragstart", (e) => {
+        dragClientId = el.dataset.clientId;
+        el.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
+        dragClientId = null;
+      });
+      el.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        el.classList.add("drag-over");
+      });
+      el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
+      el.addEventListener("drop", (e) => {
+        e.preventDefault();
+        el.classList.remove("drag-over");
+        const toId = el.dataset.clientId;
+        if (!dragClientId || dragClientId === toId) return;
+        const clients = [...this._getClients()];
+        const from = clients.findIndex((c) => c.id === dragClientId);
+        const to = clients.findIndex((c) => c.id === toId);
+        if (from < 0 || to < 0) return;
+        const [item] = clients.splice(from, 1);
+        clients.splice(to, 0, item);
+        this._update({ downloadClients: clients });
+        this._render();
+      });
+    });
     this.shadowRoot.querySelectorAll("input[data-cat-toggle]").forEach((el) => {
       el.addEventListener("change", () => {
         const cats = this._getCats().map(
@@ -529,6 +616,8 @@ var ARR_I18N = {
     pauseAll: "Pozastavit v\u0161e",
     resumeSab: "Spustit SAB",
     pauseSab: "Pozastavit SAB",
+    resumeNzbget: "Spustit NZBGet",
+    pauseNzbget: "Pozastavit NZBGet",
     pause: "Pozastavit",
     resume: "Spustit",
     stopSeed: "Zastavit seed",
@@ -876,6 +965,8 @@ var ARR_I18N = {
     pauseAll: "Pause all",
     resumeSab: "Resume SAB",
     pauseSab: "Pause SAB",
+    resumeNzbget: "Resume NZBGet",
+    pauseNzbget: "Pause NZBGet",
     pause: "Pause",
     resume: "Resume",
     stopSeed: "Stop seed",
@@ -4288,6 +4379,7 @@ var _FetchMethods = class {
       this._capsLoaded = true;
       if (!caps.qbit) this._qbitConfigured = false;
       if (!caps.sabnzbd) this._sabConfigured = false;
+      if (!caps.nzbget) this._nzbgetConfigured = false;
       if (!caps.radarr2) this._radarr2Configured = false;
       if (!caps.sonarr2) this._sonarr2Configured = false;
       if (!caps.bazarr) this._bazarrConfigured = false;
@@ -4324,6 +4416,8 @@ var _FetchMethods = class {
       this._fetchTrakt(),
       this._fetchSab(),
       this._fetchSabHistory(),
+      this._fetchNzbget(),
+      this._fetchNzbgetHistory(),
       this._fetchQbit(),
       this._fetchBazarr(),
       this._fetchRadarrQueue(),
@@ -4463,16 +4557,20 @@ var _FetchMethods = class {
   async _fetchDownloadsAndRender() {
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
-    const hadItems = prevQbit.size > 0 || prevSab.size > 0;
+    const prevNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
+    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0;
     await Promise.allSettled([
       this._fetchQbit(),
       this._fetchSab(),
-      this._fetchSabHistory()
+      this._fetchSabHistory(),
+      this._fetchNzbget(),
+      this._fetchNzbgetHistory()
     ]);
     if (hadItems) {
       const currQbit = new Set((this._qbit || []).map((t) => t.hash));
       const currSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
-      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id));
+      const currNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
+      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id));
       if (completed) {
         await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
         this._reRenderRight();
@@ -5264,6 +5362,59 @@ var _FetchMethods = class {
       await new Promise((r) => setTimeout(r, 1e3));
       await Promise.all([this._fetchSab(), this._fetchSabHistory()]);
       this._sabRetryBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  async _fetchNzbget() {
+    try {
+      const [statusResp, queueResp] = await Promise.all([
+        this._callApi("GET", "arr_stack/nzbget/status"),
+        this._callApi("GET", "arr_stack/nzbget/queue")
+      ]);
+      this._nzbget = statusResp?.result || null;
+      this._nzbgetQueue = queueResp?.result || [];
+      this._nzbgetConfigured = true;
+    } catch (e) {
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      this._nzbgetConfigured = !(status === 503 || body && body.includes("not configured"));
+      if (this._nzbgetConfigured) console.error("[arr-card] NZBGet fetch error:", e);
+    }
+  }
+  async _fetchNzbgetHistory() {
+    try {
+      const data = await this._callApi("GET", "arr_stack/nzbget/history");
+      const items = data?.result || [];
+      this._nzbgetFailed = items.filter((i) => i.Status === "FAILURE");
+      this._nzbgetCompleted = items.filter((i) => i.Status === "SUCCESS").slice(0, 10);
+    } catch (e) {
+      console.error("[arr-card] NZBGet history fetch error:", e);
+    }
+  }
+  async _nzbgetAction(mode, id = null) {
+    this._nzbgetBusy = true;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode, id });
+    } catch (e) {
+      console.error("[arr-card] NZBGet action error:", e);
+    } finally {
+      await this._fetchNzbget();
+      this._nzbgetBusy = false;
+      this._reRenderLeft();
+    }
+  }
+  async _nzbgetItemDelete(nzbId) {
+    this._nzbgetItemBusy = nzbId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_delete", id: nzbId });
+    } catch (e) {
+      console.error("[arr-card] NZBGet delete error:", e);
+    } finally {
+      this._nzbgetItemBusy = null;
+      this._nzbgetConfirm = null;
+      await this._fetchNzbget();
       this._reRenderLeft();
     }
   }
@@ -6116,14 +6267,27 @@ var fetchMixin = _FetchMethods.prototype;
 // src/render/left.js
 var _RenderLeft = class {
   _renderLeft() {
-    if (!this._qbitConfigured && !this._sabConfigured) return "";
-    const qbit = this._qbitConfigured ? this._renderQbit() : "";
-    const sab = this._sabConfigured ? this._renderSab() : "";
-    const sep = qbit && sab ? '<div class="spacer"></div>' : "";
+    if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured) return "";
+    const defaultOrder = [
+      { id: "qbit", enabled: true },
+      { id: "sab", enabled: true },
+      { id: "nzbget", enabled: true }
+    ];
+    const saved = this._config?.downloadClients;
+    const cfgList = Array.isArray(saved) ? saved : defaultOrder;
+    const savedIds = new Set(cfgList.map((c) => c.id));
+    const allClients = [
+      ...cfgList,
+      ...defaultOrder.filter((c) => !savedIds.has(c.id))
+    ];
+    const renderers = { qbit: "_renderQbit", sab: "_renderSab", nzbget: "_renderNzbget" };
+    const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured };
+    const parts = allClients.filter((c) => c.enabled !== false && configured[c.id]).map((c) => this[renderers[c.id]]()).filter(Boolean);
+    if (!parts.length) return "";
     return `
     ${this._renderDiskRow()}
     <div class="spacer"></div>
-    ${qbit}${sep}${sab}
+    ${parts.join('<div class="spacer"></div>')}
   `;
   }
   _renderLeftHeader() {
@@ -6143,20 +6307,35 @@ var _RenderLeft = class {
     const qbitUpBytes = this._qbitConfigured ? this._qbitTransfer.up_info_speed || 0 : 0;
     const sabKbps = this._sabConfigured ? parseFloat(this._sab.kbpersec) || 0 : 0;
     const sabSpeedBytes = sabKbps * 1024;
-    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes;
+    const nzbgetSpeedBytes = this._nzbgetConfigured ? this._nzbget?.DownloadRate || 0 : 0;
+    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes;
     const combinedStr = this.fmtSpeed(combinedSpeed);
     const combinedUpStr = this.fmtSpeed(qbitUpBytes);
+    const activeClients = [
+      this._qbitConfigured && "qBit",
+      this._sabConfigured && "SAB",
+      this._nzbgetConfigured && "NZBGet"
+    ].filter(Boolean);
     let speedSub = "";
-    if (this._qbitConfigured && this._sabConfigured) {
-      speedSub = `qBit ${this.fmtSpeed(qbitSpeedBytes)} \xB7 SAB ${this.fmtSpeed(sabSpeedBytes)}`;
+    if (activeClients.length > 1) {
+      const parts = [];
+      if (this._qbitConfigured) parts.push(`qBit ${this.fmtSpeed(qbitSpeedBytes)}`);
+      if (this._sabConfigured) parts.push(`SAB ${this.fmtSpeed(sabSpeedBytes)}`);
+      if (this._nzbgetConfigured) parts.push(`NZBGet ${this.fmtSpeed(nzbgetSpeedBytes)}`);
+      speedSub = parts.join(" \xB7 ");
     } else if (this._qbitConfigured) {
       speedSub = `qBittorrent`;
     } else if (this._sabConfigured) {
       speedSub = `SABnzbd`;
+    } else if (this._nzbgetConfigured) {
+      speedSub = `NZBGet`;
     }
     const sabFreeGB = this._sabConfigured ? parseFloat(this._sab.diskspace2) || 0 : 0;
     const sabTotalGB = this._sabConfigured ? parseFloat(this._sab.diskspacetotal2) || 0 : 0;
     const hasSabDisk = sabTotalGB > 0;
+    const nzbgetFreeGB = this._nzbgetConfigured ? (this._nzbget?.FreeDiskSpaceMB || 0) / 1024 : 0;
+    const nzbgetTotalGB = this._nzbgetConfigured ? (this._nzbget?.TotalDiskSpaceMB || 0) / 1024 : 0;
+    const hasNzbgetDisk = nzbgetTotalGB > 0;
     const qbitFreeBytes = this._qbitDiskFreeBytes;
     const hasQbitDisk = typeof qbitFreeBytes === "number" && qbitFreeBytes > 0;
     const DISK_ROUND = 100 * 1024 * 1024;
@@ -6231,6 +6410,16 @@ var _RenderLeft = class {
         <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedGB * 1073741824)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(sabTotalGB * 1073741824)}</span></div>
         <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
         <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(sabFreeGB * 1073741824)} ${this._t("free")}</div>
+      </div>`;
+    } else if (hasNzbgetDisk) {
+      const usedGB = nzbgetTotalGB - nzbgetFreeGB;
+      const pct = usedGB / nzbgetTotalGB * 100;
+      diskChip = `
+      <div class="disk-chip">
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedGB * 1073741824)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(nzbgetTotalGB * 1073741824)}</span></div>
+        <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(nzbgetFreeGB * 1073741824)} ${this._t("free")}</div>
       </div>`;
     } else if (hasQbitDisk) {
       diskChip = `
@@ -6487,6 +6676,115 @@ var _RenderLeft = class {
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${status === "Failed" ? "pf-red" : status === "Completed" ? "pf-green" : ["Checking", "Verifying", "Extracting", "Repairing"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange"}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  // ─────────────────────────────────────────────
+  // NZBGet
+  // ─────────────────────────────────────────────
+  _renderNzbget() {
+    if (!this._nzbgetConfigured) return "";
+    const speedBps = this._nzbget?.DownloadRate || 0;
+    const speedStr = this.fmtSpeed(speedBps);
+    const paused = !!this._nzbget?.DownloadPaused;
+    const allSlots = this._getPageData("nzbget");
+    const items = this._pagedList(allSlots, "nzbget", (s) => this._renderNzbgetItem(s), this._perPage("nzbget"));
+    return `
+    <div class="sec-card">
+      <div class="col-hdr" style="margin-bottom:8px">
+        ${this._appIcon("nzbget")}
+        <span class="col-hdr-title">NZBGet</span>
+        <div class="col-hdr-line"></div>
+        ${this._nzbgetBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn nzbget-global-toggle${paused ? " paused" : ""}" title="${paused ? this._t("resumeNzbget") : this._t("pauseNzbget")}">
+               <ha-icon icon="${paused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+             </button>`}
+      </div>
+      ${items}
+      ${this._renderNzbgetFailed()}
+    </div>`;
+  }
+  _renderNzbgetFailed() {
+    if (!this._nzbgetFailed || this._nzbgetFailed.length === 0) return "";
+    const rows = this._nzbgetFailed.map((s) => {
+      const name = this._escHtml(s.NZBName || "Unknown");
+      const isDeleting = this._nzbgetItemBusy === s.NZBID;
+      const btns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${s.NZBID}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>`;
+      return `
+      <div class="dl dl-failed">
+        <div class="dl-r1">
+          <ha-icon icon="mdi:alert-circle-outline" style="--mdc-icon-size:13px;color:rgba(255,69,58,0.85);flex-shrink:0;margin-right:3px"></ha-icon>
+          <span class="dl-name" title="${name}" style="color:rgba(255,120,110,0.90)">${name}</span>
+          <div style="display:flex;gap:3px;flex-shrink:0">${btns}</div>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="sab-failed-sep"></div>${rows}`;
+  }
+  _renderNzbgetItem(s) {
+    const isHistory = !!s._history;
+    const name = this._escHtml(s.NZBName || "Unknown");
+    const totalMB = s.FileSizeMB || 0;
+    const remMB = isHistory ? 0 : s.RemainingSizeMB || 0;
+    const doneMB = totalMB - remMB;
+    const pct = totalMB > 0 ? Math.max(0, Math.min(100, Math.round(doneMB / totalMB * 100))) : isHistory ? 100 : 0;
+    const totalStr = this.fmtSize(totalMB * 1024 * 1024);
+    const doneStr = this.fmtSize(doneMB * 1024 * 1024);
+    const status = s.Status || "";
+    const nzbId = s.NZBID;
+    const NZBGET_STATUS_PILLS = {
+      QUEUED: { cls: "pill-gray", icon: "mdi:clock-outline", label: "Queued" },
+      PAUSED: { cls: "pill-orange", icon: "mdi:pause", label: "Paused" },
+      PP_QUEUED: { cls: "pill-gray", icon: "mdi:clock-outline", label: "PP Queued" },
+      LOADING_PARS: { cls: "pill-teal", icon: "mdi:magnify", label: "Loading Pars" },
+      VERIFYING_SOURCE: { cls: "pill-teal", icon: "mdi:shield-check", label: "Verifying" },
+      VERIFYING_REPAIRED: { cls: "pill-teal", icon: "mdi:shield-check", label: "Verified" },
+      REPAIRING: { cls: "pill-teal", icon: "mdi:wrench-outline", label: "Repairing" },
+      UNPACKING: { cls: "pill-teal", icon: "mdi:archive-outline", label: "Unpacking" },
+      MOVING: { cls: "pill-teal", icon: "mdi:folder-move", label: "Moving" },
+      EXECUTING_SCRIPT: { cls: "pill-teal", icon: "mdi:script-outline", label: "Script" },
+      FAILURE: { cls: "pill-red", icon: "mdi:alert-circle", label: "Failed" },
+      SUCCESS: { cls: "pill-green", icon: "mdi:check-circle", label: "Completed" },
+      DELETED: { cls: "pill-gray", icon: "mdi:delete-outline", label: "Deleted" }
+    };
+    const isDownloading = status === "DOWNLOADING" && !this._nzbget?.DownloadPaused;
+    const globalPaused = !!this._nzbget?.DownloadPaused;
+    let speedCol = "";
+    if (isDownloading) {
+      const bps = this._nzbget?.DownloadRate || 0;
+      speedCol = `<span class="dm"><b class="g"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px"></ha-icon> ${this.fmtSpeed(bps)}</b></span>`;
+    } else {
+      const pillStatus = isHistory ? status === "SUCCESS" ? "SUCCESS" : "FAILURE" : status === "DOWNLOADING" && globalPaused ? "PAUSED" : status;
+      const pill = NZBGET_STATUS_PILLS[pillStatus] || { cls: "pill-gray", icon: "mdi:dots-horizontal", label: pillStatus || "\u2014" };
+      speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
+    }
+    let actionBtns = "";
+    if (isHistory) {
+      const isDeleting = this._nzbgetItemBusy === nzbId;
+      actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    } else {
+      const isBusy = this._nzbgetItemBusy === nzbId;
+      if (isBusy) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._nzbgetConfirm === nzbId) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
+    }
+    const barCls = status === "FAILURE" ? "pf-red" : isHistory ? "pf-green" : ["LOADING_PARS", "VERIFYING_SOURCE", "VERIFYING_REPAIRED", "REPAIRING", "UNPACKING", "MOVING", "EXECUTING_SCRIPT"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange";
+    return `
+    <div class="dl">
+      <div class="dl-r1">
+        <span class="dl-name" title="${name}">${name}</span>
+        <span class="dl-pct">${pct}%</span>
+        <div class="tb-group">${actionBtns}</div>
+      </div>
+      <div class="dl-r2">
+        ${speedCol}
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneStr} / ${totalStr}</b></span>
+      </div>
+      <div class="pbar"><div class="pbar-fill ${barCls}" style="width:${pct}%"></div></div>
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -8240,6 +8538,31 @@ var _WireMethods = class {
         } else if (action === "delete") {
           this._sabQueueConfirm = null;
           this._sabQueueDelete(nzoId);
+        }
+      });
+    });
+    const nzbgetToggle = this.shadowRoot.querySelector(".nzbget-global-toggle");
+    if (nzbgetToggle) {
+      nzbgetToggle.addEventListener("click", () => {
+        const paused = nzbgetToggle.classList.contains("paused");
+        this._nzbgetAction(paused ? "resume" : "pause");
+      });
+    }
+    this.shadowRoot.querySelectorAll("[data-nzbget-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.nzbgetAction;
+        const nzbId = parseInt(btn.dataset.nzbid, 10);
+        if (!nzbId) return;
+        if (action === "confirm") {
+          this._nzbgetConfirm = nzbId;
+          this._reRenderLeft();
+        } else if (action === "cancel") {
+          this._nzbgetConfirm = null;
+          this._reRenderLeft();
+        } else if (action === "item-delete") {
+          this._nzbgetConfirm = null;
+          this._nzbgetItemDelete(nzbId);
         }
       });
     });
@@ -19621,6 +19944,14 @@ var ArrStackCard = class extends HTMLElement {
     this._capsLoaded = false;
     this._qbitConfigured = true;
     this._sabConfigured = true;
+    this._nzbgetConfigured = true;
+    this._nzbget = null;
+    this._nzbgetQueue = [];
+    this._nzbgetFailed = [];
+    this._nzbgetCompleted = [];
+    this._nzbgetBusy = false;
+    this._nzbgetItemBusy = null;
+    this._nzbgetConfirm = null;
     this._bazarrConfigured = true;
     this._tautulliConfigured = true;
     this._tautulli = null;
@@ -20025,6 +20356,7 @@ var ArrStackCard = class extends HTMLElement {
   _perPage(section) {
     if (section === "qbit") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
     if (section === "sab") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
+    if (section === "nzbget") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
     return 4;
   }
   // Converts "#rrggbb" or "#rgb" to "r,g,b" string for use in rgba()
@@ -20108,6 +20440,7 @@ var ArrStackCard = class extends HTMLElement {
     const cdnSlugs = {
       qbit: "qbittorrent",
       sab: "sabnzbd",
+      nzbget: "nzbget",
       radarr: "radarr",
       sonarr: "sonarr",
       overseerr: "overseerr",
@@ -20122,6 +20455,7 @@ var ArrStackCard = class extends HTMLElement {
     const mdiIcons = {
       qbit: "mdi:download-network",
       sab: "mdi:email-arrow-down-outline",
+      nzbget: "mdi:email-arrow-down-outline",
       radarr: "mdi:filmstrip",
       sonarr: "mdi:television-play",
       overseerr: "mdi:movie-open-check-outline",
@@ -20236,6 +20570,18 @@ var ArrStackCard = class extends HTMLElement {
   // Returns the correct data array for a given section key
   _getPageData(section) {
     if (section === "qbit") return Array.isArray(this._qbit) ? this._qbit : [];
+    if (section === "nzbget") {
+      const queue = Array.isArray(this._nzbgetQueue) ? this._nzbgetQueue : [];
+      const completed = (this._nzbgetCompleted || []).map((s) => ({
+        NZBID: s.NZBID,
+        NZBName: s.NZBName || "Unknown",
+        FileSizeMB: s.FileSizeMB || 0,
+        RemainingSizeMB: 0,
+        Status: "SUCCESS",
+        _history: true
+      }));
+      return [...queue, ...completed];
+    }
     if (section === "sab") {
       const slots = Array.isArray(this._sab?.slots) ? this._sab.slots : [];
       const completed = (this._sabCompleted || []).map((s) => ({
