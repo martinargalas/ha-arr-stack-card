@@ -157,6 +157,8 @@ Indexer overview and search statistics from Prowlarr.
 - Performance mode — disables backdrop blur
 - Category colour overlays — colour-tinted poster overlays per section, toggle via `styles.categoryOverlays`
 - Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos. Switch to MDI icons via `styles.applicationIcons: mdi`
+- UI scale — proportionally scales all card content via `styles.uiScale`. Useful on large monitors or TVs where the default size is too small
+- Left panel width — adjustable via `styles.leftPanelWidth` (percentage of card width, default 40)
 
 ---
 
@@ -268,6 +270,8 @@ styles:
   dayNightMode: true              # auto switch popup colours based on sun.sun
   categoryOverlays: true          # colour-tinted overlays on category poster grids  (default: true)
   applicationIcons: real          # real | mdi — use real app logos or MDI icons  (default: real)
+  uiScale: 1                      # scale all card content — use >1 on large screens/TVs  (default: 1)
+  leftPanelWidth: 40              # downloads panel width as % of card width  (default: 40)
   searchBarIconColor: ""
   headingTextColor: "#ffffff"
   headingColor: "#ffffff"
