@@ -5404,6 +5404,20 @@ var _FetchMethods = class {
       this._reRenderLeft();
     }
   }
+  async _nzbgetRetry(nzbId) {
+    this._nzbgetRetryBusy = nzbId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_redownload", id: nzbId });
+    } catch (e) {
+      console.error("[arr-card] NZBGet retry error:", e);
+    } finally {
+      await new Promise((r) => setTimeout(r, 1e3));
+      await Promise.all([this._fetchNzbget(), this._fetchNzbgetHistory()]);
+      this._nzbgetRetryBusy = null;
+      this._reRenderLeft();
+    }
+  }
   async _nzbgetItemDelete(nzbId) {
     this._nzbgetItemBusy = nzbId;
     this._reRenderLeft();
@@ -6706,8 +6720,11 @@ var _RenderLeft = class {
     if (!this._nzbgetFailed || this._nzbgetFailed.length === 0) return "";
     const rows = this._nzbgetFailed.map((s) => {
       const name = this._escHtml(s.NZBName || "Unknown");
+      const isRetrying = this._nzbgetRetryBusy === s.NZBID;
       const isDeleting = this._nzbgetItemBusy === s.NZBID;
-      const btns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${s.NZBID}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>`;
+      const isBusy = isRetrying || isDeleting;
+      const btns = isBusy ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : `<button class="tb tb-retry"    data-nzbget-action="retry"       data-nzbid="${s.NZBID}" title="${this._t("retry")}"><ha-icon icon="mdi:refresh" style="--mdc-icon-size:14px"></ha-icon></button>
+         <button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${s.NZBID}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>`;
       return `
       <div class="dl dl-failed">
         <div class="dl-r1">
@@ -8563,6 +8580,8 @@ var _WireMethods = class {
         } else if (action === "item-delete") {
           this._nzbgetConfirm = null;
           this._nzbgetItemDelete(nzbId);
+        } else if (action === "retry") {
+          this._nzbgetRetry(nzbId);
         }
       });
     });
@@ -19952,6 +19971,7 @@ var ArrStackCard = class extends HTMLElement {
     this._nzbgetBusy = false;
     this._nzbgetItemBusy = null;
     this._nzbgetConfirm = null;
+    this._nzbgetRetryBusy = null;
     this._bazarrConfigured = true;
     this._tautulliConfigured = true;
     this._tautulli = null;
