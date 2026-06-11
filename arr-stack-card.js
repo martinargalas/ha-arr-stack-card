@@ -295,6 +295,12 @@ var ArrStackCardEditor = class extends HTMLElement {
           </label>
         </div>
         <div class="hint">Show brand-colour background tint behind each section's content.</div>
+
+        ${this._numberRow("UI scale", "uiScale", 1, 0.5, 3, 0.05, "0.5\u20133")}
+        <div class="hint">Scale all card content proportionally. Use values above 1 on large screens or TVs where the default text is too small. Reduce columns (Items per category) if content overflows.</div>
+
+        ${this._numberRow("Left panel width", "leftPanelWidth", 40, 10, 90, 1, "10\u201390 %")}
+        <div class="hint">Width of the downloads panel as a percentage of the card. Default is 40 %. Has no effect when the downloads panel is hidden or on mobile.</div>
       </div>
     `;
     this._wireEvents();
@@ -352,6 +358,18 @@ var ArrStackCardEditor = class extends HTMLElement {
         <input type="number" data-style-key="${key}" value="${val}" min="${min}" max="${max}" step="${step}" style="width:56px;text-align:right"/>
       </div>`;
   }
+  _sliderRow(label, key, defaultVal, min, max, step, unit) {
+    const stored = this._styleVal(key, null);
+    const val = stored != null ? stored : defaultVal;
+    const display = unit ? `${val}${unit}` : `${val}`;
+    return `
+      <div class="row" style="flex-wrap:wrap;gap:4px">
+        <span class="row-label">${label}</span>
+        <span class="color-alpha" data-val-for="${key}" style="min-width:36px;text-align:right">${display}</span>
+      </div>
+      <input type="range" data-style-key="${key}" data-unit="${unit || ""}" value="${val}" min="${min}" max="${max}" step="${step}"
+        style="width:100%;margin:2px 0 6px;accent-color:var(--primary-color,#03a9f4)"/>`;
+  }
   _colorRow(label, key, defaultHex, alphaHint) {
     const stored = this._styleVal(key, null);
     const hex = this._toHex(stored, defaultHex);
@@ -407,6 +425,18 @@ var ArrStackCardEditor = class extends HTMLElement {
       el.addEventListener("change", () => {
         const existing = this._config.styles || {};
         this._update({ styles: { ...existing, [el.dataset.styleKey]: parseFloat(el.value) } });
+      });
+    });
+    this.shadowRoot.querySelectorAll('input[type="range"][data-style-key]').forEach((el) => {
+      const key = el.dataset.styleKey;
+      const unit = el.dataset.unit || "";
+      const label = this.shadowRoot.querySelector(`[data-val-for="${key}"]`);
+      el.addEventListener("pointerdown", (e) => e.stopPropagation());
+      el.addEventListener("mousedown", (e) => e.stopPropagation());
+      el.addEventListener("input", () => {
+        if (label) label.textContent = el.value + unit;
+        const existing = this._config.styles || {};
+        this._update({ styles: { ...existing, [key]: parseFloat(el.value) } });
       });
     });
     this.shadowRoot.querySelectorAll('input[type="color"][data-style-key]').forEach((el) => {
@@ -2427,8 +2457,8 @@ var STYLES = `
         background: var(--accent);
         border: none;
         color: #fff;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         cursor: pointer;
         display: flex;
@@ -6659,9 +6689,9 @@ var _RenderRight = class {
           actionBtn = withdrawBtn;
         }
       } else if (isMovie) {
-        actionBtn = `<button class="btn-add req-open" data-movieid="${tmdbId}" data-tmdb="${tmdbId}" data-reqkey="${searchReqKey}">${this._t("add")}</button>`;
+        actionBtn = `<button class="btn-add req-open" data-movieid="${tmdbId}" data-tmdb="${tmdbId}" data-reqkey="${searchReqKey}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
       } else {
-        actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}" data-source="search">${this._t("add")}</button>`;
+        actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}" data-source="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
       }
       let statusBadge = "";
       if (_isAvail) {
@@ -8089,6 +8119,17 @@ var _ThemeMethods = class {
     if (mbb) rules.push(`.popup-overlay .is-open-btn:not(.remove-lib-btn):not(.remove-disc-btn) { background: rgba(${mbb}, 0.20) !important; border-color: rgba(${mbb}, 0.40) !important; }`);
     const mrb = c("modalRemoveButtonBackgroundColor");
     if (mrb) rules.push(`.popup-overlay .is-open-btn[data-action="remove-confirm"] { background: rgba(${mrb}, 0.20) !important; border-color: rgba(${mrb}, 0.40) !important; }`);
+    const uiScale = parseFloat(cfg["uiScale"]);
+    if (uiScale && uiScale !== 1 && !isNaN(uiScale)) {
+      rules.push(`.card-body { zoom: ${uiScale}; }`);
+    }
+    const leftPct = parseFloat(cfg["leftPanelWidth"]);
+    if (!isNaN(leftPct) && leftPct > 0 && leftPct !== 40) {
+      const l = Math.round(leftPct);
+      const r = 100 - l;
+      rules.push(`.card-body { grid-template-columns: ${l}fr ${r}fr !important; }`);
+      rules.push(`.card-body.swap-sides { grid-template-columns: ${r}fr ${l}fr !important; }`);
+    }
     let el = this.shadowRoot.getElementById("arr-theme");
     if (!el) {
       el = document.createElement("style");
@@ -10844,7 +10885,40 @@ var _PopupMethods = class {
       this._plexCastBtnRect = null;
     };
     if (overlay) {
-      overlay.addEventListener("click", () => {
+      overlay.addEventListener("click", (e) => {
+        const playBtn = e.target.closest('[data-action="plex-cast-play"]');
+        if (playBtn) {
+          const castEntity = playBtn.dataset.entity;
+          const dd = this._popup;
+          if (!castEntity || !dd) return;
+          const _isMovT = dd._type === "radarr" || dd._type === "movie";
+          const tmdbId = dd.id || dd.tmdbId || (dd._radarrId ? (this._radarr || []).find((m) => m.id === dd._radarrId)?.tmdbId : null) || (dd._radarr2Id ? (this._radarr2 || []).find((m) => m.id === dd._radarr2Id)?.tmdbId : null);
+          const tvdbId = dd.externalIds?.tvdbId || dd._sonarrSeries?.tvdbId || dd._sonarr2Series?.tvdbId;
+          this._plexCasting = castEntity;
+          this._plexCastOpen = false;
+          this._renderPopupEl();
+          (async () => {
+            try {
+              const lookupParam = _isMovT ? `tmdbId=${tmdbId}` : `tvdbId=${tvdbId}`;
+              const lookup = await this._callApi("GET", `arr_stack/plex/lookup?${lookupParam}`);
+              if (!lookup?.plex_key) throw new Error("Plex item not found");
+              const contentId = {};
+              if (lookup.library) contentId.library_name = lookup.library;
+              if (lookup.title) contentId.title = lookup.title;
+              await this._hass.callService("media_player", "play_media", {
+                entity_id: castEntity,
+                media_content_type: "plex",
+                media_content_id: JSON.stringify(contentId)
+              });
+            } catch (err) {
+              console.warn("[arr-card] Plex cast error:", err);
+            }
+            this._plexCasting = null;
+            this._renderPopupEl();
+          })();
+          return;
+        }
+        if (e.target.closest(".plex-cast-dropdown")) return;
         _resetPopupTransient();
         this._popup = null;
         this._renderPopupEl();
@@ -10860,11 +10934,6 @@ var _PopupMethods = class {
     }
     if (glass) glass.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (this._plexCastOpen && !e.target.closest('[data-action^="plex-cast"]')) {
-        this._plexCastOpen = false;
-        this._renderPopupEl();
-        return;
-      }
       const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid],[data-sn-spage],[data-is-page]");
       if (!t) return;
       const _closeAS = () => {
@@ -10888,50 +10957,17 @@ var _PopupMethods = class {
         this._removeConfirm = false;
       };
       if (t.dataset.action === "plex-cast-open") {
+        if (this._plexCastOpen) {
+          this._plexCastOpen = false;
+          this._renderPopupEl();
+          return;
+        }
         this._plexCastOpen = true;
         this._plexClients = null;
         const rect = t.getBoundingClientRect();
-        this._plexCastBtnRect = { top: rect.top, left: rect.left };
+        this._plexCastBtnRect = { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
         this._renderPopupEl();
         this._fetchPlexClients();
-        return;
-      }
-      if (t.dataset.action === "plex-cast-close") {
-        this._plexCastOpen = false;
-        this._renderPopupEl();
-        return;
-      }
-      if (t.dataset.action === "plex-cast-play") {
-        const castEntity = t.dataset.entity;
-        const dd = this._popup;
-        if (!castEntity || !dd) return;
-        const _isMovT = dd._type === "radarr" || dd._type === "movie";
-        const tmdbId = dd.id || dd.tmdbId || (dd._radarrId ? (this._radarr || []).find((m) => m.id === dd._radarrId)?.tmdbId : null) || (dd._radarr2Id ? (this._radarr2 || []).find((m) => m.id === dd._radarr2Id)?.tmdbId : null);
-        const tvdbId = dd.externalIds?.tvdbId || dd._sonarrSeries?.tvdbId || dd._sonarr2Series?.tvdbId;
-        this._plexCasting = castEntity;
-        this._plexCastOpen = false;
-        this._renderPopupEl();
-        (async () => {
-          try {
-            const lookupParam = _isMovT ? `tmdbId=${tmdbId}` : `tvdbId=${tvdbId}`;
-            const lookup = await this._callApi("GET", `arr_stack/plex/lookup?${lookupParam}`);
-            console.log("[arr-card] plex lookup result:", JSON.stringify(lookup));
-            if (!lookup?.plex_key) throw new Error("Plex item not found");
-            const contentId = {};
-            if (lookup.library) contentId.library_name = lookup.library;
-            if (lookup.title) contentId.title = lookup.title;
-            console.log("[arr-card] plex play_media content_id:", JSON.stringify(contentId));
-            await this._hass.callService("media_player", "play_media", {
-              entity_id: castEntity,
-              media_content_type: "plex",
-              media_content_id: JSON.stringify(contentId)
-            });
-          } catch (e2) {
-            console.warn("[arr-card] Plex cast error:", e2);
-          }
-          this._plexCasting = null;
-          this._renderPopupEl();
-        })();
         return;
       }
       if (t.dataset.action === "search-expand") {
@@ -11885,7 +11921,10 @@ var _PopupMethods = class {
           <div class="popup-content"${searchActive ? ' style="padding-top:52px"' : ""}>
             ${posterHtmlFinal}
             <div class="popup-meta">
-              <h2 class="popup-title">${title}</h2>
+              <div style="display:flex;align-items:flex-start;gap:8px;margin:0 0 5px">
+                <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${title}</h2>
+                ${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}
+              </div>
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
               ${instanceStatusHtml}
               ${singleDlTag}
@@ -11896,7 +11935,6 @@ var _PopupMethods = class {
                 ${searchBtnHtml}
                 ${removeBtn}
                 ${terminateActionBtn}
-                ${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}
               </div>
             </div>
           </div>
@@ -11906,6 +11944,7 @@ var _PopupMethods = class {
           ${snIsActive ? this._renderSonarrIsSection() : ""}
         </div>
       </div>
+      ${this._renderPlexCastDropdown()}
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -12089,7 +12128,7 @@ var _PopupMethods = class {
   async _fetchPlexClients() {
     const states = this._hass?.states || {};
     const online = /* @__PURE__ */ new Set(["playing", "paused", "idle", "standby", "on"]);
-    const allPlayers = Object.entries(states).filter(([id, s]) => id.startsWith("media_player.") && s.state !== "unavailable").map(([id, s]) => ({ entityId: id, name: s.attributes?.friendly_name || id }));
+    const allPlayers = Object.entries(states).filter(([id, s]) => id.startsWith("media_player.plex_") && s.state !== "unavailable").map(([id, s]) => ({ entityId: id, name: s.attributes?.friendly_name || id }));
     try {
       const raw = await this._callApi("GET", "arr_stack/plex/clients");
       const mc = raw?.MediaContainer || raw || {};
@@ -12124,32 +12163,40 @@ var _PopupMethods = class {
     if (!inLib) return "";
     const castSvg = `<svg viewBox="0 0 24 24" width="14" height="14" style="display:block"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3m0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7m0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10m20-7H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>`;
     const spinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
-    const _circleStyle = `width:28px!important;padding:0!important;border-radius:50%!important;display:grid!important;place-items:center!important;gap:0!important`;
+    const _btnCommon = `flex-shrink:0;width:36px;height:36px;padding:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:background 0.15s,color 0.15s,border-color 0.15s`;
+    const btnBase = `${_btnCommon};border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-btn-clr)`;
+    const btnActive = `${_btnCommon};border:1px solid var(--is-btn-abdr);background:var(--is-btn-abg);color:var(--is-btn-aclr)`;
     if (this._plexCasting) {
-      return `<div class="is-btn-row"><button class="is-open-btn" disabled style="${_circleStyle}">${spinner}</button></div>`;
+      return `<button disabled style="${btnBase};opacity:0.6">${spinner}</button>`;
     }
-    if (this._plexCastOpen) {
-      let dropContent;
-      if (this._plexClients === null) {
-        dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:8px">${spinner} Loading\u2026</div>`;
-      } else if (!this._plexClients.length) {
-        dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.45)">No devices found</div>`;
-      } else {
-        dropContent = this._plexClients.map(
-          (p) => `<button data-action="plex-cast-play" data-entity="${this._escHtml(p.entityId)}"
-          style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;padding:7px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);cursor:pointer;text-align:left;border-radius:6px;transition:background 0.12s"
-          onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"
-        >${castSvg}${this._escHtml(p.name)}</button>`
-        ).join("");
-      }
-      return `<div class="is-btn-row" style="position:relative">
-      <button class="is-open-btn active" data-action="plex-cast-close" style="${_circleStyle}">${castSvg}</button>
-      <div style="position:absolute;bottom:calc(100% + 4px);left:0;z-index:9999;background:rgba(18,18,28,0.97);border:1px solid rgba(255,255,255,0.12);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.5);min-width:180px;max-height:220px;overflow-y:auto;padding:4px;display:flex;flex-direction:column">
-        ${dropContent}
-      </div>
-    </div>`;
+    const btnStyle = this._plexCastOpen ? btnActive : btnBase;
+    return `<button data-action="plex-cast-open" style="${btnStyle}">${castSvg}</button>`;
+  }
+  _renderPlexCastDropdown() {
+    if (!this._plexCastOpen) return "";
+    const r = this._plexCastBtnRect;
+    if (!r) return "";
+    const castSvg = `<svg viewBox="0 0 24 24" width="12" height="12" style="display:block;flex-shrink:0"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3m0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7m0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10m20-7H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>`;
+    const spinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    let dropContent;
+    if (this._plexClients === null) {
+      dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:8px">${spinner} Loading\u2026</div>`;
+    } else if (!this._plexClients.length) {
+      dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.45)">No devices found</div>`;
+    } else {
+      dropContent = this._plexClients.map(
+        (p) => `<button data-action="plex-cast-play" data-entity="${this._escHtml(p.entityId)}"
+        style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;padding:7px 12px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);cursor:pointer;text-align:left;border-radius:6px;transition:background 0.12s"
+        onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"
+      >${castSvg}${this._escHtml(p.name)}</button>`
+      ).join("");
     }
-    return `<div class="is-btn-row"><button class="is-open-btn" data-action="plex-cast-open" style="${_circleStyle}">${castSvg}</button></div>`;
+    const dropW = 190, dropH = 220, gap = 8;
+    const leftPx = Math.max(8, Math.round(r.left - gap - dropW));
+    const topPx = Math.max(8, Math.min(Math.round(r.top), window.innerHeight - dropH - 8));
+    return `<div class="plex-cast-dropdown" style="position:absolute;left:${leftPx}px;top:${topPx}px;z-index:9999;background:rgba(18,18,28,0.97);border:1px solid rgba(255,255,255,0.12);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.5);min-width:${dropW}px;max-height:${dropH}px;overflow-y:auto;padding:4px;display:flex;flex-direction:column">
+    ${dropContent}
+  </div>`;
   }
 };
 var popupMixin = _PopupMethods.prototype;
