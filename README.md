@@ -14,29 +14,7 @@ Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTo
 
 ### Supported services
 
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" width="36" height="36" title="Radarr"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" width="36" height="36" title="Sonarr"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" width="36" height="36" title="Bazarr"/>
-&nbsp;
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" width="36" height="36" title="qBittorrent"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" width="36" height="36" title="Deluge"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" width="36" height="36" title="rTorrent"/>
-&nbsp;
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" width="36" height="36" title="SABnzbd"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" width="36" height="36" title="NZBGet"/>
-&nbsp;
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" width="36" height="36" title="Overseerr"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" width="36" height="36" title="Jellyseerr"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" width="36" height="36" title="TMDB"/>
-&nbsp;
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" width="36" height="36" title="Prowlarr"/>
-&nbsp;
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" width="36" height="36" title="Plex"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" width="36" height="36" title="Tautulli"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" width="36" height="36" title="Jellyfin"/>
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" width="36" height="36" title="Jellystat"/>
-&nbsp;
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" width="36" height="36" title="Trakt"/>
+<p><img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" width="36" height="36" title="Radarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" width="36" height="36" title="Sonarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" width="36" height="36" title="Bazarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" width="36" height="36" title="qBittorrent"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" width="36" height="36" title="Deluge"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" width="36" height="36" title="rTorrent"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" width="36" height="36" title="SABnzbd"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" width="36" height="36" title="NZBGet"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" width="36" height="36" title="Overseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" width="36" height="36" title="Jellyseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" width="36" height="36" title="TMDB"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" width="36" height="36" title="Prowlarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" width="36" height="36" title="Plex"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" width="36" height="36" title="Tautulli"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" width="36" height="36" title="Jellyfin"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" width="36" height="36" title="Jellystat"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" width="36" height="36" title="Trakt"/></p>
 
 ![Arr Stack Card preview](screenshot.png)
 
