@@ -15,7 +15,7 @@ var ArrStackCardEditor = class extends HTMLElement {
   async _loadCaps() {
     try {
       this._caps = await this._hass.callApi("GET", "arr_stack/capabilities/info");
-      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge;
+      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge || this._caps.rtorrent;
       if (!hasDownloads && this._config.layout !== "right") {
         this._config = { ...this._config, layout: "right" };
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -158,7 +158,7 @@ var ArrStackCardEditor = class extends HTMLElement {
             <option value="en" ${this._val("localisation", "en") === "en" ? "selected" : ""}>English</option>
           </select>
         </div>
-        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps?.deluge || this._caps === null ? `
+        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps?.deluge || this._caps?.rtorrent || this._caps === null ? `
         <div class="row">
           <span class="row-label">Layout</span>
           <select data-key="layout">
@@ -235,19 +235,22 @@ var ArrStackCardEditor = class extends HTMLElement {
       <!-- Left Panel \u2014 Download Clients -->
       ${(() => {
       const caps = this._caps;
-      const clients = this._getClients().filter((c) => {
+      const allClients = this._getClients().filter((c) => {
         if (caps === null) return true;
         if (c.id === "qbit" && !caps?.qbit) return false;
+        if (c.id === "deluge" && !caps?.deluge) return false;
+        if (c.id === "rtorrent" && !caps?.rtorrent) return false;
         if (c.id === "sab" && !caps?.sabnzbd) return false;
         if (c.id === "nzbget" && !caps?.nzbget) return false;
-        if (c.id === "deluge" && !caps?.deluge) return false;
         return true;
       });
-      if (clients.length === 0) return "";
-      return `
-      <div class="section">
-        <div class="section-title">Left Panel \u2014 Download Clients</div>
-        <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide. Only configured clients are shown.</div>
+      const torrentIds = ["qbit", "deluge", "rtorrent"];
+      const usenetIds = ["sab", "nzbget"];
+      const torrentClients = allClients.filter((c) => torrentIds.includes(c.id));
+      const usenetClients = allClients.filter((c) => usenetIds.includes(c.id));
+      if (allClients.length === 0) return "";
+      const renderGroup = (title, clients) => clients.length === 0 ? "" : `
+        <div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:8px 0 4px">${title}</div>
         <div class="cat-list">
           ${clients.map((c) => `
             <div class="cat-item${c.enabled === false ? " cat-disabled" : ""}" draggable="true" data-client-id="${c.id}">
@@ -259,7 +262,13 @@ var ArrStackCardEditor = class extends HTMLElement {
               </label>
             </div>
           `).join("")}
-        </div>
+        </div>`;
+      return `
+      <div class="section">
+        <div class="section-title">Left Panel \u2014 Download Clients</div>
+        <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide. Only configured clients are shown.</div>
+        ${renderGroup("Torrent", torrentClients)}
+        ${renderGroup("Usenet", usenetClients)}
       </div>`;
     })()}
 
@@ -382,9 +391,10 @@ var ArrStackCardEditor = class extends HTMLElement {
   _defaultClients() {
     return [
       { id: "qbit", enabled: true },
+      { id: "deluge", enabled: true },
+      { id: "rtorrent", enabled: true },
       { id: "sab", enabled: true },
-      { id: "nzbget", enabled: true },
-      { id: "deluge", enabled: true }
+      { id: "nzbget", enabled: true }
     ];
   }
   _getClients() {
@@ -395,7 +405,7 @@ var ArrStackCardEditor = class extends HTMLElement {
     return [...saved, ...missing];
   }
   _clientLabel(id) {
-    return { qbit: "qBittorrent", sab: "SABnzbd", nzbget: "NZBGet", deluge: "Deluge" }[id] || id;
+    return { qbit: "qBittorrent", sab: "SABnzbd", nzbget: "NZBGet", deluge: "Deluge", rtorrent: "rTorrent" }[id] || id;
   }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
     const stored = this._styleVal(key, null);
@@ -1541,11 +1551,13 @@ var STYLES = `
       .sort-btns { margin-left: auto; display: flex; gap: 3px; }
 
       .sb {
-        font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 1px;
+        font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
         border: 1px solid rgba(255,255,255,0.30); background: rgba(255,255,255,0.12);
         color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.85); cursor: pointer;
         backdrop-filter: blur(8px);
       }
+      .sb ha-icon { display: flex; align-items: center; justify-content: center; }
 
       .sb.on {
         background: rgba(var(--accent-rgb),0.30); border-color: rgba(var(--accent-rgb),0.55);
@@ -1561,12 +1573,13 @@ var STYLES = `
       .action-btn {
         display: inline-flex; align-items: center; justify-content: center;
         width: 26px; height: 26px; flex-shrink: 0;
-        border-radius: 7px; border: 1px solid rgba(255,255,255,0.22);
+        border-radius: 50%; border: 1px solid rgba(255,255,255,0.22);
         background: rgba(255,255,255,0.10);
         color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.80); cursor: pointer;
         backdrop-filter: blur(8px);
         transition: background 0.15s, color 0.15s;
       }
+      .action-btn ha-icon { display: flex; align-items: center; justify-content: center; }
       .action-btn:hover {
         background: rgba(255,255,255,0.20); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1);
       }
@@ -1591,18 +1604,19 @@ var STYLES = `
 
       /* \u2500\u2500 Per-torrent tiny action buttons \u2500\u2500 */
       .tb-group {
-        display: flex; gap: 3px; flex-shrink: 0; margin-left: 6px;
+        display: flex; gap: 3px; flex-shrink: 0; margin-left: 24px; min-width: 53px; justify-content: flex-end;
       }
 
       .tb {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 22px; height: 22px; flex-shrink: 0;
-        border-radius: 5px; border: 1px solid rgba(255,255,255,0.28);
+        width: 25px; height: 25px; flex-shrink: 0;
+        border-radius: 50%; border: 1px solid rgba(255,255,255,0.28);
         background: rgba(255,255,255,0.10);
         color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.90); cursor: pointer;
-        padding: 0;
+        padding: 0; line-height: 0;
         transition: background 0.12s, color 0.12s;
       }
+      .tb ha-icon { display: block; width: var(--mdc-icon-size, 15px); height: var(--mdc-icon-size, 15px); }
       .tb:hover  { background: rgba(255,255,255,0.22); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
       .tb:active { transform: scale(0.88); }
 
@@ -1640,7 +1654,18 @@ var STYLES = `
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          SECTION GLASS CARD
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
-      .sec-card { margin-bottom: 4px; }
+      .sec-card { margin-bottom: 4px; overflow: hidden; }
+      .dc-section-card {
+        background: rgba(255,255,255,0.07);
+        border-radius: 14px;
+        padding: 10px 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .dc-section-card.dc-no-chev { margin: 0 22px; }
+      @media (max-width: 600px) { .dc-section-card.dc-no-chev { margin: 0; } }
+      .dc-section-card .dl-list { position: relative; z-index: 1; }
+      .has-gradient .dc-section-card { position: relative; z-index: 1; }
       .has-gradient .col-hdr,
       .has-gradient .pg-wrap,
       .has-gradient .tl-row,
@@ -1742,11 +1767,11 @@ var STYLES = `
         color: rgba(var(--arr-pt-rgb, 255, 255, 255), 1);
         text-shadow: 0 1px 5px rgba(0,0,0,0.55);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        max-width: 360px;
+        flex: 1; min-width: 0;
       }
 
       .dl-pct { font-size: 13px; font-weight: 800; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.5); flex-shrink: 0; margin-left: 8px;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+        min-width: 3.2ch; text-align: right; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
       .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
 
@@ -3364,8 +3389,8 @@ var STYLES = `
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
       .tl-row { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
       .tl-card {
-        background: rgba(255,255,255,0.10);
-        border-radius: 11px; padding: 11px 10px; cursor: pointer;
+        background: rgba(255,255,255,0.07);
+        border-radius: 14px; padding: 11px 10px; cursor: pointer;
         position: relative; overflow: hidden; aspect-ratio: 2/3;
         display: flex; flex-direction: column;
         transition: transform .15s, box-shadow .15s;
@@ -4385,6 +4410,8 @@ var _FetchMethods = class {
       if (!caps.sabnzbd) this._sabConfigured = false;
       if (!caps.nzbget) this._nzbgetConfigured = false;
       if (!caps.deluge) this._delugeConfigured = false;
+      if (caps.rtorrent) this._rtorrentConfigured = true;
+      else this._rtorrentConfigured = false;
       if (!caps.radarr2) this._radarr2Configured = false;
       if (!caps.sonarr2) this._sonarr2Configured = false;
       if (!caps.bazarr) this._bazarrConfigured = false;
@@ -4565,10 +4592,12 @@ var _FetchMethods = class {
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
     const prevNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
     const prevDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
-    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0;
+    const prevRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
+    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0 || prevRtorrent.size > 0;
     await Promise.allSettled([
       this._fetchQbit(),
       this._fetchDeluge(),
+      this._fetchRtorrent(),
       this._fetchSab(),
       this._fetchSabHistory(),
       this._fetchNzbget(),
@@ -4579,7 +4608,8 @@ var _FetchMethods = class {
       const currSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
       const currNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
       const currDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
-      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id)) || [...prevDeluge].some((id) => !currDeluge.has(id));
+      const currRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
+      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id)) || [...prevDeluge].some((id) => !currDeluge.has(id)) || [...prevRtorrent].some((id) => !currRtorrent.has(id));
       if (completed) {
         await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
         this._reRenderRight();
@@ -5478,6 +5508,24 @@ var _FetchMethods = class {
       console.error("[arr-card] Deluge fetch error:", e);
     }
   }
+  async _fetchRtorrent() {
+    if (this._rtorrentConfigured === false) return;
+    try {
+      const [torrents, status] = await Promise.all([
+        this._callApi("GET", "arr_stack/rtorrent/queue"),
+        this._callApi("GET", "arr_stack/rtorrent/status").catch(() => ({}))
+      ]);
+      this._rtorrentQueue = Array.isArray(torrents) ? torrents : [];
+      this._rtorrentStatus = status || {};
+      this._rtorrentConfigured = true;
+    } catch (e) {
+      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = statusCode === 503 || body.includes("not configured");
+      this._rtorrentConfigured = !isNotConfigured;
+      console.error("[arr-card] rTorrent fetch error:", e);
+    }
+  }
   async _fetchOverseerrRadarrSettings() {
     try {
       const servers = await this._callApi("GET", "arr_stack/overseerr/radarr_settings");
@@ -6308,12 +6356,14 @@ var fetchMixin = _FetchMethods.prototype;
 // src/render/left.js
 var _RenderLeft = class {
   _renderLeft() {
-    if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured && !this._delugeConfigured) return "";
+    if (!this._capsLoaded) return "";
+    if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured && !this._delugeConfigured && !this._rtorrentConfigured) return "";
     const defaultOrder = [
       { id: "qbit", enabled: true },
       { id: "sab", enabled: true },
       { id: "nzbget", enabled: true },
-      { id: "deluge", enabled: true }
+      { id: "deluge", enabled: true },
+      { id: "rtorrent", enabled: true }
     ];
     const saved = this._config?.downloadClients;
     const cfgList = Array.isArray(saved) ? saved : defaultOrder;
@@ -6322,8 +6372,8 @@ var _RenderLeft = class {
       ...cfgList,
       ...defaultOrder.filter((c) => !savedIds.has(c.id))
     ];
-    const renderers = { qbit: "_renderQbit", sab: "_renderSab", nzbget: "_renderNzbget", deluge: "_renderDeluge" };
-    const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured };
+    const renderers = { qbit: "_renderQbit", sab: "_renderSab", nzbget: "_renderNzbget", deluge: "_renderDeluge", rtorrent: "_renderRtorrent" };
+    const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured, rtorrent: this._rtorrentConfigured };
     const parts = allClients.filter((c) => c.enabled !== false && configured[c.id]).map((c) => this[renderers[c.id]]()).filter(Boolean);
     if (!parts.length) return "";
     return `
@@ -6352,33 +6402,31 @@ var _RenderLeft = class {
     const nzbgetSpeedBytes = this._nzbgetConfigured ? this._nzbget?.DownloadRate || 0 : 0;
     const delugeSpeedBytes = this._delugeConfigured ? this._delugeStatus?.download_rate || 0 : 0;
     const delugeUpBytes = this._delugeConfigured ? this._delugeStatus?.upload_rate || 0 : 0;
-    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes + delugeSpeedBytes;
-    const combinedUpBytes = qbitUpBytes + delugeUpBytes;
+    const rtorrentSpeedBytes = this._rtorrentConfigured ? this._rtorrentStatus?.download_rate || 0 : 0;
+    const rtorrentUpBytes = this._rtorrentConfigured ? this._rtorrentStatus?.upload_rate || 0 : 0;
+    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes;
+    const combinedUpBytes = qbitUpBytes + delugeUpBytes + rtorrentUpBytes;
     const combinedStr = this.fmtSpeed(combinedSpeed);
     const combinedUpStr = this.fmtSpeed(combinedUpBytes);
-    const hasUpload = this._qbitConfigured || this._delugeConfigured;
-    const activeClients = [
-      this._qbitConfigured && "qBit",
-      this._sabConfigured && "SAB",
-      this._nzbgetConfigured && "NZBGet",
-      this._delugeConfigured && "Deluge"
-    ].filter(Boolean);
+    const hasUpload = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured;
+    const torrentSpeed = qbitSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes;
+    const usenetSpeed = sabSpeedBytes + nzbgetSpeedBytes;
+    const hasTorrent = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured;
+    const hasUsenet = this._sabConfigured || this._nzbgetConfigured;
     let speedSub = "";
-    if (activeClients.length > 1) {
-      const parts = [];
-      if (this._qbitConfigured) parts.push(`qBit ${this.fmtSpeed(qbitSpeedBytes)}`);
-      if (this._sabConfigured) parts.push(`SAB ${this.fmtSpeed(sabSpeedBytes)}`);
-      if (this._nzbgetConfigured) parts.push(`NZBGet ${this.fmtSpeed(nzbgetSpeedBytes)}`);
-      if (this._delugeConfigured) parts.push(`Deluge ${this.fmtSpeed(delugeSpeedBytes)}`);
-      speedSub = parts.join(" \xB7 ");
-    } else if (this._qbitConfigured) {
-      speedSub = `qBittorrent`;
-    } else if (this._sabConfigured) {
-      speedSub = `SABnzbd`;
-    } else if (this._nzbgetConfigured) {
-      speedSub = `NZBGet`;
-    } else if (this._delugeConfigured) {
-      speedSub = `Deluge`;
+    if (hasTorrent && hasUsenet) {
+      speedSub = `Torrent ${this.fmtSpeed(torrentSpeed)} \xB7 Usenet ${this.fmtSpeed(usenetSpeed)}`;
+    } else if (hasTorrent) {
+      const torrentClients = [
+        this._qbitConfigured && "qBittorrent",
+        this._delugeConfigured && "Deluge",
+        this._rtorrentConfigured && "rTorrent"
+      ].filter(Boolean);
+      const onlyOne = torrentClients.length === 1 ? torrentClients[0] : "Torrent";
+      speedSub = onlyOne;
+    } else if (hasUsenet) {
+      const onlyOne = this._sabConfigured && !this._nzbgetConfigured ? "SABnzbd" : !this._sabConfigured && this._nzbgetConfigured ? "NZBGet" : "Usenet";
+      speedSub = onlyOne;
     }
     const sabFreeGB = this._sabConfigured ? parseFloat(this._sab.diskspace2) || 0 : 0;
     const sabTotalGB = this._sabConfigured ? parseFloat(this._sab.diskspacetotal2) || 0 : 0;
@@ -6515,19 +6563,20 @@ var _RenderLeft = class {
     const _isQbitPaused = (st) => st.startsWith("paused") || st.startsWith("stopped");
     const activeTorrents = torrents.filter((t) => !_isQbitPaused(t.state || "") && t.progress < 1);
     const allPaused = torrents.length > 0 && activeTorrents.length === 0;
-    const items = this._pagedList(torrents, "qbit", (t) => this._renderTorrentItem(t), this._perPage("qbit"));
+    const items = this._pagedList(torrents, "qbit", (t) => this._renderTorrentItem(t), this._perPage("qbit"), "dc-section-card");
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${torrents.length >= this._perPage("qbit") ? this._sectionOverlayHtml("qbit", 15, 85, 0.23) : this._sectionOverlayHtml("qbit", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon("qbit")}
         <span class="col-hdr-title">qBittorrent</span>
         <div class="col-hdr-line"></div>
         <div class="sort-btns">
           <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" title="${this._t("sortByProgress")}">
-            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon>${progressActive ? `<span class="sb-dir">${dir}</span>` : ""}
+            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
           <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" title="${this._t("sortBySpeed")}">
-            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon>${speedActive ? `<span class="sb-dir">${dir}</span>` : ""}
+            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
         ${this._qbitBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn qbit-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
@@ -6613,7 +6662,7 @@ var _RenderLeft = class {
     const status = this._delugeStatus || {};
     const dlSpeed = this.fmtSpeed(status.download_rate || 0);
     const torrents = Array.isArray(this._delugeQueue) ? [...this._delugeQueue] : [];
-    const [sortField, sortDir] = this._sort.split("_");
+    const [sortField, sortDir] = this._sortDeluge.split("_");
     torrents.sort((a, b) => {
       const av = sortField === "speed" ? a.download_payload_rate || 0 : a.progress || 0;
       const bv = sortField === "speed" ? b.download_payload_rate || 0 : b.progress || 0;
@@ -6627,19 +6676,20 @@ var _RenderLeft = class {
       return st !== "paused" && t.progress < 100;
     });
     const allPaused = torrents.length > 0 && activeTorrents.length === 0;
-    const items = this._pagedList(torrents, "deluge", (t) => this._renderDelugeTorrentItem(t), this._perPage("deluge"));
+    const items = this._pagedList(torrents, "deluge", (t) => this._renderDelugeTorrentItem(t), this._perPage("deluge"), "dc-section-card");
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${torrents.length >= this._perPage("deluge") ? this._sectionOverlayHtml("deluge", 15, 85, 0.23) : this._sectionOverlayHtml("deluge", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon("deluge")}
         <span class="col-hdr-title">Deluge</span>
         <div class="col-hdr-line"></div>
         <div class="sort-btns">
-          <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" title="${this._t("sortByProgress")}">
-            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon>${progressActive ? `<span class="sb-dir">${dir}</span>` : ""}
+          <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" data-client="deluge" title="${this._t("sortByProgress")}">
+            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
-          <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" title="${this._t("sortBySpeed")}">
-            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon>${speedActive ? `<span class="sb-dir">${dir}</span>` : ""}
+          <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" data-client="deluge" title="${this._t("sortBySpeed")}">
+            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
         ${this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
@@ -6721,9 +6771,10 @@ var _RenderLeft = class {
     const speedStr = this.fmtSpeed(sabKbps * 1024);
     const sabPaused = this._sab.status === "Paused";
     const allSlots = this._getPageData("sab");
-    const items = this._pagedList(allSlots, "sab", (s) => this._renderSabItem(s), this._perPage("sab"));
+    const items = this._pagedList(allSlots, "sab", (s) => this._renderSabItem(s), this._perPage("sab"), "dc-section-card");
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${allSlots.length >= this._perPage("sab") ? this._sectionOverlayHtml("sab", 15, 85, 0.23) : this._sectionOverlayHtml("sab", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         <div style="position:relative;flex-shrink:0;display:inline-flex;width:26px;height:26px">
           ${this._appIcon("sab")}
@@ -6852,9 +6903,10 @@ var _RenderLeft = class {
     const speedStr = this.fmtSpeed(speedBps);
     const paused = !!this._nzbget?.DownloadPaused;
     const allSlots = this._getPageData("nzbget");
-    const items = this._pagedList(allSlots, "nzbget", (s) => this._renderNzbgetItem(s), this._perPage("nzbget"));
+    const items = this._pagedList(allSlots, "nzbget", (s) => this._renderNzbgetItem(s), this._perPage("nzbget"), "dc-section-card");
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${allSlots.length >= this._perPage("nzbget") ? this._sectionOverlayHtml("nzbget", 15, 85, 0.23) : this._sectionOverlayHtml("nzbget", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon("nzbget")}
         <span class="col-hdr-title">NZBGet</span>
@@ -6995,6 +7047,110 @@ var _RenderLeft = class {
         </div>
         <div style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${title}">${title}</div>
       </div>
+    </div>`;
+  }
+  _renderRtorrent() {
+    if (!this._rtorrentConfigured) return "";
+    const status = this._rtorrentStatus || {};
+    const torrents = Array.isArray(this._rtorrentQueue) ? [...this._rtorrentQueue] : [];
+    const [sortField, sortDir] = this._sortRtorrent.split("_");
+    torrents.sort((a, b) => {
+      const av = sortField === "speed" ? a.download_payload_rate || 0 : a.progress || 0;
+      const bv = sortField === "speed" ? b.download_payload_rate || 0 : b.progress || 0;
+      return sortDir === "desc" ? bv - av : av - bv;
+    });
+    const progressActive = sortField === "progress";
+    const speedActive = sortField === "speed";
+    const dir = sortDir === "desc" ? "\u2193" : "\u2191";
+    const allPaused = torrents.length > 0 && torrents.every((t) => (t.state || "").toLowerCase() === "paused");
+    const items = this._pagedList(torrents, "rtorrent", (t) => this._renderRtorrentItem(t), this._perPage("rtorrent"), "dc-section-card");
+    return `
+  <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+    ${torrents.length >= this._perPage("rtorrent") ? this._sectionOverlayHtml("rtorrent", 15, 85, 0.23) : this._sectionOverlayHtml("rtorrent", 15, 85, 0.23, 55, 20)}
+    <div class="col-hdr" style="margin-bottom:8px">
+      ${this._appIcon("rtorrent")}
+      <span class="col-hdr-title">rTorrent</span>
+      <div class="col-hdr-line"></div>
+      <div class="sort-btns">
+        <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" data-client="rtorrent" title="${this._t("sortByProgress")}">
+          <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
+        </button>
+        <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" data-client="rtorrent" title="${this._t("sortBySpeed")}">
+          <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
+        </button>
+      </div>
+      ${this._rtorrentBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn rtorrent-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+             <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+           </button>`}
+    </div>
+    ${items}
+  </div>`;
+  }
+  _renderRtorrentItem(t) {
+    const pct = Math.round(t.progress || 0);
+    const dlSpeed = this.fmtSpeed(t.download_payload_rate || 0);
+    const upSpeed = this.fmtSpeed(t.upload_payload_rate || 0);
+    const eta = this.fmtEta(t.eta);
+    const completed = this.fmtSize(t.total_done || 0);
+    const total = this.fmtSize(t.total_size || 0);
+    const seeds = t.num_seeds || 0;
+    const peers = t.num_peers || 0;
+    const name = this._escHtml(t.name || "Unknown");
+    const hash = t.hash || "";
+    const state = (t.state || "").toLowerCase();
+    const isCompleted = pct >= 100;
+    const isPaused = state === "paused";
+    const isSeeding = state === "seeding";
+    const isError = state === "error";
+    const isChecking = state === "checking";
+    let speedCol = "";
+    if (isSeeding) {
+      speedCol = this._pill("pill-teal", "mdi:upload", upSpeed);
+    } else if (isCompleted) {
+      speedCol = this._pill("pill-green", "mdi:check-circle", this._t("complete"));
+    } else if (isError) {
+      speedCol = this._pill("pill-red", "mdi:alert-circle", t.message || this._t("errorState"));
+    } else if (isPaused) {
+      speedCol = this._pill("pill-orange", "mdi:pause-circle", this._t("paused"));
+    } else if (isChecking) {
+      speedCol = this._pill("pill-orange", "mdi:sync", "Checking");
+    } else {
+      speedCol = this._pill("pill-green", "mdi:download", dlSpeed);
+    }
+    const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    let actionBtns = "";
+    if (this._rtorrentItemBusy === hash) {
+      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+    } else if (this._rtorrentConfirm === hash) {
+      actionBtns = `
+      <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    } else {
+      if (!isCompleted && isPaused)
+        actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (!isCompleted && !isPaused && !isError)
+        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (isSeeding)
+        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    }
+    return `
+    <div class="dl">
+      <div class="dl-r1">
+        <span class="dl-name" title="${name}">${name}</span>
+        <span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>
+        <div class="tb-group">${actionBtns}</div>
+      </div>
+      <div class="dl-r2">
+        ${speedCol}
+        ${!isCompleted && !isError && !isPaused && !isChecking ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
+        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
+        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
+        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
+      </div>
+      <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
   }
 };
@@ -8587,14 +8743,14 @@ var _ThemeMethods = class {
     if (mrb) rules.push(`.popup-overlay .is-open-btn[data-action="remove-confirm"] { background: rgba(${mrb}, 0.20) !important; border-color: rgba(${mrb}, 0.40) !important; }`);
     const uiScale = parseFloat(cfg["uiScale"]);
     if (uiScale && uiScale !== 1 && !isNaN(uiScale)) {
-      rules.push(`.card-body { zoom: ${uiScale}; }`);
+      rules.push(`@media (min-width: 601px) { .card-body { zoom: ${uiScale}; } }`);
     }
     const leftPct = parseFloat(cfg["leftPanelWidth"]);
     if (!isNaN(leftPct) && leftPct > 0 && leftPct !== 40) {
       const l = Math.round(leftPct);
       const r = 100 - l;
-      rules.push(`.card-body { grid-template-columns: ${l}fr ${r}fr !important; }`);
-      rules.push(`.card-body.swap-sides { grid-template-columns: ${r}fr ${l}fr !important; }`);
+      rules.push(`@media (min-width: 601px) { .card-body { grid-template-columns: ${l}fr ${r}fr !important; } }`);
+      rules.push(`@media (min-width: 601px) { .card-body.swap-sides { grid-template-columns: ${r}fr ${l}fr !important; } }`);
     }
     let el = this.shadowRoot.getElementById("arr-theme");
     if (!el) {
@@ -8651,6 +8807,28 @@ var _WireMethods = class {
       await this._fetchDeluge();
       this._delugeBusy = false;
       this._delugeItemBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  async _rtorrentAction(hash, action, deleteFiles = false) {
+    const isGlobal = action === "pauseAll" || action === "resumeAll";
+    if (isGlobal) {
+      this._rtorrentBusy = true;
+    } else {
+      this._rtorrentItemBusy = hash;
+    }
+    this._reRenderLeft();
+    try {
+      const mode = isGlobal ? action === "pauseAll" ? "global_pause" : "global_resume" : deleteFiles ? "delete_files" : action === "delete" ? "delete" : action;
+      await this._hass.callApi("POST", "arr_stack/rtorrent/action", { action: mode, id: hash });
+    } catch (e) {
+      console.error("[arr-card] rTorrent action error:", e);
+    } finally {
+      this._rtorrentConfirm = null;
+      await new Promise((r) => setTimeout(r, 2e3));
+      await this._fetchRtorrent();
+      this._rtorrentBusy = false;
+      this._rtorrentItemBusy = null;
       this._reRenderLeft();
     }
   }
@@ -8789,6 +8967,35 @@ var _WireMethods = class {
         }
       });
     });
+    const rtorrentToggle = this.shadowRoot.querySelector(".rtorrent-global-toggle");
+    if (rtorrentToggle) {
+      rtorrentToggle.addEventListener("click", () => {
+        const paused = rtorrentToggle.classList.contains("paused");
+        this._rtorrentAction(null, paused ? "resumeAll" : "pauseAll");
+      });
+    }
+    this.shadowRoot.querySelectorAll("[data-rt-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.rtAction;
+        const hash = btn.dataset.rtHash || "";
+        if (action === "pause") {
+          this._rtorrentAction(hash, "pause");
+        } else if (action === "resume") {
+          this._rtorrentAction(hash, "resume");
+        } else if (action === "remove-confirm") {
+          this._rtorrentConfirm = hash;
+          this._reRenderLeft();
+        } else if (action === "cancel-remove") {
+          this._rtorrentConfirm = null;
+          this._reRenderLeft();
+        } else if (action === "remove-keep") {
+          this._rtorrentAction(hash, "delete", false);
+        } else if (action === "remove-del") {
+          this._rtorrentAction(hash, "delete", true);
+        }
+      });
+    });
     this.shadowRoot.querySelectorAll("[data-tb-action]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -8819,8 +9026,17 @@ var _WireMethods = class {
     const btns = this.shadowRoot.querySelectorAll(".sort-btns .sb");
     btns.forEach((btn) => {
       btn.addEventListener("click", () => {
-        this._sort = btn.dataset.sort || "progress_desc";
-        this._pages.qbit = 0;
+        const val = btn.dataset.sort || "progress_desc";
+        if (btn.dataset.client === "deluge") {
+          this._sortDeluge = val;
+          this._pages.deluge = 0;
+        } else if (btn.dataset.client === "rtorrent") {
+          this._sortRtorrent = val;
+          this._pages.rtorrent = 0;
+        } else {
+          this._sort = val;
+          this._pages.qbit = 0;
+        }
         this._render();
       });
     });
@@ -13386,7 +13602,7 @@ var _TautulliMethods = class {
     const showWarn = data.sharingDetected && !data.sharingAcked;
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("tautulli", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("tautulli", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           ${this._appIcon("tautulli", 24)}
           <span class="col-hdr-title">${this._t("tlStatisticsPlex")}</span>
@@ -14615,7 +14831,7 @@ var _JellystatMethods = class {
     const data = this._jellystat || {};
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("jellystat", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("jellystat", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           ${this._appIcon("jellystat", 24)}
           <span class="col-hdr-title">Statistics (Jellyfin)</span>
@@ -14969,7 +15185,7 @@ var _ActivityRenderMethods = class {
     const totalActive = rItems.filter((x) => !x.failed).length + r2Items.filter((x) => !x.failed).length + snPct.size + sn2Pct.size;
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("radarr", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("radarr", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
             ${this._appIcon("radarr", 24)}
@@ -17813,7 +18029,7 @@ var _ProwlarrRenderMethods = class {
   _renderProwlarr() {
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("prowlarr", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("prowlarr", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           ${this._appIcon("prowlarr", 24)}
           <span class="col-hdr-title">Prowlarr</span>
@@ -20131,6 +20347,8 @@ var ArrStackCard = class extends HTMLElement {
     this._initialized = false;
     this._pageBtnAbort = null;
     this._sort = "progress_desc";
+    this._sortDeluge = "progress_desc";
+    this._sortRtorrent = "progress_desc";
     this._radarr = [];
     this._radarrTotal = 0;
     this._radarr2 = [];
@@ -20182,6 +20400,12 @@ var ArrStackCard = class extends HTMLElement {
     this._delugeBusy = false;
     this._delugeItemBusy = null;
     this._delugeConfirm = null;
+    this._rtorrentConfigured = null;
+    this._rtorrentStatus = {};
+    this._rtorrentQueue = [];
+    this._rtorrentBusy = false;
+    this._rtorrentItemBusy = null;
+    this._rtorrentConfirm = null;
     this._bazarrConfigured = true;
     this._tautulliConfigured = true;
     this._tautulli = null;
@@ -20297,7 +20521,7 @@ var ArrStackCard = class extends HTMLElement {
     this._searchActive = false;
     this._searchTimer = null;
     this._searchAbort = null;
-    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
+    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, rtorrent: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "", streams: "" };
     this._streamsTimer = null;
     this._streamPopupTimer = null;
@@ -20588,6 +20812,7 @@ var ArrStackCard = class extends HTMLElement {
     if (section === "sab") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
     if (section === "nzbget") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
     if (section === "deluge") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
+    if (section === "rtorrent") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
     return 4;
   }
   // Converts "#rrggbb" or "#rgb" to "r,g,b" string for use in rgba()
@@ -20673,6 +20898,7 @@ var ArrStackCard = class extends HTMLElement {
       sab: "sabnzbd",
       nzbget: "nzbget",
       deluge: "deluge",
+      rtorrent: "rutorrent",
       radarr: "radarr",
       sonarr: "sonarr",
       overseerr: "overseerr",
@@ -20700,6 +20926,7 @@ var ArrStackCard = class extends HTMLElement {
       qbit: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="9.5" font-weight="700" font-family="sans-serif">qb</text></svg>`,
       sab: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M5 2h14v10h3L12 22 2 12h3V2z"/></svg>`,
       deluge: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3l6 5h-4v5H10v-5H6l6-5z"/></svg>`,
+      rtorrent: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm-1 3v5.27l-3.5 2.02.99 1.71L12 14.15l3.51 2.02.99-1.71L13 12.27V7h-2z"/></svg>`,
       nzbget: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><rect x="5" y="2" width="14" height="2" rx="0.5"/><rect x="5" y="5.5" width="14" height="2" rx="0.5"/><rect x="5" y="9" width="14" height="2" rx="0.5"/><path d="M5 12h14v4h3L12 22 2 16h3v-4z"/></svg>`
     };
     if (useReal && cdnSlugs[app]) {
@@ -20729,8 +20956,11 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: `rgba(255,111,0,${o})`,
       jellystat: `rgba(0,164,220,${o})`,
       prowlarr: `rgba(255,80,0,${o})`,
-      qbit: `rgba(50,178,92,${o})`,
-      sab: `rgba(255,190,0,${o})`
+      qbit: `rgba(30,140,255,${o})`,
+      deluge: `rgba(10,80,220,${o})`,
+      rtorrent: `rgba(60,120,255,${o})`,
+      sab: `rgba(200,150,0,${o})`,
+      nzbget: `rgba(40,140,60,${o})`
     };
     return map[app] || `rgba(255,255,255,${o})`;
   }
@@ -20746,8 +20976,11 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: `rgba(255,255,255,${o})`,
       jellystat: `rgba(139,92,246,${o})`,
       prowlarr: `rgba(255,160,50,${o})`,
-      qbit: `rgba(30,140,70,${o})`,
-      sab: `rgba(200,150,0,${o})`
+      qbit: `rgba(10,80,220,${o})`,
+      deluge: `rgba(5,45,160,${o})`,
+      rtorrent: `rgba(140,60,240,${o})`,
+      sab: `rgba(170,125,0,${o})`,
+      nzbget: `rgba(30,120,50,${o})`
     };
     return map[app] || `rgba(255,255,255,${o})`;
   }
@@ -20757,9 +20990,9 @@ var ArrStackCard = class extends HTMLElement {
   get _categoryOverlaysEnabled() {
     return this._cfgGet("styles", "categoryOverlays", true) !== false;
   }
-  _sectionOverlayHtml(app, posL = 15, posR = 85, o = 0.4, bottomFade = 80) {
+  _sectionOverlayHtml(app, posL = 15, posR = 85, o = 0.4, bottomFade = 80, topFade = 6) {
     if (!this._categoryOverlaysEnabled) return "";
-    const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black ${bottomFade}%,transparent 100%)`;
+    const mask = `linear-gradient(to bottom,transparent 0.07%,black ${topFade}%,black ${bottomFade}%,transparent 100%)`;
     const gradL = `radial-gradient(circle at ${posL}% 15%,${this._brandColor(app, o)} 0%,transparent 48%)`;
     const gradR = `radial-gradient(circle at ${posR}% 15%,${this._brandColorSecondary(app, o)} 0%,transparent 48%)`;
     return `<div style="position:absolute;inset:0;background:${gradL},${gradR};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>`;
@@ -20809,6 +21042,7 @@ var ArrStackCard = class extends HTMLElement {
   _getPageData(section) {
     if (section === "qbit") return Array.isArray(this._qbit) ? this._qbit : [];
     if (section === "deluge") return Array.isArray(this._delugeQueue) ? this._delugeQueue : [];
+    if (section === "rtorrent") return Array.isArray(this._rtorrentQueue) ? this._rtorrentQueue : [];
     if (section === "nzbget") {
       const queue = Array.isArray(this._nzbgetQueue) ? this._nzbgetQueue : [];
       const completed = (this._nzbgetCompleted || []).map((s) => ({
@@ -20904,22 +21138,25 @@ var ArrStackCard = class extends HTMLElement {
     return [...finalMovies, ...finalShows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
   }
   // Paginated vertical list (for download items)
-  _pagedList(items, section, renderFn, perPage = 4) {
+  _pagedList(items, section, renderFn, perPage = 4, innerClass = "", overlayHtml = "") {
     if (!items || items.length === 0)
-      return `<div class="placeholder">${this._t("noDownloads")}</div>`;
+      return innerClass ? `<div class="${innerClass} dc-no-chev">${overlayHtml}<div class="placeholder">${this._t("noDownloads")}</div></div>` : `<div class="placeholder">${this._t("noDownloads")}</div>`;
     const page = this._pages[section] || 0;
     const totalPages = Math.ceil(items.length / perPage);
     const pageItems = items.slice(page * perPage, page * perPage + perPage);
     const dir = this._pageDir[section] || "";
     const animClass = dir === "next" ? "anim-next" : dir === "prev" ? "anim-prev" : "";
     const list = `<div class="dl-list ${animClass}">${pageItems.map((it) => renderFn(it)).join("")}</div>`;
-    if (totalPages <= 1) return list;
+    if (totalPages <= 1) {
+      return innerClass ? `<div class="${innerClass} dc-no-chev">${overlayHtml}${list}</div>` : list;
+    }
     const prevDis = page === 0 ? "disabled" : "";
     const nextDis = page >= totalPages - 1 ? "disabled" : "";
+    const inner = innerClass ? `<div class="${innerClass}" style="flex:1;min-width:0">${overlayHtml}${list}</div>` : list;
     return `
       <div class="pg-wrap">
         <button class="pg-btn" data-section="${section}" data-dir="prev" ${prevDis}>\u2039</button>
-        ${list}
+        ${inner}
         <button class="pg-btn" data-section="${section}" data-dir="next" ${nextDis}>\u203A</button>
       </div>`;
   }

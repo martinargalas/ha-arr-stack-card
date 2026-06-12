@@ -10,9 +10,35 @@
 
 <a href="https://discord.gg/Q4jKKqRY" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, SABnzbd, NZBGet, Overseerr/Jellyseerr, Bazarr, Plex, Tautulli, Jellystat, Prowlarr, and Trakt — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTorrent, SABnzbd, NZBGet, Overseerr/Jellyseerr, Bazarr, Plex, Tautulli, Jellystat, Prowlarr, and Trakt — directly from Home Assistant with a single unified dashboard card.
 
 ![Arr Stack Card preview](screenshot.png)
+
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" width="36" title="Radarr"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" width="36" title="Sonarr"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" width="36" title="Bazarr"/>
+  &nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" width="36" title="qBittorrent"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" width="36" title="Deluge"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" width="36" title="rTorrent"/>
+  &nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" width="36" title="SABnzbd"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" width="36" title="NZBGet"/>
+  &nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" width="36" title="Overseerr"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" width="36" title="Jellyseerr"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" width="36" title="TMDB"/>
+  &nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" width="36" title="Prowlarr"/>
+  &nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" width="36" title="Plex"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" width="36" title="Tautulli"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" width="36" title="Jellyfin"/>
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" width="36" title="Jellystat"/>
+  &nbsp;&nbsp;
+  <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" width="36" title="Trakt"/>
+</p>
 
 ![Trakt Seen & Skip](trakt.gif)
 
@@ -51,6 +77,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | Sonarr 2 | Second Sonarr instance — HD + 4K workflow | Optional |
 | qBittorrent | Torrent download management | Optional |
 | Deluge | Torrent download management | Optional |
+| rTorrent / ruTorrent | Torrent download management | Optional |
 | SABnzbd | Usenet download management | Optional |
 | NZBGet | Usenet download management | Optional |
 | Overseerr / Jellyseerr | Media requests, discovery, approvals | Optional |
@@ -73,6 +100,7 @@ The left panel appears when at least one download manager is configured. You can
 
 - **qBittorrent** — active torrents with download and upload speed, progress, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Total speed chip shows combined download and upload across all active torrents.
 - **Deluge** — same feature set as qBittorrent: active torrents, speed, progress, seeds/peers, pause/resume per torrent and globally, delete with or without files.
+- **rTorrent / ruTorrent** — same feature set as qBittorrent: active torrents, speed, progress, seeds/peers, pause/resume per torrent and globally, delete with or without files. Connects via the ruTorrent XMLRPC endpoint.
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
 - **NZBGet** — NZB queue with progress, post-processing status, failed history with retry/delete, global pause/resume.
 - **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Disks are deduplicated automatically. If your media is spread across multiple disks, use the chevron arrows to page through them.
@@ -163,7 +191,7 @@ Indexer overview and search statistics from Prowlarr.
 - Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos. Switch to MDI icons via `styles.applicationIcons: mdi`
 - UI scale — proportionally scales all card content via `styles.uiScale`. Useful on large monitors or TVs where the default size is too small
 - Left panel width — adjustable via `styles.leftPanelWidth` (percentage of card width, default 40)
-- Download client order — enable, disable, and reorder qBittorrent, Deluge, SABnzbd, and NZBGet from the visual editor. Only configured clients appear in the list
+- Download client order — enable, disable, and reorder qBittorrent, Deluge, rTorrent, SABnzbd, and NZBGet from the visual editor. Only configured clients appear in the list
 
 ---
 
@@ -217,7 +245,7 @@ sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (de
 
 # Download managers (left panel)
 downloads:
-  torrentItems: 3            # qBittorrent / Deluge items per page  (default: 3)
+  torrentItems: 3            # qBittorrent / Deluge / rTorrent items per page  (default: 3)
   usenetItems: 3             # SABnzbd / NZBGet items per page  (default: 3)
 
 # Download client order & visibility (left panel)
@@ -225,6 +253,8 @@ downloadClients:
   - id: qbit
     enabled: true
   - id: deluge
+    enabled: true
+  - id: rtorrent
     enabled: true
   - id: sab
     enabled: true
