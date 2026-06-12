@@ -15,7 +15,7 @@ var ArrStackCardEditor = class extends HTMLElement {
   async _loadCaps() {
     try {
       this._caps = await this._hass.callApi("GET", "arr_stack/capabilities/info");
-      const hasDownloads = this._caps.qbit || this._caps.sabnzbd;
+      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge || this._caps.rtorrent;
       if (!hasDownloads && this._config.layout !== "right") {
         this._config = { ...this._config, layout: "right" };
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -158,7 +158,7 @@ var ArrStackCardEditor = class extends HTMLElement {
             <option value="en" ${this._val("localisation", "en") === "en" ? "selected" : ""}>English</option>
           </select>
         </div>
-        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps === null ? `
+        ${this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps?.deluge || this._caps?.rtorrent || this._caps === null ? `
         <div class="row">
           <span class="row-label">Layout</span>
           <select data-key="layout">
@@ -232,6 +232,46 @@ var ArrStackCardEditor = class extends HTMLElement {
         <div class="hint">Quality profile name from Sonarr (Settings \u2192 Profiles \u2192 Name). Leave empty to use Sonarr default.</div>
       </div>
 
+      <!-- Left Panel \u2014 Download Clients -->
+      ${(() => {
+      const caps = this._caps;
+      const allClients = this._getClients().filter((c) => {
+        if (caps === null) return true;
+        if (c.id === "qbit" && !caps?.qbit) return false;
+        if (c.id === "deluge" && !caps?.deluge) return false;
+        if (c.id === "rtorrent" && !caps?.rtorrent) return false;
+        if (c.id === "sab" && !caps?.sabnzbd) return false;
+        if (c.id === "nzbget" && !caps?.nzbget) return false;
+        return true;
+      });
+      const torrentIds = ["qbit", "deluge", "rtorrent"];
+      const usenetIds = ["sab", "nzbget"];
+      const torrentClients = allClients.filter((c) => torrentIds.includes(c.id));
+      const usenetClients = allClients.filter((c) => usenetIds.includes(c.id));
+      if (allClients.length === 0) return "";
+      const renderGroup = (title, clients) => clients.length === 0 ? "" : `
+        <div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:8px 0 4px">${title}</div>
+        <div class="cat-list">
+          ${clients.map((c) => `
+            <div class="cat-item${c.enabled === false ? " cat-disabled" : ""}" draggable="true" data-client-id="${c.id}">
+              <ha-icon icon="mdi:drag-vertical" style="--mdc-icon-size:18px;color:var(--secondary-text-color,#9e9e9e);flex-shrink:0;cursor:grab"></ha-icon>
+              <span class="cat-label">${this._clientLabel(c.id)}</span>
+              <label class="toggle">
+                <input type="checkbox" data-client-toggle="${c.id}" ${c.enabled !== false ? "checked" : ""}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          `).join("")}
+        </div>`;
+      return `
+      <div class="section">
+        <div class="section-title">Left Panel \u2014 Download Clients</div>
+        <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide. Only configured clients are shown.</div>
+        ${renderGroup("Torrent", torrentClients)}
+        ${renderGroup("Usenet", usenetClients)}
+      </div>`;
+    })()}
+
       <!-- Right Panel -->
       <div class="section">
         <div class="section-title">Right Panel \u2014 Categories</div>
@@ -295,6 +335,12 @@ var ArrStackCardEditor = class extends HTMLElement {
           </label>
         </div>
         <div class="hint">Show brand-colour background tint behind each section's content.</div>
+
+        ${this._numberRow("UI scale", "uiScale", 1, 0.5, 3, 0.05, "0.5\u20133")}
+        <div class="hint">Scale all card content proportionally. Use values above 1 on large screens or TVs where the default text is too small. Reduce columns (Items per category) if content overflows.</div>
+
+        ${this._numberRow("Left panel width", "leftPanelWidth", 40, 10, 90, 1, "10\u201390 %")}
+        <div class="hint">Width of the downloads panel as a percentage of the card. Default is 40 %. Has no effect when the downloads panel is hidden or on mobile.</div>
       </div>
     `;
     this._wireEvents();
@@ -342,6 +388,25 @@ var ArrStackCardEditor = class extends HTMLElement {
       prowlarr: "Prowlarr (Indexers / Stats / History)"
     }[id] || id;
   }
+  _defaultClients() {
+    return [
+      { id: "qbit", enabled: true },
+      { id: "deluge", enabled: true },
+      { id: "rtorrent", enabled: true },
+      { id: "sab", enabled: true },
+      { id: "nzbget", enabled: true }
+    ];
+  }
+  _getClients() {
+    const saved = this._config?.downloadClients;
+    if (!Array.isArray(saved)) return this._defaultClients();
+    const savedIds = new Set(saved.map((c) => c.id));
+    const missing = this._defaultClients().filter((c) => !savedIds.has(c.id));
+    return [...saved, ...missing];
+  }
+  _clientLabel(id) {
+    return { qbit: "qBittorrent", sab: "SABnzbd", nzbget: "NZBGet", deluge: "Deluge", rtorrent: "rTorrent" }[id] || id;
+  }
   _numberRow(label, key, defaultVal, min, max, step, hint) {
     const stored = this._styleVal(key, null);
     const val = stored != null ? stored : defaultVal;
@@ -351,6 +416,18 @@ var ArrStackCardEditor = class extends HTMLElement {
         ${hint ? `<span class="color-alpha">${hint}</span>` : ""}
         <input type="number" data-style-key="${key}" value="${val}" min="${min}" max="${max}" step="${step}" style="width:56px;text-align:right"/>
       </div>`;
+  }
+  _sliderRow(label, key, defaultVal, min, max, step, unit) {
+    const stored = this._styleVal(key, null);
+    const val = stored != null ? stored : defaultVal;
+    const display = unit ? `${val}${unit}` : `${val}`;
+    return `
+      <div class="row" style="flex-wrap:wrap;gap:4px">
+        <span class="row-label">${label}</span>
+        <span class="color-alpha" data-val-for="${key}" style="min-width:36px;text-align:right">${display}</span>
+      </div>
+      <input type="range" data-style-key="${key}" data-unit="${unit || ""}" value="${val}" min="${min}" max="${max}" step="${step}"
+        style="width:100%;margin:2px 0 6px;accent-color:var(--primary-color,#03a9f4)"/>`;
   }
   _colorRow(label, key, defaultHex, alphaHint) {
     const stored = this._styleVal(key, null);
@@ -409,10 +486,62 @@ var ArrStackCardEditor = class extends HTMLElement {
         this._update({ styles: { ...existing, [el.dataset.styleKey]: parseFloat(el.value) } });
       });
     });
+    this.shadowRoot.querySelectorAll('input[type="range"][data-style-key]').forEach((el) => {
+      const key = el.dataset.styleKey;
+      const unit = el.dataset.unit || "";
+      const label = this.shadowRoot.querySelector(`[data-val-for="${key}"]`);
+      el.addEventListener("pointerdown", (e) => e.stopPropagation());
+      el.addEventListener("mousedown", (e) => e.stopPropagation());
+      el.addEventListener("input", () => {
+        if (label) label.textContent = el.value + unit;
+        const existing = this._config.styles || {};
+        this._update({ styles: { ...existing, [key]: parseFloat(el.value) } });
+      });
+    });
     this.shadowRoot.querySelectorAll('input[type="color"][data-style-key]').forEach((el) => {
       el.addEventListener("input", () => {
         const existing = this._config.styles || {};
         this._update({ styles: { ...existing, [el.dataset.styleKey]: el.value } });
+      });
+    });
+    this.shadowRoot.querySelectorAll("input[data-client-toggle]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const clients = this._getClients().map(
+          (c) => c.id === el.dataset.clientToggle ? { ...c, enabled: el.checked } : c
+        );
+        this._update({ downloadClients: clients });
+      });
+    });
+    let dragClientId = null;
+    this.shadowRoot.querySelectorAll("[data-client-id]").forEach((el) => {
+      el.addEventListener("dragstart", (e) => {
+        dragClientId = el.dataset.clientId;
+        el.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
+        dragClientId = null;
+      });
+      el.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        el.classList.add("drag-over");
+      });
+      el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
+      el.addEventListener("drop", (e) => {
+        e.preventDefault();
+        el.classList.remove("drag-over");
+        const toId = el.dataset.clientId;
+        if (!dragClientId || dragClientId === toId) return;
+        const clients = [...this._getClients()];
+        const from = clients.findIndex((c) => c.id === dragClientId);
+        const to = clients.findIndex((c) => c.id === toId);
+        if (from < 0 || to < 0) return;
+        const [item] = clients.splice(from, 1);
+        clients.splice(to, 0, item);
+        this._update({ downloadClients: clients });
+        this._render();
       });
     });
     this.shadowRoot.querySelectorAll("input[data-cat-toggle]").forEach((el) => {
@@ -499,6 +628,8 @@ var ARR_I18N = {
     pauseAll: "Pozastavit v\u0161e",
     resumeSab: "Spustit SAB",
     pauseSab: "Pozastavit SAB",
+    resumeNzbget: "Spustit NZBGet",
+    pauseNzbget: "Pozastavit NZBGet",
     pause: "Pozastavit",
     resume: "Spustit",
     stopSeed: "Zastavit seed",
@@ -508,6 +639,7 @@ var ARR_I18N = {
     remove: "Odstranit",
     retry: "Zkusit znovu",
     removeFromHist: "Odstranit z historie",
+    paused: "Pozastaveno",
     // Chybové stavy
     errorState: "Chyba",
     missingFiles: "Chyb\xED soubory",
@@ -846,6 +978,8 @@ var ARR_I18N = {
     pauseAll: "Pause all",
     resumeSab: "Resume SAB",
     pauseSab: "Pause SAB",
+    resumeNzbget: "Resume NZBGet",
+    pauseNzbget: "Pause NZBGet",
     pause: "Pause",
     resume: "Resume",
     stopSeed: "Stop seed",
@@ -855,6 +989,7 @@ var ARR_I18N = {
     remove: "Remove",
     retry: "Retry",
     removeFromHist: "Remove from history",
+    paused: "Paused",
     errorState: "Error",
     missingFiles: "Missing files",
     approve: "Approve",
@@ -1416,11 +1551,13 @@ var STYLES = `
       .sort-btns { margin-left: auto; display: flex; gap: 3px; }
 
       .sb {
-        font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 1px;
+        font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
         border: 1px solid rgba(255,255,255,0.30); background: rgba(255,255,255,0.12);
         color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.85); cursor: pointer;
         backdrop-filter: blur(8px);
       }
+      .sb ha-icon { display: flex; align-items: center; justify-content: center; }
 
       .sb.on {
         background: rgba(var(--accent-rgb),0.30); border-color: rgba(var(--accent-rgb),0.55);
@@ -1436,12 +1573,13 @@ var STYLES = `
       .action-btn {
         display: inline-flex; align-items: center; justify-content: center;
         width: 26px; height: 26px; flex-shrink: 0;
-        border-radius: 7px; border: 1px solid rgba(255,255,255,0.22);
+        border-radius: 50%; border: 1px solid rgba(255,255,255,0.22);
         background: rgba(255,255,255,0.10);
         color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.80); cursor: pointer;
         backdrop-filter: blur(8px);
         transition: background 0.15s, color 0.15s;
       }
+      .action-btn ha-icon { display: flex; align-items: center; justify-content: center; }
       .action-btn:hover {
         background: rgba(255,255,255,0.20); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1);
       }
@@ -1466,18 +1604,19 @@ var STYLES = `
 
       /* \u2500\u2500 Per-torrent tiny action buttons \u2500\u2500 */
       .tb-group {
-        display: flex; gap: 3px; flex-shrink: 0; margin-left: 6px;
+        display: flex; gap: 3px; flex-shrink: 0; margin-left: 24px; min-width: 53px; justify-content: flex-end;
       }
 
       .tb {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 22px; height: 22px; flex-shrink: 0;
-        border-radius: 5px; border: 1px solid rgba(255,255,255,0.28);
+        width: 25px; height: 25px; flex-shrink: 0;
+        border-radius: 50%; border: 1px solid rgba(255,255,255,0.28);
         background: rgba(255,255,255,0.10);
         color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.90); cursor: pointer;
-        padding: 0;
+        padding: 0; line-height: 0;
         transition: background 0.12s, color 0.12s;
       }
+      .tb ha-icon { display: block; width: var(--mdc-icon-size, 15px); height: var(--mdc-icon-size, 15px); }
       .tb:hover  { background: rgba(255,255,255,0.22); color: rgba(var(--arr-dbt-rgb, 255, 255, 255), 1); }
       .tb:active { transform: scale(0.88); }
 
@@ -1515,7 +1654,18 @@ var STYLES = `
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          SECTION GLASS CARD
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
-      .sec-card { margin-bottom: 4px; }
+      .sec-card { margin-bottom: 4px; overflow: hidden; }
+      .dc-section-card {
+        background: rgba(255,255,255,0.07);
+        border-radius: 14px;
+        padding: 10px 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .dc-section-card.dc-no-chev { margin: 0 22px; }
+      @media (max-width: 600px) { .dc-section-card.dc-no-chev { margin: 0; } }
+      .dc-section-card .dl-list { position: relative; z-index: 1; }
+      .has-gradient .dc-section-card { position: relative; z-index: 1; }
       .has-gradient .col-hdr,
       .has-gradient .pg-wrap,
       .has-gradient .tl-row,
@@ -1617,11 +1767,11 @@ var STYLES = `
         color: rgba(var(--arr-pt-rgb, 255, 255, 255), 1);
         text-shadow: 0 1px 5px rgba(0,0,0,0.55);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        max-width: 360px;
+        flex: 1; min-width: 0;
       }
 
       .dl-pct { font-size: 13px; font-weight: 800; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.5); flex-shrink: 0; margin-left: 8px;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+        min-width: 3.2ch; text-align: right; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
       .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
 
@@ -2427,8 +2577,8 @@ var STYLES = `
         background: var(--accent);
         border: none;
         color: #fff;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         cursor: pointer;
         display: flex;
@@ -3239,8 +3389,8 @@ var STYLES = `
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
       .tl-row { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
       .tl-card {
-        background: rgba(255,255,255,0.10);
-        border-radius: 11px; padding: 11px 10px; cursor: pointer;
+        background: rgba(255,255,255,0.07);
+        border-radius: 14px; padding: 11px 10px; cursor: pointer;
         position: relative; overflow: hidden; aspect-ratio: 2/3;
         display: flex; flex-direction: column;
         transition: transform .15s, box-shadow .15s;
@@ -4258,6 +4408,10 @@ var _FetchMethods = class {
       this._capsLoaded = true;
       if (!caps.qbit) this._qbitConfigured = false;
       if (!caps.sabnzbd) this._sabConfigured = false;
+      if (!caps.nzbget) this._nzbgetConfigured = false;
+      if (!caps.deluge) this._delugeConfigured = false;
+      if (caps.rtorrent) this._rtorrentConfigured = true;
+      else this._rtorrentConfigured = false;
       if (!caps.radarr2) this._radarr2Configured = false;
       if (!caps.sonarr2) this._sonarr2Configured = false;
       if (!caps.bazarr) this._bazarrConfigured = false;
@@ -4294,7 +4448,10 @@ var _FetchMethods = class {
       this._fetchTrakt(),
       this._fetchSab(),
       this._fetchSabHistory(),
+      this._fetchNzbget(),
+      this._fetchNzbgetHistory(),
       this._fetchQbit(),
+      this._fetchDeluge(),
       this._fetchBazarr(),
       this._fetchRadarrQueue(),
       this._fetchRadarr2Queue(),
@@ -4433,16 +4590,26 @@ var _FetchMethods = class {
   async _fetchDownloadsAndRender() {
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
-    const hadItems = prevQbit.size > 0 || prevSab.size > 0;
+    const prevNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
+    const prevDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
+    const prevRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
+    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0 || prevRtorrent.size > 0;
     await Promise.allSettled([
       this._fetchQbit(),
+      this._fetchDeluge(),
+      this._fetchRtorrent(),
       this._fetchSab(),
-      this._fetchSabHistory()
+      this._fetchSabHistory(),
+      this._fetchNzbget(),
+      this._fetchNzbgetHistory()
     ]);
     if (hadItems) {
       const currQbit = new Set((this._qbit || []).map((t) => t.hash));
       const currSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
-      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id));
+      const currNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
+      const currDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
+      const currRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
+      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id)) || [...prevDeluge].some((id) => !currDeluge.has(id)) || [...prevRtorrent].some((id) => !currRtorrent.has(id));
       if (completed) {
         await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
         this._reRenderRight();
@@ -5237,6 +5404,73 @@ var _FetchMethods = class {
       this._reRenderLeft();
     }
   }
+  async _fetchNzbget() {
+    try {
+      const [statusResp, queueResp] = await Promise.all([
+        this._callApi("GET", "arr_stack/nzbget/status"),
+        this._callApi("GET", "arr_stack/nzbget/queue")
+      ]);
+      this._nzbget = statusResp?.result || null;
+      this._nzbgetQueue = queueResp?.result || [];
+      this._nzbgetConfigured = true;
+    } catch (e) {
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      this._nzbgetConfigured = !(status === 503 || body && body.includes("not configured"));
+      if (this._nzbgetConfigured) console.error("[arr-card] NZBGet fetch error:", e);
+    }
+  }
+  async _fetchNzbgetHistory() {
+    try {
+      const data = await this._callApi("GET", "arr_stack/nzbget/history");
+      const items = data?.result || [];
+      this._nzbgetFailed = items.filter((i) => i.Status === "FAILURE");
+      this._nzbgetCompleted = items.filter((i) => i.Status === "SUCCESS").slice(0, 10);
+    } catch (e) {
+      console.error("[arr-card] NZBGet history fetch error:", e);
+    }
+  }
+  async _nzbgetAction(mode, id = null) {
+    this._nzbgetBusy = true;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode, id });
+    } catch (e) {
+      console.error("[arr-card] NZBGet action error:", e);
+    } finally {
+      await this._fetchNzbget();
+      this._nzbgetBusy = false;
+      this._reRenderLeft();
+    }
+  }
+  async _nzbgetRetry(nzbId) {
+    this._nzbgetRetryBusy = nzbId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_redownload", id: nzbId });
+    } catch (e) {
+      console.error("[arr-card] NZBGet retry error:", e);
+    } finally {
+      await new Promise((r) => setTimeout(r, 1e3));
+      await Promise.all([this._fetchNzbget(), this._fetchNzbgetHistory()]);
+      this._nzbgetRetryBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  async _nzbgetItemDelete(nzbId) {
+    this._nzbgetItemBusy = nzbId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_delete", id: nzbId });
+    } catch (e) {
+      console.error("[arr-card] NZBGet delete error:", e);
+    } finally {
+      this._nzbgetItemBusy = null;
+      this._nzbgetConfirm = null;
+      await this._fetchNzbget();
+      this._reRenderLeft();
+    }
+  }
   async _fetchQbit() {
     try {
       const [torrents, transfer, maindata] = await Promise.all([
@@ -5254,6 +5488,42 @@ var _FetchMethods = class {
       const isNotConfigured = status === 503 || body.includes("not configured");
       this._qbitConfigured = !isNotConfigured;
       console.error("[arr-card] qBittorrent fetch error:", e);
+    }
+  }
+  async _fetchDeluge() {
+    if (this._delugeConfigured === false) return;
+    try {
+      const [torrents, status] = await Promise.all([
+        this._callApi("GET", "arr_stack/deluge/queue"),
+        this._callApi("GET", "arr_stack/deluge/status").catch(() => ({}))
+      ]);
+      this._delugeQueue = Array.isArray(torrents) ? torrents : [];
+      this._delugeStatus = status || {};
+      this._delugeConfigured = true;
+    } catch (e) {
+      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = statusCode === 503 || body.includes("not configured");
+      this._delugeConfigured = !isNotConfigured;
+      console.error("[arr-card] Deluge fetch error:", e);
+    }
+  }
+  async _fetchRtorrent() {
+    if (this._rtorrentConfigured === false) return;
+    try {
+      const [torrents, status] = await Promise.all([
+        this._callApi("GET", "arr_stack/rtorrent/queue"),
+        this._callApi("GET", "arr_stack/rtorrent/status").catch(() => ({}))
+      ]);
+      this._rtorrentQueue = Array.isArray(torrents) ? torrents : [];
+      this._rtorrentStatus = status || {};
+      this._rtorrentConfigured = true;
+    } catch (e) {
+      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = statusCode === 503 || body.includes("not configured");
+      this._rtorrentConfigured = !isNotConfigured;
+      console.error("[arr-card] rTorrent fetch error:", e);
     }
   }
   async _fetchOverseerrRadarrSettings() {
@@ -6086,14 +6356,30 @@ var fetchMixin = _FetchMethods.prototype;
 // src/render/left.js
 var _RenderLeft = class {
   _renderLeft() {
-    if (!this._qbitConfigured && !this._sabConfigured) return "";
-    const qbit = this._qbitConfigured ? this._renderQbit() : "";
-    const sab = this._sabConfigured ? this._renderSab() : "";
-    const sep = qbit && sab ? '<div class="spacer"></div>' : "";
+    if (!this._capsLoaded) return "";
+    if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured && !this._delugeConfigured && !this._rtorrentConfigured) return "";
+    const defaultOrder = [
+      { id: "qbit", enabled: true },
+      { id: "sab", enabled: true },
+      { id: "nzbget", enabled: true },
+      { id: "deluge", enabled: true },
+      { id: "rtorrent", enabled: true }
+    ];
+    const saved = this._config?.downloadClients;
+    const cfgList = Array.isArray(saved) ? saved : defaultOrder;
+    const savedIds = new Set(cfgList.map((c) => c.id));
+    const allClients = [
+      ...cfgList,
+      ...defaultOrder.filter((c) => !savedIds.has(c.id))
+    ];
+    const renderers = { qbit: "_renderQbit", sab: "_renderSab", nzbget: "_renderNzbget", deluge: "_renderDeluge", rtorrent: "_renderRtorrent" };
+    const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured, rtorrent: this._rtorrentConfigured };
+    const parts = allClients.filter((c) => c.enabled !== false && configured[c.id]).map((c) => this[renderers[c.id]]()).filter(Boolean);
+    if (!parts.length) return "";
     return `
     ${this._renderDiskRow()}
     <div class="spacer"></div>
-    ${qbit}${sep}${sab}
+    ${parts.join('<div class="spacer"></div>')}
   `;
   }
   _renderLeftHeader() {
@@ -6113,22 +6399,45 @@ var _RenderLeft = class {
     const qbitUpBytes = this._qbitConfigured ? this._qbitTransfer.up_info_speed || 0 : 0;
     const sabKbps = this._sabConfigured ? parseFloat(this._sab.kbpersec) || 0 : 0;
     const sabSpeedBytes = sabKbps * 1024;
-    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes;
+    const nzbgetSpeedBytes = this._nzbgetConfigured ? this._nzbget?.DownloadRate || 0 : 0;
+    const delugeSpeedBytes = this._delugeConfigured ? this._delugeStatus?.download_rate || 0 : 0;
+    const delugeUpBytes = this._delugeConfigured ? this._delugeStatus?.upload_rate || 0 : 0;
+    const rtorrentSpeedBytes = this._rtorrentConfigured ? this._rtorrentStatus?.download_rate || 0 : 0;
+    const rtorrentUpBytes = this._rtorrentConfigured ? this._rtorrentStatus?.upload_rate || 0 : 0;
+    const combinedSpeed = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes;
+    const combinedUpBytes = qbitUpBytes + delugeUpBytes + rtorrentUpBytes;
     const combinedStr = this.fmtSpeed(combinedSpeed);
-    const combinedUpStr = this.fmtSpeed(qbitUpBytes);
+    const combinedUpStr = this.fmtSpeed(combinedUpBytes);
+    const hasUpload = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured;
+    const torrentSpeed = qbitSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes;
+    const usenetSpeed = sabSpeedBytes + nzbgetSpeedBytes;
+    const hasTorrent = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured;
+    const hasUsenet = this._sabConfigured || this._nzbgetConfigured;
     let speedSub = "";
-    if (this._qbitConfigured && this._sabConfigured) {
-      speedSub = `qBit ${this.fmtSpeed(qbitSpeedBytes)} \xB7 SAB ${this.fmtSpeed(sabSpeedBytes)}`;
-    } else if (this._qbitConfigured) {
-      speedSub = `qBittorrent`;
-    } else if (this._sabConfigured) {
-      speedSub = `SABnzbd`;
+    if (hasTorrent && hasUsenet) {
+      speedSub = `Torrent ${this.fmtSpeed(torrentSpeed)} \xB7 Usenet ${this.fmtSpeed(usenetSpeed)}`;
+    } else if (hasTorrent) {
+      const torrentClients = [
+        this._qbitConfigured && "qBittorrent",
+        this._delugeConfigured && "Deluge",
+        this._rtorrentConfigured && "rTorrent"
+      ].filter(Boolean);
+      const onlyOne = torrentClients.length === 1 ? torrentClients[0] : "Torrent";
+      speedSub = onlyOne;
+    } else if (hasUsenet) {
+      const onlyOne = this._sabConfigured && !this._nzbgetConfigured ? "SABnzbd" : !this._sabConfigured && this._nzbgetConfigured ? "NZBGet" : "Usenet";
+      speedSub = onlyOne;
     }
     const sabFreeGB = this._sabConfigured ? parseFloat(this._sab.diskspace2) || 0 : 0;
     const sabTotalGB = this._sabConfigured ? parseFloat(this._sab.diskspacetotal2) || 0 : 0;
     const hasSabDisk = sabTotalGB > 0;
+    const nzbgetFreeGB = this._nzbgetConfigured ? (this._nzbget?.FreeDiskSpaceMB || 0) / 1024 : 0;
+    const nzbgetTotalGB = this._nzbgetConfigured ? (this._nzbget?.TotalDiskSpaceMB || 0) / 1024 : 0;
+    const hasNzbgetDisk = nzbgetTotalGB > 0;
     const qbitFreeBytes = this._qbitDiskFreeBytes;
     const hasQbitDisk = typeof qbitFreeBytes === "number" && qbitFreeBytes > 0;
+    const delugeFreeBytes = this._delugeConfigured ? this._delugeStatus?.free_space || 0 : 0;
+    const hasDelugeDisk = delugeFreeBytes > 0;
     const DISK_ROUND = 100 * 1024 * 1024;
     const allRoots = [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
     const diskMap = /* @__PURE__ */ new Map();
@@ -6202,11 +6511,27 @@ var _RenderLeft = class {
         <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
         <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(sabFreeGB * 1073741824)} ${this._t("free")}</div>
       </div>`;
+    } else if (hasNzbgetDisk) {
+      const usedGB = nzbgetTotalGB - nzbgetFreeGB;
+      const pct = usedGB / nzbgetTotalGB * 100;
+      diskChip = `
+      <div class="disk-chip">
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedGB * 1073741824)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(nzbgetTotalGB * 1073741824)}</span></div>
+        <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(nzbgetFreeGB * 1073741824)} ${this._t("free")}</div>
+      </div>`;
     } else if (hasQbitDisk) {
       diskChip = `
       <div class="disk-chip">
         <div class="dc-label">${this._t("storage")}</div>
         <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(qbitFreeBytes)} ${this._t("free")}</span></div>
+      </div>`;
+    } else if (hasDelugeDisk) {
+      diskChip = `
+      <div class="disk-chip">
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(delugeFreeBytes)} ${this._t("free")}</span></div>
       </div>`;
     }
     const speedStyle = diskChip ? "" : "flex:1";
@@ -6215,7 +6540,7 @@ var _RenderLeft = class {
       <div class="dc-label">${this._t("totalSpeed")}</div>
       <div class="dc-val" style="display:flex;gap:6px;align-items:center">
         <span class="g" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:download" style="--mdc-icon-size:13px"></ha-icon> ${combinedStr}</span>
-        ${this._qbitConfigured ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ""}
+        ${hasUpload ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ""}
       </div>
       <div class="dc-sub speed-chip-sub">${speedSub}</div>
     </div>`;
@@ -6238,19 +6563,20 @@ var _RenderLeft = class {
     const _isQbitPaused = (st) => st.startsWith("paused") || st.startsWith("stopped");
     const activeTorrents = torrents.filter((t) => !_isQbitPaused(t.state || "") && t.progress < 1);
     const allPaused = torrents.length > 0 && activeTorrents.length === 0;
-    const items = this._pagedList(torrents, "qbit", (t) => this._renderTorrentItem(t), this._perPage("qbit"));
+    const items = this._pagedList(torrents, "qbit", (t) => this._renderTorrentItem(t), this._perPage("qbit"), "dc-section-card");
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${torrents.length >= this._perPage("qbit") ? this._sectionOverlayHtml("qbit", 15, 85, 0.23) : this._sectionOverlayHtml("qbit", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon("qbit")}
         <span class="col-hdr-title">qBittorrent</span>
         <div class="col-hdr-line"></div>
         <div class="sort-btns">
           <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" title="${this._t("sortByProgress")}">
-            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon>${progressActive ? `<span class="sb-dir">${dir}</span>` : ""}
+            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
           <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" title="${this._t("sortBySpeed")}">
-            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon>${speedActive ? `<span class="sb-dir">${dir}</span>` : ""}
+            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
         ${this._qbitBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn qbit-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
@@ -6331,15 +6657,124 @@ var _RenderLeft = class {
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
   }
+  _renderDeluge() {
+    if (!this._delugeConfigured) return "";
+    const status = this._delugeStatus || {};
+    const dlSpeed = this.fmtSpeed(status.download_rate || 0);
+    const torrents = Array.isArray(this._delugeQueue) ? [...this._delugeQueue] : [];
+    const [sortField, sortDir] = this._sortDeluge.split("_");
+    torrents.sort((a, b) => {
+      const av = sortField === "speed" ? a.download_payload_rate || 0 : a.progress || 0;
+      const bv = sortField === "speed" ? b.download_payload_rate || 0 : b.progress || 0;
+      return sortDir === "asc" ? av - bv : bv - av;
+    });
+    const progressActive = sortField === "progress";
+    const speedActive = sortField === "speed";
+    const dir = sortDir === "asc" ? "\u2191" : "\u2193";
+    const activeTorrents = torrents.filter((t) => {
+      const st = (t.state || "").toLowerCase();
+      return st !== "paused" && t.progress < 100;
+    });
+    const allPaused = torrents.length > 0 && activeTorrents.length === 0;
+    const items = this._pagedList(torrents, "deluge", (t) => this._renderDelugeTorrentItem(t), this._perPage("deluge"), "dc-section-card");
+    return `
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${torrents.length >= this._perPage("deluge") ? this._sectionOverlayHtml("deluge", 15, 85, 0.23) : this._sectionOverlayHtml("deluge", 15, 85, 0.23, 55, 20)}
+      <div class="col-hdr" style="margin-bottom:8px">
+        ${this._appIcon("deluge")}
+        <span class="col-hdr-title">Deluge</span>
+        <div class="col-hdr-line"></div>
+        <div class="sort-btns">
+          <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" data-client="deluge" title="${this._t("sortByProgress")}">
+            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
+          </button>
+          <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" data-client="deluge" title="${this._t("sortBySpeed")}">
+            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
+          </button>
+        </div>
+        ${this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+             </button>`}
+      </div>
+      ${items}
+    </div>`;
+  }
+  _renderDelugeTorrentItem(t) {
+    const pct = Math.round(t.progress || 0);
+    const dlSpd = this.fmtSpeed(t.download_payload_rate || 0);
+    const upSpd = this.fmtSpeed(t.upload_payload_rate || 0);
+    const etaRaw = t.eta;
+    const eta = etaRaw && etaRaw > 0 && etaRaw < 86400 * 365 ? this.fmtEta(etaRaw) : "\u2014";
+    const total = this.fmtSize(t.total_size || 0);
+    const done = this.fmtSize(t.total_done || 0);
+    const seeds = t.num_seeds || 0;
+    const peers = t.num_peers || 0;
+    const name = this._escHtml(t.name || "Unknown");
+    const hash = t.hash || "";
+    const state = (t.state || "").toLowerCase();
+    const isCompleted = pct >= 100;
+    const isPaused = state === "paused";
+    const isSeeding = state === "seeding";
+    const isError = state === "error";
+    const isChecking = state === "checking";
+    let speedCol = "";
+    if (isSeeding) {
+      speedCol = this._pill("pill-teal", "mdi:upload", upSpd);
+    } else if (isCompleted) {
+      speedCol = this._pill("pill-green", "mdi:check-circle", this._t("complete"));
+    } else if (isError) {
+      speedCol = this._pill("pill-red", "mdi:alert-circle", this._t("errorState"));
+    } else if (isPaused) {
+      speedCol = this._pill("pill-orange", "mdi:pause-circle", this._t("paused"));
+    } else {
+      speedCol = this._pill("pill-green", "mdi:download", dlSpd);
+    }
+    const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    let actionBtns = "";
+    if (this._delugeItemBusy === hash) {
+      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+    } else if (this._delugeConfirm === hash) {
+      actionBtns = `
+      <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    } else {
+      if (!isCompleted && isPaused)
+        actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (!isCompleted && !isPaused && !isError)
+        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (isSeeding)
+        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    }
+    return `
+    <div class="dl">
+      <div class="dl-r1">
+        <span class="dl-name" title="${name}">${name}</span>
+        <span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>
+        <div class="tb-group">${actionBtns}</div>
+      </div>
+      <div class="dl-r2">
+        ${speedCol}
+        ${!isCompleted && !isError && !isPaused ? this._pill("pill-teal", "mdi:upload", upSpd) : ""}
+        ${isSeeding ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${done} / ${total}</b></span>
+        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
+        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
+      </div>
+      <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
   _renderSab() {
     if (!this._sabConfigured) return "";
     const sabKbps = parseFloat(this._sab.kbpersec) || 0;
     const speedStr = this.fmtSpeed(sabKbps * 1024);
     const sabPaused = this._sab.status === "Paused";
     const allSlots = this._getPageData("sab");
-    const items = this._pagedList(allSlots, "sab", (s) => this._renderSabItem(s), this._perPage("sab"));
+    const items = this._pagedList(allSlots, "sab", (s) => this._renderSabItem(s), this._perPage("sab"), "dc-section-card");
     return `
-    <div class="sec-card">
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${allSlots.length >= this._perPage("sab") ? this._sectionOverlayHtml("sab", 15, 85, 0.23) : this._sectionOverlayHtml("sab", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         <div style="position:relative;flex-shrink:0;display:inline-flex;width:26px;height:26px">
           ${this._appIcon("sab")}
@@ -6460,6 +6895,119 @@ var _RenderLeft = class {
     </div>`;
   }
   // ─────────────────────────────────────────────
+  // NZBGet
+  // ─────────────────────────────────────────────
+  _renderNzbget() {
+    if (!this._nzbgetConfigured) return "";
+    const speedBps = this._nzbget?.DownloadRate || 0;
+    const speedStr = this.fmtSpeed(speedBps);
+    const paused = !!this._nzbget?.DownloadPaused;
+    const allSlots = this._getPageData("nzbget");
+    const items = this._pagedList(allSlots, "nzbget", (s) => this._renderNzbgetItem(s), this._perPage("nzbget"), "dc-section-card");
+    return `
+    <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+      ${allSlots.length >= this._perPage("nzbget") ? this._sectionOverlayHtml("nzbget", 15, 85, 0.23) : this._sectionOverlayHtml("nzbget", 15, 85, 0.23, 55, 20)}
+      <div class="col-hdr" style="margin-bottom:8px">
+        ${this._appIcon("nzbget")}
+        <span class="col-hdr-title">NZBGet</span>
+        <div class="col-hdr-line"></div>
+        ${this._nzbgetBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn nzbget-global-toggle${paused ? " paused" : ""}" title="${paused ? this._t("resumeNzbget") : this._t("pauseNzbget")}">
+               <ha-icon icon="${paused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+             </button>`}
+      </div>
+      ${items}
+      ${this._renderNzbgetFailed()}
+    </div>`;
+  }
+  _renderNzbgetFailed() {
+    if (!this._nzbgetFailed || this._nzbgetFailed.length === 0) return "";
+    const rows = this._nzbgetFailed.map((s) => {
+      const name = this._escHtml(s.NZBName || "Unknown");
+      const isRetrying = this._nzbgetRetryBusy === s.NZBID;
+      const isDeleting = this._nzbgetItemBusy === s.NZBID;
+      const isBusy = isRetrying || isDeleting;
+      const btns = isBusy ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : `<button class="tb tb-retry"    data-nzbget-action="retry"       data-nzbid="${s.NZBID}" title="${this._t("retry")}"><ha-icon icon="mdi:refresh" style="--mdc-icon-size:14px"></ha-icon></button>
+         <button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${s.NZBID}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>`;
+      return `
+      <div class="dl dl-failed">
+        <div class="dl-r1">
+          <ha-icon icon="mdi:alert-circle-outline" style="--mdc-icon-size:13px;color:rgba(255,69,58,0.85);flex-shrink:0;margin-right:3px"></ha-icon>
+          <span class="dl-name" title="${name}" style="color:rgba(255,120,110,0.90)">${name}</span>
+          <div style="display:flex;gap:3px;flex-shrink:0">${btns}</div>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="sab-failed-sep"></div>${rows}`;
+  }
+  _renderNzbgetItem(s) {
+    const isHistory = !!s._history;
+    const name = this._escHtml(s.NZBName || "Unknown");
+    const totalMB = s.FileSizeMB || 0;
+    const remMB = isHistory ? 0 : s.RemainingSizeMB || 0;
+    const doneMB = totalMB - remMB;
+    const pct = totalMB > 0 ? Math.max(0, Math.min(100, Math.round(doneMB / totalMB * 100))) : isHistory ? 100 : 0;
+    const totalStr = this.fmtSize(totalMB * 1024 * 1024);
+    const doneStr = this.fmtSize(doneMB * 1024 * 1024);
+    const status = s.Status || "";
+    const nzbId = s.NZBID;
+    const NZBGET_STATUS_PILLS = {
+      QUEUED: { cls: "pill-gray", icon: "mdi:clock-outline", label: "Queued" },
+      PAUSED: { cls: "pill-orange", icon: "mdi:pause", label: "Paused" },
+      PP_QUEUED: { cls: "pill-gray", icon: "mdi:clock-outline", label: "PP Queued" },
+      LOADING_PARS: { cls: "pill-teal", icon: "mdi:magnify", label: "Loading Pars" },
+      VERIFYING_SOURCE: { cls: "pill-teal", icon: "mdi:shield-check", label: "Verifying" },
+      VERIFYING_REPAIRED: { cls: "pill-teal", icon: "mdi:shield-check", label: "Verified" },
+      REPAIRING: { cls: "pill-teal", icon: "mdi:wrench-outline", label: "Repairing" },
+      UNPACKING: { cls: "pill-teal", icon: "mdi:archive-outline", label: "Unpacking" },
+      MOVING: { cls: "pill-teal", icon: "mdi:folder-move", label: "Moving" },
+      EXECUTING_SCRIPT: { cls: "pill-teal", icon: "mdi:script-outline", label: "Script" },
+      FAILURE: { cls: "pill-red", icon: "mdi:alert-circle", label: "Failed" },
+      SUCCESS: { cls: "pill-green", icon: "mdi:check-circle", label: "Completed" },
+      DELETED: { cls: "pill-gray", icon: "mdi:delete-outline", label: "Deleted" }
+    };
+    const isDownloading = status === "DOWNLOADING" && !this._nzbget?.DownloadPaused;
+    const globalPaused = !!this._nzbget?.DownloadPaused;
+    let speedCol = "";
+    if (isDownloading) {
+      const bps = this._nzbget?.DownloadRate || 0;
+      speedCol = `<span class="dm"><b class="g"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px"></ha-icon> ${this.fmtSpeed(bps)}</b></span>`;
+    } else {
+      const pillStatus = isHistory ? status === "SUCCESS" ? "SUCCESS" : "FAILURE" : status === "DOWNLOADING" && globalPaused ? "PAUSED" : status;
+      const pill = NZBGET_STATUS_PILLS[pillStatus] || { cls: "pill-gray", icon: "mdi:dots-horizontal", label: pillStatus || "\u2014" };
+      speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
+    }
+    let actionBtns = "";
+    if (isHistory) {
+      const isDeleting = this._nzbgetItemBusy === nzbId;
+      actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    } else {
+      const isBusy = this._nzbgetItemBusy === nzbId;
+      if (isBusy) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._nzbgetConfirm === nzbId) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
+    }
+    const barCls = status === "FAILURE" ? "pf-red" : isHistory ? "pf-green" : ["LOADING_PARS", "VERIFYING_SOURCE", "VERIFYING_REPAIRED", "REPAIRING", "UNPACKING", "MOVING", "EXECUTING_SCRIPT"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange";
+    return `
+    <div class="dl">
+      <div class="dl-r1">
+        <span class="dl-name" title="${name}">${name}</span>
+        <span class="dl-pct">${pct}%</span>
+        <div class="tb-group">${actionBtns}</div>
+      </div>
+      <div class="dl-r2">
+        ${speedCol}
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneStr} / ${totalStr}</b></span>
+      </div>
+      <div class="pbar"><div class="pbar-fill ${barCls}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  // ─────────────────────────────────────────────
   // Right column
   // ─────────────────────────────────────────────
   _renderPendingRequests() {
@@ -6499,6 +7047,110 @@ var _RenderLeft = class {
         </div>
         <div style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${title}">${title}</div>
       </div>
+    </div>`;
+  }
+  _renderRtorrent() {
+    if (!this._rtorrentConfigured) return "";
+    const status = this._rtorrentStatus || {};
+    const torrents = Array.isArray(this._rtorrentQueue) ? [...this._rtorrentQueue] : [];
+    const [sortField, sortDir] = this._sortRtorrent.split("_");
+    torrents.sort((a, b) => {
+      const av = sortField === "speed" ? a.download_payload_rate || 0 : a.progress || 0;
+      const bv = sortField === "speed" ? b.download_payload_rate || 0 : b.progress || 0;
+      return sortDir === "desc" ? bv - av : av - bv;
+    });
+    const progressActive = sortField === "progress";
+    const speedActive = sortField === "speed";
+    const dir = sortDir === "desc" ? "\u2193" : "\u2191";
+    const allPaused = torrents.length > 0 && torrents.every((t) => (t.state || "").toLowerCase() === "paused");
+    const items = this._pagedList(torrents, "rtorrent", (t) => this._renderRtorrentItem(t), this._perPage("rtorrent"), "dc-section-card");
+    return `
+  <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+    ${torrents.length >= this._perPage("rtorrent") ? this._sectionOverlayHtml("rtorrent", 15, 85, 0.23) : this._sectionOverlayHtml("rtorrent", 15, 85, 0.23, 55, 20)}
+    <div class="col-hdr" style="margin-bottom:8px">
+      ${this._appIcon("rtorrent")}
+      <span class="col-hdr-title">rTorrent</span>
+      <div class="col-hdr-line"></div>
+      <div class="sort-btns">
+        <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" data-client="rtorrent" title="${this._t("sortByProgress")}">
+          <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
+        </button>
+        <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" data-client="rtorrent" title="${this._t("sortBySpeed")}">
+          <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
+        </button>
+      </div>
+      ${this._rtorrentBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn rtorrent-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+             <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+           </button>`}
+    </div>
+    ${items}
+  </div>`;
+  }
+  _renderRtorrentItem(t) {
+    const pct = Math.round(t.progress || 0);
+    const dlSpeed = this.fmtSpeed(t.download_payload_rate || 0);
+    const upSpeed = this.fmtSpeed(t.upload_payload_rate || 0);
+    const eta = this.fmtEta(t.eta);
+    const completed = this.fmtSize(t.total_done || 0);
+    const total = this.fmtSize(t.total_size || 0);
+    const seeds = t.num_seeds || 0;
+    const peers = t.num_peers || 0;
+    const name = this._escHtml(t.name || "Unknown");
+    const hash = t.hash || "";
+    const state = (t.state || "").toLowerCase();
+    const isCompleted = pct >= 100;
+    const isPaused = state === "paused";
+    const isSeeding = state === "seeding";
+    const isError = state === "error";
+    const isChecking = state === "checking";
+    let speedCol = "";
+    if (isSeeding) {
+      speedCol = this._pill("pill-teal", "mdi:upload", upSpeed);
+    } else if (isCompleted) {
+      speedCol = this._pill("pill-green", "mdi:check-circle", this._t("complete"));
+    } else if (isError) {
+      speedCol = this._pill("pill-red", "mdi:alert-circle", t.message || this._t("errorState"));
+    } else if (isPaused) {
+      speedCol = this._pill("pill-orange", "mdi:pause-circle", this._t("paused"));
+    } else if (isChecking) {
+      speedCol = this._pill("pill-orange", "mdi:sync", "Checking");
+    } else {
+      speedCol = this._pill("pill-green", "mdi:download", dlSpeed);
+    }
+    const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    let actionBtns = "";
+    if (this._rtorrentItemBusy === hash) {
+      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+    } else if (this._rtorrentConfirm === hash) {
+      actionBtns = `
+      <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+      <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    } else {
+      if (!isCompleted && isPaused)
+        actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (!isCompleted && !isPaused && !isError)
+        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      if (isSeeding)
+        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    }
+    return `
+    <div class="dl">
+      <div class="dl-r1">
+        <span class="dl-name" title="${name}">${name}</span>
+        <span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>
+        <div class="tb-group">${actionBtns}</div>
+      </div>
+      <div class="dl-r2">
+        ${speedCol}
+        ${!isCompleted && !isError && !isPaused && !isChecking ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
+        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
+        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
+        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
+      </div>
+      <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
   }
 };
@@ -6659,9 +7311,9 @@ var _RenderRight = class {
           actionBtn = withdrawBtn;
         }
       } else if (isMovie) {
-        actionBtn = `<button class="btn-add req-open" data-movieid="${tmdbId}" data-tmdb="${tmdbId}" data-reqkey="${searchReqKey}">${this._t("add")}</button>`;
+        actionBtn = `<button class="btn-add req-open" data-movieid="${tmdbId}" data-tmdb="${tmdbId}" data-reqkey="${searchReqKey}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
       } else {
-        actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}" data-source="search">${this._t("add")}</button>`;
+        actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}" data-source="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
       }
       let statusBadge = "";
       if (_isAvail) {
@@ -8089,6 +8741,17 @@ var _ThemeMethods = class {
     if (mbb) rules.push(`.popup-overlay .is-open-btn:not(.remove-lib-btn):not(.remove-disc-btn) { background: rgba(${mbb}, 0.20) !important; border-color: rgba(${mbb}, 0.40) !important; }`);
     const mrb = c("modalRemoveButtonBackgroundColor");
     if (mrb) rules.push(`.popup-overlay .is-open-btn[data-action="remove-confirm"] { background: rgba(${mrb}, 0.20) !important; border-color: rgba(${mrb}, 0.40) !important; }`);
+    const uiScale = parseFloat(cfg["uiScale"]);
+    if (uiScale && uiScale !== 1 && !isNaN(uiScale)) {
+      rules.push(`@media (min-width: 601px) { .card-body { zoom: ${uiScale}; } }`);
+    }
+    const leftPct = parseFloat(cfg["leftPanelWidth"]);
+    if (!isNaN(leftPct) && leftPct > 0 && leftPct !== 40) {
+      const l = Math.round(leftPct);
+      const r = 100 - l;
+      rules.push(`@media (min-width: 601px) { .card-body { grid-template-columns: ${l}fr ${r}fr !important; } }`);
+      rules.push(`@media (min-width: 601px) { .card-body.swap-sides { grid-template-columns: ${r}fr ${l}fr !important; } }`);
+    }
     let el = this.shadowRoot.getElementById("arr-theme");
     if (!el) {
       el = document.createElement("style");
@@ -8120,6 +8783,52 @@ var _WireMethods = class {
       await this._fetchQbit();
       this._qbitBusy = false;
       this._qbitItemBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  // ─────────────────────────────────────────────
+  // Deluge action API
+  // ─────────────────────────────────────────────
+  async _delugeAction(hash, action, deleteFiles = false) {
+    const isGlobal = action === "pauseAll" || action === "resumeAll";
+    if (isGlobal) {
+      this._delugeBusy = true;
+    } else {
+      this._delugeItemBusy = hash;
+    }
+    this._reRenderLeft();
+    try {
+      await this._hass.callApi("POST", "arr_stack/deluge/action", { action, hash, deleteFiles });
+    } catch (e) {
+      console.error("[arr-card] Deluge action error:", e);
+    } finally {
+      this._delugeConfirm = null;
+      await new Promise((r) => setTimeout(r, 2e3));
+      await this._fetchDeluge();
+      this._delugeBusy = false;
+      this._delugeItemBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  async _rtorrentAction(hash, action, deleteFiles = false) {
+    const isGlobal = action === "pauseAll" || action === "resumeAll";
+    if (isGlobal) {
+      this._rtorrentBusy = true;
+    } else {
+      this._rtorrentItemBusy = hash;
+    }
+    this._reRenderLeft();
+    try {
+      const mode = isGlobal ? action === "pauseAll" ? "global_pause" : "global_resume" : deleteFiles ? "delete_files" : action === "delete" ? "delete" : action;
+      await this._hass.callApi("POST", "arr_stack/rtorrent/action", { action: mode, id: hash });
+    } catch (e) {
+      console.error("[arr-card] rTorrent action error:", e);
+    } finally {
+      this._rtorrentConfirm = null;
+      await new Promise((r) => setTimeout(r, 2e3));
+      await this._fetchRtorrent();
+      this._rtorrentBusy = false;
+      this._rtorrentItemBusy = null;
       this._reRenderLeft();
     }
   }
@@ -8202,6 +8911,91 @@ var _WireMethods = class {
         }
       });
     });
+    const nzbgetToggle = this.shadowRoot.querySelector(".nzbget-global-toggle");
+    if (nzbgetToggle) {
+      nzbgetToggle.addEventListener("click", () => {
+        const paused = nzbgetToggle.classList.contains("paused");
+        this._nzbgetAction(paused ? "resume" : "pause");
+      });
+    }
+    this.shadowRoot.querySelectorAll("[data-nzbget-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.nzbgetAction;
+        const nzbId = parseInt(btn.dataset.nzbid, 10);
+        if (!nzbId) return;
+        if (action === "confirm") {
+          this._nzbgetConfirm = nzbId;
+          this._reRenderLeft();
+        } else if (action === "cancel") {
+          this._nzbgetConfirm = null;
+          this._reRenderLeft();
+        } else if (action === "item-delete") {
+          this._nzbgetConfirm = null;
+          this._nzbgetItemDelete(nzbId);
+        } else if (action === "retry") {
+          this._nzbgetRetry(nzbId);
+        }
+      });
+    });
+    const delugeToggle = this.shadowRoot.querySelector(".deluge-global-toggle");
+    if (delugeToggle) {
+      delugeToggle.addEventListener("click", () => {
+        const paused = delugeToggle.classList.contains("paused");
+        this._delugeAction(null, paused ? "resumeAll" : "pauseAll");
+      });
+    }
+    this.shadowRoot.querySelectorAll("[data-dlg-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.dlgAction;
+        const hash = btn.dataset.dlgHash || "";
+        if (action === "pause") {
+          this._delugeAction(hash, "pause");
+        } else if (action === "resume") {
+          this._delugeAction(hash, "resume");
+        } else if (action === "remove-confirm") {
+          this._delugeConfirm = hash;
+          this._reRenderLeft();
+        } else if (action === "cancel-remove") {
+          this._delugeConfirm = null;
+          this._reRenderLeft();
+        } else if (action === "remove-keep") {
+          this._delugeAction(hash, "delete", false);
+        } else if (action === "remove-del") {
+          this._delugeAction(hash, "delete", true);
+        }
+      });
+    });
+    const rtorrentToggle = this.shadowRoot.querySelector(".rtorrent-global-toggle");
+    if (rtorrentToggle) {
+      rtorrentToggle.addEventListener("click", () => {
+        const paused = rtorrentToggle.classList.contains("paused");
+        this._rtorrentAction(null, paused ? "resumeAll" : "pauseAll");
+      });
+    }
+    this.shadowRoot.querySelectorAll("[data-rt-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.rtAction;
+        const hash = btn.dataset.rtHash || "";
+        if (action === "pause") {
+          this._rtorrentAction(hash, "pause");
+        } else if (action === "resume") {
+          this._rtorrentAction(hash, "resume");
+        } else if (action === "remove-confirm") {
+          this._rtorrentConfirm = hash;
+          this._reRenderLeft();
+        } else if (action === "cancel-remove") {
+          this._rtorrentConfirm = null;
+          this._reRenderLeft();
+        } else if (action === "remove-keep") {
+          this._rtorrentAction(hash, "delete", false);
+        } else if (action === "remove-del") {
+          this._rtorrentAction(hash, "delete", true);
+        }
+      });
+    });
     this.shadowRoot.querySelectorAll("[data-tb-action]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -8232,8 +9026,17 @@ var _WireMethods = class {
     const btns = this.shadowRoot.querySelectorAll(".sort-btns .sb");
     btns.forEach((btn) => {
       btn.addEventListener("click", () => {
-        this._sort = btn.dataset.sort || "progress_desc";
-        this._pages.qbit = 0;
+        const val = btn.dataset.sort || "progress_desc";
+        if (btn.dataset.client === "deluge") {
+          this._sortDeluge = val;
+          this._pages.deluge = 0;
+        } else if (btn.dataset.client === "rtorrent") {
+          this._sortRtorrent = val;
+          this._pages.rtorrent = 0;
+        } else {
+          this._sort = val;
+          this._pages.qbit = 0;
+        }
         this._render();
       });
     });
@@ -10844,7 +11647,40 @@ var _PopupMethods = class {
       this._plexCastBtnRect = null;
     };
     if (overlay) {
-      overlay.addEventListener("click", () => {
+      overlay.addEventListener("click", (e) => {
+        const playBtn = e.target.closest('[data-action="plex-cast-play"]');
+        if (playBtn) {
+          const castEntity = playBtn.dataset.entity;
+          const dd = this._popup;
+          if (!castEntity || !dd) return;
+          const _isMovT = dd._type === "radarr" || dd._type === "movie";
+          const tmdbId = dd.id || dd.tmdbId || (dd._radarrId ? (this._radarr || []).find((m) => m.id === dd._radarrId)?.tmdbId : null) || (dd._radarr2Id ? (this._radarr2 || []).find((m) => m.id === dd._radarr2Id)?.tmdbId : null);
+          const tvdbId = dd.externalIds?.tvdbId || dd._sonarrSeries?.tvdbId || dd._sonarr2Series?.tvdbId;
+          this._plexCasting = castEntity;
+          this._plexCastOpen = false;
+          this._renderPopupEl();
+          (async () => {
+            try {
+              const lookupParam = _isMovT ? `tmdbId=${tmdbId}` : `tvdbId=${tvdbId}`;
+              const lookup = await this._callApi("GET", `arr_stack/plex/lookup?${lookupParam}`);
+              if (!lookup?.plex_key) throw new Error("Plex item not found");
+              const contentId = {};
+              if (lookup.library) contentId.library_name = lookup.library;
+              if (lookup.title) contentId.title = lookup.title;
+              await this._hass.callService("media_player", "play_media", {
+                entity_id: castEntity,
+                media_content_type: "plex",
+                media_content_id: JSON.stringify(contentId)
+              });
+            } catch (err) {
+              console.warn("[arr-card] Plex cast error:", err);
+            }
+            this._plexCasting = null;
+            this._renderPopupEl();
+          })();
+          return;
+        }
+        if (e.target.closest(".plex-cast-dropdown")) return;
         _resetPopupTransient();
         this._popup = null;
         this._renderPopupEl();
@@ -10860,11 +11696,6 @@ var _PopupMethods = class {
     }
     if (glass) glass.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (this._plexCastOpen && !e.target.closest('[data-action^="plex-cast"]')) {
-        this._plexCastOpen = false;
-        this._renderPopupEl();
-        return;
-      }
       const t = e.target.closest("[data-action],[data-isfil],[data-snisfilter],[data-issort],[data-snissort],[data-grab],[data-sngrab],[data-guid],[data-sn-spage],[data-is-page]");
       if (!t) return;
       const _closeAS = () => {
@@ -10888,50 +11719,17 @@ var _PopupMethods = class {
         this._removeConfirm = false;
       };
       if (t.dataset.action === "plex-cast-open") {
+        if (this._plexCastOpen) {
+          this._plexCastOpen = false;
+          this._renderPopupEl();
+          return;
+        }
         this._plexCastOpen = true;
         this._plexClients = null;
         const rect = t.getBoundingClientRect();
-        this._plexCastBtnRect = { top: rect.top, left: rect.left };
+        this._plexCastBtnRect = { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
         this._renderPopupEl();
         this._fetchPlexClients();
-        return;
-      }
-      if (t.dataset.action === "plex-cast-close") {
-        this._plexCastOpen = false;
-        this._renderPopupEl();
-        return;
-      }
-      if (t.dataset.action === "plex-cast-play") {
-        const castEntity = t.dataset.entity;
-        const dd = this._popup;
-        if (!castEntity || !dd) return;
-        const _isMovT = dd._type === "radarr" || dd._type === "movie";
-        const tmdbId = dd.id || dd.tmdbId || (dd._radarrId ? (this._radarr || []).find((m) => m.id === dd._radarrId)?.tmdbId : null) || (dd._radarr2Id ? (this._radarr2 || []).find((m) => m.id === dd._radarr2Id)?.tmdbId : null);
-        const tvdbId = dd.externalIds?.tvdbId || dd._sonarrSeries?.tvdbId || dd._sonarr2Series?.tvdbId;
-        this._plexCasting = castEntity;
-        this._plexCastOpen = false;
-        this._renderPopupEl();
-        (async () => {
-          try {
-            const lookupParam = _isMovT ? `tmdbId=${tmdbId}` : `tvdbId=${tvdbId}`;
-            const lookup = await this._callApi("GET", `arr_stack/plex/lookup?${lookupParam}`);
-            console.log("[arr-card] plex lookup result:", JSON.stringify(lookup));
-            if (!lookup?.plex_key) throw new Error("Plex item not found");
-            const contentId = {};
-            if (lookup.library) contentId.library_name = lookup.library;
-            if (lookup.title) contentId.title = lookup.title;
-            console.log("[arr-card] plex play_media content_id:", JSON.stringify(contentId));
-            await this._hass.callService("media_player", "play_media", {
-              entity_id: castEntity,
-              media_content_type: "plex",
-              media_content_id: JSON.stringify(contentId)
-            });
-          } catch (e2) {
-            console.warn("[arr-card] Plex cast error:", e2);
-          }
-          this._plexCasting = null;
-          this._renderPopupEl();
-        })();
         return;
       }
       if (t.dataset.action === "search-expand") {
@@ -11885,7 +12683,10 @@ var _PopupMethods = class {
           <div class="popup-content"${searchActive ? ' style="padding-top:52px"' : ""}>
             ${posterHtmlFinal}
             <div class="popup-meta">
-              <h2 class="popup-title">${title}</h2>
+              <div style="display:flex;align-items:flex-start;gap:8px;margin:0 0 5px">
+                <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${title}</h2>
+                ${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}
+              </div>
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
               ${instanceStatusHtml}
               ${singleDlTag}
@@ -11896,7 +12697,6 @@ var _PopupMethods = class {
                 ${searchBtnHtml}
                 ${removeBtn}
                 ${terminateActionBtn}
-                ${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}
               </div>
             </div>
           </div>
@@ -11906,6 +12706,7 @@ var _PopupMethods = class {
           ${snIsActive ? this._renderSonarrIsSection() : ""}
         </div>
       </div>
+      ${this._renderPlexCastDropdown()}
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -12089,7 +12890,7 @@ var _PopupMethods = class {
   async _fetchPlexClients() {
     const states = this._hass?.states || {};
     const online = /* @__PURE__ */ new Set(["playing", "paused", "idle", "standby", "on"]);
-    const allPlayers = Object.entries(states).filter(([id, s]) => id.startsWith("media_player.") && s.state !== "unavailable").map(([id, s]) => ({ entityId: id, name: s.attributes?.friendly_name || id }));
+    const allPlayers = Object.entries(states).filter(([id, s]) => id.startsWith("media_player.plex_") && s.state !== "unavailable").map(([id, s]) => ({ entityId: id, name: s.attributes?.friendly_name || id }));
     try {
       const raw = await this._callApi("GET", "arr_stack/plex/clients");
       const mc = raw?.MediaContainer || raw || {};
@@ -12124,32 +12925,40 @@ var _PopupMethods = class {
     if (!inLib) return "";
     const castSvg = `<svg viewBox="0 0 24 24" width="14" height="14" style="display:block"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3m0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7m0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10m20-7H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>`;
     const spinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
-    const _circleStyle = `width:28px!important;padding:0!important;border-radius:50%!important;display:grid!important;place-items:center!important;gap:0!important`;
+    const _btnCommon = `flex-shrink:0;width:36px;height:36px;padding:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:background 0.15s,color 0.15s,border-color 0.15s`;
+    const btnBase = `${_btnCommon};border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-btn-clr)`;
+    const btnActive = `${_btnCommon};border:1px solid var(--is-btn-abdr);background:var(--is-btn-abg);color:var(--is-btn-aclr)`;
     if (this._plexCasting) {
-      return `<div class="is-btn-row"><button class="is-open-btn" disabled style="${_circleStyle}">${spinner}</button></div>`;
+      return `<button disabled style="${btnBase};opacity:0.6">${spinner}</button>`;
     }
-    if (this._plexCastOpen) {
-      let dropContent;
-      if (this._plexClients === null) {
-        dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:8px">${spinner} Loading\u2026</div>`;
-      } else if (!this._plexClients.length) {
-        dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.45)">No devices found</div>`;
-      } else {
-        dropContent = this._plexClients.map(
-          (p) => `<button data-action="plex-cast-play" data-entity="${this._escHtml(p.entityId)}"
-          style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;padding:7px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);cursor:pointer;text-align:left;border-radius:6px;transition:background 0.12s"
-          onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"
-        >${castSvg}${this._escHtml(p.name)}</button>`
-        ).join("");
-      }
-      return `<div class="is-btn-row" style="position:relative">
-      <button class="is-open-btn active" data-action="plex-cast-close" style="${_circleStyle}">${castSvg}</button>
-      <div style="position:absolute;bottom:calc(100% + 4px);left:0;z-index:9999;background:rgba(18,18,28,0.97);border:1px solid rgba(255,255,255,0.12);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.5);min-width:180px;max-height:220px;overflow-y:auto;padding:4px;display:flex;flex-direction:column">
-        ${dropContent}
-      </div>
-    </div>`;
+    const btnStyle = this._plexCastOpen ? btnActive : btnBase;
+    return `<button data-action="plex-cast-open" style="${btnStyle}">${castSvg}</button>`;
+  }
+  _renderPlexCastDropdown() {
+    if (!this._plexCastOpen) return "";
+    const r = this._plexCastBtnRect;
+    if (!r) return "";
+    const castSvg = `<svg viewBox="0 0 24 24" width="12" height="12" style="display:block;flex-shrink:0"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3m0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7m0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10m20-7H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>`;
+    const spinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    let dropContent;
+    if (this._plexClients === null) {
+      dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:8px">${spinner} Loading\u2026</div>`;
+    } else if (!this._plexClients.length) {
+      dropContent = `<div style="padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.45)">No devices found</div>`;
+    } else {
+      dropContent = this._plexClients.map(
+        (p) => `<button data-action="plex-cast-play" data-entity="${this._escHtml(p.entityId)}"
+        style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;padding:7px 12px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);cursor:pointer;text-align:left;border-radius:6px;transition:background 0.12s"
+        onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"
+      >${castSvg}${this._escHtml(p.name)}</button>`
+      ).join("");
     }
-    return `<div class="is-btn-row"><button class="is-open-btn" data-action="plex-cast-open" style="${_circleStyle}">${castSvg}</button></div>`;
+    const dropW = 190, dropH = 220, gap = 8;
+    const leftPx = Math.max(8, Math.round(r.left - gap - dropW));
+    const topPx = Math.max(8, Math.min(Math.round(r.top), window.innerHeight - dropH - 8));
+    return `<div class="plex-cast-dropdown" style="position:absolute;left:${leftPx}px;top:${topPx}px;z-index:9999;background:rgba(18,18,28,0.97);border:1px solid rgba(255,255,255,0.12);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.5);min-width:${dropW}px;max-height:${dropH}px;overflow-y:auto;padding:4px;display:flex;flex-direction:column">
+    ${dropContent}
+  </div>`;
   }
 };
 var popupMixin = _PopupMethods.prototype;
@@ -12793,7 +13602,7 @@ var _TautulliMethods = class {
     const showWarn = data.sharingDetected && !data.sharingAcked;
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("tautulli", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("tautulli", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           ${this._appIcon("tautulli", 24)}
           <span class="col-hdr-title">${this._t("tlStatisticsPlex")}</span>
@@ -14022,7 +14831,7 @@ var _JellystatMethods = class {
     const data = this._jellystat || {};
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("jellystat", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("jellystat", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           ${this._appIcon("jellystat", 24)}
           <span class="col-hdr-title">Statistics (Jellyfin)</span>
@@ -14376,7 +15185,7 @@ var _ActivityRenderMethods = class {
     const totalActive = rItems.filter((x) => !x.failed).length + r2Items.filter((x) => !x.failed).length + snPct.size + sn2Pct.size;
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("radarr", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("radarr", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
             ${this._appIcon("radarr", 24)}
@@ -17220,7 +18029,7 @@ var _ProwlarrRenderMethods = class {
   _renderProwlarr() {
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml("prowlarr", 25, 75, 0.4)}
+        ${this._sectionOverlayHtml("prowlarr", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
           ${this._appIcon("prowlarr", 24)}
           <span class="col-hdr-title">Prowlarr</span>
@@ -19538,6 +20347,8 @@ var ArrStackCard = class extends HTMLElement {
     this._initialized = false;
     this._pageBtnAbort = null;
     this._sort = "progress_desc";
+    this._sortDeluge = "progress_desc";
+    this._sortRtorrent = "progress_desc";
     this._radarr = [];
     this._radarrTotal = 0;
     this._radarr2 = [];
@@ -19574,6 +20385,27 @@ var ArrStackCard = class extends HTMLElement {
     this._capsLoaded = false;
     this._qbitConfigured = true;
     this._sabConfigured = true;
+    this._nzbgetConfigured = true;
+    this._nzbget = null;
+    this._nzbgetQueue = [];
+    this._nzbgetFailed = [];
+    this._nzbgetCompleted = [];
+    this._nzbgetBusy = false;
+    this._nzbgetItemBusy = null;
+    this._nzbgetConfirm = null;
+    this._nzbgetRetryBusy = null;
+    this._delugeConfigured = true;
+    this._deluge = null;
+    this._delugeQueue = [];
+    this._delugeBusy = false;
+    this._delugeItemBusy = null;
+    this._delugeConfirm = null;
+    this._rtorrentConfigured = null;
+    this._rtorrentStatus = {};
+    this._rtorrentQueue = [];
+    this._rtorrentBusy = false;
+    this._rtorrentItemBusy = null;
+    this._rtorrentConfirm = null;
     this._bazarrConfigured = true;
     this._tautulliConfigured = true;
     this._tautulli = null;
@@ -19689,7 +20521,7 @@ var ArrStackCard = class extends HTMLElement {
     this._searchActive = false;
     this._searchTimer = null;
     this._searchAbort = null;
-    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
+    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, rtorrent: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "", streams: "" };
     this._streamsTimer = null;
     this._streamPopupTimer = null;
@@ -19978,6 +20810,9 @@ var ArrStackCard = class extends HTMLElement {
   _perPage(section) {
     if (section === "qbit") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
     if (section === "sab") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
+    if (section === "nzbget") return parseInt(this._cfgGet("downloads", "usenetItems", 3)) || 3;
+    if (section === "deluge") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
+    if (section === "rtorrent") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
     return 4;
   }
   // Converts "#rrggbb" or "#rgb" to "r,g,b" string for use in rgba()
@@ -20061,6 +20896,9 @@ var ArrStackCard = class extends HTMLElement {
     const cdnSlugs = {
       qbit: "qbittorrent",
       sab: "sabnzbd",
+      nzbget: "nzbget",
+      deluge: "deluge",
+      rtorrent: "rutorrent",
       radarr: "radarr",
       sonarr: "sonarr",
       overseerr: "overseerr",
@@ -20073,8 +20911,6 @@ var ArrStackCard = class extends HTMLElement {
       jellystat: "jellystat"
     };
     const mdiIcons = {
-      qbit: "mdi:download-network",
-      sab: "mdi:email-arrow-down-outline",
       radarr: "mdi:filmstrip",
       sonarr: "mdi:television-play",
       overseerr: "mdi:movie-open-check-outline",
@@ -20086,11 +20922,21 @@ var ArrStackCard = class extends HTMLElement {
       prowlarr: "mdi:magnify-scan",
       jellystat: "mdi:chart-line"
     };
+    const customSvgs = {
+      qbit: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="9.5" font-weight="700" font-family="sans-serif">qb</text></svg>`,
+      sab: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M5 2h14v10h3L12 22 2 12h3V2z"/></svg>`,
+      deluge: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3l6 5h-4v5H10v-5H6l6-5z"/></svg>`,
+      rtorrent: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm-1 3v5.27l-3.5 2.02.99 1.71L12 14.15l3.51 2.02.99-1.71L13 12.27V7h-2z"/></svg>`,
+      nzbget: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><rect x="5" y="2" width="14" height="2" rx="0.5"/><rect x="5" y="5.5" width="14" height="2" rx="0.5"/><rect x="5" y="9" width="14" height="2" rx="0.5"/><path d="M5 12h14v4h3L12 22 2 16h3v-4z"/></svg>`
+    };
     if (useReal && cdnSlugs[app]) {
-      return `<img src="${CDN}/${cdnSlugs[app]}.svg" ${sz} style="flex-shrink:0;display:block;object-fit:contain" loading="lazy" onerror="this.style.visibility='hidden'">`;
+      return `<img src="${CDN}/${cdnSlugs[app]}.svg" ${sz} style="flex-shrink:0;display:block;object-fit:contain" onerror="this.style.display='none'">`;
+    }
+    if (customSvgs[app]) {
+      return customSvgs[app];
     }
     if (mdiIcons[app]) {
-      return `<ha-icon icon="${mdiIcons[app]}" style="--mdc-icon-size:${size}px"></ha-icon>`;
+      return `<ha-icon icon="${mdiIcons[app]}" style="--mdc-icon-size:${size}px;flex-shrink:0"></ha-icon>`;
     }
     return "";
   }
@@ -20110,8 +20956,11 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: `rgba(255,111,0,${o})`,
       jellystat: `rgba(0,164,220,${o})`,
       prowlarr: `rgba(255,80,0,${o})`,
-      qbit: `rgba(50,178,92,${o})`,
-      sab: `rgba(255,190,0,${o})`
+      qbit: `rgba(30,140,255,${o})`,
+      deluge: `rgba(10,80,220,${o})`,
+      rtorrent: `rgba(60,120,255,${o})`,
+      sab: `rgba(200,150,0,${o})`,
+      nzbget: `rgba(40,140,60,${o})`
     };
     return map[app] || `rgba(255,255,255,${o})`;
   }
@@ -20127,8 +20976,11 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: `rgba(255,255,255,${o})`,
       jellystat: `rgba(139,92,246,${o})`,
       prowlarr: `rgba(255,160,50,${o})`,
-      qbit: `rgba(30,140,70,${o})`,
-      sab: `rgba(200,150,0,${o})`
+      qbit: `rgba(10,80,220,${o})`,
+      deluge: `rgba(5,45,160,${o})`,
+      rtorrent: `rgba(140,60,240,${o})`,
+      sab: `rgba(170,125,0,${o})`,
+      nzbget: `rgba(30,120,50,${o})`
     };
     return map[app] || `rgba(255,255,255,${o})`;
   }
@@ -20138,9 +20990,9 @@ var ArrStackCard = class extends HTMLElement {
   get _categoryOverlaysEnabled() {
     return this._cfgGet("styles", "categoryOverlays", true) !== false;
   }
-  _sectionOverlayHtml(app, posL = 15, posR = 85, o = 0.4, bottomFade = 80) {
+  _sectionOverlayHtml(app, posL = 15, posR = 85, o = 0.4, bottomFade = 80, topFade = 6) {
     if (!this._categoryOverlaysEnabled) return "";
-    const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black ${bottomFade}%,transparent 100%)`;
+    const mask = `linear-gradient(to bottom,transparent 0.07%,black ${topFade}%,black ${bottomFade}%,transparent 100%)`;
     const gradL = `radial-gradient(circle at ${posL}% 15%,${this._brandColor(app, o)} 0%,transparent 48%)`;
     const gradR = `radial-gradient(circle at ${posR}% 15%,${this._brandColorSecondary(app, o)} 0%,transparent 48%)`;
     return `<div style="position:absolute;inset:0;background:${gradL},${gradR};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>`;
@@ -20189,6 +21041,20 @@ var ArrStackCard = class extends HTMLElement {
   // Returns the correct data array for a given section key
   _getPageData(section) {
     if (section === "qbit") return Array.isArray(this._qbit) ? this._qbit : [];
+    if (section === "deluge") return Array.isArray(this._delugeQueue) ? this._delugeQueue : [];
+    if (section === "rtorrent") return Array.isArray(this._rtorrentQueue) ? this._rtorrentQueue : [];
+    if (section === "nzbget") {
+      const queue = Array.isArray(this._nzbgetQueue) ? this._nzbgetQueue : [];
+      const completed = (this._nzbgetCompleted || []).map((s) => ({
+        NZBID: s.NZBID,
+        NZBName: s.NZBName || "Unknown",
+        FileSizeMB: s.FileSizeMB || 0,
+        RemainingSizeMB: 0,
+        Status: "SUCCESS",
+        _history: true
+      }));
+      return [...queue, ...completed];
+    }
     if (section === "sab") {
       const slots = Array.isArray(this._sab?.slots) ? this._sab.slots : [];
       const completed = (this._sabCompleted || []).map((s) => ({
@@ -20272,22 +21138,25 @@ var ArrStackCard = class extends HTMLElement {
     return [...finalMovies, ...finalShows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
   }
   // Paginated vertical list (for download items)
-  _pagedList(items, section, renderFn, perPage = 4) {
+  _pagedList(items, section, renderFn, perPage = 4, innerClass = "", overlayHtml = "") {
     if (!items || items.length === 0)
-      return `<div class="placeholder">${this._t("noDownloads")}</div>`;
+      return innerClass ? `<div class="${innerClass} dc-no-chev">${overlayHtml}<div class="placeholder">${this._t("noDownloads")}</div></div>` : `<div class="placeholder">${this._t("noDownloads")}</div>`;
     const page = this._pages[section] || 0;
     const totalPages = Math.ceil(items.length / perPage);
     const pageItems = items.slice(page * perPage, page * perPage + perPage);
     const dir = this._pageDir[section] || "";
     const animClass = dir === "next" ? "anim-next" : dir === "prev" ? "anim-prev" : "";
     const list = `<div class="dl-list ${animClass}">${pageItems.map((it) => renderFn(it)).join("")}</div>`;
-    if (totalPages <= 1) return list;
+    if (totalPages <= 1) {
+      return innerClass ? `<div class="${innerClass} dc-no-chev">${overlayHtml}${list}</div>` : list;
+    }
     const prevDis = page === 0 ? "disabled" : "";
     const nextDis = page >= totalPages - 1 ? "disabled" : "";
+    const inner = innerClass ? `<div class="${innerClass}" style="flex:1;min-width:0">${overlayHtml}${list}</div>` : list;
     return `
       <div class="pg-wrap">
         <button class="pg-btn" data-section="${section}" data-dir="prev" ${prevDis}>\u2039</button>
-        ${list}
+        ${inner}
         <button class="pg-btn" data-section="${section}" data-dir="next" ${nextDis}>\u203A</button>
       </div>`;
   }
