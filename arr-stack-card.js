@@ -1505,8 +1505,10 @@ var STYLES = `
       .dc-root-path { font-size: 10px; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 0.6); font-weight: 600; line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .disk-chip.dc-pageable { padding: 0; }
       .stream-badge { font-size: 9px; font-weight: 800; padding: 1px 4px; border-radius: 3px; letter-spacing: 0.04em; vertical-align: middle; }
-      .stream-badge-plex { background: rgba(229,160,13,0.25); color: rgba(229,160,13,1); border: 1px solid rgba(229,160,13,0.35); }
-      .stream-badge-jf   { background: rgba(0,164,220,0.25);  color: rgba(0,164,220,1);  border: 1px solid rgba(0,164,220,0.35); }
+      .stream-badge-plex { background: rgba(229,160,13,0.75); color: #fff; border: 1px solid rgba(229,160,13,0.35); }
+      .stream-badge-jf   { background: rgba(0,164,220,0.75);  color: #fff; border: 1px solid rgba(0,164,220,0.35); }
+      .stream-badge-emby { background: rgba(82,182,92,0.75);  color: #fff; border: 1px solid rgba(82,182,92,0.35); }
+      .stream-badge-kodi { background: rgba(23,154,215,0.75); color: #fff; border: 1px solid rgba(23,154,215,0.35); }
       .stream-prog-track { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.15); z-index: 2; }
       .stream-prog-fill  { height: 100%; background: rgba(229,160,13,0.9); border-radius: 0 1px 0 0; transition: width 0.5s linear; }
       .stream-paused img { filter: brightness(0.55) saturate(0.4); }
@@ -2688,6 +2690,85 @@ var STYLES = `
          POPUP \u2014 IS BUTTON + ADMIN BADGE
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
       .popup-title   { font-size: 18px; font-weight: 800; color: var(--is-text); margin: 0 0 5px; line-height: 1.2; }
+      .popup-mon-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        padding: 0; margin-left: 7px; vertical-align: -1px;
+        border: none; background: transparent;
+        color: var(--is-text); cursor: pointer; opacity: 0.85;
+        transition: opacity 0.12s;
+      }
+      .popup-mon-btn:hover  { opacity: 1; }
+      .popup-mon-btn.active { opacity: 1; }
+      .popup-mon-row { display: flex; gap: 6px; margin: 0 0 8px; }
+      .popup-subrow  { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+      .popup-subrow .popup-sub { margin-bottom: 0; }
+      .popup-ratings { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+      .popup-backdrop--cast {
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.04);
+      }
+      .popup-cast-fab-anchor {
+        position: absolute;
+        bottom: 0;
+        left: 16px;
+        width: 90px;
+        z-index: 6;
+      }
+      .popup-cast-fab {
+        display: flex; align-items: center; justify-content: center; gap: 5px;
+        width: 100%; box-sizing: border-box;
+        padding: 5px 0; border-radius: 10px 10px 0 0;
+        border: none;
+        background: rgba(0,0,0,0.45);
+        color: #fff; font-size: 11px; font-weight: 700; cursor: pointer;
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        transition: background 0.12s;
+      }
+      .popup-cast-fab:hover  { background: rgba(0,0,0,0.65); }
+      .popup-cast-fab.active { background: rgba(10,132,255,0.55); }
+      .popup-cast-panel {
+        display: flex; flex-direction: column; gap: 4px;
+        width: 100%; height: 100%;
+        justify-content: flex-end;
+        padding: 10px 16px 10px;
+        box-sizing: border-box;
+      }
+      @media (max-width: 600px) {
+        .popup-cast-panel { justify-content: center; padding: 10px 16px 26px; }
+      }
+      .popup-cast-grid {
+        display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+      }
+      @media (max-width: 600px) {
+        .popup-cast-grid { grid-template-columns: repeat(3, 1fr); }
+      }
+      .popup-cast-item { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; min-width: 0; }
+      .popup-cast-item img, .popup-cast-ph {
+        width: 92px; height: 92px;
+        border-radius: 50%; object-fit: cover;
+        border: 1px solid rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.18);
+      }
+      @media (max-width: 600px) {
+        .popup-cast-item img, .popup-cast-ph { width: 56px; height: 56px; }
+      }
+      .popup-cast-ph {
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.08);
+        font-size: 20px; font-weight: 800; color: var(--is-text-sec);
+      }
+      .popup-cast-name { font-size: 11px; font-weight: 700; color: var(--is-text); line-height: 1.2; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .popup-cast-role { font-size: 10px; color: var(--is-text-muted); line-height: 1.2; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .popup-cast-nav { display: flex; align-items: center; justify-content: center; gap: 10px; position: relative; z-index: 5; }
+      .popup-cast-nav-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px; padding: 0; line-height: 1;
+        border-radius: 50%; border: 1px solid rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.22);
+        background: rgba(var(--arr-dbt-rgb, 255, 255, 255), 0.08);
+        color: var(--is-text); font-size: 15px; cursor: pointer;
+      }
+      .popup-cast-nav-btn:disabled { opacity: 0.3; cursor: default; }
+      .popup-cast-pg { font-size: 10px; font-weight: 700; color: var(--is-text-sec); }
       .popup-sub     { font-size: 11px; color: var(--is-text-sec); margin-bottom: 8px; }
       .popup-overview { font-size: 11px; color: var(--is-text-body); line-height: 1.65; margin: 0 0 12px; }
 
@@ -2703,6 +2784,7 @@ var STYLES = `
       .ic--failed      { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
       .ic--missing     { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
       .ic--added       { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+      .ic--partial     { color: #ff9f0a; border-color: rgba(255,159,10,0.35); background: rgba(255,159,10,0.08); }
       .ic--none        { color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.08); background: transparent; }
 
       .is-open-btn {
@@ -3992,6 +4074,7 @@ var _SonarrIS = class {
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
     </svg>`;
+    const monBtn = this._snMonitorBtn(season);
     const chevron = `<svg class="sn-season-chevron${exp ? " open" : ""}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="6 9 12 15 18 9"/>
     </svg>`;
@@ -4006,6 +4089,7 @@ var _SonarrIS = class {
         <span class="sn-season-stat">${have}/${tot}</span>
         <div class="sn-season-bar"><div class="sn-season-bar-fill" style="${pctStyle}"></div></div>
         ${isQueued ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:64px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(qPct, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${qPct}%</span></div>` : ""}
+        ${monBtn}
         <button class="btn-person${isActiveIs ? " active" : ""}" data-action="sn-season-is" data-season="${n}" title="Interactive Search \u2014 season pack">
           ${personIcon}
         </button>
@@ -4344,6 +4428,7 @@ var _AutoSearchMethods = class {
         <span class="sn-season-title">${this._t("snSeasonTitle")} ${n}</span>
         <span class="sn-season-stat">${have}/${tot}</span>
         <div class="sn-season-bar"><div class="sn-season-bar-fill" style="width:${pct}%"></div></div>
+        ${this._snMonitorBtn(season)}
         ${searchBtn}
       </div>
       ${episodesHtml}
@@ -4469,6 +4554,9 @@ var _FetchMethods = class {
       this._fetchTautulli(),
       this._fetchJellystat(),
       this._fetchPlexSessions(),
+      this._fetchJellyfinSessions(),
+      this._fetchEmbySessions(),
+      this._fetchKodiSessions(),
       this._fetchActivityHistory(),
       this._fetchActivityBlocklist(),
       this._fetchProwlarr()
@@ -4587,6 +4675,182 @@ var _FetchMethods = class {
       _plexSessionKey: s.sessionKey || ""
     };
   }
+  async _fetchJellyfinSessions() {
+    const now = Date.now();
+    if (now - (this._jellyfinLastFetch || 0) < 5e3) return;
+    this._jellyfinLastFetch = now;
+    try {
+      const raw = await this._callApi("GET", "arr_stack/jellyfin/sessions");
+      if (raw?._notConfigured) {
+        this._jellyfinSessions = [];
+        return;
+      }
+      const sessions = raw?.sessions || [];
+      const serverUrl = raw?.server_url || "";
+      const apiToken = raw?.api_token || "";
+      this._jellyfinSessions = sessions.map((s) => this._normalizeJellyfinSession(s, serverUrl, apiToken));
+    } catch (_) {
+      this._jellyfinSessions = [];
+    }
+  }
+  _normalizeJellyfinSession(s, serverUrl, apiToken) {
+    const np = s.NowPlayingItem || {};
+    const ps = s.PlayState || {};
+    const type = (np.Type || "").toLowerCase();
+    const isTV = type === "episode";
+    const isMusic = type === "audio";
+    const nl = `${s.Client || ""} ${s.DeviceName || ""}`.toLowerCase();
+    let deviceIcon = "mdi:television";
+    let deviceName = "TV";
+    if (/iphone|ios/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    } else if (/ipad/i.test(nl)) {
+      deviceIcon = "mdi:tablet";
+      deviceName = "Tablet";
+    } else if (/macbook|for mac\b|mac desktop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Mac";
+    } else if (/windows|desktop|pc\b/i.test(nl)) {
+      deviceIcon = "mdi:monitor";
+      deviceName = "PC";
+    } else if (/web|chrome|browser|safari|firefox/i.test(nl)) {
+      deviceIcon = "mdi:web";
+      deviceName = "Browser";
+    } else if (/android.*tv|fire.*tv|shield|apple.*tv/i.test(nl)) {
+      deviceIcon = "mdi:television";
+      deviceName = "TV";
+    } else if (/android/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    }
+    const itemId = np.Id || "";
+    const providers = np.ProviderIds || {};
+    const poster = itemId && serverUrl ? `${serverUrl}/Items/${itemId}/Images/Primary${apiToken ? "?api_key=" + apiToken : ""}` : null;
+    return {
+      id: `jellyfin:${s.Id || s.id}`,
+      source: "jellyfin",
+      state: ps.IsPaused ? "paused" : "playing",
+      attr: {
+        media_content_type: isTV ? "episode" : isMusic ? "music" : "movie",
+        media_title: np.Name || "",
+        media_series_title: isTV ? np.SeriesName || "" : "",
+        media_season: isTV ? np.ParentIndexNumber || 0 : 0,
+        media_episode: isTV ? np.IndexNumber || 0 : 0,
+        media_artist: isMusic ? np.AlbumArtist || "" : "",
+        media_album_name: isMusic ? np.Album || "" : "",
+        media_channel: "",
+        media_library_title: "",
+        entity_picture: poster,
+        media_duration: Math.round((np.RunTimeTicks || 0) / 1e7),
+        media_position: Math.round((ps.PositionTicks || 0) / 1e7),
+        media_position_updated_at: (/* @__PURE__ */ new Date()).toISOString(),
+        friendly_name: `${s.Client || ""} ${s.DeviceName || ""}`.trim(),
+        _jfDeviceIcon: deviceIcon,
+        _jfDeviceName: deviceName,
+        _jfUser: s.UserName || "",
+        _jfTmdbId: providers.Tmdb || providers.tmdb || null,
+        _jfTvdbId: providers.Tvdb || providers.tvdb || null
+      }
+    };
+  }
+  async _fetchEmbySessions() {
+    const now = Date.now();
+    if (now - (this._embyLastFetch || 0) < 5e3) return;
+    this._embyLastFetch = now;
+    try {
+      const raw = await this._callApi("GET", "arr_stack/emby/sessions");
+      if (raw?._notConfigured) {
+        this._embySessions = [];
+        return;
+      }
+      const sessions = raw?.sessions || [];
+      const serverUrl = raw?.server_url || "";
+      const apiToken = raw?.api_token || "";
+      this._embySessions = sessions.map((s) => this._normalizeEmbySession(s, serverUrl, apiToken));
+    } catch (_) {
+      this._embySessions = [];
+    }
+  }
+  _normalizeEmbySession(s, serverUrl, apiToken) {
+    const np = s.NowPlayingItem || {};
+    const ps = s.PlayState || {};
+    const type = (np.Type || "").toLowerCase();
+    const isTV = type === "episode";
+    const isMusic = type === "audio";
+    const nl = `${s.Client || ""} ${s.DeviceName || ""}`.toLowerCase();
+    let deviceIcon = "mdi:television";
+    let deviceName = "TV";
+    if (/iphone|ios/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    } else if (/ipad/i.test(nl)) {
+      deviceIcon = "mdi:tablet";
+      deviceName = "Tablet";
+    } else if (/macbook|for mac\b|mac desktop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Mac";
+    } else if (/windows|desktop|pc\b/i.test(nl)) {
+      deviceIcon = "mdi:monitor";
+      deviceName = "PC";
+    } else if (/web|chrome|browser|safari|firefox/i.test(nl)) {
+      deviceIcon = "mdi:web";
+      deviceName = "Browser";
+    } else if (/android.*tv|fire.*tv|shield|apple.*tv/i.test(nl)) {
+      deviceIcon = "mdi:television";
+      deviceName = "TV";
+    } else if (/android/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    }
+    const itemId = np.Id || "";
+    const providers = np.ProviderIds || {};
+    const poster = itemId && serverUrl ? `${serverUrl}/Items/${itemId}/Images/Primary?api_key=${apiToken}` : null;
+    return {
+      id: `emby:${s.Id || s.id}`,
+      source: "emby",
+      state: ps.IsPaused ? "paused" : "playing",
+      attr: {
+        media_content_type: isTV ? "episode" : isMusic ? "music" : "movie",
+        media_title: np.Name || "",
+        media_series_title: isTV ? np.SeriesName || "" : "",
+        media_season: isTV ? np.ParentIndexNumber || 0 : 0,
+        media_episode: isTV ? np.IndexNumber || 0 : 0,
+        media_artist: isMusic ? np.AlbumArtist || "" : "",
+        media_album_name: isMusic ? np.Album || "" : "",
+        media_channel: "",
+        media_library_title: "",
+        entity_picture: poster,
+        media_duration: Math.round((np.RunTimeTicks || 0) / 1e7),
+        media_position: Math.round((ps.PositionTicks || 0) / 1e7),
+        media_position_updated_at: (/* @__PURE__ */ new Date()).toISOString(),
+        friendly_name: `${s.Client || ""} ${s.DeviceName || ""}`.trim(),
+        _embyDeviceIcon: deviceIcon,
+        _embyDeviceName: deviceName,
+        _embyUser: s.UserName || "",
+        _embyTmdbId: providers.Tmdb || providers.tmdb || null,
+        _embyTvdbId: providers.Tvdb || providers.tvdb || null
+      }
+    };
+  }
+  async _fetchKodiSessions() {
+    const now = Date.now();
+    if (now - (this._kodiLastFetch || 0) < 5e3) return;
+    this._kodiLastFetch = now;
+    try {
+      const raw = await this._callApi("GET", "arr_stack/kodi/sessions");
+      const sessions = raw?.sessions || [];
+      if (raw?.known_ids?.length) this._kodiEntityIds = new Set(raw.known_ids);
+      this._kodiSessions = sessions.map((s) => ({
+        id: s.entity_id,
+        source: "kodi",
+        state: s.state,
+        attr: s.attributes || {}
+      }));
+    } catch (_) {
+      this._kodiSessions = [];
+    }
+  }
   async _fetchDownloadsAndRender() {
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
@@ -4601,7 +4865,11 @@ var _FetchMethods = class {
       this._fetchSab(),
       this._fetchSabHistory(),
       this._fetchNzbget(),
-      this._fetchNzbgetHistory()
+      this._fetchNzbgetHistory(),
+      this._fetchPlexSessions(),
+      this._fetchJellyfinSessions(),
+      this._fetchEmbySessions(),
+      this._fetchKodiSessions()
     ]);
     if (hadItems) {
       const currQbit = new Set((this._qbit || []).map((t) => t.hash));
@@ -6566,7 +6834,7 @@ var _RenderLeft = class {
     const items = this._pagedList(torrents, "qbit", (t) => this._renderTorrentItem(t), this._perPage("qbit"), "dc-section-card");
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${torrents.length >= this._perPage("qbit") ? this._sectionOverlayHtml("qbit", 15, 85, 0.23) : this._sectionOverlayHtml("qbit", 15, 85, 0.23, 55, 20)}
+      ${torrents.length === 0 ? this._sectionOverlayHtml("qbit", 15, 85, 0.15, 55, 20) : torrents.length >= this._perPage("qbit") ? this._sectionOverlayHtml("qbit", 15, 85, 0.23) : this._sectionOverlayHtml("qbit", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon("qbit")}
         <span class="col-hdr-title">qBittorrent</span>
@@ -6679,7 +6947,7 @@ var _RenderLeft = class {
     const items = this._pagedList(torrents, "deluge", (t) => this._renderDelugeTorrentItem(t), this._perPage("deluge"), "dc-section-card");
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${torrents.length >= this._perPage("deluge") ? this._sectionOverlayHtml("deluge", 15, 85, 0.23) : this._sectionOverlayHtml("deluge", 15, 85, 0.23, 55, 20)}
+      ${torrents.length === 0 ? this._sectionOverlayHtml("deluge", 15, 85, 0.15, 55, 20) : torrents.length >= this._perPage("deluge") ? this._sectionOverlayHtml("deluge", 15, 85, 0.23) : this._sectionOverlayHtml("deluge", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon("deluge")}
         <span class="col-hdr-title">Deluge</span>
@@ -6774,7 +7042,7 @@ var _RenderLeft = class {
     const items = this._pagedList(allSlots, "sab", (s) => this._renderSabItem(s), this._perPage("sab"), "dc-section-card");
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${allSlots.length >= this._perPage("sab") ? this._sectionOverlayHtml("sab", 15, 85, 0.23) : this._sectionOverlayHtml("sab", 15, 85, 0.23, 55, 20)}
+      ${allSlots.length === 0 && (!this._sabFailed || this._sabFailed.length === 0) ? this._sectionOverlayHtml("sab", 15, 85, 0.15, 55, 20) : allSlots.length >= this._perPage("sab") ? this._sectionOverlayHtml("sab", 15, 85, 0.23) : this._sectionOverlayHtml("sab", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         <div style="position:relative;flex-shrink:0;display:inline-flex;width:26px;height:26px">
           ${this._appIcon("sab")}
@@ -6906,7 +7174,7 @@ var _RenderLeft = class {
     const items = this._pagedList(allSlots, "nzbget", (s) => this._renderNzbgetItem(s), this._perPage("nzbget"), "dc-section-card");
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${allSlots.length >= this._perPage("nzbget") ? this._sectionOverlayHtml("nzbget", 15, 85, 0.23) : this._sectionOverlayHtml("nzbget", 15, 85, 0.23, 55, 20)}
+      ${allSlots.length === 0 ? this._sectionOverlayHtml("nzbget", 15, 85, 0.15, 55, 20) : allSlots.length >= this._perPage("nzbget") ? this._sectionOverlayHtml("nzbget", 15, 85, 0.23) : this._sectionOverlayHtml("nzbget", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon("nzbget")}
         <span class="col-hdr-title">NZBGet</span>
@@ -7066,7 +7334,7 @@ var _RenderLeft = class {
     const items = this._pagedList(torrents, "rtorrent", (t) => this._renderRtorrentItem(t), this._perPage("rtorrent"), "dc-section-card");
     return `
   <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-    ${torrents.length >= this._perPage("rtorrent") ? this._sectionOverlayHtml("rtorrent", 15, 85, 0.23) : this._sectionOverlayHtml("rtorrent", 15, 85, 0.23, 55, 20)}
+    ${torrents.length === 0 ? this._sectionOverlayHtml("rtorrent", 15, 85, 0.15, 55, 20) : torrents.length >= this._perPage("rtorrent") ? this._sectionOverlayHtml("rtorrent", 15, 85, 0.23) : this._sectionOverlayHtml("rtorrent", 15, 85, 0.23, 55, 20)}
     <div class="col-hdr" style="margin-bottom:8px">
       ${this._appIcon("rtorrent")}
       <span class="col-hdr-title">rTorrent</span>
@@ -7175,8 +7443,8 @@ var _RenderRight = class {
     const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "activity", "prowlarr"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
-    const hasActiveStreams = Object.keys(states).some((id) => {
-      if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) return false;
+    const hasActiveStreams = (this._jellyfinSessions || []).length > 0 || (this._embySessions || []).length > 0 || (this._kodiSessions || []).length > 0 || Object.keys(states).some((id) => {
+      if (!id.startsWith("media_player.plex_")) return false;
       const st = states[id].state;
       return st === "playing" || st === "paused";
     });
@@ -7333,10 +7601,7 @@ var _RenderRight = class {
         ${posterHtml}
         <span class="media-type-tag">${typeTag}</span>
         ${statusBadge}
-        ${this._mcGrad(gradColor, `${m.voteAverage ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${m.voteAverage.toFixed(1)}</span></div>` : ""}<div style="display:flex;align-items:center;gap:4px">
-            <div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
-            ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-          </div>`)}
+        ${this._mcGrad(gradColor, `${m.ratings?.imdb?.value || m.voteAverage ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${(m.ratings?.imdb?.value || m.voteAverage).toFixed(1)}</span></div>` : ""}<div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
         ${reqOverlay}
       </div>`;
     }).join("");
@@ -7904,8 +8169,8 @@ var _RenderRight = class {
   // ─────────────────────────────────────────────
   _renderStreams() {
     const states = this._hass?.states || {};
-    const streams = Object.entries(states).filter(([id, s]) => {
-      if (!(id.startsWith("media_player.plex_") || id.startsWith("media_player.jellyfin_"))) return false;
+    const plexStreams = Object.entries(states).filter(([id, s]) => {
+      if (!id.startsWith("media_player.plex_")) return false;
       if (s.state !== "playing" && s.state !== "paused") {
         this._streamsEnded.delete(id);
         return false;
@@ -7917,26 +8182,55 @@ var _RenderRight = class {
       if (dur > 0 && pos >= dur - 2) return false;
       return true;
     }).map(([id, s]) => ({ id, state: s.state, attr: s.attributes || {} }));
+    const jellyfinStreams = (this._jellyfinSessions || []).filter((s) => {
+      if (this._streamsEnded.has(s.id)) return false;
+      const dur = s.attr.media_duration || 0;
+      const pos = s.attr.media_position || 0;
+      if (dur > 0 && pos >= dur - 2) return false;
+      return true;
+    });
+    const embyStreams = (this._embySessions || []).filter((s) => {
+      if (this._streamsEnded.has(s.id)) return false;
+      const dur = s.attr.media_duration || 0;
+      const pos = s.attr.media_position || 0;
+      if (dur > 0 && pos >= dur - 2) return false;
+      return true;
+    });
+    const kodiStreams = (this._kodiSessions || []).filter((s) => {
+      if (this._streamsEnded.has(s.id)) return false;
+      const dur = s.attr.media_duration || 0;
+      const pos = s.attr.media_position || 0;
+      if (dur > 0 && pos >= dur - 2) return false;
+      return true;
+    });
+    const streams = [...plexStreams, ...jellyfinStreams, ...embyStreams, ...kodiStreams];
     this._streams = streams;
     this._startStreamsTimer(streams);
     this._syncStreamPopup();
     if (streams.length === 0) return "";
     const grid = this._pagedGridWithSmp(streams, "streams", (s) => this._renderStreamCard(s));
+    const hasPlex = plexStreams.length > 0;
+    const hasJF = jellyfinStreams.length > 0;
+    const hasEmby = embyStreams.length > 0;
+    const hasKodi = kodiStreams.length > 0;
+    const activeApps = [hasPlex && "plex", hasJF && "jellyfin", hasEmby && "emby", hasKodi && "kodi"].filter(Boolean);
+    const overlayApp = activeApps[0] || "plex";
     const _streamOverlay = (() => {
       if (!this._categoryOverlaysEnabled) return "";
       const o = 0.4;
       if (streams.length <= 2) {
         const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black 80%,transparent 100%)`;
-        const g = `radial-gradient(circle at 25% 15%,${this._brandColor("plex", o)} 0%,transparent 48%)`;
+        const g = `radial-gradient(circle at 25% 15%,${this._brandColor(overlayApp, o)} 0%,transparent 48%)`;
         return `<div style="position:absolute;inset:0;background:${g};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>`;
       }
-      return this._sectionOverlayHtml("plex", 25, 75, o);
+      return this._sectionOverlayHtml(overlayApp, 25, 75, o);
     })();
+    const iconHtml = activeApps.length > 1 ? activeApps.map((a) => this._appIcon(a, 20)).join("") : this._appIcon(activeApps[0] || "plex", 24);
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${_streamOverlay}
       <div class="col-hdr" style="margin-bottom:5px">
-        ${this._appIcon("plex", 24)}
+        <div style="display:flex;gap:4px;align-items:center">${iconHtml}</div>
         <span class="col-hdr-title">${this._t("streamsTitle")}</span>
         <div class="col-hdr-line"></div>
         <span class="sec-badge" style="background:rgba(229,160,13,0.12);border:1px solid rgba(229,160,13,0.25)">${streams.length} ${this._t("streamsActive")}</span>
@@ -7986,7 +8280,10 @@ var _RenderRight = class {
     }, 1e3);
   }
   _renderStreamCard({ id, state, attr }) {
-    const isPlex = id.startsWith("media_player.plex_");
+    const isPlex = id.startsWith("media_player.plex_") || id.startsWith("plex:");
+    const isJellyfin = id.startsWith("jellyfin:");
+    const isEmby = id.startsWith("emby:");
+    const isKodi = (this._kodiSessions || []).some((s) => s.id === id);
     const isPlaying = state === "playing";
     const contentType = attr.media_content_type || "";
     const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
@@ -7996,31 +8293,31 @@ var _RenderRight = class {
     const title = isLiveTV ? channel || attr.media_title || "" : isTV ? attr.media_series_title || attr.media_title || "" : attr.media_artist || attr.media_title || "";
     const epLabel = !isLiveTV && isTV && attr.media_season && attr.media_episode ? `S${String(attr.media_season).padStart(2, "0")}E${String(attr.media_episode).padStart(2, "0")}` : "";
     const subtitle = isMusic ? attr.media_album_name || "" : isLiveTV ? attr.media_title || "" : isTV ? attr.media_title || "" : "";
+    let deviceIcon = attr._jfDeviceIcon || attr._embyDeviceIcon || "mdi:television";
+    let deviceName = attr._jfDeviceName || attr._embyDeviceName || "TV";
     const nl = (attr.friendly_name || id).toLowerCase();
-    let deviceIcon = "mdi:television";
-    let deviceName = "TV";
-    if (/iphone|android.*mobile|for\s+ios|for\s+android\s*\(mobile\)/i.test(nl)) {
+    if (!isJellyfin && !isEmby && /iphone|android.*mobile|for\s+ios|for\s+android\s*\(mobile\)/i.test(nl)) {
       deviceIcon = "mdi:cellphone";
       deviceName = "Phone";
-    } else if (/ipad|for\s+android\s*\(tablet\)|tablet/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /ipad|for\s+android\s*\(tablet\)|tablet/i.test(nl)) {
       deviceIcon = "mdi:tablet";
       deviceName = "Tablet";
-    } else if (/macbook|for\s+mac\b|mac\s+desktop/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /macbook|for\s+mac\b|mac\s+desktop/i.test(nl)) {
       deviceIcon = "mdi:laptop";
       deviceName = "Mac";
-    } else if (/laptop/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /laptop/i.test(nl)) {
       deviceIcon = "mdi:laptop";
       deviceName = "Notebook";
-    } else if (/windows|for\s+windows|desktop|pc\b/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /windows|for\s+windows|desktop|pc\b/i.test(nl)) {
       deviceIcon = "mdi:monitor";
       deviceName = "PC";
-    } else if (/web|chrome|browser|safari|firefox|for\s+web/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /web|chrome|browser|safari|firefox|for\s+web/i.test(nl)) {
       deviceIcon = "mdi:web";
       deviceName = "Browser";
-    } else if (/apple\s*tv|android\s*tv|fire\s*tv|roku|samsung.*tv|lg.*tv|shield|htpc|for\s+tv/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /apple\s*tv|android\s*tv|fire\s*tv|roku|samsung.*tv|lg.*tv|shield|htpc|for\s+tv/i.test(nl)) {
       deviceIcon = "mdi:television";
       deviceName = "TV";
-    } else if (/android/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /android/i.test(nl)) {
       deviceIcon = "mdi:cellphone";
       deviceName = "Phone";
     }
@@ -8044,7 +8341,7 @@ var _RenderRight = class {
     const initPct = duration > 0 ? (currentPos / duration * 100).toFixed(2) : 0;
     const progBar = duration > 0 ? `<div class="stream-prog-track"><div class="stream-prog-fill" data-entity="${this._escHtml(id)}" data-pos="${position}" data-dur="${duration}" data-updated="${updatedAt}" data-state="${state}" style="width:${initPct}%;transition:none"></div></div>` : "";
     const svcBadge = this._statusBadge(
-      isPlex ? `<span class="stream-badge stream-badge-plex">PLEX</span>` : `<span class="stream-badge stream-badge-jf">JF</span>`
+      isPlex ? `<span class="stream-badge stream-badge-plex">PLEX</span>` : isEmby ? `<span class="stream-badge stream-badge-emby">EMBY</span>` : isKodi ? `<span class="stream-badge stream-badge-kodi">KODI</span>` : `<span class="stream-badge stream-badge-jf">JF</span>`
     );
     const pausedOverlay = !isPlaying ? `<div class="stream-paused-overlay"><ha-icon icon="mdi:pause-circle" style="--mdc-icon-size:32px;opacity:0.85"></ha-icon></div>` : "";
     const deviceTag = `<span class="stream-device-tag"><ha-icon icon="${deviceIcon}" style="--mdc-icon-size:9px"></ha-icon> ${this._escHtml(deviceName)}</span>`;
@@ -8062,6 +8359,12 @@ var _RenderRight = class {
         userName = match._plexUser;
         userThumb = match._plexUserThumb || "";
       }
+    } else if (isJellyfin) {
+      userName = attr._jfUser || "";
+    } else if (isEmby) {
+      userName = attr._embyUser || "";
+    } else if (isKodi) {
+      userName = "";
     } else {
       const fn = attr.friendly_name || "";
       const jf = fn.replace(/^jellyfin\s*/i, "").trim();
@@ -8512,11 +8815,7 @@ var _MediaCardMethods = class {
       ${traktOverlays}
       ${tagHtml}
       ${statusBadge}
-      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
-        <div style="display:flex;align-items:center;gap:4px">
-          <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
-          ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-        </div>`)}
+      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
     </div>`;
   }
   _renderTraktCard(m, overlayIndex = null) {
@@ -8603,11 +8902,7 @@ var _MediaCardMethods = class {
       ${traktOverlays}
       ${tagHtml}
       ${statusBadge}
-      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}
-        <div style="display:flex;align-items:center;gap:4px">
-          <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${title}</div>
-          ${actionBtn ? `<div style="flex-shrink:0">${actionBtn}</div>` : ""}
-        </div>`)}
+      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
       ${overlay}
     </div>`;
   }
@@ -11084,7 +11379,14 @@ var _PopupMethods = class {
     this._popup = { _loading: true, title: trackTitle };
     this._renderPopupEl();
     let sessionTmdbId = null;
-    if (entityId.startsWith("media_player.plex_") || entityId.startsWith("media_player.plex ")) {
+    if (entityId.startsWith("jellyfin:")) {
+      const jfSession = (this._jellyfinSessions || []).find((s) => s.id === entityId);
+      if (jfSession?.attr?._jfTmdbId) sessionTmdbId = String(jfSession.attr._jfTmdbId);
+    } else if (entityId.startsWith("emby:")) {
+      const embySession = (this._embySessions || []).find((s) => s.id === entityId);
+      if (embySession?.attr?._embyTmdbId) sessionTmdbId = String(embySession.attr._embyTmdbId);
+    }
+    if (!sessionTmdbId && (entityId.startsWith("media_player.plex_") || entityId.startsWith("media_player.plex "))) {
       try {
         const raw = await this._hass.callApi("GET", "arr_stack/plex/sessions");
         const sessions = raw?.MediaContainer?.Metadata || [];
@@ -11208,14 +11510,37 @@ var _PopupMethods = class {
   // Attach live stream data to current popup (called after _openPopup for movie/TV from stream card)
   _attachStreamData(entityId) {
     if (!this._popup) return;
-    const s = this._hass?.states?.[entityId];
-    const attr = s?.attributes || {};
+    let state = "idle", attr = {}, updatedAt = Date.now();
+    if (entityId.startsWith("jellyfin:")) {
+      const jf = (this._jellyfinSessions || []).find((s) => s.id === entityId);
+      if (jf) {
+        state = jf.state;
+        attr = jf.attr;
+      }
+      updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    } else if (entityId.startsWith("emby:")) {
+      const emby = (this._embySessions || []).find((s) => s.id === entityId);
+      if (emby) {
+        state = emby.state;
+        attr = emby.attr;
+      }
+      updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    } else {
+      const s = this._hass?.states?.[entityId];
+      attr = s?.attributes || {};
+      state = s?.state || "idle";
+      updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    }
     this._popup._streamEntity = entityId;
-    this._popup._streamState = s?.state || "idle";
+    this._popup._streamState = state;
     this._popup._duration = attr.media_duration || 0;
     this._popup._position = attr.media_position || 0;
-    this._popup._updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    this._popup._updatedAt = updatedAt;
     this._popup._plexMachineId = null;
+    this._popup._jfSessionId = entityId.startsWith("jellyfin:") ? entityId.replace("jellyfin:", "") : null;
+    this._popup._embySessionId = entityId.startsWith("emby:") ? entityId.replace("emby:", "") : null;
+    const isKodiSession = (this._kodiSessions || []).some((s) => s.id === entityId);
+    this._popup._kodiEntityId = isKodiSession ? entityId : null;
     if (entityId.startsWith("media_player.plex_")) this._fetchPlexMachineId(entityId);
   }
   async _fetchPlexMachineId(entityId) {
@@ -11390,6 +11715,10 @@ var _PopupMethods = class {
         ) ?? null;
       }
     }
+    this._popupMonExpand = false;
+    this._popupMonBusy = null;
+    this._popupCastOpen = false;
+    this._popupCastPage = 0;
     this._popup = { _loading: true, title, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series };
     this._renderPopupEl();
     if (this._overseerrConfigured === false) {
@@ -11413,6 +11742,8 @@ var _PopupMethods = class {
             genres: detail.genres?.length ? detail.genres : prev.genres || [],
             releaseDate: detail.releaseDate || prev.releaseDate || "",
             firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
+            numberOfSeasons: detail.numberOfSeasons || prev.numberOfSeasons || 0,
+            credits: detail.credits?.cast?.length ? detail.credits : prev.credits || null,
             relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
           };
           this._renderPopupEl();
@@ -11444,6 +11775,19 @@ var _PopupMethods = class {
         }
       }
       this._popup = { ...data, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series };
+      {
+        const _isMovieRt = type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE;
+        if (tmdbId && (!_isMovieRt || !_radarrId)) {
+          const _rtPath = _isMovieRt ? `arr_stack/overseerr/movie/${tmdbId}/ratings` : `arr_stack/overseerr/tv/${tmdbId}/ratings`;
+          this._callApi("GET", _rtPath).then((rt) => {
+            if (this._popup && this._popup._type === type) {
+              this._popup._rtRatings = rt;
+              this._renderPopupEl();
+            }
+          }).catch(() => {
+          });
+        }
+      }
       if (_sonarrSeries || type === POPUP_TYPE.TV || type === POPUP_TYPE.SONARR) {
         this._fetchSonarrQueue("sonarr").then(() => this._renderPopupEl());
         if (this._sonarr2Configured !== false)
@@ -11464,6 +11808,7 @@ var _PopupMethods = class {
             genres: detail.genres?.length ? detail.genres : prev.genres || [],
             releaseDate: detail.releaseDate || prev.releaseDate || "",
             firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
+            numberOfSeasons: detail.numberOfSeasons || prev.numberOfSeasons || 0,
             relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
           };
           this._renderPopupEl();
@@ -11492,6 +11837,8 @@ var _PopupMethods = class {
             genres: detail.genres?.length ? detail.genres : prev.genres || [],
             releaseDate: detail.releaseDate || prev.releaseDate || "",
             firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
+            numberOfSeasons: detail.numberOfSeasons || prev.numberOfSeasons || 0,
+            credits: detail.credits?.cast?.length ? detail.credits : prev.credits || null,
             relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
           };
           this._renderPopupEl();
@@ -11917,6 +12264,45 @@ var _PopupMethods = class {
         this._renderPopupEl();
         return;
       }
+      if (t.dataset.action === "popup-cast-toggle") {
+        this._popupCastOpen = !this._popupCastOpen;
+        this._popupCastPage = 0;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "popup-cast-prev") {
+        this._popupCastPage = Math.max(0, (this._popupCastPage || 0) - 1);
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "popup-cast-next") {
+        this._popupCastPage = (this._popupCastPage || 0) + 1;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "popup-monitor-expand") {
+        this._popupMonExpand = !this._popupMonExpand;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "popup-monitor-toggle") {
+        if (this._popupMonBusy) return;
+        this._popupMonBusy = t.dataset.instance;
+        this._renderPopupEl();
+        this._togglePopupMonitor(t.dataset.instance);
+        return;
+      }
+      if (t.dataset.action === "sn-season-monitor") {
+        const n = parseInt(t.dataset.season);
+        if (this._snMonitorBusy != null) return;
+        const monInst = this._asOpen ? this._asInstance : this._snIsInstance;
+        const monSeries = monInst === "sonarr2" ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
+        if (!monSeries?.id) return;
+        this._snMonitorBusy = n;
+        this._renderPopupEl();
+        this._toggleSeasonMonitor(monSeries, n, monInst);
+        return;
+      }
       if (t.dataset.action === "sn-season-is") {
         const n = parseInt(t.dataset.season);
         const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
@@ -12180,7 +12566,7 @@ var _PopupMethods = class {
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:auto">
           <button data-action="stream-terminate-cancel" class="is-open-btn" style="justify-content:center;padding:0 12px;min-width:74px">${this._t("terminateCancel")}</button>
-          <button data-action="stream-terminate-confirm" data-session-id="${this._escHtml(sessionId)}"
+          <button data-action="stream-terminate-confirm" data-session-id="${this._escHtml(sessionId || "")}"
             class="is-open-btn remove-disc-btn" style="justify-content:center;padding:0 12px;min-width:74px">${this._t("terminateStop")}</button>
         </div>`;
         this._terminateActive = true;
@@ -12194,7 +12580,7 @@ var _PopupMethods = class {
       }
       if (t.dataset.action === "stream-terminate-confirm") {
         const sessionId = t.dataset.sessionId;
-        if (!sessionId) return;
+        if (!sessionId && !this._popup?._jfSessionId && !this._popup?._embySessionId && !this._popup?._kodiEntityId) return;
         const modal = this.shadowRoot?.querySelector(".plex-terminate-modal");
         const reason = (modal?.querySelector("#stream-terminate-reason")?.value || "").trim() || this._t("terminateDefault");
         const stopBtn = this.shadowRoot?.querySelector('[data-action="stream-terminate-show"]');
@@ -12213,22 +12599,43 @@ var _PopupMethods = class {
           }
           d._plexTerminated = true;
         }
-        this._callApi("DELETE", "arr_stack/plex/session/terminate", { sessionId, reason }).catch(() => {
-        });
+        if (this._popup?._jfSessionId) {
+          this._callApi("POST", "arr_stack/jellyfin/stop", { session_id: this._popup._jfSessionId, message: reason }).catch(() => {
+          });
+        } else if (this._popup?._embySessionId) {
+          this._callApi("POST", "arr_stack/emby/stop", { session_id: this._popup._embySessionId, message: reason }).catch(() => {
+          });
+        } else if (this._popup?._kodiEntityId) {
+          this._callApi("POST", "arr_stack/kodi/stop", { entity_id: this._popup._kodiEntityId, message: reason }).catch(() => {
+          });
+        } else {
+          this._callApi("DELETE", "arr_stack/plex/session/terminate", { sessionId, reason }).catch(() => {
+          });
+        }
         if (stopBtn) {
           stopBtn.innerHTML = `<ha-icon icon="mdi:loading" style="--mdc-icon-size:14px;animation:btn-spin 0.65s linear infinite"></ha-icon> ${this._t("stopPlayback")}`;
           stopBtn.disabled = true;
           setTimeout(() => {
             if (stopBtn) stopBtn.innerHTML = `${checkSvgInline} ${this._t("stopPlayback")}`;
             setTimeout(() => {
-              if (this._popup) this._popup._plexSessionId = null;
+              if (this._popup) {
+                this._popup._plexSessionId = null;
+                this._popup._jfSessionId = null;
+                this._popup._embySessionId = null;
+                this._popup._kodiEntityId = null;
+              }
               this._renderPopupEl();
               this._reRenderSection?.("streams");
             }, 600);
           }, 1e3);
         } else {
           setTimeout(() => {
-            if (this._popup) this._popup._plexSessionId = null;
+            if (this._popup) {
+              this._popup._plexSessionId = null;
+              this._popup._jfSessionId = null;
+              this._popup._embySessionId = null;
+              this._popup._kodiEntityId = null;
+            }
             this._renderPopupEl();
             this._reRenderSection?.("streams");
           }, 1e3);
@@ -12323,6 +12730,99 @@ var _PopupMethods = class {
       }, 1e3);
     }
   }
+  // Season monitoring toggle button — bookmark outline/filled, spinner while saving
+  _snMonitorBtn(season) {
+    const n = season.seasonNumber;
+    if (this._snMonitorBusy === n) {
+      return `<button class="btn-person" disabled><span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span></button>`;
+    }
+    const mon = !!season.monitored;
+    const icon = mon ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    const title = mon ? this._cfg?.localisation === "cs" ? "Monitorov\xE1no \u2014 kliknut\xEDm vypne\u0161" : "Monitored \u2014 click to unmonitor" : this._cfg?.localisation === "cs" ? "Nemonitorov\xE1no \u2014 kliknut\xEDm zapne\u0161" : "Not monitored \u2014 click to monitor";
+    return `<button class="btn-person${mon ? " active" : ""}" data-action="sn-season-monitor" data-season="${n}" title="${title}">${icon}</button>`;
+  }
+  // Toggle movie/series monitored flag from popup title bookmark
+  async _togglePopupMonitor(inst) {
+    const d = this._popup;
+    try {
+      if (inst === "radarr" || inst === "radarr2") {
+        const arr = inst === "radarr2" ? this._radarr2 : this._radarr;
+        const id = inst === "radarr2" ? d?._radarr2Id : d?._radarrId;
+        const movie = (arr || []).find((m) => m.id === id);
+        if (movie) {
+          const fresh = await this._callApi("PUT", `arr_stack/${inst}/movie/${id}`, { ...movie, monitored: !movie.monitored });
+          const upd = fresh && fresh.id ? fresh : { ...movie, monitored: !movie.monitored };
+          const i = arr.findIndex((m) => m.id === id);
+          if (i >= 0) arr[i] = { ...arr[i], ...upd };
+        }
+      } else {
+        const series = inst === "sonarr2" ? d?._sonarr2Series : d?._sonarrSeries;
+        if (series?.id) {
+          const pool = inst === "sonarr2" ? this._sonarr2 : this._sonarr;
+          const cur = (pool || []).find((s) => s.id === series.id) || series;
+          const fresh = await this._callApi("PUT", `arr_stack/${inst}/series/${series.id}`, { ...cur, monitored: !cur.monitored });
+          const upd = fresh && fresh.id ? fresh : { ...cur, monitored: !cur.monitored };
+          if (inst === "sonarr2") {
+            if (d?._sonarr2Series?.id === series.id) d._sonarr2Series = upd;
+          } else if (d?._sonarrSeries?.id === series.id) {
+            d._sonarrSeries = upd;
+          }
+          for (const p of inst === "sonarr2" ? [this._sonarr2] : [this._sonarr, this._sonarrAll]) {
+            const i = (p || []).findIndex((s) => s.id === series.id);
+            if (i >= 0) p[i] = { ...p[i], ...upd };
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[arr-card] popup monitor toggle failed:", e);
+    }
+    this._popupMonBusy = null;
+    this._renderPopupEl();
+  }
+  // Toggle season monitored flag via Sonarr PUT /series/{id}
+  async _toggleSeasonMonitor(series, seasonNumber, inst) {
+    try {
+      const svc = inst === "sonarr2" ? "sonarr2" : "sonarr";
+      const updated = {
+        ...series,
+        seasons: (series.seasons || []).map((s) => s.seasonNumber === seasonNumber ? { ...s, monitored: !s.monitored } : s)
+      };
+      const res = await this._callApi("PUT", `arr_stack/${svc}/series/${series.id}`, updated);
+      const fresh = res && res.id ? res : updated;
+      if (inst === "sonarr2") {
+        if (this._popup?._sonarr2Series?.id === series.id) this._popup._sonarr2Series = fresh;
+        const i = (this._sonarr2 || []).findIndex((s) => s.id === series.id);
+        if (i >= 0) this._sonarr2[i] = fresh;
+      } else {
+        if (this._popup?._sonarrSeries?.id === series.id) this._popup._sonarrSeries = fresh;
+        for (const pool of [this._sonarr, this._sonarrAll]) {
+          const i = (pool || []).findIndex((s) => s.id === series.id);
+          if (i >= 0) pool[i] = fresh;
+        }
+      }
+    } catch (e) {
+      console.error("[arr-card] season monitor toggle failed:", e);
+    }
+    this._snMonitorBusy = null;
+    this._renderPopupEl();
+  }
+  // Sonarr instance chip — episode counts from monitored seasons
+  // green = all monitored episodes downloaded, blue = incomplete or not monitored
+  _snInstChip(chipFn, label, entry, pct) {
+    if (!entry) return chipFn(label, "none");
+    if (pct !== null) return chipFn(label, "downloading", pct);
+    const monitoredSeasons = (entry.seasons || []).filter((s) => s.seasonNumber > 0 && s.monitored);
+    const notMonitored = !entry.monitored || monitoredSeasons.length === 0;
+    if (notMonitored) {
+      const nm = this._cfg?.localisation === "cs" ? "nemonitorov\xE1no" : "not monitored";
+      return chipFn(label ? `${label} \u2014 ${nm}` : nm, "added");
+    }
+    const efc = entry.statistics?.episodeFileCount ?? 0;
+    const ec = entry.statistics?.episodeCount ?? 0;
+    const cnt = `${efc}/${ec}`;
+    const complete = ec > 0 && efc >= ec;
+    return chipFn(label ? `${label} ${cnt}` : cnt, complete ? "available" : "partial");
+  }
   _renderPopup() {
     const d = this._popup;
     if (!d) return "";
@@ -12394,7 +12894,13 @@ var _PopupMethods = class {
     const genres = (d.genres || []).map((g) => this._escHtml(g.name || "")).filter(Boolean).join(" \xB7 ");
     const rating = d.voteAverage ? d.voteAverage.toFixed(1) : "";
     const overview = this._escHtml(d.overview || "");
-    const subLine = [year, genres, rating ? `\u2B50 ${rating}` : ""].filter(Boolean).join(" \xB7 ");
+    const _isSeriesPopup = d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV;
+    let seasonsLine = "";
+    if (_isSeriesPopup) {
+      const snCount = d._sonarrSeries?.statistics?.seasonCount ?? d._sonarr2Series?.statistics?.seasonCount ?? d.numberOfSeasons ?? 0;
+      if (snCount > 0) seasonsLine = this._tSeasons(snCount);
+    }
+    const subLine = [year, seasonsLine, genres].filter(Boolean).join(" \xB7 ");
     const backdropPath = d.backdropPath || null;
     const posterPath = d.posterPath || null;
     const backdropUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : d._localBackdropUrl || "";
@@ -12412,6 +12918,32 @@ var _PopupMethods = class {
          </div>
        </a>` : "";
     const posterHtml = posterUrl ? `<img class="popup-poster" src="${posterUrl}" loading="lazy" onerror="this.style.display='none'" />` : "";
+    const _castList = (d.credits?.cast || []).filter((c) => c.name);
+    let castPanelHtml = "";
+    if (this._popupCastOpen && _castList.length) {
+      const PER = window.innerWidth <= 600 ? 3 : 6;
+      const castPages = Math.max(1, Math.ceil(_castList.length / PER));
+      const castPg = Math.min(this._popupCastPage || 0, castPages - 1);
+      const slice = _castList.slice(castPg * PER, castPg * PER + PER);
+      const items = slice.map((c) => {
+        const pp = c.profilePath || c.profile_path;
+        const img = pp ? `https://image.tmdb.org/t/p/w185${pp}` : null;
+        const initials = this._escHtml(c.name.split(" ").map((w) => w[0] || "").slice(0, 2).join("").toUpperCase());
+        return `<div class="popup-cast-item">
+        ${img ? `<img src="${img}" loading="lazy">` : `<div class="popup-cast-ph">${initials}</div>`}
+        <div class="popup-cast-name">${this._escHtml(c.name)}</div>
+        <div class="popup-cast-role">${this._escHtml(c.character || "")}</div>
+      </div>`;
+      }).join("");
+      const nav = castPages > 1 ? `<div class="popup-cast-nav">
+           <button class="popup-cast-nav-btn" data-action="popup-cast-prev"${castPg === 0 ? " disabled" : ""}>\u2039</button>
+           <span class="popup-cast-pg">${castPg + 1} / ${castPages}</span>
+           <button class="popup-cast-nav-btn" data-action="popup-cast-next"${castPg >= castPages - 1 ? " disabled" : ""}>\u203A</button>
+         </div>` : "";
+      castPanelHtml = `<div class="popup-cast-panel"><div class="popup-cast-grid">${items}</div>${nav}</div>`;
+    }
+    const castGroupSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+    const castToggleBtn = _castList.length ? `<button class="popup-cast-fab${this._popupCastOpen ? " active" : ""}" data-action="popup-cast-toggle">${castGroupSvg} ${this._cfg?.localisation === "cs" ? "Obsazen\xED" : "Cast"}</button>` : "";
     const isAdmin = this._hass.user.is_admin;
     const isMovieType = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE;
     const isSonarrType = d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV;
@@ -12562,6 +13094,7 @@ var _PopupMethods = class {
         failed: { cls: "ic--failed", icon: "\u2717" },
         missing: { cls: "ic--missing", icon: "\u2717" },
         added: { cls: "ic--added", icon: "+" },
+        partial: { cls: "ic--partial", icon: "" },
         none: { cls: "ic--none", icon: "\u2013" }
       };
       const { cls } = map[status] || map.none;
@@ -12610,9 +13143,7 @@ var _PopupMethods = class {
         "Sonarr 1",
         "Sonarr 2"
       );
-      const st1 = _instStatus(sonarrEntry, null, null);
-      const st2 = _instStatus(sonarr2Entry, null, null);
-      instanceStatusHtml = `<div class="instance-status-row">${_instChip(lbl1, st1, _chipSeriesPct("sonarr"))}${_instChip(lbl2, st2, _chipSeriesPct("sonarr2"))}</div>`;
+      instanceStatusHtml = `<div class="instance-status-row">${this._snInstChip(_instChip, lbl1, sonarrEntry, _chipSeriesPct("sonarr"))}${this._snInstChip(_instChip, lbl2, sonarr2Entry, _chipSeriesPct("sonarr2"))}</div>`;
     } else if (isMovieType) {
       const pct = _chipMoviePct("radarr");
       if (pct !== null) {
@@ -12622,6 +13153,8 @@ var _PopupMethods = class {
       const pct = _chipSeriesPct("sonarr");
       if (pct !== null) {
         singleDlTag = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><div style="width:80px;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(pct, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:10px;color:#3b82f6;font-weight:700">${pct}%</span></div>`;
+      } else if (sonarrEntry) {
+        instanceStatusHtml = `<div class="instance-status-row">${this._snInstChip(_instChip, "", sonarrEntry, null)}</div>`;
       }
     }
     const _popupRadarrEntry = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
@@ -12660,7 +13193,62 @@ var _PopupMethods = class {
         <button class="remove-ic-btn remove-ic-no" data-action="remove-no">${crossSvg}</button>
       </div>`;
     })() : "";
-    const canTerminate = !!(d._streamEntity && d._plexSessionId) && !!this._hass?.user?.is_admin;
+    let ratingsRow = "";
+    {
+      const _icImdb = `<svg width="30" height="15" viewBox="0 0 64 32" style="flex-shrink:0"><rect width="64" height="32" rx="6" fill="#F5C518"/><text x="32" y="23" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#000">IMDb</text></svg>`;
+      const _icTmdb = `<svg width="30" height="15" viewBox="0 0 64 32" style="flex-shrink:0"><rect width="64" height="32" rx="6" fill="#0d253f"/><text x="32" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#01b4e4">TMDB</text></svg>`;
+      const _icRt = `<svg width="15" height="15" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#FA320A" d="M12 7.5c-5 0-8.5 3-8.5 7.8 0 4.4 3.8 6.7 8.5 6.7s8.5-2.3 8.5-6.7c0-4.8-3.5-7.8-8.5-7.8z"/><path fill="#00912D" d="M11.8 7.6c.2-2 1.5-3.6 3.6-4.1-1 1.2-1.2 2.1-1.2 2.1s2-1.6 4.1-1c-1.5 1-2 2.3-2 2.3s1.7-.7 3.2-.2c-2 1.5-4.2 1.4-5.7 1.1-.5-.1-1.4-.2-2-.2z"/></svg>`;
+      const _icMc = `<svg width="15" height="15" viewBox="0 0 32 32" style="flex-shrink:0"><circle cx="16" cy="16" r="16" fill="#001a35"/><text x="16" y="23" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="900" fill="#ffcc33">m</text></svg>`;
+      const _fmt1 = (v) => (Math.round(v * 10) / 10).toFixed(1);
+      const items = [];
+      const _rR = (radarrEntry || radarr2Entry)?.ratings;
+      if (isMovieType && _rR) {
+        if (_rR.imdb?.value) items.push([_icImdb, _fmt1(_rR.imdb.value)]);
+        if (_rR.tmdb?.value) items.push([_icTmdb, _fmt1(_rR.tmdb.value)]);
+        else if (d.voteAverage) items.push([_icTmdb, _fmt1(d.voteAverage)]);
+        if (_rR.rottenTomatoes?.value > 0) items.push([_icRt, `${Math.round(_rR.rottenTomatoes.value)}%`]);
+        if (_rR.metacritic?.value > 0) items.push([_icMc, `${Math.round(_rR.metacritic.value)}`]);
+      } else if (d.voteAverage) {
+        items.push([_icTmdb, _fmt1(d.voteAverage)]);
+      }
+      const _rtOv = d._rtRatings;
+      if (_rtOv?.criticsScore != null && !items.some((it) => it[0] === _icRt)) {
+        items.push([_icRt, `${Math.round(_rtOv.criticsScore)}%`]);
+      }
+      if (items.length) {
+        ratingsRow = `<div class="popup-ratings">${items.map(([ic, v]) => `<span style="display:inline-flex;align-items:center;gap:4px">${ic}<b style="font-size:12px;color:var(--is-text)">${v}</b></span>`).join("")}</div>`;
+      }
+    }
+    let monTitleBtn = "";
+    let monExpandRow = "";
+    if (isAdmin && (isMovieType || isSonarrType)) {
+      const _monE1 = isMovieType ? radarrEntry : sonarrEntry;
+      const _monE2 = isMovieType ? radarr2Entry : sonarr2Entry;
+      const _monI1 = isMovieType ? "radarr" : "sonarr";
+      const _monI2 = isMovieType ? "radarr2" : "sonarr2";
+      const _monAdded = [_monE1 && _monI1, _monE2 && _monI2].filter(Boolean);
+      if (_monAdded.length) {
+        const _bmSvg = (mon, sz = 18) => mon ? `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+        const _monSpin = `<span class="action-spinner" style="width:13px;height:13px;border-width:1.5px"></span>`;
+        const _monAny = !!(_monE1?.monitored || _monE2?.monitored);
+        const _monTitleTip = this._cfg?.localisation === "cs" ? "Monitoring" : "Monitoring";
+        if (_monAdded.length === 1) {
+          const inst = _monAdded[0];
+          const busy = this._popupMonBusy === inst;
+          monTitleBtn = `<button class="popup-mon-btn" data-action="popup-monitor-toggle" data-instance="${inst}" title="${_monTitleTip}"${busy ? " disabled" : ""}>${busy ? _monSpin : _bmSvg(_monAny)}</button>`;
+        } else {
+          monTitleBtn = `<button class="popup-mon-btn${this._popupMonExpand ? " active" : ""}" data-action="popup-monitor-expand" title="${_monTitleTip}">${_bmSvg(_monAny)}</button>`;
+          if (this._popupMonExpand) {
+            const [_ml1, _ml2] = isMovieType ? [isl1, isl2] : _instLabels(this._seerrSonarr?.name, this._seerrSonarr2?.name, "Sonarr 1", "Sonarr 2");
+            monExpandRow = `<div class="popup-mon-row">${[[_monI1, _monE1, _ml1], [_monI2, _monE2, _ml2]].map(([inst, e, lbl]) => {
+              const busy = this._popupMonBusy === inst;
+              return `<button class="is-open-btn" data-action="popup-monitor-toggle" data-instance="${inst}"${busy ? " disabled" : ""}>${busy ? _monSpin : _bmSvg(!!e?.monitored, 12)} ${lbl}</button>`;
+            }).join("")}</div>`;
+          }
+        }
+      }
+    }
+    const canTerminate = !!(d._streamEntity && (d._plexSessionId || d._jfSessionId || d._embySessionId || d._kodiEntityId)) && !!this._hass?.user?.is_admin;
     const terminateActionBtn = canTerminate ? `
     <button class="is-open-btn remove-disc-btn" data-action="stream-terminate-show"
       data-session-id="${this._escHtml(d._plexSessionId)}">
@@ -12669,9 +13257,15 @@ var _PopupMethods = class {
     const wideClass = isActive || snIsActive ? " is-wide" : "";
     const searchActive = isActive || snIsActive || asSonarrActive;
     const glassStyle = searchActive ? ' style="height:82vh"' : "";
-    const backdropEl = searchActive ? "" : `
+    const backdropEl = searchActive ? "" : this._popupCastOpen && castPanelHtml ? `
+        <div class="popup-backdrop popup-backdrop--cast">
+          ${castPanelHtml}
+          <div class="popup-backdrop-fade"></div>
+          ${castToggleBtn ? `<div class="popup-cast-fab-anchor">${castToggleBtn}</div>` : ""}
+        </div>` : `
         <div class="popup-backdrop" style="${backdropStyle}">
           <div class="popup-backdrop-fade"></div>
+          ${castToggleBtn ? `<div class="popup-cast-fab-anchor">${castToggleBtn}</div>` : ""}
         </div>`;
     const posterHtmlFinal = posterHtml ? searchActive ? posterHtml.replace('<img class="popup-poster"', '<img class="popup-poster" style="margin-top:0"') : posterHtml : "";
     return `
@@ -12684,10 +13278,11 @@ var _PopupMethods = class {
             ${posterHtmlFinal}
             <div class="popup-meta">
               <div style="display:flex;align-items:flex-start;gap:8px;margin:0 0 5px">
-                <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${title}</h2>
+                <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${title}${monTitleBtn}</h2>
                 ${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}
               </div>
-              ${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}
+              ${monExpandRow}
+              ${subLine || ratingsRow ? `<div class="popup-subrow">${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}${ratingsRow}</div>` : ""}
               ${instanceStatusHtml}
               ${singleDlTag}
               ${popupTagHtml}
@@ -16308,6 +16903,8 @@ var _ActivityRenderMethods = class {
     const chevRightSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>`;
     const chevDownSvgLg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     const chevRightSvgLg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>`;
+    const _monBookmarkSvg = (mon) => mon ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    const _monToggleBtn = (mon, attrs, extraStyle = "") => `<button class="act-mon-toggle" ${attrs} data-mon="${mon ? 1 : 0}" title="${mon ? this._t("actMonitored") : this._t("actNotMonitored")}" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:5px;cursor:pointer;padding:0;color:${mon ? "var(--is-text)" : "var(--is-text-muted)"};${extraStyle}">${_monBookmarkSvg(mon)}</button>`;
     const _seasonSubRows = (r, mobile) => {
       if (!r._raw?.seasons) return "";
       const seasons = (r._raw.seasons || []).filter((ss) => ss.seasonNumber > 0).map((ss) => ({ n: ss.seasonNumber, monitored: ss.monitored, missing: (ss.statistics?.totalEpisodeCount || 0) - (ss.statistics?.episodeFileCount || 0), total: ss.statistics?.totalEpisodeCount || 0 })).filter((ss) => ss.missing > 0).sort((a, b) => a.n - b.n);
@@ -16318,7 +16915,7 @@ var _ActivityRenderMethods = class {
             <span style="font-size:11px;font-weight:700;color:var(--is-text-sec);min-width:28px">S${String(ss.n).padStart(2, "0")}</span>
             <span style="font-size:10px;font-weight:700;color:#fb923c">${ss.total - ss.missing}/${ss.total}</span>
             <span style="flex:1"></span>
-            <select class="act-missing-season-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;color-scheme:light dark"><option value="monitor"${ss.monitored ? " selected" : ""}>Monitor</option><option value="unmonitor"${!ss.monitored ? " selected" : ""}>Unmonitor</option></select>
+            ${_monToggleBtn(ss.monitored, `data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" data-kind="season"`)}
             <button class="act-missing-season-is-btn" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" data-title="${this._escHtml(r._title)}" title="IS S${String(ss.n).padStart(2, "0")}" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>
             <button class="act-missing-as-btn" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" title="AS S${String(ss.n).padStart(2, "0")}" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>
           </div>
@@ -16332,7 +16929,7 @@ var _ActivityRenderMethods = class {
         ${visCols.map((col) => {
         if (col.id === "missing") return `<td style="padding:5px 8px;font-size:10px;font-weight:700;color:#fb923c">${ss.total - ss.missing}/${ss.total}</td>`;
         if (col.id === "monitored") {
-          return `<td style="padding:4px 8px"><select class="act-missing-season-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;width:auto;display:block;margin-left:auto;color-scheme:light dark"><option value="monitor"${ss.monitored ? " selected" : ""}>${this._t("actMonitored")}</option><option value="unmonitor"${!ss.monitored ? " selected" : ""}>${this._t("actNotMonitored")}</option></select></td>`;
+          return `<td style="padding:4px 8px">${_monToggleBtn(ss.monitored, `data-id="${r._id}" data-svc="${r._svc}" data-season="${ss.n}" data-kind="season"`, "margin:0 auto")}</td>`;
         }
         return `<td style="padding:5px 8px"></td>`;
       }).join("")}
@@ -16368,7 +16965,7 @@ var _ActivityRenderMethods = class {
               ${subParts.length ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${subParts.join(" \xB7 ")}</div>` : ""}
             </div>
             <div style="flex-shrink:0;align-self:stretch;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:4px;margin-right:10px">
-              ${!isSonarr ? `<select class="act-missing-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;color-scheme:light dark"><option value="monitor"${r._monitored ? " selected" : ""}>${this._t("actMonitored")}</option><option value="unmonitor"${!r._monitored ? " selected" : ""}>${this._t("actNotMonitored")}</option></select>` : `<select class="act-missing-sonarr-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;color-scheme:light dark"><option value="">No Change</option><option value="all">All Episodes</option><option value="future">Future Eps</option><option value="missing">Missing Eps</option><option value="existing">Existing Eps</option><option value="recent">Recent Eps</option><option value="pilot">Pilot</option><option value="firstSeason">First Season</option><option value="lastSeason">Last Season</option><option value="monitorSpecials">+ Specials</option><option value="unmonitorSpecials">- Specials</option><option value="none">None</option></select>`}
+              ${_monToggleBtn(r._monitored, `data-id="${r._id}" data-svc="${r._svc}" data-kind="${isSonarr ? "series" : "movie"}"`)}
               <div style="display:flex;gap:4px;align-items:center">
                 <button class="act-missing-is-btn" data-id="${r._id}" data-svc="${r._svc}" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" title="IS" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.12);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.75)">${isSvgSm}</button>
                 <button class="act-missing-as-btn" data-id="${r._id}" data-svc="${r._svc}" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" title="${this._t("actAutoSearch")}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9)">${asSvgSm}</button>
@@ -16407,8 +17004,7 @@ var _ActivityRenderMethods = class {
         if (col.id === "added") return `<td style="padding:8px;font-size:10px;color:var(--is-text-muted);white-space:nowrap">${fmtDate(r._added)}</td>`;
         if (col.id === "missing") return `<td style="padding:8px;font-size:10px;font-weight:700;color:${r._missing ? "#fb923c" : "var(--is-text-muted)"}">${r._missing !== null ? `${isSonarr ? totalEp - r._missing + "/" + totalEp : r._missing}` : "\u2014"}</td>`;
         if (col.id === "monitored") {
-          const mon = r._monitored;
-          return isSonarr ? `<td style="padding:4px 8px"><select class="act-missing-sonarr-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;width:100%;color-scheme:light dark"><option value="">No Change</option><option value="all">All Episodes</option><option value="future">Future Eps</option><option value="missing">Missing Eps</option><option value="existing">Existing Eps</option><option value="recent">Recent Eps</option><option value="pilot">Pilot</option><option value="firstSeason">First Season</option><option value="lastSeason">Last Season</option><option value="monitorSpecials">+ Specials</option><option value="unmonitorSpecials">- Specials</option><option value="none">None</option></select></td>` : `<td style="padding:4px 8px"><select class="act-missing-monitor-sel" data-id="${r._id}" data-svc="${r._svc}" style="font-size:10px;padding:1px 2px;border-radius:4px;border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-text);cursor:pointer;height:22px;width:100%;color-scheme:light dark"><option value="monitor"${mon ? " selected" : ""}>${this._t("actMonitored")}</option><option value="unmonitor"${!mon ? " selected" : ""}>${this._t("actNotMonitored")}</option></select></td>`;
+          return `<td style="padding:4px 8px">${_monToggleBtn(r._monitored, `data-id="${r._id}" data-svc="${r._svc}" data-kind="${isSonarr ? "series" : "movie"}"`, "margin:0 auto")}</td>`;
         }
         return "";
       }).join("");
@@ -17064,77 +17660,43 @@ var _WireActivityMethods = class {
           _mRerender();
         });
       });
-      body.addEventListener("change", async (e) => {
-        const snMonSel = e.target.closest(".act-missing-sonarr-monitor-sel");
-        if (snMonSel && this._activityModal) {
-          const val = snMonSel.value;
-          if (!val) return;
-          const id2 = Number(snMonSel.dataset.id);
-          const svc2 = snMonSel.dataset.svc;
-          snMonSel.disabled = true;
+      body.addEventListener("click", async (e) => {
+        if (!this._activityModal) return;
+        const monT = e.target.closest(".act-mon-toggle");
+        if (monT) {
+          const kind = monT.dataset.kind;
+          const id = Number(monT.dataset.id);
+          const svc = monT.dataset.svc;
+          const cur = monT.dataset.mon === "1";
+          monT.disabled = true;
+          monT.innerHTML = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px"></span>`;
           try {
-            await this._callApi("PUT", `arr_stack/${svc2}/series/monitor`, {
-              seriesIds: [id2],
-              monitored: val !== "none",
-              monitoringOptions: { monitor: val }
-            });
-            await this._actLoadTab("missing", modalEl);
-          } catch {
-            snMonSel.disabled = false;
-          }
-          snMonSel.value = "";
-          return;
-        }
-        const seasonMonSel = e.target.closest(".act-missing-season-monitor-sel");
-        if (seasonMonSel && this._activityModal) {
-          const seriesId = Number(seasonMonSel.dataset.id);
-          const svc2 = seasonMonSel.dataset.svc;
-          const seasonNum = Number(seasonMonSel.dataset.season);
-          const monitored2 = seasonMonSel.value === "monitor";
-          seasonMonSel.disabled = true;
-          try {
-            const arr = (svc2 === "sonarr2" ? this._sonarr2 : this._sonarr) || [];
-            const series = arr.find((s) => s.id === seriesId);
-            if (series) {
-              const updatedSeasons = (series.seasons || []).map(
-                (ss) => ss.seasonNumber === seasonNum ? { ...ss, monitored: monitored2 } : ss
-              );
-              const fresh = await this._callApi("PUT", `arr_stack/${svc2}/series/${seriesId}`, { ...series, seasons: updatedSeasons });
-              if (fresh) {
-                const idx2 = arr.findIndex((s) => s.id === seriesId);
-                if (idx2 !== -1) arr[idx2] = { ...arr[idx2], ...fresh };
+            if (kind === "movie") {
+              const arr = svc === "radarr2" ? this._radarr2 : this._radarr;
+              const movie = (arr || []).find((m2) => m2.id === id) || { id };
+              const fresh = await this._callApi("PUT", `arr_stack/${svc}/movie/${id}`, { ...movie, monitored: !cur });
+              if (fresh && arr) {
+                const idx = arr.findIndex((m2) => m2.id === id);
+                if (idx !== -1) arr[idx] = { ...arr[idx], ...fresh };
+              }
+            } else {
+              const arr = (svc === "sonarr2" ? this._sonarr2 : this._sonarr) || [];
+              const series = arr.find((s) => s.id === id);
+              if (series) {
+                const payload = kind === "season" ? { ...series, seasons: (series.seasons || []).map((ss) => ss.seasonNumber === Number(monT.dataset.season) ? { ...ss, monitored: !cur } : ss) } : { ...series, monitored: !cur };
+                const fresh = await this._callApi("PUT", `arr_stack/${svc}/series/${id}`, payload);
+                if (fresh) {
+                  const idx2 = arr.findIndex((s) => s.id === id);
+                  if (idx2 !== -1) arr[idx2] = { ...arr[idx2], ...fresh };
+                }
               }
             }
             await this._actLoadTab("missing", modalEl);
           } catch {
-            seasonMonSel.disabled = false;
+            monT.disabled = false;
           }
           return;
         }
-        const monSel = e.target.closest(".act-missing-monitor-sel");
-        if (!monSel || !this._activityModal) return;
-        const id = Number(monSel.dataset.id);
-        const svc = monSel.dataset.svc;
-        const monitored = monSel.value === "monitor";
-        monSel.disabled = true;
-        const origOpts = monSel.innerHTML;
-        monSel.innerHTML = `<option>\u2026</option>`;
-        try {
-          const arr = svc === "radarr2" ? this._radarr2 : this._radarr;
-          const movie = (arr || []).find((m2) => m2.id === id) || { id };
-          const fresh = await this._callApi("PUT", `arr_stack/${svc}/movie/${id}`, { ...movie, monitored });
-          if (fresh && arr) {
-            const idx = arr.findIndex((m2) => m2.id === id);
-            if (idx !== -1) arr[idx] = { ...arr[idx], ...fresh };
-          }
-          await this._actLoadTab("missing", modalEl);
-        } catch {
-          monSel.innerHTML = origOpts;
-          monSel.disabled = false;
-        }
-      }, { signal });
-      body.addEventListener("click", async (e) => {
-        if (!this._activityModal) return;
         const infoBtn = e.target.closest(".act-missing-info-btn");
         if (infoBtn) {
           const tmdb = infoBtn.dataset.tmdb || null;
@@ -20426,6 +20988,13 @@ var ArrStackCard = class extends HTMLElement {
     this._plexSessions = [];
     this._plexConfigured = null;
     this._plexLastFetch = 0;
+    this._jellyfinSessions = [];
+    this._jellyfinLastFetch = 0;
+    this._embySessions = [];
+    this._embyLastFetch = 0;
+    this._kodiSessions = [];
+    this._kodiLastFetch = 0;
+    this._kodiEntityIds = /* @__PURE__ */ new Set();
     this._overseerrConfigured = null;
     this._seerrRadarr = null;
     this._seerrRadarr2 = null;
@@ -20471,6 +21040,11 @@ var ArrStackCard = class extends HTMLElement {
     this._snExpandedSeasons = /* @__PURE__ */ new Set();
     this._snEpisodes = /* @__PURE__ */ new Map();
     this._snActiveIs = null;
+    this._snMonitorBusy = null;
+    this._popupMonExpand = false;
+    this._popupMonBusy = null;
+    this._popupCastOpen = false;
+    this._popupCastPage = 0;
     this._snIsState = null;
     this._snIsResults = [];
     this._snIsError = null;
@@ -20610,6 +21184,23 @@ var ArrStackCard = class extends HTMLElement {
           this._streamsEnded.delete(id);
           this._reRenderSection("streams");
           break;
+        }
+      }
+      if (this._kodiEntityIds.size) {
+        let kodiChanged = false;
+        for (const id of this._kodiEntityIds) {
+          if (cur[id]?.state !== old[id]?.state) {
+            kodiChanged = true;
+            break;
+          }
+        }
+        if (kodiChanged) {
+          this._kodiSessions = [...this._kodiEntityIds].map((id) => {
+            const s = cur[id];
+            if (!s || s.state !== "playing" && s.state !== "paused") return null;
+            return { id, source: "kodi", state: s.state, attr: s.attributes || {} };
+          }).filter(Boolean);
+          this._reRenderSection("streams");
         }
       }
     }
@@ -20806,6 +21397,15 @@ var ArrStackCard = class extends HTMLElement {
     const lang = this._cfg?.localisation === "cs" ? "cs" : "en";
     return (ARR_I18N[lang] || ARR_I18N.cs)[key] || key;
   }
+  // "X seasons" s českou plurálovou logikou (1 série / 2–4 série / 5+ sérií)
+  _tSeasons(n) {
+    const lang = this._cfg?.localisation === "cs" ? "cs" : "en";
+    if (lang === "cs") {
+      const word = n === 1 ? "s\xE9rie" : n >= 2 && n <= 4 ? "s\xE9rie" : "s\xE9ri\xED";
+      return `${n} ${word}`;
+    }
+    return `${n} ${n === 1 ? "season" : "seasons"}`;
+  }
   // Returns items per page for a given section (respects YAML config)
   _perPage(section) {
     if (section === "qbit") return parseInt(this._cfgGet("downloads", "torrentItems", 3)) || 3;
@@ -20908,7 +21508,10 @@ var ArrStackCard = class extends HTMLElement {
       plex: "plex",
       tautulli: "tautulli",
       prowlarr: "prowlarr",
-      jellystat: "jellystat"
+      jellystat: "jellystat",
+      jellyfin: "jellyfin",
+      emby: "emby",
+      kodi: "kodi"
     };
     const mdiIcons = {
       radarr: "mdi:filmstrip",
@@ -20920,7 +21523,10 @@ var ArrStackCard = class extends HTMLElement {
       plex: "mdi:plex",
       tautulli: "mdi:chart-bar",
       prowlarr: "mdi:magnify-scan",
-      jellystat: "mdi:chart-line"
+      jellystat: "mdi:chart-line",
+      jellyfin: "mdi:jellyfish-outline",
+      emby: "mdi:emby",
+      kodi: "mdi:kodi"
     };
     const customSvgs = {
       qbit: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="9.5" font-weight="700" font-family="sans-serif">qb</text></svg>`,
@@ -20955,6 +21561,9 @@ var ArrStackCard = class extends HTMLElement {
       plex: `rgba(229,160,13,${o})`,
       tautulli: `rgba(255,111,0,${o})`,
       jellystat: `rgba(0,164,220,${o})`,
+      jellyfin: `rgba(0,164,220,${o})`,
+      emby: `rgba(82,182,92,${o})`,
+      kodi: `rgba(23,154,215,${o})`,
       prowlarr: `rgba(255,80,0,${o})`,
       qbit: `rgba(30,140,255,${o})`,
       deluge: `rgba(10,80,220,${o})`,
@@ -20975,6 +21584,7 @@ var ArrStackCard = class extends HTMLElement {
       plex: `rgba(200,100,0,${o})`,
       tautulli: `rgba(255,255,255,${o})`,
       jellystat: `rgba(139,92,246,${o})`,
+      jellyfin: `rgba(139,92,246,${o})`,
       prowlarr: `rgba(255,160,50,${o})`,
       qbit: `rgba(10,80,220,${o})`,
       deluge: `rgba(5,45,160,${o})`,
