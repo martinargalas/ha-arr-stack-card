@@ -1505,8 +1505,10 @@ var STYLES = `
       .dc-root-path { font-size: 10px; color: rgba(var(--arr-pt-rgb, 255, 255, 255), 0.6); font-weight: 600; line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .disk-chip.dc-pageable { padding: 0; }
       .stream-badge { font-size: 9px; font-weight: 800; padding: 1px 4px; border-radius: 3px; letter-spacing: 0.04em; vertical-align: middle; }
-      .stream-badge-plex { background: rgba(229,160,13,0.25); color: rgba(229,160,13,1); border: 1px solid rgba(229,160,13,0.35); }
-      .stream-badge-jf   { background: rgba(0,164,220,0.25);  color: rgba(0,164,220,1);  border: 1px solid rgba(0,164,220,0.35); }
+      .stream-badge-plex { background: rgba(229,160,13,0.75); color: #fff; border: 1px solid rgba(229,160,13,0.35); }
+      .stream-badge-jf   { background: rgba(0,164,220,0.75);  color: #fff; border: 1px solid rgba(0,164,220,0.35); }
+      .stream-badge-emby { background: rgba(82,182,92,0.75);  color: #fff; border: 1px solid rgba(82,182,92,0.35); }
+      .stream-badge-kodi { background: rgba(23,154,215,0.75); color: #fff; border: 1px solid rgba(23,154,215,0.35); }
       .stream-prog-track { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.15); z-index: 2; }
       .stream-prog-fill  { height: 100%; background: rgba(229,160,13,0.9); border-radius: 0 1px 0 0; transition: width 0.5s linear; }
       .stream-paused img { filter: brightness(0.55) saturate(0.4); }
@@ -4553,6 +4555,8 @@ var _FetchMethods = class {
       this._fetchJellystat(),
       this._fetchPlexSessions(),
       this._fetchJellyfinSessions(),
+      this._fetchEmbySessions(),
+      this._fetchKodiSessions(),
       this._fetchActivityHistory(),
       this._fetchActivityBlocklist(),
       this._fetchProwlarr()
@@ -4750,6 +4754,103 @@ var _FetchMethods = class {
       }
     };
   }
+  async _fetchEmbySessions() {
+    const now = Date.now();
+    if (now - (this._embyLastFetch || 0) < 5e3) return;
+    this._embyLastFetch = now;
+    try {
+      const raw = await this._callApi("GET", "arr_stack/emby/sessions");
+      if (raw?._notConfigured) {
+        this._embySessions = [];
+        return;
+      }
+      const sessions = raw?.sessions || [];
+      const serverUrl = raw?.server_url || "";
+      const apiToken = raw?.api_token || "";
+      this._embySessions = sessions.map((s) => this._normalizeEmbySession(s, serverUrl, apiToken));
+    } catch (_) {
+      this._embySessions = [];
+    }
+  }
+  _normalizeEmbySession(s, serverUrl, apiToken) {
+    const np = s.NowPlayingItem || {};
+    const ps = s.PlayState || {};
+    const type = (np.Type || "").toLowerCase();
+    const isTV = type === "episode";
+    const isMusic = type === "audio";
+    const nl = `${s.Client || ""} ${s.DeviceName || ""}`.toLowerCase();
+    let deviceIcon = "mdi:television";
+    let deviceName = "TV";
+    if (/iphone|ios/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    } else if (/ipad/i.test(nl)) {
+      deviceIcon = "mdi:tablet";
+      deviceName = "Tablet";
+    } else if (/macbook|for mac\b|mac desktop/i.test(nl)) {
+      deviceIcon = "mdi:laptop";
+      deviceName = "Mac";
+    } else if (/windows|desktop|pc\b/i.test(nl)) {
+      deviceIcon = "mdi:monitor";
+      deviceName = "PC";
+    } else if (/web|chrome|browser|safari|firefox/i.test(nl)) {
+      deviceIcon = "mdi:web";
+      deviceName = "Browser";
+    } else if (/android.*tv|fire.*tv|shield|apple.*tv/i.test(nl)) {
+      deviceIcon = "mdi:television";
+      deviceName = "TV";
+    } else if (/android/i.test(nl)) {
+      deviceIcon = "mdi:cellphone";
+      deviceName = "Phone";
+    }
+    const itemId = np.Id || "";
+    const providers = np.ProviderIds || {};
+    const poster = itemId && serverUrl ? `${serverUrl}/Items/${itemId}/Images/Primary?api_key=${apiToken}` : null;
+    return {
+      id: `emby:${s.Id || s.id}`,
+      source: "emby",
+      state: ps.IsPaused ? "paused" : "playing",
+      attr: {
+        media_content_type: isTV ? "episode" : isMusic ? "music" : "movie",
+        media_title: np.Name || "",
+        media_series_title: isTV ? np.SeriesName || "" : "",
+        media_season: isTV ? np.ParentIndexNumber || 0 : 0,
+        media_episode: isTV ? np.IndexNumber || 0 : 0,
+        media_artist: isMusic ? np.AlbumArtist || "" : "",
+        media_album_name: isMusic ? np.Album || "" : "",
+        media_channel: "",
+        media_library_title: "",
+        entity_picture: poster,
+        media_duration: Math.round((np.RunTimeTicks || 0) / 1e7),
+        media_position: Math.round((ps.PositionTicks || 0) / 1e7),
+        media_position_updated_at: (/* @__PURE__ */ new Date()).toISOString(),
+        friendly_name: `${s.Client || ""} ${s.DeviceName || ""}`.trim(),
+        _embyDeviceIcon: deviceIcon,
+        _embyDeviceName: deviceName,
+        _embyUser: s.UserName || "",
+        _embyTmdbId: providers.Tmdb || providers.tmdb || null,
+        _embyTvdbId: providers.Tvdb || providers.tvdb || null
+      }
+    };
+  }
+  async _fetchKodiSessions() {
+    const now = Date.now();
+    if (now - (this._kodiLastFetch || 0) < 5e3) return;
+    this._kodiLastFetch = now;
+    try {
+      const raw = await this._callApi("GET", "arr_stack/kodi/sessions");
+      const sessions = raw?.sessions || [];
+      if (raw?.known_ids?.length) this._kodiEntityIds = new Set(raw.known_ids);
+      this._kodiSessions = sessions.map((s) => ({
+        id: s.entity_id,
+        source: "kodi",
+        state: s.state,
+        attr: s.attributes || {}
+      }));
+    } catch (_) {
+      this._kodiSessions = [];
+    }
+  }
   async _fetchDownloadsAndRender() {
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
@@ -4764,7 +4865,11 @@ var _FetchMethods = class {
       this._fetchSab(),
       this._fetchSabHistory(),
       this._fetchNzbget(),
-      this._fetchNzbgetHistory()
+      this._fetchNzbgetHistory(),
+      this._fetchPlexSessions(),
+      this._fetchJellyfinSessions(),
+      this._fetchEmbySessions(),
+      this._fetchKodiSessions()
     ]);
     if (hadItems) {
       const currQbit = new Set((this._qbit || []).map((t) => t.hash));
@@ -7338,7 +7443,7 @@ var _RenderRight = class {
     const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "activity", "prowlarr"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
-    const hasActiveStreams = (this._jellyfinSessions || []).length > 0 || Object.keys(states).some((id) => {
+    const hasActiveStreams = (this._jellyfinSessions || []).length > 0 || (this._embySessions || []).length > 0 || (this._kodiSessions || []).length > 0 || Object.keys(states).some((id) => {
       if (!id.startsWith("media_player.plex_")) return false;
       const st = states[id].state;
       return st === "playing" || st === "paused";
@@ -8084,7 +8189,21 @@ var _RenderRight = class {
       if (dur > 0 && pos >= dur - 2) return false;
       return true;
     });
-    const streams = [...plexStreams, ...jellyfinStreams];
+    const embyStreams = (this._embySessions || []).filter((s) => {
+      if (this._streamsEnded.has(s.id)) return false;
+      const dur = s.attr.media_duration || 0;
+      const pos = s.attr.media_position || 0;
+      if (dur > 0 && pos >= dur - 2) return false;
+      return true;
+    });
+    const kodiStreams = (this._kodiSessions || []).filter((s) => {
+      if (this._streamsEnded.has(s.id)) return false;
+      const dur = s.attr.media_duration || 0;
+      const pos = s.attr.media_position || 0;
+      if (dur > 0 && pos >= dur - 2) return false;
+      return true;
+    });
+    const streams = [...plexStreams, ...jellyfinStreams, ...embyStreams, ...kodiStreams];
     this._streams = streams;
     this._startStreamsTimer(streams);
     this._syncStreamPopup();
@@ -8092,7 +8211,10 @@ var _RenderRight = class {
     const grid = this._pagedGridWithSmp(streams, "streams", (s) => this._renderStreamCard(s));
     const hasPlex = plexStreams.length > 0;
     const hasJF = jellyfinStreams.length > 0;
-    const overlayApp = hasJF && !hasPlex ? "jellyfin" : "plex";
+    const hasEmby = embyStreams.length > 0;
+    const hasKodi = kodiStreams.length > 0;
+    const activeApps = [hasPlex && "plex", hasJF && "jellyfin", hasEmby && "emby", hasKodi && "kodi"].filter(Boolean);
+    const overlayApp = activeApps[0] || "plex";
     const _streamOverlay = (() => {
       if (!this._categoryOverlaysEnabled) return "";
       const o = 0.4;
@@ -8103,7 +8225,7 @@ var _RenderRight = class {
       }
       return this._sectionOverlayHtml(overlayApp, 25, 75, o);
     })();
-    const iconHtml = hasPlex && hasJF ? `${this._appIcon("plex", 20)}${this._appIcon("jellyfin", 20)}` : hasPlex ? this._appIcon("plex", 24) : this._appIcon("jellyfin", 24);
+    const iconHtml = activeApps.length > 1 ? activeApps.map((a) => this._appIcon(a, 20)).join("") : this._appIcon(activeApps[0] || "plex", 24);
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${_streamOverlay}
@@ -8158,8 +8280,10 @@ var _RenderRight = class {
     }, 1e3);
   }
   _renderStreamCard({ id, state, attr }) {
-    const isPlex = id.startsWith("media_player.plex_");
+    const isPlex = id.startsWith("media_player.plex_") || id.startsWith("plex:");
     const isJellyfin = id.startsWith("jellyfin:");
+    const isEmby = id.startsWith("emby:");
+    const isKodi = (this._kodiSessions || []).some((s) => s.id === id);
     const isPlaying = state === "playing";
     const contentType = attr.media_content_type || "";
     const isMusic = contentType === "music" || contentType === "artist" || contentType === "album";
@@ -8169,31 +8293,31 @@ var _RenderRight = class {
     const title = isLiveTV ? channel || attr.media_title || "" : isTV ? attr.media_series_title || attr.media_title || "" : attr.media_artist || attr.media_title || "";
     const epLabel = !isLiveTV && isTV && attr.media_season && attr.media_episode ? `S${String(attr.media_season).padStart(2, "0")}E${String(attr.media_episode).padStart(2, "0")}` : "";
     const subtitle = isMusic ? attr.media_album_name || "" : isLiveTV ? attr.media_title || "" : isTV ? attr.media_title || "" : "";
-    let deviceIcon = attr._jfDeviceIcon || "mdi:television";
-    let deviceName = attr._jfDeviceName || "TV";
+    let deviceIcon = attr._jfDeviceIcon || attr._embyDeviceIcon || "mdi:television";
+    let deviceName = attr._jfDeviceName || attr._embyDeviceName || "TV";
     const nl = (attr.friendly_name || id).toLowerCase();
-    if (!isJellyfin && /iphone|android.*mobile|for\s+ios|for\s+android\s*\(mobile\)/i.test(nl)) {
+    if (!isJellyfin && !isEmby && /iphone|android.*mobile|for\s+ios|for\s+android\s*\(mobile\)/i.test(nl)) {
       deviceIcon = "mdi:cellphone";
       deviceName = "Phone";
-    } else if (!isJellyfin && /ipad|for\s+android\s*\(tablet\)|tablet/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /ipad|for\s+android\s*\(tablet\)|tablet/i.test(nl)) {
       deviceIcon = "mdi:tablet";
       deviceName = "Tablet";
-    } else if (!isJellyfin && /macbook|for\s+mac\b|mac\s+desktop/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /macbook|for\s+mac\b|mac\s+desktop/i.test(nl)) {
       deviceIcon = "mdi:laptop";
       deviceName = "Mac";
-    } else if (!isJellyfin && /laptop/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /laptop/i.test(nl)) {
       deviceIcon = "mdi:laptop";
       deviceName = "Notebook";
-    } else if (!isJellyfin && /windows|for\s+windows|desktop|pc\b/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /windows|for\s+windows|desktop|pc\b/i.test(nl)) {
       deviceIcon = "mdi:monitor";
       deviceName = "PC";
-    } else if (!isJellyfin && /web|chrome|browser|safari|firefox|for\s+web/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /web|chrome|browser|safari|firefox|for\s+web/i.test(nl)) {
       deviceIcon = "mdi:web";
       deviceName = "Browser";
-    } else if (!isJellyfin && /apple\s*tv|android\s*tv|fire\s*tv|roku|samsung.*tv|lg.*tv|shield|htpc|for\s+tv/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /apple\s*tv|android\s*tv|fire\s*tv|roku|samsung.*tv|lg.*tv|shield|htpc|for\s+tv/i.test(nl)) {
       deviceIcon = "mdi:television";
       deviceName = "TV";
-    } else if (!isJellyfin && /android/i.test(nl)) {
+    } else if (!isJellyfin && !isEmby && /android/i.test(nl)) {
       deviceIcon = "mdi:cellphone";
       deviceName = "Phone";
     }
@@ -8217,7 +8341,7 @@ var _RenderRight = class {
     const initPct = duration > 0 ? (currentPos / duration * 100).toFixed(2) : 0;
     const progBar = duration > 0 ? `<div class="stream-prog-track"><div class="stream-prog-fill" data-entity="${this._escHtml(id)}" data-pos="${position}" data-dur="${duration}" data-updated="${updatedAt}" data-state="${state}" style="width:${initPct}%;transition:none"></div></div>` : "";
     const svcBadge = this._statusBadge(
-      isPlex ? `<span class="stream-badge stream-badge-plex">PLEX</span>` : `<span class="stream-badge stream-badge-jf">JF</span>`
+      isPlex ? `<span class="stream-badge stream-badge-plex">PLEX</span>` : isEmby ? `<span class="stream-badge stream-badge-emby">EMBY</span>` : isKodi ? `<span class="stream-badge stream-badge-kodi">KODI</span>` : `<span class="stream-badge stream-badge-jf">JF</span>`
     );
     const pausedOverlay = !isPlaying ? `<div class="stream-paused-overlay"><ha-icon icon="mdi:pause-circle" style="--mdc-icon-size:32px;opacity:0.85"></ha-icon></div>` : "";
     const deviceTag = `<span class="stream-device-tag"><ha-icon icon="${deviceIcon}" style="--mdc-icon-size:9px"></ha-icon> ${this._escHtml(deviceName)}</span>`;
@@ -8237,6 +8361,10 @@ var _RenderRight = class {
       }
     } else if (isJellyfin) {
       userName = attr._jfUser || "";
+    } else if (isEmby) {
+      userName = attr._embyUser || "";
+    } else if (isKodi) {
+      userName = "";
     } else {
       const fn = attr.friendly_name || "";
       const jf = fn.replace(/^jellyfin\s*/i, "").trim();
@@ -11254,6 +11382,9 @@ var _PopupMethods = class {
     if (entityId.startsWith("jellyfin:")) {
       const jfSession = (this._jellyfinSessions || []).find((s) => s.id === entityId);
       if (jfSession?.attr?._jfTmdbId) sessionTmdbId = String(jfSession.attr._jfTmdbId);
+    } else if (entityId.startsWith("emby:")) {
+      const embySession = (this._embySessions || []).find((s) => s.id === entityId);
+      if (embySession?.attr?._embyTmdbId) sessionTmdbId = String(embySession.attr._embyTmdbId);
     }
     if (!sessionTmdbId && (entityId.startsWith("media_player.plex_") || entityId.startsWith("media_player.plex "))) {
       try {
@@ -11387,6 +11518,13 @@ var _PopupMethods = class {
         attr = jf.attr;
       }
       updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    } else if (entityId.startsWith("emby:")) {
+      const emby = (this._embySessions || []).find((s) => s.id === entityId);
+      if (emby) {
+        state = emby.state;
+        attr = emby.attr;
+      }
+      updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
     } else {
       const s = this._hass?.states?.[entityId];
       attr = s?.attributes || {};
@@ -11400,6 +11538,9 @@ var _PopupMethods = class {
     this._popup._updatedAt = updatedAt;
     this._popup._plexMachineId = null;
     this._popup._jfSessionId = entityId.startsWith("jellyfin:") ? entityId.replace("jellyfin:", "") : null;
+    this._popup._embySessionId = entityId.startsWith("emby:") ? entityId.replace("emby:", "") : null;
+    const isKodiSession = (this._kodiSessions || []).some((s) => s.id === entityId);
+    this._popup._kodiEntityId = isKodiSession ? entityId : null;
     if (entityId.startsWith("media_player.plex_")) this._fetchPlexMachineId(entityId);
   }
   async _fetchPlexMachineId(entityId) {
@@ -12439,7 +12580,7 @@ var _PopupMethods = class {
       }
       if (t.dataset.action === "stream-terminate-confirm") {
         const sessionId = t.dataset.sessionId;
-        if (!sessionId && !this._popup?._jfSessionId) return;
+        if (!sessionId && !this._popup?._jfSessionId && !this._popup?._embySessionId && !this._popup?._kodiEntityId) return;
         const modal = this.shadowRoot?.querySelector(".plex-terminate-modal");
         const reason = (modal?.querySelector("#stream-terminate-reason")?.value || "").trim() || this._t("terminateDefault");
         const stopBtn = this.shadowRoot?.querySelector('[data-action="stream-terminate-show"]');
@@ -12461,6 +12602,12 @@ var _PopupMethods = class {
         if (this._popup?._jfSessionId) {
           this._callApi("POST", "arr_stack/jellyfin/stop", { session_id: this._popup._jfSessionId, message: reason }).catch(() => {
           });
+        } else if (this._popup?._embySessionId) {
+          this._callApi("POST", "arr_stack/emby/stop", { session_id: this._popup._embySessionId, message: reason }).catch(() => {
+          });
+        } else if (this._popup?._kodiEntityId) {
+          this._callApi("POST", "arr_stack/kodi/stop", { entity_id: this._popup._kodiEntityId, message: reason }).catch(() => {
+          });
         } else {
           this._callApi("DELETE", "arr_stack/plex/session/terminate", { sessionId, reason }).catch(() => {
           });
@@ -12471,14 +12618,24 @@ var _PopupMethods = class {
           setTimeout(() => {
             if (stopBtn) stopBtn.innerHTML = `${checkSvgInline} ${this._t("stopPlayback")}`;
             setTimeout(() => {
-              if (this._popup) this._popup._plexSessionId = null;
+              if (this._popup) {
+                this._popup._plexSessionId = null;
+                this._popup._jfSessionId = null;
+                this._popup._embySessionId = null;
+                this._popup._kodiEntityId = null;
+              }
               this._renderPopupEl();
               this._reRenderSection?.("streams");
             }, 600);
           }, 1e3);
         } else {
           setTimeout(() => {
-            if (this._popup) this._popup._plexSessionId = null;
+            if (this._popup) {
+              this._popup._plexSessionId = null;
+              this._popup._jfSessionId = null;
+              this._popup._embySessionId = null;
+              this._popup._kodiEntityId = null;
+            }
             this._renderPopupEl();
             this._reRenderSection?.("streams");
           }, 1e3);
@@ -13091,7 +13248,7 @@ var _PopupMethods = class {
         }
       }
     }
-    const canTerminate = !!(d._streamEntity && (d._plexSessionId || d._jfSessionId)) && !!this._hass?.user?.is_admin;
+    const canTerminate = !!(d._streamEntity && (d._plexSessionId || d._jfSessionId || d._embySessionId || d._kodiEntityId)) && !!this._hass?.user?.is_admin;
     const terminateActionBtn = canTerminate ? `
     <button class="is-open-btn remove-disc-btn" data-action="stream-terminate-show"
       data-session-id="${this._escHtml(d._plexSessionId)}">
@@ -20833,6 +20990,11 @@ var ArrStackCard = class extends HTMLElement {
     this._plexLastFetch = 0;
     this._jellyfinSessions = [];
     this._jellyfinLastFetch = 0;
+    this._embySessions = [];
+    this._embyLastFetch = 0;
+    this._kodiSessions = [];
+    this._kodiLastFetch = 0;
+    this._kodiEntityIds = /* @__PURE__ */ new Set();
     this._overseerrConfigured = null;
     this._seerrRadarr = null;
     this._seerrRadarr2 = null;
@@ -21022,6 +21184,23 @@ var ArrStackCard = class extends HTMLElement {
           this._streamsEnded.delete(id);
           this._reRenderSection("streams");
           break;
+        }
+      }
+      if (this._kodiEntityIds.size) {
+        let kodiChanged = false;
+        for (const id of this._kodiEntityIds) {
+          if (cur[id]?.state !== old[id]?.state) {
+            kodiChanged = true;
+            break;
+          }
+        }
+        if (kodiChanged) {
+          this._kodiSessions = [...this._kodiEntityIds].map((id) => {
+            const s = cur[id];
+            if (!s || s.state !== "playing" && s.state !== "paused") return null;
+            return { id, source: "kodi", state: s.state, attr: s.attributes || {} };
+          }).filter(Boolean);
+          this._reRenderSection("streams");
         }
       }
     }
@@ -21330,7 +21509,9 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: "tautulli",
       prowlarr: "prowlarr",
       jellystat: "jellystat",
-      jellyfin: "jellyfin"
+      jellyfin: "jellyfin",
+      emby: "emby",
+      kodi: "kodi"
     };
     const mdiIcons = {
       radarr: "mdi:filmstrip",
@@ -21343,7 +21524,9 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: "mdi:chart-bar",
       prowlarr: "mdi:magnify-scan",
       jellystat: "mdi:chart-line",
-      jellyfin: "mdi:jellyfish-outline"
+      jellyfin: "mdi:jellyfish-outline",
+      emby: "mdi:emby",
+      kodi: "mdi:kodi"
     };
     const customSvgs = {
       qbit: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="9.5" font-weight="700" font-family="sans-serif">qb</text></svg>`,
@@ -21379,6 +21562,8 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: `rgba(255,111,0,${o})`,
       jellystat: `rgba(0,164,220,${o})`,
       jellyfin: `rgba(0,164,220,${o})`,
+      emby: `rgba(82,182,92,${o})`,
+      kodi: `rgba(23,154,215,${o})`,
       prowlarr: `rgba(255,80,0,${o})`,
       qbit: `rgba(30,140,255,${o})`,
       deluge: `rgba(10,80,220,${o})`,
