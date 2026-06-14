@@ -61,7 +61,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | Overseerr / Jellyseerr | Media requests, discovery, approvals | Optional |
 | Bazarr | Subtitle status per movie/show | Optional |
 | Plex | Active stream monitoring and playback control | Optional |
-| Jellyfin | Active stream monitoring | Optional |
+| Jellyfin | Active stream monitoring and playback control | Optional |
 | Emby | Active stream monitoring and playback control | Optional |
 | Kodi | Active stream monitoring and playback control | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
