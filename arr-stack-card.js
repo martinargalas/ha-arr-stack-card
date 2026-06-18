@@ -278,8 +278,9 @@ var ArrStackCardEditor = class extends HTMLElement {
         <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide.</div>
         <div class="cat-list">
           ${this._getCats().filter((c) => {
-      if (!this._hass?.user?.is_admin && ["tautulli", "jellystat", "activity", "prowlarr"].includes(c.id)) return false;
+      if (!this._hass?.user?.is_admin && ["tautulli", "jellystat", "tracearr", "activity", "prowlarr"].includes(c.id)) return false;
       if (c.id === "prowlarr" && this._caps !== null && !this._caps?.prowlarr) return false;
+      if (c.id === "tracearr" && this._caps !== null && !this._caps?.tracearr) return false;
       return true;
     }).map((c) => `
             <div class="cat-item${c.enabled === false ? " cat-disabled" : ""}" draggable="true" data-cat-id="${c.id}">
@@ -358,6 +359,7 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "streams", enabled: false },
       { id: "tautulli", enabled: false },
       { id: "jellystat", enabled: false },
+      { id: "tracearr", enabled: false },
       { id: "activity", enabled: false },
       { id: "prowlarr", enabled: false }
     ];
@@ -384,6 +386,7 @@ var ArrStackCardEditor = class extends HTMLElement {
       streams: "Now Playing (Plex / Jellyfin) \u2014 auto-hidden when nothing plays",
       tautulli: "Statistics (Plex)",
       jellystat: "Statistics (Jellyfin)",
+      tracearr: "Streaming Access (Tracearr)",
       activity: "Activity (Queue / History / Blocklist)",
       prowlarr: "Prowlarr (Indexers / Stats / History)"
     }[id] || id;
@@ -944,9 +947,77 @@ var ARR_I18N = {
     // Statistics section headers
     tlStatisticsPlex: "Statistiky (Plex)",
     tlStatisticsJellyfin: "Statistiky (Jellyfin)",
+    // Tracearr
+    traTitle: "Streaming Stats",
+    traOverview: "P\u0159ehled",
+    traActivity: "Aktivita",
+    traViolations: "Violations",
+    traServers: "Servery",
+    traAllClear: "V\u0161e OK",
+    traNoViolations: "\u017D\xE1dn\xE9 violations",
+    traNew: "nov\xE9",
+    traStreamsNow: "Streamy nyn\xED",
+    traUsers: "U\u017Eivatel\xE9",
+    traThisMonth: "tento m\u011Bs\xEDc",
+    traActivity7d: "P\u0159ehr\xE1n\xED 7d",
+    traRecentViolations: "Ned\xE1vn\xE9 violations",
+    traAllTypes: "V\u0161echny typy",
+    traAllUsers: "V\u0161ichni u\u017Eivatel\xE9",
+    traAllServers: "V\u0161echny servery",
+    traAllMedia: "V\u0161e m\xE9dia",
+    traSearch: "Hledat\u2026",
+    traUser: "U\u017Eivatel",
+    traServer: "Server",
+    traMedia: "M\xE9dium",
+    traNaposledy: "Naposledy",
+    traPlaybackTrend: "P\u0159ehr\xE1v\xE1n\xED",
     actActivityQueue: "Fronta aktivit",
     // Columns picker header
-    actColPickerHdr: "Sloupce"
+    actColPickerHdr: "Sloupce",
+    // Library analytics tabs
+    traQuality: "Kvalita",
+    traStorage: "\xDAlo\u017Ei\u0161t\u011B",
+    traWatch: "Sledov\xE1n\xED",
+    traWatchTab: "Watch",
+    traQualityEvolution: "V\xFDvoj kvality",
+    traCurrentDistribution: "Aktu\xE1ln\xED rozlo\u017Een\xED",
+    traTotalSize: "Celkov\xE1 velikost",
+    traTotalItems: "Polo\u017Eek celkem",
+    traGrowth30d: "N\xE1r\u016Fst (30d)",
+    traMovies: "Filmy",
+    traStorageTrend: "Trend \xFAlo\u017Ei\u0161t\u011B",
+    traResolution: "Rozli\u0161en\xED",
+    traPlays: "P\u0159ehr\xE1n\xED",
+    traDuration: "D\xE9lka",
+    traType: "Typ",
+    traVideoCodecs: "Video kodeky",
+    traAudioCodecs: "Audio kodeky",
+    traAudioChannels: "Audio kan\xE1ly",
+    traNeverWatched: "Nikdy neshl\xE9dnuto",
+    traStaleContent: "Zastaral\xFD obsah",
+    traAdded: "P\u0159id\xE1no",
+    traSize: "Velikost",
+    traDaysAgo: "p\u0159ed %d dny",
+    traYesterday: "v\u010Dera",
+    traToday: "dnes",
+    traMostWatched: "Nejv\xEDce sledovan\xE9",
+    traBingeHighlights: "Binge anal\xFDza",
+    traViewingHours: "Hodiny sledov\xE1n\xED",
+    traMonthlyTrends: "M\u011Bs\xED\u010Dn\xED trendy",
+    traWatchTime: "Celkov\xFD \u010Das",
+    traWatchedOf: "Sledov\xE1no",
+    traPeakHour: "\u0160pi\u010Dkov\xE1 hodina",
+    traBingeScore: "Sk\xF3re",
+    traConsecutive: "Konsek.",
+    traMaxDay: "Max/den",
+    traHighlyAddictive: "Vysoce n\xE1vykov\xE9",
+    traAddictive: "N\xE1vykov\xE9",
+    traBingeable: "Binge",
+    traWatchHours: "Hod. sledov\xE1n\xED",
+    traViewers: "Div\xE1ci",
+    traCompletion: "Dokon\u010Den\xED",
+    traBusiest: "Nejru\u0161n\u011Bj\u0161\xED",
+    traQuietest: "Nejklidn\u011Bj\u0161\xED"
   },
   en: {
     downloads: "Downloads",
@@ -1283,9 +1354,77 @@ var ARR_I18N = {
     // Statistics section headers
     tlStatisticsPlex: "Statistics (Plex)",
     tlStatisticsJellyfin: "Statistics (Jellyfin)",
+    // Tracearr
+    traTitle: "Streaming Stats",
+    traOverview: "Overview",
+    traActivity: "Activity",
+    traViolations: "Violations",
+    traServers: "Servers",
+    traAllClear: "All clear",
+    traNoViolations: "No violations",
+    traNew: "new",
+    traStreamsNow: "Active streams",
+    traUsers: "Users",
+    traThisMonth: "this month",
+    traActivity7d: "Plays 7d",
+    traRecentViolations: "Recent violations",
+    traAllTypes: "All types",
+    traAllUsers: "All users",
+    traAllServers: "All servers",
+    traAllMedia: "All media",
+    traSearch: "Search\u2026",
+    traUser: "User",
+    traServer: "Server",
+    traMedia: "Media",
+    traNaposledy: "Last seen",
+    traPlaybackTrend: "Playback trend",
     actActivityQueue: "Activity Queue",
     // Columns picker header
-    actColPickerHdr: "Columns"
+    actColPickerHdr: "Columns",
+    // Library analytics tabs
+    traQuality: "Quality",
+    traStorage: "Storage",
+    traWatch: "Most Watched",
+    traWatchTab: "Watch",
+    traQualityEvolution: "Quality evolution",
+    traCurrentDistribution: "Current distribution",
+    traTotalSize: "Total size",
+    traTotalItems: "Total items",
+    traGrowth30d: "Growth (30d)",
+    traMovies: "Movies",
+    traStorageTrend: "Storage trend",
+    traResolution: "Resolution",
+    traPlays: "Plays",
+    traDuration: "Duration",
+    traType: "Type",
+    traVideoCodecs: "Video codecs",
+    traAudioCodecs: "Audio codecs",
+    traAudioChannels: "Audio channels",
+    traNeverWatched: "Never Watched",
+    traStaleContent: "Stale Content",
+    traAdded: "Added",
+    traSize: "Size",
+    traDaysAgo: "%d days ago",
+    traYesterday: "yesterday",
+    traToday: "today",
+    traMostWatched: "Most Watched",
+    traBingeHighlights: "Binge Highlights",
+    traViewingHours: "Viewing Hours",
+    traMonthlyTrends: "Monthly Trends",
+    traWatchTime: "Total Watch Time",
+    traWatchedOf: "Watched",
+    traPeakHour: "Peak Hour",
+    traBingeScore: "Score",
+    traConsecutive: "Consec.",
+    traMaxDay: "Max/Day",
+    traHighlyAddictive: "Highly Addictive",
+    traAddictive: "Addictive",
+    traBingeable: "Bingeable",
+    traWatchHours: "Watch Hours",
+    traViewers: "Viewers",
+    traCompletion: "Completion",
+    traBusiest: "Busiest",
+    traQuietest: "Quietest"
   }
 };
 
@@ -3541,6 +3680,14 @@ var STYLES = `
       }
       /* Hover highlight for column groups */
       .tl-g-col:hover .tl-g-anim-bar { opacity: 1 !important; filter: brightness(1.15); }
+      @keyframes tl-g-bar-horiz {
+        from { transform: scaleX(0); opacity: 0.4; }
+        to   { transform: scaleX(1); opacity: 1; }
+      }
+      .tl-g-anim-bar-h {
+        transform-origin: left center;
+        animation: tl-g-bar-horiz 0.45s cubic-bezier(.22,.61,.36,1) both;
+      }
 
       /* Line animation: draw left\u2192right via stroke-dashoffset (large dasharray, no pathLength) */
       @keyframes tl-g-line-draw {
@@ -3549,7 +3696,7 @@ var STYLES = `
       }
       .tl-g-anim-line {
         stroke-dasharray: 4000;
-        animation: tl-g-line-draw 0.75s ease-out both;
+        animation: tl-g-line-draw 2.5s ease-out both;
       }
 
       /* HTML x-axis label row below SVG \u2014 avoids font stretching from preserveAspectRatio:none */
@@ -3560,7 +3707,7 @@ var STYLES = `
       .tl-g-ylabel { position: absolute; top: 2px; left: 2px; font-size: 10px; color: var(--is-text-muted); line-height: 1; pointer-events: none; z-index: 1; white-space: nowrap; }
       .tl-hist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
       .tl-hist-table th { text-align: left; padding: 6px 8px; color: var(--is-text-label); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--is-divider); }
-      .tl-hist-table td { padding: 9px 8px; border-bottom: 1px solid var(--is-divider); color: var(--is-text-body); vertical-align: middle; }
+      .tl-hist-table td { padding: 0 8px; height: 44px; border-bottom: 1px solid var(--is-divider); color: var(--is-text-body); vertical-align: middle; overflow: hidden; max-width: 220px; white-space: nowrap; text-overflow: ellipsis; }
       .tl-hist-table tr:last-child td { border-bottom: none; }
       .tl-hist-table tr:hover td { background: var(--is-row-hover); }
       .tl-users-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -3573,7 +3720,7 @@ var STYLES = `
       .tl-ack-btn { margin-left: auto; flex-shrink: 0; align-self: center; background: rgba(255,60,60,0.18); border: 1px solid rgba(255,60,60,0.35); border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; color: rgba(255,120,120,0.9); cursor: pointer; transition: all .15s; white-space: nowrap; }
       .tl-ack-btn:hover { background: rgba(255,60,60,0.3); color: #fff; }
       .tl-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
-      .tl-page-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg); color: var(--is-btn-clr); cursor: pointer; font-size: 12px; line-height: 1.4; transition: all .15s; }
+      .tl-page-btn { padding: 0 12px; height: 28px; box-sizing: border-box; border-radius: 6px; border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg); color: var(--is-btn-clr); cursor: pointer; font-size: 12px; line-height: 1; transition: all .15s; display: inline-flex; align-items: center; justify-content: center; }
       .tl-page-btn:disabled { opacity: 0.3; pointer-events: none; }
       .tl-page-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
       .tl-page-btn.active { background: rgba(10,132,255,0.28); border-color: rgba(10,132,255,0.55); color: #fff; }
@@ -3582,7 +3729,7 @@ var STYLES = `
       .tl-col-chk { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--is-btn-bdr); background: transparent; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
       .tl-col-chk.on { background: rgba(10,132,255,0.85); border-color: rgba(10,132,255,0.9); }
       .tl-col-chk.on::after { content: "\u2713"; font-size: 9px; color: #fff; font-weight: 900; line-height: 1; }
-      .tl-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+      .tl-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; width:100%; box-sizing:border-box; }
       .tl-toolbar-actions { margin-left:auto; display:flex; align-items:center; gap:6px; }
       .tl-edit-btn { display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 4px; border: 1px solid; cursor: pointer; font-size: 10px; font-weight: 600; transition: all .15s; white-space: nowrap; }
       .tl-del-btn   { background: rgba(255,69,58,0.18);  border-color: rgba(255,69,58,0.4);  color: rgba(255,100,90,0.9); }
@@ -4504,6 +4651,7 @@ var _FetchMethods = class {
       if (!caps.plex) this._plexConfigured = false;
       if (!caps.tautulli) this._tautulliConfigured = false;
       if (!caps.jellystat) this._jellystatConfigured = false;
+      if (!caps.tracearr) this._tracearrConfigured = false;
       if (!caps.trakt) this._traktConfigured = false;
       if (!caps.prowlarr) this._prowlarrConfigured = false;
       this._seerrType = caps.seerrType || "overseerr";
@@ -4553,6 +4701,7 @@ var _FetchMethods = class {
       this._fetchRadarr2RootFolders(),
       this._fetchTautulli(),
       this._fetchJellystat(),
+      this._fetchTracearr(),
       this._fetchPlexSessions(),
       this._fetchJellyfinSessions(),
       this._fetchEmbySessions(),
@@ -6618,6 +6767,34 @@ var _FetchMethods = class {
       if (newEl) posterEl.replaceWith(newEl);
     }
   }
+  async _fetchTracearr() {
+    if (!this._tracearrConfigured) return;
+    try {
+      const [stats, health, viols, act] = await Promise.all([
+        this._hass.callApi("GET", "arr_stack/tracearr/v1/public/stats").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tracearr/v1/public/health").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tracearr/v1/public/violations?pageSize=5").catch(() => null),
+        this._hass.callApi("GET", "arr_stack/tracearr/v1/public/activity?days=7").catch(() => null)
+      ]);
+      if (stats?._notConfigured || stats?.error === "Tracearr not configured") {
+        this._tracearrConfigured = false;
+        return;
+      }
+      const [usersR] = await Promise.all([
+        this._hass.callApi("GET", "arr_stack/tracearr/v1/public/users?pageSize=10&sort=trustScore&order=asc").catch(() => null)
+      ]);
+      this._tracearr = {
+        stats: stats || {},
+        health: health || {},
+        users: usersR?.data || [],
+        violations: viols?.data || [],
+        violationTotal: viols?.meta?.total || 0,
+        activity: act || {}
+      };
+    } catch (_) {
+      this._tracearrConfigured = false;
+    }
+  }
 };
 var fetchMixin = _FetchMethods.prototype;
 
@@ -7440,7 +7617,7 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "activity", "prowlarr"];
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
     const hasActiveStreams = (this._jellyfinSessions || []).length > 0 || (this._embySessions || []).length > 0 || (this._kodiSessions || []).length > 0 || Object.keys(states).some((id) => {
@@ -7462,6 +7639,7 @@ var _RenderRight = class {
       streams: hasActiveStreams ? () => this._renderStreams() : null,
       tautulli: this._hass?.user?.is_admin && this._tautulliConfigured !== false ? () => this._renderTautulli() : null,
       jellystat: this._hass?.user?.is_admin && this._jellystatConfigured !== false ? () => this._renderJellystat() : null,
+      tracearr: this._hass?.user?.is_admin && this._tracearrConfigured !== false ? () => this._renderTracearr() : null,
       activity: this._hass?.user?.is_admin ? () => this._renderActivity() : null,
       prowlarr: this._hass?.user?.is_admin && this._prowlarrConfigured !== false ? () => this._renderProwlarr() : null
     };
@@ -10334,6 +10512,470 @@ var _WireTautulliMethods = class {
         await this._tlRefetchHistory(body);
       });
     });
+    body.querySelectorAll("[data-tl-ud-open]").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        if (!this._tautulliModal) return;
+        this._tlOpenUserDetail(row.dataset.tlUdOpen, row.dataset.tlUdName, row.dataset.tlUdThumb, body);
+      });
+    });
+    body.querySelector("[data-tl-ud-back]")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.userDetailId = null;
+      body.style.overflowY = "";
+      body.innerHTML = this._tlBodyUsers(this._tautulliModal.usersData, this._tautulliModal.usersTotal);
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelectorAll("[data-tl-ud-tab]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const tab = btn.dataset.tlUdTab;
+        this._tautulliModal.userDetailTab = tab;
+        if (tab === "history" && !this._tautulliModal.userDetailHistData?.length) {
+          body.innerHTML = this._tlBodyUserDetail();
+          this._wireTautulliModalBody(body);
+          await this._tlRefetchUdHistory(body);
+          return;
+        }
+        if (tab === "ips" && !this._tautulliModal.userDetailIpsData?.length) {
+          body.innerHTML = this._tlBodyUserDetail();
+          this._wireTautulliModalBody(body);
+          const ips = await this._tlFetchUserIps(this._tautulliModal.userDetailId);
+          if (!this._tautulliModal) return;
+          this._tautulliModal.userDetailIpsData = ips;
+        }
+        body.innerHTML = this._tlBodyUserDetail();
+        this._wireTautulliModalBody(body);
+        if (tab === "profile") this._tlLoadUdThumbs(body);
+      });
+    });
+    {
+      const recScroll = body.querySelector("#tl-ud-rec-scroll");
+      if (recScroll) {
+        const prevBtn = body.querySelector(".tl-ud-rec-prev");
+        const nextBtn = body.querySelector(".tl-ud-rec-next");
+        const pages = recScroll.querySelectorAll(":scope > div");
+        let curPage = 0;
+        const goTo = (idx) => {
+          curPage = Math.max(0, Math.min(pages.length - 1, idx));
+          const pageW = recScroll.offsetWidth || recScroll.scrollWidth / pages.length;
+          recScroll.scrollTo({ left: curPage * pageW, behavior: "smooth" });
+          if (prevBtn) prevBtn.disabled = curPage === 0;
+          if (nextBtn) nextBtn.disabled = curPage >= pages.length - 1;
+        };
+        if (prevBtn) prevBtn.addEventListener("click", () => goTo(curPage - 1));
+        if (nextBtn) nextBtn.addEventListener("click", () => goTo(curPage + 1));
+        if (nextBtn && pages.length <= 1) nextBtn.disabled = true;
+      }
+    }
+    {
+      let _udHistSearchTimer = null;
+      body.querySelector("#tl-ud-hist-search")?.addEventListener("input", (e) => {
+        if (!this._tautulliModal) return;
+        this._tautulliModal.userDetailHistSearch = e.target.value || "";
+        this._tautulliModal.userDetailHistPage = 0;
+        clearTimeout(_udHistSearchTimer);
+        _udHistSearchTimer = setTimeout(async () => {
+          const inp0 = body.querySelector("#tl-ud-hist-search");
+          const sel0 = inp0?.selectionStart ?? null;
+          await this._tlRefetchUdHistory(body);
+          const inp = body.querySelector("#tl-ud-hist-search");
+          if (inp && sel0 !== null) {
+            inp.focus();
+            inp.setSelectionRange(sel0, sel0);
+          }
+        }, 400);
+      });
+    }
+    body.querySelectorAll("[data-tl-ud-hist-media]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const v = btn.dataset.tlUdHistMedia;
+        this._tautulliModal.userDetailHistMedia = this._tautulliModal.userDetailHistMedia === v ? null : v;
+        this._tautulliModal.userDetailHistPage = 0;
+        await this._tlRefetchUdHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ud-hist-play]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const v = btn.dataset.tlUdHistPlay;
+        this._tautulliModal.userDetailHistPlayback = this._tautulliModal.userDetailHistPlayback === v ? null : v;
+        this._tautulliModal.userDetailHistPage = 0;
+        await this._tlRefetchUdHistory(body);
+      });
+    });
+    body.querySelector("#tl-ud-hist-del-mode")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.userDetailHistDeleteMode = !this._tautulliModal.userDetailHistDeleteMode;
+      body.innerHTML = this._tlBodyUserDetail();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("#tl-ud-hist-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.userDetailHistColsOpen = !this._tautulliModal.userDetailHistColsOpen;
+      const menu = body.querySelector("#tl-ud-hist-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.userDetailHistColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-ud-hist-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("userDetailHistHiddenCols", ["ip", "paused", "stopped"]);
+        const col = item.dataset.tlUdHistCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tlSaveColPrefs();
+        this._tautulliModal.userDetailHistColsOpen = true;
+        body.innerHTML = this._tlBodyUserDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelector("#tl-ud-hist-mob-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tautulliModal) return;
+      this._tautulliModal.userDetailHistMobColsOpen = !this._tautulliModal.userDetailHistMobColsOpen;
+      const menu = body.querySelector("#tl-ud-hist-mob-cols-menu");
+      if (menu) menu.style.display = this._tautulliModal.userDetailHistMobColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tl-ud-hist-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const hidden = this._tlHidden("userDetailHistMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
+        const col = item.dataset.tlUdHistMobCol;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tlSaveColPrefs();
+        this._tautulliModal.userDetailHistMobColsOpen = true;
+        body.innerHTML = this._tlBodyUserDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll(".tl-ud-hist-row").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        if (!this._tautulliModal) return;
+        const rid = row.dataset.tlUdHistRow;
+        const m = this._tautulliModal;
+        m.userDetailHistExpandedRow = m.userDetailHistExpandedRow === rid ? null : rid;
+        body.innerHTML = this._tlBodyUserDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ud-hist-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const rid = btn.dataset.tlUdHistDelete;
+        if (!confirm("Delete this history entry? This cannot be undone.")) return;
+        btn.disabled = true;
+        await this._tlApiFetch("delete_history", `row_id=${rid}`);
+        await this._tlRefetchUdHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ud-hpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m.userDetailHistTotal / this._tlCalcPerPage({ hasFilter: true })));
+        const val = btn.dataset.tlUdHpage;
+        let p = m.userDetailHistPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.userDetailHistPage) return;
+        m.userDetailHistPage = p;
+        await this._tlRefetchUdHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ud-ip-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const col = th.dataset.tlUdIpSort;
+        const m = this._tautulliModal;
+        if (m.userDetailIpsSortCol === col) {
+          m.userDetailIpsSortDir = m.userDetailIpsSortDir === "asc" ? "desc" : "asc";
+        } else {
+          m.userDetailIpsSortCol = col;
+          m.userDetailIpsSortDir = "desc";
+        }
+        m.userDetailIpsPage = 0;
+        body.innerHTML = this._tlBodyUserDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ud-ippage]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil((m.userDetailIpsData || []).length / this._tlCalcPerPage()));
+        const val = btn.dataset.tlUdIppage;
+        let p = m.userDetailIpsPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.userDetailIpsPage) return;
+        m.userDetailIpsPage = p;
+        body.innerHTML = this._tlBodyUserDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ld-open]").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        if (!this._tautulliModal) return;
+        this._tlOpenLibDetail(row.dataset.tlLdOpen, row.dataset.tlLdName, body);
+      });
+    });
+    body.querySelector("[data-tl-ld-back]")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libDetailId = null;
+      body.style.overflowY = "";
+      body.innerHTML = this._tlBodyLibraries(this._tautulliModal.libsData, this._tautulliModal.libsTotal);
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelectorAll("[data-tl-ld-tab]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const tab = btn.dataset.tlLdTab;
+        m.libDetailTab = tab;
+        if (tab === "history" && !m.libDetailHistData?.length) {
+          body.innerHTML = this._tlBodyLibDetail();
+          this._wireTautulliModalBody(body);
+          await this._tlRefetchLdHistory(body);
+          return;
+        }
+        if (tab === "media" && !m.libDetailMediaData?.length) {
+          body.innerHTML = this._tlBodyLibDetail();
+          this._wireTautulliModalBody(body);
+          await this._tlRefetchLdMedia(body);
+          return;
+        }
+        body.innerHTML = this._tlBodyLibDetail();
+        this._wireTautulliModalBody(body);
+        if (tab === "profile") this._tlLoadUdThumbs(body);
+      });
+    });
+    {
+      const recScroll = body.querySelector("#tl-ld-rec-scroll");
+      if (recScroll) {
+        const prevBtn = body.querySelector(".tl-ld-rec-prev");
+        const nextBtn = body.querySelector(".tl-ld-rec-next");
+        const pages = recScroll.querySelectorAll(":scope > div");
+        let curPage = 0;
+        const goTo = (idx) => {
+          curPage = Math.max(0, Math.min(pages.length - 1, idx));
+          const pageW = recScroll.offsetWidth || recScroll.scrollWidth / pages.length;
+          recScroll.scrollTo({ left: curPage * pageW, behavior: "smooth" });
+          if (prevBtn) prevBtn.disabled = curPage === 0;
+          if (nextBtn) nextBtn.disabled = curPage >= pages.length - 1;
+        };
+        if (prevBtn) prevBtn.addEventListener("click", () => goTo(curPage - 1));
+        if (nextBtn) nextBtn.addEventListener("click", () => goTo(curPage + 1));
+        if (nextBtn && pages.length <= 1) nextBtn.disabled = true;
+      }
+    }
+    body.querySelectorAll("[data-tl-ld-hist-media]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const v = btn.dataset.tlLdHistMedia || null;
+        this._tautulliModal.libDetailHistMedia = v || null;
+        this._tautulliModal.libDetailHistPage = 0;
+        await this._tlRefetchLdHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ld-hist-play]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const v = btn.dataset.tlLdHistPlay || null;
+        this._tautulliModal.libDetailHistPlayback = v || null;
+        this._tautulliModal.libDetailHistPage = 0;
+        await this._tlRefetchLdHistory(body);
+      });
+    });
+    {
+      let _ldHistSearchTimer = null;
+      body.querySelector("#tl-ld-hist-search")?.addEventListener("input", (e) => {
+        if (!this._tautulliModal) return;
+        this._tautulliModal.libDetailHistSearch = e.target.value || "";
+        this._tautulliModal.libDetailHistPage = 0;
+        clearTimeout(_ldHistSearchTimer);
+        _ldHistSearchTimer = setTimeout(() => this._tlRefetchLdHistory(body), 400);
+      });
+    }
+    body.querySelector("[data-tl-ld-hist-del-mode]")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libDetailHistDeleteMode = !this._tautulliModal.libDetailHistDeleteMode;
+      body.innerHTML = this._tlBodyLibDetail();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelectorAll("[data-tl-ld-hist-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const col = item.dataset.tlLdHistCol;
+        const s = this._tautulliModal.libDetailHistHiddenCols;
+        s.has(col) ? s.delete(col) : s.add(col);
+        this._tlSaveColPrefs();
+        body.innerHTML = this._tlBodyLibDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ld-hist-mob-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tautulliModal) return;
+        const col = item.dataset.tlLdHistMobCol;
+        const s = this._tautulliModal.libDetailHistMobHiddenCols;
+        s.has(col) ? s.delete(col) : s.add(col);
+        this._tlSaveColPrefs();
+        body.innerHTML = this._tlBodyLibDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelector("[data-tl-ld-hist-cols-btn]")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libDetailHistColsOpen = !this._tautulliModal.libDetailHistColsOpen;
+      body.innerHTML = this._tlBodyLibDetail();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelector("[data-tl-ld-hist-mob-cols-btn]")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.libDetailHistMobColsOpen = !this._tautulliModal.libDetailHistMobColsOpen;
+      body.innerHTML = this._tlBodyLibDetail();
+      this._wireTautulliModalBody(body);
+    });
+    body.querySelectorAll("[data-tl-ld-hist-row]").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        if (!this._tautulliModal) return;
+        const rid = row.dataset.tlLdHistRow;
+        this._tautulliModal.libDetailHistExpandedRow = this._tautulliModal.libDetailHistExpandedRow === rid ? null : rid;
+        body.innerHTML = this._tlBodyLibDetail();
+        this._wireTautulliModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ld-hist-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const rid = btn.dataset.tlLdHistDelete;
+        await this._tlApiFetch("delete_history", `row_id=${rid}`);
+        await this._tlRefetchLdHistory(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ld-hpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const val = btn.dataset.tlLdHpage;
+        const perPage = this._tlCalcPerPage({ hasFilter: true });
+        const totalPages = Math.max(1, Math.ceil(m.libDetailHistTotal / perPage));
+        let p = m.libDetailHistPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.libDetailHistPage) return;
+        m.libDetailHistPage = p;
+        await this._tlRefetchLdHistory(body);
+      });
+    });
+    {
+      let _ldMediaSearchTimer = null;
+      body.querySelector("#tl-ld-media-search")?.addEventListener("input", (e) => {
+        if (!this._tautulliModal) return;
+        this._tautulliModal.libDetailMediaSearch = e.target.value || "";
+        this._tautulliModal.libDetailMediaPage = 0;
+        clearTimeout(_ldMediaSearchTimer);
+        _ldMediaSearchTimer = setTimeout(() => this._tlRefetchLdMedia(body), 400);
+      });
+    }
+    body.querySelectorAll("[data-tl-ld-media-sort]").forEach((th) => {
+      th.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        this._tautulliModal.libDetailMediaSort = th.dataset.tlLdMediaSort;
+        this._tautulliModal.libDetailMediaDir = th.dataset.tlLdMediaDir;
+        this._tautulliModal.libDetailMediaPage = 0;
+        await this._tlRefetchLdMedia(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-ld-mpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const val = btn.dataset.tlLdMpage;
+        const totalPages = Math.max(1, Math.ceil(m.libDetailMediaTotal / 25));
+        let p = m.libDetailMediaPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.libDetailMediaPage) return;
+        m.libDetailMediaPage = p;
+        await this._tlRefetchLdMedia(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-md-open]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        if (!this._tautulliModal) return;
+        const { tlMdOpen: key, tlMdTitle: title, tlMdThumb: thumb, tlMdPrev: prev } = el.dataset;
+        this._tlOpenMediaDetail(key, title, thumb, prev, body);
+      });
+    });
+    body.querySelector("[data-tl-md-back-lib]")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.mediaDetailKey = null;
+      body.innerHTML = this._tlBodyLibDetail();
+      this._wireTautulliModalBody(body);
+      this._tlLoadUdThumbs(body);
+    });
+    body.querySelector("[data-tl-md-back-user]")?.addEventListener("click", () => {
+      if (!this._tautulliModal) return;
+      this._tautulliModal.mediaDetailKey = null;
+      body.innerHTML = this._tlBodyUserDetail();
+      this._wireTautulliModalBody(body);
+      this._tlLoadUdThumbs(body);
+    });
+    body.querySelectorAll("[data-tl-md-tab]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tautulliModal) return;
+        const m = this._tautulliModal;
+        const tab = btn.dataset.tlMdTab;
+        m.mediaDetailTab = tab;
+        if (tab === "history" && !m.mediaDetailHistData?.length) {
+          body.innerHTML = this._tlBodyMediaDetail();
+          this._wireTautulliModalBody(body);
+          await this._tlRefetchMdHistory(body);
+          return;
+        }
+        body.innerHTML = this._tlBodyMediaDetail();
+        this._wireTautulliModalBody(body);
+        if (tab === "info") this._tlLoadUdThumbs(body);
+      });
+    });
+    body.querySelectorAll("[data-tl-md-hpage]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m = this._tautulliModal;
+        if (!m) return;
+        const val = btn.dataset.tlMdHpage;
+        const perPage = this._tlCalcPerPage({ hasFilter: false });
+        const totalPages = Math.max(1, Math.ceil(m.mediaDetailHistTotal / perPage));
+        let p = m.mediaDetailHistPage || 0;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(totalPages - 1, p + 1);
+        else if (val === "last") p = totalPages - 1;
+        else p = parseInt(val);
+        if (p === m.mediaDetailHistPage) return;
+        m.mediaDetailHistPage = p;
+        await this._tlRefetchMdHistory(body);
+      });
+    });
     this._wireGraphControls(body);
     body.querySelector("#tl-libs-search")?.addEventListener("input", (e) => {
       if (!this._tautulliModal) return;
@@ -10598,6 +11240,184 @@ var _WireTautulliMethods = class {
       });
     });
   }
+  // ── User detail helpers ───────────────────────────────────────────────────
+  async _tlOpenUserDetail(userId, name, thumb, body) {
+    if (!this._tautulliModal) return;
+    const m = this._tautulliModal;
+    m.userDetailId = userId;
+    m.userDetailName = name;
+    m.userDetailThumb = thumb;
+    m.userDetailTab = "profile";
+    m.userDetailProfile = null;
+    m.userDetailHistData = [];
+    m.userDetailHistTotal = 0;
+    m.userDetailHistPage = 0;
+    m.userDetailHistMedia = null;
+    m.userDetailHistPlayback = null;
+    m.userDetailHistSearch = "";
+    m.userDetailHistExpandedRow = null;
+    m.userDetailIpsData = [];
+    m.userDetailIpsPage = 0;
+    body.style.overflowY = "hidden";
+    body.innerHTML = this._tlBodyUserDetail();
+    this._wireTautulliModalBody(body);
+    const profile = await this._tlFetchUserProfile(userId);
+    if (!this._tautulliModal || this._tautulliModal.userDetailId !== userId) return;
+    m.userDetailProfile = profile;
+    body.innerHTML = this._tlBodyUserDetail();
+    this._wireTautulliModalBody(body);
+    this._tlLoadUdThumbs(body);
+  }
+  async _tlLoadUdThumbs(body) {
+    const token = this._hass?.auth?.data?.access_token;
+    if (!token) return;
+    const imgs = body.querySelectorAll("img[data-tl-plex-path]");
+    if (!imgs.length) return;
+    for (const img of imgs) {
+      const path = img.dataset.tlPlexPath;
+      if (!path) continue;
+      try {
+        const r = await fetch(
+          `/api/arr_stack/tautulli/pms_image_proxy?img=${encodeURIComponent(path)}&width=220&height=330&opacity=100&background=282828&blur=0&fallback=poster`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!r.ok) continue;
+        const blob = await r.blob();
+        if (!blob.type.startsWith("image/")) continue;
+        if (!img.isConnected) continue;
+        img.src = URL.createObjectURL(blob);
+        img.removeAttribute("data-tl-plex-path");
+      } catch {
+      }
+    }
+  }
+  async _tlRefetchUdHistory(body) {
+    const m = this._tautulliModal;
+    if (!m || !m.userDetailId) return;
+    m.userDetailHistLoading = true;
+    body.innerHTML = this._tlBodyUserDetail();
+    this._wireTautulliModalBody(body);
+    const data = await this._tlFetchHistory(
+      m.userDetailHistPage,
+      m.userDetailId,
+      m.userDetailHistMedia,
+      m.userDetailHistPlayback,
+      this._tlCalcPerPage({ hasFilter: true }),
+      m.userDetailHistSearch
+    );
+    if (!this._tautulliModal) return;
+    m.userDetailHistLoading = false;
+    m.userDetailHistData = data.data || [];
+    m.userDetailHistTotal = data.recordsFiltered || 0;
+    body.innerHTML = this._tlBodyUserDetail();
+    this._wireTautulliModalBody(body);
+  }
+  // ── Library detail helpers ───────────────────────────────────────────────
+  async _tlOpenLibDetail(sectionId, name, body) {
+    if (!this._tautulliModal) return;
+    const m = this._tautulliModal;
+    m.libDetailId = sectionId;
+    m.libDetailName = name;
+    m.libDetailTab = "profile";
+    m.libDetailProfile = null;
+    m.libDetailHistData = [];
+    m.libDetailHistTotal = 0;
+    m.libDetailHistPage = 0;
+    m.libDetailHistMedia = null;
+    m.libDetailHistPlayback = null;
+    m.libDetailHistSearch = "";
+    m.libDetailHistExpandedRow = null;
+    m.libDetailMediaData = [];
+    m.libDetailMediaTotal = 0;
+    m.libDetailMediaPage = 0;
+    m.libDetailMediaSearch = "";
+    m.libDetailMediaSort = "added_at";
+    m.libDetailMediaDir = "desc";
+    body.style.overflowY = "hidden";
+    body.innerHTML = this._tlBodyLibDetail();
+    this._wireTautulliModalBody(body);
+    const profile = await this._tlFetchLibProfile(sectionId);
+    if (!this._tautulliModal || this._tautulliModal.libDetailId !== sectionId) return;
+    m.libDetailProfile = profile;
+    body.innerHTML = this._tlBodyLibDetail();
+    this._wireTautulliModalBody(body);
+    this._tlLoadUdThumbs(body);
+  }
+  async _tlRefetchLdHistory(body) {
+    const m = this._tautulliModal;
+    if (!m || !m.libDetailId) return;
+    m.libDetailHistLoading = true;
+    body.innerHTML = this._tlBodyLibDetail();
+    this._wireTautulliModalBody(body);
+    const perPage = this._tlCalcPerPage({ hasFilter: true });
+    const data = await this._tlFetchLibHistory(
+      m.libDetailId,
+      m.libDetailHistPage,
+      m.libDetailHistMedia,
+      m.libDetailHistPlayback,
+      m.libDetailHistSearch,
+      perPage
+    );
+    if (!this._tautulliModal) return;
+    m.libDetailHistLoading = false;
+    m.libDetailHistData = data.data || [];
+    m.libDetailHistTotal = data.recordsFiltered || 0;
+    body.innerHTML = this._tlBodyLibDetail();
+    this._wireTautulliModalBody(body);
+  }
+  async _tlRefetchLdMedia(body) {
+    const m = this._tautulliModal;
+    if (!m || !m.libDetailId) return;
+    body.innerHTML = this._tlBodyLibDetail();
+    this._wireTautulliModalBody(body);
+    const data = await this._tlFetchLibMedia(
+      m.libDetailId,
+      m.libDetailMediaPage,
+      m.libDetailMediaSort,
+      m.libDetailMediaDir,
+      m.libDetailMediaSearch,
+      25
+    );
+    if (!this._tautulliModal) return;
+    m.libDetailMediaData = data.data || [];
+    m.libDetailMediaTotal = data.recordsTotal || 0;
+    body.innerHTML = this._tlBodyLibDetail();
+    this._wireTautulliModalBody(body);
+  }
+  // ── Media item detail helpers ────────────────────────────────────────────
+  async _tlOpenMediaDetail(ratingKey, title, thumb, prev, body) {
+    if (!this._tautulliModal) return;
+    const m = this._tautulliModal;
+    m.mediaDetailKey = ratingKey;
+    m.mediaDetailTitle = title;
+    m.mediaDetailThumb = thumb;
+    m.mediaDetailTab = "info";
+    m.mediaDetailData = null;
+    m.mediaDetailHistData = [];
+    m.mediaDetailHistTotal = 0;
+    m.mediaDetailHistPage = 0;
+    m.mediaDetailPrev = prev || "lib";
+    body.style.overflowY = "hidden";
+    body.innerHTML = this._tlBodyMediaDetail();
+    this._wireTautulliModalBody(body);
+    const data = await this._tlFetchMediaDetail(ratingKey);
+    if (!this._tautulliModal || this._tautulliModal.mediaDetailKey !== ratingKey) return;
+    m.mediaDetailData = data;
+    body.innerHTML = this._tlBodyMediaDetail();
+    this._wireTautulliModalBody(body);
+    this._tlLoadUdThumbs(body);
+  }
+  async _tlRefetchMdHistory(body) {
+    const m = this._tautulliModal;
+    if (!m || !m.mediaDetailKey) return;
+    const perPage = this._tlCalcPerPage({ hasFilter: false });
+    const data = await this._tlFetchMediaHistory(m.mediaDetailKey, m.mediaDetailHistPage, perPage);
+    if (!this._tautulliModal) return;
+    m.mediaDetailHistData = data.data || [];
+    m.mediaDetailHistTotal = data.recordsFiltered || 0;
+    body.innerHTML = this._tlBodyMediaDetail();
+    this._wireTautulliModalBody(body);
+  }
   // ── Graph controls wiring ─────────────────────────────────────────────────
   // Called after body render when graphs tab is active.
   // Also called from _wireTautulliModalBody for all tabs (no-ops if no els).
@@ -10704,7 +11524,12 @@ var _WireTautulliMethods = class {
         if (panel) panel.style.display = "block";
       });
     });
-    const _tlGVBW = 1e3, _tlGSVH = 200;
+    this._wireChartCards(body);
+  }
+  // ── Shared chart tooltip + SVG-fix wiring — used by Tautulli AND Tracearr ─
+  _wireChartCards(body) {
+    if (!body) return;
+    const _tlGVBW = 1e3;
     const _tlGRoundedTopJS = (x, y, w, h, rx, ry) => {
       rx = Math.min(rx, w / 2);
       ry = Math.min(ry, h / 2);
@@ -10713,16 +11538,17 @@ var _WireTautulliMethods = class {
       return `M${f(x)},${f(y + h)} L${f(x)},${f(y + ry)} Q${f(x)},${f(y)} ${f(x + rx)},${f(y)} L${f(x + w - rx)},${f(y)} Q${f(x + w)},${f(y)} ${f(x + w)},${f(y + ry)} L${f(x + w)},${f(y + h)} Z`;
     };
     const fixSvgDots = (svg) => {
-      const svgW = svg.getBoundingClientRect().width;
-      if (!svgW) return;
-      const scaleX = svgW / _tlGVBW;
+      const rect = svg.getBoundingClientRect();
+      const svgW = rect.width, svgH = rect.height;
+      if (!svgW || !svgH) return;
+      const ryFactor = svgW / (5 * svgH);
       svg.querySelectorAll("circle").forEach((c) => {
         const r = parseFloat(c.getAttribute("r")) || 0;
         const el = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
         el.setAttribute("cx", c.getAttribute("cx") || "0");
         el.setAttribute("cy", c.getAttribute("cy") || "0");
         el.setAttribute("rx", String(r));
-        el.setAttribute("ry", String(r * scaleX));
+        el.setAttribute("ry", String(r * ryFactor));
         el.setAttribute("data-tl-dot-r", String(r));
         const fill = c.getAttribute("fill");
         if (fill) el.setAttribute("fill", fill);
@@ -10732,7 +11558,7 @@ var _WireTautulliMethods = class {
       });
       svg.querySelectorAll("ellipse[data-tl-dot-r]").forEach((el) => {
         const r = parseFloat(el.getAttribute("data-tl-dot-r")) || 0;
-        el.setAttribute("ry", String(r * scaleX));
+        el.setAttribute("ry", String(r * ryFactor));
       });
       svg.querySelectorAll("path[data-tl-rr]").forEach((p) => {
         const rr = parseFloat(p.getAttribute("data-tl-rr")) || 0;
@@ -10740,7 +11566,7 @@ var _WireTautulliMethods = class {
         const by = parseFloat(p.getAttribute("data-tl-by")) || 0;
         const bw = parseFloat(p.getAttribute("data-tl-bw")) || 0;
         const bh = parseFloat(p.getAttribute("data-tl-bh")) || 0;
-        p.setAttribute("d", _tlGRoundedTopJS(bx, by, bw, bh, rr, rr * scaleX));
+        p.setAttribute("d", _tlGRoundedTopJS(bx, by, bw, bh, rr, rr * ryFactor));
       });
     };
     requestAnimationFrame(() => {
@@ -10774,13 +11600,15 @@ var _WireTautulliMethods = class {
              </div>` : "";
         tipEl.innerHTML = `<div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px">${lbl}</div>${rows}${totRow}`;
         const cardRect = tipEl.parentElement.getBoundingClientRect();
-        let tipLeft = eClientX - cardRect.left;
+        const clickX = eClientX - cardRect.left;
         let tipTop = eClientY - cardRect.top - 8;
         tipEl.style.display = "block";
         tipEl.style.left = "0";
         tipEl.style.top = "0";
         const tipW = tipEl.offsetWidth, tipH = tipEl.offsetHeight, contW = cardRect.width;
-        tipLeft = Math.max(4, Math.min(tipLeft - tipW / 2, contW - tipW - 4));
+        let tipLeft = clickX + 12;
+        if (tipLeft + tipW > contW - 4) tipLeft = clickX - tipW - 12;
+        tipLeft = Math.max(4, tipLeft);
         tipTop = Math.max(4, tipTop - tipH);
         tipEl.style.left = tipLeft + "px";
         tipEl.style.top = tipTop + "px";
@@ -11287,6 +12115,700 @@ var _WireJellystatMethods = class {
   }
 };
 var wireJellystatMixin = _WireJellystatMethods.prototype;
+
+// src/wire/tracearr.js
+var _WireTraceaRrMethods = class {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Poster row — delegate clicks to open modal on correct tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _wireTracearrPosters(right) {
+    right.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-tra-open]");
+      if (!card) return;
+      this._openTracearrModal(card.dataset.traOpen);
+    });
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Modal outer wiring (close button, overlay click, tab buttons)
+  // ──────────────────────────────────────────────────────────────────────────
+  _wireTracearrModal(el) {
+    const glass = el.querySelector(".popup-glass");
+    el.addEventListener("click", (e) => {
+      if (!glass.contains(e.target)) this._closeTracearrModal();
+    });
+    glass.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (e.target.closest("#tra-close")) {
+        this._closeTracearrModal();
+        return;
+      }
+      const srvBtn = e.target.closest("[data-tra-server]");
+      if (srvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = srvBtn.dataset.traServer;
+        m.selectedServerId = sid;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        m.stalePage = 0;
+        m.staleDeduped = null;
+        glass.querySelectorAll("[data-tra-server]").forEach((b) => b.classList.toggle("active", b === srvBtn));
+        this._traLoadTab("storage", el);
+        return;
+      }
+      const qualSrvBtn = e.target.closest("[data-tra-quality-srv]");
+      if (qualSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        m.qualityServerId = qualSrvBtn.dataset.traQualitySrv || null;
+        try {
+          localStorage.setItem("arr-tra-srv", m.qualityServerId);
+        } catch (_) {
+        }
+        m.qualityData = null;
+        m._qualityKey = null;
+        m.qualityResolution = null;
+        glass.querySelectorAll("[data-tra-quality-srv]").forEach((b) => b.classList.toggle("active", b === qualSrvBtn));
+        this._traLoadTab("quality", el);
+        return;
+      }
+      const watchSrvBtn = e.target.closest("[data-tra-watch-srv]");
+      if (watchSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = watchSrvBtn.dataset.traWatchSrv || null;
+        m.watchServerId = sid;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        m.watchPatterns = null;
+        m.watchStatus = null;
+        m.watchCompletion = null;
+        m.watchTopMovies = null;
+        m.watchTopShows = null;
+        m.watchSrvKey = null;
+        m.watchSrvPeriodKey = null;
+        glass.querySelectorAll("[data-tra-watch-srv]").forEach((b) => b.classList.toggle("active", b === watchSrvBtn));
+        this._traLoadTab("watch", el);
+        return;
+      }
+      const devMobTab = e.target.closest("[data-tra-dev-mob-tab]");
+      if (devMobTab) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        m.devMobView = devMobTab.dataset.traDevMobTab;
+        m.devHealthPage = 0;
+        m.devMatrixPage = 0;
+        m.devHotspotsPage = 0;
+        m.devUsersPage = 0;
+        const _b0 = el.querySelector("#tra-body");
+        if (_b0) _b0.innerHTML = this._traBodyDevices();
+        return;
+      }
+      const devRightTab = e.target.closest("[data-tra-dev-right-tab]");
+      if (devRightTab) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        m.devicesRightView = devRightTab.dataset.traDevRightTab;
+        m.devHotspotsPage = 0;
+        m.devUsersPage = 0;
+        const _b1 = el.querySelector("#tra-body");
+        if (_b1) _b1.innerHTML = this._traBodyDevices();
+        return;
+      }
+      const devLeftTab = e.target.closest("[data-tra-dev-left-tab]");
+      if (devLeftTab) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        m.devicesLeftView = devLeftTab.dataset.traDevLeftTab;
+        m.devHealthPage = 0;
+        m.devMatrixPage = 0;
+        const _b2 = el.querySelector("#tra-body");
+        if (_b2) _b2.innerHTML = this._traBodyDevices();
+        return;
+      }
+      const devPage = e.target.closest("[data-tra-dev-page]");
+      if (devPage) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const [view, dir] = devPage.dataset.traDevPage.split("-");
+        const delta = dir === "next" ? 1 : -1;
+        const PAGE = 6;
+        const lens = { health: (m.devicesHealth?.data || []).length, matrix: (m.devicesMatrix?.devices || []).length, hotspots: (m.devicesHotspots?.data || []).length, users: (m.devicesUsers?.data || []).length };
+        const keys = { health: "devHealthPage", matrix: "devMatrixPage", hotspots: "devHotspotsPage", users: "devUsersPage" };
+        const key = keys[view];
+        if (!key) return;
+        const max = Math.max(0, Math.ceil(lens[view] / PAGE) - 1);
+        m[key] = Math.max(0, Math.min(max, (m[key] || 0) + delta));
+        const _b3 = el.querySelector("#tra-body");
+        if (_b3) _b3.innerHTML = this._traBodyDevices();
+        return;
+      }
+      const devSrvBtn = e.target.closest("[data-tra-dev-srv]");
+      if (devSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        m.devicesServerId = devSrvBtn.dataset.traDevSrv || null;
+        m.devicesData = null;
+        m.devicesHealth = null;
+        m.devicesHotspots = null;
+        m.devicesMatrix = null;
+        m.devicesUsers = null;
+        m.devHealthPage = 0;
+        m.devMatrixPage = 0;
+        m.devHotspotsPage = 0;
+        m.devUsersPage = 0;
+        try {
+          localStorage.setItem("arr-tra-srv", m.devicesServerId);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-dev-srv]").forEach((b) => b.classList.toggle("active", b === devSrvBtn));
+        this._traLoadTab("devices", el);
+        return;
+      }
+      const bwSrvBtn = e.target.closest("[data-tra-bw-srv]");
+      if (bwSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        m.bwServerId = bwSrvBtn.dataset.traBwSrv || null;
+        m.bwSummary = null;
+        m.bwDaily = null;
+        m.bwUsers = null;
+        m.bwUsersPage = 0;
+        try {
+          localStorage.setItem("arr-tra-srv", m.bwServerId);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-bw-srv]").forEach((b) => b.classList.toggle("active", b === bwSrvBtn));
+        this._traLoadTab("bandwidth", el);
+        return;
+      }
+      const bwPeriodBtn = e.target.closest("[data-tra-bw-period]");
+      if (bwPeriodBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        m.bwPeriod = bwPeriodBtn.dataset.traBwPeriod || "month";
+        m.bwSummary = null;
+        m.bwDaily = null;
+        m.bwUsers = null;
+        m.bwUsersPage = 0;
+        this._traLoadTab("bandwidth", el);
+        return;
+      }
+      const histSrvBtn = e.target.closest("[data-tra-hist-srv]");
+      if (histSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = histSrvBtn.dataset.traHistSrv || null;
+        m.histServer = sid;
+        m.histPage = 0;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-hist-srv]").forEach((b) => b.classList.toggle("active", b === histSrvBtn));
+        this._traLoadTab("history", el);
+        return;
+      }
+      const actSrvBtn = e.target.closest("[data-tra-act-srv]");
+      if (actSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = actSrvBtn.dataset.traActSrv || null;
+        m.activityServerId = sid;
+        m.activityData = null;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-act-srv]").forEach((b) => b.classList.toggle("active", b === actSrvBtn));
+        this._traLoadTab("activity", el);
+        return;
+      }
+      const _TRA_NAV = [
+        { id: "map", tab: "map" },
+        { id: "history", tab: "history" },
+        { id: "stats", sub: [["activity", "Activity"]] },
+        { id: "library", sub: [["quality", "Quality"], ["storage", "Storage"], ["watch", "Watch"]] },
+        { id: "performance", sub: [["devices", "Devices"], ["bandwidth", "Bandwidth"]] },
+        { id: "users", tab: "users" },
+        { id: "rules" },
+        { id: "violations", tab: "violations" }
+      ];
+      const _SRV_TABS = ["storage", "quality", "history", "activity", "watch", "devices", "bandwidth"];
+      const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+      const _updateMobileNav = () => {
+        const panel = glass.querySelector("#tra-mobile-nav");
+        if (!panel) return;
+        const m = this._tracearrModal;
+        const tmp = document.createElement("div");
+        tmp.innerHTML = this._traMobileNavHtml(m.tab, m.navGroup);
+        panel.innerHTML = tmp.firstElementChild.innerHTML;
+      };
+      const _applyNavActive = (groupId) => {
+        glass.querySelectorAll("[data-tra-nav]").forEach((b) => {
+          const on = b.dataset.traNav === groupId;
+          b.style.height = "28px";
+          b.style.boxSizing = "border-box";
+          b.style.background = on ? "rgba(0,122,255,0.5)" : "transparent";
+          b.style.color = _day ? "#000" : "#fff";
+          b.style.borderColor = on ? "rgba(0,122,255,0.8)" : "var(--is-btn-bdr)";
+        });
+      };
+      const navBtn = e.target.closest("[data-tra-nav]");
+      if (navBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const groupId = navBtn.dataset.traNav;
+        const grp = _TRA_NAV.find((g) => g.id === groupId);
+        if (!grp || !grp.tab && !grp.sub) return;
+        const _collapseAllSubs = () => glass.querySelectorAll("[data-tra-sub]").forEach((el2) => {
+          el2.innerHTML = "";
+          el2.style.maxWidth = "0";
+        });
+        if (grp.sub?.length) {
+          const expanding = m.navGroup !== groupId;
+          m.navGroup = expanding ? groupId : null;
+          _applyNavActive(m.navGroup);
+          _collapseAllSubs();
+          if (expanding) {
+            const subEl = glass.querySelector(`[data-tra-sub="${groupId}"]`);
+            if (subEl) {
+              subEl.innerHTML = grp.sub.map(([tid, tlbl]) => {
+                const isActive = m.tab === tid;
+                const _tc = _day ? "#000" : "#fff";
+                const subSt = isActive ? `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-size:10px;font-weight:700` : `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.08);color:${_tc};border-color:rgba(0,122,255,0.2);font-size:10px`;
+                return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
+              }).join("");
+              subEl.style.maxWidth = "500px";
+            }
+          }
+          _updateMobileNav();
+        } else if (grp.tab) {
+          m.navGroup = groupId;
+          m.tab = grp.tab;
+          _applyNavActive(groupId);
+          _collapseAllSubs();
+          const titleEl = glass.querySelector("#tra-hdr-title");
+          if (titleEl) titleEl.textContent = this._traTabTitle(grp.tab);
+          const srvEl = glass.querySelector("#tra-hdr-server");
+          if (srvEl && !_SRV_TABS.includes(grp.tab)) srvEl.style.display = "none";
+          _updateMobileNav();
+          this._traLoadTab(grp.tab, el);
+        }
+        return;
+      }
+      const tabBtn = e.target.closest("[data-tra-tab]");
+      if (tabBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const tab = tabBtn.dataset.traTab;
+        if (m.tab === tab) return;
+        m.tab = tab;
+        glass.querySelectorAll("[data-tra-tab]").forEach((b) => {
+          const on = b.dataset.traTab === tab;
+          const _tc = _day ? "#000" : "#fff";
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "rgba(0,122,255,0.08)";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "rgba(0,122,255,0.2)";
+          b.style.fontWeight = on ? "700" : "";
+        });
+        const titleEl = glass.querySelector("#tra-hdr-title");
+        if (titleEl) titleEl.textContent = this._traTabTitle(tab);
+        const srvEl = glass.querySelector("#tra-hdr-server");
+        if (srvEl && !_SRV_TABS.includes(tab)) srvEl.style.display = "none";
+        _updateMobileNav();
+        this._traLoadTab(tab, el);
+      }
+    });
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Modal body wiring — called after every innerHTML replace
+  // ──────────────────────────────────────────────────────────────────────────
+  _wireTracearrModalBody(body) {
+    const m = this._tracearrModal;
+    if (!m) return;
+    const modal = () => body.closest("[data-tra-modal]");
+    const resolvePage = (val, current, total) => {
+      if (val === "first") return 0;
+      if (val === "prev") return Math.max(0, current - 1);
+      if (val === "next") return Math.min(total - 1, current + 1);
+      if (val === "last") return total - 1;
+      const n = parseInt(val, 10);
+      return isNaN(n) ? current : n;
+    };
+    const usersSearch = body.querySelector("#tra-users-search");
+    if (usersSearch) {
+      let t;
+      usersSearch.addEventListener("input", () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          if (!this._tracearrModal) return;
+          this._tracearrModal.usersSearch = usersSearch.value;
+          this._tracearrModal.usersPage = 0;
+          this._traLoadTab("users", modal());
+        }, 320);
+      });
+    }
+    body.querySelectorAll("[data-tra-users-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const col = th.dataset.traUsersSort;
+        if (this._tracearrModal.usersSortCol === col) {
+          this._tracearrModal.usersSortDir = this._tracearrModal.usersSortDir === "asc" ? "desc" : "asc";
+        } else {
+          this._tracearrModal.usersSortCol = col;
+          this._tracearrModal.usersSortDir = "asc";
+        }
+        this._tracearrModal.usersPage = 0;
+        this._traLoadTab("users", modal());
+      });
+    });
+    body.querySelectorAll("[data-tra-users-page]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const pp = this._tlCalcPerPage();
+        const totalP = Math.max(1, Math.ceil((this._tracearrModal.usersTotal || 0) / pp));
+        this._tracearrModal.usersPage = resolvePage(btn.dataset.traUsersPage, this._tracearrModal.usersPage, totalP);
+        this._traLoadTab("users", modal());
+      });
+    });
+    const violsType = body.querySelector("#tra-viols-type");
+    if (violsType) {
+      violsType.addEventListener("change", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.violsType = violsType.value || null;
+        this._tracearrModal.violsPage = 0;
+        this._traLoadTab("violations", modal());
+      });
+    }
+    const violsUser = body.querySelector("#tra-viols-user");
+    if (violsUser) {
+      violsUser.addEventListener("change", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.violsUser = violsUser.value || null;
+        this._tracearrModal.violsPage = 0;
+        this._traLoadTab("violations", modal());
+      });
+    }
+    body.querySelectorAll("[data-tra-viols-page]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const pp = this._tlCalcPerPage({ hasFilter: true });
+        const totalP = Math.max(1, Math.ceil((this._tracearrModal.violsTotal || 0) / pp));
+        this._tracearrModal.violsPage = resolvePage(btn.dataset.traViolsPage, this._tracearrModal.violsPage, totalP);
+        this._traLoadTab("violations", modal());
+      });
+    });
+    const histServer = body.querySelector("#tra-hist-server");
+    if (histServer) {
+      histServer.addEventListener("change", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.histServer = histServer.value || null;
+        this._tracearrModal.histPage = 0;
+        this._tracearrModal.histNeedsRefetch = true;
+        this._traLoadTab("history", modal());
+      });
+    }
+    const histUser = body.querySelector("#tra-hist-user");
+    if (histUser) {
+      histUser.addEventListener("change", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.histUser = histUser.value || null;
+        this._tracearrModal.histPage = 0;
+        this._tracearrModal.histNeedsRefetch = true;
+        this._traLoadTab("history", modal());
+      });
+    }
+    const histMedia = body.querySelector("#tra-hist-media");
+    if (histMedia) {
+      histMedia.addEventListener("change", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.histMedia = histMedia.value || null;
+        this._tracearrModal.histPage = 0;
+        this._tracearrModal.histNeedsRefetch = true;
+        this._traLoadTab("history", modal());
+      });
+    }
+    const histSearch = body.querySelector("#tra-hist-search");
+    if (histSearch) {
+      let t;
+      histSearch.addEventListener("input", () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          if (!this._tracearrModal) return;
+          this._tracearrModal.histSearch = histSearch.value;
+          this._tracearrModal.histPage = 0;
+          this._traLoadTab("history", modal());
+        }, 320);
+      });
+    }
+    body.querySelectorAll("[data-tra-hist-page]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const isMobH = window.matchMedia("(max-width:600px)").matches;
+        const pp = this._tlCalcPerPage({ hasFilter: true, filterH: isMobH ? 120 : 40, rowH: isMobH ? 80 : 44, bar: 0 });
+        const totalP = Math.max(1, Math.ceil((this._tracearrModal.histTotal || 0) / pp));
+        this._tracearrModal.histPage = resolvePage(btn.dataset.traHistPage, this._tracearrModal.histPage, totalP);
+        this._traLoadTab("history", modal());
+      });
+    });
+    body.querySelector("#tra-hist-cols-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this._tracearrModal) return;
+      this._tracearrModal.traHistColsOpen = !this._tracearrModal.traHistColsOpen;
+      const menu = body.querySelector("#tra-hist-cols-menu");
+      if (menu) menu.style.display = this._tracearrModal.traHistColsOpen ? "block" : "none";
+    });
+    body.querySelectorAll("[data-tra-hist-col]").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        if (!this._tracearrModal.traHistHiddenCols) this._tracearrModal.traHistHiddenCols = /* @__PURE__ */ new Set();
+        const col = item.dataset.traHistCol;
+        const hidden = this._tracearrModal.traHistHiddenCols;
+        if (hidden.has(col)) hidden.delete(col);
+        else hidden.add(col);
+        this._tracearrModal.traHistColsOpen = true;
+        body.innerHTML = this._traBodyHistory();
+        this._wireTracearrModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tra-hist-period]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const p = btn.dataset.traHistPeriod;
+        this._tracearrModal.histPeriod = p === "all" ? null : p;
+        this._tracearrModal.histPage = 0;
+        this._traLoadTab("history", modal());
+      });
+    });
+    body.querySelectorAll("[data-tra-act-period]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.activityPeriod = btn.dataset.traActPeriod;
+        this._traLoadTab("activity", modal());
+      });
+    });
+    body.querySelectorAll("[data-tra-dev-period]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const m2 = this._tracearrModal;
+        m2.devicesPeriod = btn.dataset.traDevPeriod;
+        m2.devicesData = null;
+        m2.devicesHealth = null;
+        m2.devicesHotspots = null;
+        m2.devicesMatrix = null;
+        m2.devicesUsers = null;
+        m2.devHealthPage = 0;
+        m2.devMatrixPage = 0;
+        m2.devHotspotsPage = 0;
+        m2.devUsersPage = 0;
+        this._traLoadTab("devices", modal());
+      });
+    });
+    body.querySelectorAll("[data-tra-q-codec-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.qualityCodecTab = btn.dataset.traQCodecTab;
+        try {
+          localStorage.setItem("arr-tra-q-codec", this._tracearrModal.qualityCodecTab);
+        } catch (_) {
+        }
+        const sec = body.querySelector("[data-tra-q-codecs]");
+        if (sec) {
+          sec.innerHTML = this._traQualCodecsCard();
+          this._wireTracearrModalBody(body);
+        }
+      });
+    });
+    body.querySelectorAll("[data-tra-q-period]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.qualityPeriod = btn.dataset.traQPeriod;
+        try {
+          localStorage.setItem("arr-tra-q-period", this._tracearrModal.qualityPeriod);
+        } catch (_) {
+        }
+        const sec = body.querySelector("[data-tra-q-evol]");
+        if (sec) {
+          sec.innerHTML = this._traQualEvolCard();
+          this._wireTracearrModalBody(body);
+        }
+      });
+    });
+    body.querySelectorAll("[data-tra-q-mt]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.qualityMediaType = btn.dataset.traQMt || null;
+        try {
+          localStorage.setItem("arr-tra-q-mt", this._tracearrModal.qualityMediaType ?? "");
+        } catch (_) {
+        }
+        this._tracearrModal.qualityData = null;
+        this._tracearrModal._qualityKey = null;
+        const sec = body.querySelector("[data-tra-q-evol]");
+        if (sec) {
+          const m2 = this._tracearrModal;
+          const _qSrvId = m2.qualityServerId || null;
+          const _qMt = m2.qualityMediaType || null;
+          const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+          const _qQ = ["period=all", `timezone=${_tz}`, _qSrvId && `serverId=${_qSrvId}`, _qMt && `mediaType=${_qMt}`].filter(Boolean).join("&");
+          const qr = await this._traLibFetch(`quality?${_qQ}`);
+          if (!this._tracearrModal) return;
+          m2.qualityData = qr;
+          m2._qualityKey = `${_qSrvId}|${_qMt}`;
+          sec.innerHTML = this._traQualEvolCard();
+          this._wireTracearrModalBody(body);
+        }
+      });
+    });
+    body.querySelectorAll("[data-tra-stor-period]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.storagePeriod = btn.dataset.traStorPeriod;
+        try {
+          localStorage.setItem("arr-tra-stor-period", this._tracearrModal.storagePeriod);
+        } catch (_) {
+        }
+        body.innerHTML = this._traBodyStorage();
+        this._wireTracearrModalBody(body);
+      });
+    });
+    body.querySelector("[data-tra-stor-pred]")?.addEventListener("click", () => {
+      if (!this._tracearrModal) return;
+      this._tracearrModal.storagePredictions = !this._tracearrModal.storagePredictions;
+      try {
+        localStorage.setItem("arr-tra-stor-pred", this._tracearrModal.storagePredictions ? "1" : "0");
+      } catch (_) {
+      }
+      body.innerHTML = this._traBodyStorage();
+      this._wireTracearrModalBody(body);
+    });
+    body.querySelectorAll("[data-tra-w-top]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.watchTopTab = btn.dataset.traWTop;
+        body.querySelectorAll("[data-tra-w-top]").forEach((b) => b.classList.toggle("active", b.dataset.traWTop === btn.dataset.traWTop));
+        const target = body.querySelector("[data-tra-watch-top]");
+        if (target) target.innerHTML = this._traWatchTopRowsHtml();
+      });
+    });
+    body.querySelectorAll("[data-tra-w-period]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.watchPeriod = btn.dataset.traWPeriod;
+        m2.watchTopMovies = null;
+        m2.watchTopShows = null;
+        m2.watchSrvPeriodKey = null;
+        body.querySelectorAll("[data-tra-w-period]").forEach((b) => b.classList.toggle("active", b.dataset.traWPeriod === btn.dataset.traWPeriod));
+        const target = body.querySelector("[data-tra-watch-top]");
+        if (target) target.innerHTML = `<div style="grid-column:1/-1;padding:24px;text-align:center;color:rgba(255,255,255,0.3);font-size:11px">${this._t("loading")}</div>`;
+        const _wSrvId = m2.watchServerId || m2.qualityServerId || m2.selectedServerId || null;
+        const _wSrvQ = _wSrvId ? `&serverId=${_wSrvId}` : "";
+        const [mov, sh] = await Promise.all([
+          this._traLibFetch(`top-movies?period=${m2.watchPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`),
+          this._traLibFetch(`top-shows?period=${m2.watchPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`)
+        ]);
+        if (!this._tracearrModal) return;
+        m2.watchTopMovies = mov?.items || mov || [];
+        m2.watchTopShows = sh?.items || sh || [];
+        m2.watchSrvPeriodKey = `${_wSrvId}|${m2.watchPeriod}`;
+        const t2 = body.querySelector("[data-tra-watch-top]");
+        if (t2) t2.innerHTML = this._traWatchTopRowsHtml();
+      });
+    });
+    body.querySelector("#tra-stale-type")?.addEventListener("change", (e) => {
+      if (!this._tracearrModal) return;
+      this._tracearrModal.staleMediaType = e.target.value || null;
+      this._tracearrModal.stalePage = 0;
+      this._traRefreshStale(body);
+    });
+    body.querySelector("#tra-stale-months")?.addEventListener("change", (e) => {
+      if (!this._tracearrModal) return;
+      this._tracearrModal.staleMonths = Number(e.target.value) || 3;
+      this._tracearrModal.stalePage = 0;
+      this._tracearrModal.staleRaw = null;
+      this._traRefreshStale(body);
+    });
+    body.querySelectorAll("[data-tra-stale-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const m2 = this._tracearrModal;
+        const col = th.dataset.traStaleSort;
+        if ((m2.staleSort || "fileSize") === col) {
+          m2.staleOrder = m2.staleOrder === "asc" ? "desc" : "asc";
+        } else {
+          m2.staleSort = col;
+          m2.staleOrder = "desc";
+        }
+        m2.stalePage = 0;
+        this._traRefreshStale(body);
+      });
+    });
+    body.querySelectorAll("[data-tra-stale-cat]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        this._tracearrModal.staleCategory = btn.dataset.traStaleCat;
+        this._tracearrModal.stalePage = 0;
+        this._tracearrModal.staleRaw = null;
+        this._traRefreshStale(body);
+      });
+    });
+    body.querySelectorAll("[data-tra-stale-page]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!this._tracearrModal) return;
+        const m2 = this._tracearrModal;
+        const pp = m2.stalePageSize || 10;
+        const totalP = Math.max(1, Math.ceil(m2.staleTotal / pp));
+        m2.stalePage = resolvePage(btn.dataset.traStalePage, m2.stalePage, totalP);
+        this._traRefreshStale(body);
+      });
+    });
+    body.querySelectorAll("[data-tra-bw-users-page]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        const users = Array.isArray(m2.bwUsers) ? m2.bwUsers : m2.bwUsers?.data || m2.bwUsers?.users || [];
+        const pp = m2.bwPageSize || 5;
+        const pages = Math.max(1, Math.ceil(users.length / pp));
+        m2.bwUsersPage = resolvePage(btn.dataset.traBwUsersPage, m2.bwUsersPage || 0, pages);
+        body.innerHTML = this._traBodyBandwidth();
+        this._wireTracearrModalBody(body);
+      });
+    });
+    this._wireChartCards(body);
+    this._tlGTriggerAnim(body);
+    body.querySelectorAll(".donut-wrap").forEach((wrap) => {
+      const arcs = wrap.querySelectorAll(".donut-arc");
+      const rings = wrap.querySelectorAll(".donut-ring");
+      const tt = wrap.querySelector(".donut-tt");
+      if (!tt) return;
+      arcs.forEach((arc, i) => {
+        arc.addEventListener("mouseenter", () => {
+          if (rings[i]) rings[i].style.strokeOpacity = "0.22";
+          tt.innerHTML = `<div style="font-size:11px;font-weight:700;margin-bottom:2px">${arc.dataset.label}</div><div style="font-size:10px;opacity:0.65">${arc.dataset.value} items (${arc.dataset.pct}%)</div>`;
+          tt.style.display = "block";
+        });
+        arc.addEventListener("mousemove", (e) => {
+          const rect = wrap.getBoundingClientRect();
+          let x = e.clientX - rect.left + 10;
+          let y = e.clientY - rect.top - 38;
+          tt.style.left = x + "px";
+          tt.style.top = y + "px";
+        });
+        arc.addEventListener("mouseleave", () => {
+          if (rings[i]) rings[i].style.strokeOpacity = "0";
+          tt.style.display = "none";
+        });
+      });
+    });
+  }
+};
+var wireTracearrMixin = _WireTraceaRrMethods.prototype;
 
 // src/popup/index.js
 var _PopupMethods = class {
@@ -13588,7 +15110,7 @@ var _TautulliSharedMethods = class {
   _tlSaveColPrefs() {
     const m = this._tautulliModal;
     if (!m) return;
-    const KEYS = ["libsHiddenCols", "libsMobHiddenCols", "usersHiddenCols", "usersMobHiddenCols", "histHiddenCols", "histMobHiddenCols"];
+    const KEYS = ["libsHiddenCols", "libsMobHiddenCols", "usersHiddenCols", "usersMobHiddenCols", "histHiddenCols", "histMobHiddenCols", "udHistHiddenCols", "udHistMobHiddenCols", "ldHistHiddenCols", "ldHistMobHiddenCols"];
     const value = {};
     for (const k of KEYS) if (m[k]) value[k] = [...m[k]];
     this._hass.callWS({ type: "frontend/store_user_data", key: "arr-tl-cols", value }).catch(() => {
@@ -13616,6 +15138,7 @@ var _TautulliSharedMethods = class {
     if (type === "movie") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`;
     if (type === "episode") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
     if (type === "track") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    if (type === "live" || type === "liveTV" || type === "livetv") return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}"><rect x="2" y="8" width="20" height="13" rx="2"/><path d="M8 8L12 3l4 5"/></svg>`;
     return "";
   }
   // ── Toolbar building blocks ───────────────────────────────────────────────
@@ -13629,8 +15152,10 @@ var _TautulliSharedMethods = class {
     const icon = label === "Delete" ? _TL_TRASH_SVG : _TL_EDIT_SVG;
     return `<button id="${id}" class="tl-page-btn${active ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px">${icon}${label}</button>`;
   }
-  _tlColsMenu(btnId, menuId, items, isOpen) {
-    return `<div style="position:relative"><button id="${btnId}" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px">${_TL_COLS_SVG}Columns</button><div id="${menuId}" style="display:${isOpen ? "block" : "none"};${_TL_MENU_STY}">${items}</div></div>`;
+  _tlColsMenu(btnId, menuId, items, isOpen, iconOnly = false) {
+    const label = iconOnly ? "" : "Columns";
+    const gap = iconOnly ? "" : "gap:5px;";
+    return `<div style="position:relative"><button id="${btnId}" class="tl-page-btn" style="display:inline-flex;align-items:center;${gap}">${_TL_COLS_SVG}${label}</button><div id="${menuId}" style="display:${isOpen ? "block" : "none"};${_TL_MENU_STY}">${items}</div></div>`;
   }
   _tlColItems(cols, hiddenSet, dataAttr) {
     return cols.map((c) => {
@@ -13645,11 +15170,11 @@ var _TautulliSharedMethods = class {
     return `${b}<div class="tl-toolbar">${showLabel}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
   }
   // ── Pagination ────────────────────────────────────────────────────────────
-  _tlMobPag(attr, page, totalPages) {
+  _tlMobPag(attr, page, totalPages, numeric = false) {
     if (totalPages <= 1) return "";
     const DOT_LIMIT = 15;
     let center;
-    if (totalPages <= DOT_LIMIT) {
+    if (!numeric && totalPages <= DOT_LIMIT) {
       const dots = Array.from(
         { length: totalPages },
         (_, i) => i === page ? `<button data-${attr}="${i}" style="width:18px;height:6px;border-radius:3px;background:var(--is-text);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none;cursor:default;outline:none" disabled></button>` : `<button class="tl-page-btn" data-${attr}="${i}" style="width:6px;height:6px;border-radius:50%;background:var(--is-text-muted);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none"></button>`
@@ -13693,11 +15218,11 @@ var _TautulliSharedMethods = class {
     const modalH = window.innerHeight * 0.88;
     const hdr = isMob ? 90 : 68;
     const pad = 34;
-    const bar = 44;
-    const filter = opts && opts.hasFilter ? 44 : 0;
+    const bar = opts && opts.bar !== void 0 ? opts.bar : 44;
+    const filter = opts && opts.hasFilter ? opts.filterH || 44 : 0;
     const thead = isMob ? 0 : 36;
     const pag = isMob ? 56 : 52;
-    const rowH = isMob ? 62 : 38;
+    const rowH = opts && opts.rowH || (isMob ? 62 : 38);
     return Math.max(3, Math.floor((modalH - hdr - pad - bar - filter - thead - pag) / rowH));
   }
   _tlFmtDuration(secs) {
@@ -13730,7 +15255,7 @@ var _TautulliSharedMethods = class {
   }
   _tlSearchInput(id, value) {
     const SEARCH_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--is-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
-    return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;padding:4px 7px">
+    return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;padding:0 7px;height:28px;box-sizing:border-box">
       ${SEARCH_SVG}
       <input id="${id}" type="search" value="${this._escHtml(value || "")}" placeholder="Search\u2026" autocomplete="off" style="background:none;border:none;outline:none;color:var(--is-text,#fff);font-size:12px;line-height:1.4;width:110px;min-width:60px;padding:0;margin:0;box-sizing:border-box">
     </div>`;
@@ -13749,6 +15274,8 @@ var _TautulliTableMethods = class {
   _tlBodyLibraries(data, total) {
     const isMobile2 = window.matchMedia("(max-width:600px)").matches;
     const m = this._tautulliModal || {};
+    if (m.mediaDetailKey) return this._tlBodyMediaDetail();
+    if (m.libDetailId) return this._tlBodyLibDetail();
     const page = m.libsPage || 0;
     const perPage = this._tlCalcPerPage();
     const sortCol = m.libsSortCol || "plays";
@@ -13807,7 +15334,8 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("parents") && lib.parent_count != null) mp.push(`<span>${lib.parent_count} sea/alb</span>`);
         if (!mobHidden.has("children") && lib.child_count != null) mp.push(`<span>${lib.child_count} ep/trk</span>`);
         if (!mobHidden.has("lastStream") && lib.last_accessed) mp.push(`<span>${this._tlFmtDate(lib.last_accessed)}</span>`);
-        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">
+        const ldAttr = !editMode ? ` data-tl-ld-open="${sid}" data-tl-ld-name="${this._escHtml(lib.section_name || "")}" style="cursor:pointer"` : "";
+        return `<div class="tl-mob-card"${ldAttr}><div style="display:flex;align-items:center;gap:10px">
           <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
           <div style="flex:1;min-width:0"><div class="tl-mob-name">${lib.section_name || "\u2014"}</div>${mp.length ? `<div class="tl-mob-meta">${mp.join("")}</div>` : ""}</div>
           <div style="text-align:right;flex-shrink:0">
@@ -13841,7 +15369,8 @@ var _TautulliTableMethods = class {
         ${_DEL_BTN(`data-tl-lib-delete="${sid}" data-tl-lib-name="${lib.section_name || sid}"`)}
         ${_PURGE_BTN(`data-tl-lib-purge="${sid}" data-tl-lib-name="${lib.section_name || sid}"`)}
       </div></td>` : "";
-      return `<tr>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
+      const ldAttr = !editMode ? ` data-tl-ld-open="${sid}" data-tl-ld-name="${this._escHtml(lib.section_name || "")}" style="cursor:pointer"` : "";
+      return `<tr${ldAttr}>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
     return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoLibraryData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-lpage", page, totalPages);
   }
@@ -13898,6 +15427,8 @@ var _TautulliTableMethods = class {
   _tlBodyUsers(data, total) {
     const isMobile2 = window.matchMedia("(max-width:600px)").matches;
     const m = this._tautulliModal || {};
+    if (m.mediaDetailKey) return this._tlBodyMediaDetail();
+    if (m.userDetailId) return this._tlBodyUserDetail();
     const page = m.usersPage || 0;
     const perPage = this._tlCalcPerPage();
     const sortCol = m.usersSortCol || "plays";
@@ -13971,7 +15502,7 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("ip") && u.ip_address) um.push(`<span style="font-family:monospace;font-size:10px">${this._escHtml(u.ip_address)}</span>`);
         if (!mobHidden.has("username") && u.username) um.push(`<span style="color:var(--is-text-label)">${this._escHtml(u.username)}</span>`);
         if (!mobHidden.has("email") && u.email) um.push(`<span style="color:var(--is-text-label);font-size:10px">${this._escHtml(u.email)}</span>`);
-        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">
+        return `<div class="tl-mob-card" data-tl-ud-open="${uid}" data-tl-ud-name="${this._escHtml(name)}" data-tl-ud-thumb="${thumb}" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px">
           ${av}
           <div style="flex:1;min-width:0"><div class="tl-mob-name">${this._escHtml(name)}</div>${um.length ? `<div class="tl-mob-meta">${um.join("")}</div>` : ""}</div>
           <div style="text-align:right;flex-shrink:0">
@@ -14013,7 +15544,7 @@ var _TautulliTableMethods = class {
         <button class="tl-edit-btn tl-tog-btn${kh ? " on" : ""}" data-tl-toggle-hist="${uid}" data-tl-kh="${kh}" title="${kh ? "Disable" : "Enable"} history"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
         <button class="tl-edit-btn tl-tog-btn${ag ? " on" : ""}" data-tl-toggle-guest="${uid}" data-tl-ag="${ag}" title="${ag ? "Disable" : "Enable"} guest"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></button>
       </div></td>` : "";
-      return `<tr${isW ? ' class="tl-row-warn"' : ""}>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
+      return `<tr${isW ? ' class="tl-row-warn"' : ""} data-tl-ud-open="${uid}" data-tl-ud-name="${this._escHtml(name)}" data-tl-ud-thumb="${thumb}" style="cursor:pointer">${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
     return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoUserData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-upage", page, totalPages);
   }
@@ -14182,6 +15713,866 @@ var _TautulliTableMethods = class {
     body.innerHTML = this._tlBodyHistory();
     this._wireTautulliModalBody(body);
   }
+  // ──────────────────────────────────────────────────────────────────────────
+  // User detail — wrapper
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyUserDetail() {
+    const m = this._tautulliModal || {};
+    const tab = m.userDetailTab || "profile";
+    const name = m.userDetailName || "\u2014";
+    const thumb = m.userDetailThumb || "";
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const av = thumb ? `<img src="${thumb}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--is-divider);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:40px;height:40px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;color:var(--is-text-muted);font-size:15px;font-weight:700;flex-shrink:0">${(name[0] || "?").toUpperCase()}</span>`;
+    const TAB_LABELS = { profile: "Profile", history: "History", ips: "IP Addresses" };
+    const tabBtns = ["profile", "history", "ips"].map(
+      (t) => `<button class="is-f-btn${tab === t ? " active" : ""}" data-tl-ud-tab="${t}">${TAB_LABELS[t]}</button>`
+    ).join("");
+    const backBtn = `<button data-tl-ud-back title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
+    const hdr = isMob ? `<div style="margin-bottom:12px">
+           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">${backBtn}</div>
+           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+             ${av}
+             <div style="font-size:15px;font-weight:700;color:var(--is-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(name)}</div>
+           </div>
+           <div class="is-filter">${tabBtns}</div>
+         </div>` : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+           ${backBtn}${av}
+           <div style="font-size:15px;font-weight:700;color:var(--is-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${this._escHtml(name)}</div>
+           <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         </div>`;
+    let content = "";
+    if (tab === "profile") content = this._tlBodyUdProfile();
+    else if (tab === "history") content = this._tlBodyUdHistory();
+    else content = this._tlBodyUdIps();
+    return hdr + content;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // User detail — Profile tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyUdProfile() {
+    const m = this._tautulliModal || {};
+    const profile = m.userDetailProfile;
+    if (!profile) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const wts = profile.watchTimeStats || [];
+    const ps = profile.playerStats || [];
+    const rh = profile.recentHistory || [];
+    const periodLabel = (d) => d === 1 ? "Last 24h" : d === 7 ? "Last 7 days" : d === 30 ? "Last 30 days" : "All Time";
+    const statMap = {};
+    wts.forEach((s) => {
+      statMap[Number(s.query_days)] = s;
+    });
+    const statCards = [1, 7, 30, 0].map((d) => {
+      const s = statMap[d] || {};
+      const plays = s.total_plays ?? 0;
+      const dur = s.total_time ? this._tlFmtDuration(s.total_time) : "0m";
+      return `<div style="background:var(--is-row-hover);border-radius:8px;padding:${isMob ? "6px" : "8px 6px"};text-align:center;display:flex;flex-direction:column;gap:2px">
+        <div style="font-size:${isMob ? "9px" : "10px"};font-weight:700;color:var(--is-text);text-transform:uppercase;letter-spacing:0.3px">${periodLabel(d)}</div>
+        <div style="font-size:${isMob ? "16px" : "20px"};font-weight:800;color:rgba(250,180,50,0.95);line-height:1">${plays} <span style="font-size:8px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase">plays</span></div>
+        <div style="font-size:${isMob ? "10px" : "11px"};font-weight:600;color:var(--is-text)">${dur}</div>
+      </div>`;
+    }).join("");
+    const _platIcon = (plat) => {
+      const p = (plat || "").toLowerCase();
+      const s = `viewBox="0 0 24 24" width="20" height="20" fill="currentColor"`;
+      if (p.includes("ios") || p.includes("ipad") || p.includes("iphone") || p.includes("tvos") || p.includes("apple"))
+        return `<svg ${s}><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>`;
+      if (p.includes("android") || p.includes("samsung") || p.includes("pixel") || p.includes("galaxy"))
+        return `<svg ${s}><path d="M17.523 15.341c-.398 0-.72-.322-.72-.72s.322-.72.72-.72.72.322.72.72-.322.72-.72.72m-11.046 0c-.398 0-.72-.322-.72-.72s.322-.72.72-.72.72.322.72.72-.322.72-.72.72M17.69 8.5l1.6-2.771a.333.333 0 10-.577-.333l-1.62 2.806A9.867 9.867 0 0012 7.167a9.867 9.867 0 00-5.093 1.035L5.287 5.396a.333.333 0 10-.577.333L6.31 8.5C3.7 9.991 1.97 12.768 2 16h20c.03-3.232-1.7-6.009-4.31-7.5z"/></svg>`;
+      if (p.includes("chrome") || p.includes("chromium"))
+        return `<svg ${s} fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/></svg>`;
+      if (p.includes("roku"))
+        return `<svg ${s} fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="14" rx="2"/><line x1="8" y1="22" x2="16" y2="22"/><line x1="12" y1="18" x2="12" y2="22"/></svg>`;
+      if (p.includes("xbox"))
+        return `<svg ${s}><path d="M4.102 7.512C3.438 8.28 3 9.251 3 10.343c0 1.574.757 2.968 1.917 3.86C4.918 8.948 7.14 5.852 10.14 3.4 8.34 3.543 6.024 4.698 4.103 7.512zm15.796 0C17.977 4.698 15.661 3.543 13.86 3.4c3 2.451 5.222 5.548 5.223 10.803A4.986 4.986 0 0021 10.343c0-1.092-.438-2.063-1.102-2.83zM12 4c-1.55 1.254-5 4.73-5 9 0 1.636.438 3.168 1.194 4.494.806 1.408 1.937 2.573 3.806 4.506 1.869-1.933 3-3.098 3.806-4.506C16.562 16.168 17 14.636 17 13c0-4.27-3.45-7.746-5-9z"/></svg>`;
+      if (p.includes("playstation") || p.includes("ps4") || p.includes("ps5"))
+        return `<svg ${s}><path d="M8.985 2.596v17.548l3.915 1.261V6.688c0-.69.304-1.151.794-.996.636.199.76.866.76 1.554v5.302c2.773 1.103 4.926-.24 4.926-3.604C19.38 5.726 17.581 4 14.198 4 12.99 4 10.67 4.344 8.985 2.596zM4.62 18.686c-2.545.73-2.697-1.114-.76-1.688l3.15-.934v-2.314l-4.6 1.361C-1.327 16.44.63 21.04 4.62 20.109l3.389-1.004v-2.33z"/></svg>`;
+      return `<svg ${s} fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+    };
+    const playerChips = ps.length ? `<div style="display:flex;flex-wrap:nowrap;gap:${isMob ? "8px" : "12px"};overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px">` + ps.map((p) => {
+      const platform = this._escHtml(p.platform || "");
+      const player = this._escHtml(p.player || p.friendly_name || platform);
+      const plays = p.total_plays ?? 0;
+      const icon = _platIcon(p.platform || "");
+      return `<div style="background:var(--is-row-hover);border-radius:12px;padding:${isMob ? "10px 12px" : "12px 16px"};display:flex;flex-direction:column;align-items:center;gap:6px;min-width:${isMob ? "76px" : "90px"};flex-shrink:0">
+            <div style="color:var(--is-text-muted)">${icon}</div>
+            <div style="font-size:${isMob ? "10px" : "11px"};font-weight:600;color:var(--is-text);text-align:center;width:${isMob ? "68px" : "82px"};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${player}</div>
+            <div style="font-size:${isMob ? "14px" : "16px"};font-weight:800;color:rgba(250,180,50,0.95);line-height:1">${plays}</div>
+            <div style="font-size:9px;color:var(--is-text-muted);text-transform:uppercase">plays</div>
+          </div>`;
+    }).join("") + "</div>" : `<div style="color:var(--is-text-muted);font-size:12px;padding:8px 0">No player data available.</div>`;
+    let recentSection = "";
+    if (rh.length) {
+      const W = isMob ? 100 : 130;
+      const H = Math.round(W * 1.5);
+      const perPage = isMob ? 4 : 7;
+      const pages = [];
+      for (let i = 0; i < rh.length; i += perPage) pages.push(rh.slice(i, i + perPage));
+      const multiPage = pages.length > 1;
+      const posterCard = (h) => {
+        const title = this._escHtml(h.full_title || h.title || "\u2014");
+        const ago = h.date ? this._tlFmtDate(h.date) : "";
+        const mt = (h.media_type || "").toLowerCase();
+        const isLive = mt === "live" || mt === "livetv" || h.live === 1;
+        const thumbPath = mt === "episode" && h.grandparent_thumb ? h.grandparent_thumb : h.thumb || "";
+        const icon = this._tlMediaIcon(mt, 16);
+        const typeLabel = isLive ? "Live TV" : mt === "movie" ? "Movie" : mt === "episode" ? "Show" : mt === "track" ? "Music" : null;
+        const typeTag = typeLabel ? `<span class="media-type-tag">${typeLabel}</span>` : "";
+        const rk = h.rating_key || "";
+        const mdAttr = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${title}" data-tl-md-thumb="${this._escHtml(thumbPath)}" data-tl-md-prev="user" style="cursor:pointer"` : "";
+        const imgTag = thumbPath ? `<img data-tl-plex-path="${this._escHtml(thumbPath)}" alt="" style="width:${W}px;height:${H}px;object-fit:cover;border-radius:6px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="display:none;width:${W}px;height:${H}px;background:var(--is-row-hover);border-radius:6px;align-items:center;justify-content:center">${icon}</div>` : `<div style="width:${W}px;height:${H}px;background:var(--is-row-hover);border-radius:6px;display:flex;align-items:center;justify-content:center">${icon}</div>`;
+        const grad = `<div class="mc-grad" style="border-radius:0 0 6px 6px">
+          <div class="mc-title" style="font-size:10px" title="${title}">${title}</div>
+          ${ago ? `<div class="mc-sub" style="font-size:9px">${ago}</div>` : ""}
+        </div>`;
+        return `<div${mdAttr} style="flex-shrink:0;width:${W}px">
+          <div style="position:relative;line-height:0;border-radius:6px;overflow:hidden">${imgTag}${typeTag}${grad}</div>
+        </div>`;
+      };
+      const pagesHtml = pages.map(
+        (pg) => `<div style="display:flex;gap:8px;flex-shrink:0;min-width:100%;scroll-snap-align:start;padding:2px 0">${pg.map(posterCard).join("")}</div>`
+      ).join("");
+      const chevStyle = `background:none;border:none;color:var(--is-text);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;opacity:0.85`;
+      const chevL = `<button class="tl-ud-rec-prev" disabled style="${chevStyle}"><ha-icon icon="mdi:chevron-left"  style="--mdc-icon-size:28px"></ha-icon></button>`;
+      const chevR = `<button class="tl-ud-rec-next"        style="${chevStyle}"><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:28px"></ha-icon></button>`;
+      recentSection = `<div style="margin-top:14px">
+        <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Recently Played</div>
+        <div class="sv-nav-wrap">
+          ${multiPage ? chevL : ""}
+          <div class="sv-scroll" id="tl-ud-rec-scroll" style="scroll-snap-type:x mandatory">${pagesHtml}</div>
+          ${multiPage ? chevR : ""}
+        </div>
+      </div>`;
+    }
+    return `<div style="margin-bottom:${isMob ? "10px" : "14px"}">
+      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Global Watch Stats</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "6px" : "10px"}">${statCards}</div>
+    </div>
+    <div style="margin-bottom:0">
+      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Player Stats</div>
+      ${playerChips}
+    </div>
+    ${recentSection}`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // User detail — History tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyUdHistory() {
+    const m = this._tautulliModal;
+    if (!m) return "";
+    if (m.userDetailHistLoading) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const page = m.userDetailHistPage || 0;
+    const perPage = this._tlCalcPerPage({ hasFilter: true });
+    const tot = m.userDetailHistTotal || 0;
+    const data = m.userDetailHistData || [];
+    const media = m.userDetailHistMedia || null;
+    const playback = m.userDetailHistPlayback || null;
+    const delMode = m.userDetailHistDeleteMode || false;
+    const expRow = m.userDetailHistExpandedRow || null;
+    const hidden = this._tlHidden("userDetailHistHiddenCols", ["ip", "paused", "stopped"]);
+    const mobHidden = this._tlHidden("userDetailHistMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const HIST_COLS = [
+      { key: "date", label: this._t("tlColDate"), right: false },
+      { key: "ip", label: this._t("tlColIP"), right: false },
+      { key: "platform", label: this._t("tlColPlatform"), right: false },
+      { key: "product", label: this._t("tlColProduct"), right: false },
+      { key: "player", label: this._t("tlColPlayer"), right: false },
+      { key: "title", label: this._t("tlColTitle"), right: false },
+      { key: "started", label: this._t("tlColStarted"), right: false },
+      { key: "paused", label: this._t("tlColPaused"), right: true },
+      { key: "stopped", label: this._t("tlColStopped"), right: false },
+      { key: "duration", label: this._t("tlColDuration"), right: true }
+    ];
+    const mediaBtns = [
+      { v: "movie", l: this._t("tlFilterMovies") },
+      { v: "episode", l: this._t("tlFilterTvShows") },
+      { v: "track", l: this._t("tlFilterMusic") },
+      { v: "live", l: this._t("tlFilterLiveTV") }
+    ].map((f) => `<button class="tl-page-btn${media === f.v ? " active" : ""}" data-tl-ud-hist-media="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
+    const playBtns = [
+      { v: "direct play", l: this._t("tlFilterDirectPlay") },
+      { v: "direct stream", l: this._t("tlFilterDirectStream") },
+      { v: "transcode", l: this._t("tlFilterTranscode") }
+    ].map((f) => `<button class="tl-page-btn${playback === f.v ? " active" : ""}" data-tl-ud-hist-play="${f.v}" style="white-space:nowrap;flex-shrink:0">${f.l}</button>`).join("");
+    const delBtn = this._tlEditBtn("tl-ud-hist-del-mode", delMode, this._t("tlDelete"));
+    const MOB_PICKER = [
+      { key: "platform", label: this._t("tlColPlatform") },
+      { key: "player", label: this._t("tlColPlayer") },
+      { key: "started", label: this._t("tlColStarted") },
+      { key: "duration", label: this._t("tlColDuration") },
+      { key: "ip", label: this._t("tlColIP") },
+      { key: "paused", label: this._t("tlColPaused") },
+      { key: "stopped", label: this._t("tlColStopped") }
+    ];
+    const colsBtn = isMob ? this._tlColsMenu("tl-ud-hist-mob-cols-btn", "tl-ud-hist-mob-cols-menu", this._tlColItems(MOB_PICKER, mobHidden, "data-tl-ud-hist-mob-col"), m.userDetailHistMobColsOpen) : this._tlColsMenu("tl-ud-hist-cols-btn", "tl-ud-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-ud-hist-col"), m.userDetailHistColsOpen);
+    const searchEl = this._tlSearchInput("tl-ud-hist-search", m.userDetailHistSearch);
+    const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    let toolbar;
+    if (isMob) {
+      toolbar = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">${searchElFlex}<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${delBtn}${colsBtn}</div></div>
+        <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">${mediaBtns}${playBtns}</div>`;
+    } else {
+      toolbar = `<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${delBtn}${colsBtn}</div></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap"><div style="display:flex;gap:4px;flex-wrap:wrap">${mediaBtns}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${playBtns}</div></div>`;
+    }
+    if (!data.length && !m.userDetailHistLoading) {
+      return toolbar + `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
+    }
+    const _wRing = '<circle cx="7" cy="7" r="5.5" fill="none" style="stroke:var(--is-text-muted)" stroke-width="1.5"/>';
+    const _wSvg = (inner) => `<svg width="14" height="14" viewBox="0 0 14 14">${inner}</svg>`;
+    const _wArc = (d) => `<path d="${d}" style="fill:var(--is-text-body)"/>`;
+    const watchSvg = (ws) => ws === 4 ? _wSvg('<circle cx="7" cy="7" r="5.5" style="fill:var(--is-text-body)"/>') : ws === 3 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,1,1 1.5,7 Z")}`) : ws === 2 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 7,12.5 Z")}`) : ws === 1 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 12.5,7 Z")}`) : _wSvg(_wRing);
+    const _streamBadge = (dec) => {
+      if (!dec) return "";
+      const lo = dec.toLowerCase();
+      const bg = lo === "direct play" ? "rgba(52,211,153,0.15)" : lo === "direct stream" ? "rgba(99,179,237,0.15)" : "rgba(248,113,113,0.15)";
+      const clr = lo === "direct play" ? "rgba(52,211,153,0.95)" : lo === "direct stream" ? "rgba(99,179,237,0.9)" : "rgba(248,113,113,0.9)";
+      const lbl = lo === "direct play" ? "Direct Play" : lo === "direct stream" ? "Direct Stream" : "Transcode";
+      return `<span style="background:${bg};color:${clr};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap">${lbl}</span>`;
+    };
+    const _expandedRow = (h, colCount) => {
+      const esc = (s) => this._escHtml(s || "");
+      const decBdg = _streamBadge(h.transcode_decision);
+      const vBdg = h.video_decision ? _streamBadge(h.video_decision) : "";
+      const aBdg = h.audio_decision ? _streamBadge(h.audio_decision) : "";
+      const vInfo = [esc(h.video_full_resolution || ""), esc(h.video_codec || "")].filter(Boolean).join(" \xB7 ");
+      const aInfo = [esc(h.audio_codec || ""), esc(h.audio_channel_layout || "")].filter(Boolean).join(" \xB7 ");
+      const qual = esc(h.quality_profile || "");
+      const ip = esc(h.ip_address || "");
+      const chunks = [
+        decBdg ? `<span>${decBdg}</span>` : "",
+        qual ? `<span style="font-size:11px;color:var(--is-text-label)">${qual}</span>` : "",
+        vInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${vInfo}</span>` : "",
+        vBdg ? `<span style="font-size:10px;color:var(--is-text-muted)">Video: ${vBdg}</span>` : "",
+        aInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${aInfo}</span>` : "",
+        aBdg ? `<span style="font-size:10px;color:var(--is-text-muted)">Audio: ${aBdg}</span>` : "",
+        ip ? `<span style="font-family:monospace;font-size:10px;color:var(--is-text-muted)">${ip}</span>` : ""
+      ].filter(Boolean);
+      return `<tr class="tl-ud-hist-detail-row"><td colspan="${colCount}" style="padding:0 10px 10px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:var(--is-row-hover);border-radius:6px">${chunks.join("")}</div>
+      </td></tr>`;
+    };
+    if (isMob) {
+      const cards = data.map((h) => {
+        const rid = String(h.row_id || "");
+        const icon = this._tlMediaIcon(h.media_type || "", 12);
+        const title = this._escHtml(h.full_title || h.title || "\u2014");
+        const ago = h.date ? this._tlFmtDate(h.date) : "\u2014";
+        const dur = h.duration ? this._tlFmtDuration(h.duration) : "\u2014";
+        const pct = h.percent_complete ?? 0;
+        const ws = pct >= 85 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 10 ? 1 : 0;
+        const isExp = expRow === rid;
+        const mp = [];
+        if (!mobHidden.has("platform") && h.platform) mp.push(this._escHtml(h.platform));
+        if (!mobHidden.has("player") && h.player) mp.push(this._escHtml(h.player));
+        if (!mobHidden.has("started") && h.started) mp.push(this._tlFmtTime(h.started));
+        if (!mobHidden.has("ip") && h.ip_address) mp.push(h.ip_address);
+        if (!mobHidden.has("paused") && h.paused_counter) mp.push(this._t("tlColPaused") + " " + this._tlFmtDuration(h.paused_counter));
+        const meta = `<div class="tl-mob-meta"><span>${ago}</span>${mp.map((v) => `<span style="color:var(--is-text-muted)"> &middot; </span><span>${v}</span>`).join("")}</div>`;
+        const delEl = delMode ? `<button class="tl-edit-btn tl-del-btn" data-tl-ud-hist-delete="${rid}" style="margin-top:6px;font-size:10px">${this._t("tlDelete")}</button>` : "";
+        let expDetail = "";
+        if (isExp) {
+          const decBdg = _streamBadge(h.transcode_decision);
+          const vInfo = [this._escHtml(h.video_full_resolution || ""), this._escHtml(h.video_codec || "")].filter(Boolean).join(" \xB7 ");
+          const aInfo = [this._escHtml(h.audio_codec || ""), this._escHtml(h.audio_channel_layout || "")].filter(Boolean).join(" \xB7 ");
+          const qual = this._escHtml(h.quality_profile || "");
+          const ip = this._escHtml(h.ip_address || "");
+          expDetail = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--is-divider);display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+            ${decBdg}
+            ${qual ? `<span style="font-size:11px;color:var(--is-text-label)">${qual}</span>` : ""}
+            ${vInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${vInfo}</span>` : ""}
+            ${aInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${aInfo}</span>` : ""}
+            ${ip ? `<span style="font-family:monospace;font-size:10px;color:var(--is-text-muted)">${ip}</span>` : ""}
+          </div>`;
+        }
+        return `<div class="tl-mob-card tl-ud-hist-row" data-tl-ud-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>
+              ${meta}
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div>
+              <div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div>
+            </div>
+          </div>
+          ${expDetail}${delEl}
+        </div>`;
+      }).join("");
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-ud-hpage", page, totalPages, true);
+    }
+    const vis = HIST_COLS.filter((c) => !hidden.has(c.key));
+    const thead = vis.map((c) => `<th style="${c.right ? "text-align:right;" : ""}white-space:nowrap">${c.label}</th>`).join("") + "<th></th>";
+    const delHdr = delMode ? '<th style="width:1px"></th>' : "";
+    const rows = data.map((h) => {
+      const icon = this._tlMediaIcon(h.media_type || "", 11);
+      const pct = h.percent_complete ?? 0;
+      const ws = pct >= 85 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 10 ? 1 : 0;
+      const rid = String(h.row_id || "");
+      const isExp = expRow === rid;
+      const esc = (s) => this._escHtml(s || "");
+      const cm = {
+        date: `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.date ? this._tlFmtDate(h.date) : "\u2014"}</td>`,
+        ip: `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.ip_address || "\u2014"}</td>`,
+        platform: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.platform)}</td>`,
+        product: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.product)}</td>`,
+        player: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.player)}</td>`,
+        title: `<td style="max-width:240px"><div style="display:flex;align-items:center;gap:5px;min-width:0">${icon}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1" title="${esc(h.full_title || h.title)}">${esc(h.full_title || h.title)}</span></div></td>`,
+        started: `<td style="white-space:nowrap;font-size:11px">${h.started ? this._tlFmtTime(h.started) : "\u2014"}</td>`,
+        paused: `<td style="text-align:right;white-space:nowrap;font-size:11px">${h.paused_counter ? this._tlFmtDuration(h.paused_counter) : "0m"}</td>`,
+        stopped: `<td style="white-space:nowrap;font-size:11px">${h.stopped ? this._tlFmtTime(h.stopped) : "\u2014"}</td>`,
+        duration: `<td style="text-align:right;white-space:nowrap;font-weight:600">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td>`
+      };
+      const watchCell = `<td style="text-align:right;padding-right:8px">${watchSvg(ws)}</td>`;
+      const delCell = delMode ? `<td style="padding:0 4px"><button class="tl-edit-btn tl-del-btn" data-tl-ud-hist-delete="${rid}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>` : "";
+      const mainRow = `<tr class="tl-ud-hist-row" data-tl-ud-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchCell}${delCell}</tr>`;
+      return mainRow + (isExp ? _expandedRow(h, vis.length + 1 + (delMode ? 1 : 0)) : "");
+    }).join("");
+    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ud-hpage", page, totalPages, true);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // User detail — IP Addresses tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _tlBodyUdIps() {
+    const m = this._tautulliModal || {};
+    const data = m.userDetailIpsData || [];
+    const sortCol = m.userDetailIpsSortCol || "last_seen";
+    const sortDir = m.userDetailIpsSortDir || "desc";
+    const page = m.userDetailIpsPage || 0;
+    const perPage = this._tlCalcPerPage();
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    if (!data.length) {
+      return `<div style="text-align:center;color:var(--is-text-muted);padding:30px">No IP address data available.</div>`;
+    }
+    const sorted = [...data].sort((a, b) => {
+      let av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
+      if (typeof av === "number" || typeof bv === "number") {
+        av = Number(av);
+        bv = Number(bv);
+      } else {
+        av = String(av).toLowerCase();
+        bv = String(bv).toLowerCase();
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    const totalPages = Math.max(1, Math.ceil(sorted.length / perPage));
+    const page2 = Math.min(page, totalPages - 1);
+    const sliced = sorted.slice(page2 * perPage, (page2 + 1) * perPage);
+    const IP_COLS = [
+      { key: "ip_address", label: "IP Address", sort: "ip_address", right: false },
+      { key: "last_seen", label: "Last Seen", sort: "last_seen", right: false },
+      { key: "first_seen", label: "First Seen", sort: "first_seen", right: false },
+      { key: "platform", label: this._t("tlColPlatform"), sort: "platform", right: false },
+      { key: "player", label: this._t("tlColPlayer"), sort: "player", right: false },
+      { key: "last_played", label: this._t("tlColLastPlayed"), sort: "last_played", right: false },
+      { key: "play_count", label: this._t("tlColPlays"), sort: "play_count", right: true }
+    ];
+    const thFn = (c) => {
+      const arrow = c.sort === sortCol ? sortDir === "asc" ? "\u2191" : "\u2193" : "\u2195";
+      const op = c.sort === sortCol ? 1 : 0.3;
+      return `<th data-tl-ud-ip-sort="${c.sort}" style="${c.right ? "text-align:right;" : ""}cursor:pointer;user-select:none;white-space:nowrap"><span style="white-space:nowrap">${c.label} <span style="opacity:${op};font-size:9px">${arrow}</span></span></th>`;
+    };
+    if (isMob) {
+      const cards = sliced.map((ip) => {
+        const addr = this._escHtml(ip.ip_address || "\u2014");
+        const ls = ip.last_seen ? this._tlFmtDate(ip.last_seen) : "\u2014";
+        const fs = ip.first_seen ? this._tlFmtDate(ip.first_seen) : "\u2014";
+        const plat = this._escHtml(ip.platform || "");
+        const player = this._escHtml(ip.player || "");
+        const lp = this._escHtml(ip.last_played || "");
+        const pc = ip.play_count ?? 0;
+        return `<div class="tl-mob-card">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div class="tl-mob-name" style="font-family:monospace;font-size:12px">${addr}</div>
+              <div class="tl-mob-meta">
+                ${ls ? `<span>${ls}</span>` : ""}
+                ${plat ? `<span>${plat}</span>` : ""}
+                ${player && player !== plat ? `<span>${player}</span>` : ""}
+                ${lp ? `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lp}</span>` : ""}
+              </div>
+              ${fs ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">First: ${fs}</div>` : ""}
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">${pc}</div>
+              <div style="font-size:9px;color:var(--is-text-muted);text-transform:uppercase">plays</div>
+            </div>
+          </div>
+        </div>`;
+      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">No data</div>`;
+      return `<div>${cards}</div>` + this._tlMobPag("tl-ud-ippage", page, totalPages);
+    }
+    const thead = IP_COLS.map(thFn).join("");
+    const rows = sliced.map((ip) => {
+      const esc = (s) => this._escHtml(s || "");
+      const addr = esc(ip.ip_address || "\u2014");
+      const ls = ip.last_seen ? this._tlFmtDate(ip.last_seen) : "\u2014";
+      const fs = ip.first_seen ? this._tlFmtDate(ip.first_seen) : "\u2014";
+      const plat = esc(ip.platform || "\u2014");
+      const player = esc(ip.player || "\u2014");
+      const lp = esc(ip.last_played || "\u2014");
+      const pc = ip.play_count ?? 0;
+      return `<tr>
+        <td style="font-family:monospace;font-size:12px">${addr}</td>
+        <td style="white-space:nowrap;font-size:11px">${ls}</td>
+        <td style="white-space:nowrap;font-size:11px">${fs}</td>
+        <td style="white-space:nowrap">${plat}</td>
+        <td style="white-space:nowrap">${player}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lp}</td>
+        <td style="text-align:right;font-weight:700;color:rgba(250,180,50,0.9)">${pc}</td>
+      </tr>`;
+    }).join("");
+    return `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="7" style="text-align:center;color:var(--is-text-muted);padding:30px">No data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ud-ippage", page, totalPages);
+  }
+  // ══════════════════════════════════════════════════════════════════════════
+  // Library detail
+  // ══════════════════════════════════════════════════════════════════════════
+  _tlBodyLibDetail() {
+    const m = this._tautulliModal || {};
+    const name = m.libDetailName || "\u2014";
+    const tab = m.libDetailTab || "profile";
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const backBtn = `<button data-tl-ld-back title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
+    const tabs = [["profile", "Profile"], ["history", "History"], ["media", "Media Info"]];
+    const tabBtns = tabs.map(([k, l]) => `<button class="tl-page-btn${tab === k ? " active" : ""}" data-tl-ld-tab="${k}">${l}</button>`).join("");
+    const hdr = isMob ? `<div style="margin-bottom:12px">
+           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">${backBtn}</div>
+           <div style="font-size:15px;font-weight:700;color:var(--is-text);margin-bottom:10px">${this._escHtml(name)}</div>
+           <div class="is-filter">${tabBtns}</div>
+         </div>` : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+           ${backBtn}
+           <div style="font-size:15px;font-weight:700;color:var(--is-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${this._escHtml(name)}</div>
+           <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         </div>`;
+    let content = "";
+    if (tab === "profile") content = this._tlBodyLdProfile();
+    else if (tab === "history") content = this._tlBodyLdHistory();
+    else content = this._tlBodyLdMedia();
+    return hdr + content;
+  }
+  _tlBodyLdProfile() {
+    const m = this._tautulliModal || {};
+    const prof = m.libDetailProfile;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    if (!prof) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
+    const wts = prof.watchTimeStats || [];
+    const us = prof.userStats || [];
+    const rh = prof.recentHistory || [];
+    const periodLabel = (d) => d === 1 ? "Last 24h" : d === 7 ? "Last 7 days" : d === 30 ? "Last 30 days" : "All Time";
+    const statMap = {};
+    wts.forEach((s) => {
+      statMap[Number(s.query_days)] = s;
+    });
+    const statCards = [1, 7, 30, 0].map((d) => {
+      const s = statMap[d] || {};
+      const plays = s.total_plays ?? 0;
+      const dur = s.total_time ? this._tlFmtDuration(s.total_time) : "0m";
+      return `<div style="background:var(--is-row-hover);border-radius:8px;padding:${isMob ? "6px" : "8px 6px"};text-align:center;display:flex;flex-direction:column;gap:2px">
+        <div style="font-size:${isMob ? "9px" : "10px"};font-weight:700;color:var(--is-text);text-transform:uppercase;letter-spacing:0.3px">${periodLabel(d)}</div>
+        <div style="font-size:${isMob ? "16px" : "20px"};font-weight:800;color:rgba(250,180,50,0.95);line-height:1">${plays} <span style="font-size:8px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase">plays</span></div>
+        <div style="font-size:${isMob ? "10px" : "11px"};font-weight:600;color:var(--is-text)">${dur}</div>
+      </div>`;
+    }).join("");
+    const userChips = us.length ? `<div style="display:flex;flex-wrap:wrap;gap:${isMob ? "8px" : "10px"}">` + us.map((u) => {
+      const uname = this._escHtml(u.friendly_name || u.user || "\u2014");
+      const plays = u.total_plays ?? 0;
+      const dur = u.total_time ? this._tlFmtDuration(u.total_time) : "0m";
+      const thumb = u.user_thumb || "";
+      const av = thumb ? `<img src="${this._escHtml(thumb)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">` : `<div style="width:28px;height:28px;border-radius:50%;background:var(--is-row-hover);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--is-text)">${(uname[0] || "?").toUpperCase()}</div>`;
+      return `<div style="display:flex;align-items:center;gap:8px;background:var(--is-row-hover);border-radius:10px;padding:6px 10px">
+            ${av}
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--is-text)">${uname}</div>
+              <div style="font-size:10px;color:var(--is-text-muted)">${plays} plays \xB7 ${dur}</div>
+            </div>
+          </div>`;
+    }).join("") + "</div>" : `<div style="color:var(--is-text-muted);font-size:12px;padding:4px 0">No user data.</div>`;
+    let recentSection = "";
+    if (rh.length) {
+      const W = isMob ? 100 : 130;
+      const H = Math.round(W * 1.5);
+      const perPage = isMob ? 4 : 7;
+      const pages = [];
+      for (let i = 0; i < rh.length; i += perPage) pages.push(rh.slice(i, i + perPage));
+      const multi = pages.length > 1;
+      const posterCard = (h) => {
+        const title = this._escHtml(h.full_title || h.title || "\u2014");
+        const ago = h.date ? this._tlFmtDate(h.date) : "";
+        const mt = (h.media_type || "").toLowerCase();
+        const isLive = mt === "live" || mt === "livetv" || h.live === 1;
+        const thumbPath = mt === "episode" && h.grandparent_thumb ? h.grandparent_thumb : h.thumb || "";
+        const icon = this._tlMediaIcon(mt, 16);
+        const typeLabel = isLive ? "Live TV" : mt === "movie" ? "Movie" : mt === "episode" ? "Show" : mt === "track" ? "Music" : null;
+        const typeTag = typeLabel ? `<span class="media-type-tag">${typeLabel}</span>` : "";
+        const rk = h.rating_key || "";
+        const mdAttr = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${title}" data-tl-md-thumb="${this._escHtml(thumbPath)}" data-tl-md-prev="lib" style="cursor:pointer"` : "";
+        const imgTag = thumbPath ? `<img data-tl-plex-path="${this._escHtml(thumbPath)}" alt="" style="width:${W}px;height:${H}px;object-fit:cover;border-radius:6px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="display:none;width:${W}px;height:${H}px;background:var(--is-row-hover);border-radius:6px;align-items:center;justify-content:center">${icon}</div>` : `<div style="width:${W}px;height:${H}px;background:var(--is-row-hover);border-radius:6px;display:flex;align-items:center;justify-content:center">${icon}</div>`;
+        const grad = `<div class="mc-grad" style="border-radius:0 0 6px 6px">
+          <div class="mc-title" style="font-size:10px" title="${title}">${title}</div>
+          ${ago ? `<div class="mc-sub" style="font-size:9px">${ago}</div>` : ""}
+        </div>`;
+        return `<div${mdAttr} style="flex-shrink:0;width:${W}px">
+          <div style="position:relative;line-height:0;border-radius:6px;overflow:hidden">${imgTag}${typeTag}${grad}</div>
+        </div>`;
+      };
+      const pagesHtml = pages.map((pg) => `<div style="display:flex;gap:8px;flex-shrink:0;min-width:100%;scroll-snap-align:start;padding:2px 0">${pg.map(posterCard).join("")}</div>`).join("");
+      const chevSt = `background:none;border:none;color:var(--is-text);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;opacity:0.85`;
+      const chevL = `<button class="tl-ld-rec-prev" disabled style="${chevSt}"><ha-icon icon="mdi:chevron-left"  style="--mdc-icon-size:28px"></ha-icon></button>`;
+      const chevR = `<button class="tl-ld-rec-next" style="${chevSt}"><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:28px"></ha-icon></button>`;
+      recentSection = `<div style="margin-top:14px">
+        <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Recently Played</div>
+        <div class="sv-nav-wrap">
+          ${multi ? chevL : ""}
+          <div class="sv-scroll" id="tl-ld-rec-scroll" style="scroll-snap-type:x mandatory">${pagesHtml}</div>
+          ${multi ? chevR : ""}
+        </div>
+      </div>`;
+    }
+    return `<div style="margin-bottom:${isMob ? "10px" : "14px"}">
+      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Global Watch Stats</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "6px" : "10px"}">${statCards}</div>
+    </div>
+    <div style="margin-bottom:${isMob ? "10px" : "14px"}">
+      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">User Stats</div>
+      ${userChips}
+    </div>
+    ${recentSection}`;
+  }
+  _tlBodyLdHistory() {
+    const m = this._tautulliModal || {};
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const data = m.libDetailHistData || [];
+    const tot = m.libDetailHistTotal || 0;
+    const page = m.libDetailHistPage || 0;
+    const media = m.libDetailHistMedia;
+    const playback = m.libDetailHistPlayback;
+    const search = m.libDetailHistSearch || "";
+    const delMode = m.libDetailHistDeleteMode;
+    const hidden = this._tlHidden("libDetailHistHiddenCols", ["ip", "paused", "stopped"]);
+    const mobHidden = this._tlHidden("libDetailHistMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
+    const perPage = this._tlCalcPerPage({ hasFilter: true });
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    if (m.libDetailHistLoading) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
+    const HIST_COLS = [
+      { key: "date", label: "Date", sort: "date", right: false },
+      { key: "user", label: "User", sort: "user", right: false },
+      { key: "ip", label: "IP", sort: "ip_address", right: false },
+      { key: "platform", label: "Platform", sort: "platform", right: false },
+      { key: "product", label: "Product", sort: "product", right: false },
+      { key: "player", label: "Player", sort: "player", right: false },
+      { key: "title", label: "Title", sort: "title", right: false },
+      { key: "duration", label: "Duration", sort: "duration", right: true },
+      { key: "paused", label: "Paused", sort: "paused_counter", right: true },
+      { key: "stopped", label: "Stopped", sort: "stopped", right: true }
+    ];
+    const MOB_PICKER = [
+      { key: "ip", label: "IP" },
+      { key: "platform", label: "Platform" },
+      { key: "product", label: "Product" },
+      { key: "player", label: "Player" },
+      { key: "paused", label: "Paused" },
+      { key: "stopped", label: "Stopped" }
+    ];
+    const vis = HIST_COLS.filter((c) => !hidden.has(c.key));
+    const mediaBtns = [["", "All"], ["movie", "Movies"], ["episode", "Episodes"], ["track", "Music"], ["live", "Live TV"]].map(([v, l]) => `<button class="tl-page-btn${media === v ? " active" : ""}" data-tl-ld-hist-media="${v}" style="white-space:nowrap;flex-shrink:0">${l}</button>`).join("");
+    const playBtns = [["", "All"], ["direct play", "Direct Play"], ["copy", "Direct Stream"], ["transcode", "Transcode"]].map(([v, l]) => `<button class="tl-page-btn${playback === v ? " active" : ""}" data-tl-ld-hist-play="${v}" style="white-space:nowrap;flex-shrink:0">${l}</button>`).join("");
+    const delBtn = this._tlEditBtn("tl-ld-hist-del-mode", delMode, this._t("tlDelete"));
+    const colsMenu = isMob ? this._tlColsMenu("tl-ld-hist-mob-cols-btn", "tl-ld-hist-mob-cols-menu", this._tlColItems(MOB_PICKER, mobHidden, "data-tl-ld-hist-mob-col"), m.libDetailHistMobColsOpen) : this._tlColsMenu("tl-ld-hist-cols-btn", "tl-ld-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-ld-hist-col"), m.libDetailHistColsOpen);
+    const searchEl = this._tlSearchInput("tl-ld-hist-search", search);
+    const toolbar = `<div style="margin-bottom:10px">
+      <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">${mediaBtns}${playBtns}</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${searchEl}${delBtn}${colsMenu}</div>
+    </div>`;
+    const _expandedRow = (h, colCount2) => {
+      const esc2 = (s) => this._escHtml(String(s ?? ""));
+      const td = (s) => this._tlFmtDuration(s);
+      const ws = h.watched_status ?? -1;
+      return `<tr class="tl-ld-hist-detail-row"><td colspan="${colCount2}" style="padding:0 10px 10px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;font-size:11px;color:var(--is-text-muted);padding:10px;background:var(--is-row-hover);border-radius:6px">
+          ${h.transcode_decision ? `<div><span style="color:var(--is-text)">Transcode:</span> ${esc2(h.transcode_decision)}</div>` : ""}
+          ${h.quality_profile ? `<div><span style="color:var(--is-text)">Quality:</span> ${esc2(h.quality_profile)}</div>` : ""}
+          ${h.video_full_resolution ? `<div><span style="color:var(--is-text)">Resolution:</span> ${esc2(h.video_full_resolution)}</div>` : ""}
+          ${h.video_codec ? `<div><span style="color:var(--is-text)">Video:</span> ${esc2(h.video_codec)}</div>` : ""}
+          ${h.audio_codec ? `<div><span style="color:var(--is-text)">Audio:</span> ${esc2(h.audio_codec)}</div>` : ""}
+          ${h.ip_address ? `<div><span style="color:var(--is-text)">IP:</span> ${esc2(h.ip_address)}</div>` : ""}
+        </div>
+      </td></tr>`;
+    };
+    const esc = (s) => this._escHtml(String(s ?? ""));
+    if (isMob) {
+      const cards = data.map((h) => {
+        const rid = h.reference_id || h.session_key || Math.random();
+        const isExp = m.libDetailHistExpandedRow === rid;
+        const icon = this._tlMediaIcon(h.media_type || "", 14);
+        const title = esc(h.full_title || h.title || "\u2014");
+        const dur = this._tlFmtDuration(h.duration || 0);
+        const ws = h.watched_status ?? -1;
+        const watchSvg = (s) => s === 1 ? `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>` : s === 0 ? `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="rgba(250,180,50,0.9)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` : "";
+        const meta = [];
+        if (!mobHidden.has("platform") && h.platform) meta.push(`<span>${esc(h.platform)}</span>`);
+        if (!mobHidden.has("player") && h.player) meta.push(`<span>${esc(h.player)}</span>`);
+        if (!mobHidden.has("ip") && h.ip_address) meta.push(`<span style="font-family:monospace;font-size:10px">${esc(h.ip_address)}</span>`);
+        const delEl = delMode ? `<button class="tl-edit-btn tl-del-btn" data-tl-ld-hist-delete="${rid}" style="margin-top:6px;font-size:10px">${this._t("tlDelete")}</button>` : "";
+        const detail = isExp ? `<div style="margin-top:8px;font-size:11px;color:var(--is-text-muted);display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          ${h.transcode_decision ? `<div><span style="color:var(--is-text)">Transcode:</span> ${esc(h.transcode_decision)}</div>` : ""}
+          ${h.quality_profile ? `<div><span style="color:var(--is-text)">Quality:</span> ${esc(h.quality_profile)}</div>` : ""}
+          ${h.ip_address ? `<div><span style="color:var(--is-text)">IP:</span> ${esc(h.ip_address)}</div>` : ""}
+        </div>` : "";
+        return `<div class="tl-mob-card tl-ld-hist-row" data-tl-ld-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>
+              ${meta.length ? `<div class="tl-mob-meta">${meta.join("")}</div>` : ""}
+            </div>
+            <div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div>
+          </div>${detail}${delEl}</div>`;
+      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-ld-hpage", page, totalPages, true);
+    }
+    const watchCell = `<td style="padding:0 6px;text-align:center"></td>`;
+    const delHdr = delMode ? `<th style="width:32px"></th>` : "";
+    const thead = vis.map((c) => `<th style="text-align:${c.right ? "right" : "left"}">${c.label}</th>`).join("") + watchCell;
+    const colCount = vis.length + 2;
+    const rows = data.map((h) => {
+      const rid = h.reference_id || h.session_key || Math.random();
+      const isExp = m.libDetailHistExpandedRow === rid;
+      const icon = this._tlMediaIcon(h.media_type || "", 12);
+      const esc2 = (s) => this._escHtml(String(s ?? ""));
+      const ws = h.watched_status ?? -1;
+      const watchSvg = (s) => s === 1 ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>` : s === 0 ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(250,180,50,0.9)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` : "";
+      const cm = {
+        date: `<td style="white-space:nowrap;font-size:11px">${esc2(h.date || "\u2014")}</td>`,
+        user: `<td style="white-space:nowrap">${esc2(h.friendly_name || h.user || "\u2014")}</td>`,
+        ip: `<td style="font-family:monospace;font-size:11px">${esc2(h.ip_address || "\u2014")}</td>`,
+        platform: `<td style="white-space:nowrap">${esc2(h.platform || "\u2014")}</td>`,
+        product: `<td style="white-space:nowrap;font-size:11px">${esc2(h.product || "\u2014")}</td>`,
+        player: `<td style="white-space:nowrap;font-size:11px">${esc2(h.player || "\u2014")}</td>`,
+        title: `<td style="max-width:240px"><div style="display:flex;align-items:center;gap:5px;min-width:0">${icon}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1" title="${esc2(h.full_title || h.title)}">${esc2(h.full_title || h.title)}</span></div></td>`,
+        duration: `<td style="text-align:right;white-space:nowrap">${this._tlFmtDuration(h.duration || 0)}</td>`,
+        paused: `<td style="text-align:right">${this._tlFmtDuration(h.paused_counter || 0)}</td>`,
+        stopped: `<td style="text-align:right;white-space:nowrap">${esc2(h.stopped || "\u2014")}</td>`
+      };
+      const watchTd = `<td style="padding:0 6px;text-align:center">${watchSvg(ws)}</td>`;
+      const delCell = delMode ? `<td style="padding:0 4px"><button class="tl-edit-btn tl-del-btn" data-tl-ld-hist-delete="${rid}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>` : "";
+      const mainRow = `<tr class="tl-ld-hist-row" data-tl-ld-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchTd}${delCell}</tr>`;
+      return mainRow + (isExp ? _expandedRow(h, colCount) : "");
+    }).join("");
+    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${colCount}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ld-hpage", page, totalPages, true);
+  }
+  _tlBodyLdMedia() {
+    const m = this._tautulliModal || {};
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const data = m.libDetailMediaData || [];
+    const tot = m.libDetailMediaTotal || 0;
+    const page = m.libDetailMediaPage || 0;
+    const search = m.libDetailMediaSearch || "";
+    const sort = m.libDetailMediaSort || "added_at";
+    const dir = m.libDetailMediaDir || "desc";
+    const perPage = 25;
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const _sortTh = (key, label, right = false) => {
+      const active = sort === key;
+      const nextDir = active && dir === "asc" ? "desc" : "asc";
+      const arrow = active ? dir === "asc" ? "\u2191" : "\u2193" : "";
+      return `<th data-tl-ld-media-sort="${key}" data-tl-ld-media-dir="${nextDir}" style="text-align:${right ? "right" : "left"};cursor:pointer;white-space:nowrap;user-select:none">${label}${arrow ? ` <span style="color:rgba(250,180,50,0.9)">${arrow}</span>` : ""}</th>`;
+    };
+    const searchEl = this._tlSearchInput("tl-ld-media-search", search);
+    const toolbar = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">${searchEl}</div>`;
+    if (isMob) {
+      const cards = data.map((item) => {
+        const rk = item.rating_key || "";
+        const title = this._escHtml(item.title || "\u2014");
+        const year = item.year ? `<span style="color:var(--is-text-muted)">${item.year}</span>` : "";
+        const meta = [item.video_resolution, item.video_codec, item.audio_codec].filter(Boolean).map((v) => this._escHtml(v)).join(" \xB7 ");
+        const mdAttr = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${title}" data-tl-md-prev="lib" style="cursor:pointer"` : "";
+        return `<div class="tl-mob-card"${mdAttr}>
+          <div class="tl-mob-name">${title} ${year}</div>
+          ${meta ? `<div class="tl-mob-meta"><span>${meta}</span></div>` : ""}
+        </div>`;
+      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">No media data.</div>`;
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-ld-mpage", page, totalPages, true);
+    }
+    const thead = [
+      _sortTh("added_at", "Added"),
+      _sortTh("title", "Title"),
+      _sortTh("container", "Format"),
+      _sortTh("bitrate", "Bitrate", true),
+      _sortTh("video_codec", "Video"),
+      _sortTh("video_resolution", "Res"),
+      _sortTh("video_framerate", "FPS"),
+      _sortTh("audio_codec", "Audio"),
+      _sortTh("audio_channels", "Ch", true),
+      _sortTh("file_size", "Size", true),
+      _sortTh("last_played", "Last Played"),
+      _sortTh("play_count", "Plays", true)
+    ].join("");
+    const rows = data.map((item) => {
+      const rk = item.rating_key || "";
+      const esc = (s) => this._escHtml(String(s ?? ""));
+      const mdAttr = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${esc(item.title || "")}" data-tl-md-prev="lib" style="cursor:pointer"` : "";
+      const fmtSz = (b) => {
+        if (!b) return "\u2014";
+        const gb = b / 1073741824;
+        return gb >= 1 ? gb.toFixed(1) + " GB" : (b / 1048576).toFixed(0) + " MB";
+      };
+      return `<tr${mdAttr}>
+        <td style="white-space:nowrap;font-size:11px">${esc(item.added_at || "\u2014")}</td>
+        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.title || "\u2014")}${item.year ? ` <span style="color:var(--is-text-muted);font-size:10px">${item.year}</span>` : ""}</td>
+        <td>${esc(item.container || "\u2014")}</td>
+        <td style="text-align:right;white-space:nowrap">${item.bitrate ? esc(item.bitrate) + " kbps" : "\u2014"}</td>
+        <td>${esc(item.video_codec || "\u2014")}</td>
+        <td>${esc(item.video_resolution || "\u2014")}</td>
+        <td>${esc(item.video_framerate || "\u2014")}</td>
+        <td>${esc(item.audio_codec || "\u2014")}</td>
+        <td style="text-align:right">${item.audio_channels ? esc(item.audio_channels) + " ch" : "\u2014"}</td>
+        <td style="text-align:right;white-space:nowrap">${fmtSz(item.file_size)}</td>
+        <td style="white-space:nowrap;font-size:11px">${esc(item.last_played || "\u2014")}</td>
+        <td style="text-align:right;font-weight:700;color:rgba(250,180,50,0.9)">${item.play_count ?? 0}</td>
+      </tr>`;
+    }).join("");
+    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="12" style="text-align:center;color:var(--is-text-muted);padding:30px">No media data.</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ld-mpage", page, totalPages, true);
+  }
+  // ══════════════════════════════════════════════════════════════════════════
+  // Media item detail
+  // ══════════════════════════════════════════════════════════════════════════
+  _tlBodyMediaDetail() {
+    const m = this._tautulliModal || {};
+    const tab = m.mediaDetailTab || "info";
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const backAttr = m.mediaDetailPrev === "lib" ? "data-tl-md-back-lib" : "data-tl-md-back-user";
+    const backBtn = `<button ${backAttr} title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
+    const tabs = [["info", "Info"], ["history", "History"]];
+    const tabBtns = tabs.map(([k, l]) => `<button class="tl-page-btn${tab === k ? " active" : ""}" data-tl-md-tab="${k}">${l}</button>`).join("");
+    const title = this._escHtml(m.mediaDetailTitle || "\u2014");
+    const hdr = isMob ? `<div style="margin-bottom:12px">
+           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">${backBtn}</div>
+           <div style="font-size:15px;font-weight:700;color:var(--is-text);margin-bottom:10px">${title}</div>
+           <div class="is-filter">${tabBtns}</div>
+         </div>` : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+           ${backBtn}
+           <div style="font-size:15px;font-weight:700;color:var(--is-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${title}</div>
+           <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         </div>`;
+    let content = "";
+    if (tab === "info") content = this._tlBodyMdInfo();
+    else content = this._tlBodyMdHistory();
+    return hdr + content;
+  }
+  _tlBodyMdInfo() {
+    const m = this._tautulliModal || {};
+    const data = m.mediaDetailData;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    if (!data) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
+    const meta = data.metadata || {};
+    const wts = data.watchTimeStats || [];
+    const us = data.userStats || [];
+    const esc = (s) => this._escHtml(String(s ?? ""));
+    const thumbPath = meta.thumb || meta.grandparent_thumb || "";
+    const W = isMob ? 80 : 110;
+    const H = Math.round(W * 1.5);
+    const posterEl = thumbPath ? `<img data-tl-plex-path="${esc(thumbPath)}" alt="" style="width:${W}px;height:${H}px;object-fit:cover;border-radius:8px;flex-shrink:0;display:block" onerror="this.style.display='none'">` : `<div style="width:${W}px;height:${H}px;background:var(--is-row-hover);border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center">${this._tlMediaIcon(meta.media_type || "", 24)}</div>`;
+    const metaRows = [];
+    if (meta.studio) metaRows.push(`<span style="color:var(--is-text-muted)">Studio:</span> ${esc(meta.studio)}`);
+    if (meta.year) metaRows.push(`<span style="color:var(--is-text-muted)">Year:</span> ${esc(meta.year)}`);
+    if (meta.rating) metaRows.push(`<span style="color:var(--is-text-muted)">Rating:</span> ${esc(meta.rating)}`);
+    if (meta.content_rating) metaRows.push(`<span style="color:var(--is-text-muted)">Rated:</span> ${esc(meta.content_rating)}`);
+    if (meta.duration) metaRows.push(`<span style="color:var(--is-text-muted)">Runtime:</span> ${this._tlFmtDuration(meta.duration)}`);
+    if (meta.originally_available_at) metaRows.push(`<span style="color:var(--is-text-muted)">Aired:</span> ${esc(meta.originally_available_at)}`);
+    if (meta.directors?.length) metaRows.push(`<span style="color:var(--is-text-muted)">Director:</span> ${meta.directors.map((d) => esc(d.tag || d)).join(", ")}`);
+    if (meta.genres?.length) metaRows.push(`<span style="color:var(--is-text-muted)">Genres:</span> ${meta.genres.map((g) => esc(g.tag || g)).join(", ")}`);
+    const fullTitle = esc(meta.full_title || meta.title || m.mediaDetailTitle || "\u2014");
+    const subtitle = meta.parent_title ? `${esc(meta.parent_title)}${meta.media_index ? " \xB7 E" + meta.media_index : ""}` : "";
+    const summary = meta.summary ? `<div style="font-size:11px;color:var(--is-text-muted);margin-top:8px;line-height:1.5;max-height:60px;overflow:hidden">${esc(meta.summary)}</div>` : "";
+    const metaHdr = `<div style="display:flex;gap:12px;margin-bottom:${isMob ? "12px" : "16px"}">
+      ${posterEl}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:${isMob ? "13px" : "15px"};font-weight:700;color:var(--is-text)">${fullTitle}</div>
+        ${subtitle ? `<div style="font-size:11px;color:var(--is-text-muted);margin-top:2px">${subtitle}</div>` : ""}
+        ${summary}
+        <div style="font-size:11px;color:var(--is-text);margin-top:8px;display:flex;flex-direction:column;gap:3px">${metaRows.map((r) => `<div>${r}</div>`).join("")}</div>
+      </div>
+    </div>`;
+    const periodLabel = (d) => d === 1 ? "Last 24h" : d === 7 ? "Last 7 days" : d === 30 ? "Last 30 days" : "All Time";
+    const statMap = {};
+    wts.forEach((s) => {
+      statMap[Number(s.query_days)] = s;
+    });
+    const statCards = [1, 7, 30, 0].map((d) => {
+      const s = statMap[d] || {};
+      const plays = s.total_plays ?? 0;
+      const dur = s.total_time ? this._tlFmtDuration(s.total_time) : "0m";
+      return `<div style="background:var(--is-row-hover);border-radius:8px;padding:${isMob ? "6px" : "8px 6px"};text-align:center;display:flex;flex-direction:column;gap:2px">
+        <div style="font-size:${isMob ? "9px" : "10px"};font-weight:700;color:var(--is-text);text-transform:uppercase;letter-spacing:0.3px">${periodLabel(d)}</div>
+        <div style="font-size:${isMob ? "16px" : "20px"};font-weight:800;color:rgba(250,180,50,0.95);line-height:1">${plays} <span style="font-size:8px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase">plays</span></div>
+        <div style="font-size:${isMob ? "10px" : "11px"};font-weight:600;color:var(--is-text)">${dur}</div>
+      </div>`;
+    }).join("");
+    const userChips = us.length ? `<div style="display:flex;flex-wrap:wrap;gap:${isMob ? "8px" : "10px"}">` + us.map((u) => {
+      const uname = esc(u.friendly_name || u.user || "\u2014");
+      const plays = u.total_plays ?? 0;
+      const dur = u.total_time ? this._tlFmtDuration(u.total_time) : "0m";
+      const av = u.user_thumb ? `<img src="${esc(u.user_thumb)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">` : `<div style="width:28px;height:28px;border-radius:50%;background:var(--is-row-hover);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--is-text)">${(uname[0] || "?").toUpperCase()}</div>`;
+      return `<div style="display:flex;align-items:center;gap:8px;background:var(--is-row-hover);border-radius:10px;padding:6px 10px">
+            ${av}
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--is-text)">${uname}</div>
+              <div style="font-size:10px;color:var(--is-text-muted)">${plays} plays \xB7 ${dur}</div>
+            </div>
+          </div>`;
+    }).join("") + "</div>" : `<div style="color:var(--is-text-muted);font-size:12px;padding:4px 0">No user data.</div>`;
+    return metaHdr + `<div style="margin-bottom:${isMob ? "10px" : "14px"}">
+           <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Global Watch Stats</div>
+           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "6px" : "10px"}">${statCards}</div>
+         </div>
+         <div>
+           <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">User Stats</div>
+           ${userChips}
+         </div>`;
+  }
+  _tlBodyMdHistory() {
+    const m = this._tautulliModal || {};
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const data = m.mediaDetailHistData || [];
+    const tot = m.mediaDetailHistTotal || 0;
+    const page = m.mediaDetailHistPage || 0;
+    const perPage = this._tlCalcPerPage({ hasFilter: false });
+    const totalPages = Math.max(1, Math.ceil(tot / perPage));
+    const esc = (s) => this._escHtml(String(s ?? ""));
+    if (isMob) {
+      const cards = data.map((h) => {
+        const title = esc(h.full_title || h.title || "\u2014");
+        const user = esc(h.friendly_name || h.user || "\u2014");
+        const dur = this._tlFmtDuration(h.duration || 0);
+        return `<div class="tl-mob-card">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div class="tl-mob-name">${user}</div>
+              <div class="tl-mob-meta"><span>${esc(h.date || "")}</span>${h.platform ? `<span>${esc(h.platform)}</span>` : ""}</div>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div>
+          </div>
+        </div>`;
+      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
+      return `<div>${cards}</div>` + this._tlMobPag("tl-md-hpage", page, totalPages, true);
+    }
+    const thead = `<th>Date</th><th>User</th><th>Platform</th><th>Player</th><th style="text-align:right">Duration</th><th style="text-align:right">Paused</th>`;
+    const rows = data.map((h) => `<tr>
+      <td style="white-space:nowrap;font-size:11px">${esc(h.date || "\u2014")}</td>
+      <td>${esc(h.friendly_name || h.user || "\u2014")}</td>
+      <td style="white-space:nowrap">${esc(h.platform || "\u2014")}</td>
+      <td style="white-space:nowrap;font-size:11px">${esc(h.player || "\u2014")}</td>
+      <td style="text-align:right;white-space:nowrap">${this._tlFmtDuration(h.duration || 0)}</td>
+      <td style="text-align:right">${this._tlFmtDuration(h.paused_counter || 0)}</td>
+    </tr>`).join("");
+    return `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="6" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-md-hpage", page, totalPages, true);
+  }
 };
 var tautulliTableMixin = _TautulliTableMethods.prototype;
 
@@ -14246,7 +16637,7 @@ var _TautulliMethods = class {
       const sep = userRows.indexOf(r) > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return `<div style="${sep}display:flex;align-items:center;gap:6px;padding:4px 0">${av}<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${plays}</span></div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">${this._t("tlNoData")}</div>`;
-    const activeTag = activeUsers > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${activeUsers} ${this._t("tlActive")}</span>` : "";
+    const activeTag = activeUsers > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${activeUsers} ${this._t("tlActive")}</span>` : "";
     return `<div class="tl-card" data-tl-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
@@ -14262,7 +16653,7 @@ var _TautulliMethods = class {
   _tlSharingCard(data) {
     const name = (data.sharingUsers || [])[0] || this._t("tlUnknown");
     return `<div class="tl-card tl-card-warn" data-tl-open="users">
-      <span class="media-type-tag" style="color:rgba(255,150,150,0.95)">${this._t("tlSharing")}</span>
+      <span class="media-type-tag" style="color:#fff">${this._t("tlSharing")}</span>
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(70,0,0,0.95) 0%,rgba(40,0,0,0.65) 55%,transparent 100%);padding:48px 8px 8px;z-index:1">
         <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${name}</div>
         <div style="font-size:9px;color:rgba(255,150,150,0.7)">${this._t("tlSharingHint")}</div>
@@ -14279,7 +16670,7 @@ var _TautulliMethods = class {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return `<div style="${sep}padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>`;
-    const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} ${this._t("tlNow")}</span>` : "";
+    const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} ${this._t("tlNow")}</span>` : "";
     return `<div class="tl-card" data-tl-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
@@ -14306,7 +16697,7 @@ var _TautulliMethods = class {
       const isToday = parseInt(day, 10) === today;
       return `<div style="flex:1;font-size:7px;font-weight:${isToday ? "700" : "500"};color:${isToday ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)"};text-align:center;padding:2px 0 0">${day}</div>`;
     }).join("");
-    const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("tlPlays")}</span>` : "";
+    const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("tlPlays")}</span>` : "";
     return `<div class="tl-card" data-tl-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
@@ -14379,7 +16770,64 @@ var _TautulliMethods = class {
       libsHiddenCols: hSet("libsHiddenCols", ["type"]),
       libsColsOpen: false,
       libsMobHiddenCols: hSet("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]),
-      libsMobColsOpen: false
+      libsMobColsOpen: false,
+      // ── user detail ──────────────────────────────────────────────────────
+      userDetailId: null,
+      userDetailName: null,
+      userDetailThumb: null,
+      userDetailTab: "profile",
+      userDetailProfile: null,
+      userDetailHistPage: 0,
+      userDetailHistMedia: null,
+      userDetailHistPlayback: null,
+      userDetailHistSearch: "",
+      userDetailHistTotal: 0,
+      userDetailHistData: [],
+      userDetailHistDeleteMode: false,
+      userDetailHistLoading: false,
+      userDetailHistColsOpen: false,
+      userDetailHistMobColsOpen: false,
+      userDetailHistHiddenCols: hSet("udHistHiddenCols", ["ip", "paused", "stopped"]),
+      userDetailHistMobHiddenCols: hSet("udHistMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]),
+      userDetailHistExpandedRow: null,
+      userDetailIpsData: [],
+      userDetailIpsPage: 0,
+      userDetailIpsSortCol: "last_seen",
+      userDetailIpsSortDir: "desc",
+      // ── library detail ───────────────────────────────────────────────────
+      libDetailId: null,
+      libDetailName: null,
+      libDetailTab: "profile",
+      libDetailProfile: null,
+      libDetailHistPage: 0,
+      libDetailHistMedia: null,
+      libDetailHistPlayback: null,
+      libDetailHistSearch: "",
+      libDetailHistTotal: 0,
+      libDetailHistData: [],
+      libDetailHistDeleteMode: false,
+      libDetailHistColsOpen: false,
+      libDetailHistMobColsOpen: false,
+      libDetailHistHiddenCols: hSet("ldHistHiddenCols", ["ip", "paused", "stopped"]),
+      libDetailHistMobHiddenCols: hSet("ldHistMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]),
+      libDetailHistExpandedRow: null,
+      libDetailMediaPage: 0,
+      libDetailMediaSearch: "",
+      libDetailMediaTotal: 0,
+      libDetailMediaData: [],
+      libDetailMediaSort: "added_at",
+      libDetailMediaDir: "desc",
+      // ── media item detail ────────────────────────────────────────────────
+      mediaDetailKey: null,
+      mediaDetailTitle: null,
+      mediaDetailThumb: null,
+      mediaDetailTab: "info",
+      mediaDetailData: null,
+      mediaDetailHistPage: 0,
+      mediaDetailHistTotal: 0,
+      mediaDetailHistData: [],
+      mediaDetailPrev: null
+      // 'lib' | 'user'
     };
     this.shadowRoot.querySelector("[data-tl-modal]")?.remove();
     const wrap = document.createElement("div");
@@ -14518,6 +16966,68 @@ var _TautulliMethods = class {
     if (media) p += `&media_type=${encodeURIComponent(media)}`;
     if (playback) p += `&transcode_decision=${encodeURIComponent(playback)}`;
     if (search) p += `&search=${encodeURIComponent(search)}`;
+    const r = await this._tlApiFetch("get_history", p);
+    return r?.response?.data || { data: [], recordsFiltered: 0 };
+  }
+  async _tlFetchUserProfile(userId) {
+    const [wts, ps, hist] = await Promise.all([
+      this._tlApiFetch("get_user_watch_time_stats", `user_id=${userId}`),
+      this._tlApiFetch("get_user_player_stats", `user_id=${userId}`),
+      this._tlApiFetch("get_history", `user_id=${userId}&length=12&start=0&order_column=date&order_dir=desc`)
+    ]);
+    return {
+      watchTimeStats: wts?.response?.data || [],
+      playerStats: ps?.response?.data || [],
+      recentHistory: hist?.response?.data?.data || []
+    };
+  }
+  async _tlFetchUserIps(userId) {
+    const r = await this._tlApiFetch("get_user_ips", `user_id=${userId}&length=100&start=0`);
+    return r?.response?.data?.data || [];
+  }
+  async _tlFetchLibProfile(sectionId) {
+    const [wts, us, hist] = await Promise.all([
+      this._tlApiFetch("get_library_watch_time_stats", `section_id=${sectionId}`),
+      this._tlApiFetch("get_library_user_stats", `section_id=${sectionId}`),
+      this._tlApiFetch("get_history", `section_id=${sectionId}&length=12&start=0&order_column=date&order_dir=desc`)
+    ]);
+    return {
+      watchTimeStats: wts?.response?.data || [],
+      userStats: us?.response?.data || [],
+      recentHistory: hist?.response?.data?.data || []
+    };
+  }
+  async _tlFetchLibHistory(sectionId, page, media, playback, search, perPage) {
+    perPage = perPage || 10;
+    let p = `section_id=${sectionId}&length=${perPage}&start=${(page || 0) * perPage}&order_column=date&order_dir=desc`;
+    if (media) p += `&media_type=${encodeURIComponent(media)}`;
+    if (playback) p += `&transcode_decision=${encodeURIComponent(playback)}`;
+    if (search) p += `&search=${encodeURIComponent(search)}`;
+    const r = await this._tlApiFetch("get_history", p);
+    return r?.response?.data || { data: [], recordsFiltered: 0 };
+  }
+  async _tlFetchLibMedia(sectionId, page, sort, dir, search, perPage) {
+    perPage = perPage || 25;
+    let p = `section_id=${sectionId}&length=${perPage}&start=${(page || 0) * perPage}&order_column=${sort || "added_at"}&order_dir=${dir || "desc"}`;
+    if (search) p += `&search=${encodeURIComponent(search)}`;
+    const r = await this._tlApiFetch("get_library_media_info", p);
+    return r?.response?.data || { data: [], recordsTotal: 0, recordsFiltered: 0 };
+  }
+  async _tlFetchMediaDetail(ratingKey) {
+    const [meta, wts, us] = await Promise.all([
+      this._tlApiFetch("get_metadata", `rating_key=${ratingKey}`),
+      this._tlApiFetch("get_item_watch_time_stats", `rating_key=${ratingKey}&grouping=0`),
+      this._tlApiFetch("get_item_user_stats", `rating_key=${ratingKey}&grouping=0`)
+    ]);
+    return {
+      metadata: meta?.response?.data || {},
+      watchTimeStats: wts?.response?.data || [],
+      userStats: us?.response?.data || []
+    };
+  }
+  async _tlFetchMediaHistory(ratingKey, page, perPage) {
+    perPage = perPage || 10;
+    const p = `rating_key=${ratingKey}&length=${perPage}&start=${(page || 0) * perPage}&order_column=date&order_dir=desc`;
     const r = await this._tlApiFetch("get_history", p);
     return r?.response?.data || { data: [], recordsFiltered: 0 };
   }
@@ -14714,8 +17224,8 @@ var _TautulliGraphsMethods = class {
       </div>
     </div>`;
   }
-  _tlGSvgEl(inner) {
-    return `<svg class="tl-g-svg" viewBox="0 0 ${_TL_G_VBW} ${_TL_G_SVH}" width="100%" height="${_TL_G_DISP}" preserveAspectRatio="none">${inner}</svg>`;
+  _tlGSvgEl(inner, h) {
+    return `<svg class="tl-g-svg" viewBox="0 0 ${_TL_G_VBW} ${_TL_G_SVH}" width="100%" height="${h || _TL_G_DISP}" preserveAspectRatio="none">${inner}</svg>`;
   }
   // HTML y-label + SVG wrapper — avoids font distortion from preserveAspectRatio:none
   _tlGWrap(svgHtml, labelsHtml, yLblTxt) {
@@ -14798,7 +17308,7 @@ var _TautulliGraphsMethods = class {
       }
     });
     const yLblTxt = isDur ? _tlGFmtDurShort(maxV) : String(maxV);
-    return this._tlGWrap(this._tlGSvgEl(defs + bars), _tlGXLabels(visibleLabels), yLblTxt);
+    return this._tlGWrap(this._tlGSvgEl(defs + bars, opts.height), _tlGXLabels(visibleLabels), yLblTxt);
   }
   _tlGRoundedTop(x, y, w, h, r) {
     r = Math.min(r, h / 2, w / 2);
@@ -14814,7 +17324,7 @@ var _TautulliGraphsMethods = class {
     const prep = _tlGPrep(rawData, opts);
     const VBW = _TL_G_VBW, SVH = _TL_G_SVH;
     const noDt = this._tlGWrap(
-      this._tlGSvgEl(`<text x="${VBW / 2}" y="${SVH / 2}" text-anchor="middle" dominant-baseline="middle" style="fill:var(--is-text-muted);font-size:22">No data</text>`),
+      this._tlGSvgEl(`<text x="${VBW / 2}" y="${SVH / 2}" text-anchor="middle" dominant-baseline="middle" style="fill:var(--is-text-muted);font-size:22">No data</text>`, opts.height),
       "",
       ""
     );
@@ -14826,7 +17336,7 @@ var _TautulliGraphsMethods = class {
     const baseY = _P.t + cH;
     const cid = opts.chartId || "l";
     const isDur = !!opts.isDuration;
-    const dotR = n <= 12 ? 4 : n <= 30 ? 3 : 2;
+    const dotR = opts.dotR != null ? opts.dotR : n <= 12 ? 4 : n <= 30 ? 3 : 2;
     const slotW2 = cW / Math.max(n, 1);
     const ptX = (i) => _P.l + (i + 0.5) * slotW2;
     const colL = (i) => _P.l + i * slotW2;
@@ -14862,7 +17372,7 @@ var _TautulliGraphsMethods = class {
       const pts = seriesPts[si];
       if (!pts.some((p) => p.v > 0)) return;
       const hex = _tlGHex(ser.name, si);
-      out += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tl-gl-${cid}-${si})"/>`;
+      out += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tl-gl-${cid}-${si});animation:fade-in 0.8s ease-out both"/>`;
       out += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line" mask="url(#tl-lmask-${cid}-${si})"/>`;
     });
     series.forEach((ser, si) => {
@@ -14896,7 +17406,7 @@ var _TautulliGraphsMethods = class {
       }
     });
     const yLblTxt = isDur ? _tlGFmtDurShort(maxV) : String(maxV);
-    return this._tlGWrap(this._tlGSvgEl(out), _tlGXLabels(visibleLabels), yLblTxt);
+    return this._tlGWrap(this._tlGSvgEl(out, opts.height), _tlGXLabels(visibleLabels), yLblTxt);
   }
   _tlGSmoothLine(pts) {
     if (pts.length < 2) return pts.length === 1 ? `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}` : "";
@@ -15467,7 +17977,7 @@ var _JellystatMethods = class {
       const av = '<span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:7px;font-weight:700;color:#fff">' + (name[0] || "?").toUpperCase() + "</span>";
       return '<div style="' + sep + 'display:flex;align-items:center;gap:6px;padding:4px 0">' + av + '<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">' + name + '</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">' + plays + "</span></div>";
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">${this._t("tlNoData")}</div>`;
-    const activeTag = active > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + active + " " + this._t("tlActive") + "</span>" : "";
+    const activeTag = active > 0 ? '<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + active + " " + this._t("tlActive") + "</span>" : "";
     return `<div class="tl-card" data-js-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>` + activeTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
   }
   _jsHistoryCard(data) {
@@ -15481,7 +17991,7 @@ var _JellystatMethods = class {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return '<div style="' + sep + 'padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + series + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">' + user + (ago ? " &middot; " + ago : "") + "</div></div>";
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>`;
-    const streamTag = streams > 0 ? '<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + streams + " " + this._t("tlNow") + "</span>" : "";
+    const streamTag = streams > 0 ? '<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + streams + " " + this._t("tlNow") + "</span>" : "";
     return `<div class="tl-card" data-js-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlHistory")}</span>` + streamTag + '</div><div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">' + items + "</div></div>";
   }
   _jsActivityCard(playsData) {
@@ -15500,7 +18010,7 @@ var _JellystatMethods = class {
       const isToday = parseInt(day, 10) === today;
       return '<div style="flex:1;font-size:7px;font-weight:' + (isToday ? "700" : "500") + ";color:" + (isToday ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)") + ';text-align:center;padding:2px 0 0">' + day + "</div>";
     }).join("");
-    const playsTag = total > 0 ? '<span style="font-size:10px;font-weight:700;color:#63b3ed;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + total + " " + this._t("tlPlays") + "</span>" : "";
+    const playsTag = total > 0 ? '<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + total + " " + this._t("tlPlays") + "</span>" : "";
     return `<div class="tl-card" data-js-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlCharts")}</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span></div>` + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:0">' + (bars || "") + '</div><div style="height:1px;background:rgba(255,255,255,0.08);margin:1px 0"></div><div style="display:flex;gap:0;margin-top:1px">' + labels + "</div></div></div>";
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -15768,6 +18278,3442 @@ var _JellystatGraphsMethods = class {
 };
 var jellystatGraphsMixin = _JellystatGraphsMethods.prototype;
 
+// src/render/tracearr-table.js
+var _TRA_SEL = `margin:0;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;color:var(--is-text,#fff);padding:0 8px;font-size:12px;height:28px;box-sizing:border-box;width:120px`;
+var _traSortTh = (col, label, sortCol, sortDir) => `<th style="cursor:pointer;user-select:none" data-tra-users-sort="${col}"><span style="white-space:nowrap">${label} <span style="opacity:${col === sortCol ? 1 : 0.3};font-size:9px">${col === sortCol ? sortDir === "asc" ? "\u2191" : "\u2193" : "\u2195"}</span></span></th>`;
+var _TraceaRrTableMethods = class {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Overview tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyOverview() {
+    const m = this._tracearrModal;
+    const st = m.overviewStats || {};
+    const hlth = m.overviewHealth || {};
+    const viols = m.overviewViols || [];
+    const act = m.overviewAct || {};
+    const plays7 = (act.plays || []).slice(-7);
+    const total7 = plays7.reduce((s, p) => s + (p.count || 0), 0);
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const tile = (lbl, val, sub, color) => `<div style="background:var(--is-row-hover);border-radius:10px;padding:${isMob ? "10px 11px" : "12px 13px"}">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--is-text-label);margin-bottom:6px">${lbl}</div>
+        <div style="font-size:${isMob ? "20px" : "24px"};font-weight:800;line-height:1;color:${color}">${val}</div>
+        ${sub ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:4px">${sub}</div>` : ""}
+      </div>`;
+    const tiles = `<div style="display:grid;grid-template-columns:repeat(${isMob ? 2 : 4},1fr);gap:${isMob ? "8px" : "10px"};margin-bottom:${isMob ? "14px" : "16px"}">
+      ${tile(this._t("traStreamsNow"), st.activeStreams ?? 0, null, "#34C759")}
+      ${tile(this._t("traUsers"), st.totalUsers ?? 0, st.totalSessions ? st.totalSessions + " " + this._t("tlPlays") : null, "#BF5AF2")}
+      ${tile(this._t("traViolations"), st.recentViolations ?? 0, this._t("traThisMonth"), st.recentViolations > 0 ? "#FF3B30" : "#34C759")}
+      ${tile(this._t("traActivity7d"), total7, null, "#007AFF")}
+    </div>`;
+    const srvs = (hlth.servers || []).map((s) => {
+      const ic = { plex: { bg: "#e5a00d", c: "#000", l: "P" }, jellyfin: { bg: "#7c4dff", c: "#fff", l: "J" }, emby: { bg: "#52b54b", c: "#fff", l: "E" } }[s.type] || { bg: "rgba(255,255,255,0.15)", c: "#fff", l: "?" };
+      const dot = s.online ? "#34d399" : "#f87171";
+      const streams = s.activeStreams > 0 ? `<span style="font-size:10px;font-weight:700;color:#34C759;background:rgba(52,199,89,0.16);border-radius:20px;padding:1px 7px">${s.activeStreams} live</span>` : "";
+      return `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--is-divider)">
+        <span style="width:22px;height:22px;border-radius:6px;background:${ic.bg};color:${ic.c};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${ic.l}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--is-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</span>
+        ${streams}
+        <span style="width:8px;height:8px;border-radius:50%;background:${dot};box-shadow:0 0 7px ${dot};flex-shrink:0"></span>
+      </div>`;
+    }).join("");
+    const vioRows = viols.slice(0, 5).map((v) => {
+      const color = this._traSevColor(v.severity);
+      const bg = this._traSevBg(v.severity);
+      const type = this._traViolTypeLabel(v.type);
+      const user = v.user?.displayName || v.username || "";
+      const when = this._traFmtDate(v.createdAt || v.detectedAt);
+      return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--is-divider)">
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;color:${color};background:${bg};flex-shrink:0;margin-top:1px;white-space:nowrap">${(v.severity || "").toUpperCase()}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--is-text)">${type}</div>
+          <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[user, when].filter(Boolean).join(" \xB7 ")}</div>
+        </div>
+      </div>`;
+    }).join("") || `<div style="font-size:12px;color:#34C759;padding:12px 0;display:flex;align-items:center;gap:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#34d399;flex-shrink:0"></span>${this._t("traNoViolations")}
+      </div>`;
+    const sectionLabel = (lbl) => `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--is-text-label);margin-bottom:2px">${lbl}</div>`;
+    const srvBlock = `<div style="background:var(--is-row-hover);border-radius:10px;padding:${isMob ? "12px 14px" : "14px 16px"}">${sectionLabel(this._t("traServers"))}${srvs || `<div style="font-size:12px;color:var(--is-text-muted);padding:8px 0">${this._t("tlNoData")}</div>`}</div>`;
+    const vioBlock = `<div style="background:var(--is-row-hover);border-radius:10px;padding:${isMob ? "12px 14px" : "14px 16px"}">${sectionLabel(this._t("traRecentViolations"))}${vioRows}</div>`;
+    const cols = isMob ? `<div style="display:flex;flex-direction:column;gap:10px">${srvBlock}${vioBlock}</div>` : `<div style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px">${srvBlock}${vioBlock}</div>`;
+    return tiles + cols;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Users tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyUsers() {
+    const m = this._tracearrModal;
+    const seen = /* @__PURE__ */ new Set();
+    const users = (m.usersData || []).filter((u) => {
+      const k = u.id || u.username;
+      return k && !seen.has(k) && seen.add(k);
+    });
+    const total = m.usersTotal || 0;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const pp = this._tlCalcPerPage();
+    const pages = Math.max(1, Math.ceil(total / pp));
+    const srchEl = this._tlSearchInput("tra-users-search", m.usersSearch).replace("width:110px", "flex:1").replace("display:inline-flex", "display:flex;flex:1");
+    const toolbar = `<div class="tl-toolbar">${srchEl}</div>`;
+    if (isMob) {
+      const cards = users.map((u) => {
+        const score = u.trustScore ?? 100;
+        const c = this._traTrustColor(score);
+        const bg = this._traTrustBg(score);
+        const badge = u.totalViolations > 0 ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;color:#FF3B30;background:rgba(255,59,48,0.18)">${u.totalViolations} viol.</span>` : `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;color:#34C759;background:rgba(52,199,89,0.14)">OK</span>`;
+        const meta = [u.serverName, `${u.sessionCount ?? 0} ${this._t("tlPlays")}`].filter(Boolean).join(" \xB7 ");
+        return `<div class="tl-mob-card" style="display:flex;align-items:center;gap:10px">
+          ${this._traUserAvatar(u, 32)}
+          <div style="flex:1;min-width:0">
+            <div class="tl-mob-name">${u.displayName || u.username}</div>
+            <div class="tl-mob-meta"><span>${meta}</span></div>
+          </div>
+          ${badge}
+          <span style="font-size:14px;font-weight:800;color:${c};background:${bg};border-radius:8px;padding:3px 8px;flex-shrink:0">${score}</span>
+        </div>`;
+      }).join("") || `<div class="tl-mob-card" style="text-align:center;color:var(--is-text-muted)">${this._t("tlNoData")}</div>`;
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tra-users-page", m.usersPage, pages);
+    }
+    const rows = users.map((u) => {
+      const score = u.trustScore ?? 100;
+      const c = this._traTrustColor(score);
+      const pct = score + "%";
+      const vBadge = u.totalViolations > 0 ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;color:#FF3B30;background:rgba(255,59,48,0.18)">${u.totalViolations}</span>` : `<span style="color:var(--is-text-muted);font-size:11px">0</span>`;
+      const srvBg = { plex: "#e5a00d", jellyfin: "#7c4dff", emby: "#52b54b" }[u.serverType] || "rgba(255,255,255,0.15)";
+      const srvC = u.serverType === "plex" ? "#000" : "#fff";
+      const srvL = { plex: "P", jellyfin: "J", emby: "E" }[u.serverType] || "?";
+      return `<tr${u.totalViolations > 0 ? ' class="tl-row-warn"' : ""}>
+        <td><div style="display:flex;align-items:center;gap:8px">${this._traUserAvatar(u, 22)}<strong style="font-size:12px;font-weight:600;color:var(--is-text)">${u.displayName || u.username}</strong></div></td>
+        <td><span style="width:18px;height:18px;border-radius:5px;background:${srvBg};color:${srvC};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;vertical-align:middle;margin-right:5px">${srvL}</span><span style="font-size:11px;color:var(--is-text)">${u.serverName || "\u2014"}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:52px;height:5px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;flex-shrink:0"><div style="height:100%;border-radius:4px;background:${c.replace("0.9", "0.7")};width:${pct}"></div></div>
+            <span style="font-size:11px;font-weight:700;color:${c}">${score}</span>
+          </div>
+        </td>
+        <td style="font-size:11px;color:var(--is-text)">${u.sessionCount ?? 0}</td>
+        <td>${vBadge}</td>
+        <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${u.lastActivityAt ? this._traFmtDate(u.lastActivityAt) : "\u2014"}</td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--is-text-muted);padding:20px">${this._t("tlNoData")}</td></tr>`;
+    return toolbar + `<div style="overflow-x:auto">
+      <table class="tl-users-table">
+        <thead><tr>
+          ${_traSortTh("displayName", this._t("traUser"), m.usersSortCol, m.usersSortDir)}
+          <th>${this._t("traServer")}</th>
+          ${_traSortTh("trustScore", "Trust", m.usersSortCol, m.usersSortDir)}
+          ${_traSortTh("sessionCount", this._t("tlPlays"), m.usersSortCol, m.usersSortDir)}
+          ${_traSortTh("totalViolations", "Violations", m.usersSortCol, m.usersSortDir)}
+          <th>${this._t("traNaposledy")}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>` + this._tlMobPag("tra-users-page", m.usersPage, Math.max(1, Math.ceil(total / pp)));
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Violations tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyViolations() {
+    const m = this._tracearrModal;
+    const viols = m.violsData || [];
+    const total = m.violsTotal || 0;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const pp = this._tlCalcPerPage({ hasFilter: true });
+    const pages = Math.max(1, Math.ceil(total / pp));
+    const TYPES = ["impossible_travel", "simultaneous_locations", "concurrent_streams", "device_velocity"];
+    const filters = `<div class="tl-toolbar" style="flex-wrap:wrap">
+      <select id="tra-viols-type" style="${_TRA_SEL}">
+        <option value="">${this._t("traAllTypes")}</option>
+        ${TYPES.map((t) => `<option value="${t}"${m.violsType === t ? " selected" : ""}>${this._traViolTypeLabel(t)}</option>`).join("")}
+      </select>
+      <select id="tra-viols-user" style="${_TRA_SEL}">
+        <option value="">${this._t("traAllUsers")}</option>
+        ${(m.violsUsers || []).map((u) => `<option value="${u.id}"${m.violsUser === u.id ? " selected" : ""}>${u.displayName || u.username}</option>`).join("")}
+      </select>
+    </div>`;
+    if (!viols.length) {
+      return filters + `<div style="display:flex;align-items:center;gap:10px;padding:24px;color:#34C759;font-size:14px">
+        <span style="width:10px;height:10px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;flex-shrink:0"></span>
+        ${this._t("traNoViolations")}
+      </div>`;
+    }
+    if (isMob) {
+      const cards = viols.map((v) => {
+        const sev = v.severity || "high";
+        const c = this._traSevColor(sev);
+        const bg = this._traSevBg(sev);
+        const type = this._traViolTypeLabel(v.type);
+        const user = v.user?.displayName || v.username || "";
+        const when = this._traFmtDate(v.createdAt || v.detectedAt);
+        const det = v.detail || v.description || "";
+        const borderC = c.replace("0.9", "0.5");
+        return `<div class="tl-mob-card" style="border-left:3px solid ${borderC}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;color:${c};background:${bg};white-space:nowrap">${sev.toUpperCase()}</span>
+            <span class="tl-mob-name">${type}</span>
+          </div>
+          <div class="tl-mob-meta">
+            ${user ? `<span>${user}</span>` : ""}
+            ${det ? `<span>${det}</span>` : ""}
+            <span>${when}</span>
+          </div>
+        </div>`;
+      }).join("");
+      return filters + `<div>${cards}</div>` + this._tlMobPag("tra-viols-page", m.violsPage, pages);
+    }
+    const rows = viols.map((v) => {
+      const sev = v.severity || "high";
+      const c = this._traSevColor(sev);
+      const bg = this._traSevBg(sev);
+      const type = this._traViolTypeLabel(v.type);
+      const user = v.user || {};
+      const when = this._traFmtDate(v.createdAt || v.detectedAt);
+      const det = v.detail || v.description || "\u2014";
+      return `<tr${sev === "high" ? ' class="tl-row-warn"' : ""}>
+        <td><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;color:${c};background:${bg};white-space:nowrap">${sev.toUpperCase()}</span></td>
+        <td style="font-size:12px;font-weight:600;color:var(--is-text)">${type}</td>
+        <td><div style="display:flex;align-items:center;gap:7px">${this._traUserAvatar(v.user, 18)}<span style="font-size:11px;color:var(--is-text)">${user.displayName || user.username || "\u2014"}</span></div></td>
+        <td style="font-size:11px;color:var(--is-text-muted);max-width:280px">${det}</td>
+        <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${when}</td>
+      </tr>`;
+    }).join("");
+    return filters + `<div style="overflow-x:auto">
+      <table class="tl-users-table">
+        <thead><tr>
+          <th>Severity</th>
+          <th>Type</th>
+          <th>${this._t("traUser")}</th>
+          <th>Detail</th>
+          <th>${this._t("traNaposledy")}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>` + this._tlMobPag("tra-viols-page", m.violsPage, Math.max(1, Math.ceil(total / pp)));
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Shared animated donut chart (matches Activity tab style)
+  _traDonutSvg(segs, size) {
+    const total = segs.reduce((s, sg) => s + (sg.value || 0), 0);
+    if (!total) return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"></svg>`;
+    const cx = size / 2, cy = size / 2, r = size * 0.34, sw = size * 0.15;
+    const C = 2 * Math.PI * r;
+    let cum = 0;
+    const gap = segs.length > 1 ? 3 : 0;
+    const uid = Math.random().toString(36).slice(2, 7);
+    const ro = (r + sw / 2).toFixed(1);
+    const ri = (r - sw / 2).toFixed(1);
+    const ip = (Number(ri) / Number(ro) * 100).toFixed(0);
+    const defs = "<defs>" + segs.map(
+      (sg, i) => `<radialGradient id="dg-${uid}-${i}" cx="${cx}" cy="${cy}" r="${ro}" fx="${cx}" fy="${cy}" gradientUnits="userSpaceOnUse"><stop offset="${ip}%" stop-color="${sg.color}" stop-opacity="0.5"/><stop offset="100%" stop-color="${sg.color}" stop-opacity="1"/></radialGradient>`
+    ).join("") + "</defs>";
+    const rings = segs.map((sg) => {
+      const full = sg.value / total * C;
+      const dash = Math.max(0, full - gap);
+      const off = -cum;
+      cum += full;
+      return `<circle class="donut-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${sg.color}" stroke-width="${sw * 1.9}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" stroke-opacity="0" style="transition:stroke-opacity 0.15s"/>`;
+    }).join("");
+    cum = 0;
+    const arcs = segs.map((sg, i) => {
+      const full = sg.value / total * C;
+      const dash = Math.max(0, full - gap);
+      const off = -cum;
+      cum += full;
+      const pct = Math.round(sg.value / total * 100);
+      return `<circle class="donut-arc" data-idx="${i}" data-label="${sg.label}" data-value="${sg.value}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#dg-${uid}-${i})" stroke-width="${sw}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" style="cursor:pointer"><animate attributeName="r" from="0" to="${r.toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/><animate attributeName="stroke-dasharray" from="0 ${C.toFixed(2)}" to="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/></circle>`;
+    }).join("");
+    const fs = Math.min(size * 0.14, 12);
+    return `<div class="donut-wrap" style="position:relative;display:inline-block;flex-shrink:0"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;overflow:visible">
+      ${defs}
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="${sw}"/>
+      <g><animateTransform attributeName="transform" type="rotate" from="-360 ${cx} ${cy}" to="0 ${cx} ${cy}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/>${rings}${arcs}</g>
+      <text x="${cx}" y="${cy + fs * 0.4}" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="${fs}" font-weight="700">${total}</text>
+    </svg><div class="donut-tt" style="display:none;position:absolute;pointer-events:none;background:rgba(15,15,20,0.92);border:1px solid rgba(255,255,255,0.13);border-radius:6px;padding:5px 9px;white-space:nowrap;z-index:10;color:rgba(255,255,255,0.9)"></div></div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Shared progress pie (5-level Tautulli style, 14×14 SVG)
+  _traWatchPie(pct) {
+    const ring = '<circle cx="7" cy="7" r="5.5" fill="none" style="stroke:var(--is-text-muted)" stroke-width="1.5"/>';
+    const svg = (inner) => `<svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0">${inner}</svg>`;
+    const arc = (d) => `<path d="${d}" style="fill:var(--is-text-body)"/>`;
+    return pct >= 85 ? svg('<circle cx="7" cy="7" r="5.5" style="fill:var(--is-text-body)"/>') : pct >= 63 ? svg(`${ring}${arc("M7,7 L7,1.5 A5.5,5.5 0,1,1 1.5,7 Z")}`) : pct >= 38 ? svg(`${ring}${arc("M7,7 L7,1.5 A5.5,5.5 0,0,1 7,12.5 Z")}`) : pct >= 10 ? svg(`${ring}${arc("M7,7 L7,1.5 A5.5,5.5 0,0,1 12.5,7 Z")}`) : svg(ring);
+  }
+  // History tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyHistory() {
+    const m = this._tracearrModal;
+    const hist = m.histData || [];
+    const total = m.histTotal || 0;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const _NAV_SUBS = { stats: 1, library: 3, performance: 2 };
+    const _navH = isMob ? (_NAV_SUBS[m.navGroup] ? 44 : 0) + 56 : 0;
+    const pp = isMob ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 90 - _navH - 26 - 72 - 46) / 92) - 1) : this._tlCalcPerPage({ hasFilter: true, filterH: 40, rowH: 44, bar: 0 });
+    const pages = Math.max(1, Math.ceil(total / pp));
+    const TRA_HIST_COLS = [
+      { key: "date", label: "Date" },
+      { key: "user", label: this._t("traUser") },
+      { key: "content", label: this._t("traMedia"), always: true },
+      { key: "platform", label: "Platform" },
+      { key: "quality", label: "Quality" },
+      { key: "duration", label: "Duration" },
+      { key: "progress", label: "Progress" }
+    ];
+    if (!m.traHistHiddenCols) m.traHistHiddenCols = /* @__PURE__ */ new Set();
+    const hidden = m.traHistHiddenCols;
+    const vis = TRA_HIST_COLS.filter((col) => !hidden.has(col.key));
+    const toggleable = TRA_HIST_COLS.filter((col) => !col.always);
+    const colsBtn = this._tlColsMenu(
+      "tra-hist-cols-btn",
+      "tra-hist-cols-menu",
+      this._tlColItems(toggleable, hidden, "data-tra-hist-col"),
+      m.traHistColsOpen
+    );
+    const colsBtnIcon = this._tlColsMenu(
+      "tra-hist-cols-btn",
+      "tra-hist-cols-menu",
+      this._tlColItems(toggleable, hidden, "data-tra-hist-col"),
+      m.traHistColsOpen,
+      true
+    );
+    const mediaIcon = (type) => this._tlMediaIcon(type || "", 12);
+    const watchPie = (pct) => this._traWatchPie(pct);
+    const watchBadge = (h) => {
+      const p = parseInt(h.progressMs || 0, 10);
+      const t = parseInt(h.totalDurationMs || 0, 10);
+      const pct = t ? Math.round(p / t * 100) : 0;
+      let label, color, bg;
+      if (h.watched || pct >= 90) {
+        label = "Watched";
+        color = "#34C759";
+        bg = "rgba(52,199,89,0.15)";
+      } else if (pct >= 50) {
+        label = "Engaged";
+        color = "#007AFF";
+        bg = "rgba(0,122,255,0.15)";
+      } else if (pct >= 10) {
+        label = "Abandoned";
+        color = "#FF9500";
+        bg = "rgba(255,149,0,0.15)";
+      } else {
+        label = "Sampled";
+        color = "rgba(255,255,255,0.35)";
+        bg = "rgba(255,255,255,0.07)";
+      }
+      return { label, color, bg, pct };
+    };
+    const fmtDt = (iso) => {
+      if (!iso) return "\u2014";
+      const d = new Date(iso);
+      const date = d.toLocaleDateString("en", { month: "short", day: "numeric" });
+      const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+      return { date, time };
+    };
+    const _SRV_CLR_F = { plex: "#e5a00d", jellyfin: "#7c4dff", emby: "#52b54b" };
+    const srvMapF = Object.fromEntries((m.histServers || []).map((s) => [s.id, s]));
+    const _srvSfx = (id) => {
+      const s = srvMapF[id];
+      if (!s?.type) return "";
+      return " - " + (s.type.charAt(0).toUpperCase() + s.type.slice(1));
+    };
+    const srvOpts = (m.histServers || []).map((s) => `<option value="${s.id}"${m.histServer === s.id ? " selected" : ""}>${s.name}</option>`).join("");
+    const filteredUsers = m.histServer ? (m.histUsers || []).filter((u) => u.serverId === m.histServer) : m.histUsers || [];
+    const uOpts = filteredUsers.map((u) => `<option value="${u.id}"${m.histUser === u.id ? " selected" : ""}>${u.displayName || u.username}${_srvSfx(u.serverId)}</option>`).join("");
+    const srchEl = this._tlSearchInput("tra-hist-search", m.histSearch).replace("width:110px", "flex:1").replace("display:inline-flex", "display:flex;flex:1");
+    const _HIST_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
+    const HIST_PERIODS = ["week", "month", "year", "all"];
+    const periodBtns = HIST_PERIODS.map((p) => {
+      const active = (m.histPeriod || "all") === p;
+      const mobSt = isMob && active ? "background:rgba(0,122,255,0.4);border-color:rgba(0,122,255,0.7);color:#fff" : "";
+      return `<button class="is-f-btn${active ? " active" : ""}" data-tra-hist-period="${p}" style="${mobSt}">${_HIST_P_LBLS[p]}</button>`;
+    }).join("");
+    const userSel = `<select id="tra-hist-user" style="${_TRA_SEL}"><option value="">${this._t("traAllUsers")}</option>${uOpts}</select>`;
+    const mediaSel = `<select id="tra-hist-media" style="${_TRA_SEL}"><option value="">${this._t("traAllMedia")}</option><option value="movie"${m.histMedia === "movie" ? " selected" : ""}>Movie</option><option value="episode"${m.histMedia === "episode" ? " selected" : ""}>Episode</option><option value="track"${m.histMedia === "track" ? " selected" : ""}>Music</option></select>`;
+    const _hi14 = (d) => `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">${d}</svg>`;
+    const _mediaIco = (val) => {
+      if (val === "movie") return _hi14('<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>');
+      if (val === "episode") return _hi14('<rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/>');
+      if (val === "track") return _hi14('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>');
+      return _hi14('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>');
+    };
+    const _CHEV_DN = `<svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.55;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const _iconSel = (id, icon, opts, isActive) => {
+      const bg = isActive ? "rgba(0,122,255,0.3)" : "var(--is-btn-bg)";
+      const bdr = isActive ? "rgba(0,122,255,0.6)" : "var(--is-btn-bdr,rgba(255,255,255,0.18))";
+      return `<div style="position:relative;height:28px;box-sizing:border-box;border:1px solid ${bdr};border-radius:6px;display:inline-flex;align-items:center;gap:2px;padding:0 5px;background:${bg};flex-shrink:0;cursor:pointer">${icon}${_CHEV_DN}<select id="${id}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px">${opts}</select></div>`;
+    };
+    const mobUserSel = _iconSel(
+      "tra-hist-user",
+      _hi14('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+      `<option value="">${this._t("traAllUsers")}</option>${uOpts}`,
+      !!m.histUser
+    );
+    const mobMediaSel = _iconSel(
+      "tra-hist-media",
+      _mediaIco(m.histMedia || ""),
+      `<option value="">${this._t("traAllMedia")}</option><option value="movie"${m.histMedia === "movie" ? " selected" : ""}>Movie</option><option value="episode"${m.histMedia === "episode" ? " selected" : ""}>Episode</option><option value="track"${m.histMedia === "track" ? " selected" : ""}>Music</option>`,
+      !!m.histMedia
+    );
+    const filters = isMob ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+          <div style="display:flex;gap:4px">${srchEl}${colsBtnIcon}</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div class="is-filter" style="gap:3px">${periodBtns}</div>
+            <div style="display:flex;gap:4px;margin-left:auto">${mobUserSel}${mobMediaSel}</div>
+          </div>
+        </div>` : `<div class="tl-toolbar">
+          ${srchEl}
+          <div class="tl-toolbar-actions">
+            <div class="is-filter" style="gap:3px">${periodBtns}</div>
+            ${userSel}${mediaSel}
+            ${colsBtn}
+          </div>
+        </div>`;
+    if (!hist.length) return filters + `<div style="color:var(--is-text-muted);text-align:center;padding:24px">${this._t("tlNoHistory")}</div>`;
+    if (isMob) {
+      const _DP_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><polygon points="5,3 19,12 5,21"/></svg>`;
+      const _TC_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+      const _CLK = `<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+      const cards = hist.map((h) => {
+        const title = h.showTitle || h.mediaTitle || "\u2014";
+        const yearLbl = h.showTitle ? `S${String(h.seasonNumber || 0).padStart(2, "0")}E${String(h.episodeNumber || 0).padStart(2, "0")}` : h.year ? String(h.year) : "";
+        const user = h.user?.displayName || h.user?.username || "";
+        const durRaw = h.durationMs ? (() => {
+          const s = Math.round(h.durationMs / 1e3);
+          const hh = Math.floor(s / 3600);
+          const mm = Math.floor(s % 3600 / 60);
+          const ss = s % 60;
+          return hh > 0 ? `${hh}h ${String(mm).padStart(2, "0")}m` : `${mm}m ${String(ss).padStart(2, "0")}s`;
+        })() : "";
+        const { label, color, bg, pct } = watchBadge(h);
+        const dt = fmtDt(h.startedAt);
+        const decTag = h.isTranscode ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 5px;border-radius:5px;color:#FF9500;background:rgba(255,149,0,0.14);white-space:nowrap">${_TC_ICO}Transcode</span>` : `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 5px;border-radius:5px;color:#34C759;background:rgba(52,199,89,0.14);white-space:nowrap">${_DP_ICO}Direct Play</span>`;
+        const metaParts = [
+          yearLbl ? `<span>${yearLbl}</span>` : "",
+          user ? `<span>${user}</span>` : "",
+          durRaw ? `<span style="display:inline-flex;align-items:center;gap:3px">${_CLK}${durRaw}</span>` : ""
+        ].filter(Boolean).join('<span style="opacity:0.3;margin:0 1px">\xB7</span>');
+        return `<div class="tl-mob-card" style="display:grid;grid-template-columns:1fr auto;row-gap:5px;column-gap:8px;align-items:center">
+          <div style="display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden">
+            <span style="flex-shrink:0">${mediaIcon(h.mediaType)}</span>
+            <span style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;white-space:nowrap;justify-content:flex-end">
+            ${watchPie(pct)}<span style="font-size:10px;color:var(--is-text-muted)">${pct}%</span>
+          </div>
+          <div>${decTag}</div>
+          <div style="display:flex;justify-content:flex-end">
+            <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;color:${color};background:${bg};white-space:nowrap">${label}</span>
+          </div>
+          <div style="font-size:10px;color:var(--is-text-muted);display:flex;align-items:center;gap:4px;overflow:hidden;white-space:nowrap;min-width:0">${metaParts}</div>
+          <div style="text-align:right;font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1.4">
+            <div>${dt.date}</div><div>${dt.time}</div>
+          </div>
+        </div>`;
+      }).join("");
+      const pag2 = this._tlMobPag("tra-hist-page", m.histPage, pages);
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin:-10px -12px -16px">
+        <div style="flex-shrink:0;padding:10px 12px 0">${filters}</div>
+        <div style="flex:1;min-height:0;overflow:hidden">${cards}</div>
+        ${pag2 ? `<div style="flex-shrink:0;padding:4px 12px 8px">${pag2}</div>` : ""}
+      </div>`;
+    }
+    const rows = hist.map((h) => {
+      const title = h.mediaTitle || "\u2014";
+      const sub = h.showTitle ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${h.showTitle} \xB7 S${String(h.seasonNumber || 0).padStart(2, "0")}E${String(h.episodeNumber || 0).padStart(2, "0")}</div>` : h.year ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${h.year}</div>` : "";
+      const user = h.user?.displayName || h.user?.username || "\u2014";
+      const srv = srvMapF[h.serverId] || null;
+      const srvType = srv?.type || null;
+      const srvLabel = srvType ? srvType.charAt(0).toUpperCase() + srvType.slice(1) : null;
+      const srvColor = srvType ? _SRV_CLR_F[srvType] || "rgba(255,255,255,0.4)" : null;
+      const _DP_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><polygon points="5,3 19,12 5,21"/></svg>`;
+      const _TC_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+      const dec = h.isTranscode ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;color:#FF9500;background:rgba(255,149,0,0.14);white-space:nowrap">${_TC_ICO}Transcode</span>` : `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;color:#34C759;background:rgba(52,199,89,0.14);white-space:nowrap">${_DP_ICO}Direct Play</span>`;
+      const _CLK = `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+      const durRaw = h.durationMs ? (() => {
+        const s = Math.round(h.durationMs / 1e3);
+        const h2 = Math.floor(s / 3600);
+        const m2 = Math.floor(s % 3600 / 60);
+        const s2 = s % 60;
+        return h2 > 0 ? `${h2}h ${String(m2).padStart(2, "0")}m` : `${m2}m ${String(s2).padStart(2, "0")}s`;
+      })() : "\u2014";
+      const dur = h.durationMs ? `<div style="display:inline-flex;align-items:center;gap:4px">${_CLK}<span>${durRaw}</span></div>` : "\u2014";
+      const { label, color, bg, pct } = watchBadge(h);
+      const dt = fmtDt(h.startedAt);
+      const cm = {
+        date: `<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600;color:var(--is-text)">${dt.date}</div><div style="font-size:10px;color:var(--is-text-muted)">${dt.time}</div></td>`,
+        user: `<td><div style="display:flex;align-items:center;gap:6px">${this._traUserAvatar(h.user, 18)}<div><div style="font-size:11px;color:var(--is-text)">${user}</div>${srvLabel ? `<div style="font-size:9px;font-weight:700;color:${srvColor}">${srvLabel}</div>` : ""}</div></div></td>`,
+        content: `<td style="min-width:180px"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${mediaIcon(h.mediaType)}<strong style="font-size:12px;font-weight:600;color:var(--is-text)">${title}</strong><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;color:${color};background:${bg};white-space:nowrap">${label}</span></div>${sub}</td>`,
+        platform: `<td><div style="font-size:11px;color:var(--is-text)">${h.platform || "\u2014"}</div><div style="font-size:10px;color:var(--is-text-muted)">${h.product || ""}</div></td>`,
+        quality: `<td>${dec}</td>`,
+        duration: `<td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${dur}</td>`,
+        progress: `<td><div style="display:flex;align-items:center;gap:5px">${watchPie(pct)}<span style="font-size:11px;color:var(--is-text-muted)">${pct}%</span></div></td>`
+      };
+      return `<tr>${vis.map((col) => cm[col.key] || "<td>\u2014</td>").join("")}</tr>`;
+    }).join("");
+    const thead = vis.map((col) => `<th>${col.label}</th>`).join("");
+    const pag = this._tlMobPag("tra-hist-page", m.histPage, Math.max(1, Math.ceil(total / pp)), true);
+    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;height:100%">
+      <div style="flex-shrink:0">${filters}</div>
+      <div style="flex:1;min-height:0;overflow-x:auto;overflow-y:auto">
+        <table class="tl-hist-table">
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="flex-shrink:0">${pag}</div>
+    </div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Activity tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyActivity() {
+    const m = this._tracearrModal;
+    const act = m.activityData || {};
+    const period = m.activityPeriod || "month";
+    const days = period === "week" ? 7 : period === "year" ? 365 : 30;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const tauFmt = (categories, series) => ({ response: { data: { categories, series } } });
+    const playsAll = act.plays || [];
+    const concAll = act.concurrent || [];
+    const ptsP = playsAll.slice(-days);
+    const ptsC = concAll.slice(-days);
+    const playsRaw = tauFmt(
+      ptsP.map((p) => (p.date || "").slice(0, 10)),
+      [{ name: "Plays", data: ptsP.map((p) => p.count || 0) }]
+    );
+    const concRaw = tauFmt(
+      ptsC.map((p) => (p.date || p.day || "").slice(0, 10)),
+      [
+        { name: "Direct Play", data: ptsC.map((p) => Number(p.direct) || 0) },
+        { name: "Direct Stream", data: ptsC.map((p) => Number(p.directStream) || 0) },
+        { name: "Transcode", data: ptsC.map((p) => Number(p.transcode) || 0) }
+      ]
+    );
+    const dowRaw = (() => {
+      const raw = act.byDayOfWeek || [];
+      const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const cats = raw.map((it, i) => it.name ? it.name.slice(0, 3) : DOW[it.day ?? it.dayOfWeek ?? i] || String(i));
+      const vals = raw.map((it) => it.count || 0);
+      return tauFmt(cats, [{ name: "Plays", data: vals }]);
+    })();
+    const hodRaw = (() => {
+      const raw = act.byHourOfDay || [];
+      const cats = raw.map((it, i) => String(typeof it === "number" ? i : it.hour ?? i));
+      const vals = raw.map((it) => typeof it === "number" ? it : it.count || it.plays || 0);
+      return tauFmt(cats, [{ name: "Plays", data: vals }]);
+    })();
+    const qual = act.quality || {};
+    const qualRaw = (() => {
+      const entries = [
+        { name: "Direct Play", val: qual.directPlay || 0 },
+        { name: "Direct Stream", val: qual.directStream || 0 },
+        { name: "Transcode", val: qual.transcode || 0 }
+      ].filter((e) => e.val > 0);
+      return tauFmt(
+        entries.map((e) => e.name),
+        entries.map((e, i) => ({ name: e.name, data: entries.map((_, j) => j === i ? e.val : 0) }))
+      );
+    })();
+    const platRaw = (() => {
+      const plats = (act.platforms || []).slice(0, 8);
+      return tauFmt(
+        plats.map((p) => p.platform),
+        plats.map((p, i) => ({ name: p.platform, data: plats.map((_, j) => j === i ? p.count || 0 : 0) }))
+      );
+    })();
+    const _ACT_P_LBLS = isMob ? { week: "W", month: "M", year: "Y" } : { week: "Week", month: "Month", year: "Year" };
+    const dayBtns = ["week", "month", "year"].map(
+      (p) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-act-period="${p}">${_ACT_P_LBLS[p]}</button>`
+    ).join("");
+    const hdr = `<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:${isMob ? 10 : 12}px">
+      <div class="is-filter">${dayBtns}</div>
+    </div>`;
+    const chartH = isMob ? 100 : 118;
+    const BASE = { range: ptsP.length || days, isDate: true, isMob, height: chartH };
+    const BOPT = { isMob, height: chartH };
+    const lineXLabel = /* @__PURE__ */ ((n) => (d, i) => i % Math.max(1, Math.ceil(n / 7)) === 0 ? d.slice(-5) : "")(ptsP.length);
+    const playsSvg = this._tlGLineSvg(playsRaw, { ...BASE, chartId: "tra-p", xLabel: lineXLabel });
+    const concSvg = this._tlGLineSvg(concRaw, { ...BASE, chartId: "tra-c", isDuration: false, xLabel: lineXLabel });
+    const dowSvg = this._tlGBarSvg(dowRaw, { ...BOPT, chartId: "tra-dw", xLabel: (d) => d.slice(0, 3) });
+    const hodSvg = this._tlGBarSvg(hodRaw, { ...BOPT, chartId: "tra-hd", xLabel: (_, i) => i % 4 === 0 ? `${i}h` : "" });
+    const playsCard = this._tlGCard(this._t("traPlaybackTrend"), playsRaw, playsSvg);
+    const concCard = this._tlGCard("Concurrent streams", concRaw, concSvg);
+    const dowCard = this._tlGCard("Activity by day of week", dowRaw, dowSvg);
+    const hodCard = this._tlGCard("Activity by hour of day", hodRaw, hodSvg);
+    const DONUT_HEX = ["#34C759", "#007AFF", "#FF3B30", "#FF9500", "#BF5AF2", "#FF2D55", "#5AC8FA", "#FFCC00"];
+    const QUAL_HEX = { "Direct Play": "#34C759", "Direct Stream": "#007AFF", "Transcode": "#FF3B30" };
+    const svgDonut = (segs, size) => {
+      const total = segs.reduce((s, sg) => s + (sg.value || 0), 0);
+      if (!total) return `<div class="donut-wrap" style="position:relative;display:inline-block;flex-shrink:0"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"></svg><div class="donut-tt" style="display:none"></div></div>`;
+      const cx = size / 2, cy = size / 2, r = size * 0.34, sw = size * 0.15;
+      const C = 2 * Math.PI * r;
+      let cum = 0;
+      const gap = segs.length > 1 ? 3 : 0;
+      const uid = Math.random().toString(36).slice(2, 7);
+      const ro = (r + sw / 2).toFixed(1);
+      const ri = (r - sw / 2).toFixed(1);
+      const ip = (Number(ri) / Number(ro) * 100).toFixed(0);
+      const defs = "<defs>" + segs.map(
+        (sg, i) => `<radialGradient id="dg-${uid}-${i}" cx="${cx}" cy="${cy}" r="${ro}" fx="${cx}" fy="${cy}" gradientUnits="userSpaceOnUse"><stop offset="${ip}%" stop-color="${sg.color}" stop-opacity="0.5"/><stop offset="100%" stop-color="${sg.color}" stop-opacity="1"/></radialGradient>`
+      ).join("") + "</defs>";
+      const rings = segs.map((sg) => {
+        const full = sg.value / total * C;
+        const dash = Math.max(0, full - gap);
+        const off = -cum;
+        cum += full;
+        return `<circle class="donut-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${sg.color}" stroke-width="${sw * 1.9}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" stroke-opacity="0" style="transition:stroke-opacity 0.15s"/>`;
+      }).join("");
+      cum = 0;
+      const arcs = segs.map((sg, i) => {
+        const full = sg.value / total * C;
+        const dash = Math.max(0, full - gap);
+        const off = -cum;
+        cum += full;
+        const pct = Math.round(sg.value / total * 100);
+        return `<circle class="donut-arc" data-idx="${i}" data-label="${sg.label}" data-value="${sg.value}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#dg-${uid}-${i})" stroke-width="${sw}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" style="cursor:pointer"><animate attributeName="r" from="0" to="${r.toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/><animate attributeName="stroke-dasharray" from="0 ${C.toFixed(2)}" to="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/></circle>`;
+      }).join("");
+      const fs = Math.min(size * 0.14, 12);
+      const svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;overflow:visible">
+        ${defs}
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="${sw}"/>
+        <g><animateTransform attributeName="transform" type="rotate" from="-360 ${cx} ${cy}" to="0 ${cx} ${cy}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/>${rings}${arcs}</g>
+        <text x="${cx}" y="${cy + fs * 0.4}" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="${fs}" font-weight="700">${total}</text>
+      </svg>`;
+      return `<div class="donut-wrap" style="position:relative;display:inline-block;flex-shrink:0">${svg}<div class="donut-tt" style="display:none;position:absolute;pointer-events:none;background:rgba(15,15,20,0.92);border:1px solid rgba(255,255,255,0.13);border-radius:6px;padding:5px 9px;white-space:nowrap;z-index:10;color:rgba(255,255,255,0.9)"></div></div>`;
+    };
+    const donutCard = (title, segs) => {
+      const total = segs.reduce((s, sg) => s + sg.value, 0);
+      const ds = isMob ? 78 : 92;
+      const legendItems = segs.map((s) => {
+        const pct = total ? Math.round(s.value / total * 100) : 0;
+        return `<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+          <span style="width:7px;height:7px;border-radius:2px;background:${s.color};flex-shrink:0"></span>
+          <span style="font-size:10px;color:var(--is-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.label}</span>
+          <span style="font-size:10px;font-weight:700;color:var(--is-text-muted)">${pct}%</span>
+        </div>`;
+      }).join("");
+      return `<div class="tl-g-card">
+        <div style="margin-bottom:8px"><span class="tl-graph-title">${title}</span></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          ${svgDonut(segs, ds)}
+          <div style="flex:1;min-width:0">${legendItems}</div>
+        </div>
+      </div>`;
+    };
+    const qualSegs = [
+      { label: "Direct Play", value: qual.directPlay || 0, color: QUAL_HEX["Direct Play"] },
+      { label: "Direct Stream", value: qual.directStream || 0, color: QUAL_HEX["Direct Stream"] },
+      { label: "Transcode", value: qual.transcode || 0, color: QUAL_HEX["Transcode"] }
+    ].filter((s) => s.value > 0);
+    const platSegs = (act.platforms || []).slice(0, 8).map((p, i) => ({
+      label: p.platform,
+      value: p.count || 0,
+      color: DONUT_HEX[i % DONUT_HEX.length]
+    }));
+    const qualCard = donutCard("Stream quality", qualSegs);
+    const platCard = donutCard("Platforms", platSegs);
+    if (isMob) {
+      return hdr + `<div style="display:flex;flex-direction:column;gap:8px">${playsCard}${concCard}${dowCard}${hodCard}${qualCard}${platCard}</div>`;
+    }
+    return hdr + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">` + playsCard + concCard + dowCard + hodCard + qualCard + platCard + `</div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Quality tab (library analytics)
+  // ──────────────────────────────────────────────────────────────────────────
+  _traQualEvolCard() {
+    const m = this._tracearrModal;
+    const qd = m.qualityData || {};
+    const _allData = qd.data || [];
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const Q_COLORS = { "4K": "#34C759", "1080p": "#007AFF", "720p": "#FF9500", "SD": "#FF3B30" };
+    const _period = m.qualityPeriod || "month";
+    const _periodDays = { week: 7, month: 30, year: 365 };
+    const _sliced = _period === "all" ? _allData : _allData.slice(-(_periodDays[_period] || 30));
+    const data = _period === "year" ? _sliced.filter((_, i) => i % 7 === 0 || i === _sliced.length - 1) : _period === "all" ? _sliced.filter((_, i) => i % 30 === 0 || i === _sliced.length - 1) : _sliced;
+    const days = data.map((d) => d.day);
+    const n = days.length;
+    const chartH = isMob ? 110 : 130;
+    const layers = [
+      { label: "SD", color: Q_COLORS["SD"] },
+      { label: "720p", color: Q_COLORS["720p"] },
+      { label: "1080p", color: Q_COLORS["1080p"] },
+      { label: "4K", color: Q_COLORS["4K"] }
+    ];
+    const _curPeriod = _period;
+    const _curMt = m.qualityMediaType || null;
+    const _Q_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
+    const _periodBtns = ["week", "month", "year", "all"].map(
+      (p) => `<button class="is-f-btn${_curPeriod === p ? " active" : ""}" data-tra-q-period="${p}" style="padding:2px 7px;font-size:10px">${_Q_P_LBLS[p]}</button>`
+    ).join("");
+    const _mtBtns = [["All", ""], ["Movies", "movies"], ["Series", "shows"]].map(
+      ([lbl, val]) => `<button class="is-f-btn${(_curMt || "") === val ? " active" : ""}" data-tra-q-mt="${val}" style="padding:2px 7px;font-size:10px">${lbl}</button>`
+    ).join("");
+    const legend = layers.slice().reverse().map(
+      (l) => `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)"><span style="width:7px;height:7px;border-radius:2px;background:${l.color};display:inline-block"></span>${l.label}</span>`
+    ).join("");
+    const header = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        <span class="tl-graph-title">${this._t("traQualityEvolution")}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="is-filter" style="gap:3px">${_mtBtns}</div>
+          <span style="width:1px;height:14px;background:var(--is-btn-bdr,rgba(255,255,255,0.15));flex-shrink:0"></span>
+          <div class="is-filter" style="gap:3px">${_periodBtns}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">${legend}</div>`;
+    if (!n) return `<div class="tl-g-card" style="position:relative">${header}<div style="height:${chartH}px;display:flex;align-items:center;justify-content:center;color:var(--is-text-muted);font-size:12px">No data</div></div>`;
+    const VBW = 1e3, SVH = 200;
+    const PL = 12, PR = 6, PT = 18, PB = 6;
+    const cW = VBW - PL - PR, cH = SVH - PT - PB;
+    const slotW = cW / Math.max(n, 1);
+    const xOf = (i) => PL + (i + 0.5) * slotW;
+    const maxV = Math.max(1, ...data.map((d) => d.totalItems || 0));
+    const yAbs = (v) => PT + (1 - v / maxV) * cH;
+    const baseY = PT + cH;
+    const seriesAbs = [
+      { label: "4K", color: Q_COLORS["4K"], vals: data.map((d) => (d.countSd || 0) + (d.count720p || 0) + (d.count1080p || 0) + (d.count4k || 0)) },
+      { label: "1080p", color: Q_COLORS["1080p"], vals: data.map((d) => (d.countSd || 0) + (d.count720p || 0) + (d.count1080p || 0)) },
+      { label: "720p", color: Q_COLORS["720p"], vals: data.map((d) => (d.countSd || 0) + (d.count720p || 0)) },
+      { label: "SD", color: Q_COLORS["SD"], vals: data.map((d) => d.countSd || 0) }
+    ];
+    const pts = seriesAbs.map((s) => s.vals.map((v, i) => ({ x: xOf(i), y: yAbs(v), v, cat: data[i]?.day })));
+    const wkndRects = _period === "year" || _period === "all" ? "" : data.map((d, i) => {
+      const dow = (/* @__PURE__ */ new Date(d.day + "T12:00:00")).getDay();
+      if (dow !== 0 && dow !== 6) return "";
+      const rx = xOf(i) - slotW / 2;
+      return `<rect x="${rx.toFixed(1)}" y="${PT}" width="${slotW.toFixed(1)}" height="${cH}" style="fill:var(--tl-wknd)"/>`;
+    }).join("");
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map((v) => Math.round(v * maxV));
+    const gridlines = yTicks.map(
+      (v) => `<line x1="${PL}" y1="${yAbs(v).toFixed(1)}" x2="${VBW - PR}" y2="${yAbs(v).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`
+    ).join("");
+    const defs = "<defs>" + seriesAbs.map(
+      (s, si) => `<linearGradient id="traq-g${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${s.color}" stop-opacity="0.18"/><stop offset="100%" stop-color="${s.color}" stop-opacity="0"/></linearGradient>`
+    ).join("") + "</defs>";
+    const areaFills = seriesAbs.map(
+      (s, si) => `<path d="${this._tlGSmoothArea(pts[si], baseY)}" fill="url(#traq-g${si})" style="animation:fade-in 0.8s ease-out both"/>`
+    ).join("");
+    const lines = seriesAbs.map(
+      (s, si) => `<path d="${this._tlGSmoothLine(pts[si])}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line"/>`
+    ).join("");
+    const colW = (VBW - PL - PR) / n;
+    const hitCols = data.map((d, i) => {
+      const vals = [
+        { n: "4K", v: d.count4k || 0, hex: Q_COLORS["4K"] },
+        { n: "1080p", v: d.count1080p || 0, hex: Q_COLORS["1080p"] },
+        { n: "720p", v: d.count720p || 0, hex: Q_COLORS["720p"] },
+        { n: "SD", v: d.countSd || 0, hex: Q_COLORS["SD"] }
+      ].filter((v) => v.v > 0).sort((a, b) => b.v - a.v);
+      const tot = vals.reduce((s, v) => s + v.v, 0);
+      const td = JSON.stringify({ lbl: d.day, tot, vals }).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+      const rx = (PL + i * colW).toFixed(1);
+      return `<g class="tl-g-lcol" data-tl-g-col="${td}" style="cursor:pointer"><rect class="tl-g-lhlt" x="${rx}" y="${PT}" width="${colW.toFixed(1)}" height="${SVH - PT - PB}" style="fill:var(--tl-col-hlt,rgba(255,255,255,0.04));opacity:0"/><rect x="${rx}" y="${PT}" width="${colW.toFixed(1)}" height="${SVH - PT - PB}" fill="transparent"/></g>`;
+    }).join("");
+    const yLblTxt = maxV >= 1e3 ? (maxV / 1e3).toFixed(1) + "K" : String(maxV);
+    const step = Math.max(1, Math.ceil(n / 7));
+    const xLabelsHtml = '<div class="tl-g-x-labels">' + data.map((d, i) => {
+      if (i % step !== 0 && i !== n - 1) return "";
+      const pct = (xOf(i) / VBW * 100).toFixed(1);
+      const pos = i === 0 ? `left:${pct}%;transform:translateX(0)` : i === n - 1 ? `left:${pct}%;transform:translateX(-100%)` : `left:${pct}%;transform:translateX(-50%)`;
+      return `<span style="position:absolute;${pos};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${d.day.slice(5)}</span>`;
+    }).join("") + "</div>";
+    const chartHtml = this._tlGWrap(this._tlGSvgEl(defs + wkndRects + gridlines + areaFills + lines + hitCols, chartH), xLabelsHtml, yLblTxt);
+    return `<div class="tl-g-card" style="position:relative">${header}<div style="position:relative">${chartHtml}</div><div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div></div>`;
+  }
+  _traQualCodecsCard() {
+    const m = this._tracearrModal;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const codecs = m.qualityCodecs || {};
+    const CODEC_COLORS = ["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#BF5AF2", "#FF2D55", "#5AC8FA", "#FFCC00"];
+    const codecBars = (items) => {
+      if (!items?.length) return "";
+      const maxC = items[0].count || 1;
+      return items.map((it, i) => {
+        const pct = Math.round(it.count / maxC * 100);
+        const color = CODEC_COLORS[i % CODEC_COLORS.length];
+        const delay = (i * 0.05).toFixed(2);
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+          <span style="font-size:10px;font-weight:600;color:var(--is-text);width:44px;text-align:right;flex-shrink:0;white-space:nowrap">${it.codec}</span>
+          <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden">
+            <div class="tl-g-anim-bar-h" style="height:100%;border-radius:3px;background:linear-gradient(to right,${color},${color}70);width:${pct}%;animation-delay:${delay}s"></div>
+          </div>
+          <span style="font-size:10px;color:var(--is-text-muted);width:32px;flex-shrink:0">${it.count}</span>
+        </div>`;
+      }).join("");
+    };
+    const codecSection = (title, items, extra = "") => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="tl-graph-title">${title}</span>${extra}</div>${codecBars(items)}`;
+    const _codecTab = m.qualityCodecTab || "movies";
+    const _ctBtns = [["movies", "Movies / TV"], ["music", "Music"]].map(
+      ([val, lbl]) => `<button class="is-f-btn${_codecTab === val ? " active" : ""}" data-tra-q-codec-tab="${val}" style="padding:2px 7px;font-size:10px">${lbl}</button>`
+    ).join("");
+    const _ctBtnsEl = `<div class="is-filter" style="gap:3px;margin-left:auto">${_ctBtns}</div>`;
+    if (_codecTab === "music") {
+      const musicBars = codecBars(codecs.music?.codecs);
+      return `<div class="tl-g-card">${codecSection(this._t("traAudioCodecs"), codecs.music?.codecs, _ctBtnsEl)}${musicBars ? "" : '<span style="font-size:11px;color:var(--is-text-muted)">No data</span>'}</div>`;
+    }
+    const videoSec = codecSection(this._t("traVideoCodecs"), codecs.video?.codecs);
+    const audioSec = codecSection(this._t("traAudioCodecs"), codecs.audio?.codecs);
+    const chanSec = codecSection(this._t("traAudioChannels"), codecs.channels?.codecs, _ctBtnsEl);
+    const _innerCols = isMob ? `<div>${chanSec}</div><div>${videoSec}</div><div>${audioSec}</div>` : `<div>${videoSec}</div><div>${audioSec}</div><div>${chanSec}</div>`;
+    return `<div class="tl-g-card"><div style="display:grid;grid-template-columns:${isMob ? "1fr" : "1fr 1fr 1fr"};gap:${isMob ? "12px" : "16px"}">${_innerCols}</div></div>`;
+  }
+  _traBodyQuality() {
+    const m = this._tracearrModal;
+    const qd = m.qualityData || {};
+    if (qd.status === "generating" || qd.message && !qd.data) {
+      return `<div style="text-align:center;padding:48px 24px">
+        <div style="font-size:28px;margin-bottom:12px">\u23F3</div>
+        <div style="font-size:14px;font-weight:700;color:var(--is-text);margin-bottom:6px">Generating historical data\u2026</div>
+        <div style="font-size:12px;color:var(--is-text-muted)">${qd.message || "Creating snapshots from library history. This may take a few minutes."}</div>
+      </div>`;
+    }
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const Q_COLORS = { "4K": "#34C759", "1080p": "#007AFF", "720p": "#FF9500", "SD": "#FF3B30" };
+    const qualCard = this._traQualEvolCard();
+    const codecsRow = this._traQualCodecsCard();
+    const res = m.qualityResolution || {};
+    const _resSegs = (obj) => {
+      if (!obj) return [];
+      const c4k = obj.count4k ?? obj["4K"] ?? obj["4k"] ?? 0;
+      const c1080 = obj.count1080p ?? obj["1080p"] ?? 0;
+      const c720 = obj.count720p ?? obj["720p"] ?? 0;
+      const cSd = obj.countSd ?? obj["SD"] ?? obj["sd"] ?? 0;
+      return [
+        { label: "4K", value: c4k, color: Q_COLORS["4K"] },
+        { label: "1080p", value: c1080, color: Q_COLORS["1080p"] },
+        { label: "720p", value: c720, color: Q_COLORS["720p"] },
+        { label: "SD", value: cSd, color: Q_COLORS["SD"] }
+      ].filter((s) => s.value > 0);
+    };
+    const movSegs = _resSegs(res.movies);
+    const showSegs = _resSegs(res.shows ?? res.tv ?? res.series);
+    const movTotal = movSegs.reduce((s, sg) => s + sg.value, 0) || 1;
+    const showTotal = showSegs.reduce((s, sg) => s + sg.value, 0) || 1;
+    const svgDonut = (segs, size) => {
+      const total = segs.reduce((s, sg) => s + sg.value, 0);
+      if (!total) return `<div class="donut-wrap" style="position:relative;display:inline-block;flex-shrink:0"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"></svg><div class="donut-tt" style="display:none"></div></div>`;
+      const cx = size / 2, cy = size / 2, r = size * 0.34, sw = size * 0.15;
+      const C = 2 * Math.PI * r;
+      let cum = 0;
+      const gap = segs.length > 1 ? 3 : 0;
+      const uid = Math.random().toString(36).slice(2, 7);
+      const ro = (r + sw / 2).toFixed(1);
+      const ri = (r - sw / 2).toFixed(1);
+      const ip = (Number(ri) / Number(ro) * 100).toFixed(0);
+      const defs = "<defs>" + segs.map(
+        (sg, i) => `<radialGradient id="dg-${uid}-${i}" cx="${cx}" cy="${cy}" r="${ro}" fx="${cx}" fy="${cy}" gradientUnits="userSpaceOnUse"><stop offset="${ip}%" stop-color="${sg.color}" stop-opacity="0.5"/><stop offset="100%" stop-color="${sg.color}" stop-opacity="1"/></radialGradient>`
+      ).join("") + "</defs>";
+      const rings = segs.map((sg) => {
+        const full = sg.value / total * C;
+        const dash = Math.max(0, full - gap);
+        const off = -cum;
+        cum += full;
+        return `<circle class="donut-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${sg.color}" stroke-width="${sw * 1.9}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" stroke-opacity="0" style="transition:stroke-opacity 0.15s"/>`;
+      }).join("");
+      cum = 0;
+      const arcs = segs.map((sg, i) => {
+        const full = sg.value / total * C;
+        const dash = Math.max(0, full - gap);
+        const off = -cum;
+        cum += full;
+        const pct = Math.round(sg.value / total * 100);
+        return `<circle class="donut-arc" data-idx="${i}" data-label="${sg.label}" data-value="${sg.value}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#dg-${uid}-${i})" stroke-width="${sw}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" style="cursor:pointer"><animate attributeName="r" from="0" to="${r.toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/><animate attributeName="stroke-dasharray" from="0 ${C.toFixed(2)}" to="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/></circle>`;
+      }).join("");
+      const fs = Math.min(size * 0.13, 11);
+      const svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;overflow:visible">
+        ${defs}
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="${sw}"/>
+        <g><animateTransform attributeName="transform" type="rotate" from="-360 ${cx} ${cy}" to="0 ${cx} ${cy}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/>${rings}${arcs}</g>
+        <text x="${cx}" y="${cy + fs * 0.4}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="${fs}" font-weight="700">${total}</text>
+      </svg>`;
+      return `<div class="donut-wrap" style="position:relative;display:inline-block;flex-shrink:0">${svg}<div class="donut-tt" style="display:none;position:absolute;pointer-events:none;background:rgba(15,15,20,0.92);border:1px solid rgba(255,255,255,0.13);border-radius:6px;padding:5px 9px;white-space:nowrap;z-index:10;color:rgba(255,255,255,0.9)"></div></div>`;
+    };
+    const ds = isMob ? 90 : 110;
+    const _donutLegend = (segs, total) => segs.map((s) => {
+      const pct = Math.round(s.value / total * 100);
+      return `<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+        <span style="width:8px;height:8px;border-radius:2px;background:${s.color};flex-shrink:0"></span>
+        <span style="font-size:11px;color:var(--is-text);flex:1">${s.label}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--is-text-muted)">${s.value} <span style="opacity:0.6">(${pct}%)</span></span>
+      </div>`;
+    }).join("");
+    const movCard = `<div class="tl-g-card">
+      <div style="margin-bottom:10px"><span class="tl-graph-title">Movies</span><span style="float:right;font-size:10px;color:var(--is-text-muted)">${movTotal} ${this._t("traTotalItems")}</span></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        ${svgDonut(movSegs, ds)}
+        <div style="flex:1;min-width:0">${_donutLegend(movSegs, movTotal)}</div>
+      </div>
+    </div>`;
+    const showCard = `<div class="tl-g-card">
+      <div style="margin-bottom:10px"><span class="tl-graph-title">TV Shows</span><span style="float:right;font-size:10px;color:var(--is-text-muted)">${showTotal} ${this._t("traTotalItems")}</span></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        ${svgDonut(showSegs, ds)}
+        <div style="flex:1;min-width:0">${_donutLegend(showSegs, showTotal)}</div>
+      </div>
+    </div>`;
+    if (isMob) {
+      return `<div style="display:flex;flex-direction:column;gap:8px"><div data-tra-q-evol>${qualCard}</div>${movCard}${showCard}<div data-tra-q-codecs>${codecsRow}</div></div>`;
+    }
+    return `<div data-tra-q-evol style="margin-bottom:8px">${qualCard}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">${movCard}${showCard}</div>
+      <div data-tra-q-codecs>${codecsRow}</div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Storage tab (library analytics)
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyStorage() {
+    const m = this._tracearrModal;
+    const hist = m.storageData?.history || [];
+    const cur = m.storageData?.current || {};
+    const st = m.storageStats || {};
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const fmtBytes = (b) => {
+      const n = Number(b) || 0;
+      if (n >= 1024 ** 4) return (n / 1024 ** 4).toFixed(2) + " TB";
+      if (n >= 1024 ** 3) return (n / 1024 ** 3).toFixed(1) + " GB";
+      if (n >= 1024 ** 2) return (n / 1024 ** 2).toFixed(0) + " MB";
+      return n + " B";
+    };
+    const tile = (lbl, val, color, sub) => `<div style="background:var(--is-row-hover);border-radius:7px;padding:5px 8px">
+        <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--is-text-label);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lbl}</div>
+        <div style="font-size:${isMob ? "13px" : "14px"};font-weight:800;line-height:1;color:${color};white-space:nowrap">${val}</div>
+        ${sub ? `<div style="font-size:8px;color:var(--is-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>` : ""}
+      </div>`;
+    const period = m.storagePeriod || "month";
+    const gr = m.storageData?.growthRate;
+    const growthVal = (() => {
+      if (!gr) {
+        const days = { week: 7, month: 30, year: 365 }[period];
+        const slice = days ? hist.slice(-days) : hist;
+        const f = slice[0], l = slice[slice.length - 1];
+        return f && l ? Number(l.totalSizeBytes) - Number(f.totalSizeBytes) : 0;
+      }
+      if (period === "week") return Number(gr.bytesPerWeek || 0);
+      if (period === "year") return Number(gr.bytesPerMonth || 0) * 12;
+      if (period === "all") {
+        const f = hist[0], l = hist[hist.length - 1];
+        return f && l ? Number(l.totalSizeBytes) - Number(f.totalSizeBytes) : 0;
+      }
+      return Number(gr.bytesPerMonth || 0);
+    })();
+    const growthLabel = { week: "Growth/wk", month: "Growth/mo", year: "Growth/yr", all: "Total Growth" }[period] || "Growth";
+    const growthSign = growthVal >= 0 ? "+" : "";
+    const dupG = m.dupsSummary?.totalGroups || 0;
+    const dupSav = Number(m.dupsSummary?.totalPotentialSavingsBytes || 0);
+    const stSum = m.staleSummary?.total || m.staleSummary?.neverWatched || {};
+    const stCnt = stSum.count || 0;
+    const stSz = Number(stSum.sizeBytes || 0);
+    const tiles = `<div style="display:grid;grid-template-columns:repeat(${isMob ? 2 : 4},1fr);gap:${isMob ? "6px" : "8px"};margin-bottom:${isMob ? "6px" : "6px"}">
+      ${tile(this._t("traTotalSize"), fmtBytes(cur.totalSizeBytes || st.totalSizeBytes || 0), "#007AFF")}
+      ${tile(growthLabel, growthSign + fmtBytes(Math.abs(growthVal)), growthVal >= 0 ? "#34C759" : "#FF3B30")}
+      ${tile("Duplicates", dupG ? `${dupG.toLocaleString()} groups` : "\u2014", "#FF3B30", dupG ? `${fmtBytes(dupSav)} recoverable` : "")}
+      ${tile(this._t("traStaleContent"), stCnt ? `${stCnt.toLocaleString()} items` : "\u2014", "#FF9500", stCnt ? `${fmtBytes(stSz)} unused` : "")}
+    </div>`;
+    const periodDays = { week: 7, month: 30, year: 365 };
+    const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    const showPred = m.storagePredictions !== false && period !== "all";
+    const predDays = { week: 7, month: 30, year: 365, all: 30 }[period] || 30;
+    const _rawSlice = period === "all" ? hist : hist.slice(-(periodDays[period] || 30));
+    const _pastFull = _rawSlice.filter((d) => d.day <= today);
+    const _past = period === "all" && _pastFull.length > 250 ? (() => {
+      const stride = Math.ceil(_pastFull.length / 250);
+      const sampled = _pastFull.filter((_, i) => i % stride === 0);
+      if (sampled[sampled.length - 1] !== _pastFull[_pastFull.length - 1]) sampled.push(_pastFull[_pastFull.length - 1]);
+      return sampled;
+    })() : _pastFull;
+    const histSlice = showPred ? (() => {
+      const _needed = predDays - _past.length;
+      if (_needed <= 0) return _past;
+      const firstDay = _past[0]?.day || today;
+      const _padded = Array.from({ length: _needed }, (_, i) => {
+        const d = /* @__PURE__ */ new Date(firstDay + "T12:00:00");
+        d.setDate(d.getDate() - (_needed - i));
+        return { day: d.toISOString().slice(0, 10), totalSizeBytes: 0 };
+      });
+      return [..._padded, ..._past];
+    })() : _past.filter((d) => Number(d.totalSizeBytes) > 0);
+    const lastHist = histSlice[histSlice.length - 1];
+    const lastBytes = Number(lastHist?.totalSizeBytes || 0);
+    const _recentPts = _past.filter((d) => Number(d.totalSizeBytes) > 0).slice(-30);
+    const bytesPerDay = _recentPts.length >= 2 ? (Number(_recentPts[_recentPts.length - 1].totalSizeBytes) - Number(_recentPts[0].totalSizeBytes)) / (_recentPts.length - 1) : Number(gr?.bytesPerDay || 0);
+    const predPoints = showPred && lastHist && lastBytes > 0 ? Array.from({ length: predDays }, (_, i) => {
+      const d = /* @__PURE__ */ new Date(lastHist.day + "T12:00:00");
+      d.setDate(d.getDate() + i + 1);
+      const mid = lastBytes + bytesPerDay * (i + 1);
+      const spread = mid * 0.1;
+      return { day: d.toISOString().slice(0, 10), totalSizeBytes: mid, spreadHi: mid + spread, spreadLo: Math.max(0, mid - spread) };
+    }) : [];
+    const _nonZeroLen = histSlice.filter((d) => Number(d.totalSizeBytes) > 0).length;
+    const confidence = _nonZeroLen >= 30 ? "High" : _nonZeroLen >= 7 ? "Medium" : "Low";
+    const confColor = { High: "#34C759", Medium: "#FF9500", Low: "#FF3B30" }[confidence];
+    const VBW = 1e3, SVH = 200, PL = 8, PR = 8, PT = 14, PB = 4;
+    const cW = VBW - PL - PR, cH = SVH - PT - PB;
+    const baseY = PT + cH;
+    const allPts = [...histSlice, ...predPoints];
+    const toGiB = (b) => Number(b) / 1024 ** 3;
+    const allGiB = allPts.flatMap((d) => [toGiB(d.totalSizeBytes), d.spreadHi ? toGiB(d.spreadHi) : 0]);
+    const maxGiB = Math.max(...allGiB, 1) * 1.08;
+    const N = allPts.length;
+    const slotW = cW / Math.max(N, 1);
+    const ptX = (i) => PL + (i + 0.5) * slotW;
+    const ptY = (v) => Math.max(PT, Math.min(baseY, PT + cH * (1 - v / maxGiB)));
+    const linePath = (pts) => {
+      const n = pts.length;
+      if (!n) return "";
+      if (n < 2) return `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+      const dx = [], dy = [], m2 = [];
+      for (let i = 0; i < n - 1; i++) {
+        dx[i] = pts[i + 1].x - pts[i].x;
+        dy[i] = pts[i + 1].y - pts[i].y;
+        m2[i] = dy[i] / dx[i];
+      }
+      const t = new Array(n);
+      t[0] = m2[0];
+      t[n - 1] = m2[n - 2];
+      for (let i = 1; i < n - 1; i++) t[i] = (m2[i - 1] + m2[i]) / 2;
+      for (let i = 0; i < n - 1; i++) {
+        if (Math.abs(m2[i]) < 1e-10) {
+          t[i] = t[i + 1] = 0;
+          continue;
+        }
+        const a = t[i] / m2[i], b = t[i + 1] / m2[i];
+        if (a < 0 || b < 0) {
+          t[i] = t[i + 1] = 0;
+          continue;
+        }
+        const h = Math.sqrt(a * a + b * b);
+        if (h > 3) {
+          t[i] = 3 * m2[i] / h * a;
+          t[i + 1] = 3 * m2[i] / h * b;
+        }
+      }
+      let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+      for (let i = 0; i < n - 1; i++) {
+        const x1 = pts[i].x + dx[i] / 3, y1 = pts[i].y + t[i] * dx[i] / 3;
+        const x2 = pts[i + 1].x - dx[i] / 3, y2 = pts[i + 1].y - t[i + 1] * dx[i] / 3;
+        d += ` C${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)} ${pts[i + 1].x.toFixed(1)},${pts[i + 1].y.toFixed(1)}`;
+      }
+      return d;
+    };
+    const areaPath = (pts, bY) => {
+      if (!pts.length) return "";
+      return `${linePath(pts)} L${pts[pts.length - 1].x.toFixed(1)},${bY} L${pts[0].x.toFixed(1)},${bY} Z`;
+    };
+    const histCoords = histSlice.map((d, i) => ({ x: ptX(i), y: ptY(toGiB(d.totalSizeBytes)), day: d.day, bytes: d.totalSizeBytes }));
+    const hLast = histCoords[histCoords.length - 1];
+    const predCoords = predPoints.map((d, i) => ({ x: ptX(histSlice.length + i), y: ptY(toGiB(d.totalSizeBytes)), day: d.day, bytes: d.totalSizeBytes, spreadHi: d.spreadHi, spreadLo: d.spreadLo }));
+    const predWithJoint = hLast ? [hLast, ...predCoords] : predCoords;
+    const _spreadJoint = showPred && predCoords.length && predCoords[0]?.spreadHi && hLast ? { x: hLast.x, y: hLast.y } : null;
+    const spreadHiPts = _spreadJoint ? [_spreadJoint, ...predCoords.map((p) => ({ x: p.x, y: ptY(toGiB(p.spreadHi)) }))] : [];
+    const spreadLoPts = _spreadJoint ? [_spreadJoint, ...predCoords.map((p) => ({ x: p.x, y: ptY(toGiB(p.spreadLo)) }))] : [];
+    const spreadBandPath = spreadHiPts.length >= 2 && spreadLoPts.length >= 2 ? (() => {
+      const j = spreadHiPts[0];
+      const hi = spreadHiPts[spreadHiPts.length - 1];
+      const lo = spreadLoPts[spreadLoPts.length - 1];
+      return `M${j.x.toFixed(1)},${j.y.toFixed(1)} L${hi.x.toFixed(1)},${hi.y.toFixed(1)} L${lo.x.toFixed(1)},${lo.y.toFixed(1)} Z`;
+    })() : "";
+    const lastPred = predPoints[predPoints.length - 1];
+    const rangeLoTB = lastPred ? (toGiB(lastPred.spreadLo) / 1024).toFixed(2) : null;
+    const rangeHiTB = lastPred ? (toGiB(lastPred.spreadHi) / 1024).toFixed(2) : null;
+    const HEX = "#007AFF";
+    const PRED_HEX = "#e0f2fe";
+    const SPRD_HEX = "#5AC8FA";
+    const chartH = isMob ? showPred ? 88 : 108 : showPred ? 90 : 110;
+    const maxTB = maxGiB / 1024;
+    const tickStep = maxTB <= 0.5 ? 0.1 : maxTB <= 1 ? 0.25 : maxTB <= 2 ? 0.5 : maxTB <= 5 ? 1 : maxTB <= 10 ? 2 : 5;
+    const yTicks = [];
+    for (let v = 0; v <= maxTB * 1.01; v = Math.round((v + tickStep) * 1e3) / 1e3) yTicks.push(v);
+    const yAxisHtml = yTicks.map((v) => {
+      const pct = (ptY(v * 1024) / SVH * 100).toFixed(1);
+      return `<span style="position:absolute;right:4px;top:${pct}%;transform:translateY(-50%);font-size:9px;color:rgba(255,255,255,0.32);white-space:nowrap;line-height:1">${v} TB</span>`;
+    }).join("");
+    const showEvery = Math.max(1, Math.ceil((isMob ? 110 : 62) / slotW));
+    const xLabelsHtml = (() => {
+      let lastLbl = "";
+      return `<div class="tl-g-x-labels">` + allPts.map((d, i) => {
+        const isLast = i === N - 1, isFirst = i === 0;
+        if (!isFirst && !isLast && i % showEvery !== 0) return "";
+        const lbl = period === "week" || period === "month" ? d.day.slice(5) : d.day.slice(2, 7);
+        if (lbl === lastLbl) return "";
+        lastLbl = lbl;
+        const pct = ptX(i) / VBW * 100;
+        const tx = isFirst ? "-25%" : isLast ? "-75%" : "-50%";
+        return `<span style="position:absolute;left:${pct.toFixed(1)}%;transform:translateX(${tx});font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${lbl}</span>`;
+      }).join("") + "</div>";
+    })();
+    const DOT_R = 3;
+    const MASK_R = DOT_R + 2;
+    const predDotStep = Math.max(1, Math.floor(predCoords.length / 12));
+    const visPredDots = showPred ? predCoords.filter((_, i) => i % predDotStep === 0) : [];
+    const maskCircles = visPredDots.map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${MASK_R}"/>`).join("");
+    const dotEl = (p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${DOT_R}" style="fill:transparent;stroke:${HEX};stroke-width:1.5" vector-effect="non-scaling-stroke"/>`;
+    const histDots = "";
+    const predDots = visPredDots.map(dotEl).join("");
+    const _esc = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+    const fmtTB = (b) => (toGiB(b) / 1024).toFixed(2) + " TB";
+    const hitCols = allPts.map((d, i) => {
+      const isPred = i >= histSlice.length;
+      const byt = Number(d.totalSizeBytes);
+      if (byt <= 0 && !isPred) return "";
+      const hex = HEX;
+      const name = isPred ? "Prediction" : "Storage";
+      const fv = fmtTB(isPred ? byt : byt);
+      const td = _esc(JSON.stringify({ lbl: d.day, tot: null, ftot: fv, vals: [{ n: name, v: byt, fv, hex }] }));
+      const rx = (PL + i * slotW).toFixed(1);
+      const rw = slotW.toFixed(1);
+      return `<g class="tl-g-lcol" data-tl-g-col="${td}" style="cursor:pointer"><rect class="tl-g-lhlt" x="${rx}" y="${PT}" width="${rw}" height="${cH}" style="fill:rgba(255,255,255,0.12);opacity:0"/><rect x="${rx}" y="${PT}" width="${rw}" height="${cH}" fill="transparent"/></g>`;
+    }).join("");
+    const nowX = hLast ? hLast.x.toFixed(1) : null;
+    const svgInner = `
+      <defs>
+        <linearGradient id="tras-gh" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${HEX}" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="${HEX}" stop-opacity="0"/>
+        </linearGradient>
+        <mask id="tras-dot-mask">
+          <rect x="0" y="0" width="${VBW}" height="${SVH}" fill="white"/>
+          ${maskCircles}
+        </mask>
+      </defs>
+      ${yTicks.map((v) => `<line x1="${PL}" y1="${ptY(v * 1024).toFixed(1)}" x2="${VBW - PR}" y2="${ptY(v * 1024).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`).join("")}
+      ${spreadBandPath ? `<path d="${spreadBandPath}" fill="${SPRD_HEX}" fill-opacity="0.12"/>` : ""}
+      ${spreadHiPts.length >= 2 ? `<line x1="${spreadHiPts[0].x.toFixed(1)}" y1="${spreadHiPts[0].y.toFixed(1)}" x2="${spreadHiPts[spreadHiPts.length - 1].x.toFixed(1)}" y2="${spreadHiPts[spreadHiPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke"/>` : ""}
+      ${spreadLoPts.length >= 2 ? `<line x1="${spreadLoPts[0].x.toFixed(1)}" y1="${spreadLoPts[0].y.toFixed(1)}" x2="${spreadLoPts[spreadLoPts.length - 1].x.toFixed(1)}" y2="${spreadLoPts[spreadLoPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke"/>` : ""}
+      <path d="${areaPath(histCoords, baseY)}" fill="url(#tras-gh)" style="animation:fade-in 0.8s ease-out both"/>
+      ${nowX ? `<line x1="${nowX}" y1="${PT}" x2="${nowX}" y2="${baseY}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 3"/>` : ""}
+      <path d="${linePath(histCoords, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="2" vector-effect="non-scaling-stroke" class="tl-g-anim-line"/>
+      ${showPred && predWithJoint.length > 1 ? `<path d="${linePath(predWithJoint, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke" mask="url(#tras-dot-mask)"/>` : ""}
+      ${histDots}${predDots}
+      ${hitCols}
+    `;
+    const storSvg = `<div class="tl-g-wrap" style="position:relative;padding-left:36px">
+      <div style="position:absolute;left:0;top:0;height:${chartH}px;width:34px"><div style="position:relative;height:100%">${yAxisHtml}</div></div>
+      <svg class="tl-g-svg" viewBox="0 0 ${VBW} ${SVH}" width="100%" height="${chartH}" preserveAspectRatio="none">${svgInner}</svg>
+      ${xLabelsHtml}
+    </div>`;
+    const legend = showPred ? `<div style="display:flex;gap:10px;align-items:center;font-size:10px;color:var(--is-text-muted)">
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:18px;height:2px;background:${HEX}"></span>Historical</span>
+      <span style="display:flex;align-items:center;gap:4px"><svg width="20" height="4" style="flex-shrink:0"><line x1="0" y1="2" x2="20" y2="2" stroke="${HEX}" stroke-width="2" stroke-dasharray="6 4"/></svg>Prediction</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:18px;height:6px;border-radius:2px;background:${SPRD_HEX};opacity:0.35"></span>Range</span>
+    </div>` : "";
+    const _STOR_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
+    const periodBtns = ["week", "month", "year", "all"].map(
+      (p) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-stor-period="${p}" style="padding:2px 7px;font-size:10px">${_STOR_P_LBLS[p]}</button>`
+    ).join("");
+    const predToggle = `<button data-tra-stor-pred style="display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;padding:0;font-size:10px;color:var(--is-text-muted)">
+      <span style="position:relative;display:inline-block;width:28px;height:15px;border-radius:8px;background:${showPred ? HEX : "rgba(255,255,255,0.15)"};transition:background 0.2s;flex-shrink:0">
+        <span style="position:absolute;top:2px;left:${showPred ? "15px" : "2px"};width:11px;height:11px;border-radius:50%;background:#fff;transition:left 0.2s"></span>
+      </span>
+      Predictions
+    </button>`;
+    const rangeStr = rangeLoTB && rangeHiTB ? ` \xB7 ${rangeLoTB}\u2013${rangeHiTB} TB` : "";
+    const confBadge = showPred ? `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${confColor}22;color:${confColor};border:1px solid ${confColor}44">${confidence} Confidence${rangeStr}</span>` : "";
+    const storCard = `<div class="tl-g-card" style="position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span class="tl-graph-title">${this._t("traStorageTrend")}</span>
+          ${confBadge}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${predToggle}
+          <div class="is-filter" style="gap:3px">${periodBtns}</div>
+        </div>
+      </div>
+      ${legend ? `<div style="margin-bottom:4px">${legend}</div>` : ""}
+      <div style="position:relative">
+        ${storSvg}
+        <div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+      </div>
+    </div>`;
+    if (isMob) {
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin:-10px -12px -16px">
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px 0">
+          ${tiles}${storCard}<div data-tra-stale-wrap style="margin-top:6px">${this._traBodyStaleSection()}</div>
+        </div>
+        <div data-tra-stale-pag style="flex-shrink:0;padding:4px 12px 8px">${this._traStalePagHtml()}</div>
+      </div>`;
+    }
+    return tiles + storCard + `<div data-tra-stale-wrap style="margin-top:6px">${this._traBodyStaleSection()}</div>`;
+  }
+  _traBodyStaleSection() {
+    const m = this._tracearrModal;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const items = m.staleItems || [];
+    const total = m.staleTotal || 0;
+    const sum = m.staleSummary || {};
+    const cat = m.staleCategory || "never_watched";
+    const page = m.stalePage || 0;
+    const pp = m.stalePageSize || 10;
+    const totalP = Math.max(1, Math.ceil(total / pp));
+    const nwCnt = sum.neverWatched?.count ?? 0;
+    const stCnt = sum.stale?.count ?? 0;
+    const fmtBytes = (b) => {
+      const n = Number(b) || 0;
+      if (n >= 1024 ** 4) return (n / 1024 ** 4).toFixed(2) + " TB";
+      if (n >= 1024 ** 3) return (n / 1024 ** 3).toFixed(1) + " GB";
+      if (n >= 1024 ** 2) return (n / 1024 ** 2).toFixed(0) + " MB";
+      return n + " B";
+    };
+    const fmtDate = (iso) => {
+      if (!iso) return "\u2014";
+      const d = new Date(iso);
+      const diff = Math.floor((Date.now() - d) / 864e5);
+      if (diff === 0) return this._t("traToday");
+      if (diff === 1) return this._t("traYesterday");
+      return this._t("traDaysAgo").replace("%d", diff);
+    };
+    const RES_COLOR = { "4k": "#BF5AF2", "1080p": "#007AFF", "720p": "#34C759", "480p": "#FF9500", "sd": "#FF9500" };
+    const mt = m.staleMediaType || "";
+    const _CHEV_DN_ST = `<svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.55;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const _iconSelSt = (id, icon, opts, isActive) => {
+      const bg = isActive ? "rgba(0,122,255,0.3)" : "var(--is-btn-bg)";
+      const bdr = isActive ? "rgba(0,122,255,0.6)" : "var(--is-btn-bdr,rgba(255,255,255,0.18))";
+      return `<div style="position:relative;height:28px;box-sizing:border-box;border:1px solid ${bdr};border-radius:6px;display:inline-flex;align-items:center;gap:2px;padding:0 5px;background:${bg};flex-shrink:0;cursor:pointer">${icon}${_CHEV_DN_ST}<select id="${id}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px">${opts}</select></div>`;
+    };
+    const _ALL_TYPES_ICO = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;flex-shrink:0"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
+    const _UNWATCHED_ICO = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;flex-shrink:0"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    const typeOpts = `<option value="" ${!mt ? "selected" : ""}>All types</option><option value="movie" ${mt === "movie" ? "selected" : ""}>Movies</option><option value="show" ${mt === "show" ? "selected" : ""}>TV Shows</option>`;
+    const typeSelEl = isMob ? _iconSelSt("tra-stale-type", _ALL_TYPES_ICO, typeOpts, !!mt) : `<select id="tra-stale-type" style="height:28px;box-sizing:border-box;padding:0 6px;font-size:12px;background:var(--is-btn-bg);color:var(--is-btn-clr);border:1px solid var(--is-btn-bdr);border-radius:6px;cursor:pointer;outline:none">${typeOpts}</select>`;
+    const staleMonthsEl = (() => {
+      if (cat !== "stale") return "";
+      const mo = m.staleMonths || 3;
+      const moOpts = `<option value="3" ${mo === 3 ? "selected" : ""}>Unwatched 3+ mo</option><option value="6" ${mo === 6 ? "selected" : ""}>Unwatched 6+ mo</option><option value="12" ${mo === 12 ? "selected" : ""}>Unwatched 1+ yr</option><option value="24" ${mo === 24 ? "selected" : ""}>Unwatched 2+ yr</option>`;
+      return isMob ? _iconSelSt("tra-stale-months", _UNWATCHED_ICO, moOpts, mo !== 3) : `<select id="tra-stale-months" style="height:28px;box-sizing:border-box;padding:0 6px;font-size:12px;background:var(--is-btn-bg);color:var(--is-btn-clr);border:1px solid var(--is-btn-bdr);border-radius:6px;cursor:pointer;outline:none">${moOpts}</select>`;
+    })();
+    const subTabs = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+      <div style="display:flex;gap:6px;align-items:center">
+        ${typeSelEl}
+        ${staleMonthsEl}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="tl-page-btn${cat === "never_watched" ? " active" : ""}" data-tra-stale-cat="never_watched">${this._t("traNeverWatched")} (${nwCnt.toLocaleString()})</button>
+        <button class="tl-page-btn${cat === "stale" ? " active" : ""}" data-tra-stale-cat="stale">${this._t("traStaleContent")} (${stCnt.toLocaleString()})</button>
+      </div>
+    </div>`;
+    let tableHtml = "";
+    if (!items.length) {
+      tableHtml = `<div style="text-align:center;color:var(--is-text-muted);padding:20px 0;font-size:12px">${this._t("tlNoData")}</div>`;
+    } else if (isMob) {
+      const rows = items.map((it) => {
+        const res = (it.resolution || "").toLowerCase();
+        const rColor = RES_COLOR[res] || "rgba(255,255,255,0.4)";
+        const icon = it.mediaType === "movie" ? "mdi:movie-outline" : "mdi:television-play";
+        return `<div class="tl-mob-card">
+          <div style="display:flex;align-items:center;gap:8px">
+            <ha-icon icon="${icon}" style="--mdc-icon-size:14px;color:var(--is-text-muted);flex-shrink:0"></ha-icon>
+            <div style="flex:1;min-width:0">
+              <div class="tl-mob-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.title}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${it.year})</span>` : ""}</div>
+              <div class="tl-mob-meta"><span>${it.serverName || ""}</span><span style="color:var(--is-text);font-weight:600">${it.resolution || "\u2014"}</span><span>${fmtDate(it.addedAt)}</span></div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:#007AFF;flex-shrink:0;white-space:nowrap">${fmtBytes(it.fileSize)}</span>
+          </div>
+        </div>`;
+      }).join("");
+      tableHtml = `<div>${rows}</div>`;
+    } else {
+      const sortCol = m.staleSort || "fileSize";
+      const sortDir = m.staleOrder || "desc";
+      const sth = (col, lbl, align) => {
+        const active = sortCol === col;
+        const arrow = active ? sortDir === "asc" ? " \u2191" : " \u2193" : "";
+        return `<th data-tra-stale-sort="${col}" style="cursor:pointer;user-select:none;white-space:nowrap${align ? ";text-align:" + align : ""};color:${active ? "var(--is-text)" : ""}">${lbl}${arrow}</th>`;
+      };
+      const hasStreaming = false;
+      const rows = items.map((it) => {
+        const res = (it.resolution || "").toLowerCase();
+        const rColor = RES_COLOR[res] || "rgba(255,255,255,0.4)";
+        const icon = it.mediaType === "movie" ? "mdi:movie-outline" : "mdi:television-play";
+        const plays = it.playCount ?? it.watchCount ?? null;
+        const lastP = it.lastPlayedAt ? fmtDate(it.lastPlayedAt) : null;
+        const streamCell = hasStreaming ? `<td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${plays != null ? plays + "\xD7" : ""}${lastP ? `<span style="margin-left:4px;opacity:0.7">${lastP}</span>` : ""}${plays == null && !lastP ? "\u2014" : ""}</td>` : "";
+        return `<tr>
+          <td style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <span style="display:flex;align-items:center;gap:4px;min-width:0">
+              <ha-icon icon="${icon}" style="--mdc-icon-size:13px;color:var(--is-text-muted);flex-shrink:0"></ha-icon>
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${it.year})</span>` : ""}</span>
+            </span></td>
+          <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${it.serverName || "\u2014"}</td>
+          <td style="font-size:11px;font-weight:600;color:var(--is-text);white-space:nowrap;text-align:right">${fmtBytes(it.fileSize)}</td>
+          <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${fmtDate(it.addedAt)}</td>
+          <td style="font-size:11px;font-weight:600;color:var(--is-text);white-space:nowrap">${it.resolution || "\u2014"}</td>
+          ${streamCell}
+        </tr>`;
+      }).join("");
+      tableHtml = `<div>
+        <table class="tl-hist-table" style="table-layout:fixed;width:100%">
+          <colgroup>
+            <col style="width:40%">
+            <col style="width:90px">
+            <col style="width:64px">
+            <col style="width:72px">
+            <col style="width:72px">
+            ${hasStreaming ? '<col style="width:90px">' : ""}
+          </colgroup>
+          <thead><tr>
+            <th>${this._t("traTitle")}</th>
+            <th>${this._t("traServer")}</th>
+            ${sth("fileSize", this._t("traSize"), "right")}
+            ${sth("addedAt", this._t("traAdded"))}
+            ${sth("resolution", this._t("traResolution"))}
+            ${hasStreaming ? sth("playCount", "Plays") : ""}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }
+    const pagination = this._tlMobPag("tra-stale-page", page, totalP, true);
+    if (isMob) return `${subTabs}${tableHtml}`;
+    return `${subTabs}${tableHtml}${pagination}`;
+  }
+  _traStalePagHtml() {
+    const m = this._tracearrModal;
+    const page = m.stalePage || 0;
+    const pp = m.stalePageSize || 3;
+    const totalP = Math.max(1, Math.ceil((m.staleTotal || 0) / pp));
+    return this._tlMobPag("tra-stale-page", page, totalP, true) || "";
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Watch tab (library analytics)
+  // Partial refresh: only MW data rows (tbody innerHTML replacement)
+  _traWatchTopRowsHtml() {
+    const m = this._tracearrModal;
+    if (!m) return "";
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const _topTab = m.watchTopTab || "movies";
+    const topItems = (_topTab === "movies" ? m.watchTopMovies : m.watchTopShows) || [];
+    const fmtH = (h) => {
+      if (h >= 24) return `${Math.floor(h / 24)}d ${Math.round(h % 24)}h`;
+      return h >= 1 ? `${h.toFixed(1)}h` : `${Math.round(h * 60)}m`;
+    };
+    if (!topItems.length) {
+      if (isMob) return `<div style="padding:16px;text-align:center;color:var(--is-text-muted);font-size:11px">${this._t("tlNoData")}</div>`;
+      const ROW_H = "height:40px";
+      return `<tr style="${ROW_H}"><td colspan="6" style="text-align:center;color:var(--is-text-muted);font-size:11px">${this._t("tlNoData")}</td></tr>`;
+    }
+    return topItems.slice(0, 5).map((it, i) => {
+      const plays = it.plays ?? it.totalPlays ?? it.playCount ?? it.viewCount ?? it.watchCount ?? it.totalEpisodeViews ?? 0;
+      const wh = it.watchHours ?? it.totalWatchHours ?? (it.totalWatchMs ? it.totalWatchMs / 36e5 : 0);
+      const views = it.viewers ?? it.uniqueViewers ?? it.viewerCount ?? 1;
+      const cr = it.completionRate ?? it.completion ?? it.avgCompletion ?? it.averageCompletion ?? it.episodeCompletionRate ?? it.avgEpisodeCompletion ?? it.avgCompletionRate ?? it.showCompletionRate ?? null;
+      const cmplt = cr !== null ? cr > 1 ? Math.round(cr) : Math.round(cr * 100) : null;
+      const title = it.title || it.showTitle || it.seriesTitle || "\u2014";
+      const year = it.year ? ` (${it.year})` : "";
+      if (isMob) {
+        const metaParts = [
+          plays ? `${plays}\xD7` : null,
+          wh > 0 ? fmtH(wh) : null,
+          views > 1 ? `${views} viewers` : null,
+          cmplt !== null ? `${cmplt}%` : null
+        ].filter(Boolean).join("  \xB7  ");
+        return `<div class="tl-mob-card" style="display:grid;grid-template-columns:16px 1fr;row-gap:3px;column-gap:6px;align-items:center">
+          <span style="font-size:9px;color:var(--is-text-muted);text-align:center;line-height:1">${i + 1}</span>
+          <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}<span style="font-weight:400;opacity:0.5;font-size:10px">${year}</span></span>
+          <span></span>
+          <span style="font-size:10px;color:var(--is-text-muted)">${metaParts}</span>
+        </div>`;
+      }
+      const cmpltCell = cmplt !== null ? `<div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">${this._traWatchPie(cmplt)}<span style="font-size:11px;color:var(--is-text-muted)">${cmplt}%</span></div>` : `<span style="font-size:10px;color:rgba(255,255,255,0.25)">\u2014</span>`;
+      const ROW_H = "height:40px";
+      return `<tr style="${ROW_H}">
+        <td style="width:22px;font-size:10px;color:var(--is-text-muted);text-align:center">${i + 1}</td>
+        <td style="font-size:11px;font-weight:600;color:var(--is-text);max-width:140px"><div style="display:flex;align-items:center;gap:5px;overflow:hidden">${this._tlMediaIcon(_topTab === "movies" ? "movie" : "episode", 11)}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}${it.year ? ` <span style="color:var(--is-text-muted);font-weight:400">(${it.year})</span>` : ""}</span></div></td>
+        <td style="font-size:11px;font-weight:600;color:var(--is-text);text-align:right">${plays}</td>
+        <td style="font-size:10px;color:var(--is-text-muted);text-align:right">${wh > 0 ? fmtH(wh) : "\u2014"}</td>
+        <td style="font-size:10px;color:var(--is-text-muted);text-align:right">${views}</td>
+        <td style="text-align:right">${cmpltCell}</td>
+      </tr>`;
+    }).join("");
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyWatch() {
+    const m = this._tracearrModal;
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const pat = m.watchPatterns || {};
+    const stat = m.watchStatus || {};
+    const comp = m.watchCompletion || {};
+    const topMovies = m.watchTopMovies || [];
+    const topShows = m.watchTopShows || [];
+    const fmtHours = (h) => {
+      const hh = Math.floor(h);
+      const mm = Math.round((h - hh) * 60);
+      return hh > 0 ? mm > 0 ? `${hh}h ${mm}m` : `${hh}h` : `${mm}m`;
+    };
+    const fmtMs = (ms) => fmtHours(ms / 36e5);
+    const pct = (a, b) => b > 0 ? Math.round(a / b * 100) : 0;
+    const peakTimes = pat.peakTimes || {};
+    const hourDist = peakTimes.hourlyDistribution || [];
+    const hourMap = new Map(hourDist.map((r) => [r.hour, r.watchCount || 0]));
+    const hourVals = Array.from({ length: 24 }, (_, h) => hourMap.get(h) || 0);
+    const peakHour = peakTimes.peakHour ?? hourVals.indexOf(Math.max(...hourVals));
+    const peakHourLabel = `${String(peakHour).padStart(2, "0")}:00`;
+    const peakDayNum = peakTimes.peakDayOfWeek ?? null;
+    const peakDay = peakDayNum !== null ? `(${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][peakDayNum] || ""})` : "";
+    const seasonal = pat.seasonalTrends || {};
+    const monthlyArr = seasonal.monthlyTrends || [];
+    const busiestMonth = seasonal.busiestMonth || "";
+    const quietestMonth = seasonal.quietestMonth || "";
+    const totalWatchMs = monthlyArr.reduce((s, r) => s + (r.totalWatchMs || 0), 0);
+    const completedCount = (comp.movie?.summary?.completedCount ?? 0) + (comp.episode?.summary?.completedCount ?? 0);
+    const totalMovies = comp.movie?.summary?.totalItems ?? 0;
+    const watchedMovies = (comp.movie?.summary?.completedCount ?? 0) + (comp.movie?.summary?.inProgressCount ?? 0);
+    const totalShows = comp.episode?.summary?.totalItems ?? 0;
+    const watchedShows = (comp.episode?.summary?.completedCount ?? 0) + (comp.episode?.summary?.inProgressCount ?? 0);
+    const totalItems = totalMovies + totalShows || (stat.itemCount ?? 0);
+    const watchedItems = watchedMovies + watchedShows || (m.watchedTotal ?? 0);
+    const watchedPct = pct(watchedItems, totalItems);
+    const binge = pat.bingeShows || [];
+    m.watchBinge = binge;
+    const bingeRatePct = Math.round(pat.summary?.bingeSessionsPct ?? 0);
+    const _mdiSvg = (path, sz) => {
+      const s = sz || 18;
+      return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" style="flex-shrink:0;color:var(--is-text-muted)" fill="currentColor"><path d="${path}"/></svg>`;
+    };
+    const _mdiEye = "M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,19.5 12,4.5M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z";
+    const _mdiClock = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z";
+    const _mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
+    const _mdiTrend = "M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z";
+    const statCard = (iconSvg, val, sub) => isMob ? `<div class="tl-g-card" style="display:flex;align-items:center;gap:5px;padding:5px 7px">
+          ${iconSvg.replace(/width="\d+" height="\d+"/, 'width="13" height="13"')}
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--is-text);line-height:1">${val}</div>
+            <div style="font-size:8px;color:var(--is-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>
+          </div>
+        </div>` : `<div class="tl-g-card" style="display:flex;align-items:center;gap:10px;padding:10px 12px">
+          ${iconSvg}
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--is-text);line-height:1">${val}</div>
+            <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${sub}</div>
+          </div>
+        </div>`;
+    const statsRow = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "4px" : "6px"};margin-bottom:8px">
+      ${statCard(_mdiSvg(_mdiEye), watchedItems ? `${watchedItems}/${totalItems}` : totalItems ? `\u2014/${totalItems}` : "\u2014", isMob ? `${watchedPct}%` : `${this._t("traWatchedOf")} (${watchedPct}%)`)}
+      ${statCard(_mdiSvg(_mdiClock), totalWatchMs ? fmtMs(totalWatchMs) : "\u2014", isMob ? "Watch Time" : this._t("traWatchTime"))}
+      ${statCard(_mdiSvg(_mdiCheck), completedCount || "\u2014", isMob ? "Completed" : this._t("traCompletion"))}
+      ${statCard(_mdiSvg(_mdiTrend), hourVals.some((v) => v > 0) ? `${peakHourLabel} ${peakDay}` : "\u2014", isMob ? "Peak Hour" : this._t("traPeakHour"))}
+    </div>`;
+    const _topTab = m.watchTopTab || "movies";
+    const _period = m.watchPeriod || "30d";
+    const _periodMap = { "7d": "7d", "30d": "30d", "90d": "90d", "all": "all" };
+    const _periodLbl = isMob ? { "7d": "W", "30d": "M", "90d": "3M", "all": "All" } : { "7d": "Week", "30d": "Month", "90d": "Quarter", "all": "All" };
+    const _topItems = _topTab === "movies" ? topMovies : topShows;
+    const _periodBtns = Object.keys(_periodMap).map(
+      (p) => `<button class="is-f-btn${_period === p ? " active" : ""}" data-tra-w-period="${p}" style="padding:2px 6px;font-size:10px">${_periodLbl[p]}</button>`
+    ).join("");
+    const _topTabBtns = [["movies", this._t("traMovies")], ["shows", "TV"]].map(
+      ([v, l]) => `<button class="is-f-btn${_topTab === v ? " active" : ""}" data-tra-w-top="${v}" style="padding:2px 6px;font-size:10px">${l}</button>`
+    ).join("");
+    const _CARD_HDR = "min-height:42px;display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:nowrap;flex-shrink:0";
+    const ROW_H = "height:40px";
+    const mostWatched = isMob ? `<div class="tl-g-card" style="display:flex;flex-direction:column">
+          <div style="${_CARD_HDR}">
+            <span class="tl-graph-title">${this._t("traMostWatched")}</span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0">
+              <div class="is-filter" style="gap:2px">${_topTabBtns}</div>
+              <span style="width:1px;height:12px;background:var(--is-btn-bdr,rgba(255,255,255,0.15));flex-shrink:0"></span>
+              <div class="is-filter" style="gap:2px">${_periodBtns}</div>
+            </div>
+          </div>
+          <div data-tra-watch-top style="display:flex;flex-direction:column;gap:6px">${this._traWatchTopRowsHtml()}</div>
+        </div>` : `<div class="tl-g-card" style="height:100%;box-sizing:border-box;display:flex;flex-direction:column">
+          <div style="${_CARD_HDR}">
+            <span class="tl-graph-title">${this._t("traMostWatched")}</span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0">
+              <div class="is-filter" style="gap:2px">${_topTabBtns}</div>
+              <span style="width:1px;height:12px;background:var(--is-btn-bdr,rgba(255,255,255,0.15));flex-shrink:0"></span>
+              <div class="is-filter" style="gap:2px">${_periodBtns}</div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;flex:1">
+            <table class="tl-hist-table" style="font-size:11px;width:100%">
+              <thead><tr style="${ROW_H}">
+                <th style="width:22px">#</th>
+                <th>${this._t("traTitle")}</th>
+                <th style="text-align:right">${this._t("traPlays")}</th>
+                <th style="text-align:right">${this._t("traWatchHours")}</th>
+                <th style="text-align:right">${this._t("traViewers")}</th>
+                <th style="text-align:right">${this._t("traCompletion")}</th>
+              </tr></thead>
+              <tbody data-tra-watch-top>${this._traWatchTopRowsHtml()}</tbody>
+            </table>
+          </div>
+        </div>`;
+    const scoreTag2 = (score) => {
+      const lbl = score >= 80 ? "highly addictive" : score >= 60 ? "addictive" : "bingeable";
+      const [bg, txt] = lbl.includes("highly") ? ["rgba(255,59,48,0.18)", "#FF3B30"] : lbl.includes("addict") ? ["rgba(255,149,0,0.18)", "#FF9500"] : ["rgba(52,199,89,0.15)", "#34C759"];
+      const dl = lbl.includes("highly") ? this._t("traHighlyAddictive") : lbl.includes("addict") ? this._t("traAddictive") : this._t("traBingeable");
+      return `<span style="font-size:9px;font-weight:700;color:${txt};background:${bg};border-radius:4px;padding:1px 5px;white-space:nowrap">${dl}</span>`;
+    };
+    const bingeRows = binge.slice(0, 5).map((b) => {
+      const show = b.showTitle ?? b.show ?? b.title ?? "\u2014";
+      const eps = b.totalEpisodeWatches ?? b.episodes ?? "\u2014";
+      const cons = b.consecutiveEpisodes ?? b.consecutive ?? "\u2014";
+      const cp = b.consecutivePct ?? null;
+      const bS = b.bingeScore ?? b.score ?? "\u2014";
+      const maxP = b.maxEpisodesInOneDay ?? b.maxPerDay ?? "\u2014";
+      if (isMob) {
+        return `<div class="tl-mob-card" style="display:flex;flex-direction:column;gap:3px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${show}</span>
+            ${typeof bS === "number" ? scoreTag2(bS) : ""}
+          </div>
+          <div style="font-size:10px;color:var(--is-text-muted);display:flex;gap:8px;flex-wrap:wrap">
+            <span>${eps} eps</span>
+            <span>${cons}${cp !== null ? ` (${Math.round(cp)}%)` : ""} consec</span>
+            <span>max ${maxP}/day</span>
+          </div>
+        </div>`;
+      }
+      return `<tr style="${ROW_H}">
+        <td style="font-size:11px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px">${show}</td>
+        <td style="font-size:11px;color:var(--is-text-muted);text-align:center">${eps}</td>
+        <td style="font-size:11px;color:var(--is-text-muted);text-align:center">${cons}${cp !== null ? ` <span style="font-size:9px">(${Math.round(cp)}%)</span>` : ""}</td>
+        <td style="text-align:center">
+          <span style="font-size:12px;font-weight:800;color:var(--is-text)">${bS}</span>
+          ${typeof bS === "number" ? scoreTag2(bS) : ""}
+        </td>
+        <td style="font-size:11px;color:var(--is-text-muted);text-align:center">${maxP}</td>
+      </tr>`;
+    }).join("") || (isMob ? `<div style="padding:16px;text-align:center;color:var(--is-text-muted);font-size:11px">${this._t("tlNoData")}</div>` : `<tr style="${ROW_H}"><td colspan="5" style="text-align:center;color:var(--is-text-muted);font-size:11px">${this._t("tlNoData")}</td></tr>`);
+    const _bingeHdr = `<div style="${_CARD_HDR}">
+        <div>
+          <span class="tl-graph-title">${this._t("traBingeHighlights")}</span>
+          <div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">Shows with the most intensive viewing patterns</div>
+        </div>
+        ${bingeRatePct > 0 ? `<span style="margin-left:auto;font-size:13px;font-weight:800;color:var(--is-text);flex-shrink:0">${bingeRatePct}% <span style="font-size:10px;color:var(--is-text-muted);font-weight:400">binge sessions</span></span>` : ""}
+      </div>`;
+    const bingeCard = isMob ? `<div class="tl-g-card" style="display:flex;flex-direction:column">
+          ${_bingeHdr}
+          <div style="display:flex;flex-direction:column;gap:6px">${bingeRows}</div>
+        </div>` : `<div class="tl-g-card" style="height:100%;box-sizing:border-box;display:flex;flex-direction:column">
+          ${_bingeHdr}
+          <div style="overflow-x:auto;flex:1">
+            <table class="tl-hist-table" style="font-size:11px;width:100%">
+              <thead><tr style="${ROW_H}">
+                <th>Show</th>
+                <th style="text-align:center">Eps</th>
+                <th style="text-align:center">${this._t("traConsecutive")}</th>
+                <th style="text-align:center">${this._t("traBingeScore")}</th>
+                <th style="text-align:center">${this._t("traMaxDay")}</th>
+              </tr></thead>
+              <tbody>${bingeRows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    const _wHodTauFmt = (cats, series) => ({ response: { data: { categories: cats, series } } });
+    const wHodRaw = _wHodTauFmt(
+      Array.from({ length: 24 }, (_, h) => String(h)),
+      [{ name: "Plays", data: hourVals }]
+    );
+    const wHodSvg = this._tlGBarSvg(wHodRaw, { isMob, height: isMob ? 70 : 80, chartId: "tra-whd", xLabel: (_, i) => i % 4 === 0 ? `${String(i).padStart(2, "0")}` : "" });
+    const watchDonut = (label, watched, total, color) => {
+      const remaining = Math.max(0, total - watched);
+      const segs = [
+        { label: this._t("traWatchedOf"), value: watched, color },
+        { label: "Remaining", value: remaining, color: "rgba(255,255,255,0.12)" }
+      ].filter((s) => s.value > 0);
+      const ds = isMob ? 72 : 104;
+      const pct2 = total ? Math.round(watched / total * 100) : 0;
+      const legendItems = [
+        { label: this._t("traWatchedOf"), value: watched, color, pct: pct2 },
+        { label: "Remaining", value: remaining, color: "rgba(255,255,255,0.25)", pct: 100 - pct2 }
+      ].filter((s) => s.value > 0).map(
+        (s) => `<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+          <span style="width:7px;height:7px;border-radius:2px;background:${s.color};flex-shrink:0"></span>
+          <span style="font-size:10px;color:var(--is-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.label}</span>
+          <span style="font-size:10px;font-weight:700;color:var(--is-text-muted)">${s.pct}%</span>
+        </div>`
+      ).join("");
+      if (!total) return `<div class="tl-g-card" style="flex:1;box-sizing:border-box;display:flex;flex-direction:column"><span class="tl-graph-title">${label}</span><div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--is-text-muted)">No data</div></div>`;
+      return `<div class="tl-g-card" style="flex:1;box-sizing:border-box;display:flex;flex-direction:column">
+        <div style="margin-bottom:8px;flex-shrink:0"><span class="tl-graph-title">${label}</span></div>
+        <div style="flex:1;display:flex;align-items:center;gap:12px">
+          ${this._traDonutSvg(segs, ds)}
+          <div style="flex:1;min-width:0">${legendItems}</div>
+        </div>
+      </div>`;
+    };
+    const moviesDonutCard = watchDonut(this._t("traMovies"), watchedMovies, totalMovies, "#007AFF");
+    const showsDonutCard = watchDonut("TV Shows", watchedShows, totalShows, "#BF5AF2");
+    const _tipEl = `<div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>`;
+    const _badge = (txt, color, bg) => `<span style="font-size:9px;font-weight:700;color:${color};background:${bg};border-radius:5px;padding:2px 7px">${txt}</span>`;
+    const peakBadge = hourVals.some((v) => v > 0) ? _badge(`Peak: ${peakHourLabel}`, "var(--is-text)", "rgba(255,255,255,0.08)") : "";
+    const viewingHoursCard = `<div class="tl-g-card" style="flex:1;box-sizing:border-box;display:flex;flex-direction:column;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0">
+        <span class="tl-graph-title">${this._t("traViewingHours")}</span>
+        ${peakBadge}
+      </div>
+      <div style="flex:1;position:relative">${wHodSvg}${_tipEl}</div>
+    </div>`;
+    const mArr = monthlyArr.slice(-12);
+    const mN = mArr.length;
+    const _mFmt = (cat) => {
+      const [y, mo] = (cat || "").split("-");
+      if (!y || !mo) return cat;
+      return `${mo.padStart(2, "0")}-${y.slice(2)}`;
+    };
+    const mVals = mArr.map((r) => r.watchCount ?? r.count ?? r.plays ?? 0);
+    const mMax = Math.max(1, ...mVals);
+    const _MC = "#007AFF";
+    const _mEsc = (v) => String(v).replace(/"/g, "&quot;");
+    const mSvg = (() => {
+      if (mN < 2) return "";
+      const VBW = 1e3, SVH = 200, PL = 12, PR = 6, PT = 18, PB = 6;
+      const cW = VBW - PL - PR, cH = SVH - PT - PB, baseY = PT + cH;
+      const xOf = (i) => PL + i / (mN - 1) * cW;
+      const yOf = (v) => PT + (1 - v / mMax) * cH;
+      const pts = mVals.map((v, i) => ({ x: xOf(i), y: yOf(v), v, cat: _mFmt(mArr[i]?.month || "") }));
+      const defs = `<defs>
+        <linearGradient id="tra-mt-g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${_MC}" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="${_MC}" stop-opacity="0"/>
+        </linearGradient>
+        <mask id="tra-mt-mask" maskUnits="userSpaceOnUse">
+          <rect x="0" y="0" width="${VBW}" height="${SVH}" fill="white"/>
+          ${pts.filter((p) => p.v > 0).map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="black"/>`).join("")}
+        </mask>
+      </defs>`;
+      let inner = defs;
+      inner += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tra-mt-g);animation:fade-in 0.8s ease-out both"/>`;
+      inner += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${_MC}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line" mask="url(#tra-mt-mask)"/>`;
+      pts.forEach((p) => {
+        if (!p.v) return;
+        inner += `<circle class="tl-g-dot" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" style="fill:transparent;stroke:${_MC};stroke-width:2.5;cursor:pointer" vector-effect="non-scaling-stroke" data-tl-g-dot="${_mEsc(JSON.stringify({ lbl: p.cat, name: "Watches", val: p.v, hex: _MC }))}"/>`;
+      });
+      const slotW = cW / mN;
+      pts.forEach((p, i) => {
+        const rx = i === 0 ? PL : p.x - slotW / 2;
+        const rw = i === mN - 1 ? VBW - PR - rx : slotW;
+        const td = _mEsc(JSON.stringify({ lbl: p.cat, tot: p.v, vals: [{ n: "Watches", v: p.v, fv: null, hex: _MC }] }));
+        inner += `<g class="tl-g-lcol" data-tl-g-col="${td}" style="cursor:pointer"><rect class="tl-g-lhlt" x="${rx.toFixed(1)}" y="${PT}" width="${rw.toFixed(1)}" height="${cH}" style="fill:var(--tl-col-hlt);opacity:0"/><rect x="${rx.toFixed(1)}" y="${PT}" width="${rw.toFixed(1)}" height="${cH}" fill="transparent"/></g>`;
+      });
+      const svgEl = this._tlGSvgEl(inner, isMob ? 70 : 80);
+      const xLbls = `<div style="position:relative;height:16px;margin-top:2px">
+        <span style="position:absolute;left:0;font-size:9px;color:var(--is-text-muted)">${pts[0].cat}</span>
+        <span style="position:absolute;right:0;font-size:9px;color:var(--is-text-muted)">${pts[mN - 1].cat}</span>
+      </div>`;
+      return this._tlGWrap(svgEl, xLbls, "");
+    })();
+    const mTags = `<div style="display:flex;gap:4px;flex-wrap:wrap">
+      ${busiestMonth ? _badge(`${this._t("traBusiest")}: ${busiestMonth}`, "#34C759", "rgba(52,199,89,0.15)") : ""}
+      ${quietestMonth && quietestMonth !== busiestMonth ? _badge(`${this._t("traQuietest")}: ${quietestMonth}`, "var(--is-text)", "rgba(255,255,255,0.08)") : ""}
+    </div>`;
+    const monthlyCard = `<div class="tl-g-card" style="flex:1;box-sizing:border-box;display:flex;flex-direction:column;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:4px;flex-wrap:wrap;flex-shrink:0">
+        <span class="tl-graph-title">${this._t("traMonthlyTrends")}</span>
+        ${mTags}
+      </div>
+      ${mN >= 2 ? `<div style="flex:1;position:relative">${mSvg}${_tipEl}</div>` : `<div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--is-text-muted)">No data</div>`}
+    </div>`;
+    if (isMob) {
+      return `${statsRow}
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${mostWatched}${bingeCard}${moviesDonutCard}${showsDonutCard}${viewingHoursCard}${monthlyCard}
+        </div>`;
+    }
+    return `${statsRow}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;align-items:stretch">
+        <div style="grid-column:span 2;display:flex;flex-direction:column">${mostWatched}</div>
+        <div style="grid-column:span 2;display:flex;flex-direction:column">${bingeCard}</div>
+        <div style="display:flex;flex-direction:column">${moviesDonutCard}</div>
+        <div style="display:flex;flex-direction:column">${showsDonutCard}</div>
+        <div style="display:flex;flex-direction:column">${viewingHoursCard}</div>
+        <div style="display:flex;flex-direction:column">${monthlyCard}</div>
+      </div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Device Compatibility tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyDevices() {
+    const m = this._tracearrModal;
+    if (!m) return "";
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const sum = m.devicesData?.summary || {};
+    const dh = m.devicesHealth?.data || [];
+    const dhot = m.devicesHotspots?.data || [];
+    const dmat = m.devicesMatrix || {};
+    const dtu = m.devicesUsers?.data || [];
+    const PAGE = 6;
+    const period = m.devicesPeriod || "month";
+    const _pLbl = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
+    const periodBtns = Object.entries(_pLbl).map(
+      ([p, lbl]) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-dev-period="${p}">${lbl}</button>`
+    ).join("");
+    const hdr = `<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:${isMob ? 8 : 10}px">
+      <div class="is-filter">${periodBtns}</div>
+    </div>`;
+    const _dIco = (path) => `<svg viewBox="0 0 24 24" width="18" height="18" style="flex-shrink:0;color:var(--is-text-muted)" fill="currentColor"><path d="${path}"/></svg>`;
+    const _dPlay = "M8,5.14V19.14L19,12.14L8,5.14Z";
+    const _dScreen = "M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z";
+    const _dCodec = "M14.6,16.6L19.2,12L14.6,7.4L16,6L22,12L16,18L14.6,16.6M9.4,16.6L4.8,12L9.4,7.4L8,6L2,12L8,18L9.4,16.6Z";
+    const _dCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
+    const tile = (iconSvg, lbl, val) => isMob ? `<div class="tl-g-card" style="display:flex;align-items:center;gap:5px;padding:5px 7px">
+          ${iconSvg.replace('width="18" height="18"', 'width="13" height="13"')}
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--is-text);line-height:1">${val}</div>
+            <div style="font-size:8px;color:var(--is-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lbl}</div>
+          </div>
+        </div>` : `<div class="tl-g-card" style="display:flex;align-items:center;gap:9px;padding:10px 12px">
+          ${iconSvg}
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--is-text);line-height:1">${val}</div>
+            <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${lbl}</div>
+          </div>
+        </div>`;
+    const totalSess = sum.totalSessions ?? 0;
+    const dpRaw = sum.directPlayPct ?? sum.directPlayRate ?? null;
+    const dpN_s = dpRaw != null ? Math.round(Number(dpRaw)) : null;
+    const dpFmt = dpN_s != null ? `${dpN_s}%` : "\u2014";
+    const uDevices = sum.uniqueDevices ?? dh.length;
+    const uCodecs = sum.uniqueCodecs ?? 0;
+    const statsRow = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "4px" : "6px"};margin-bottom:8px">
+      ${tile(_dIco(_dPlay), isMob ? "Sessions" : "Total Sessions", totalSess)}
+      ${tile(_dIco(_dCheck), isMob ? "Direct Play" : "Direct Play Rate", dpFmt)}
+      ${tile(_dIco(_dScreen), isMob ? "Devices" : "Unique Devices", uDevices)}
+      ${tile(_dIco(_dCodec), isMob ? "Codecs" : "Unique Codecs", uCodecs)}
+    </div>`;
+    const _pag = (view, page, total) => {
+      const tot = Math.ceil(total / PAGE);
+      if (tot <= 1) return "";
+      const pd = page <= 0 ? "opacity:0.3;pointer-events:none" : "";
+      const nd = page >= tot - 1 ? "opacity:0.3;pointer-events:none" : "";
+      return `<div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+        <button class="tl-page-btn" data-tra-dev-page="${view}-prev" style="padding:2px 5px;font-size:13px;${pd}">\u2039</button>
+        <span style="font-size:10px;color:var(--is-text-muted);white-space:nowrap">${page + 1}/${tot}</span>
+        <button class="tl-page-btn" data-tra-dev-page="${view}-next" style="padding:2px 5px;font-size:13px;${nd}">\u203A</button>
+      </div>`;
+    };
+    const _lv = m.devicesLeftView || "health";
+    const _hP = m.devHealthPage || 0;
+    const _mP = m.devMatrixPage || 0;
+    const _dpC = (p) => p >= 80 ? "#34C759" : p >= 50 ? "#FF9500" : "#FF3B30";
+    const dhPage = dh.slice(_hP * PAGE, (_hP + 1) * PAGE);
+    const healthRows = dhPage.map((d) => {
+      const name = d.device || d.name || d.deviceType || "?";
+      const sess = d.sessions ?? d.totalSessions ?? d.count ?? 0;
+      const pct = Math.round(Number(d.directPlayPct ?? d.directPlayRate ?? d.directPlay ?? 0));
+      const col = _dpC(pct);
+      return `<div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="font-size:11px;font-weight:600;color:var(--is-text)">${name}</span>
+          <span style="font-size:10px;color:var(--is-text-muted)">${sess} sessions&nbsp;<span style="font-weight:700;color:${col}">${pct}%</span></span>
+        </div>
+        <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:3px"></div>
+        </div>
+      </div>`;
+    }).join("") || `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:14px">${this._t("tlNoData")}</div>`;
+    const matCodecs = dmat.codecs || [];
+    const matData = dmat.devices || [];
+    const matDataPage = matData.slice(_mP * PAGE, (_mP + 1) * PAGE);
+    const _mc = (p) => p >= 80 ? "rgba(52,199,89,0.18)" : p >= 50 ? "rgba(255,149,0,0.15)" : "rgba(255,59,48,0.15)";
+    const _mt = (p) => p >= 80 ? "#34C759" : p >= 50 ? "#FF9500" : "#FF3B30";
+    let matInner = `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:12px">${this._t("tlNoData")}</div>`;
+    if (matCodecs.length && matDataPage.length) {
+      const cW = `${Math.max(12, Math.floor(75 / matCodecs.length))}%`;
+      const thCells = matCodecs.map(
+        (c) => `<th style="text-align:center;font-size:10px;font-weight:600;color:var(--is-text-muted);padding:5px 8px;width:${cW}">${c}</th>`
+      ).join("");
+      const tRows = matDataPage.map((d) => {
+        const dName = d.device || d.name || "?";
+        const dSess = d.sessions ?? d.totalSessions ?? "";
+        const dC = d.codecs || {};
+        const cells = matCodecs.map((codec) => {
+          const cell = dC[codec];
+          if (!cell) return `<td style="text-align:center;color:rgba(255,255,255,0.2);font-size:10px;padding:5px 8px">\u2014</td>`;
+          const p = Math.round(Number(cell.directPct ?? cell.directPlayRate ?? cell.rate ?? 0));
+          const s = cell.sessions ?? cell.count ?? 0;
+          return `<td style="text-align:center;background:${_mc(p)};padding:5px 8px">
+            <div style="font-size:11px;font-weight:700;color:${_mt(p)}">${p}%</div>
+            <div style="font-size:9px;color:var(--is-text-muted)">${s}</div>
+          </td>`;
+        }).join("");
+        return `<tr><td style="font-size:11px;font-weight:600;color:var(--is-text);padding:5px 8px">
+          ${dName}${dSess ? `<div style="font-size:9px;color:var(--is-text-muted)">${dSess} sessions</div>` : ""}
+        </td>${cells}</tr>`;
+      }).join("");
+      matInner = `<table class="tl-hist-table" style="width:100%">
+        <thead><tr>
+          <th style="text-align:left;font-size:10px;font-weight:600;color:var(--is-text-muted);padding:5px 8px;width:20%">Device</th>
+          ${thCells}
+        </tr></thead>
+        <tbody>${tRows}</tbody>
+      </table>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:9px;font-weight:700;color:#34C759;background:rgba(52,199,89,0.15);border-radius:4px;padding:2px 7px">\u226580% Direct</span>
+        <span style="font-size:9px;font-weight:700;color:#FF9500;background:rgba(255,149,0,0.12);border-radius:4px;padding:2px 7px">50-79%</span>
+        <span style="font-size:9px;font-weight:700;color:#FF3B30;background:rgba(255,59,48,0.12);border-radius:4px;padding:2px 7px">&lt;50%</span>
+      </div>`;
+    }
+    const leftCard = `<div class="tl-g-card" style="flex:1;min-height:0;min-width:0;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;gap:6px">
+        <span class="tl-graph-title" style="font-size:11px">${_lv === "health" ? "Device Health" : "Compatibility Matrix"}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <div class="is-filter" style="gap:2px">
+            <button class="is-f-btn${_lv === "health" ? " active" : ""}" data-tra-dev-left-tab="health" style="font-size:10px;padding:2px 7px">Health</button>
+            <button class="is-f-btn${_lv === "matrix" ? " active" : ""}" data-tra-dev-left-tab="matrix" style="font-size:10px;padding:2px 7px">Matrix</button>
+          </div>
+          ${_lv === "health" ? _pag("health", _hP, dh.length) : _pag("matrix", _mP, matData.length)}
+        </div>
+      </div>
+      <div data-tra-dev-left-panel="health" style="flex:1;overflow-y:auto;${_lv === "health" ? "" : "display:none"}">${healthRows}</div>
+      <div data-tra-dev-left-panel="matrix" style="flex:1;overflow-y:auto;${_lv === "matrix" ? "" : "display:none"}">${matInner}</div>
+    </div>`;
+    const _rv = m.devicesRightView || "hotspots";
+    const _hoP = m.devHotspotsPage || 0;
+    const _uP = m.devUsersPage || 0;
+    const dhotPage = dhot.slice(_hoP * PAGE, (_hoP + 1) * PAGE);
+    const _noData3 = `<tr><td colspan="3" style="text-align:center;color:var(--is-text-muted);font-size:11px;padding:12px">${this._t("tlNoData")}</td></tr>`;
+    const hotRows = dhotPage.map((h) => {
+      const dev = h.device || h.deviceType || "?";
+      const vid = h.videoCodec || h.codec || "";
+      const aud = h.audioCodec || "";
+      const cod = [vid, aud].filter(Boolean).join(" + ") || h.codecCombination || "?";
+      const tr = h.transcodeCount ?? h.transcodes ?? h.count ?? 0;
+      const pct = Math.round(Number(h.pctOfTotalTranscodes ?? h.percentage ?? h.percent ?? 0));
+      const pc = pct >= 50 ? "#FF3B30" : "#FF9500";
+      const pb = pct >= 50 ? "rgba(255,59,48,0.12)" : "rgba(255,149,0,0.1)";
+      return `<tr>
+        <td style="padding:5px 0;font-size:11px;color:var(--is-text)">
+          <div style="font-weight:600">${dev}</div>
+          <div style="font-size:10px;color:var(--is-text-muted)">${cod}</div>
+        </td>
+        <td style="padding:5px 6px;font-size:11px;font-weight:700;color:var(--is-text);text-align:right">${tr}</td>
+        <td style="padding:5px 0 5px 6px;text-align:right"><span style="font-size:10px;font-weight:700;color:${pc};background:${pb};border-radius:5px;padding:2px 7px">${pct}%</span></td>
+      </tr>`;
+    }).join("") || _noData3;
+    const hotMobCards = dhotPage.map((h) => {
+      const dev = h.device || h.deviceType || "?";
+      const vid = h.videoCodec || h.codec || "";
+      const aud = h.audioCodec || "";
+      const cod = [vid, aud].filter(Boolean).join(" + ") || h.codecCombination || "?";
+      const tr = h.transcodeCount ?? h.transcodes ?? h.count ?? 0;
+      const pct = Math.round(Number(h.pctOfTotalTranscodes ?? h.percentage ?? h.percent ?? 0));
+      const pc = pct >= 50 ? "#FF3B30" : "#FF9500";
+      const pb = pct >= 50 ? "rgba(255,59,48,0.12)" : "rgba(255,149,0,0.1)";
+      return `<div class="tl-mob-card" style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center">
+        <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${dev}</span>
+        <span style="font-size:10px;font-weight:700;color:${pc};background:${pb};border-radius:5px;padding:2px 7px;white-space:nowrap">${pct}%</span>
+        <span style="font-size:10px;color:var(--is-text-muted)">${cod}</span>
+        <span style="font-size:10px;color:var(--is-text-muted);text-align:right">${tr} transcodes</span>
+      </div>`;
+    }).join("") || `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:14px">${this._t("tlNoData")}</div>`;
+    const dtuPage = dtu.slice(_uP * PAGE, (_uP + 1) * PAGE);
+    const tuRows = dtuPage.map((u) => {
+      const name = u.identityName || u.username || u.displayName || "?";
+      const av = u.avatar || u.avatarUrl || null;
+      const sess = u.totalSessions ?? u.sessions ?? 0;
+      const dpN = Math.round(Number(u.directPlayPct ?? u.directPlayRate ?? 0));
+      const tr = u.transcodeCount ?? u.transcodes ?? 0;
+      const pctN = Math.round(Number(u.pctOfTotalTranscodes ?? u.percentage ?? (sess ? tr / sess * 100 : 0)));
+      const dc2 = dpN >= 80 ? "#34C759" : dpN >= 50 ? "#FF9500" : "#FF3B30";
+      const db2 = dpN >= 80 ? "rgba(52,199,89,0.12)" : dpN >= 50 ? "rgba(255,149,0,0.1)" : "rgba(255,59,48,0.12)";
+      const avEl = av ? `<img src="${av}" width="20" height="20" style="border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--is-text-muted)">${(name[0] || "?").toUpperCase()}</div>`;
+      return `<tr>
+        <td style="padding:6px 0;font-size:11px;font-weight:600;color:var(--is-text)">
+          <div style="display:flex;align-items:center;gap:6px">${avEl}<span>${name}</span></div>
+        </td>
+        <td style="padding:6px 6px;font-size:11px;text-align:right;color:var(--is-text)">${sess}</td>
+        <td style="padding:6px 6px;text-align:right"><span style="font-size:10px;font-weight:700;color:${dc2};background:${db2};border-radius:5px;padding:2px 7px">${dpN}%</span></td>
+        <td style="padding:6px 6px;font-size:11px;text-align:right;color:var(--is-text)">${tr}</td>
+        <td style="padding:6px 0;text-align:right"><span style="font-size:10px;font-weight:700;color:#FF3B30;background:rgba(255,59,48,0.1);border-radius:5px;padding:2px 7px">${pctN}%</span></td>
+      </tr>`;
+    }).join("");
+    const usersMobCards = dtuPage.map((u) => {
+      const name = u.identityName || u.username || u.displayName || "?";
+      const av = u.avatar || u.avatarUrl || null;
+      const sess = u.totalSessions ?? u.sessions ?? 0;
+      const dpN = Math.round(Number(u.directPlayPct ?? u.directPlayRate ?? 0));
+      const tr = u.transcodeCount ?? u.transcodes ?? 0;
+      const pctN = Math.round(Number(u.pctOfTotalTranscodes ?? u.percentage ?? (sess ? tr / sess * 100 : 0)));
+      const dc2 = dpN >= 80 ? "#34C759" : dpN >= 50 ? "#FF9500" : "#FF3B30";
+      const db2 = dpN >= 80 ? "rgba(52,199,89,0.12)" : dpN >= 50 ? "rgba(255,149,0,0.1)" : "rgba(255,59,48,0.12)";
+      const avEl = av ? `<img src="${av}" width="18" height="18" style="border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--is-text-muted)">${(name[0] || "?").toUpperCase()}</div>`;
+      return `<div class="tl-mob-card" style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center">
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden">
+          ${avEl}
+          <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>
+        </div>
+        <span style="font-size:10px;font-weight:700;color:${dc2};background:${db2};border-radius:5px;padding:2px 7px;white-space:nowrap">${dpN}% direct</span>
+        <span style="font-size:10px;color:var(--is-text-muted)">${sess} sess \xB7 ${tr} transcodes</span>
+        <span style="font-size:10px;color:var(--is-text-muted);text-align:right">${pctN}% total</span>
+      </div>`;
+    }).join("") || `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:14px">${this._t("tlNoData")}</div>`;
+    const usersHtml = tuRows ? `<table class="tl-hist-table" style="width:100%">
+          <thead><tr>
+            <th style="text-align:left;font-size:10px;color:var(--is-text-muted);padding-bottom:5px">User</th>
+            <th style="text-align:right;font-size:10px;color:var(--is-text-muted);padding-bottom:5px;padding-right:6px">Sessions</th>
+            <th style="text-align:right;font-size:10px;color:var(--is-text-muted);padding-bottom:5px;padding-right:6px">Direct Play</th>
+            <th style="text-align:right;font-size:10px;color:var(--is-text-muted);padding-bottom:5px;padding-right:6px">Transcodes</th>
+            <th style="text-align:right;font-size:10px;color:var(--is-text-muted);padding-bottom:5px">% of Total</th>
+          </tr></thead>
+          <tbody>${tuRows}</tbody>
+        </table>` : `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:12px">${this._t("tlNoData")}</div>`;
+    const rightCard = `<div class="tl-g-card" style="flex:1;min-height:0;min-width:0;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;gap:6px">
+        <span class="tl-graph-title" style="font-size:11px">${_rv === "hotspots" ? "Transcode Hotspots" : "Top Transcoding Users"}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <div class="is-filter" style="gap:2px">
+            <button class="is-f-btn${_rv === "hotspots" ? " active" : ""}" data-tra-dev-right-tab="hotspots" style="font-size:10px;padding:2px 7px">Hotspots</button>
+            <button class="is-f-btn${_rv === "users" ? " active" : ""}" data-tra-dev-right-tab="users" style="font-size:10px;padding:2px 7px">Users</button>
+          </div>
+          ${_rv === "hotspots" ? _pag("hotspots", _hoP, dhot.length) : _pag("users", _uP, dtu.length)}
+        </div>
+      </div>
+      <div data-tra-dev-panel="hotspots" style="flex:1;overflow-y:auto;${_rv === "hotspots" ? "" : "display:none"}">
+        <table class="tl-hist-table" style="width:100%">
+          <thead><tr>
+            <th style="text-align:left;font-size:10px;color:var(--is-text-muted);padding-bottom:5px">Device + Codec</th>
+            <th style="text-align:right;font-size:10px;color:var(--is-text-muted);padding-bottom:5px;padding-right:6px">Transcodes</th>
+            <th style="text-align:right;font-size:10px;color:var(--is-text-muted);padding-bottom:5px">% of Total</th>
+          </tr></thead>
+          <tbody>${hotRows}</tbody>
+        </table>
+      </div>
+      <div data-tra-dev-panel="users" style="flex:1;overflow-y:auto;${_rv === "users" ? "" : "display:none"}">${usersHtml}</div>
+    </div>`;
+    if (isMob) {
+      const mobView = m.devMobView || m.devicesLeftView || "health";
+      const _mobTabs = [["health", "Health"], ["matrix", "Matrix"], ["hotspots", "Hotspots"], ["users", "Users"]].map(
+        ([v, lbl]) => `<button class="is-f-btn${mobView === v ? " active" : ""}" data-tra-dev-mob-tab="${v}" style="flex:1;font-size:10px;padding:4px 2px">${lbl}</button>`
+      ).join("");
+      const mobNav = `<div class="is-filter" style="gap:2px;display:flex;margin-bottom:8px">${_mobTabs}</div>`;
+      const _panelTitle = { health: "Device Health", matrix: "Compatibility Matrix", hotspots: "Transcode Hotspots", users: "Top Transcoding Users" };
+      const _panelContent = {
+        health: `<div style="display:flex;flex-direction:column;gap:6px">${healthRows}</div>`,
+        matrix: matInner,
+        hotspots: `<div style="display:flex;flex-direction:column;gap:6px">${hotMobCards}</div>`,
+        users: `<div style="display:flex;flex-direction:column;gap:6px">${usersMobCards}</div>`
+      };
+      const _panelPag = {
+        health: _pag("health", _hP, dh.length),
+        matrix: _pag("matrix", _mP, matData.length),
+        hotspots: _pag("hotspots", _hoP, dhot.length),
+        users: _pag("users", _uP, dtu.length)
+      };
+      const mobPanel = `<div class="tl-g-card" style="display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0">
+          <span class="tl-graph-title" style="font-size:11px">${_panelTitle[mobView] || ""}</span>
+          ${_panelPag[mobView] || ""}
+        </div>
+        ${_panelContent[mobView] || ""}
+      </div>`;
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">${hdr}${statsRow}${mobNav}${mobPanel}</div>`;
+    }
+    const twoColRow = `<div style="display:flex;gap:8px;flex:1;min-height:0;align-items:stretch">
+      <div style="flex:0 0 calc(50% - 4px);min-width:0;min-height:0;display:flex;flex-direction:column">
+        ${leftCard}
+      </div>
+      <div style="flex:1;min-width:0;min-height:0;display:flex;flex-direction:column">
+        ${rightCard}
+      </div>
+    </div>`;
+    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">${hdr}${statsRow}${twoColRow}</div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyBandwidth() {
+    const m = this._tracearrModal;
+    if (!m) return "";
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const sum = m.bwSummary || {};
+    const _bd = m.bwDaily;
+    const daily = Array.isArray(_bd) ? _bd : _bd?.data || _bd?.daily || _bd?.items || [];
+    const _bu = m.bwUsers;
+    const users = Array.isArray(_bu) ? _bu : _bu?.data || _bu?.users || _bu?.items || [];
+    const _fmtGb = (gb) => {
+      if (gb == null) return "\u2014";
+      const n = Number(gb);
+      return n >= 1024 ? `${(n / 1024).toFixed(2)} TB` : `${n.toFixed(1)} GB`;
+    };
+    const _fmtHrs = (h) => {
+      if (h == null) return "\u2014";
+      const n = Number(h);
+      return n >= 24 ? `${Math.floor(n / 24)}d ${Math.round(n % 24)}h` : `${n.toFixed(1)}h`;
+    };
+    const _fmtBr = (mbps) => mbps != null ? `${Number(mbps).toFixed(1)} Mbps` : "\u2014";
+    const period = m.bwPeriod || "month";
+    const _BW_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
+    const periodBtns = ["week", "month", "year", "all"].map(
+      (p) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-bw-period="${p}">${_BW_P_LBLS[p]}</button>`
+    ).join("");
+    const _ico = (path) => `<svg viewBox="0 0 24 24" width="18" height="18" style="flex-shrink:0;color:var(--is-text-muted)" fill="currentColor"><path d="${path}"/></svg>`;
+    const _mdiPlay = "M8,5.14V19.14L19,12.14L8,5.14Z";
+    const _mdiDB = "M12,3C7.58,3 4,4.79 4,7C4,9.21 7.58,11 12,11C16.42,11 20,9.21 20,7C20,4.79 16.42,3 12,3M4,9V12C4,14.21 7.58,16 12,16C16.42,16 20,14.21 20,12V9C20,11.21 16.42,13 12,13C7.58,13 4,11.21 4,9M4,14V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V14C20,16.21 16.42,18 12,18C7.58,18 4,16.21 4,14Z";
+    const _mdiWifi = "M1,9L3,11C7.97,6.03 16.03,6.03 21,11L23,9C16.93,2.93 7.08,2.93 1,9M9,17L12,20L15,17C13.35,15.36 10.66,15.36 9,17M5,13L7,15C9.76,12.24 14.24,12.24 17,15L19,13C15.14,9.14 8.87,9.14 5,13Z";
+    const _mdiClock = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z";
+    const _mdiPeople = "M16,13C15.71,13 15.38,13.03 15.03,13.08C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z";
+    const tile = (iconSvg, lbl, val) => isMob ? `<div class="tl-g-card" style="display:flex;align-items:center;gap:5px;padding:5px 7px">
+          ${iconSvg.replace('width="18" height="18"', 'width="13" height="13"')}
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--is-text);line-height:1">${val}</div>
+            <div style="font-size:8px;color:var(--is-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lbl}</div>
+          </div>
+        </div>` : `<div class="tl-g-card" style="display:flex;align-items:center;gap:9px;padding:10px 12px">
+          ${iconSvg}
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--is-text);line-height:1">${val}</div>
+            <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${lbl}</div>
+          </div>
+        </div>`;
+    const avgBrLbl = sum.peakBitrateMbps != null ? `Avg \xB7 Peak ${_fmtBr(sum.peakBitrateMbps)}` : "Avg Bitrate";
+    const statsRow = isMob ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">
+          ${tile(_ico(_mdiPlay), "Sessions", sum.totalSessions ?? 0)}
+          ${tile(_ico(_mdiDB), "Data", _fmtGb(sum.totalGb))}
+          ${tile(_ico(_mdiWifi), "Avg Bitrate", _fmtBr(sum.avgBitrateMbps))}
+          ${tile(_ico(_mdiPeople), "Users", sum.uniqueUsers ?? 0)}
+        </div>` : `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px">
+          ${tile(_ico(_mdiPlay), "Total Sessions", sum.totalSessions ?? 0)}
+          ${tile(_ico(_mdiDB), "Data Transferred", _fmtGb(sum.totalGb))}
+          ${tile(_ico(_mdiWifi), avgBrLbl, _fmtBr(sum.avgBitrateMbps))}
+          ${tile(_ico(_mdiClock), "Total Watch Time", _fmtHrs(sum.totalHours))}
+          ${tile(_ico(_mdiPeople), "Unique Users", sum.uniqueUsers ?? 0)}
+        </div>`;
+    const chartHtml = (() => {
+      const VBW = 1e3, SVH = 200, PL = 6, PR = 6, PT = 18, PB = 6;
+      const cW = VBW - PL - PR, cH = SVH - PT - PB, baseY = PT + cH;
+      if (!daily.length) {
+        return `<svg class="tl-g-svg" viewBox="0 0 ${VBW} ${SVH}" width="100%" height="160" preserveAspectRatio="none">
+          <text x="${VBW / 2}" y="${SVH / 2}" text-anchor="middle" dominant-baseline="middle" style="fill:var(--is-text-muted);font-size:22">No data</text>
+        </svg>`;
+      }
+      const maxGb = Math.max(...daily.map((d) => Number(d.totalGb || 0)), 0.01);
+      const maxSess = Math.max(...daily.map((d) => Number(d.sessions || 0)), 1);
+      const n = daily.length;
+      const slotW = cW / n;
+      const bwFrac = n <= 7 ? 0.5 : n <= 14 ? 0.55 : Math.min(0.65, Math.max(0.14, 42 / slotW));
+      const bw = Math.max(4, slotW * bwFrac);
+      const rr = Math.min(bw * 0.38, 10);
+      const BAR_HEX = "#34C759";
+      const LINE_HEX = "#007AFF";
+      const roundTop = (x, y, w, h, r) => {
+        r = Math.min(r, h / 2, w / 2);
+        if (r < 0.5) return `M${x},${y + h} L${x},${y} L${x + w},${y} L${x + w},${y + h} Z`;
+        const f = (v) => v.toFixed(2);
+        return `M${f(x)},${f(y + h)} L${f(x)},${f(y + r)} Q${f(x)},${f(y)} ${f(x + r)},${f(y)} L${f(x + w - r)},${f(y)} Q${f(x + w)},${f(y)} ${f(x + w)},${f(y + r)} L${f(x + w)},${f(y + h)} Z`;
+      };
+      let bars = "", delay = 0;
+      daily.forEach((d, i) => {
+        const gb = Number(d.totalGb || 0);
+        if (!gb) return;
+        const h = gb / maxGb * cH;
+        const x = PL + i * slotW + (slotW - bw) / 2;
+        const y = baseY - h;
+        bars += `<path d="${roundTop(x, y, bw, h, rr)}" style="fill:url(#bwbg);animation-delay:${(delay * 0.012).toFixed(2)}s" class="tl-g-anim-bar"/>`;
+        delay++;
+      });
+      const sessCoords = daily.map((d, i) => ({
+        x: PL + i * slotW + slotW / 2,
+        y: PT + cH - Number(d.sessions || 0) / maxSess * cH
+      }));
+      let areaD = `M${sessCoords[0].x.toFixed(1)},${baseY}`;
+      sessCoords.forEach((p) => {
+        areaD += ` L${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+      });
+      areaD += ` L${sessCoords[sessCoords.length - 1].x.toFixed(1)},${baseY} Z`;
+      const sessPts = sessCoords.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+      const gbFmt = (v) => v >= 1024 ? `${(v / 1024).toFixed(1)}T` : v < 10 ? `${v.toFixed(1)}` : `${Math.round(v)}`;
+      const yTicksL = [0, 0.5, 1].map((f) => ({
+        y: (PT + cH - f * cH).toFixed(1),
+        lbl: f > 0 ? gbFmt(maxGb * f) : ""
+      }));
+      const yTicksR = [0, 0.5, 1].map((f) => ({
+        y: (PT + cH - f * cH).toFixed(1),
+        lbl: f > 0 ? String(Math.round(maxSess * f)) : ""
+      }));
+      const showEvery = Math.max(1, Math.ceil(n / 8));
+      const xLabelPcts = [];
+      daily.forEach((d, i) => {
+        if (i % showEvery !== 0 && i !== n - 1) return;
+        const dt = new Date(d.date || "");
+        const lbl = isNaN(dt.getTime()) ? "" : `${dt.getMonth() + 1}/${dt.getDate()}`;
+        if (!lbl) return;
+        xLabelPcts.push({ pct: ((PL + i * slotW + slotW / 2) / VBW * 100).toFixed(1), lbl, first: i === 0, last: i === n - 1 });
+      });
+      const xLabelsHtml = xLabelPcts.length ? `<div class="tl-g-x-labels">${xLabelPcts.map((l) => {
+        const a = l.first ? "translateX(0)" : l.last ? "translateX(-100%)" : "translateX(-50%)";
+        return `<span style="position:absolute;left:${l.pct}%;transform:${a};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${l.lbl}</span>`;
+      }).join("")}</div>` : "";
+      const _escBw = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+      const hitColsBw = daily.map((d, i) => {
+        const gb = Number(d.totalGb || 0);
+        const sess = Number(d.sessions || 0);
+        const dt = new Date(d.date || "");
+        const lbl = isNaN(dt.getTime()) ? d.date || "" : `${dt.getMonth() + 1}/${dt.getDate()}`;
+        const td = _escBw(JSON.stringify({
+          lbl,
+          tot: null,
+          vals: [
+            { n: "Data", fv: _fmtGb(gb), hex: BAR_HEX },
+            { n: "Sessions", fv: String(sess), hex: LINE_HEX },
+            { n: "Avg bitrate", fv: _fmtBr(d.avgBitrateMbps || 0), hex: "var(--is-text-muted)" }
+          ]
+        }));
+        const rx = (PL + i * slotW).toFixed(1);
+        const rw = slotW.toFixed(1);
+        return `<g class="tl-g-lcol" data-tl-g-col="${td}" style="cursor:pointer"><rect class="tl-g-lhlt" x="${rx}" y="${PT}" width="${rw}" height="${cH}" style="fill:rgba(255,255,255,0.08);opacity:0"/><rect x="${rx}" y="${PT}" width="${rw}" height="${cH}" fill="transparent"/></g>`;
+      }).join("");
+      const svgInner = `
+        <defs>
+          <linearGradient id="bwbg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="${BAR_HEX}" stop-opacity="0.92"/>
+            <stop offset="100%" stop-color="${BAR_HEX}" stop-opacity="0.42"/>
+          </linearGradient>
+          <linearGradient id="bwag" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="${LINE_HEX}" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="${LINE_HEX}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${[0, 0.5, 1].map((f) => `<line x1="${PL}" y1="${(PT + cH - f * cH).toFixed(1)}" x2="${VBW - PR}" y2="${(PT + cH - f * cH).toFixed(1)}" stroke="rgba(255,255,255,${f === 0 ? "0.08" : "0.05"})" stroke-width="1" ${f === 0.5 ? 'stroke-dasharray="4 3"' : ""}/>`).join("")}
+        ${bars}
+        <path d="${areaD}" fill="url(#bwag)" style="animation:fade-in 0.8s ease-out both"/>
+        <polyline points="${sessPts}" fill="none" stroke="${LINE_HEX}" stroke-width="2" vector-effect="non-scaling-stroke" class="tl-g-anim-line"/>
+        ${hitColsBw}
+      `;
+      const SVGH_DISP = 110;
+      const mapY = (svgY) => (parseFloat(svgY) / SVH * SVGH_DISP).toFixed(1);
+      const PW = 38;
+      const yHtmlL = yTicksL.filter((t) => t.lbl).map(
+        (t) => `<span style="position:absolute;right:2px;top:${mapY(t.y)}px;transform:translateY(-50%);font-size:9px;line-height:1;color:#34C759;white-space:nowrap">${t.lbl}</span>`
+      ).join("");
+      const yHtmlR = yTicksR.filter((t) => t.lbl).map(
+        (t) => `<span style="position:absolute;left:2px;top:${mapY(t.y)}px;transform:translateY(-50%);font-size:9px;line-height:1;color:rgba(107,170,255,0.85);white-space:nowrap">${t.lbl}</span>`
+      ).join("");
+      return `<div style="position:relative;padding-left:${PW}px;padding-right:${PW}px">
+        <div style="position:absolute;left:0;top:0;width:${PW}px;height:${SVGH_DISP}px;overflow:visible">
+          <span style="position:absolute;left:0;top:0;width:${PW}px;height:${SVGH_DISP}px;display:flex;align-items:center;justify-content:center">
+            <span style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;color:rgba(52,199,89,0.7);white-space:nowrap">GB</span>
+          </span>
+          ${yHtmlL}
+        </div>
+        <div style="position:absolute;right:0;top:0;width:${PW}px;height:${SVGH_DISP}px;overflow:visible">
+          <span style="position:absolute;left:0;top:0;width:${PW}px;height:${SVGH_DISP}px;display:flex;align-items:center;justify-content:center">
+            <span style="writing-mode:vertical-rl;font-size:9px;color:rgba(107,170,255,0.7);white-space:nowrap">Sessions</span>
+          </span>
+          ${yHtmlR}
+        </div>
+        <svg class="tl-g-svg" viewBox="0 0 ${VBW} ${SVH}" width="100%" height="${SVGH_DISP}" preserveAspectRatio="none">${svgInner}</svg>
+        ${xLabelsHtml}
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:6px">
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:${BAR_HEX};opacity:0.7"></div><span style="font-size:10px;color:var(--is-text-muted)">Data (GB)</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:3px;border-radius:2px;background:${LINE_HEX}"></div><span style="font-size:10px;color:var(--is-text-muted)">Sessions</span></div>
+      </div>`;
+    })();
+    const _tipEl = `<div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>`;
+    const chartCard = `<div class="tl-g-card" style="margin-bottom:8px;flex-shrink:0;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span class="tl-graph-title" style="font-size:11px">Daily Bandwidth Usage</span>
+        <div class="is-filter">${periodBtns}</div>
+      </div>
+      ${chartHtml}
+      ${_tipEl}
+    </div>`;
+    const BW_PAGE = isMob ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 500) / 60)) : 5;
+    m.bwPageSize = BW_PAGE;
+    const bwPage = m.bwUsersPage || 0;
+    const bwTotal = users.length;
+    const bwPages = Math.max(1, Math.ceil(bwTotal / BW_PAGE));
+    const pageUsers = users.slice(bwPage * BW_PAGE, (bwPage + 1) * BW_PAGE);
+    const userRows = pageUsers.map((u, i) => {
+      const rank = bwPage * BW_PAGE + i + 1;
+      const name = u.identityName || u.username || u.displayName || "?";
+      const av = u.thumbUrl || u.avatarUrl || u.avatar || null;
+      const avEl = av ? `<img src="${av}" width="22" height="22" style="border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--is-text-muted)">${(name[0] || "?").toUpperCase()}</div>`;
+      return `<tr>
+        <td style="padding:6px 8px;font-size:11px;color:var(--is-text-muted);text-align:center;width:28px">${rank}</td>
+        <td style="padding:6px 0;font-size:11px;font-weight:600;color:var(--is-text)">
+          <div style="display:flex;align-items:center;gap:7px">${avEl}<span>${name}</span></div>
+        </td>
+        <td style="padding:6px 8px;font-size:11px;text-align:right;color:var(--is-text)">${u.sessions ?? 0}</td>
+        <td style="padding:6px 8px;font-size:11px;text-align:right;color:var(--is-text)">${_fmtGb(u.totalGb)}</td>
+        <td style="padding:6px 8px;font-size:11px;text-align:right;color:var(--is-text)">${_fmtHrs(u.totalHours)}</td>
+        <td style="padding:6px 0;text-align:right"><span style="font-size:10px;font-weight:700;color:#FF9500;background:rgba(255,149,0,0.1);border-radius:5px;padding:2px 7px">${_fmtBr(u.avgBitrateMbps)}</span></td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--is-text-muted);font-size:11px;padding:14px">No data</td></tr>`;
+    const userMobCards = pageUsers.map((u, i) => {
+      const rank = bwPage * BW_PAGE + i + 1;
+      const name = u.identityName || u.username || u.displayName || "?";
+      const av = u.thumbUrl || u.avatarUrl || u.avatar || null;
+      const avEl = av ? `<img src="${av}" width="18" height="18" style="border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--is-text-muted)">${(name[0] || "?").toUpperCase()}</div>`;
+      const metaParts = [
+        `${u.sessions ?? 0} sess`,
+        _fmtHrs(u.totalHours) !== "\u2014" ? _fmtHrs(u.totalHours) : null
+      ].filter(Boolean).join("  \xB7  ");
+      return `<div class="tl-mob-card" style="display:grid;grid-template-columns:16px 1fr auto;gap:2px 6px;align-items:center">
+        <span style="font-size:9px;color:var(--is-text-muted);text-align:center;line-height:1">${rank}</span>
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden">${avEl}<span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span></div>
+        <span style="font-size:11px;font-weight:700;color:var(--is-text)">${_fmtGb(u.totalGb)}</span>
+        <span></span>
+        <span style="font-size:10px;color:var(--is-text-muted)">${metaParts}</span>
+        <span style="font-size:10px;font-weight:700;color:#FF9500;background:rgba(255,149,0,0.1);border-radius:5px;padding:1px 5px;white-space:nowrap;text-align:right">${_fmtBr(u.avgBitrateMbps)}</span>
+      </div>`;
+    }).join("") || `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:14px">No data</div>`;
+    const bwPaging = this._tlMobPag("tra-bw-users-page", bwPage, bwPages, true);
+    if (isMob) {
+      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin:-10px -12px -16px">
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px 0">
+          ${statsRow}${chartCard}
+          <div class="tl-g-card" style="display:flex;flex-direction:column;margin-bottom:0">
+            <div style="margin-bottom:8px;flex-shrink:0"><span class="tl-graph-title" style="font-size:11px">Top Bandwidth Users</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px">${userMobCards}</div>
+          </div>
+        </div>
+        <div style="flex-shrink:0;padding:4px 12px 8px">${bwPaging}</div>
+      </div>`;
+    }
+    const usersCard = `<div class="tl-g-card" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
+      <div style="margin-bottom:8px;flex-shrink:0">
+        <span class="tl-graph-title" style="font-size:11px">Top Bandwidth Users</span>
+      </div>
+      <div style="flex:1;overflow-y:auto;min-height:0">
+        <table class="tl-hist-table" style="width:100%">
+          <thead><tr>
+            <th style="text-align:center;width:28px">#</th>
+            <th style="text-align:left">User</th>
+            <th style="text-align:right;padding-right:8px">Sessions</th>
+            <th style="text-align:right;padding-right:8px">Data</th>
+            <th style="text-align:right;padding-right:8px">Watch Time</th>
+            <th style="text-align:right">Avg Bitrate</th>
+          </tr></thead>
+          <tbody>${userRows}</tbody>
+        </table>
+      </div>
+      ${bwPaging}
+    </div>`;
+    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">${statsRow}${chartCard}${usersCard}</div>`;
+  }
+};
+var tracearrTableMixin = _TraceaRrTableMethods.prototype;
+
+// src/render/tracearr.js
+var _TraceaRrMethods = class {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Poster row — 4 cards in right panel
+  // ──────────────────────────────────────────────────────────────────────────
+  _renderTracearr() {
+    const d = this._tracearr || {};
+    return `
+      <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+        ${this._sectionOverlayHtml("tracearr", 25, 75, 0.22)}
+        <div class="col-hdr" style="margin-bottom:5px">
+          ${this._appIcon("tracearr", 24)}
+          <span class="col-hdr-title">${this._t("traTitle")}</span>
+          <div class="col-hdr-line"></div>
+        </div>
+        <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative">
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8249;</button>
+          <div class="tl-row">
+            ${this._traUsersCard(d)}
+            ${this._traViolationsCard(d)}
+            ${this._traActivityCard(d)}
+            ${this._traServersCard(d)}
+          </div>
+          <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">&#8250;</button>
+        </div>
+      </div>`;
+  }
+  _traUsersCard(d) {
+    const seen = /* @__PURE__ */ new Set();
+    const users = (d.users || []).filter((u) => {
+      const k = u.id || u.username;
+      return k && !seen.has(k) && seen.add(k);
+    }).slice(0, 5);
+    const flagged = users.filter((u) => u.trustScore < 70 || u.totalViolations > 0).length;
+    const rows = users.map((u, i) => {
+      const name = u.displayName || u.username || "\u2014";
+      const score = u.trustScore ?? 100;
+      const color = score >= 80 ? "rgba(110,231,183,0.9)" : score >= 50 ? "rgba(252,211,77,0.9)" : "rgba(252,165,165,0.9)";
+      const av = u.thumbUrl || u.avatarUrl ? `<img src="${u.thumbUrl || u.avatarUrl}" style="width:15px;height:15px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;font-size:6px;font-weight:800;color:rgba(255,255,255,0.6);flex-shrink:0">${name.slice(0, 2).toUpperCase()}</span>`;
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      return `<div style="${sep}display:flex;align-items:center;gap:6px;padding:4px 0">
+        ${av}
+        <span style="font-size:10px;font-weight:600;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>
+        <span style="font-size:10px;font-weight:700;color:${color};flex-shrink:0">${score}</span>
+      </div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoData")}</div>`;
+    const flagTag = flagged > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(252,165,165,0.9);background:rgba(248,113,113,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${flagged} flagged</span>` : `<span style="font-size:10px;font-weight:700;color:rgba(110,231,183,0.9);background:rgba(52,211,153,0.16);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${this._t("traAllClear")}</span>`;
+    return `<div class="tl-card" data-tra-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+        <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>
+        ${flagTag}
+      </div>
+      <div style="flex:1;position:relative;z-index:2">${rows}</div>
+    </div>`;
+  }
+  _traViolationsCard(d) {
+    const viols = (d.violations || []).slice(0, 3);
+    const total = d.violationTotal || 0;
+    const typeLabel = {
+      impossible_travel: "Impossible travel",
+      simultaneous_locations: "Soub\u011B\u017En\xE9 lokace",
+      concurrent_streams: "Concurrent streams",
+      device_velocity: "Device velocity"
+    };
+    const severityColor = { high: "rgba(252,165,165,0.9)", medium: "rgba(252,211,77,0.9)", low: "rgba(110,231,183,0.9)" };
+    const dotColor = { high: "#f87171", medium: "#fbbf24", low: "#34d399" };
+    const items = viols.map((v, i) => {
+      const label = typeLabel[v.type] || v.type || "\u2014";
+      const user = v.user?.displayName || v.username || "";
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      const dot = dotColor[v.severity] || dotColor.high;
+      return `<div style="${sep}padding:4px 0">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="width:7px;height:7px;border-radius:50%;background:${dot};box-shadow:0 0 6px ${dot};flex-shrink:0"></span>
+          <span style="font-size:10px;font-weight:600;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span>
+        </div>
+        ${user ? `<div style="font-size:9px;color:rgba(255,255,255,0.38);padding-left:12px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${user}</div>` : ""}
+      </div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(110,231,183,0.7);padding:8px 0;display:flex;align-items:center;gap:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#34d399;flex-shrink:0"></span>${this._t("traNoViolations")}
+      </div>`;
+    const badge = total > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(252,165,165,0.9);background:rgba(248,113,113,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("traNew")}</span>` : "";
+    return `<div class="tl-card" data-tra-open="violations" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+        <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("traViolations")}</span>
+        ${badge}
+      </div>
+      <div style="flex:1;position:relative;z-index:2">${items}</div>
+    </div>`;
+  }
+  _traActivityCard(d) {
+    const plays = (d.activity?.plays || []).slice(-7);
+    const quality = d.activity?.quality || {};
+    const maxP = Math.max(...plays.map((p) => p.count || 0), 1);
+    const total = plays.reduce((s, p) => s + (p.count || 0), 0);
+    const todayD = (/* @__PURE__ */ new Date()).getDate();
+    const bars = plays.map((p) => {
+      const h = Math.max(p.count ? 4 : 0, Math.round((p.count || 0) / maxP * 100));
+      const gap = 100 - h;
+      const day = new Date(p.date).getDate();
+      return `<div style="flex:1;display:flex;flex-direction:column;padding:0 1.5px">
+        <div style="flex:${gap}"></div>
+        ${p.count ? `<div style="flex:${h};background:linear-gradient(to bottom,rgba(130,80,255,0.85),rgba(130,80,255,0.3));border-radius:3px 3px 0 0"></div>` : `<div style="flex:${h};display:none"></div>`}
+      </div>`;
+    }).join("");
+    const labels = plays.map((p) => {
+      const day = new Date(p.date).getDate();
+      const today = day === todayD;
+      return `<div style="flex:1;font-size:7px;font-weight:${today ? "700" : "500"};color:${today ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.3)"};text-align:center;padding:2px 0 0">${day}</div>`;
+    }).join("");
+    const dp = quality.directPlayPercent ?? 0;
+    const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(130,80,255,0.2);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("tlPlays")}</span>` : "";
+    return `<div class="tl-card" data-tra-open="activity" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+        <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.93 19.07A9 9 0 1 1 19.07 19.07" stroke-linecap="round"/><line x1="12" y1="12" x2="17.5" y2="6.5" stroke-linecap="round"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px">
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("traActivity")}</span>
+          <span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic;padding-left:2px">${this._t("tlLast7Days")}</span>
+        </div>
+        ${playsTag}
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0">
+        <div style="flex:1;display:flex;gap:0">${bars}</div>
+        <div style="height:1px;background:rgba(255,255,255,0.08);margin:1px 0"></div>
+        <div style="display:flex;gap:0;margin-top:1px">${labels}</div>
+        ${dp > 0 ? `<div style="font-size:9px;color:rgba(255,255,255,0.38);margin-top:5px;display:flex;justify-content:space-between"><span>Direct play</span><span style="color:rgba(110,231,183,0.85);font-weight:700">${dp}%</span></div>` : ""}
+      </div>
+    </div>`;
+  }
+  _traServersCard(d) {
+    const servers = d.health?.servers || [];
+    const plays = (d.activity?.plays || []).slice(-7);
+    const maxP = Math.max(...plays.map((p) => p.count || 0), 1);
+    const typeIcon = { plex: { bg: "#e5a00d", color: "#000", l: "P" }, jellyfin: { bg: "#7c4dff", color: "#fff", l: "J" }, emby: { bg: "#52b54b", color: "#fff", l: "E" } };
+    const srvRows = servers.map((s, i) => {
+      const ic = typeIcon[s.type] || { bg: "rgba(255,255,255,0.15)", color: "#fff", l: "?" };
+      const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
+      const dot = s.online ? "#34d399" : "#f87171";
+      return `<div style="${sep}display:flex;align-items:center;gap:5px;padding:4px 0">
+        <span style="width:16px;height:16px;border-radius:5px;background:${ic.bg};color:${ic.color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;flex-shrink:0">${ic.l}</span>
+        <span style="font-size:10px;font-weight:600;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</span>
+        <span style="width:7px;height:7px;border-radius:50%;background:${dot};box-shadow:0 0 6px ${dot};flex-shrink:0"></span>
+      </div>`;
+    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:4px 0">${this._t("tlNoData")}</div>`;
+    const bars = plays.map((p) => {
+      const h = Math.max(p.count ? 3 : 0, Math.round((p.count || 0) / maxP * 100));
+      return `<div style="flex:1;display:flex;flex-direction:column;padding:0 1.5px">
+        <div style="flex:${100 - h}"></div>
+        ${p.count ? `<div style="flex:${h};background:rgba(130,80,255,0.55);border-radius:2px 2px 0 0"></div>` : ""}
+      </div>`;
+    }).join("");
+    const allOnline = servers.length > 0 && servers.every((s) => s.online);
+    const badge = servers.length > 0 ? `<span style="font-size:10px;font-weight:700;color:${allOnline ? "rgba(110,231,183,0.9)" : "rgba(252,165,165,0.9)"};background:${allOnline ? "rgba(52,211,153,0.16)" : "rgba(248,113,113,0.18)"};border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${servers.filter((s) => s.online).length}/${servers.length} online</span>` : "";
+    return `<div class="tl-card" data-tra-open="servers" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
+      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+        <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px">
+        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("traServers")}</span>
+        ${badge}
+      </div>
+      <div style="position:relative;z-index:2">${srvRows}</div>
+      <div style="flex:1;display:flex;gap:0;margin-top:6px;position:relative;z-index:2">${bars}</div>
+    </div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Modal — open / close / shell
+  // ──────────────────────────────────────────────────────────────────────────
+  _openTracearrModal(tab) {
+    const _T2G = { map: "map", history: "history", activity: "stats", quality: "library", storage: "library", watch: "library", devices: "performance", bandwidth: "performance", users: "users", violations: "violations" };
+    if (tab === "servers" || tab === "overview") tab = "dash";
+    tab = tab || "dash";
+    const navGroup = _T2G[tab] || "map";
+    this._tracearrModal = {
+      tab,
+      navGroup,
+      // users
+      usersData: [],
+      usersTotal: 0,
+      usersSortCol: "trustScore",
+      usersSortDir: "asc",
+      usersSearch: "",
+      usersPage: 0,
+      usersPerPage: 20,
+      // violations
+      violsData: [],
+      violsTotal: 0,
+      violsPage: 0,
+      violsPerPage: 20,
+      violsUser: null,
+      violsType: null,
+      // activity
+      activityData: null,
+      activityPeriod: "month",
+      activityServerId: null,
+      // history
+      histData: [],
+      histTotal: 0,
+      histPage: 0,
+      histPerPage: 20,
+      histServer: null,
+      histUser: null,
+      histMedia: null,
+      histSearch: "",
+      histPeriod: null,
+      histRawData: null,
+      histNeedsRefetch: true,
+      // servers
+      serversData: [],
+      // stale content (inside storage tab)
+      staleCategory: "never_watched",
+      stalePage: 0,
+      stalePageSize: 10,
+      staleItems: null,
+      staleTotal: 0,
+      staleSummary: null,
+      staleSort: "fileSize",
+      staleOrder: "desc",
+      staleMediaType: null,
+      staleMonths: 3,
+      staleDeduped: null,
+      staleServers: null,
+      selectedServerId: null,
+      qualityServerId: null,
+      qualityPeriod: (() => {
+        try {
+          return localStorage.getItem("arr-tra-q-period") || "month";
+        } catch (_) {
+          return "month";
+        }
+      })(),
+      qualityMediaType: (() => {
+        try {
+          return localStorage.getItem("arr-tra-q-mt") || null;
+        } catch (_) {
+          return null;
+        }
+      })(),
+      qualityCodecTab: (() => {
+        try {
+          return localStorage.getItem("arr-tra-q-codec") || "movies";
+        } catch (_) {
+          return "movies";
+        }
+      })(),
+      storagePeriod: (() => {
+        try {
+          return localStorage.getItem("arr-tra-stor-period") || "month";
+        } catch (_) {
+          return "month";
+        }
+      })(),
+      storagePredictions: (() => {
+        try {
+          const v = localStorage.getItem("arr-tra-stor-pred");
+          return v === null ? true : v === "1";
+        } catch (_) {
+          return true;
+        }
+      })(),
+      devicesServerId: null,
+      devicesPeriod: "month",
+      devicesData: null,
+      devicesHealth: null,
+      devicesHotspots: null,
+      devicesMatrix: null,
+      devicesUsers: null,
+      devicesLeftView: "health",
+      devicesRightView: "hotspots",
+      devHealthPage: 0,
+      devMatrixPage: 0,
+      devHotspotsPage: 0,
+      devUsersPage: 0,
+      bwServerId: (() => {
+        try {
+          return localStorage.getItem("arr-tra-srv") || null;
+        } catch (_) {
+          return null;
+        }
+      })(),
+      bwPeriod: "month",
+      bwSummary: null,
+      bwDaily: null,
+      bwUsers: null,
+      bwUsersPage: 0,
+      watchTopTab: "movies",
+      watchPeriod: "30d",
+      watchServerId: (() => {
+        try {
+          return localStorage.getItem("arr-tra-srv") || null;
+        } catch (_) {
+          return null;
+        }
+      })(),
+      watchTopMovies: null,
+      watchTopShows: null,
+      watchPatterns: null,
+      watchCompletion: null,
+      watchStatus: null,
+      watchSrvPeriodKey: null,
+      watchSrvKey: null
+    };
+    this.shadowRoot.querySelector("[data-tra-modal]")?.remove();
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._traModalHtml(tab, navGroup);
+    const el = wrap.firstElementChild;
+    this.shadowRoot.appendChild(el);
+    this._wireTracearrModal(el);
+    this._traLoadTab(tab, el);
+  }
+  _closeTracearrModal() {
+    this.shadowRoot.querySelector("[data-tra-modal]")?.remove();
+    this._tracearrModal = null;
+  }
+  _traNavHtml(currentTab, navGroup) {
+    const NAV = [
+      { id: "map", label: "Map", tab: "map" },
+      { id: "history", label: "History", tab: "history" },
+      { id: "stats", label: "Stats", sub: [["activity", "Activity"]] },
+      { id: "library", label: "Library", sub: [["quality", "Quality"], ["storage", "Storage"], ["watch", "Watch"]] },
+      { id: "performance", label: "Performance", sub: [["devices", "Devices"], ["bandwidth", "Bandwidth"]] },
+      { id: "users", label: "Users", tab: "users" },
+      { id: "rules", label: "Rules" },
+      { id: "violations", label: "Violations", tab: "violations" }
+    ];
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const items = NAV.map((g) => {
+      const active = navGroup === g.id;
+      const txtClr = _day ? "#000" : "#fff";
+      const navH = "height:28px;box-sizing:border-box;";
+      const subH = "height:24px;box-sizing:border-box;";
+      const st = active ? `${navH}background:rgba(0,122,255,0.5);color:${txtClr};border-color:rgba(0,122,255,0.8)` : `${navH}color:${txtClr}`;
+      const btn = `<button class="is-f-btn" data-tra-nav="${g.id}" style="${st}">${g.label}</button>`;
+      if (!g.sub) return btn;
+      const expanded = active;
+      const subHtml = expanded ? g.sub.map(([tid, tlbl]) => {
+        const isActive = currentTab === tid;
+        const subSt = isActive ? `${subH}background:rgba(0,122,255,0.25);color:#007AFF;border-color:rgba(0,122,255,0.5);font-size:10px` : `${subH}background:rgba(0,122,255,0.08);color:${txtClr};border-color:rgba(0,122,255,0.2);font-size:10px`;
+        return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
+      }).join("") : "";
+      return `<div style="display:flex;align-items:center;gap:4px"><div data-tra-sub="${g.id}" style="display:flex;gap:4px;overflow:hidden;max-width:${expanded ? "500px" : "0"};transition:max-width 0.25s ease">${subHtml}</div>` + btn + `</div>`;
+    }).join("");
+    return `<div id="tra-nav" style="display:flex;flex:1;justify-content:flex-end;align-items:center;gap:4px;flex-wrap:wrap">${items}</div>`;
+  }
+  _traMobileNavHtml(currentTab, navGroup) {
+    const _ico = (d, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+    const NAV = [
+      {
+        id: "map",
+        label: "Map",
+        tab: "map",
+        icon: _ico('<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>'),
+        sub: []
+      },
+      {
+        id: "history",
+        label: "History",
+        tab: "history",
+        icon: _ico('<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/><polyline points="12 7 12 12 15 15"/>'),
+        sub: []
+      },
+      {
+        id: "stats",
+        label: "Stats",
+        icon: _ico('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'),
+        sub: [["activity", _ico('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>', 16), "Activity"]]
+      },
+      {
+        id: "library",
+        label: "Library",
+        icon: _ico('<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'),
+        sub: [
+          ["quality", _ico('<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>', 16), "Quality"],
+          ["storage", _ico('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>', 16), "Storage"],
+          ["watch", _ico('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>', 16), "Watch"]
+        ]
+      },
+      {
+        id: "performance",
+        label: "Performance",
+        icon: _ico('<path d="M12 2a9 9 0 0 1 9 9"/><path d="M3 11a9 9 0 0 1 9-9"/><path d="M12 2C6.48 2 2 6.48 2 12"/><path d="M22 12c0-5.52-4.48-10-10-10"/><path d="M5 19a8 8 0 0 1 14 0"/><line x1="12" y1="12" x2="16.24" y2="7.76"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>'),
+        sub: [
+          ["devices", _ico('<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>', 16), "Devices"],
+          ["bandwidth", _ico('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', 16), "Bandwidth"]
+        ]
+      },
+      {
+        id: "users",
+        label: "Users",
+        tab: "users",
+        icon: _ico('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+        sub: []
+      },
+      {
+        id: "rules",
+        label: "Rules",
+        icon: _ico('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
+        sub: []
+      },
+      {
+        id: "violations",
+        label: "Violations",
+        tab: "violations",
+        icon: _ico('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+        sub: []
+      }
+    ];
+    const activeGrp = NAV.find((g) => g.id === navGroup);
+    const subRow = activeGrp?.sub?.length ? `<div style="display:flex;border-top:1px solid rgba(255,255,255,0.08);overflow-x:auto;scrollbar-width:none">` + activeGrp.sub.map(([tid, ico, lbl]) => {
+      const sa = currentTab === tid;
+      return `<button data-tra-tab="${tid}" style="flex:1;min-width:52px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:${sa ? "rgba(0,122,255,0.35)" : "transparent"};border:none;cursor:pointer;color:${sa ? "#fff" : "rgba(255,255,255,0.5)"};">${ico}<span style="font-size:9px;font-weight:${sa ? "700" : "500"};line-height:1">${lbl || ""}</span></button>`;
+    }).join("") + `</div>` : "";
+    const mainBar = `<div style="display:flex;border-top:1px solid rgba(255,255,255,0.1);overflow-x:auto;scrollbar-width:none">` + NAV.map((g) => {
+      const active = navGroup === g.id;
+      return `<button data-tra-nav="${g.id}" style="flex:1;min-width:36px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:${active ? "rgba(0,122,255,0.4)" : "transparent"};border:none;cursor:pointer;color:${active ? "#fff" : "rgba(255,255,255,0.5)"};">${g.icon}<span style="font-size:9px;font-weight:${active ? "700" : "400"};line-height:1;opacity:${active ? "1" : "0"};transition:opacity 0.15s">${g.label}</span></button>`;
+    }).join("") + `</div>`;
+    return `<div id="tra-mobile-nav" style="flex-shrink:0;background:rgba(12,12,20,0.85)">
+      ${subRow}${mainBar}
+    </div>`;
+  }
+  _traModalHtml(tab, navGroup) {
+    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const pad = isMobile2 ? "12px 10px 10px" : "14px 22px 10px";
+    if (isMobile2) {
+      return `<div class="popup-overlay${dayClass(this)}" data-tra-modal>
+        <div class="popup-glass tl-wide">
+          <div class="is-panel-hdr" style="flex-direction:column;align-items:stretch;padding:${pad};gap:6px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;min-width:0;overflow:hidden">
+                <div id="tra-hdr-title" style="font-size:14px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._traTabTitle(tab)}</div>
+                <div id="tra-hdr-sub" style="font-size:11px;color:var(--is-text-sec);margin-top:1px"></div>
+              </div>
+              <div id="tra-hdr-server" style="display:none;gap:5px;align-items:center;flex-shrink:0"></div>
+              <button class="popup-close" id="tra-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:center">${ICONS.close}</button>
+            </div>
+          </div>
+          <div class="popup-body" id="tra-body" style="padding:10px 12px 16px;flex:1;min-height:0;overflow-y:auto">
+            <div class="is-loading"><span>${this._t("loading")}</span></div>
+          </div>
+          ${this._traMobileNavHtml(tab, navGroup)}
+        </div>
+      </div>`;
+    }
+    return `<div class="popup-overlay${dayClass(this)}" data-tra-modal>
+      <div class="popup-glass tl-wide">
+        <div class="is-panel-hdr" style="flex-direction:column;align-items:stretch;padding:${pad};gap:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="min-width:0;overflow:hidden;flex-shrink:0">
+              <div id="tra-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._traTabTitle(tab)}</div>
+              <div id="tra-hdr-sub" style="font-size:12px;color:var(--is-text-sec);margin-top:2px"></div>
+            </div>
+            <div id="tra-hdr-server" style="display:none;gap:5px;align-items:center;flex-shrink:0"></div>
+            ${this._traNavHtml(tab, navGroup)}
+            <button class="popup-close" id="tra-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:center">${ICONS.close}</button>
+          </div>
+        </div>
+        <div class="popup-body" id="tra-body" style="padding:14px 22px 20px">
+          <div class="is-loading"><span>${this._t("loading")}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  _traTabLabel(t) {
+    return {
+      overview: this._t("traOverview"),
+      users: this._t("tlUsers"),
+      violations: this._t("traViolations"),
+      history: this._t("tlHistory"),
+      activity: this._t("traActivity"),
+      quality: this._t("traQuality"),
+      storage: this._t("traStorage"),
+      watch: this._t("traWatchTab"),
+      devices: "Devices",
+      bandwidth: "Bandwidth"
+    }[t] || t;
+  }
+  _traTabTitle(t) {
+    return {
+      overview: this._t("traTitle"),
+      users: this._t("tlAllUsers"),
+      violations: this._t("traViolations"),
+      history: this._t("tlRecentHistory"),
+      activity: this._t("traActivity"),
+      quality: this._t("traQuality"),
+      storage: this._t("traStorage"),
+      watch: this._t("traWatch"),
+      devices: "Device Compatibility",
+      bandwidth: "Bandwidth"
+    }[t] || "";
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tab loader
+  // ──────────────────────────────────────────────────────────────────────────
+  async _traLoadTab(tab, modal) {
+    const body = modal.querySelector("#tra-body");
+    if (!body) return;
+    body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
+    const m = this._tracearrModal;
+    if (!m) return;
+    if (tab === "map") {
+      body.innerHTML = `<div style="text-align:center;color:var(--is-text-muted);padding:60px 24px;font-size:13px">Coming soon</div>`;
+      this._wireTracearrModalBody(body);
+      return;
+    }
+    if (tab === "overview") {
+      const [stats, health, viols, act] = await Promise.all([
+        this._traApiFetch("stats"),
+        this._traApiFetch("health"),
+        this._traApiFetch("violations?pageSize=5"),
+        this._traApiFetch("activity?days=7")
+      ]);
+      if (!this._tracearrModal) return;
+      m.overviewStats = stats;
+      m.overviewHealth = health;
+      m.overviewViols = viols?.data || [];
+      m.overviewAct = act;
+      body.innerHTML = this._traBodyOverview();
+      this._wireTracearrModalBody(body);
+    } else if (tab === "users") {
+      const pp = this._tlCalcPerPage();
+      const r = await this._traApiFetch(`users?pageSize=${pp}&page=${m.usersPage + 1}&sort=${m.usersSortCol}&order=${m.usersSortDir}${m.usersSearch ? "&search=" + encodeURIComponent(m.usersSearch) : ""}`);
+      if (!this._tracearrModal) return;
+      m.usersData = r?.data || [];
+      m.usersTotal = r?.meta?.total || 0;
+      body.innerHTML = this._traBodyUsers();
+      this._wireTracearrModalBody(body);
+    } else if (tab === "violations") {
+      const pp = this._tlCalcPerPage({ hasFilter: true });
+      let q = `pageSize=${pp}&page=${m.violsPage + 1}`;
+      if (m.violsUser) q += `&userId=${m.violsUser}`;
+      if (m.violsType) q += `&type=${m.violsType}`;
+      const [vr, ur] = await Promise.all([
+        this._traApiFetch(`violations?${q}`),
+        this._traApiFetch("users?pageSize=100")
+      ]);
+      if (!this._tracearrModal) return;
+      m.violsData = vr?.data || [];
+      m.violsTotal = vr?.meta?.total || 0;
+      m.violsUsers = ur?.data || [];
+      body.innerHTML = this._traBodyViolations();
+      this._wireTracearrModalBody(body);
+    } else if (tab === "history") {
+      const isMobH = window.matchMedia("(max-width:600px)").matches;
+      const pp = this._tlCalcPerPage({ hasFilter: true, filterH: isMobH ? 120 : 40, rowH: isMobH ? 80 : 44, bar: 0 });
+      let q = `pageSize=${pp}&page=${m.histPage + 1}&order=desc`;
+      if (m.histServer) q += `&serverId=${m.histServer}`;
+      if (m.histUser) q += `&userId=${m.histUser}`;
+      if (m.histMedia) q += `&mediaType=${m.histMedia}`;
+      if (m.histSearch) q += `&search=${encodeURIComponent(m.histSearch)}`;
+      if (m.histPeriod) {
+        const days = m.histPeriod === "week" ? 7 : m.histPeriod === "month" ? 30 : 365;
+        const end = /* @__PURE__ */ new Date();
+        end.setHours(23, 59, 59, 0);
+        const start = new Date(Date.now() - days * 864e5);
+        start.setHours(0, 0, 0, 0);
+        const fmt = (d) => d.toISOString().slice(0, 10);
+        q += `&startDate=${fmt(start)}&endDate=${fmt(end)}`;
+      }
+      const [hr, ur, sr] = await Promise.all([
+        this._traApiFetch(`history?${q}`),
+        this._traApiFetch("users?pageSize=100"),
+        this._traApiFetch("health")
+      ]);
+      if (!this._tracearrModal) return;
+      m.histData = hr?.data || [];
+      m.histTotal = hr?.meta?.total || 0;
+      m.histUsers = ur?.data || [];
+      m.histServers = sr?.servers || [];
+      if (m.histServer === null && m.histServers.length > 0) {
+        const _pk = (s) => {
+          const t = (s.type || "").toLowerCase();
+          return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.histServers.find((s) => s.id === _saved);
+        m.histServer = _validSaved ? _saved : [...m.histServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+        if (m.histServer) {
+          this._traLoadTab("history", modal);
+          return;
+        }
+      }
+      body.innerHTML = this._traBodyHistory();
+      this._wireTracearrModalBody(body);
+      const _hSrvEl = modal.querySelector("#tra-hdr-server");
+      if (_hSrvEl && m.histServers.length > 1) {
+        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+        const _hKey = (s) => {
+          const t = (s.type || "").toLowerCase();
+          return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
+        };
+        const _hPk = (s) => {
+          const k = _hKey(s);
+          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
+        };
+        _hSrvEl.innerHTML = [...m.histServers].sort((a, b) => _hPk(a) - _hPk(b)).map((s) => {
+          const key = _hKey(s);
+          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
+          return `<button class="tl-page-btn${m.histServer === s.id ? " active" : ""}" data-tra-hist-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
+        }).join("");
+        _hSrvEl.style.display = "flex";
+      } else if (_hSrvEl) {
+        _hSrvEl.style.display = "none";
+      }
+    } else if (tab === "activity") {
+      if (!m.staleServers) {
+        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+        if (this._tracearrModal) {
+          const srvMap = /* @__PURE__ */ new Map();
+          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+        }
+      }
+      if (!this._tracearrModal) return;
+      if (!m.activityServerId && (m.staleServers || []).length > 0) {
+        const _pk = (n) => {
+          const s = (n || "").toLowerCase();
+          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
+        m.activityServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+      }
+      const _actSrvQ = m.activityServerId ? `&serverId=${m.activityServerId}` : "";
+      const ar = await this._traApiFetch(`activity?period=${m.activityPeriod || "month"}${_actSrvQ}`);
+      if (!this._tracearrModal) return;
+      m.activityData = ar;
+      body.innerHTML = this._traBodyActivity();
+      this._wireTracearrModalBody(body);
+      const _aSrvEl = modal.querySelector("#tra-hdr-server");
+      if (_aSrvEl && (m.staleServers || []).length > 1) {
+        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+        const _aKey = (name) => {
+          const n = (name || "").toLowerCase();
+          return n.includes("plex") ? "plex" : n.includes("jellyfin") ? "jellyfin" : n.includes("emby") ? "emby" : null;
+        };
+        const _aPk = (name) => {
+          const k = _aKey(name);
+          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
+        };
+        const _sorted = [...m.staleServers].sort((a, b) => _aPk(a.name) - _aPk(b.name));
+        _aSrvEl.innerHTML = _sorted.map((s) => {
+          const key = _aKey(s.name);
+          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
+          return `<button class="tl-page-btn${m.activityServerId === s.id ? " active" : ""}" data-tra-act-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
+        }).join("");
+        _aSrvEl.style.display = "flex";
+      } else if (_aSrvEl) {
+        _aSrvEl.style.display = "none";
+      }
+    } else if (tab === "quality") {
+      if (!m.staleServers) {
+        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+        if (this._tracearrModal) {
+          const srvMap = /* @__PURE__ */ new Map();
+          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+        }
+      }
+      if (!this._tracearrModal) return;
+      if (!m.qualityServerId && (m.staleServers || []).length > 0) {
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
+        if (_validSaved) {
+          m.qualityServerId = _saved;
+        } else {
+          const _pk = (n) => {
+            const s = (n || "").toLowerCase();
+            return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
+          };
+          const _first = [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0];
+          if (_first) m.qualityServerId = _first.id;
+        }
+      }
+      const _qSrvId = m.qualityServerId || null;
+      const _qMt = m.qualityMediaType || null;
+      const _qKey = `${_qSrvId}|${_qMt}`;
+      const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+      const _qQ = ["period=all", `timezone=${_tz}`, _qSrvId && `serverId=${_qSrvId}`, _qMt && `mediaType=${_qMt}`].filter(Boolean).join("&");
+      const _qSrvQ = `?${_qQ}`;
+      if (!m.qualityResolution || m._qualityResSrvId !== _qSrvId) {
+        const _srvSuffix = _qSrvId ? `?serverId=${_qSrvId}` : "";
+        const [res, cod] = await Promise.all([
+          this._traLibFetch(`resolution${_srvSuffix}`),
+          this._traLibFetch(`codecs${_srvSuffix}`)
+        ]);
+        if (!this._tracearrModal) return;
+        m.qualityResolution = res;
+        m.qualityCodecs = cod;
+        m._qualityResSrvId = _qSrvId;
+      }
+      if (!m.qualityData || m._qualityKey !== _qKey) {
+        const qr = await this._traLibFetch(`quality${_qSrvQ}`);
+        if (!this._tracearrModal) return;
+        m.qualityData = qr;
+        m._qualityKey = _qKey;
+      }
+      body.innerHTML = this._traBodyQuality();
+      this._wireTracearrModalBody(body);
+      const _qSrvEl = body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server");
+      if (_qSrvEl && (m.staleServers || []).length > 1) {
+        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+        const _srvAppKey = (name) => {
+          const n = (name || "").toLowerCase();
+          if (n.includes("plex")) return "plex";
+          if (n.includes("jellyfin")) return "jellyfin";
+          if (n.includes("emby")) return "emby";
+          return null;
+        };
+        const _typePriority = { jellyfin: 0, plex: 1, emby: 2 };
+        const _sorted = [...m.staleServers || []].sort((a, b) => {
+          const pa = _typePriority[_srvAppKey(a.name)] ?? 99;
+          const pb = _typePriority[_srvAppKey(b.name)] ?? 99;
+          return pa - pb;
+        });
+        const _sel = m.qualityServerId || null;
+        _qSrvEl.innerHTML = _sorted.map((s) => {
+          const key = _srvAppKey(s.name);
+          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
+          return `<button class="tl-page-btn${_sel === s.id ? " active" : ""}" data-tra-quality-srv="${s.id}"
+            title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
+        }).join("");
+        _qSrvEl.style.display = "flex";
+      } else if (_qSrvEl) {
+        _qSrvEl.style.display = "none";
+      }
+    } else if (tab === "storage") {
+      try {
+        const _effectiveSrv = m.selectedServerId || null;
+        const _srvQ = _effectiveSrv ? `&serverId=${_effectiveSrv}` : "";
+        if (!m.storageData || m._storageServerId !== _effectiveSrv) {
+          const [sr, st] = await Promise.all([
+            this._traLibFetch(`storage?period=all${_srvQ}`),
+            this._traLibFetch(`stats${_effectiveSrv ? `?serverId=${_effectiveSrv}` : ""}`)
+          ]);
+          if (!this._tracearrModal) return;
+          m.storageData = sr;
+          m.storageStats = st;
+          m._storageServerId = _effectiveSrv;
+        }
+        if (!m.dupsSummary || m._dupsServerId !== _effectiveSrv) {
+          const dupPath = _effectiveSrv ? `duplicates?serverId=${_effectiveSrv}&pageSize=1` : "duplicates?pageSize=1";
+          const dupR = await this._traLibFetch(dupPath);
+          if (!this._tracearrModal) return;
+          m.dupsSummary = dupR?.summary || null;
+          m._dupsServerId = _effectiveSrv;
+        }
+        const _isMobSt = window.matchMedia("(max-width:600px)").matches;
+        m.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
+        const _staleCat = m.staleCategory || "never_watched";
+        const _staleMo = _staleCat === "stale" ? m.staleMonths || 3 : null;
+        const _staleKey = `${_staleCat}|${_effectiveSrv || ""}|${_staleMo || ""}`;
+        if (!m.staleRaw || m.staleRaw._key !== _staleKey) {
+          const srvParam = _effectiveSrv ? `&serverId=${_effectiveSrv}` : "";
+          const moParam = _staleMo ? `&months=${_staleMo}` : "";
+          const staleR = await this._traLibFetch(
+            `stale?category=${_staleCat}&page=1&pageSize=100&sort=${m.staleSort || "fileSize"}&order=${m.staleOrder || "desc"}${srvParam}${moParam}`
+          );
+          if (!this._tracearrModal) return;
+          m.staleSummary = staleR?.summary || null;
+          const rawItems = staleR?.items || [];
+          m.staleRaw = Object.assign([...rawItems], { _key: _staleKey });
+          m.staleDeduped = null;
+          if (!_effectiveSrv) {
+            const srvMap = /* @__PURE__ */ new Map();
+            for (const it of rawItems) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+            m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+            if (!m.selectedServerId && m.staleServers.length > 0) {
+              let _savedStor = null;
+              try {
+                _savedStor = localStorage.getItem("arr-tra-srv");
+              } catch (_) {
+              }
+              const _validStor = _savedStor && m.staleServers.find((s) => s.id === _savedStor);
+              m.selectedServerId = _validStor ? _savedStor : m.staleServers[0].id;
+              const _modalEl = body.closest("[data-tra-modal]");
+              if (_modalEl) {
+                this._traLoadTab("storage", _modalEl);
+                return;
+              }
+            }
+          }
+        }
+        const srvEl = body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server");
+        if (srvEl) {
+          if ((m.staleServers || []).length > 1) {
+            const sel = m.selectedServerId || m.staleServers[0]?.id;
+            const _srvAppKey = (name) => {
+              const n = (name || "").toLowerCase();
+              if (n.includes("plex")) return "plex";
+              if (n.includes("jellyfin")) return "jellyfin";
+              if (n.includes("emby")) return "emby";
+              return null;
+            };
+            const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+            const _srvIcon = (name) => {
+              const key = _srvAppKey(name);
+              if (!key) return `<span style="font-size:11px;font-weight:700">${name}</span>`;
+              return `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain" title="${name}">`;
+            };
+            srvEl.innerHTML = m.staleServers.map(
+              (s) => `<button class="tl-page-btn${sel === s.id ? " active" : ""}" data-tra-server="${s.id}"
+                title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">
+                ${_srvIcon(s.name)}
+              </button>`
+            ).join("");
+            srvEl.style.display = "flex";
+          } else {
+            srvEl.style.display = "none";
+          }
+        }
+        let _filtered;
+        if (_effectiveSrv) {
+          _filtered = m.staleRaw || [];
+        } else {
+          if (!m.staleDeduped) {
+            const seen = /* @__PURE__ */ new Map();
+            for (const it of m.staleRaw || []) {
+              const key = `${it.title?.toLowerCase()}|${it.year}|${it.mediaType}`;
+              if (seen.has(key)) {
+                const ex = seen.get(key);
+                ex.serverName = [...new Set([ex.serverName, it.serverName].filter(Boolean))].join(", ");
+                if (Number(it.fileSize) > Number(ex.fileSize)) ex.fileSize = it.fileSize;
+              } else {
+                seen.set(key, { ...it });
+              }
+            }
+            m.staleDeduped = [...seen.values()];
+          }
+          _filtered = m.staleDeduped;
+        }
+        const _pp = m.stalePageSize;
+        const _start = (m.stalePage || 0) * _pp;
+        m.staleItems = _filtered.slice(_start, _start + _pp);
+        m.staleTotal = _filtered.length;
+        body.innerHTML = this._traBodyStorage();
+        this._wireTracearrModalBody(body);
+      } catch (err) {
+        console.error("[arr-card] Storage tab error:", err);
+        body.innerHTML = `<div style="color:rgba(252,165,165,0.9);padding:20px;font-size:12px;font-family:monospace">Storage error: ${err?.message || err}</div>`;
+      }
+    } else if (tab === "watch") {
+      if (!m.staleServers) {
+        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+        if (this._tracearrModal) {
+          const srvMap = /* @__PURE__ */ new Map();
+          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+        }
+      }
+      if (!this._tracearrModal) return;
+      if (!m.watchServerId && (m.staleServers || []).length > 0) {
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _valid = _saved && m.staleServers.find((s) => s.id === _saved);
+        if (_valid) {
+          m.watchServerId = _saved;
+        } else {
+          const _pk = (n) => {
+            const s = (n || "").toLowerCase();
+            return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
+          };
+          const _first = [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0];
+          if (_first) m.watchServerId = _first.id;
+        }
+      }
+      const _wSrvId = m.watchServerId || null;
+      const _wPeriod = m.watchPeriod || "30d";
+      const _wPKey = `${_wSrvId}|${_wPeriod}`;
+      const _wSKey = _wSrvId || "";
+      const _wTz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+      const _wSrvQ = _wSrvId ? `&serverId=${_wSrvId}` : "";
+      const _wSrvQS = _wSrvId ? `?serverId=${_wSrvId}` : "";
+      const fetches = [];
+      if (!m.watchPatterns || m.watchSrvKey !== _wSKey) {
+        fetches.push(Promise.all([
+          this._traLibFetch(`patterns?periodWeeks=12&timezone=${_wTz}${_wSrvQ}`),
+          this._traLibFetch(`status${_wSrvQS}`),
+          this._traLibFetch(`completion?aggregateLevel=item&page=1&pageSize=1&mediaType=movie${_wSrvQ}`),
+          this._traLibFetch(`completion?aggregateLevel=item&page=1&pageSize=1&mediaType=episode${_wSrvQ}`),
+          this._traLibFetch(`watch?page=1&pageSize=1${_wSrvQ}`)
+        ]).then(([pat, stat, compMov, compEp, watchList]) => {
+          if (!this._tracearrModal) return;
+          m.watchPatterns = pat;
+          m.watchStatus = stat;
+          m.watchCompletion = { movie: compMov, episode: compEp };
+          m.watchedTotal = watchList?.pagination?.total ?? watchList?.total ?? null;
+          m.watchSrvKey = _wSKey;
+        }));
+      }
+      if (!m.watchTopMovies || m.watchSrvPeriodKey !== _wPKey) {
+        fetches.push(Promise.all([
+          this._traLibFetch(`top-movies?period=${_wPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`),
+          this._traLibFetch(`top-shows?period=${_wPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`)
+        ]).then(([mov, sh]) => {
+          if (!this._tracearrModal) return;
+          m.watchTopMovies = mov?.items || mov || [];
+          m.watchTopShows = sh?.items || sh || [];
+          m.watchSrvPeriodKey = _wPKey;
+        }));
+      }
+      await Promise.all(fetches);
+      if (!this._tracearrModal) return;
+      body.innerHTML = this._traBodyWatch();
+      this._wireTracearrModalBody(body);
+      const _wSrvEl = body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server");
+      if (_wSrvEl && (m.staleServers || []).length > 1) {
+        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+        const _srvAppKey = (name) => {
+          const n = (name || "").toLowerCase();
+          if (n.includes("plex")) return "plex";
+          if (n.includes("jellyfin")) return "jellyfin";
+          if (n.includes("emby")) return "emby";
+          return null;
+        };
+        const _typePriority = { jellyfin: 0, plex: 1, emby: 2 };
+        const _sorted = [...m.staleServers].sort((a, b) => (_typePriority[_srvAppKey(a.name)] ?? 99) - (_typePriority[_srvAppKey(b.name)] ?? 99));
+        const _sel = m.watchServerId;
+        _wSrvEl.innerHTML = _sorted.map((s) => {
+          const key = _srvAppKey(s.name);
+          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain" title="${s.name}">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
+          return `<button class="tl-page-btn${_sel === s.id ? " active" : ""}" data-tra-watch-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
+        }).join("");
+        _wSrvEl.style.display = "flex";
+      } else if (_wSrvEl) {
+        _wSrvEl.style.display = "none";
+      }
+    } else if (tab === "devices") {
+      if (!m.staleServers) {
+        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+        if (this._tracearrModal) {
+          const srvMap = /* @__PURE__ */ new Map();
+          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+        }
+      }
+      if (!this._tracearrModal) return;
+      if (!m.devicesServerId && (m.staleServers || []).length > 0) {
+        const _pk = (n) => {
+          const s = (n || "").toLowerCase();
+          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
+        m.devicesServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+      }
+      if (!m.devicesData) {
+        const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+        const _dp = m.devicesPeriod || "month";
+        const _dSrv = m.devicesServerId ? `&serverId=${m.devicesServerId}` : "";
+        const _dQ = `period=${_dp}${_dSrv}&timezone=${_tz}`;
+        const [dc, dh, dhot, dmat, dtu] = await Promise.all([
+          this._traStatsFetch(`device-compatibility?${_dQ}&minSessions=5`),
+          this._traStatsFetch(`device-compatibility/health?${_dQ}`),
+          this._traStatsFetch(`device-compatibility/hotspots?${_dQ}`),
+          this._traStatsFetch(`device-compatibility/matrix?${_dQ}&minSessions=5`),
+          this._traStatsFetch(`device-compatibility/top-transcoding-users?${_dQ}`)
+        ]);
+        if (!this._tracearrModal) return;
+        m.devicesData = dc;
+        m.devicesHealth = dh;
+        m.devicesHotspots = dhot;
+        m.devicesMatrix = dmat;
+        m.devicesUsers = dtu;
+      }
+      body.innerHTML = this._traBodyDevices();
+      this._wireTracearrModalBody(body);
+      const _dSrvEl = modal.querySelector("#tra-hdr-server");
+      if (_dSrvEl && (m.staleServers || []).length > 1) {
+        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+        const _dKey = (name) => {
+          const n = (name || "").toLowerCase();
+          return n.includes("plex") ? "plex" : n.includes("jellyfin") ? "jellyfin" : n.includes("emby") ? "emby" : null;
+        };
+        const _dPk = (name) => {
+          const k = _dKey(name);
+          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
+        };
+        _dSrvEl.innerHTML = [...m.staleServers].sort((a, b) => _dPk(a.name) - _dPk(b.name)).map((s) => {
+          const key = _dKey(s.name);
+          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
+          return `<button class="tl-page-btn${m.devicesServerId === s.id ? " active" : ""}" data-tra-dev-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
+        }).join("");
+        _dSrvEl.style.display = "flex";
+      } else if (_dSrvEl) {
+        _dSrvEl.style.display = "none";
+      }
+    } else if (tab === "bandwidth") {
+      if (!m.staleServers) {
+        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+        if (this._tracearrModal) {
+          const srvMap = /* @__PURE__ */ new Map();
+          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+        }
+      }
+      if (!this._tracearrModal) return;
+      if (!m.bwServerId && (m.staleServers || []).length > 0) {
+        const _pk = (n) => {
+          const s = (n || "").toLowerCase();
+          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
+        m.bwServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+      }
+      if (!m.bwSummary) {
+        const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+        const _bp = m.bwPeriod || "month";
+        const _bSrv = m.bwServerId ? `&serverId=${m.bwServerId}` : "";
+        const _bQ = `period=${_bp}${_bSrv}&timezone=${_tz}`;
+        const [bws, bwd, bwu] = await Promise.all([
+          this._traStatsFetch(`bandwidth/summary?${_bQ}`),
+          this._traStatsFetch(`bandwidth/daily?${_bQ}`),
+          this._traStatsFetch(`bandwidth/top-users?${_bQ}`)
+        ]);
+        if (!this._tracearrModal) return;
+        m.bwSummary = bws;
+        m.bwDaily = bwd;
+        m.bwUsers = bwu;
+      }
+      body.innerHTML = this._traBodyBandwidth();
+      this._wireTracearrModalBody(body);
+      const _bSrvEl = modal.querySelector("#tra-hdr-server");
+      if (_bSrvEl && (m.staleServers || []).length > 1) {
+        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+        const _bKey = (name) => {
+          const n = (name || "").toLowerCase();
+          return n.includes("plex") ? "plex" : n.includes("jellyfin") ? "jellyfin" : n.includes("emby") ? "emby" : null;
+        };
+        const _bPk = (name) => {
+          const k = _bKey(name);
+          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
+        };
+        _bSrvEl.innerHTML = [...m.staleServers].sort((a, b) => _bPk(a.name) - _bPk(b.name)).map((s) => {
+          const key = _bKey(s.name);
+          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
+          return `<button class="tl-page-btn${m.bwServerId === s.id ? " active" : ""}" data-tra-bw-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
+        }).join("");
+        _bSrvEl.style.display = "flex";
+      } else if (_bSrvEl) {
+        _bSrvEl.style.display = "none";
+      }
+    }
+  }
+  // ── Refresh stale section only (no chart/tiles re-render) ────────────────
+  async _traRefreshStale(body) {
+    const m = this._tracearrModal;
+    if (!m) return;
+    try {
+      const _effectiveSrv = m.selectedServerId || null;
+      const _staleCat = m.staleCategory || "never_watched";
+      const _staleMo = _staleCat === "stale" ? m.staleMonths || 3 : null;
+      const _staleKey = `${_staleCat}|${_effectiveSrv || ""}|${_staleMo || ""}`;
+      const _isMobSt = window.matchMedia("(max-width:600px)").matches;
+      m.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
+      if (!m.staleRaw || m.staleRaw._key !== _staleKey) {
+        const srvParam = _effectiveSrv ? `&serverId=${_effectiveSrv}` : "";
+        const moParam = _staleMo ? `&months=${_staleMo}` : "";
+        const staleR = await this._traLibFetch(
+          `stale?category=${_staleCat}&page=1&pageSize=100&sort=${m.staleSort || "fileSize"}&order=${m.staleOrder || "desc"}${srvParam}${moParam}`
+        );
+        if (!this._tracearrModal) return;
+        m.staleSummary = staleR?.summary || null;
+        const rawItems = staleR?.items || [];
+        m.staleRaw = Object.assign([...rawItems], { _key: _staleKey });
+        m.staleDeduped = null;
+      }
+      let _filtered;
+      if (_effectiveSrv) {
+        _filtered = m.staleRaw || [];
+      } else {
+        if (!m.staleDeduped) {
+          const seen = /* @__PURE__ */ new Map();
+          for (const it of m.staleRaw || []) {
+            const key = `${it.title?.toLowerCase()}|${it.year}|${it.mediaType}`;
+            if (seen.has(key)) {
+              const ex = seen.get(key);
+              ex.serverName = [...new Set([ex.serverName, it.serverName].filter(Boolean))].join(", ");
+              if (Number(it.fileSize) > Number(ex.fileSize)) ex.fileSize = it.fileSize;
+            } else {
+              seen.set(key, { ...it });
+            }
+          }
+          m.staleDeduped = [...seen.values()];
+        }
+        _filtered = m.staleDeduped;
+      }
+      const _sCol = m.staleSort || "fileSize";
+      const _sDir = m.staleOrder === "asc" ? 1 : -1;
+      _filtered = [..._filtered].sort((a, b) => {
+        let va = a[_sCol], vb = b[_sCol];
+        if (_sCol === "fileSize" || _sCol === "playCount" || _sCol === "watchCount") {
+          va = Number(va) || 0;
+          vb = Number(vb) || 0;
+        }
+        if (va < vb) return -_sDir;
+        if (va > vb) return _sDir;
+        return 0;
+      });
+      if (m.staleMediaType) _filtered = _filtered.filter((it) => it.mediaType === m.staleMediaType);
+      const _pp = m.stalePageSize;
+      m.staleItems = _filtered.slice((m.stalePage || 0) * _pp, ((m.stalePage || 0) + 1) * _pp);
+      m.staleTotal = _filtered.length;
+      const wrap = body.querySelector("[data-tra-stale-wrap]");
+      if (wrap) {
+        wrap.innerHTML = this._traBodyStaleSection();
+        const pagEl = body.querySelector("[data-tra-stale-pag]");
+        if (pagEl) pagEl.innerHTML = this._traStalePagHtml();
+        this._wireTracearrModalBody(body);
+      }
+    } catch (err) {
+      console.error("[arr-card] Stale refresh error:", err);
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // API helper
+  // ──────────────────────────────────────────────────────────────────────────
+  async _traApiFetch(path) {
+    try {
+      return await this._hass.callApi("GET", `arr_stack/tracearr/v1/public/${path}`);
+    } catch (e) {
+      console.warn("[arr-card] Tracearr fetch error:", path, e);
+      return null;
+    }
+  }
+  async _traLibFetch(path) {
+    try {
+      return await this._hass.callApi("GET", `arr_stack/tracearr/v1/library/${path}`);
+    } catch (e) {
+      console.warn("[arr-card] Tracearr library fetch error:", path, e);
+      return null;
+    }
+  }
+  async _traStatsFetch(path) {
+    try {
+      return await this._hass.callApi("GET", `arr_stack/tracearr/v1/stats/${path}`);
+    } catch (e) {
+      console.warn("[arr-card] Tracearr stats fetch error:", path, e);
+      return null;
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Shared helpers
+  // ──────────────────────────────────────────────────────────────────────────
+  _traTrustColor(score) {
+    if (score >= 80) return "#34C759";
+    if (score >= 50) return "#FF9500";
+    return "#FF3B30";
+  }
+  _traTrustBg(score) {
+    if (score >= 80) return "rgba(52,199,89,0.16)";
+    if (score >= 50) return "rgba(255,149,0,0.16)";
+    return "rgba(255,59,48,0.18)";
+  }
+  _traSevColor(sev) {
+    return { high: "#FF3B30", medium: "#FF9500", low: "#34C759" }[sev] || "#FF3B30";
+  }
+  _traSevBg(sev) {
+    return { high: "rgba(248,113,113,0.18)", medium: "rgba(250,180,50,0.16)", low: "rgba(52,211,153,0.14)" }[sev] || "rgba(248,113,113,0.18)";
+  }
+  _traViolTypeLabel(type) {
+    return {
+      impossible_travel: "Impossible travel",
+      simultaneous_locations: "Simultaneous locations",
+      concurrent_streams: "Concurrent streams",
+      device_velocity: "Device velocity"
+    }[type] || type || "\u2014";
+  }
+  _traFmtDuration(ms) {
+    if (!ms) return "\u2014";
+    const m = this._tlFmtDuration ? this._tlFmtDuration(Math.round(ms / 6e4)) : Math.round(ms / 6e4) + " min";
+    return m;
+  }
+  _traFilterHistory(raw, period, search) {
+    let data = raw || [];
+    if (period) {
+      const days = period === "week" ? 7 : period === "month" ? 30 : 365;
+      const cutoff = new Date(Date.now() - days * 864e5);
+      data = data.filter((h) => h.startedAt && new Date(h.startedAt) >= cutoff);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (h) => (h.mediaTitle || "").toLowerCase().includes(q) || (h.showTitle || "").toLowerCase().includes(q) || (h.user?.username || "").toLowerCase().includes(q) || (h.user?.displayName || "").toLowerCase().includes(q)
+      );
+    }
+    return data;
+  }
+  _traFmtDate(iso) {
+    if (!iso) return "";
+    return this._tlFmtDate ? this._tlFmtDate(Math.floor(new Date(iso).getTime() / 1e3)) : new Date(iso).toLocaleString();
+  }
+  _traUserAvatar(u, size = 20) {
+    if (!u) return `<span style="width:${size}px;height:${size}px;border-radius:50%;background:rgba(255,255,255,0.1);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size * 0.4)}px;font-weight:700;color:rgba(255,255,255,0.5);flex-shrink:0">?</span>`;
+    const name = u.displayName || u.username || "?";
+    const src = u.thumbUrl || u.avatarUrl || "";
+    if (src) return `<img src="${src}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15)" loading="lazy" onerror="this.outerHTML='<span style=\\'width:${size}px;height:${size}px;border-radius:50%;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size * 0.4)}px;font-weight:700;color:rgba(255,255,255,0.6);flex-shrink:0\\'>${name.slice(0, 2).toUpperCase()}</span>'">`;
+    return `<span style="width:${size}px;height:${size}px;border-radius:50%;background:rgba(130,80,255,0.25);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size * 0.4)}px;font-weight:700;color:rgba(200,160,255,0.9);flex-shrink:0">${name.slice(0, 2).toUpperCase()}</span>`;
+  }
+};
+var tracearrMixin = _TraceaRrMethods.prototype;
+
 // src/render/activity.js
 var _ActivityRenderMethods = class {
   // ── Right-panel card row ─────────────────────────────────────────────────
@@ -15830,7 +21776,7 @@ var _ActivityRenderMethods = class {
       const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
       if (s) rows.push({ title: s.title || "\u2014", type: "show", failed: false, pct, sub });
     }
-    const badge = totalFailed > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(251,146,60,0.30);border:1px solid rgba(251,146,60,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalFailed} ${this._t("actFailed")}</span>` : totalActive > 0 ? `<span style="font-size:10px;font-weight:700;color:#34d399;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalActive} ${this._t("tlActive")}</span>` : "";
+    const badge = totalFailed > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(251,146,60,0.30);border:1px solid rgba(251,146,60,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalFailed} ${this._t("actFailed")}</span>` : totalActive > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalActive} ${this._t("tlActive")}</span>` : "";
     const rowsHtml = rows.length > 0 ? rows.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const color = r.failed ? "rgba(248,113,113,0.85)" : "rgba(52,211,153,0.85)";
@@ -18635,7 +24581,7 @@ var _ProwlarrRenderMethods = class {
         ${errMsg}
       </div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No indexers</div>`;
-    const badge = errors > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,149,0,0.9);background:rgba(255,149,0,0.15);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${errors} error${errors > 1 ? "s" : ""}</span>` : active > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.30);border:1px solid rgba(52,211,153,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${active} ok</span>` : "";
+    const badge = errors > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,149,0,0.15);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${errors} error${errors > 1 ? "s" : ""}</span>` : active > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.30);border:1px solid rgba(52,211,153,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${active} ok</span>` : "";
     return `<div class="tl-card" data-pw-open="indexers" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
@@ -20975,6 +26921,9 @@ var ArrStackCard = class extends HTMLElement {
     this._jellystatConfigured = true;
     this._jellystat = null;
     this._jellystatModal = null;
+    this._tracearrConfigured = true;
+    this._tracearr = null;
+    this._tracearrModal = null;
     this._activityModal = null;
     this._actHistoryCache = null;
     this._actBlocklistCache = null;
@@ -21509,6 +27458,7 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: "tautulli",
       prowlarr: "prowlarr",
       jellystat: "jellystat",
+      tracearr: "tracearr",
       jellyfin: "jellyfin",
       emby: "emby",
       kodi: "kodi"
@@ -21524,6 +27474,7 @@ var ArrStackCard = class extends HTMLElement {
       tautulli: "mdi:chart-bar",
       prowlarr: "mdi:magnify-scan",
       jellystat: "mdi:chart-line",
+      tracearr: "mdi:shield-account-outline",
       jellyfin: "mdi:jellyfish-outline",
       emby: "mdi:emby",
       kodi: "mdi:kodi"
@@ -21565,6 +27516,7 @@ var ArrStackCard = class extends HTMLElement {
       emby: `rgba(82,182,92,${o})`,
       kodi: `rgba(23,154,215,${o})`,
       prowlarr: `rgba(255,80,0,${o})`,
+      tracearr: `rgba(99,200,150,${o})`,
       qbit: `rgba(30,140,255,${o})`,
       deluge: `rgba(10,80,220,${o})`,
       rtorrent: `rgba(60,120,255,${o})`,
@@ -21586,6 +27538,7 @@ var ArrStackCard = class extends HTMLElement {
       jellystat: `rgba(139,92,246,${o})`,
       jellyfin: `rgba(139,92,246,${o})`,
       prowlarr: `rgba(255,160,50,${o})`,
+      tracearr: `rgba(50,180,120,${o})`,
       qbit: `rgba(10,80,220,${o})`,
       deluge: `rgba(5,45,160,${o})`,
       rtorrent: `rgba(140,60,240,${o})`,
@@ -21911,6 +27864,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wireSearch();
     this._wireTautulliPosters(right);
     this._wireJellystatPosters(right);
+    this._wireTracearrPosters(right);
     this._wireActivityPosters(right);
     this._wireProwlarrPosters(right);
     this._trimActivityCards();
@@ -22191,6 +28145,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wireSearch();
     if (right) this._wireTautulliPosters(right);
     if (right) this._wireJellystatPosters(right);
+    if (right) this._wireTracearrPosters(right);
     if (right) this._wireActivityPosters(right);
     if (right) this._wireProwlarrPosters(right);
     this._renderPopupEl();
@@ -22311,6 +28266,9 @@ applyMixin(ArrStackCard.prototype, jellystatSharedMixin);
 applyMixin(ArrStackCard.prototype, jellystatTableMixin);
 applyMixin(ArrStackCard.prototype, jellystatMixin);
 applyMixin(ArrStackCard.prototype, jellystatGraphsMixin);
+applyMixin(ArrStackCard.prototype, wireTracearrMixin);
+applyMixin(ArrStackCard.prototype, tracearrTableMixin);
+applyMixin(ArrStackCard.prototype, tracearrMixin);
 applyMixin(ArrStackCard.prototype, activityRenderMixin);
 applyMixin(ArrStackCard.prototype, wireActivityMixin);
 applyMixin(ArrStackCard.prototype, prowlarrRenderMixin);
