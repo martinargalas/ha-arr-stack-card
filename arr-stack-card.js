@@ -6671,7 +6671,8 @@ var _FetchMethods = class {
         const isRadarr = svcs[i].startsWith("radarr");
         for (const rec of r.value?.records || []) {
           const title = isRadarr ? rec.movie?.title || rec.sourceTitle || "\u2014" : rec.series?.title || rec.sourceTitle || "\u2014";
-          all.push({ title, date: rec.date, eventType: rec.eventType, svc: svcs[i] });
+          const ep = !isRadarr && rec.episode ? `S${String(rec.episode.seasonNumber).padStart(2, "0")}E${String(rec.episode.episodeNumber).padStart(2, "0")}` : null;
+          all.push({ title, date: rec.date, eventType: rec.eventType, svc: svcs[i], ep });
         }
       });
       all.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -21800,12 +21801,14 @@ var _ActivityRenderMethods = class {
   }
   _actHistoryCard() {
     const cache = this._actHistoryCache;
-    const grabbed = cache === null ? null : (cache || []).filter((r) => r.eventType === "grabbed" || r.eventType === "downloadFolderImported").slice(0, this._actCardMax("history"));
+    const grabbed = cache === null ? null : (cache || []).filter((r) => r.eventType === "grabbed" || r.eventType === "downloadFolderImported");
+    const histMax = this._actCardMax("history");
     const content = grabbed === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : grabbed.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoHistory")}</div>` : grabbed.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const ago = r.date ? this._tlFmtDate(r.date) : "";
-      const sub = [r.svc, ago].filter(Boolean).join(" \xB7 ");
-      return `<div style="${sep}padding:4px 0">
+      const sub = [r.svc, r.ep || null, ago].filter(Boolean).join(" \xB7 ");
+      const hidden = i >= histMax ? "display:none;" : "";
+      return `<div style="${hidden}${sep}padding:4px 0">
               <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
               <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}</div>
             </div>`;
@@ -21820,12 +21823,14 @@ var _ActivityRenderMethods = class {
   }
   _actBlocklistCard() {
     const cache = this._actBlocklistCache;
-    const items = cache === null ? null : (cache || []).slice(0, this._actCardMax("blocklist"));
+    const items = cache === null ? null : cache || [];
+    const blMax = this._actCardMax("blocklist");
     const content = items === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : items.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoBlocked")}</div>` : items.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const ago = r.date ? this._tlFmtDate(r.date) : "";
       const sub = [r.svc, r.quality, ago].filter(Boolean).join(" \xB7 ");
-      return `<div style="${sep}padding:4px 0">
+      const hidden = i >= blMax ? "display:none;" : "";
+      return `<div style="${hidden}${sep}padding:4px 0">
               <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
               <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}</div>
             </div>`;
