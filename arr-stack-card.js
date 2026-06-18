@@ -5679,8 +5679,6 @@ var _FetchMethods = class {
       const seriesData = /* @__PURE__ */ new Map();
       const firstEpMap = /* @__PURE__ */ new Map();
       for (const item of records) {
-        const bad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
-        if (bad) continue;
         const sz = item.size || 0;
         const sl = item.sizeleft || 0;
         const pct = sz > 0 ? Math.round((sz - sl) / sz * 100) : 0;
