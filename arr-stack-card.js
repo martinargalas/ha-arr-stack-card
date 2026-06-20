@@ -295,6 +295,22 @@ var ArrStackCardEditor = class extends HTMLElement {
         </div>
       </div>
 
+      <!-- Storage source -->
+      <div class="section">
+        <div class="section-title">Storage</div>
+        <div class="row">
+          <span class="row-label">Disk space source</span>
+          <select data-style-key="storageSource">
+            <option value="auto"    ${this._styleVal("storageSource", "auto") === "auto" ? "selected" : ""}>Auto</option>
+            <option value="radarr"  ${this._styleVal("storageSource", "auto") === "radarr" ? "selected" : ""}>Radarr</option>
+            ${this._caps?.radarr2 ? `<option value="radarr2" ${this._styleVal("storageSource", "auto") === "radarr2" ? "selected" : ""}>Radarr 2</option>` : ""}
+            <option value="sonarr"  ${this._styleVal("storageSource", "auto") === "sonarr" ? "selected" : ""}>Sonarr</option>
+            ${this._caps?.sonarr2 ? `<option value="sonarr2" ${this._styleVal("storageSource", "auto") === "sonarr2" ? "selected" : ""}>Sonarr 2</option>` : ""}
+          </select>
+        </div>
+        <div class="hint">Which service to use for the disk space widget. Use Radarr or Sonarr if SABnzbd reports a different volume (e.g. cache drive instead of array).</div>
+      </div>
+
       <!-- Appearance -->
       <div class="section">
         <div class="section-title">Appearance</div>
@@ -4700,9 +4716,13 @@ var _FetchMethods = class {
       this._fetchSonarrTags(),
       this._fetchRadarrRootFolders(),
       this._fetchSonarrRootFolders(),
+      this._fetchRadarrDiskspace(),
+      this._fetchSonarrDiskspace(),
       this._fetchRadarr2Profiles(),
       this._fetchRadarr2Tags(),
       this._fetchRadarr2RootFolders(),
+      this._fetchRadarr2Diskspace(),
+      this._fetchSonarr2Diskspace(),
       this._fetchTautulli(),
       this._fetchJellystat(),
       this._fetchTracearr(),
@@ -6060,6 +6080,40 @@ var _FetchMethods = class {
     } catch (e) {
     }
   }
+  async _fetchRadarrDiskspace() {
+    if (this._radarrDiskspace.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr/diskspace");
+      if (Array.isArray(data)) this._radarrDiskspace = data;
+    } catch (e) {
+    }
+  }
+  async _fetchRadarr2Diskspace() {
+    if (this._radarr2Configured === false) return;
+    if (this._radarr2Diskspace.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/radarr2/diskspace");
+      if (Array.isArray(data)) this._radarr2Diskspace = data;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarrDiskspace() {
+    if (this._sonarrDiskspace.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr/diskspace");
+      if (Array.isArray(data)) this._sonarrDiskspace = data;
+    } catch (e) {
+    }
+  }
+  async _fetchSonarr2Diskspace() {
+    if (this._sonarr2Configured === false) return;
+    if (this._sonarr2Diskspace?.length > 0) return;
+    try {
+      const data = await this._callApi("GET", "arr_stack/sonarr2/diskspace");
+      if (Array.isArray(data)) this._sonarr2Diskspace = data;
+    } catch (e) {
+    }
+  }
   // ─────────────────────────────────────────────
   // Sonarr Interactive Search
   // ─────────────────────────────────────────────
@@ -6889,14 +6943,27 @@ var _RenderLeft = class {
     const delugeFreeBytes = this._delugeConfigured ? this._delugeStatus?.free_space || 0 : 0;
     const hasDelugeDisk = delugeFreeBytes > 0;
     const DISK_ROUND = 100 * 1024 * 1024;
-    const allRoots = [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
+    const storageSource = this._cfgGet("styles", "storageSource", "auto");
+    const sourceDiskspace = {
+      radarr: this._radarrDiskspace || [],
+      radarr2: this._radarr2Diskspace || [],
+      sonarr: this._sonarrDiskspace || [],
+      sonarr2: this._sonarr2Diskspace || []
+    };
+    const sourceRoots = {
+      radarr: this._radarrRootFolders || [],
+      radarr2: this._radarr2RootFolders || [],
+      sonarr: this._sonarrRootFolders || [],
+      sonarr2: this._sonarr2RootFolders || []
+    };
+    const allRoots = storageSource !== "auto" && sourceDiskspace[storageSource]?.length ? sourceDiskspace[storageSource] : [...this._radarrRootFolders || [], ...this._sonarrRootFolders || []];
     const diskMap = /* @__PURE__ */ new Map();
     for (const r of allRoots) {
       const key = Math.round(r.freeSpace / DISK_ROUND);
-      if (!diskMap.has(key)) diskMap.set(key, { freeSpace: r.freeSpace, paths: /* @__PURE__ */ new Set() });
-      diskMap.get(key).paths.add(r.path);
+      if (!diskMap.has(key)) diskMap.set(key, { freeSpace: r.freeSpace, totalSpace: r.totalSpace || 0, paths: /* @__PURE__ */ new Set() });
+      diskMap.get(key).paths.add(r.label ?? r.path);
     }
-    const uniqueDisks = [...diskMap.values()].map((d) => ({ freeSpace: d.freeSpace, paths: [...d.paths] }));
+    const uniqueDisks = [...diskMap.values()].map((d) => ({ freeSpace: d.freeSpace, totalSpace: d.totalSpace, paths: [...d.paths] }));
     const diskTotal = uniqueDisks.length;
     const SAB_ROUND_EARLY = 1024 * 1024 * 1024;
     let diskPage;
@@ -6939,6 +7006,14 @@ var _RenderLeft = class {
         <div class="dc-label">${this._t("storage")}</div>
         <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(qbitFreeBytes)} ${this._t("free")}</span></div>
         ${diskLabel ? `<div class="dc-sub">${this._escHtml(diskLabel)}</div>` : ""}`;
+      } else if (activeDisk.totalSpace > 0) {
+        const usedBytes = activeDisk.totalSpace - activeDisk.freeSpace;
+        const pct = usedBytes / activeDisk.totalSpace * 100;
+        pageContent = `
+        <div class="dc-label">${this._t("storage")}</div>
+        <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedBytes)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(activeDisk.totalSpace)}</span></div>
+        <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(activeDisk.freeSpace)} ${this._t("free")}${diskLabel ? ` \xB7 ${this._escHtml(diskLabel)}` : ""}</div>`;
       } else {
         pageContent = `
         <div class="dc-label">${this._t("storage")}</div>
@@ -6951,6 +7026,26 @@ var _RenderLeft = class {
         <div class="dc-page-content">${pageContent}</div>
         ${_chev("next", diskPage >= diskTotal - 1)}
       </div>`;
+    } else if (storageSource !== "auto" && activeDisk) {
+      const lbl = activeDisk.paths.map((p) => p.replace(/\/$/, "").split("/").filter(Boolean).pop() || p).join(" \xB7 ");
+      if (activeDisk.totalSpace > 0) {
+        const usedBytes = activeDisk.totalSpace - activeDisk.freeSpace;
+        const pct = usedBytes / activeDisk.totalSpace * 100;
+        diskChip = `
+        <div class="disk-chip">
+          <div class="dc-label">${this._t("storage")}</div>
+          <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(usedBytes)}</span><span style="font-size:10px;color:rgba(var(--arr-st-rgb,255,255,255),0.6);font-weight:600"> / ${fmtGB(activeDisk.totalSpace)}</span></div>
+          <div class="mbar"><div class="mbar-fill pf-orange" style="width:${pct.toFixed(0)}%"></div></div>
+          <div class="dc-sub">${pct.toFixed(0)} % \xB7 ${fmtGB(activeDisk.freeSpace)} ${this._t("free")}${lbl ? ` \xB7 ${this._escHtml(lbl)}` : ""}</div>
+        </div>`;
+      } else {
+        diskChip = `
+        <div class="disk-chip">
+          <div class="dc-label">${this._t("storage")}</div>
+          <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(activeDisk.freeSpace)} ${this._t("free")}</span></div>
+          ${lbl ? `<div class="dc-sub">${this._escHtml(lbl)}</div>` : ""}
+        </div>`;
+      }
     } else if (hasSabDisk) {
       const usedGB = sabTotalGB - sabFreeGB;
       const pct = usedGB / sabTotalGB * 100;
@@ -12333,17 +12428,47 @@ var _WireTraceaRrMethods = class {
         this._traLoadTab("activity", el);
         return;
       }
+      const suSrvBtn = e.target.closest("[data-tra-su-srv]");
+      if (suSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = suSrvBtn.dataset.traSuSrv || null;
+        m.statsUsersServerId = sid;
+        m.statsUsersData = null;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-su-srv]").forEach((b) => b.classList.toggle("active", b === suSrvBtn));
+        this._traLoadTab("statsUsers", el);
+        return;
+      }
+      const usrSrvBtn = e.target.closest("[data-tra-usr-srv]");
+      if (usrSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = usrSrvBtn.dataset.traUsrSrv || null;
+        m.usersServerId = sid;
+        m.usersPage = 0;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-usr-srv]").forEach((b) => b.classList.toggle("active", b === usrSrvBtn));
+        this._traLoadTab("users", el);
+        return;
+      }
       const _TRA_NAV = [
         { id: "map", tab: "map" },
         { id: "history", tab: "history" },
-        { id: "stats", sub: [["activity", "Activity"]] },
+        { id: "stats", sub: [["activity", "Activity"], ["statsUsers", "Users"]] },
         { id: "library", sub: [["quality", "Quality"], ["storage", "Storage"], ["watch", "Watch"]] },
         { id: "performance", sub: [["devices", "Devices"], ["bandwidth", "Bandwidth"]] },
         { id: "users", tab: "users" },
-        { id: "rules" },
+        { id: "rules", tab: "rules" },
         { id: "violations", tab: "violations" }
       ];
-      const _SRV_TABS = ["storage", "quality", "history", "activity", "watch", "devices", "bandwidth", "map"];
+      const _SRV_TABS = ["storage", "quality", "history", "activity", "statsUsers", "users", "watch", "devices", "bandwidth", "map"];
       const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
       const _updateMobileNav = () => {
         const panel = glass.querySelector("#tra-mobile-nav");
@@ -12385,7 +12510,7 @@ var _WireTraceaRrMethods = class {
               subEl.innerHTML = grp.sub.map(([tid, tlbl]) => {
                 const isActive = m.tab === tid;
                 const _tc = _day ? "#000" : "#fff";
-                const subSt = isActive ? `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-size:10px;font-weight:700` : `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.08);color:${_tc};border-color:rgba(0,122,255,0.2);font-size:10px`;
+                const subSt = isActive ? `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-size:10px;font-weight:700` : `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.13);color:${_tc};border-color:rgba(0,122,255,0.3);font-size:10px`;
                 return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
               }).join("");
               subEl.style.maxWidth = "500px";
@@ -12425,6 +12550,37 @@ var _WireTraceaRrMethods = class {
         this._traLoadTab(tab, el);
       }
     });
+    const _getBucket = () => window.innerWidth > 600 ? window.innerWidth > 860 ? 2 : 1 : 0;
+    let _lastBucket = _getBucket();
+    let _resizeTimer = null;
+    const _onResize = () => {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(() => {
+        if (!this._tracearrModal || !el.isConnected) {
+          window.removeEventListener("resize", _onResize);
+          return;
+        }
+        const bucket = _getBucket();
+        if (bucket === _lastBucket) return;
+        const crossedMobile = _lastBucket === 0 !== (bucket === 0);
+        _lastBucket = bucket;
+        if (crossedMobile) {
+          const m = this._tracearrModal;
+          const tab = m.tab;
+          const navGroup = m.navGroup;
+          el.remove();
+          const wrap2 = document.createElement("div");
+          wrap2.innerHTML = this._traModalHtml(tab, navGroup);
+          const el2 = wrap2.firstElementChild;
+          this.shadowRoot.appendChild(el2);
+          this._wireTracearrModal(el2);
+          this._traLoadTab(tab, el2);
+        } else {
+          this._traLoadTab(this._tracearrModal.tab, el);
+        }
+      }, 150);
+    };
+    window.addEventListener("resize", _onResize);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Modal body wiring — called after every innerHTML replace
@@ -12441,6 +12597,201 @@ var _WireTraceaRrMethods = class {
       const n = parseInt(val, 10);
       return isNaN(n) ? current : n;
     };
+    const rulesAddBtn = body.querySelector("#tra-rules-add-btn");
+    if (rulesAddBtn) {
+      rulesAddBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const menu = body.querySelector("#tra-rules-add-menu");
+        if (menu) menu.style.display = menu.style.display === "none" ? "block" : "none";
+      });
+      body.addEventListener("click", (e) => {
+        if (!e.target.closest("#tra-rules-add-wrap")) {
+          const menu = body.querySelector("#tra-rules-add-menu");
+          if (menu) menu.style.display = "none";
+        }
+      }, { once: false, capture: false });
+    }
+    body.querySelectorAll("[data-tra-rule-new]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const ruleType = btn.dataset.traRuleNew;
+        if (ruleType === "classic") {
+          body.innerHTML = this._traRuleTemplatePicker();
+        } else {
+          body.innerHTML = this._traRuleFormHtml(ruleType);
+        }
+        this._wireTracearrModalBody(body);
+      });
+    });
+    body.querySelectorAll("[data-tra-rule-template]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const templateType = btn.dataset.traRuleTemplate;
+        body.innerHTML = this._traRuleFormHtml("classic", null, templateType);
+        this._wireTracearrModalBody(body);
+      });
+    });
+    const rfActiveToggle = body.querySelector("#tra-rf-active-toggle");
+    if (rfActiveToggle) {
+      rfActiveToggle.addEventListener("click", () => {
+        const cur = rfActiveToggle.dataset.active === "true";
+        const next = !cur;
+        rfActiveToggle.dataset.active = String(next);
+        rfActiveToggle.style.background = next ? "rgba(0,122,255,0.7)" : "rgba(255,255,255,0.06)";
+        rfActiveToggle.style.borderColor = next ? "rgba(0,122,255,0.8)" : "rgba(255,255,255,0.12)";
+        const knob = rfActiveToggle.querySelector("span");
+        if (knob) {
+          knob.style.left = next ? "18px" : "4px";
+          knob.style.background = next ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)";
+        }
+      });
+    }
+    body.querySelectorAll("[data-tra-rule-edit]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.traRuleEdit;
+        const fallback = (this._tracearrModal?.rulesData || []).find((r) => String(r.id) === String(id));
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        try {
+          const res = await this._traAdminFetch("GET", `v1/rules/${id}`);
+          const rule = res?.data || res || fallback;
+          if (!rule) return;
+          body.innerHTML = this._traRuleFormHtml(rule.type ? "classic" : "custom", rule);
+          this._wireTracearrModalBody(body);
+        } catch {
+          if (!fallback) return;
+          body.innerHTML = this._traRuleFormHtml(fallback.type ? "classic" : "custom", fallback);
+          this._wireTracearrModalBody(body);
+        }
+      });
+    });
+    const rfType = body.querySelector("#tra-rf-type");
+    if (rfType) {
+      const _updateClassicParams = () => {
+        const t = rfType.value;
+        const msWrap = body.querySelector("#tra-rf-max-streams-wrap");
+        if (msWrap) msWrap.style.display = t === "concurrent_streams" ? "" : "none";
+        const rfName = body.querySelector("#tra-rf-name");
+        if (rfName && !rfName.value) {
+          const LABELS = { concurrent_streams: "Concurrent Streams", geo_restriction: "Geo Restriction", impossible_travel: "Impossible Travel", simultaneous_locations: "Simultaneous Locations", device_velocity: "Device Velocity", account_inactivity: "Account Inactivity" };
+          rfName.placeholder = LABELS[t] || t;
+        }
+      };
+      rfType.addEventListener("change", _updateClassicParams);
+      _updateClassicParams();
+    }
+    body.querySelectorAll("[data-tra-rule-toggle]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.traRuleToggle;
+        const cur = btn.dataset.active === "true";
+        btn.style.opacity = "0.5";
+        btn.disabled = true;
+        try {
+          await this._traAdminFetch("PATCH", `v1/rules/${id}`, { isActive: !cur });
+          await this._traLoadTab("rules", modal());
+        } catch (e) {
+          console.error("[arr-card] Rule toggle error:", e);
+          btn.style.opacity = "";
+          btn.disabled = false;
+        }
+      });
+    });
+    body.querySelectorAll("[data-tra-rule-del]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.traRuleDel;
+        if (!confirm("Delete this rule?")) return;
+        btn.style.opacity = "0.5";
+        btn.disabled = true;
+        try {
+          await this._traAdminFetch("DELETE", `v1/rules/${id}`);
+          await this._traLoadTab("rules", modal());
+        } catch (e) {
+          console.error("[arr-card] Rule delete error:", e);
+          btn.style.opacity = "";
+          btn.disabled = false;
+        }
+      });
+    });
+    const rfCancel = body.querySelector("#tra-rf-cancel");
+    if (rfCancel) rfCancel.addEventListener("click", () => this._traLoadTab("rules", modal()));
+    const rfSave = body.querySelector("#tra-rf-save");
+    if (rfSave) {
+      rfSave.addEventListener("click", async () => {
+        const formEl = body.querySelector("[data-rule-id]") || body.firstElementChild;
+        const editId = formEl?.dataset?.ruleId || "";
+        const isEdit = !!editId;
+        const rfType2 = body.querySelector("#tra-rf-type");
+        const rfName = body.querySelector("#tra-rf-name");
+        const rfDesc = body.querySelector("#tra-rf-description");
+        const rfSev = body.querySelector("#tra-rf-severity");
+        const rfActToggle = body.querySelector("#tra-rf-active-toggle");
+        const hasCondBuilder = !!body.querySelector("#tra-rf-conds");
+        const name = rfName?.value?.trim() || "";
+        const description = rfDesc?.value?.trim() || null;
+        const severity = rfSev?.value || "warning";
+        const isActive = rfActToggle ? rfActToggle.dataset.active !== "false" : true;
+        const origInner = rfSave.innerHTML;
+        rfSave.disabled = true;
+        rfSave.textContent = "\u2026";
+        try {
+          const groups = [];
+          body.querySelectorAll(".tra-cg").forEach((grpEl) => {
+            const conds = [];
+            grpEl.querySelectorAll(".tra-cr").forEach((rowEl) => {
+              const field = rowEl.querySelector(".tra-cond-field")?.value;
+              const op = rowEl.querySelector(".tra-cond-op")?.value;
+              const val = parseFloat(rowEl.querySelector(".tra-cond-val")?.value) || 0;
+              const uDev = rowEl.querySelector(".tra-cond-uniq-dev")?.checked;
+              const uIP = rowEl.querySelector(".tra-cond-uniq-ip")?.checked;
+              if (field && op) {
+                const cond = { field, operator: op, value: val };
+                const uDevEl = rowEl.querySelector(".tra-cond-uniq-dev");
+                if (uDevEl) cond.params = { uniqueDevices: !!uDev, uniqueIPs: !!uIP };
+                conds.push(cond);
+              }
+            });
+            if (conds.length) groups.push({ conditions: conds });
+          });
+          const actions = [];
+          body.querySelectorAll(".tra-act-row").forEach((rowEl) => {
+            const type = rowEl.querySelector(".tra-act-type")?.value;
+            const msg = rowEl.querySelector(".tra-act-msg")?.value?.trim() || void 0;
+            if (type) actions.push(msg ? { type, message: msg } : { type });
+          });
+          const payload = { name: name || "Rule", description, severity, isActive, conditions: { groups }, actions: { actions } };
+          if (isEdit) {
+            await this._traAdminFetch("PATCH", `v1/rules/${editId}`, payload);
+          } else {
+            await this._traAdminFetch("POST", "v1/rules/v2", payload);
+          }
+          await this._traLoadTab("rules", modal());
+        } catch (e) {
+          console.error("[arr-card] Rule save error:", e);
+          rfSave.disabled = false;
+          rfSave.innerHTML = origInner;
+        }
+      });
+    }
+    const addAndGroup = body.querySelector("#tra-add-and-group");
+    if (addAndGroup) {
+      addAndGroup.addEventListener("click", () => {
+        const gi = body.querySelectorAll(".tra-cg").length;
+        const tmp = document.createElement("div");
+        tmp.innerHTML = this._traCondGroupHtml(gi);
+        body.querySelector("#tra-rf-conds").appendChild(tmp.firstElementChild);
+        this._wireTraCondRow(body);
+      });
+    }
+    const addAction = body.querySelector("#tra-add-action");
+    if (addAction) {
+      addAction.addEventListener("click", () => {
+        const idx = body.querySelectorAll(".tra-act-row").length;
+        const tmp = document.createElement("div");
+        tmp.innerHTML = this._traActionRowHtml(idx);
+        body.querySelector("#tra-rf-actions").appendChild(tmp.firstElementChild);
+        this._wireTraCondRow(body);
+      });
+    }
+    this._wireTraCondRow(body);
+    this._traRefreshHdrActions(body);
     const usersSearch = body.querySelector("#tra-users-search");
     if (usersSearch) {
       let t;
@@ -12586,6 +12937,41 @@ var _WireTraceaRrMethods = class {
         this._traLoadTab("history", modal());
       });
     });
+    body.querySelectorAll("[data-tra-hist-row]").forEach((row) => {
+      row.addEventListener("click", async (e) => {
+        if (e.target.closest("button,select,input,a")) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        const rowId = row.dataset.traHistRow;
+        const item = (m2.histData || []).find((h) => String(h.id) === rowId);
+        if (!item) return;
+        m2.histDetailItem = { ...item };
+        body.innerHTML = this._traBodyHistDetail();
+        this._wireTracearrModalBody(body);
+        this._traRefreshHdrActions(body);
+        const imgEl = body.querySelector("#tra-hist-poster");
+        if (imgEl && item.posterUrl) {
+          const proxyUrl = `/api/arr_stack/tracearr${item.posterUrl.replace("/api", "")}`;
+          const token = this._hass?.connection?.options?.auth?.data?.access_token || "";
+          fetch(proxyUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} }).then((r) => r.ok ? r.blob() : null).then((blob) => {
+            if (blob && imgEl.isConnected) imgEl.src = URL.createObjectURL(blob);
+          }).catch(() => {
+            if (imgEl.isConnected) imgEl.style.display = "none";
+          });
+        }
+      });
+    });
+    const detailBack = body.querySelector("#tra-hist-detail-back");
+    if (detailBack) {
+      detailBack.addEventListener("click", () => {
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.histDetailItem = null;
+        body.innerHTML = this._traBodyHistory();
+        this._wireTracearrModalBody(body);
+        this._traRefreshHdrActions(body);
+      });
+    }
     body.querySelectorAll("[data-tra-map-period]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (!this._tracearrModal) return;
@@ -12858,6 +13244,205 @@ var _WireTraceaRrMethods = class {
           if (rings[i]) rings[i].style.strokeOpacity = "0";
           tt.style.display = "none";
         });
+      });
+    });
+  }
+  // ── Rules form helpers ───────────────────────────────────────────────────
+  _traCondRowHtml(gi, ci) {
+    const inputSt = `box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--is-text,#fff);padding:0 8px;font-size:11px;height:28px`;
+    const FIELDS = [["concurrent_streams", "Concurrent Streams"], ["travel_speed_kmh", "Travel Speed (km/h)"], ["active_session_distance", "Session Distance (km)"], ["unique_ips_window", "Unique IPs in Window"], ["unique_devices_window", "Unique Devices in Window"], ["inactive_days", "Inactive Days"], ["current_pause_duration", "Pause Duration (min)"], ["total_pause_duration", "Total Pause (min)"]];
+    const OPS = [["gt", "greater than"], ["gte", "at least"], ["lt", "less than"], ["lte", "at most"], ["eq", "equals"], ["neq", "not equals"]];
+    const chkSt = "cursor:pointer;width:13px;height:13px;accent-color:rgba(0,122,255,0.9)";
+    const trash = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    return `<div class="tra-cr" data-grp="${gi}" data-row="${ci}" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;align-items:center">
+      <select class="tra-cond-field" style="${inputSt};flex:2;min-width:130px;cursor:pointer">${FIELDS.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
+      <select class="tra-cond-op"    style="${inputSt};flex:1.2;min-width:100px;cursor:pointer">${OPS.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
+      <input  class="tra-cond-val"   type="number" value="2" style="${inputSt};width:72px;flex-shrink:0">
+      <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--is-text,#fff);cursor:pointer;white-space:nowrap;flex-shrink:0">
+        <input type="checkbox" class="tra-cond-uniq-dev" style="${chkSt}">Unique devices</label>
+      <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--is-text,#fff);cursor:pointer;white-space:nowrap;flex-shrink:0">
+        <input type="checkbox" class="tra-cond-uniq-ip" style="${chkSt}">Unique IPs</label>
+      <button class="tra-cond-del" style="flex-shrink:0;width:22px;height:22px;border-radius:5px;background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:rgba(255,100,80,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center">${trash}</button>
+    </div>`;
+  }
+  _traCondGroupHtml(gi) {
+    return `<div class="tra-cg" data-grp="${gi}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:600;color:var(--is-text-label);margin-bottom:10px">Group ${gi + 1} <span style="font-weight:400;font-size:10px;opacity:0.6">(conditions match with OR logic)</span></div>
+      <div class="tra-cg-rows">${this._traCondRowHtml(gi, 0)}</div>
+      <button class="tra-add-or" data-grp="${gi}" style="font-size:11px;color:rgba(0,122,255,0.8);background:transparent;border:none;cursor:pointer;padding:2px 0;margin-top:2px">+ Add <strong>OR</strong> condition</button>
+    </div>`;
+  }
+  _traActionRowHtml(idx) {
+    const inputSt = `box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--is-text,#fff);padding:0 8px;font-size:11px;height:28px;cursor:pointer`;
+    const ACTIONS = [["log_only", "Log Only"], ["send_notification", "Send Notification"], ["kill_stream", "Kill Stream"], ["adjust_trust_score", "Adjust Trust Score"], ["set_trust_score", "Set Trust Score"], ["reset_trust_score", "Reset Trust Score"], ["message_client", "Message Client"]];
+    const trash = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    return `<div class="tra-act-row" data-idx="${idx}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:10px 12px;margin-bottom:6px">
+      <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+        <select class="tra-act-type" style="${inputSt};flex:1;min-width:0">${ACTIONS.map(([v, l]) => `<option value="${v}"${idx === 0 && v === "log_only" ? " selected" : ""}>${l}</option>`).join("")}</select>
+        <button class="tra-act-del" style="flex-shrink:0;width:22px;height:22px;border-radius:5px;background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:rgba(255,100,80,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center">${trash}</button>
+        <label style="display:flex;align-items:center;gap:6px;flex-basis:100%;min-width:0;font-size:11px;color:var(--is-text-muted);white-space:nowrap;margin-top:6px">
+          Log Message: <input class="tra-act-msg" type="text" placeholder="Optional message" style="${inputSt.replace("cursor:pointer", "")};flex:1;min-width:0;height:28px">
+        </label>
+      </div>
+      <div class="tra-act-desc" style="font-size:10px;color:var(--is-text-muted);margin-top:6px">Log the event without taking action</div>
+    </div>`;
+  }
+  _traRefreshHdrActions(body) {
+    if (!window.matchMedia("(max-width:600px)").matches) return;
+    const modal = body.closest("[data-tra-modal]");
+    if (!modal) return;
+    const hdr = modal.querySelector("#tra-hdr-actions");
+    if (!hdr) return;
+    hdr.innerHTML = "";
+    const btnSt = "width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background 0.15s,transform 0.1s;flex-shrink:0";
+    const svgSave = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
+    const svgBack = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin-right:2px"><polyline points="15 18 9 12 15 6"/></svg>`;
+    const svgPlus = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+    const hasForm = !!body.querySelector("#tra-rf-save");
+    const hasList = !!body.querySelector("#tra-rules-list");
+    const hasPicker = !!body.querySelector("[data-tra-rule-template]");
+    const hasDetail = !!body.querySelector("#tra-hist-detail");
+    if (hasForm || hasPicker || hasDetail) {
+      const cancelBtn = document.createElement("button");
+      cancelBtn.style.cssText = btnSt + ";background:var(--mac-blue);box-shadow:0 2px 8px rgba(10,132,255,0.45)";
+      cancelBtn.innerHTML = svgBack;
+      cancelBtn.addEventListener("click", () => {
+        const bodyCancel = body.querySelector("#tra-rf-cancel") || body.querySelector("#tra-hist-detail-back");
+        if (bodyCancel) bodyCancel.click();
+        else this._traLoadTab("rules", modal);
+      });
+      hdr.appendChild(cancelBtn);
+    }
+    if (hasForm) {
+      const saveBtn = document.createElement("button");
+      saveBtn.style.cssText = btnSt + ";background:var(--mac-green);box-shadow:0 2px 8px rgba(48,209,88,0.45)";
+      saveBtn.innerHTML = svgSave;
+      saveBtn.addEventListener("click", () => body.querySelector("#tra-rf-save")?.click());
+      hdr.appendChild(saveBtn);
+    }
+    if (hasList) {
+      const addBtn = document.createElement("button");
+      addBtn.style.cssText = btnSt + ";background:var(--mac-blue);box-shadow:0 2px 8px rgba(10,132,255,0.45)";
+      addBtn.innerHTML = svgPlus;
+      addBtn.addEventListener("click", () => {
+        const bodyAddBtn = body.querySelector("#tra-rules-add-btn");
+        if (bodyAddBtn) {
+          bodyAddBtn.click();
+          return;
+        }
+        body.innerHTML = this._traRuleTemplatePicker();
+        this._wireTracearrModalBody(body);
+        this._traRefreshHdrActions(body);
+      });
+      hdr.appendChild(addBtn);
+    }
+  }
+  _wireTraCondRow(body) {
+    const FIELDS_WITH_UNIQUE = /* @__PURE__ */ new Set(["concurrent_streams", "travel_speed_kmh", "active_session_distance", "unique_ips_window", "unique_devices_window"]);
+    body.querySelectorAll(".tra-cond-del").forEach((btn) => {
+      if (btn._wired) return;
+      btn._wired = true;
+      btn.addEventListener("click", () => {
+        const row = btn.closest(".tra-cr");
+        const grpEl = btn.closest(".tra-cg");
+        if (!grpEl) return;
+        const rows = grpEl.querySelectorAll(".tra-cr");
+        if (rows.length > 1) {
+          const prev = row.previousElementSibling;
+          if (prev?.classList?.contains("tra-or-label")) prev.remove();
+          row.remove();
+        } else if (body.querySelectorAll(".tra-cg").length > 1) {
+          grpEl.remove();
+        }
+      });
+    });
+    body.querySelectorAll(".tra-cond-field").forEach((sel) => {
+      if (sel._wired) return;
+      sel._wired = true;
+      sel.addEventListener("change", () => {
+        const row = sel.closest(".tra-cr");
+        if (!row) return;
+        const hasUniq = FIELDS_WITH_UNIQUE.has(sel.value);
+        row.querySelectorAll(".tra-cond-uniq-dev, .tra-cond-uniq-ip").forEach((el) => {
+          el.closest("label").style.display = hasUniq ? "" : "none";
+        });
+      });
+    });
+    body.querySelectorAll(".tra-act-del").forEach((btn) => {
+      if (btn._wired) return;
+      btn._wired = true;
+      btn.addEventListener("click", () => {
+        const row = btn.closest(".tra-act-row");
+        const container = body.querySelector("#tra-rf-actions");
+        if (container && container.querySelectorAll(".tra-act-row").length > 1) row.remove();
+      });
+    });
+    body.querySelectorAll(".tra-act-type").forEach((sel) => {
+      if (sel._wired) return;
+      sel._wired = true;
+      const ACTION_MSG_LABEL = { log_only: "Log Message", send_notification: "Message", kill_stream: "Kill Message", message_client: "Message" };
+      const ACTION_DESC = {
+        log_only: "Log the event without taking action",
+        send_notification: "Send a push notification",
+        kill_stream: "Terminate the active stream",
+        adjust_trust_score: "Add or subtract from trust score",
+        set_trust_score: "Set trust score to a specific value",
+        reset_trust_score: "Reset trust score to default",
+        message_client: "Send a message to the streaming client"
+      };
+      const inputSt = `box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--is-text,#fff);padding:0 10px;font-size:12px;height:28px;flex:1`;
+      sel.addEventListener("change", () => {
+        const row = sel.closest(".tra-act-row");
+        if (!row) return;
+        const aType = sel.value;
+        const msgLbl = ACTION_MSG_LABEL[aType];
+        const descTxt = ACTION_DESC[aType] || "";
+        const topRow = sel.parentElement;
+        let msgWrap = topRow.querySelector("label");
+        if (msgLbl) {
+          if (!msgWrap) {
+            msgWrap = document.createElement("label");
+            msgWrap.style.cssText = "display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;font-size:11px;color:var(--is-text-muted);white-space:nowrap";
+            topRow.insertBefore(msgWrap, topRow.lastElementChild);
+          }
+          msgWrap.innerHTML = `${msgLbl}: <input class="tra-act-msg" type="text" placeholder="Optional custom message" style="${inputSt}">`;
+          msgWrap.style.display = "";
+        } else if (msgWrap) {
+          msgWrap.style.display = "none";
+        }
+        let descEl = row.querySelector(".tra-act-desc");
+        if (descTxt) {
+          if (!descEl) {
+            descEl = document.createElement("div");
+            descEl.className = "tra-act-desc";
+            descEl.style.cssText = "font-size:10px;color:var(--is-text-muted);margin-top:6px";
+            row.appendChild(descEl);
+          }
+          descEl.textContent = descTxt;
+          descEl.style.display = "";
+        } else if (descEl) {
+          descEl.style.display = "none";
+        }
+      });
+    });
+    body.querySelectorAll(".tra-add-or").forEach((btn) => {
+      if (btn._wired) return;
+      btn._wired = true;
+      btn.addEventListener("click", () => {
+        const gi = parseInt(btn.dataset.grp, 10);
+        const grpEl = body.querySelector(`.tra-cg[data-grp="${gi}"]`);
+        if (!grpEl) return;
+        const ci = grpEl.querySelectorAll(".tra-cr").length;
+        const rows = grpEl.querySelector(".tra-cg-rows");
+        const orLbl = document.createElement("div");
+        orLbl.className = "tra-or-label";
+        orLbl.style.cssText = "font-size:10px;font-weight:700;color:rgba(0,122,255,0.8);margin:2px 0 6px";
+        orLbl.textContent = "OR";
+        rows.appendChild(orLbl);
+        const tmp = document.createElement("div");
+        tmp.innerHTML = this._traCondRowHtml(gi, ci);
+        rows.appendChild(tmp.firstElementChild);
+        this._wireTraCondRow(body);
       });
     });
   }
@@ -17390,6 +17975,7 @@ var _TautulliGraphsMethods = class {
     const baseY = _P.t + cH;
     const cid = opts.chartId || "l";
     const isDur = !!opts.isDuration;
+    const noDots = !!opts.noDots;
     const dotR = opts.dotR != null ? opts.dotR : n <= 12 ? 4 : n <= 30 ? 3 : 2;
     const slotW2 = cW / Math.max(n, 1);
     const ptX = (i) => _P.l + (i + 0.5) * slotW2;
@@ -17408,7 +17994,7 @@ var _TautulliGraphsMethods = class {
       const h = _tlGHex(s.name, si);
       return `<linearGradient id="tl-gl-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.18"/><stop offset="100%" stop-color="${h}" stop-opacity="0"/></linearGradient>`;
     }).join("");
-    series.forEach((ser, si) => {
+    if (!noDots) series.forEach((ser, si) => {
       const circles = seriesPts[si].filter((p) => p.v > 0).map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${dotR}" fill="black"/>`).join("");
       di += `<mask id="tl-lmask-${cid}-${si}" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="${VBW}" height="${SVH}" fill="white"/>` + circles + `</mask>`;
     });
@@ -17427,9 +18013,9 @@ var _TautulliGraphsMethods = class {
       if (!pts.some((p) => p.v > 0)) return;
       const hex = _tlGHex(ser.name, si);
       out += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tl-gl-${cid}-${si});animation:fade-in 0.8s ease-out both"/>`;
-      out += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line" mask="url(#tl-lmask-${cid}-${si})"/>`;
+      out += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line"${noDots ? "" : ` mask="url(#tl-lmask-${cid}-${si})"`}/>`;
     });
-    series.forEach((ser, si) => {
+    if (!noDots) series.forEach((ser, si) => {
       const pts = seriesPts[si];
       const hex = _tlGHex(ser.name, si);
       pts.forEach((p) => {
@@ -18393,6 +18979,319 @@ var _TraceaRrTableMethods = class {
     return tiles + cols;
   }
   // ──────────────────────────────────────────────────────────────────────────
+  // Rules tab
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyRules() {
+    const m = this._tracearrModal;
+    const rules = m.rulesData || [];
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _btnClr = _day ? "#000" : "#fff";
+    const CLASSIC_LABELS = {
+      concurrent_streams: "Concurrent Streams",
+      geo_restriction: "Geo Restriction",
+      impossible_travel: "Impossible Travel",
+      simultaneous_locations: "Simultaneous Locations",
+      device_velocity: "Device Velocity",
+      account_inactivity: "Account Inactivity"
+    };
+    const _sc = (s) => ({ high: "#FF3B30", warning: "#FF9500", low: "#34C759" })[s] || "#FF9500";
+    const _sb = (s) => ({ high: "rgba(255,59,48,0.16)", warning: "rgba(255,149,0,0.14)", low: "rgba(52,199,89,0.14)" })[s] || "rgba(255,149,0,0.14)";
+    const rows = rules.map((r) => {
+      const typeLabel = r.type ? CLASSIC_LABELS[r.type] || r.type : "Custom";
+      const sev = (r.severity || "warning").toLowerCase();
+      const toggle = `<button data-tra-rule-toggle="${r.id}" data-active="${r.isActive}" title="${r.isActive ? "Disable" : "Enable"}"
+        style="flex-shrink:0;width:36px;height:20px;border-radius:10px;border:1px solid ${r.isActive ? "rgba(0,122,255,0.8)" : "rgba(255,255,255,0.12)"};background:${r.isActive ? "rgba(0,122,255,0.7)" : "rgba(255,255,255,0.06)"};cursor:pointer;position:relative;transition:all .15s">
+        <span style="position:absolute;top:50%;transform:translateY(-50%);left:${r.isActive ? "18px" : "4px"};width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,${r.isActive ? "0.9" : "0.4"});transition:left .15s"></span>
+      </button>`;
+      const editBtn = `<button data-tra-rule-edit="${r.id}" title="Edit" style="flex-shrink:0;width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`;
+      const delBtn = `<button data-tra-rule-del="${r.id}" title="Delete" style="flex-shrink:0;width:24px;height:24px;border-radius:6px;background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:rgba(255,100,80,0.8);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>`;
+      const desc = r.description ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.description}</div>` : "";
+      const classicBadge = `<span style="font-size:9px;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.07);border-radius:4px;padding:1px 5px;white-space:nowrap;flex-shrink:0">${typeLabel}</span>`;
+      return `<div style="display:flex;align-items:center;gap:${isMob ? "7px" : "10px"};padding:9px 0;border-top:1px solid var(--is-divider)">
+        ${toggle}
+        <div data-tra-rule-edit="${r.id}" style="flex:1;min-width:0;cursor:pointer">
+          <div style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+          ${desc}
+        </div>
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:${_sb(sev)};color:${_sc(sev)};white-space:nowrap;flex-shrink:0">${sev.toUpperCase()}</span>
+        ${isMob ? "" : classicBadge}
+        ${editBtn}
+        ${delBtn}
+      </div>`;
+    }).join("") || `<div style="font-size:12px;color:var(--is-text-muted);padding:28px 0;text-align:center">No rules configured</div>`;
+    const menuSt = `position:absolute;top:32px;right:0;background:#1c1c2e;border:1px solid rgba(255,255,255,0.14);border-radius:8px;padding:4px;min-width:140px;z-index:200`;
+    const menuItemSt = `display:block;width:100%;text-align:left;padding:6px 10px;font-size:12px;font-weight:500;color:#fff;background:transparent;border:none;cursor:pointer;border-radius:5px`;
+    const addMenu = `<div style="position:relative;display:inline-block" id="tra-rules-add-wrap">
+      <button id="tra-rules-add-btn" class="is-f-btn" style="height:28px;box-sizing:border-box;padding:0 12px;font-size:11px;color:${_btnClr}">+ Add Rule</button>
+      <div id="tra-rules-add-menu" style="${menuSt};display:none">
+        <button data-tra-rule-new="classic" style="${menuItemSt}">Classic Rule</button>
+        <button data-tra-rule-new="custom" style="${menuItemSt}">Custom Rule</button>
+      </div>
+    </div>`;
+    return `<div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700;color:var(--is-text-label);text-transform:uppercase;letter-spacing:.06em">${rules.length} Rule${rules.length !== 1 ? "s" : ""}</span>
+        ${isMob ? "" : addMenu}
+      </div>
+      <div id="tra-rules-list">${rows}</div>
+    </div>`;
+  }
+  _traRuleTemplatePicker() {
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const TEMPLATES = [
+      {
+        id: "concurrent_streams",
+        name: "Concurrent Streams",
+        desc: "Limit simultaneous streams per user",
+        icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'
+      },
+      {
+        id: "geo_restriction",
+        name: "Geo Restriction",
+        desc: "Block streaming from specific countries",
+        icon: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'
+      },
+      {
+        id: "impossible_travel",
+        name: "Impossible Travel",
+        desc: "Detect physically impossible travel between sessions",
+        icon: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>'
+      },
+      {
+        id: "simultaneous_locations",
+        name: "Simultaneous Locations",
+        desc: "Detect concurrent sessions from distant locations",
+        icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
+      },
+      {
+        id: "device_velocity",
+        name: "Device Velocity",
+        desc: "Detect excessive unique IPs in a time window",
+        icon: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'
+      },
+      {
+        id: "account_inactivity",
+        name: "Account Inactivity",
+        desc: "Detect inactive accounts",
+        icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+      }
+    ];
+    const btnSt = `display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;margin-bottom:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;color:var(--is-text,#fff);transition:background .12s`;
+    const rows = TEMPLATES.map(
+      (t) => `<button data-tra-rule-template="${t.id}" style="${btnSt}">
+        <span style="width:32px;height:32px;border-radius:8px;background:rgba(0,122,255,0.1);border:1px solid rgba(0,122,255,0.2);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(0,122,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg></span>
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:600;margin-bottom:2px">${t.name}</div>
+          <div style="font-size:11px;color:var(--is-text-muted)">${t.desc}</div>
+        </div>
+      </button>`
+    ).join("");
+    return `<div style="max-width:480px;margin:0 auto">
+      <div style="font-size:14px;font-weight:700;color:var(--is-text);margin-bottom:4px">Choose a Rule Template</div>
+      <div style="font-size:11px;color:var(--is-text-muted);margin-bottom:14px">Select a pre-configured rule type to get started quickly.</div>
+      ${rows}
+      ${isMob ? "" : `<button id="tra-rf-cancel" class="is-f-btn" style="height:32px;padding:0 12px;margin-top:6px">\u2190 Back</button>`}
+    </div>`;
+  }
+  _traRuleFormHtml(ruleType, existingRule, templateType) {
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const inputSt = `width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--is-text,#fff);padding:0 10px;font-size:12px;height:32px`;
+    const selectSt = inputSt + ";cursor:pointer";
+    const labelSt = `display:block;font-size:10px;font-weight:700;color:var(--is-text-label);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px`;
+    const isEdit = !!existingRule;
+    const isCustom = existingRule ? !existingRule.type : ruleType === "custom";
+    const ruleId = existingRule?.id || "";
+    const showConditions = true;
+    const CLASSIC_TYPES = [
+      ["concurrent_streams", "Concurrent Streams"],
+      ["geo_restriction", "Geo Restriction"],
+      ["impossible_travel", "Impossible Travel"],
+      ["simultaneous_locations", "Simultaneous Locations"],
+      ["device_velocity", "Device Velocity"],
+      ["account_inactivity", "Account Inactivity"]
+    ];
+    const TEMPLATE_DEFAULTS = {
+      concurrent_streams: { name: "Concurrent Stream Limit", desc: "Limit simultaneous streams per user" },
+      geo_restriction: { name: "Country Block List", desc: "Block streaming from specific countries" },
+      impossible_travel: { name: "Impossible Travel Detection", desc: "Detect physically impossible travel between sessions" },
+      simultaneous_locations: { name: "Simultaneous Locations", desc: "Detect concurrent sessions from distant locations" },
+      device_velocity: { name: "Device Velocity Check", desc: "Detect excessive unique IPs in a time window" },
+      account_inactivity: { name: "Account Inactivity Monitor", desc: "Detect inactive accounts" }
+    };
+    const FIELDS = [
+      ["concurrent_streams", "Concurrent Streams"],
+      ["travel_speed_kmh", "Travel Speed (km/h)"],
+      ["active_session_distance", "Active Session Distance (km)"],
+      ["unique_ips_window", "Unique IPs in Window"],
+      ["unique_devices_window", "Unique Devices in Window"],
+      ["inactive_days", "Inactive Days"],
+      ["current_pause_duration", "Current Pause Duration (min)"],
+      ["total_pause_duration", "Total Pause Duration (min)"]
+    ];
+    const FIELDS_WITH_UNIQUE = /* @__PURE__ */ new Set(["concurrent_streams", "travel_speed_kmh", "active_session_distance", "unique_ips_window", "unique_devices_window"]);
+    const OPS = [
+      ["gt", "greater than"],
+      ["gte", "at least"],
+      ["lt", "less than"],
+      ["lte", "at most"],
+      ["eq", "equals"],
+      ["neq", "not equals"]
+    ];
+    const ACTIONS = [
+      ["log_only", "Log Only"],
+      ["send_notification", "Send Notification"],
+      ["kill_stream", "Kill Stream"],
+      ["adjust_trust_score", "Adjust Trust Score"],
+      ["set_trust_score", "Set Trust Score"],
+      ["reset_trust_score", "Reset Trust Score"],
+      ["message_client", "Message Client"]
+    ];
+    const ACTION_MSG_LABEL = {
+      log_only: "Log Message",
+      send_notification: "Message",
+      kill_stream: "Kill Message",
+      message_client: "Message"
+    };
+    const ACTION_DESC = {
+      log_only: "Log the event without taking action",
+      send_notification: "Send a push notification",
+      kill_stream: "Terminate the active stream",
+      adjust_trust_score: "Add or subtract from trust score",
+      set_trust_score: "Set trust score to a specific value",
+      reset_trust_score: "Reset trust score to default",
+      message_client: "Send a message to the streaming client"
+    };
+    const TEMPLATE_CONDITIONS = {
+      concurrent_streams: [{ conditions: [{ field: "concurrent_streams", operator: "gt", value: 3, params: { uniqueDevices: true, uniqueIPs: false } }] }],
+      impossible_travel: [{ conditions: [{ field: "travel_speed_kmh", operator: "gt", value: 500, params: { uniqueDevices: true, uniqueIPs: false } }] }],
+      simultaneous_locations: [{ conditions: [{ field: "active_session_distance", operator: "gt", value: 100, params: { uniqueDevices: true, uniqueIPs: false } }] }],
+      device_velocity: [{ conditions: [{ field: "unique_ips_window", operator: "gt", value: 3 }] }],
+      account_inactivity: [{ conditions: [{ field: "inactive_days", operator: "gt", value: 30 }] }]
+    };
+    const tplDef = TEMPLATE_DEFAULTS[templateType] || {};
+    const curType = existingRule?.type || templateType || CLASSIC_TYPES[0][0];
+    const curName = existingRule?.name || tplDef.name || "";
+    const curDesc = existingRule?.description || tplDef.desc || "";
+    const curSev = existingRule?.severity || "warning";
+    const curActive = existingRule ? existingRule.isActive !== false : true;
+    const _opt = (arr, cur) => arr.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("");
+    const activeToggle = `<button id="tra-rf-active-toggle" data-active="${curActive}"
+      style="flex-shrink:0;width:36px;height:20px;border-radius:10px;border:1px solid ${curActive ? "rgba(0,122,255,0.8)" : "rgba(255,255,255,0.12)"};background:${curActive ? "rgba(0,122,255,0.7)" : "rgba(255,255,255,0.06)"};cursor:pointer;position:relative;transition:all .15s">
+      <span style="position:absolute;top:50%;transform:translateY(-50%);left:${curActive ? "18px" : "4px"};width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,${curActive ? "0.9" : "0.4"});transition:left .15s"></span>
+    </button>`;
+    const classicTypeField = "";
+    const classicParams = "";
+    const condRow = (gi, ci, cond) => {
+      const field = cond?.field || "concurrent_streams";
+      const fSel = FIELDS.map(([v, l]) => `<option value="${v}"${v === field ? " selected" : ""}>${l}</option>`).join("");
+      const oSel = OPS.map(([v, l]) => `<option value="${v}"${v === (cond?.operator || "gt") ? " selected" : ""}>${l}</option>`).join("");
+      const val = cond?.value ?? 2;
+      const hasUniq = FIELDS_WITH_UNIQUE.has(field);
+      const uDev = cond?.params?.uniqueDevices ?? field === "concurrent_streams";
+      const uIP = cond?.params?.uniqueIPs ?? false;
+      const chkSt = `cursor:pointer;width:13px;height:13px;accent-color:rgba(0,122,255,0.9)`;
+      const uniqHtml = hasUniq ? `<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--is-text,#fff);cursor:pointer;white-space:nowrap;flex-shrink:0">
+            <input type="checkbox" class="tra-cond-uniq-dev" ${uDev ? "checked" : ""} style="${chkSt}">Unique devices</label>
+           <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--is-text,#fff);cursor:pointer;white-space:nowrap;flex-shrink:0">
+            <input type="checkbox" class="tra-cond-uniq-ip" ${uIP ? "checked" : ""} style="${chkSt}">Unique IPs</label>` : "";
+      const trashSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+      return `<div class="tra-cr" data-grp="${gi}" data-row="${ci}" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;align-items:center">
+        <select class="tra-cond-field" style="${selectSt.replace("width:100%", "flex:2;min-width:130px")}">${fSel}</select>
+        <select class="tra-cond-op"    style="${selectSt.replace("width:100%", "flex:1.2;min-width:100px")}">${oSel}</select>
+        <input  class="tra-cond-val"   type="number" value="${val}" style="${inputSt.replace("width:100%", "width:72px;flex-shrink:0")}">
+        ${uniqHtml}
+        <button class="tra-cond-del" style="flex-shrink:0;width:22px;height:22px;border-radius:5px;background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:rgba(255,100,80,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center">${trashSvg}</button>
+      </div>`;
+    };
+    const condGroup = (gi, grp) => {
+      const conds = grp?.conditions?.length ? grp.conditions : [null];
+      const rows = conds.map((c, ci) => {
+        const html = condRow(gi, ci, c);
+        return ci === 0 ? html : `<div class="tra-or-label" style="font-size:10px;font-weight:700;color:rgba(0,122,255,0.8);margin:2px 0 6px">OR</div>${html}`;
+      }).join("");
+      return `<div class="tra-cg" data-grp="${gi}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:600;color:var(--is-text-label);margin-bottom:10px">Group ${gi + 1} <span style="font-weight:400;font-size:10px;opacity:0.6">(conditions match with OR logic)</span></div>
+        <div class="tra-cg-rows">${rows}</div>
+        <button class="tra-add-or" data-grp="${gi}" style="font-size:11px;color:rgba(0,122,255,0.8);background:transparent;border:none;cursor:pointer;padding:2px 0;margin-top:2px">+ Add <strong>OR</strong> condition</button>
+      </div>`;
+    };
+    const existGroups = existingRule?.conditions?.groups || !isEdit && templateType && TEMPLATE_CONDITIONS[templateType] || [];
+    const condGroupsHtml = (existGroups.length ? existGroups : [null]).map((g, i) => condGroup(i, g)).join("");
+    const actionRow = (idx, act) => {
+      const aType = act?.type || (idx === 0 ? "log_only" : "log_only");
+      const msgLbl = ACTION_MSG_LABEL[aType];
+      const msgVal = act?.message || act?.logMessage || "";
+      const descTxt = ACTION_DESC[aType] || "";
+      const msgInput = msgLbl ? `<label style="display:flex;align-items:center;gap:6px;flex-basis:100%;min-width:0;font-size:11px;color:var(--is-text-muted);white-space:nowrap;margin-top:6px">
+             ${msgLbl}:
+             <input class="tra-act-msg" type="text" value="${msgVal.replace(/"/g, "&quot;")}" placeholder="Optional message"
+               style="${inputSt.replace("height:32px", "height:28px")};flex:1;min-width:0">
+           </label>` : "";
+      const trashSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+      return `<div class="tra-act-row" data-idx="${idx}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+          <select class="tra-act-type" style="${selectSt.replace("width:100%", "flex:1;min-width:0")}">${_opt(ACTIONS, aType)}</select>
+          <button class="tra-act-del" style="flex-shrink:0;width:22px;height:22px;border-radius:5px;background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:rgba(255,100,80,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center">${trashSvg}</button>
+          ${msgInput}
+        </div>
+        ${descTxt ? `<div class="tra-act-desc" style="font-size:10px;color:var(--is-text-muted);margin-top:6px">${descTxt}</div>` : ""}
+      </div>`;
+    };
+    const existActions = existingRule?.actions?.actions || [];
+    const actionsHtml = (existActions.length ? existActions : [null]).map((a, i) => actionRow(i, a)).join("");
+    const condCard = showConditions ? `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:16px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--is-text);margin-bottom:2px">Conditions</div>
+        ${isMob ? "" : `<div style="font-size:11px;color:var(--is-text-muted);margin-bottom:12px">Define when this rule should trigger. Groups are combined with <strong>AND</strong> logic.</div>`}
+        <div id="tra-rf-conds">${condGroupsHtml}</div>
+        <button id="tra-add-and-group" style="font-size:11px;color:rgba(0,122,255,0.8);background:transparent;border:none;cursor:pointer;padding:2px 0">+ Add <strong>AND</strong> condition group</button>
+      </div>` : "";
+    const actCard = showConditions ? `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:16px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--is-text);margin-bottom:2px">Additional Actions</div>
+        ${isMob ? "" : `<div style="font-size:11px;color:var(--is-text-muted);margin-bottom:12px">Optional side-effects when conditions are met. A violation is always created automatically.</div>`}
+        <div id="tra-rf-actions">${actionsHtml}</div>
+        <button id="tra-add-action" style="font-size:11px;color:rgba(0,122,255,0.8);background:transparent;border:none;cursor:pointer;padding:2px 0">+ Add action</button>
+      </div>` : "";
+    const title = isEdit ? "Edit Rule" : `New ${isCustom ? "Custom" : "Classic"} Rule`;
+    const saveLabel = isEdit ? "Update" : "Create";
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _btnClr = _day ? "#000" : "#fff";
+    return `<div ${ruleId ? `data-rule-id="${ruleId}"` : ""}>
+      ${classicTypeField}
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px">
+        <div>
+          <label style="${labelSt}">Rule Name *</label>
+          <input id="tra-rf-name" type="text" value="${curName.replace(/"/g, "&quot;")}" placeholder="Rule name" style="${inputSt}">
+        </div>
+        <div>
+          <label style="${labelSt}">Description</label>
+          <input id="tra-rf-description" type="text" value="${curDesc.replace(/"/g, "&quot;")}" placeholder="Description" style="${inputSt}">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="${labelSt}">Severity</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <select id="tra-rf-severity" style="${selectSt.replace("width:100%", "width:auto")}">
+              <option value="warning"${curSev === "warning" ? " selected" : ""}>Warning</option>
+              <option value="high"${curSev === "high" ? " selected" : ""}>High</option>
+              <option value="low"${curSev === "low" ? " selected" : ""}>Low</option>
+            </select>
+            ${activeToggle}
+            <span style="font-size:11px;color:var(--is-text-muted)">Active</span>
+          </div>
+        </div>
+      </div>
+      ${classicParams}
+      ${condCard}
+      ${actCard}
+      <div style="${isMob ? "display:none" : "display:flex;justify-content:flex-end;gap:8px;margin-top:4px"}">
+        <button id="tra-rf-cancel" class="is-f-btn" style="height:32px;padding:0 14px;display:inline-flex;align-items:center;color:${_btnClr}">Cancel</button>
+        <button id="tra-rf-save" class="is-f-btn" style="height:32px;padding:0 16px;display:inline-flex;align-items:center;background:rgba(0,122,255,0.6);border-color:rgba(0,122,255,0.9);color:${_btnClr}">${saveLabel}</button>
+      </div>
+    </div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
   // Users tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyUsers() {
@@ -18725,7 +19624,7 @@ var _TraceaRrTableMethods = class {
       const _DP_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><polygon points="5,3 19,12 5,21"/></svg>`;
       const _TC_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
       const _CLK = `<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
-      const cards = hist.map((h) => {
+      const cards = hist.map((h, idx) => {
         const title = h.showTitle || h.mediaTitle || "\u2014";
         const yearLbl = h.showTitle ? `S${String(h.seasonNumber || 0).padStart(2, "0")}E${String(h.episodeNumber || 0).padStart(2, "0")}` : h.year ? String(h.year) : "";
         const user = h.user?.displayName || h.user?.username || "";
@@ -18744,7 +19643,7 @@ var _TraceaRrTableMethods = class {
           user ? `<span>${user}</span>` : "",
           durRaw ? `<span style="display:inline-flex;align-items:center;gap:3px">${_CLK}${durRaw}</span>` : ""
         ].filter(Boolean).join('<span style="opacity:0.3;margin:0 1px">\xB7</span>');
-        return `<div class="tl-mob-card" style="display:grid;grid-template-columns:1fr auto;row-gap:5px;column-gap:8px;align-items:center">
+        return `<div class="tl-mob-card" data-tra-hist-row="${h.id || idx}" style="display:grid;grid-template-columns:1fr auto;row-gap:5px;column-gap:8px;align-items:center;cursor:pointer">
           <div style="display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden">
             <span style="flex-shrink:0">${mediaIcon(h.mediaType)}</span>
             <span style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span>
@@ -18769,7 +19668,7 @@ var _TraceaRrTableMethods = class {
         ${pag2 ? `<div style="flex-shrink:0;padding:4px 12px 8px">${pag2}</div>` : ""}
       </div>`;
     }
-    const rows = hist.map((h) => {
+    const rows = hist.map((h, idx) => {
       const title = h.mediaTitle || "\u2014";
       const sub = h.showTitle ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${h.showTitle} \xB7 S${String(h.seasonNumber || 0).padStart(2, "0")}E${String(h.episodeNumber || 0).padStart(2, "0")}</div>` : h.year ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${h.year}</div>` : "";
       const user = h.user?.displayName || h.user?.username || "\u2014";
@@ -18800,7 +19699,7 @@ var _TraceaRrTableMethods = class {
         duration: `<td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${dur}</td>`,
         progress: `<td><div style="display:flex;align-items:center;gap:5px">${watchPie(pct)}<span style="font-size:11px;color:var(--is-text-muted)">${pct}%</span></div></td>`
       };
-      return `<tr>${vis.map((col) => cm[col.key] || "<td>\u2014</td>").join("")}</tr>`;
+      return `<tr data-tra-hist-row="${h.id || idx}" style="cursor:pointer">${vis.map((col) => cm[col.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
     const thead = vis.map((col) => `<th>${col.label}</th>`).join("");
     const pag = this._tlMobPag("tra-hist-page", m.histPage, Math.max(1, Math.ceil(total / pp)), true);
@@ -18816,6 +19715,169 @@ var _TraceaRrTableMethods = class {
     </div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
+  // History — session detail view
+  // ──────────────────────────────────────────────────────────────────────────
+  _traBodyHistDetail() {
+    const m = this._tracearrModal;
+    const h = m.histDetailItem;
+    if (!h) return '<div style="color:var(--is-text-muted);padding:40px;text-align:center">No data</div>';
+    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const poster = !!h.posterUrl;
+    const fmtDur = (ms) => {
+      if (!ms || ms <= 0) return null;
+      const s = Math.round(Number(ms) / 1e3);
+      const hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60;
+      return hh > 0 ? `${hh}h ${String(mm).padStart(2, "0")}m ${String(ss).padStart(2, "0")}s` : `${mm}m ${String(ss).padStart(2, "0")}s`;
+    };
+    const fmtDt = (iso) => {
+      if (!iso) return null;
+      const d = new Date(iso);
+      return d.toLocaleDateString("en", { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+    };
+    const row = (label, value) => value != null && value !== "" && value !== "\u2014" ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px">
+           <span style="font-size:11px;color:var(--is-text-muted);flex-shrink:0">${label}</span>
+           <span style="font-size:11px;color:var(--is-text);text-align:right;word-break:break-all">${value}</span>
+         </div>` : "";
+    const secHdr = (label, bdg = "") => `<div style="display:flex;align-items:center;gap:6px;margin:14px 0 6px">
+         <span style="font-size:10px;font-weight:700;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:.06em">${label}</span>
+         ${bdg}
+       </div>`;
+    const badge = (txt, color, bg) => `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;color:${color};background:${bg};white-space:nowrap">${txt}</span>`;
+    const decisionBadge = (dec) => dec === "transcode" ? badge("Transcode", "#FF9500", "rgba(255,149,0,0.14)") : dec === "copy" ? badge("Copy", "#007AFF", "rgba(0,122,255,0.14)") : badge("Direct Play", "#34C759", "rgba(52,199,89,0.14)");
+    const title = h.showTitle || h.mediaTitle || "\u2014";
+    const subtitle = h.showTitle ? `${h.mediaTitle ? h.mediaTitle + " \xB7 " : ""}S${String(h.seasonNumber || 0).padStart(2, "0")}E${String(h.episodeNumber || 0).padStart(2, "0")}` : h.year ? String(h.year) : "";
+    const p = parseInt(h.progressMs || 0), t = parseInt(h.totalDurationMs || 0);
+    const pct = t ? Math.round(p / t * 100) : 0;
+    const stateBadge = h.state === "playing" ? badge("Playing", "#34C759", "rgba(52,199,89,0.14)") : badge("Stopped", "rgba(255,255,255,0.5)", "rgba(255,255,255,0.08)");
+    const decBadge = decisionBadge(h.videoDecision || (h.isTranscode ? "transcode" : "directplay"));
+    const watchMs = h.startedAt && h.stoppedAt ? new Date(h.stoppedAt) - new Date(h.startedAt) : Number(h.durationMs) || 0;
+    const _SRV_CLR = { plex: "#e5a00d", jellyfin: "#7c4dff", emby: "#52b54b" };
+    const srvMapF = Object.fromEntries((m.histServers || []).map((s) => [s.id, s]));
+    const srv = srvMapF[h.serverId];
+    const srvType = (srv?.type || h.serverName || "").toLowerCase();
+    const srvName = h.serverName || srv?.name || "";
+    const srvClr = _SRV_CLR[srvType] || "#fff";
+    const srvBadge = srvName ? badge(srvName, srvClr, "rgba(255,255,255,0.07)") : "";
+    const streamTbl = (fields) => {
+      const any = fields.some(([, sv, dv]) => sv != null || dv != null);
+      if (!any) return "";
+      return `<table style="width:100%;border-collapse:collapse;font-size:10px">
+        <thead><tr>
+          <th style="text-align:left;color:var(--is-text-muted);font-weight:600;padding:3px 0;width:35%"></th>
+          <th style="text-align:left;color:var(--is-text-muted);font-weight:600;padding:3px 4px;width:28%">Source</th>
+          <th style="padding:3px 0;width:6%"></th>
+          <th style="text-align:left;color:var(--is-text-muted);font-weight:600;padding:3px 4px;width:31%">Stream</th>
+        </tr></thead>
+        <tbody>${fields.map(([lbl, sv, dv]) => {
+        if (sv == null && dv == null) return "";
+        const svStr = sv != null ? String(sv) : "\u2014";
+        const dvStr = dv != null ? String(dv) : svStr;
+        const same = svStr === dvStr;
+        return `<tr>
+            <td style="color:var(--is-text-muted);padding:3px 0;vertical-align:top">${lbl}</td>
+            <td style="color:var(--is-text);font-weight:600;padding:3px 4px;vertical-align:top">${svStr}</td>
+            <td style="color:rgba(255,255,255,0.2);text-align:center;padding:3px 0;vertical-align:top">\u2192</td>
+            <td style="color:${same ? "rgba(255,255,255,0.38)" : "#0a84ff"};font-weight:600;padding:3px 4px;vertical-align:top">${dvStr}</td>
+          </tr>`;
+      }).join("")}</tbody>
+      </table>`;
+    };
+    const svd = h.sourceVideoDetails || {};
+    const stv = h.streamVideoDetails || svd;
+    const sad = h.sourceAudioDetails || {};
+    const sta = h.streamAudioDetails || sad;
+    const srcRes = h.sourceVideoWidth && h.sourceVideoHeight ? `${h.sourceVideoWidth}\xD7${h.sourceVideoHeight}${h.resolution ? ` (${h.resolution})` : ""}` : h.resolution || null;
+    const stmRes = srcRes;
+    const leftPanel = `<div style="flex:1;min-width:0">
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+        ${poster ? `<img id="tra-hist-poster" style="width:60px;min-width:60px;border-radius:6px;object-fit:cover;aspect-ratio:2/3;background:rgba(255,255,255,0.05)">` : ""}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+            ${this._tlMediaIcon(h.mediaType || "", 12)}
+            <span style="font-size:13px;font-weight:700;color:var(--is-text)">${title}</span>
+            ${stateBadge}
+          </div>
+          ${subtitle ? `<div style="font-size:11px;color:var(--is-text-muted);margin-bottom:6px">${subtitle}</div>` : ""}
+          <div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.1);margin:8px 0 2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:#0a84ff;border-radius:2px"></div>
+          </div>
+          <div style="font-size:10px;color:var(--is-text-muted);text-align:right">${pct}%</div>
+        </div>
+      </div>
+
+      ${secHdr("Playback")}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        ${row("Started", fmtDt(h.startedAt))}
+        ${row("Stopped", fmtDt(h.stoppedAt))}
+        ${row("Watch time", fmtDur(watchMs))}
+        ${row("Length", fmtDur(parseInt(h.totalDurationMs || 0)))}
+      </div>
+
+      ${secHdr("User")}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${this._traUserAvatar(h.user, 28)}
+          <span style="font-size:12px;font-weight:600;color:var(--is-text)">${h.user?.displayName || h.user?.username || "\u2014"}</span>
+        </div>
+      </div>
+
+      ${srvName ? `${secHdr("Server")}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        ${row("Server", `<span style="color:${srvClr};font-weight:700">${srvName}</span> \xB7 ${srvName}`)}
+      </div>` : ""}
+
+      ${secHdr("Device")}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        ${row("Platform", h.platform)}
+        ${row("Product", h.product)}
+        ${row("Device", h.device)}
+        ${row("Player", h.player)}
+      </div>
+    </div>`;
+    const rightPanel = `<div style="flex:1;min-width:0${isMob ? ";margin-top:0" : ""}">
+      ${secHdr("Stream Details", decBadge)}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        ${row("Container", h.transcodeInfo?.sourceContainer ? `${h.transcodeInfo.sourceContainer} \u2192 ${h.transcodeInfo.sourceContainer}` : null)}
+        ${row("Bitrate", h.bitrate ? `${(h.bitrate / 1e3).toFixed(1)} Mbps` : null)}
+      </div>
+
+      ${secHdr("Video", decisionBadge(h.videoDecision))}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        ${streamTbl([
+      ["Codec", h.sourceVideoCodecDisplay || h.sourceVideoCodec, h.streamVideoCodecDisplay || h.streamVideoCodec || h.sourceVideoCodecDisplay],
+      ["Resolution", srcRes, stmRes],
+      ["Bitrate", svd.bitrate ? `${(svd.bitrate / 1e3).toFixed(1)} Mbps` : null, stv.bitrate ? `${(stv.bitrate / 1e3).toFixed(1)} Mbps` : null],
+      ["Framerate", svd.framerate, stv.framerate],
+      ["HDR", svd.dynamicRange, stv.dynamicRange],
+      ["Profile", svd.profile, null],
+      ["Color", svd.colorSpace ? `${svd.colorSpace} ${svd.colorDepth ? svd.colorDepth + "bit" : ""}`.trim() : null, null]
+    ])}
+      </div>
+
+      ${secHdr("Audio", decisionBadge(h.audioDecision))}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        ${streamTbl([
+      ["Codec", h.sourceAudioCodecDisplay || h.sourceAudioCodec, h.streamAudioCodecDisplay || h.streamAudioCodec || h.sourceAudioCodecDisplay],
+      ["Channels", h.audioChannelsDisplay || (h.sourceAudioChannels != null ? String(h.sourceAudioChannels) : null), h.audioChannelsDisplay],
+      ["Bitrate", sad.bitrate ? `${sad.bitrate} kbps` : null, sta.bitrate ? `${sta.bitrate} kbps` : null],
+      ["Language", sad.language, sta.language],
+      ["Sample Rate", sad.sampleRate ? `${(sad.sampleRate / 1e3).toFixed(0)} kHz` : null, null]
+    ])}
+      </div>
+
+      ${h.subtitleInfo ? `${secHdr("Subtitles")}
+      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+        ${row("Format", [h.subtitleInfo.format || h.subtitleInfo.codec, h.subtitleInfo.language].filter(Boolean).join(" \xB7 "))}
+        ${row("Decision", h.subtitleInfo.decision)}
+      </div>` : ""}
+    </div>`;
+    return `<div id="tra-hist-detail" style="display:flex;flex-direction:${isMob ? "column" : "row"};gap:20px;height:100%;min-height:0;overflow-y:auto">
+      <button id="tra-hist-detail-back" style="display:none"></button>
+      ${leftPanel}
+      ${rightPanel}
+    </div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
   // Activity tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyActivity() {
@@ -18824,6 +19886,7 @@ var _TraceaRrTableMethods = class {
     const period = m.activityPeriod || "month";
     const days = period === "week" ? 7 : period === "year" ? 365 : 30;
     const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isTablet = !isMob && window.matchMedia("(max-width:860px)").matches;
     const tauFmt = (categories, series) => ({ response: { data: { categories, series } } });
     const playsAll = act.plays || [];
     const concAll = act.concurrent || [];
@@ -18880,12 +19943,12 @@ var _TraceaRrTableMethods = class {
     const hdr = `<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:${isMob ? 10 : 12}px">
       <div class="is-filter">${dayBtns}</div>
     </div>`;
-    const chartH = isMob ? 100 : 118;
+    const chartH = isMob ? 100 : isTablet ? 108 : 118;
     const BASE = { range: ptsP.length || days, isDate: true, isMob, height: chartH };
     const BOPT = { isMob, height: chartH };
     const lineXLabel = /* @__PURE__ */ ((n) => (d, i) => i % Math.max(1, Math.ceil(n / 7)) === 0 ? d.slice(-5) : "")(ptsP.length);
-    const playsSvg = this._tlGLineSvg(playsRaw, { ...BASE, chartId: "tra-p", xLabel: lineXLabel });
-    const concSvg = this._tlGLineSvg(concRaw, { ...BASE, chartId: "tra-c", isDuration: false, xLabel: lineXLabel });
+    const playsSvg = this._tlGLineSvg(playsRaw, { ...BASE, chartId: "tra-p", xLabel: lineXLabel, noDots: true });
+    const concSvg = this._tlGLineSvg(concRaw, { ...BASE, chartId: "tra-c", isDuration: false, xLabel: lineXLabel, noDots: true });
     const dowSvg = this._tlGBarSvg(dowRaw, { ...BOPT, chartId: "tra-dw", xLabel: (d) => d.slice(0, 3) });
     const hodSvg = this._tlGBarSvg(hodRaw, { ...BOPT, chartId: "tra-hd", xLabel: (_, i) => i % 4 === 0 ? `${i}h` : "" });
     const playsCard = this._tlGCard(this._t("traPlaybackTrend"), playsRaw, playsSvg);
@@ -18967,7 +20030,7 @@ var _TraceaRrTableMethods = class {
     if (isMob) {
       return hdr + `<div style="display:flex;flex-direction:column;gap:8px">${playsCard}${concCard}${dowCard}${hodCard}${qualCard}${platCard}</div>`;
     }
-    return hdr + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">` + playsCard + concCard + dowCard + hodCard + qualCard + platCard + `</div>`;
+    return hdr + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:${isTablet ? "6px" : "8px"}">` + playsCard + concCard + dowCard + hodCard + qualCard + platCard + `</div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Quality tab (library analytics)
@@ -19105,8 +20168,11 @@ var _TraceaRrTableMethods = class {
     const videoSec = codecSection(this._t("traVideoCodecs"), codecs.video?.codecs);
     const audioSec = codecSection(this._t("traAudioCodecs"), codecs.audio?.codecs);
     const chanSec = codecSection(this._t("traAudioChannels"), codecs.channels?.codecs, _ctBtnsEl);
+    const isTabletQ = window.matchMedia("(max-width:860px) and (min-width:601px)").matches;
     const _innerCols = isMob ? `<div>${chanSec}</div><div>${videoSec}</div><div>${audioSec}</div>` : `<div>${videoSec}</div><div>${audioSec}</div><div>${chanSec}</div>`;
-    return `<div class="tl-g-card"><div style="display:grid;grid-template-columns:${isMob ? "1fr" : "1fr 1fr 1fr"};gap:${isMob ? "12px" : "16px"}">${_innerCols}</div></div>`;
+    const _qCols = isMob ? "1fr" : isTabletQ ? "1fr 1fr" : "1fr 1fr 1fr";
+    const _qGap = isMob ? "12px" : isTabletQ ? "10px" : "16px";
+    return `<div class="tl-g-card"><div style="display:grid;grid-template-columns:${_qCols};gap:${_qGap}">${_innerCols}</div></div>`;
   }
   _traBodyQuality() {
     const m = this._tracearrModal;
@@ -20539,6 +21605,7 @@ var _TraceaRrTableMethods = class {
     const m = this._tracearrModal;
     if (!m) return "";
     const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isTablet = !isMob && window.matchMedia("(max-width:860px)").matches;
     const users = m.statsUsersData || [];
     const period = m.statsUsersPeriod || "month";
     const _pLbl = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
@@ -20570,8 +21637,8 @@ var _TraceaRrTableMethods = class {
       const trust = u.trustScore ?? u.trust ?? null;
       const loves = u.topContent || u.favoriteTitle || u.favoriteSeries || u.favoriteMedia || null;
       const border = borders[di];
-      const avSz = gold ? isMob ? 72 : 96 : isMob ? 52 : 68;
-      const pad = gold ? isMob ? "20px 8px 14px" : "24px 14px 16px" : isMob ? "12px 6px" : "16px 10px";
+      const avSz = gold ? isMob ? 72 : isTablet ? 84 : 96 : isMob ? 52 : isTablet ? 60 : 68;
+      const pad = gold ? isMob ? "20px 8px 14px" : isTablet ? "20px 10px 14px" : "24px 14px 16px" : isMob ? "12px 6px" : isTablet ? "12px 8px" : "16px 10px";
       const nameSz = gold ? isMob ? 12 : 14 : isMob ? 11 : 12;
       const avFb = `<div style="width:${avSz}px;height:${avSz}px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${Math.round(avSz * 0.3)}px;font-weight:800;color:rgba(255,255,255,0.6)">${name.slice(0, 2).toUpperCase()}</div>`;
       const avEl = av ? `<img src="${av}" width="${avSz}" height="${avSz}" style="border-radius:50%;object-fit:cover;border:2px solid ${border};flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : avFb;
@@ -20919,6 +21986,13 @@ var _TraceaRrMethods = class {
       usersSearch: "",
       usersPage: 0,
       usersPerPage: 20,
+      usersServerId: (() => {
+        try {
+          return localStorage.getItem("arr-tra-srv") || null;
+        } catch (_) {
+          return null;
+        }
+      })(),
       // violations
       violsData: [],
       violsTotal: 0,
@@ -21055,6 +22129,33 @@ var _TraceaRrMethods = class {
     this._wireTracearrModal(el);
     this._traLoadTab(tab, el);
   }
+  // Populate #tra-hdr-server: always show JF/Plex/Emby, gray out unconfigured
+  _traPopSrvEl(srvEl, servers, activeId, attr, keyFn) {
+    if (!srvEl) return;
+    if (!(servers || []).length) {
+      srvEl.style.display = "none";
+      return;
+    }
+    const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
+    const TYPES = ["jellyfin", "plex", "emby"];
+    const typeMap = /* @__PURE__ */ new Map();
+    for (const s of servers) {
+      const k = keyFn ? keyFn(s) : (() => {
+        const n = (s.name || "").toLowerCase();
+        return n.includes("jellyfin") ? "jellyfin" : n.includes("plex") ? "plex" : n.includes("emby") ? "emby" : null;
+      })();
+      if (k && !typeMap.has(k)) typeMap.set(k, s);
+    }
+    srvEl.innerHTML = TYPES.map((t) => {
+      const s = typeMap.get(t);
+      const active = s?.id === activeId;
+      const dis = !s;
+      const st = `padding:4px 6px;display:flex;align-items:center;justify-content:center${dis ? ";opacity:0.3;filter:grayscale(1);pointer-events:none" : ""}`;
+      const icon = `<img src="${CDN}/${t}.svg" width="20" height="20" style="display:block;object-fit:contain">`;
+      return `<button class="tl-page-btn${active ? " active" : ""}" ${s ? `${attr}="${s.id}"` : ""} title="${t}" style="${st}">${icon}</button>`;
+    }).join("");
+    srvEl.style.display = "flex";
+  }
   _closeTracearrModal() {
     if (this._tracearrModal?._leafletMap) {
       try {
@@ -21066,34 +22167,91 @@ var _TraceaRrMethods = class {
     this._tracearrModal = null;
   }
   _traNavHtml(currentTab, navGroup) {
+    const _ico = (d, s = 13) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">${d}</svg>`;
     const NAV = [
-      { id: "map", label: "Map", tab: "map" },
-      { id: "history", label: "History", tab: "history" },
-      { id: "stats", label: "Stats", sub: [["activity", "Activity"], ["statsUsers", "Users"]] },
-      { id: "library", label: "Library", sub: [["quality", "Quality"], ["storage", "Storage"], ["watch", "Watch"]] },
-      { id: "performance", label: "Performance", sub: [["devices", "Devices"], ["bandwidth", "Bandwidth"]] },
-      { id: "users", label: "Users", tab: "users" },
-      { id: "rules", label: "Rules", tab: "rules" },
-      { id: "violations", label: "Violations", tab: "violations" }
+      {
+        id: "map",
+        label: "Map",
+        tab: "map",
+        icon: _ico('<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>'),
+        sub: []
+      },
+      {
+        id: "history",
+        label: "History",
+        tab: "history",
+        icon: _ico('<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/><polyline points="12 7 12 12 15 15"/>'),
+        sub: []
+      },
+      {
+        id: "stats",
+        label: "Stats",
+        icon: _ico('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'),
+        sub: [
+          ["activity", "Activity", _ico('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>', 11)],
+          ["statsUsers", "Users", _ico('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 11)]
+        ]
+      },
+      {
+        id: "library",
+        label: "Library",
+        icon: _ico('<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'),
+        sub: [
+          ["quality", "Quality", _ico('<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>', 11)],
+          ["storage", "Storage", _ico('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>', 11)],
+          ["watch", "Watch", _ico('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>', 11)]
+        ]
+      },
+      {
+        id: "performance",
+        label: "Perf",
+        icon: _ico('<path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>'),
+        sub: [
+          ["devices", "Devices", _ico('<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>', 11)],
+          ["bandwidth", "Bandwidth", _ico('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', 11)]
+        ]
+      },
+      {
+        id: "users",
+        label: "Users",
+        tab: "users",
+        icon: _ico('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+        sub: []
+      },
+      {
+        id: "rules",
+        label: "Rules",
+        tab: "rules",
+        icon: _ico('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
+        sub: []
+      },
+      {
+        id: "violations",
+        label: "Violations",
+        tab: "violations",
+        icon: _ico('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+        sub: []
+      }
     ];
     const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
     const items = NAV.map((g) => {
       const active = navGroup === g.id;
       const txtClr = _day ? "#000" : "#fff";
-      const navH = "height:28px;box-sizing:border-box;";
-      const subH = "height:24px;box-sizing:border-box;";
+      const navH = "height:28px;box-sizing:border-box;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;";
+      const subH = "height:24px;box-sizing:border-box;padding:0 8px;";
       const st = active ? `${navH}background:rgba(0,122,255,0.5);color:${txtClr};border-color:rgba(0,122,255,0.8)` : `${navH}color:${txtClr}`;
-      const btn = `<button class="is-f-btn" data-tra-nav="${g.id}" style="${st}">${g.label}</button>`;
-      if (!g.sub) return btn;
+      const chevron = g.sub?.length ? `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.7"><polyline points="9 18 15 12 9 6"/></svg>` : "";
+      const btn = `<button class="is-f-btn" data-tra-nav="${g.id}" style="${st}">${g.icon}${g.label}${chevron}</button>`;
+      if (!g.sub?.length) return btn;
       const expanded = active;
-      const subHtml = expanded ? g.sub.map(([tid, tlbl]) => {
+      const subHtml = expanded ? g.sub.map(([tid, tlbl, tico]) => {
         const isActive = currentTab === tid;
-        const subSt = isActive ? `${subH}background:rgba(0,122,255,0.25);color:#007AFF;border-color:rgba(0,122,255,0.5);font-size:10px` : `${subH}background:rgba(0,122,255,0.08);color:${txtClr};border-color:rgba(0,122,255,0.2);font-size:10px`;
+        const subSt = isActive ? `${subH}background:rgba(0,122,255,0.25);color:#007AFF;border-color:rgba(0,122,255,0.5);font-size:10px;display:inline-flex;align-items:center;gap:4px` : `${subH}background:rgba(0,122,255,0.13);color:${txtClr};border-color:rgba(0,122,255,0.3);font-size:10px;display:inline-flex;align-items:center;gap:4px`;
         return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
       }).join("") : "";
       return `<div style="display:flex;align-items:center;gap:4px">` + btn + `<div data-tra-sub="${g.id}" style="display:flex;gap:4px;overflow:hidden;max-width:${expanded ? "500px" : "0"};transition:max-width 0.25s ease">${subHtml}</div></div>`;
     }).join("");
-    return `<div id="tra-nav" style="display:flex;justify-content:flex-start;align-items:center;gap:4px;flex-wrap:nowrap;overflow:hidden">${items}</div>`;
+    return `<div id="tra-nav" style="display:flex;justify-content:flex-start;align-items:center;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">${items}</div>`;
   }
   _traMobileNavHtml(currentTab, navGroup) {
     const _ico = (d, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -21130,8 +22288,8 @@ var _TraceaRrMethods = class {
       },
       {
         id: "performance",
-        label: "Performance",
-        icon: _ico('<path d="M12 2a9 9 0 0 1 9 9"/><path d="M3 11a9 9 0 0 1 9-9"/><path d="M12 2C6.48 2 2 6.48 2 12"/><path d="M22 12c0-5.52-4.48-10-10-10"/><path d="M5 19a8 8 0 0 1 14 0"/><line x1="12" y1="12" x2="16.24" y2="7.76"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>'),
+        label: "Perf",
+        icon: _ico('<path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>'),
         sub: [
           ["devices", _ico('<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>', 16), "Devices"],
           ["bandwidth", _ico('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', 16), "Bandwidth"]
@@ -21179,6 +22337,7 @@ var _TraceaRrMethods = class {
       return `<div class="popup-overlay${dayClass(this)}" data-tra-modal>
         <div class="popup-glass tl-wide">
           <div class="is-panel-hdr" style="flex-direction:row;align-items:center;padding:${pad};gap:6px">
+            <div id="tra-hdr-actions" style="display:flex;gap:6px;align-items:center;flex-shrink:0"></div>
             <div id="tra-hdr-server" style="display:none;gap:5px;align-items:center;flex-shrink:0"></div>
             <div style="flex:1"></div>
             <button class="popup-close" id="tra-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:center">${ICONS.close}</button>
@@ -21244,10 +22403,11 @@ var _TraceaRrMethods = class {
     const m = this._tracearrModal;
     if (!m) return;
     if (tab === "rules") {
-      body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:rgba(255,255,255,0.25);padding:60px 20px">
-        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span style="font-size:14px;font-weight:600">Under development</span>
-      </div>`;
+      const r = await this._traAdminFetch("GET", "v1/rules");
+      if (!this._tracearrModal) return;
+      m.rulesData = r?.data || [];
+      body.innerHTML = this._traBodyRules();
+      this._wireTracearrModalBody(body);
       return;
     }
     if (tab === "map") {
@@ -21258,28 +22418,7 @@ var _TraceaRrMethods = class {
       if (!this._tracearrModal) return;
       m.mapData = r;
       body.innerHTML = this._traMapHtml();
-      const _mSrvEl = modal.querySelector("#tra-hdr-server");
-      const _mSrvs = r?.availableFilters?.servers || [];
-      if (_mSrvEl && _mSrvs.length > 1) {
-        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-        const _mKey = (name) => {
-          const n = (name || "").toLowerCase();
-          return n.includes("jellyfin") ? "jellyfin" : n.includes("plex") ? "plex" : n.includes("emby") ? "emby" : null;
-        };
-        const _mPk = (name) => {
-          const k = _mKey(name);
-          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
-        };
-        const _sorted = [..._mSrvs].sort((a, b) => _mPk(a.name) - _mPk(b.name));
-        _mSrvEl.innerHTML = _sorted.map((s) => {
-          const key = _mKey(s.name);
-          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
-          return `<button class="tl-page-btn${m.mapServerId === s.id ? " active" : ""}" data-tra-map-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
-        }).join("");
-        _mSrvEl.style.display = "flex";
-      } else if (_mSrvEl) {
-        _mSrvEl.style.display = "none";
-      }
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), r?.availableFilters?.servers || [], m.mapServerId, "data-tra-map-srv");
       this._wireTracearrModalBody(body);
       this._initTraMap(body);
       return;
@@ -21299,13 +22438,37 @@ var _TraceaRrMethods = class {
       body.innerHTML = this._traBodyOverview();
       this._wireTracearrModalBody(body);
     } else if (tab === "users") {
+      if (!m.staleServers) {
+        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+        if (this._tracearrModal) {
+          const srvMap = /* @__PURE__ */ new Map();
+          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+        }
+      }
+      if (!this._tracearrModal) return;
+      if (!m.usersServerId && (m.staleServers || []).length > 0) {
+        const _pk = (n) => {
+          const s = (n || "").toLowerCase();
+          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
+        m.usersServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+      }
       const pp = this._tlCalcPerPage();
-      const r = await this._traApiFetch(`users?pageSize=${pp}&page=${m.usersPage + 1}&sort=${m.usersSortCol}&order=${m.usersSortDir}${m.usersSearch ? "&search=" + encodeURIComponent(m.usersSearch) : ""}`);
+      const _uSrvQ = m.usersServerId ? `&serverId=${m.usersServerId}` : "";
+      const r = await this._traApiFetch(`users?pageSize=${pp}&page=${m.usersPage + 1}&sort=${m.usersSortCol}&order=${m.usersSortDir}${m.usersSearch ? "&search=" + encodeURIComponent(m.usersSearch) : ""}${_uSrvQ}`);
       if (!this._tracearrModal) return;
       m.usersData = r?.data || [];
       m.usersTotal = r?.meta?.total || 0;
       body.innerHTML = this._traBodyUsers();
       this._wireTracearrModalBody(body);
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.usersServerId, "data-tra-usr-srv");
     } else if (tab === "violations") {
       const pp = this._tlCalcPerPage({ hasFilter: true });
       let q = `pageSize=${pp}&page=${m.violsPage + 1}`;
@@ -21367,26 +22530,10 @@ var _TraceaRrMethods = class {
       }
       body.innerHTML = this._traBodyHistory();
       this._wireTracearrModalBody(body);
-      const _hSrvEl = modal.querySelector("#tra-hdr-server");
-      if (_hSrvEl && m.histServers.length > 1) {
-        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-        const _hKey = (s) => {
-          const t = (s.type || "").toLowerCase();
-          return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
-        };
-        const _hPk = (s) => {
-          const k = _hKey(s);
-          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
-        };
-        _hSrvEl.innerHTML = [...m.histServers].sort((a, b) => _hPk(a) - _hPk(b)).map((s) => {
-          const key = _hKey(s);
-          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
-          return `<button class="tl-page-btn${m.histServer === s.id ? " active" : ""}" data-tra-hist-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
-        }).join("");
-        _hSrvEl.style.display = "flex";
-      } else if (_hSrvEl) {
-        _hSrvEl.style.display = "none";
-      }
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.histServers, m.histServer, "data-tra-hist-srv", (s) => {
+        const t = (s.type || "").toLowerCase();
+        return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
+      });
     } else if (tab === "activity") {
       if (!m.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
@@ -21416,28 +22563,30 @@ var _TraceaRrMethods = class {
       m.activityData = ar;
       body.innerHTML = this._traBodyActivity();
       this._wireTracearrModalBody(body);
-      const _aSrvEl = modal.querySelector("#tra-hdr-server");
-      if (_aSrvEl && (m.staleServers || []).length > 1) {
-        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-        const _aKey = (name) => {
-          const n = (name || "").toLowerCase();
-          return n.includes("plex") ? "plex" : n.includes("jellyfin") ? "jellyfin" : n.includes("emby") ? "emby" : null;
-        };
-        const _aPk = (name) => {
-          const k = _aKey(name);
-          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
-        };
-        const _sorted = [...m.staleServers].sort((a, b) => _aPk(a.name) - _aPk(b.name));
-        _aSrvEl.innerHTML = _sorted.map((s) => {
-          const key = _aKey(s.name);
-          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
-          return `<button class="tl-page-btn${m.activityServerId === s.id ? " active" : ""}" data-tra-act-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
-        }).join("");
-        _aSrvEl.style.display = "flex";
-      } else if (_aSrvEl) {
-        _aSrvEl.style.display = "none";
-      }
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.activityServerId, "data-tra-act-srv");
     } else if (tab === "statsUsers") {
+      if (!m.staleServers) {
+        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+        if (this._tracearrModal) {
+          const srvMap = /* @__PURE__ */ new Map();
+          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+        }
+      }
+      if (!this._tracearrModal) return;
+      if (!m.statsUsersServerId && (m.staleServers || []).length > 0) {
+        const _pk = (n) => {
+          const s = (n || "").toLowerCase();
+          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
+        m.statsUsersServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+      }
       const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
       const _p = m.statsUsersPeriod || "30d";
       const _sQ = m.statsUsersServerId ? `&serverId=${m.statsUsersServerId}` : "";
@@ -21446,6 +22595,7 @@ var _TraceaRrMethods = class {
       m.statsUsersData = r?.data || r || [];
       body.innerHTML = this._traBodyStatsUsers();
       this._wireTracearrModalBody(body);
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.statsUsersServerId, "data-tra-su-srv");
     } else if (tab === "quality") {
       if (!m.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
@@ -21499,33 +22649,7 @@ var _TraceaRrMethods = class {
       }
       body.innerHTML = this._traBodyQuality();
       this._wireTracearrModalBody(body);
-      const _qSrvEl = body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server");
-      if (_qSrvEl && (m.staleServers || []).length > 1) {
-        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-        const _srvAppKey = (name) => {
-          const n = (name || "").toLowerCase();
-          if (n.includes("plex")) return "plex";
-          if (n.includes("jellyfin")) return "jellyfin";
-          if (n.includes("emby")) return "emby";
-          return null;
-        };
-        const _typePriority = { jellyfin: 0, plex: 1, emby: 2 };
-        const _sorted = [...m.staleServers || []].sort((a, b) => {
-          const pa = _typePriority[_srvAppKey(a.name)] ?? 99;
-          const pb = _typePriority[_srvAppKey(b.name)] ?? 99;
-          return pa - pb;
-        });
-        const _sel = m.qualityServerId || null;
-        _qSrvEl.innerHTML = _sorted.map((s) => {
-          const key = _srvAppKey(s.name);
-          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
-          return `<button class="tl-page-btn${_sel === s.id ? " active" : ""}" data-tra-quality-srv="${s.id}"
-            title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
-        }).join("");
-        _qSrvEl.style.display = "flex";
-      } else if (_qSrvEl) {
-        _qSrvEl.style.display = "none";
-      }
+      this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m.staleServers, m.qualityServerId, "data-tra-quality-srv");
     } else if (tab === "storage") {
       try {
         const _effectiveSrv = m.selectedServerId || null;
@@ -21583,34 +22707,7 @@ var _TraceaRrMethods = class {
             }
           }
         }
-        const srvEl = body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server");
-        if (srvEl) {
-          if ((m.staleServers || []).length > 1) {
-            const sel = m.selectedServerId || m.staleServers[0]?.id;
-            const _srvAppKey = (name) => {
-              const n = (name || "").toLowerCase();
-              if (n.includes("plex")) return "plex";
-              if (n.includes("jellyfin")) return "jellyfin";
-              if (n.includes("emby")) return "emby";
-              return null;
-            };
-            const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-            const _srvIcon = (name) => {
-              const key = _srvAppKey(name);
-              if (!key) return `<span style="font-size:11px;font-weight:700">${name}</span>`;
-              return `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain" title="${name}">`;
-            };
-            srvEl.innerHTML = m.staleServers.map(
-              (s) => `<button class="tl-page-btn${sel === s.id ? " active" : ""}" data-tra-server="${s.id}"
-                title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">
-                ${_srvIcon(s.name)}
-              </button>`
-            ).join("");
-            srvEl.style.display = "flex";
-          } else {
-            srvEl.style.display = "none";
-          }
-        }
+        this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m.staleServers, m.selectedServerId, "data-tra-server");
         let _filtered;
         if (_effectiveSrv) {
           _filtered = m.staleRaw || [];
@@ -21708,28 +22805,7 @@ var _TraceaRrMethods = class {
       if (!this._tracearrModal) return;
       body.innerHTML = this._traBodyWatch();
       this._wireTracearrModalBody(body);
-      const _wSrvEl = body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server");
-      if (_wSrvEl && (m.staleServers || []).length > 1) {
-        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-        const _srvAppKey = (name) => {
-          const n = (name || "").toLowerCase();
-          if (n.includes("plex")) return "plex";
-          if (n.includes("jellyfin")) return "jellyfin";
-          if (n.includes("emby")) return "emby";
-          return null;
-        };
-        const _typePriority = { jellyfin: 0, plex: 1, emby: 2 };
-        const _sorted = [...m.staleServers].sort((a, b) => (_typePriority[_srvAppKey(a.name)] ?? 99) - (_typePriority[_srvAppKey(b.name)] ?? 99));
-        const _sel = m.watchServerId;
-        _wSrvEl.innerHTML = _sorted.map((s) => {
-          const key = _srvAppKey(s.name);
-          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain" title="${s.name}">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
-          return `<button class="tl-page-btn${_sel === s.id ? " active" : ""}" data-tra-watch-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
-        }).join("");
-        _wSrvEl.style.display = "flex";
-      } else if (_wSrvEl) {
-        _wSrvEl.style.display = "none";
-      }
+      this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m.staleServers, m.watchServerId, "data-tra-watch-srv");
     } else if (tab === "devices") {
       if (!m.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
@@ -21774,26 +22850,7 @@ var _TraceaRrMethods = class {
       }
       body.innerHTML = this._traBodyDevices();
       this._wireTracearrModalBody(body);
-      const _dSrvEl = modal.querySelector("#tra-hdr-server");
-      if (_dSrvEl && (m.staleServers || []).length > 1) {
-        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-        const _dKey = (name) => {
-          const n = (name || "").toLowerCase();
-          return n.includes("plex") ? "plex" : n.includes("jellyfin") ? "jellyfin" : n.includes("emby") ? "emby" : null;
-        };
-        const _dPk = (name) => {
-          const k = _dKey(name);
-          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
-        };
-        _dSrvEl.innerHTML = [...m.staleServers].sort((a, b) => _dPk(a.name) - _dPk(b.name)).map((s) => {
-          const key = _dKey(s.name);
-          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
-          return `<button class="tl-page-btn${m.devicesServerId === s.id ? " active" : ""}" data-tra-dev-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
-        }).join("");
-        _dSrvEl.style.display = "flex";
-      } else if (_dSrvEl) {
-        _dSrvEl.style.display = "none";
-      }
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.devicesServerId, "data-tra-dev-srv");
     } else if (tab === "bandwidth") {
       if (!m.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
@@ -21834,26 +22891,7 @@ var _TraceaRrMethods = class {
       }
       body.innerHTML = this._traBodyBandwidth();
       this._wireTracearrModalBody(body);
-      const _bSrvEl = modal.querySelector("#tra-hdr-server");
-      if (_bSrvEl && (m.staleServers || []).length > 1) {
-        const CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg";
-        const _bKey = (name) => {
-          const n = (name || "").toLowerCase();
-          return n.includes("plex") ? "plex" : n.includes("jellyfin") ? "jellyfin" : n.includes("emby") ? "emby" : null;
-        };
-        const _bPk = (name) => {
-          const k = _bKey(name);
-          return k === "jellyfin" ? 0 : k === "plex" ? 1 : k === "emby" ? 2 : 99;
-        };
-        _bSrvEl.innerHTML = [...m.staleServers].sort((a, b) => _bPk(a.name) - _bPk(b.name)).map((s) => {
-          const key = _bKey(s.name);
-          const icon = key ? `<img src="${CDN}/${key}.svg" width="20" height="20" style="display:block;object-fit:contain">` : `<span style="font-size:11px;font-weight:700">${s.name}</span>`;
-          return `<button class="tl-page-btn${m.bwServerId === s.id ? " active" : ""}" data-tra-bw-srv="${s.id}" title="${s.name}" style="padding:4px 6px;display:flex;align-items:center;justify-content:center">${icon}</button>`;
-        }).join("");
-        _bSrvEl.style.display = "flex";
-      } else if (_bSrvEl) {
-        _bSrvEl.style.display = "none";
-      }
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.bwServerId, "data-tra-bw-srv");
     }
   }
   // ── Refresh stale section only (no chart/tiles re-render) ────────────────
@@ -21951,6 +22989,14 @@ var _TraceaRrMethods = class {
     } catch (e) {
       console.warn("[arr-card] Tracearr stats fetch error:", path, e);
       return null;
+    }
+  }
+  async _traAdminFetch(method, path, body) {
+    try {
+      return await this._hass.callApi(method, `arr_stack/tracearr/${path}`, body);
+    } catch (e) {
+      if (e?.error === "Unable to parse JSON response") return null;
+      throw e;
     }
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -22350,8 +23396,7 @@ var _ActivityRenderMethods = class {
       const idxLbl = item.indexer || "\u2014";
       const cliLbl = item.downloadClient || "\u2014";
       const pb = `<div style="width:100%;height:3px;background:var(--is-divider);border-radius:2px;overflow:hidden;margin-top:3px"><div style="width:${isBad ? 100 : pct}%;height:100%;background:rgba(99,140,255,0.65);border-radius:2px"></div></div>`;
-      const delMode2 = m.queueDeleteMode || false;
-      const removeBtn = delMode2 ? `<button class="act-remove-btn" data-id="${item.id}" data-svc="${item._svc}" data-title="${this._escHtml(item._title)}" title="Remove from queue" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;color:rgba(220,80,80,0.9)">${trashSvg}</button>` : "";
+      const removeBtn = true ? `<button class="act-remove-btn" data-id="${item.id}" data-svc="${item._svc}" data-title="${this._escHtml(item._title)}" title="Remove from queue" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;color:rgba(220,80,80,0.9)">${trashSvg}</button>` : "";
       const canImport = isBad && item.downloadId;
       const importBtn = canImport ? `<button class="act-mi-btn" data-id="${item.id}" data-svc="${item._svc}" data-download-id="${item.downloadId}" data-movie-id="${item.movieId || ""}" data-series-id="${item.seriesId || ""}" data-title="${this._escHtml(item._title)}" title="Manual Import" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9);margin-right:4px">${importSvg}</button>` : "";
       const isFullyDl = item.size > 0 && (item.sizeleft === 0 || item.sizeleft === null);
@@ -22433,11 +23478,9 @@ var _ActivityRenderMethods = class {
       </tr>`;
     }).join("");
     if (isMobile2) {
-      const delModeMob = m.queueDeleteMode || false;
       return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
         <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
           ${qSearchEl}
-          <button id="act-queue-del-btn" class="tl-page-btn${delModeMob ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}${this._t("actDelete")}</button>
           <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
         </div>
         ${qFilters}
@@ -22447,11 +23490,9 @@ var _ActivityRenderMethods = class {
     }
     const COL_W = { source: 70, quality: 75, size: 65, timeleft: 75, formats: 130, protocol: 65, indexer: 110, client: 100, status: 95 };
     const thSt = `padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;white-space:nowrap`;
-    const delMode = m.queueDeleteMode || false;
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
       <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
         ${qSearchEl}
-        <button id="act-queue-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}${this._t("actDelete")}</button>
         <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
       </div>
       ${qFilters}
@@ -22679,7 +23720,7 @@ var _ActivityRenderMethods = class {
     const blSearch = (mb.blSearch || "").toLowerCase().trim();
     const blSort = mb.blSort || "date";
     const blSortDir = mb.blSortDir || "desc";
-    const delMode = mb.blDeleteMode || false;
+    const delMode = true;
     const ALL_BL_COLS = [
       { id: "source", label: this._t("actColSource") },
       { id: "srctitle", label: this._t("actColSrcTitle") },
@@ -22713,7 +23754,7 @@ var _ActivityRenderMethods = class {
     const trashSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
     const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
     const blSearchEl = this._tlSearchInput("act-bl-search", mb.blSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
-    const blToolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${blSearchEl}<button id="act-bl-del-btn" class="tl-page-btn${delMode ? " active" : ""}" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${trashSvg}${this._t("actDelete")}</button><button id="act-bl-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button></div>${blFilters}`;
+    const blToolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${blSearchEl}<button id="act-bl-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button></div>${blFilters}`;
     const allFiltered = allRaw.filter((r) => {
       if (blSvc !== "all" && r._svc !== blSvc) return false;
       if (blProto !== "all" && (r.protocol || "").toLowerCase() !== blProto) return false;
@@ -23716,13 +24757,6 @@ var _WireActivityMethods = class {
           }
         }
       });
-      body.querySelector("#act-queue-del-btn")?.addEventListener("click", () => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.queueDeleteMode = !m2.queueDeleteMode;
-        this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], m2.queuePage, m2.queuePerPage, m2.queueCols));
-        this._wireActBody(body, modalEl, "queue");
-      });
       body.querySelector("#act-queue-cols-btn")?.addEventListener("click", (e) => {
         e.stopPropagation();
         this._openQueueColPicker(e.currentTarget, modalEl);
@@ -24116,13 +25150,6 @@ var _WireActivityMethods = class {
           }
         }
       });
-      body.querySelector("#act-bl-del-btn")?.addEventListener("click", () => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.blDeleteMode = !m2.blDeleteMode;
-        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, m2.blPage, m2.blPerPage));
-        this._wireActBody(body, modalEl, "blocklist");
-      });
       body.querySelector("#act-bl-cols-btn")?.addEventListener("click", (e) => {
         e.stopPropagation();
         this._openBlColPicker(e.currentTarget, modalEl);
@@ -24209,7 +25236,7 @@ var _WireActivityMethods = class {
     const descClr = isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.6)";
     const strgClr = isDay ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.85)";
     const lblClr = isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
-    const selBg = isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)";
+    const selBg = isDay ? "rgba(0,0,0,0.04)" : "#2a2a38";
     const selBdr = isDay ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)";
     const selClr = isDay ? "rgba(0,0,0,0.82)" : "rgba(255,255,255,0.85)";
     const selScheme = isDay ? "light" : "dark";
@@ -24227,14 +25254,14 @@ var _WireActivityMethods = class {
         <p style="font-size:12px;color:${descClr};margin:0 0 20px">Are you sure you want to remove <strong style="color:${strgClr}">${this._escHtml(title)}</strong> from the queue?</p>
         <div style="display:grid;grid-template-columns:140px 1fr;align-items:center;gap:10px 12px;margin-bottom:20px">
           <label style="font-size:12px;font-weight:600;color:${lblClr}">Removal Method</label>
-          <select id="qrm-method" style="background:${selBg};border:1px solid ${selBdr};border-radius:6px;font-size:12px;padding:6px 10px;color-scheme:${selScheme};width:100%">
+          <select id="qrm-method" style="background:${selBg};border:1px solid ${selBdr};border-radius:6px;font-size:12px;padding:6px 10px;color:${selClr};color-scheme:${selScheme};width:100%">
             <option value="client" selected>Remove from Download Client</option>
             <option value="queue">Remove from Queue Only</option>
           </select>
           <div></div>
           <div id="qrm-method-warn" style="font-size:11px;color:rgba(200,120,0,0.9);margin-top:-4px">'Remove from Download Client' will remove the download and the file(s) from the download client.</div>
           <label style="font-size:12px;font-weight:600;color:${lblClr}">Blocklist Release</label>
-          <select id="qrm-blocklist" style="background:${selBg};border:1px solid ${selBdr};border-radius:6px;font-size:12px;padding:6px 10px;color-scheme:${selScheme};width:100%">
+          <select id="qrm-blocklist" style="background:${selBg};border:1px solid ${selBdr};border-radius:6px;font-size:12px;padding:6px 10px;color:${selClr};color-scheme:${selScheme};width:100%">
             <option value="none" selected>Do not Blocklist</option>
             <option value="search">Blocklist and Search</option>
             <option value="only">Blocklist Only</option>
@@ -24414,7 +25441,9 @@ var _WireActivityMethods = class {
     try {
       await this._callApi("DELETE", "arr_stack/" + svc + "/activity/blocklist/" + id);
     } catch (e) {
-      console.error("[arr-card] Blocklist remove error:", e);
+      if (e?.error !== "Unable to parse JSON response") {
+        console.error("[arr-card] Blocklist remove error:", e);
+      }
     }
     await this._actLoadTab("blocklist", modalEl);
   }
@@ -27269,6 +28298,10 @@ var ArrStackCard = class extends HTMLElement {
     this._radarr2RootFolders = [];
     this._sonarr2Profiles = [];
     this._sonarr2RootFolders = [];
+    this._radarrDiskspace = [];
+    this._radarr2Diskspace = [];
+    this._sonarrDiskspace = [];
+    this._sonarr2Diskspace = [];
     this._tvRequestPending = null;
     this._overlay = { section: null, page: 0, tvPending: null };
     this._overlayApiPage = {};
