@@ -2344,15 +2344,64 @@ var STYLES = `
         border: 1px solid rgba(255,255,255,0.08);
         transition: background 0.15s;
       }
-      .trakt-seen-ol { left: 0;  border-radius: 0 6px 6px 0; border-left: none; }
+      .trakt-seen-ol {
+        left: 0; border-radius: 0 6px 6px 0; border-left: none;
+        transition: top 0.26s cubic-bezier(0.34,1.3,0.64,1),
+                    bottom 0.26s cubic-bezier(0.34,1.3,0.64,1),
+                    transform 0.26s cubic-bezier(0.34,1.3,0.64,1),
+                    background 0.2s, width 0.2s, padding 0.2s;
+      }
       .trakt-ni-ol   { right: 0; border-radius: 6px 0 0 6px; border-right: none; }
-      .trakt-seen-ol:hover, .trakt-ni-ol:hover { background: rgba(0,0,0,0.45); }
+      .trakt-seen-ol:not(.trakt-rating-open):hover, .trakt-ni-ol:hover { background: rgba(0,0,0,0.45); }
       .trakt-seen-ol span, .trakt-ni-ol span {
         font-size: 9px; font-weight: 800; text-transform: uppercase;
         color: rgba(255,255,255,0.8); transition: color 0.15s;
         user-select: none; text-align: center; line-height: 1.4;
       }
       .trakt-seen-ol:hover span, .trakt-ni-ol:hover span { color: rgba(255,255,255,1); }
+
+      /* Expanded rating state */
+      .trakt-seen-ol.trakt-rating-open {
+        top: 19% !important; transform: none !important;
+        height: auto !important;
+        flex-direction: column; justify-content: center; gap: 5px;
+        padding: 8px 7px 10px; background: rgba(0,0,0,0.6);
+        border-radius: 0 8px 8px 0; cursor: default;
+      }
+      .trakt-star-wrap {
+        display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%;
+      }
+      .trakt-star {
+        font-size: 20px; line-height: 1; cursor: pointer;
+        color: rgba(255,255,255,0.55); transition: color 0.12s, transform 0.12s;
+        user-select: none; text-align: center;
+        animation: trakt-star-in 0.18s ease both;
+      }
+      .trakt-star:hover { color: #FFD700; transform: scale(1.3); }
+      .trakt-heart {
+        font-size: 19px; line-height: 1; cursor: pointer; margin-top: 2px;
+        color: rgba(255,255,255,0.45); transition: color 0.12s, transform 0.12s;
+        user-select: none; text-align: center;
+        animation: trakt-star-in 0.18s ease both;
+      }
+      .trakt-heart:hover { color: #ff4466; transform: scale(1.3); }
+      @keyframes trakt-star-in {
+        from { opacity: 0; transform: scale(0.3); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+
+      @media (max-width: 480px) {
+        .trakt-seen-ol.trakt-rating-open { padding: 8px 8px; }
+        .trakt-star  { font-size: 13px !important; }
+        .trakt-heart { font-size: 12px !important; }
+        .trakt-star-wrap { gap: 2px; }
+      }
+
+      /* Confetti / fireworks particles */
+      .trakt-confetti-p {
+        position: absolute; pointer-events: none; z-index: 20;
+        border-radius: 1px; opacity: 1; will-change: transform, opacity;
+      }
 
       @keyframes trakt-card-in {
         from { opacity: 0; transform: translateY(8px) scale(0.94); }
@@ -9813,12 +9862,176 @@ var _WireMethods = class {
         }, 200);
       });
     };
-    this.shadowRoot.querySelectorAll(".trakt-seen-ol").forEach(
-      (btn) => _traktDismiss(
-        btn,
-        (type, slug, tmdbId) => this._callApi("POST", "arr_stack/trakt/history", { mediaType: type, slug, tmdbId })
-      )
-    );
+    const _traktConfetti = (card) => {
+      const colors = ["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#FF6FC8", "#FF9F1C", "#A8DADC", "#E63946", "#C77DFF", "#FFBE0B"];
+      const cw = card.offsetWidth || 100;
+      const ch = card.offsetHeight || 160;
+      const cx = cw / 2;
+      const cy = ch / 2;
+      const count = 38;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement("div");
+        p.className = "trakt-confetti-p";
+        const w = 2 + Math.random() * 3;
+        const h = 10 + Math.random() * 18;
+        const baseAngle = i / count * 360;
+        const jitter = (Math.random() - 0.5) * 22;
+        const dist = 32 + Math.random() * Math.min(cx, cy) * 0.9;
+        const rad = (baseAngle + jitter) * Math.PI / 180;
+        const tx = Math.cos(rad) * dist;
+        const ty = Math.sin(rad) * dist;
+        const rot = (Math.random() - 0.5) * 800;
+        const dur = 650 + Math.random() * 500;
+        const delay = Math.random() * 100;
+        Object.assign(p.style, {
+          width: w + "px",
+          height: h + "px",
+          background: colors[i % colors.length],
+          left: cx + "px",
+          top: cy + "px",
+          marginLeft: -w / 2 + "px",
+          marginTop: -h / 2 + "px"
+        });
+        card.appendChild(p);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          p.style.transition = `transform ${dur}ms ease-out ${delay}ms, opacity ${dur}ms ease-out ${delay}ms`;
+          p.style.transform = `translate(${tx}px,${ty}px) rotate(${rot}deg)`;
+          p.style.opacity = "0";
+        }));
+        setTimeout(() => p.remove(), dur + delay + 120);
+      }
+    };
+    const _STAR_COLORS = {
+      5: "rgba(255,255,255,0.85)",
+      4: "rgba(255,255,255,0.70)",
+      3: "rgba(255,255,255,0.55)",
+      2: "rgba(255,255,255,0.42)",
+      1: "rgba(255,255,255,0.30)"
+    };
+    const _buildStarsHtml = () => {
+      let h = '<div class="trakt-star-wrap">';
+      for (let s = 5; s >= 1; s--) {
+        h += `<span class="trakt-star" data-trakt-star="${s}" style="animation-delay:${(5 - s) * 45}ms;color:${_STAR_COLORS[s]}">\u2605</span>`;
+      }
+      h += `<span class="trakt-heart" data-trakt-heart="1" style="animation-delay:${5 * 45}ms">\u2665</span>`;
+      h += "</div>";
+      return h;
+    };
+    this.shadowRoot.querySelectorAll(".trakt-seen-ol").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (btn.classList.contains("trakt-rating-open")) {
+          btn.classList.remove("trakt-rating-open");
+          const _chars = (s) => s.toUpperCase().split("").join("<br>");
+          btn.innerHTML = `<span>${_chars(this._t("watched"))}</span>`;
+          return;
+        }
+        const card = btn.closest(".mc");
+        btn.classList.add("trakt-rating-open");
+        btn.innerHTML = _buildStarsHtml();
+        const _closeRating = (ev) => {
+          if (btn.contains(ev.target)) return;
+          btn.classList.remove("trakt-rating-open");
+          const _ch = (s) => s.toUpperCase().split("").join("<br>");
+          btn.innerHTML = `<span>${_ch(this._t("watched"))}</span>`;
+          this.shadowRoot.removeEventListener("click", _closeRating, true);
+        };
+        this.shadowRoot.addEventListener("click", _closeRating, true);
+        const slug = btn.dataset.traktSlug;
+        const type = btn.dataset.traktType;
+        const tmdbId = parseInt(btn.dataset.traktTmdb, 10);
+        const key = slug || String(tmdbId);
+        const allStars = [...btn.querySelectorAll("[data-trakt-star]")];
+        const heartEl = btn.querySelector("[data-trakt-heart]");
+        const wrapEl = btn.querySelector(".trakt-star-wrap");
+        const _resetStars = () => {
+          allStars.forEach((x) => {
+            x.style.color = _STAR_COLORS[parseInt(x.dataset.traktStar)] || "";
+            x.style.transform = "";
+          });
+          if (heartEl) heartEl.style.color = "";
+        };
+        allStars.forEach((s) => {
+          s.addEventListener("mouseenter", () => {
+            const val = parseInt(s.dataset.traktStar);
+            allStars.forEach((x) => {
+              const xv = parseInt(x.dataset.traktStar);
+              x.style.color = xv <= val ? "#FFD700" : "rgba(255,255,255,0.25)";
+              x.style.transform = xv === val ? "scale(1.25)" : "";
+            });
+            if (heartEl) heartEl.style.color = "rgba(255,255,255,0.25)";
+          });
+        });
+        if (heartEl) {
+          heartEl.addEventListener("mouseenter", () => {
+            allStars.forEach((x) => {
+              x.style.color = "rgba(255,255,255,0.25)";
+              x.style.transform = "";
+            });
+            heartEl.style.color = "#ff4466";
+          });
+        }
+        if (wrapEl) wrapEl.addEventListener("mouseleave", _resetStars);
+        btn.querySelectorAll("[data-trakt-star],[data-trakt-heart]").forEach((starEl) => {
+          starEl.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            this.shadowRoot.removeEventListener("click", _closeRating, true);
+            const stars = starEl.dataset.traktStar ? parseInt(starEl.dataset.traktStar) : null;
+            const rating = stars !== null ? stars * 2 : 10;
+            if (stars !== null) {
+              allStars.forEach((x) => {
+                const xv = parseInt(x.dataset.traktStar);
+                x.style.color = xv <= stars ? "#FFD700" : "rgba(255,255,255,0.15)";
+                x.style.transform = xv <= stars ? "scale(1.1)" : "";
+              });
+              if (heartEl) heartEl.style.color = "rgba(255,255,255,0.15)";
+            } else {
+              allStars.forEach((x) => {
+                x.style.color = "rgba(255,255,255,0.15)";
+                x.style.transform = "";
+              });
+              if (heartEl) {
+                heartEl.style.color = "#ff4466";
+                heartEl.style.transform = "scale(1.2)";
+              }
+            }
+            setTimeout(() => {
+              if (card) _traktConfetti(card);
+            }, 180);
+            setTimeout(() => {
+              if (card) {
+                card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+                card.style.opacity = "0";
+                card.style.transform = "scale(0.85)";
+              }
+              setTimeout(() => {
+                if (!this._traktWatching) this._traktWatching = /* @__PURE__ */ new Set();
+                this._traktWatching.add(key);
+                this._trakt = (this._trakt || []).filter((m) => (m._traktSlug || String(m.id)) !== key);
+                this._traktAnimateNext = true;
+                this._reRenderRight(true);
+                (async () => {
+                  try {
+                    await this._callApi("POST", "arr_stack/trakt/history", { mediaType: type, slug, tmdbId });
+                  } catch (_) {
+                  }
+                  try {
+                    await this._callApi("POST", "arr_stack/trakt/rate", { mediaType: type, slug, tmdbId, rating });
+                  } catch (_) {
+                  }
+                  try {
+                    await this._fetchTrakt();
+                    this._traktAnimateNext = true;
+                    this._reRenderRight(true);
+                  } catch (_) {
+                  }
+                })();
+              }, 320);
+            }, 580);
+          });
+        });
+      });
+    });
     this.shadowRoot.querySelectorAll(".trakt-ni-ol").forEach(
       (btn) => _traktDismiss(btn, (type, slug) => {
         const mediaType = type === "tv" ? "shows" : "movies";
@@ -10465,7 +10678,16 @@ var _WireTautulliMethods = class {
       btn.addEventListener("click", () => {
         const t = btn.dataset.tlTab;
         if (!t || !this._tautulliModal) return;
-        el.querySelectorAll("[data-tl-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-tl-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._tautulliModal.tab = t;
         const titleEl = el.querySelector("#tl-hdr-title");
         if (titleEl) titleEl.textContent = this._tlTabTitle(t);
@@ -11781,7 +12003,16 @@ var _WireJellystatMethods = class {
       btn.addEventListener("click", () => {
         const t = btn.dataset.jsTab;
         if (!t || !this._jellystatModal) return;
-        el.querySelectorAll("[data-js-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-js-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._jellystatModal.tab = t;
         const titleEl = el.querySelector("#js-hdr-title");
         if (titleEl) titleEl.textContent = this._jsTabTitle(t);
@@ -12316,7 +12547,10 @@ var _WireTraceaRrMethods = class {
         m.devHotspotsPage = 0;
         m.devUsersPage = 0;
         const _b1 = el.querySelector("#tra-body");
-        if (_b1) _b1.innerHTML = this._traBodyDevices();
+        if (_b1) {
+          _b1.innerHTML = this._traBodyDevices();
+          this._wireTracearrModalBody(_b1);
+        }
         return;
       }
       const devLeftTab = e.target.closest("[data-tra-dev-left-tab]");
@@ -12327,7 +12561,10 @@ var _WireTraceaRrMethods = class {
         m.devHealthPage = 0;
         m.devMatrixPage = 0;
         const _b2 = el.querySelector("#tra-body");
-        if (_b2) _b2.innerHTML = this._traBodyDevices();
+        if (_b2) {
+          _b2.innerHTML = this._traBodyDevices();
+          this._wireTracearrModalBody(_b2);
+        }
         return;
       }
       const devPage = e.target.closest("[data-tra-dev-page]");
@@ -12344,7 +12581,10 @@ var _WireTraceaRrMethods = class {
         const max = Math.max(0, Math.ceil(lens[view] / PAGE) - 1);
         m[key] = Math.max(0, Math.min(max, (m[key] || 0) + delta));
         const _b3 = el.querySelector("#tra-body");
-        if (_b3) _b3.innerHTML = this._traBodyDevices();
+        if (_b3) {
+          _b3.innerHTML = this._traBodyDevices();
+          this._wireTracearrModalBody(_b3);
+        }
         return;
       }
       const devSrvBtn = e.target.closest("[data-tra-dev-srv]");
@@ -12396,6 +12636,21 @@ var _WireTraceaRrMethods = class {
         m.bwUsers = null;
         m.bwUsersPage = 0;
         this._traLoadTab("bandwidth", el);
+        return;
+      }
+      const violsSrvBtn = e.target.closest("[data-tra-viols-srv]");
+      if (violsSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = violsSrvBtn.dataset.traViolsSrv || null;
+        m.violsServerId = sid;
+        m.violsPage = 0;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-viols-srv]").forEach((b) => b.classList.toggle("active", b === violsSrvBtn));
+        this._traLoadTab("violations", el);
         return;
       }
       const histSrvBtn = e.target.closest("[data-tra-hist-srv]");
@@ -12468,7 +12723,7 @@ var _WireTraceaRrMethods = class {
         { id: "rules", tab: "rules" },
         { id: "violations", tab: "violations" }
       ];
-      const _SRV_TABS = ["storage", "quality", "history", "activity", "statsUsers", "users", "watch", "devices", "bandwidth", "map"];
+      const _SRV_TABS = ["storage", "quality", "history", "activity", "statsUsers", "users", "watch", "devices", "bandwidth", "map", "violations"];
       const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
       const _updateMobileNav = () => {
         const panel = glass.querySelector("#tra-mobile-nav");
@@ -12828,20 +13083,20 @@ var _WireTraceaRrMethods = class {
         this._traLoadTab("users", modal());
       });
     });
-    const violsType = body.querySelector("#tra-viols-type");
-    if (violsType) {
-      violsType.addEventListener("change", () => {
+    const violsSev = body.querySelector("#tra-viols-sev");
+    if (violsSev) {
+      violsSev.addEventListener("change", () => {
         if (!this._tracearrModal) return;
-        this._tracearrModal.violsType = violsType.value || null;
+        this._tracearrModal.violsSeverity = violsSev.value || null;
         this._tracearrModal.violsPage = 0;
         this._traLoadTab("violations", modal());
       });
     }
-    const violsUser = body.querySelector("#tra-viols-user");
-    if (violsUser) {
-      violsUser.addEventListener("change", () => {
+    const violsStat = body.querySelector("#tra-viols-stat");
+    if (violsStat) {
+      violsStat.addEventListener("change", () => {
         if (!this._tracearrModal) return;
-        this._tracearrModal.violsUser = violsUser.value || null;
+        this._tracearrModal.violsStatus = violsStat.value || null;
         this._tracearrModal.violsPage = 0;
         this._traLoadTab("violations", modal());
       });
@@ -17483,9 +17738,13 @@ var _TautulliMethods = class {
   _tlModalHtml(tab) {
     const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
     const allTabs = ["libraries", "users", "history", "graphs"];
-    const tabBtns = allTabs.map(
-      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-tl-tab="${t}">${this._tlTabLabel(t)}</button>`
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
+      return `<button class="is-f-btn${on ? " active" : ""}" data-tl-tab="${t}" style="${st}">${this._tlTabLabel(t)}</button>`;
+    }).join("");
     const sub = this._tlTabSubtitle(tab);
     const hdrInner = isMobile2 ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
            <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._tlTabTitle(tab)}</div>
@@ -18711,9 +18970,13 @@ var _JellystatMethods = class {
   _jsModalHtml(tab) {
     const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
     const allTabs = ["libraries", "users", "history", "graphs"];
-    const tabBtns = allTabs.map(
-      (t) => '<button class="is-f-btn' + (t === tab ? " active" : "") + '" data-js-tab="' + t + '">' + this._jsTabLabel(t) + "</button>"
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? "height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700" : "height:24px;box-sizing:border-box;padding:0 10px;color:" + _tc;
+      return '<button class="is-f-btn' + (on ? " active" : "") + '" data-js-tab="' + t + '" style="' + st + '">' + this._jsTabLabel(t) + "</button>";
+    }).join("");
     const hdrInner = isMobile2 ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0">' + ICONS.close + '</button></div><div class="is-filter">' + tabBtns + "</div>" : '<div style="flex:1;min-width:0"><div id="js-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div></div><div class="is-filter" style="flex-shrink:0">' + tabBtns + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">' + ICONS.close + "</button>";
     const hdrStyle = isMobile2 ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
     return '<div class="popup-overlay' + dayClass(this) + '" data-js-modal><div class="popup-glass tl-wide"><div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div><div class="popup-body" id="js-body" style="padding:' + (isMobile2 ? "12px 14px 16px" : "14px 22px 20px") + '"><div class="is-loading"><span>Loading\u2026</span></div></div></div></div>';
@@ -19372,21 +19635,26 @@ var _TraceaRrTableMethods = class {
     const isMob = window.matchMedia("(max-width:600px)").matches;
     const pp = this._tlCalcPerPage({ hasFilter: true });
     const pages = Math.max(1, Math.ceil(total / pp));
-    const TYPES = ["impossible_travel", "simultaneous_locations", "concurrent_streams", "device_velocity"];
+    const SEVERITIES = ["low", "medium", "high", "critical"];
+    const STATUSES = ["active", "resolved", "dismissed"];
+    const sevLbl = { low: "Low", medium: "Medium", high: "High", critical: "Critical" };
+    const statLbl = { active: "Active", resolved: "Resolved", dismissed: "Dismissed" };
     const filters = `<div class="tl-toolbar" style="flex-wrap:wrap">
-      <select id="tra-viols-type" style="${_TRA_SEL}">
-        <option value="">${this._t("traAllTypes")}</option>
-        ${TYPES.map((t) => `<option value="${t}"${m.violsType === t ? " selected" : ""}>${this._traViolTypeLabel(t)}</option>`).join("")}
+      <select id="tra-viols-sev" style="${_TRA_SEL}">
+        <option value="">All Severities</option>
+        ${SEVERITIES.map((s) => `<option value="${s}"${m.violsSeverity === s ? " selected" : ""}>${sevLbl[s]}</option>`).join("")}
       </select>
-      <select id="tra-viols-user" style="${_TRA_SEL}">
-        <option value="">${this._t("traAllUsers")}</option>
-        ${(m.violsUsers || []).map((u) => `<option value="${u.id}"${m.violsUser === u.id ? " selected" : ""}>${u.displayName || u.username}</option>`).join("")}
+      <select id="tra-viols-stat" style="${_TRA_SEL}">
+        <option value="">All Statuses</option>
+        ${STATUSES.map((s) => `<option value="${s}"${m.violsStatus === s ? " selected" : ""}>${statLbl[s]}</option>`).join("")}
       </select>
     </div>`;
+    const logHeading = `<div style="font-size:14px;font-weight:700;color:var(--is-text);margin:14px 0 8px">Violation Log</div>`;
     if (!viols.length) {
-      return filters + `<div style="display:flex;align-items:center;gap:10px;padding:24px;color:#34C759;font-size:14px">
-        <span style="width:10px;height:10px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;flex-shrink:0"></span>
-        ${this._t("traNoViolations")}
+      return filters + logHeading + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 24px;color:var(--is-text-muted)">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="font-size:14px;font-weight:600;color:var(--is-text)">No violations found</div>
+        <div style="font-size:12px">No violations have been recorded yet.</div>
       </div>`;
     }
     if (isMob) {
@@ -19411,7 +19679,7 @@ var _TraceaRrTableMethods = class {
           </div>
         </div>`;
       }).join("");
-      return filters + `<div>${cards}</div>` + this._tlMobPag("tra-viols-page", m.violsPage, pages);
+      return filters + logHeading + `<div>${cards}</div>` + this._tlMobPag("tra-viols-page", m.violsPage, pages);
     }
     const rows = viols.map((v) => {
       const sev = v.severity || "high";
@@ -19429,7 +19697,7 @@ var _TraceaRrTableMethods = class {
         <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${when}</td>
       </tr>`;
     }).join("");
-    return filters + `<div style="overflow-x:auto">
+    return filters + logHeading + `<div style="overflow-x:auto">
       <table class="tl-users-table">
         <thead><tr>
           <th>Severity</th>
@@ -21998,8 +22266,10 @@ var _TraceaRrMethods = class {
       violsTotal: 0,
       violsPage: 0,
       violsPerPage: 20,
-      violsUser: null,
-      violsType: null,
+      violsSeverity: null,
+      violsStatus: null,
+      violsServerId: null,
+      violsServers: [],
       // map
       mapData: null,
       mapPeriod: "month",
@@ -22246,7 +22516,7 @@ var _TraceaRrMethods = class {
       const expanded = active;
       const subHtml = expanded ? g.sub.map(([tid, tlbl, tico]) => {
         const isActive = currentTab === tid;
-        const subSt = isActive ? `${subH}background:rgba(0,122,255,0.25);color:#007AFF;border-color:rgba(0,122,255,0.5);font-size:10px;display:inline-flex;align-items:center;gap:4px` : `${subH}background:rgba(0,122,255,0.13);color:${txtClr};border-color:rgba(0,122,255,0.3);font-size:10px;display:inline-flex;align-items:center;gap:4px`;
+        const subSt = isActive ? `${subH}background:rgba(0,122,255,0.35);color:${txtClr};border-color:rgba(0,122,255,0.6);font-size:10px;display:inline-flex;align-items:center;gap:4px` : `${subH}background:rgba(0,122,255,0.13);color:${txtClr};border-color:rgba(0,122,255,0.3);font-size:10px;display:inline-flex;align-items:center;gap:4px`;
         return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
       }).join("") : "";
       return `<div style="display:flex;align-items:center;gap:4px">` + btn + `<div data-tra-sub="${g.id}" style="display:flex;gap:4px;overflow:hidden;max-width:${expanded ? "500px" : "0"};transition:max-width 0.25s ease">${subHtml}</div></div>`;
@@ -22471,19 +22741,41 @@ var _TraceaRrMethods = class {
       this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.usersServerId, "data-tra-usr-srv");
     } else if (tab === "violations") {
       const pp = this._tlCalcPerPage({ hasFilter: true });
-      let q = `pageSize=${pp}&page=${m.violsPage + 1}`;
-      if (m.violsUser) q += `&userId=${m.violsUser}`;
-      if (m.violsType) q += `&type=${m.violsType}`;
-      const [vr, ur] = await Promise.all([
+      let q = `pageSize=${pp}&page=${m.violsPage + 1}&orderBy=createdAt&orderDir=desc`;
+      if (m.violsSeverity) q += `&severity=${m.violsSeverity}`;
+      if (m.violsStatus) q += `&status=${m.violsStatus}`;
+      if (m.violsServerId) q += `&serverId=${m.violsServerId}`;
+      const [vr, sr] = await Promise.all([
         this._traApiFetch(`violations?${q}`),
-        this._traApiFetch("users?pageSize=100")
+        this._traApiFetch("health")
       ]);
       if (!this._tracearrModal) return;
       m.violsData = vr?.data || [];
       m.violsTotal = vr?.meta?.total || 0;
-      m.violsUsers = ur?.data || [];
+      m.violsServers = sr?.servers || [];
+      if (m.violsServerId === null && m.violsServers.length > 0) {
+        const _pk = (s) => {
+          const t = (s.type || "").toLowerCase();
+          return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.violsServers.find((s) => s.id === _saved);
+        m.violsServerId = _validSaved ? _saved : [...m.violsServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+        if (m.violsServerId) {
+          this._traLoadTab("violations", modal);
+          return;
+        }
+      }
       body.innerHTML = this._traBodyViolations();
       this._wireTracearrModalBody(body);
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.violsServers, m.violsServerId, "data-tra-viols-srv", (s) => {
+        const t = (s.type || "").toLowerCase();
+        return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
+      });
     } else if (tab === "history") {
       const isMobH = window.matchMedia("(max-width:600px)").matches;
       const pp = this._tlCalcPerPage({ hasFilter: true, filterH: isMobH ? 120 : 40, rowH: isMobH ? 80 : 44, bar: 0 });
@@ -23273,9 +23565,13 @@ var _ActivityRenderMethods = class {
     const isMobile2 = window.matchMedia("(max-width:600px)").matches;
     const allTabs = ["queue", "history", "blocklist", "missing"];
     const tabLabels = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") };
-    const tabBtns = allTabs.map(
-      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-act-tab="${t}">${tabLabels[t]}</button>`
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
+      return `<button class="is-f-btn${on ? " active" : ""}" data-act-tab="${t}" style="${st}">${tabLabels[t]}</button>`;
+    }).join("");
     const hdrInner = isMobile2 ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
            <div id="act-hdr-title" style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
            <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
@@ -24510,7 +24806,16 @@ var _WireActivityMethods = class {
       btn.addEventListener("click", async () => {
         const t = btn.dataset.actTab;
         if (!t || !this._activityModal) return;
-        el.querySelectorAll("[data-act-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-act-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._activityModal.tab = t;
         const tabLabel = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") }[t] || t;
         const subEl = el.querySelector("#act-hdr-sub");
@@ -26061,9 +26366,13 @@ var _WireProwlarrMethods = class {
   _pwModalHtml(tab) {
     const allTabs = ["indexers", "apps", "history", "stats"];
     const tabLabels = { indexers: "Indexers", apps: "Applications", stats: "Statistics", history: "History" };
-    const tabBtns = allTabs.map(
-      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-pw-tab="${t}">${tabLabels[t]}</button>`
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
+      return `<button class="is-f-btn${on ? " active" : ""}" data-pw-tab="${t}" style="${st}">${tabLabels[t]}</button>`;
+    }).join("");
     const hdrInner = isMobile() ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
            <div id="pw-hdr-title" style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
            <button class="popup-close" id="pw-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
@@ -26092,7 +26401,16 @@ var _WireProwlarrMethods = class {
       btn.addEventListener("click", async () => {
         const t = btn.dataset.pwTab;
         if (!t || !this._prowlarrModal) return;
-        el.querySelectorAll("[data-pw-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-pw-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._prowlarrModal.tab = t;
         const titleEl = el.querySelector("#pw-hdr-title");
         const labels = { indexers: "Indexers", apps: "Applications", stats: "Statistics", history: "History" };
