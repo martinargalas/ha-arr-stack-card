@@ -4735,6 +4735,11 @@ var _FetchMethods = class {
         await this._fetchOverseerrSonarrSettings();
       }
     }
+    if (!this._tmdbPinged && this._overseerrConfigured !== false) {
+      this._tmdbPinged = true;
+      this._callApi("GET", "arr_stack/tmdb/popular?page=1").catch(() => {
+      });
+    }
     await Promise.allSettled([
       this._fetchRadarr2(),
       this._fetchSonarr2()
@@ -28596,6 +28601,7 @@ var ArrStackCard = class extends HTMLElement {
     this._kodiLastFetch = 0;
     this._kodiEntityIds = /* @__PURE__ */ new Set();
     this._overseerrConfigured = null;
+    this._tmdbPinged = false;
     this._seerrRadarr = null;
     this._seerrRadarr2 = null;
     this._confirmRemove = null;
