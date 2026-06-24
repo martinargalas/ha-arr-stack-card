@@ -24,6 +24,11 @@ Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTo
 
 ---
 
+> [!WARNING]
+> **Action required for users of Upcoming Movies, New Shows, Trending, or Popular categories without Seerr**
+>
+> The TMDB API key used as the default data source for these categories had to be refreshed, which invalidated the previous key. If these categories show nothing, please update both the **card** and the **integration** to the latest version via HACS.
+
 > [!IMPORTANT]
 > This project consists of **two components** — both are required:
 > - **[Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration)** — backend proxy (install first)
