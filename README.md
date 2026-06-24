@@ -1,7 +1,7 @@
 > [!IMPORTANT]
-> **Existing users — action required** (2026-06-24)
+> **Existing users — action required**
 >
-> If you use **Upcoming Movies, New Shows, Trending, or Popular** categories **without Seerr**, these sections may show nothing. The TMDB API key bundled in the integration had to be refreshed, which invalidated the previous key. Please update both the **card** and the **integration** to the latest version via HACS.
+> If you use **Upcoming Movies, New Shows, Trending, or Popular** categories **without Seerr**, these sections may show nothing. The TMDB API key bundled in the integration was refreshed on 2026-06-24, which invalidated the previous key. Please update both the **card** and the **integration** to the latest version via HACS.
 
 # Arr Stack Card
 
