@@ -1,3 +1,8 @@
+> [!WARNING]
+> **Existing users — action required** (June 2026)
+>
+> If you use **Upcoming Movies, New Shows, Trending, or Popular** categories **without Seerr**, these sections may show nothing. The TMDB API key bundled in the integration had to be refreshed, which invalidated the previous key. Please update both the **card** and the **integration** to the latest version via HACS.
+
 # Arr Stack Card
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
@@ -23,11 +28,6 @@ Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTo
 ![Mobile](mobile.gif)
 
 ---
-
-> [!WARNING]
-> **Action required for users of Upcoming Movies, New Shows, Trending, or Popular categories without Seerr**
->
-> The TMDB API key used as the default data source for these categories had to be refreshed, which invalidated the previous key. If these categories show nothing, please update both the **card** and the **integration** to the latest version via HACS.
 
 > [!IMPORTANT]
 > This project consists of **two components** — both are required:
