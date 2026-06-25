@@ -1947,7 +1947,10 @@ var STYLES = `
       .dl-pct { font-size: 13px; font-weight: 800; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.5); flex-shrink: 0; margin-left: 8px;
         min-width: 3.2ch; text-align: right; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
-      .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+      .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: nowrap; overflow: hidden; }
+      .dl-r2 .status-pill { flex-shrink: 0; }
+      .dl-r2 .dm { flex-shrink: 0; }
+      .dm-peer { display: flex; gap: 4px; flex-shrink: 0; }
 
       .dm { font-size: 11px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.55); display: flex; align-items: center; gap: 2px; }
       .dm b { font-weight: 700; }
@@ -3257,7 +3260,7 @@ var STYLES = `
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;
       }
       .is-rel-age  { font-size: 9px; color: var(--is-text-muted); margin-top: 1px; display: block; }
-      .is-rej-row  { font-size: 9px; color: var(--is-rej-clr); margin-top: 2px; display: block; }
+      .is-rej-row  { font-size: 9px; line-height: 1.4; color: var(--is-rej-clr); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: calc(9px * 1.4 * 2); }
       .is-indexer  { font-size: 10px; color: var(--is-text-sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; display: block; }
       .is-size     { font-size: 10px; color: var(--is-text-sec); font-variant-numeric: tabular-nums; white-space: nowrap; }
       .is-peers    { display: flex; align-items: center; gap: 2px; font-size: 10px; white-space: nowrap; }
@@ -7270,8 +7273,7 @@ var _RenderLeft = class {
         ${!isCompleted && !isError && !isStalledDL ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
         ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
-        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7381,8 +7383,7 @@ var _RenderLeft = class {
         ${!isCompleted && !isError && !isPaused ? this._pill("pill-teal", "mdi:upload", upSpd) : ""}
         ${isSeeding ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${done} / ${total}</b></span>
-        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
-        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7779,8 +7780,7 @@ var _RenderLeft = class {
         ${!isCompleted && !isError && !isPaused && !isChecking ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
         ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
-        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -14422,19 +14422,27 @@ var _PopupMethods = class {
       if (newBody) newBody.scrollTop = savedBodyScroll;
     }
     if (this._isState === "results") {
+      const _gen = this._isMeasureGen = (this._isMeasureGen || 0) + 1;
       requestAnimationFrame(() => {
-        const wrap = this.shadowRoot?.querySelector("#popup-root .is-results-wrap");
-        const firstRow = wrap?.querySelector("tr[data-guid], .is-card");
-        if (wrap && firstRow) {
-          const rowH = Math.max(20, firstRow.getBoundingClientRect().height);
-          const wrapH = wrap.getBoundingClientRect().height;
-          const fits = Math.max(3, Math.floor(wrapH / rowH));
-          if (fits !== this._isPerPage) {
-            this._isPerPage = fits;
-            this._isPage = Math.min(this._isPage, Math.max(0, Math.ceil(this._applyIsFilters(this._isResults || []).length / fits) - 1));
-            root.innerHTML = this._renderPopup();
-            this._wirePopup();
-          }
+        if (this._isMeasureGen !== _gen) return;
+        const root2 = this.shadowRoot?.getElementById("popup-root");
+        const glass2 = root2?.querySelector(".popup-glass");
+        const panel = root2?.querySelector(".is-panel");
+        const hdr = root2?.querySelector(".is-panel-hdr");
+        const pager = root2?.querySelector('.is-panel > div[style*="flex-shrink"]');
+        const wrap = root2?.querySelector(".is-results-wrap");
+        const rows = wrap ? [...wrap.querySelectorAll("tbody tr, .is-card")] : [];
+        if (!glass2 || !panel || !hdr || !wrap || !rows.length) return;
+        const hdrBottom = hdr.getBoundingClientRect().bottom;
+        const glassVisBottom = Math.min(glass2.getBoundingClientRect().bottom, window.innerHeight);
+        const pagerH = pager ? pager.getBoundingClientRect().height : 0;
+        const available = glassVisBottom - hdrBottom - pagerH - 8;
+        const rowH = Math.max(20, ...rows.map((r) => r.getBoundingClientRect().height));
+        const fits = Math.max(1, Math.floor(available / rowH));
+        if (fits !== this._isPerPage) {
+          this._isPerPage = fits;
+          this._isPage = Math.min(this._isPage, Math.max(0, Math.ceil(this._applyIsFilters(this._isResults || []).length / fits) - 1));
+          this._renderPopupEl();
         }
       });
     }
@@ -16183,7 +16191,7 @@ var _TautulliSharedMethods = class {
     if (sec < 3600) return Math.floor(sec / 60) + "m ago";
     if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
     if (sec < 604800) return Math.floor(sec / 86400) + "d ago";
-    return d.toLocaleDateString();
+    return d.toLocaleDateString(this._locale);
   }
   _tlSearchInput(id, value) {
     const SEARCH_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--is-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
@@ -16321,7 +16329,7 @@ var _TautulliTableMethods = class {
       const ips = report[name] || [];
       const ipRows = ips.map((e) => {
         const d = e.lastSeen ? new Date(e.lastSeen * 1e3) : null;
-        const dateStr = d ? d.toLocaleDateString(void 0, { month: "short", day: "numeric", year: "numeric" }) : "\u2014";
+        const dateStr = d ? d.toLocaleDateString(this._locale, { month: "short", day: "numeric", year: "numeric" }) : "\u2014";
         return `<tr>
           <td style="padding:4px 8px;font-size:11px;font-family:monospace;color:var(--is-text)">${e.ip}</td>
           <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted)">${dateStr}</td>
@@ -19862,7 +19870,7 @@ var _TraceaRrTableMethods = class {
     const fmtDt = (iso) => {
       if (!iso) return "\u2014";
       const d = new Date(iso);
-      const date = d.toLocaleDateString("en", { month: "short", day: "numeric" });
+      const date = d.toLocaleDateString(this._locale, { month: "short", day: "numeric" });
       const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
       return { date, time };
     };
@@ -20038,7 +20046,7 @@ var _TraceaRrTableMethods = class {
     const fmtDt = (iso) => {
       if (!iso) return null;
       const d = new Date(iso);
-      return d.toLocaleDateString("en", { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+      return d.toLocaleDateString(this._locale, { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
     };
     const row = (label, value) => value != null && value !== "" && value !== "\u2014" ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px">
            <span style="font-size:11px;color:var(--is-text-muted);flex-shrink:0">${label}</span>
@@ -20799,14 +20807,14 @@ var _TraceaRrTableMethods = class {
         </mask>
       </defs>
       ${yTicks.map((v) => `<line x1="${PL}" y1="${ptY(v * 1024).toFixed(1)}" x2="${VBW - PR}" y2="${ptY(v * 1024).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`).join("")}
-      ${spreadBandPath ? `<path d="${spreadBandPath}" fill="${SPRD_HEX}" fill-opacity="0.12"/>` : ""}
-      ${spreadHiPts.length >= 2 ? `<line x1="${spreadHiPts[0].x.toFixed(1)}" y1="${spreadHiPts[0].y.toFixed(1)}" x2="${spreadHiPts[spreadHiPts.length - 1].x.toFixed(1)}" y2="${spreadHiPts[spreadHiPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke"/>` : ""}
-      ${spreadLoPts.length >= 2 ? `<line x1="${spreadLoPts[0].x.toFixed(1)}" y1="${spreadLoPts[0].y.toFixed(1)}" x2="${spreadLoPts[spreadLoPts.length - 1].x.toFixed(1)}" y2="${spreadLoPts[spreadLoPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke"/>` : ""}
+      ${spreadBandPath ? `<path d="${spreadBandPath}" fill="${SPRD_HEX}" fill-opacity="0.12" style="animation:fade-in 0.8s ease-out both"/>` : ""}
+      ${spreadHiPts.length >= 2 ? `<line x1="${spreadHiPts[0].x.toFixed(1)}" y1="${spreadHiPts[0].y.toFixed(1)}" x2="${spreadHiPts[spreadHiPts.length - 1].x.toFixed(1)}" y2="${spreadHiPts[spreadHiPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke" style="animation:fade-in 0.8s ease-out both"/>` : ""}
+      ${spreadLoPts.length >= 2 ? `<line x1="${spreadLoPts[0].x.toFixed(1)}" y1="${spreadLoPts[0].y.toFixed(1)}" x2="${spreadLoPts[spreadLoPts.length - 1].x.toFixed(1)}" y2="${spreadLoPts[spreadLoPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke" style="animation:fade-in 0.8s ease-out both"/>` : ""}
       <path d="${areaPath(histCoords, baseY)}" fill="url(#tras-gh)" style="animation:fade-in 0.8s ease-out both"/>
       ${nowX ? `<line x1="${nowX}" y1="${PT}" x2="${nowX}" y2="${baseY}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 3"/>` : ""}
       <path d="${linePath(histCoords, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="2" vector-effect="non-scaling-stroke" class="tl-g-anim-line"/>
-      ${showPred && predWithJoint.length > 1 ? `<path d="${linePath(predWithJoint, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke" mask="url(#tras-dot-mask)"/>` : ""}
-      ${histDots}${predDots}
+      ${showPred && predWithJoint.length > 1 ? `<path d="${linePath(predWithJoint, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke" mask="url(#tras-dot-mask)" style="animation:fade-in 0.8s ease-out both"/>` : ""}
+      ${histDots}${predDots ? `<g style="animation:fade-in 0.8s ease-out both">${predDots}</g>` : ""}
       ${hitCols}
     `;
     const storSvg = `<div class="tl-g-wrap" style="position:relative;padding-left:36px">
@@ -22895,37 +22903,50 @@ var _TraceaRrMethods = class {
       this._wireTracearrModalBody(body);
       this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.activityServerId, "data-tra-act-srv");
     } else if (tab === "statsUsers") {
-      if (!m.staleServers) {
-        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
-        if (this._tracearrModal) {
-          const srvMap = /* @__PURE__ */ new Map();
-          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
-        }
-      }
-      if (!this._tracearrModal) return;
-      if (!m.statsUsersServerId && (m.staleServers || []).length > 0) {
-        const _pk = (n) => {
-          const s = (n || "").toLowerCase();
-          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
-        };
-        let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
-        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
-        m.statsUsersServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
-      }
       const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-      const _p = m.statsUsersPeriod || "30d";
+      const _p = m.statsUsersPeriod || "month";
+      const _suKeyFn = (s) => {
+        const t = (s.type || s.name || "").toLowerCase();
+        return t.includes("jellyfin") ? "jellyfin" : t.includes("plex") ? "plex" : t.includes("emby") ? "emby" : null;
+      };
+      if (!m.statsUsersServers) {
+        const _r0 = await this._traStatsFetch(`top-users?period=${_p}&timezone=${_tz}`);
+        if (!this._tracearrModal) return;
+        const _avail = _r0?.availableFilters?.servers;
+        if (_avail?.length) {
+          m.statsUsersServers = _avail;
+        } else if (!m.staleServers) {
+          const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+          if (this._tracearrModal) {
+            const srvMap = /* @__PURE__ */ new Map();
+            for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+            m.statsUsersServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          }
+        } else {
+          m.statsUsersServers = m.staleServers;
+        }
+        if (!this._tracearrModal) return;
+        if (!m.statsUsersServerId && (m.statsUsersServers || []).length > 0) {
+          const _pk = (s) => {
+            const t = _suKeyFn(s);
+            return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
+          };
+          let _saved = null;
+          try {
+            _saved = localStorage.getItem("arr-tra-srv");
+          } catch (_) {
+          }
+          const _validSaved = _saved && m.statsUsersServers.find((s) => s.id === _saved);
+          m.statsUsersServerId = _validSaved ? _saved : [...m.statsUsersServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+        }
+      }
       const _sQ = m.statsUsersServerId ? `&serverId=${m.statsUsersServerId}` : "";
       const r = await this._traStatsFetch(`top-users?period=${_p}&timezone=${_tz}${_sQ}`);
       if (!this._tracearrModal) return;
       m.statsUsersData = r?.data || r || [];
       body.innerHTML = this._traBodyStatsUsers();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.statsUsersServerId, "data-tra-su-srv");
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.statsUsersServers || [], m.statsUsersServerId, "data-tra-su-srv", _suKeyFn);
     } else if (tab === "quality") {
       if (!m.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
@@ -23476,7 +23497,7 @@ var _ActivityRenderMethods = class {
   }
   _actHistoryCard() {
     const cache = this._actHistoryCache;
-    const grabbed = cache === null ? null : (cache || []).filter((r) => r.eventType === "grabbed" || r.eventType === "downloadFolderImported");
+    const grabbed = cache === null ? null : cache || [];
     const histMax = this._actCardMax("history");
     const content = grabbed === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : grabbed.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoHistory")}</div>` : grabbed.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
@@ -23738,7 +23759,7 @@ var _ActivityRenderMethods = class {
       const addedLbl = item.added ? (() => {
         try {
           const dt = new Date(item.added);
-          return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" });
+          return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" });
         } catch {
           return "";
         }
@@ -24131,7 +24152,7 @@ var _ActivityRenderMethods = class {
       if (!d) return "\u2014";
       try {
         const dt = new Date(d);
-        return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit" });
+        return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(this._locale, { hour: "2-digit", minute: "2-digit" });
       } catch {
         return d;
       }
@@ -24152,7 +24173,7 @@ var _ActivityRenderMethods = class {
         const dateShortBl = (() => {
           try {
             const dt = new Date(r.date);
-            return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" });
+            return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" });
           } catch {
             return fmtDate(r.date);
           }
@@ -24512,7 +24533,7 @@ var _ActivityRenderMethods = class {
     const fmtDate = (d) => {
       if (!d) return "\u2014";
       try {
-        return new Date(d).toLocaleDateString(void 0, { year: "numeric", month: "short", day: "numeric" });
+        return new Date(d).toLocaleDateString(this._locale, { year: "numeric", month: "short", day: "numeric" });
       } catch {
         return d;
       }
@@ -26024,7 +26045,7 @@ var _WireActivityMethods = class {
       const fmtDate = (d) => {
         if (!d) return "";
         try {
-          return new Date(d).toLocaleDateString(void 0, { month: "short", day: "numeric", year: "numeric" });
+          return new Date(d).toLocaleDateString(this._locale, { month: "short", day: "numeric", year: "numeric" });
         } catch {
           return d;
         }
@@ -26613,7 +26634,7 @@ var _WireProwlarrMethods = class {
     };
     const fmtDate = (d) => {
       try {
-        return new Date(d).toLocaleDateString(void 0, { month: "short", day: "numeric", year: "2-digit" });
+        return new Date(d).toLocaleDateString(this._locale, { month: "short", day: "numeric", year: "2-digit" });
       } catch {
         return "\u2014";
       }
@@ -27855,8 +27876,8 @@ var _WireProwlarrMethods = class {
       try {
         const dt = new Date(d), now = /* @__PURE__ */ new Date();
         if (dt.toDateString() === now.toDateString())
-          return dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
-        return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit" });
+          return dt.toLocaleTimeString(this._locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+        return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(this._locale, { hour: "2-digit", minute: "2-digit" });
       } catch {
         return d;
       }
@@ -28010,7 +28031,7 @@ var _WireProwlarrMethods = class {
     const evtLabel = { indexerQuery: "Search", releaseGrabbed: "Grab", indexerRss: "RSS", indexerAuth: "Auth" };
     const fmtDate = (d) => {
       try {
-        return new Date(d).toLocaleString();
+        return new Date(d).toLocaleString(this._locale);
       } catch {
         return d;
       }
@@ -29083,12 +29104,15 @@ var ArrStackCard = class extends HTMLElement {
     if (h > 0) return `${h}h ${m}min`;
     return `${m} min`;
   }
+  get _locale() {
+    return this._hass?.locale?.language || "en";
+  }
   fmtDate(dateStr) {
     if (!dateStr) return "";
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return "";
-      return `${d.getDate()}. ${d.getMonth() + 1}.`;
+      return d.toLocaleDateString(this._locale, { month: "numeric", day: "numeric" });
     } catch {
       return "";
     }
@@ -29848,9 +29872,20 @@ var ArrStackCard = class extends HTMLElement {
       if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
       requestAnimationFrame(() => {
         this._checkBadgeOverflow();
+        this._fixPeerChips();
       });
     });
     this._trimActivityCards();
+  }
+  _fixPeerChips() {
+    this.shadowRoot?.querySelectorAll(".dl-r2 .dm-peer").forEach((el) => {
+      el.style.display = "";
+      const r2 = el.closest(".dl-r2");
+      if (!r2) return;
+      if (el.getBoundingClientRect().right > r2.getBoundingClientRect().right + 2) {
+        el.style.display = "none";
+      }
+    });
   }
   // ─────────────────────────────────────────────
   // Left column
