@@ -193,6 +193,19 @@ var ArrStackCardEditor = class extends HTMLElement {
           <span class="row-label">Usenet items per page</span>
           <input type="number" data-group="downloads" data-key="usenetItems" value="${this._cfg("downloads", "usenetItems", 3)}" min="1" max="20"/>
         </div>
+        <div class="row">
+          <span class="row-label">Show storage card</span>
+          <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showStorage" ${this._cfg("downloads", "showStorage", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+        </div>
+        <div class="row">
+          <span class="row-label">Show total speed card</span>
+          <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showTotalSpeed" ${this._cfg("downloads", "showTotalSpeed", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+        </div>
+        <div class="row">
+          <span class="row-label">Allow download controls</span>
+          <label class="toggle"><input type="checkbox" data-group="downloads" data-key="allowControls" ${this._cfg("downloads", "allowControls", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+        </div>
+        <div class="hint">When disabled, play/pause and delete buttons are hidden. Category filters remain accessible.</div>
       </div>
 
       <!-- Discover -->
@@ -1934,7 +1947,10 @@ var STYLES = `
       .dl-pct { font-size: 13px; font-weight: 800; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.5); flex-shrink: 0; margin-left: 8px;
         min-width: 3.2ch; text-align: right; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
-      .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+      .dl-r2 { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: nowrap; overflow: hidden; }
+      .dl-r2 .status-pill { flex-shrink: 0; }
+      .dl-r2 .dm { flex-shrink: 0; }
+      .dm-peer { display: flex; gap: 4px; flex-shrink: 0; }
 
       .dm { font-size: 11px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.55); display: flex; align-items: center; gap: 2px; }
       .dm b { font-weight: 700; }
@@ -2344,15 +2360,64 @@ var STYLES = `
         border: 1px solid rgba(255,255,255,0.08);
         transition: background 0.15s;
       }
-      .trakt-seen-ol { left: 0;  border-radius: 0 6px 6px 0; border-left: none; }
+      .trakt-seen-ol {
+        left: 0; border-radius: 0 6px 6px 0; border-left: none;
+        transition: top 0.26s cubic-bezier(0.34,1.3,0.64,1),
+                    bottom 0.26s cubic-bezier(0.34,1.3,0.64,1),
+                    transform 0.26s cubic-bezier(0.34,1.3,0.64,1),
+                    background 0.2s, width 0.2s, padding 0.2s;
+      }
       .trakt-ni-ol   { right: 0; border-radius: 6px 0 0 6px; border-right: none; }
-      .trakt-seen-ol:hover, .trakt-ni-ol:hover { background: rgba(0,0,0,0.45); }
+      .trakt-seen-ol:not(.trakt-rating-open):hover, .trakt-ni-ol:hover { background: rgba(0,0,0,0.45); }
       .trakt-seen-ol span, .trakt-ni-ol span {
         font-size: 9px; font-weight: 800; text-transform: uppercase;
         color: rgba(255,255,255,0.8); transition: color 0.15s;
         user-select: none; text-align: center; line-height: 1.4;
       }
       .trakt-seen-ol:hover span, .trakt-ni-ol:hover span { color: rgba(255,255,255,1); }
+
+      /* Expanded rating state */
+      .trakt-seen-ol.trakt-rating-open {
+        top: 19% !important; transform: none !important;
+        height: auto !important;
+        flex-direction: column; justify-content: center; gap: 5px;
+        padding: 8px 7px 10px; background: rgba(0,0,0,0.6);
+        border-radius: 0 8px 8px 0; cursor: default;
+      }
+      .trakt-star-wrap {
+        display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%;
+      }
+      .trakt-star {
+        font-size: 20px; line-height: 1; cursor: pointer;
+        color: rgba(255,255,255,0.55); transition: color 0.12s, transform 0.12s;
+        user-select: none; text-align: center;
+        animation: trakt-star-in 0.18s ease both;
+      }
+      .trakt-star:hover { color: #FFD700; transform: scale(1.3); }
+      .trakt-heart {
+        font-size: 19px; line-height: 1; cursor: pointer; margin-top: 2px;
+        color: rgba(255,255,255,0.45); transition: color 0.12s, transform 0.12s;
+        user-select: none; text-align: center;
+        animation: trakt-star-in 0.18s ease both;
+      }
+      .trakt-heart:hover { color: #ff4466; transform: scale(1.3); }
+      @keyframes trakt-star-in {
+        from { opacity: 0; transform: scale(0.3); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+
+      @media (max-width: 480px) {
+        .trakt-seen-ol.trakt-rating-open { padding: 8px 8px; }
+        .trakt-star  { font-size: 13px !important; }
+        .trakt-heart { font-size: 12px !important; }
+        .trakt-star-wrap { gap: 2px; }
+      }
+
+      /* Confetti / fireworks particles */
+      .trakt-confetti-p {
+        position: absolute; pointer-events: none; z-index: 20;
+        border-radius: 1px; opacity: 1; will-change: transform, opacity;
+      }
 
       @keyframes trakt-card-in {
         from { opacity: 0; transform: translateY(8px) scale(0.94); }
@@ -3195,7 +3260,7 @@ var STYLES = `
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;
       }
       .is-rel-age  { font-size: 9px; color: var(--is-text-muted); margin-top: 1px; display: block; }
-      .is-rej-row  { font-size: 9px; color: var(--is-rej-clr); margin-top: 2px; display: block; }
+      .is-rej-row  { font-size: 9px; line-height: 1.4; color: var(--is-rej-clr); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: calc(9px * 1.4 * 2); }
       .is-indexer  { font-size: 10px; color: var(--is-text-sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; display: block; }
       .is-size     { font-size: 10px; color: var(--is-text-sec); font-variant-numeric: tabular-nums; white-space: nowrap; }
       .is-peers    { display: flex; align-items: center; gap: 2px; font-size: 10px; white-space: nowrap; }
@@ -4685,6 +4750,11 @@ var _FetchMethods = class {
       if (this._overseerrConfigured !== false) {
         await this._fetchOverseerrSonarrSettings();
       }
+    }
+    if (!this._tmdbPinged && this._overseerrConfigured !== false) {
+      this._tmdbPinged = true;
+      this._callApi("GET", "arr_stack/tmdb/popular?page=1").catch(() => {
+      });
     }
     await Promise.allSettled([
       this._fetchRadarr2(),
@@ -7079,8 +7149,10 @@ var _RenderLeft = class {
         <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(delugeFreeBytes)} ${this._t("free")}</span></div>
       </div>`;
     }
-    const speedStyle = diskChip ? "" : "flex:1";
-    const speedChip = `
+    const showStorage = this._cfgGet("downloads", "showStorage", true) !== false;
+    const showTotalSpeed = this._cfgGet("downloads", "showTotalSpeed", true) !== false;
+    const speedStyle = showStorage && diskChip ? "" : "flex:1";
+    const speedChip = showTotalSpeed ? `
     <div class="disk-chip" style="${speedStyle}">
       <div class="dc-label">${this._t("totalSpeed")}</div>
       <div class="dc-val" style="display:flex;gap:6px;align-items:center">
@@ -7088,8 +7160,10 @@ var _RenderLeft = class {
         ${hasUpload ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ""}
       </div>
       <div class="dc-sub speed-chip-sub">${speedSub}</div>
-    </div>`;
-    return `<div class="disk-row">${speedChip}${diskChip}</div>`;
+    </div>` : "";
+    const _diskChip = showStorage ? diskChip : "";
+    if (!speedChip && !_diskChip) return "";
+    return `<div class="disk-row">${speedChip}${_diskChip}</div>`;
   }
   _renderQbit() {
     if (!this._qbitConfigured) return "";
@@ -7124,9 +7198,9 @@ var _RenderLeft = class {
             <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
-        ${this._qbitBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn qbit-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
-               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._qbitBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn qbit-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+                 <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
     </div>`;
@@ -7167,22 +7241,25 @@ var _RenderLeft = class {
     const pbarClass = isError ? "pf-red" : isStalledDL ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
     const hash = t.hash || "";
     const isPaused = state === "pausedDL" || state === "pausedUP" || state === "stoppedDL" || state === "stoppedUP";
+    const _allowCtrl = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (this._qbitItemBusy === hash) {
-      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-    } else if (this._confirmRemove === hash) {
-      actionBtns = `
-      <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      if (!isCompleted && isPaused)
-        actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (!isCompleted && !isPaused && !isError)
-        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (isSeeding)
-        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrl) {
+      if (this._qbitItemBusy === hash) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._confirmRemove === hash) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        if (!isCompleted && isPaused)
+          actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (!isCompleted && !isPaused && !isError)
+          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (isSeeding)
+          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
     }
     return `
     <div class="dl">
@@ -7196,8 +7273,7 @@ var _RenderLeft = class {
         ${!isCompleted && !isError && !isStalledDL ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
         ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
-        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7237,9 +7313,9 @@ var _RenderLeft = class {
             <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
-        ${this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
-               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+                 <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
     </div>`;
@@ -7275,22 +7351,25 @@ var _RenderLeft = class {
       speedCol = this._pill("pill-green", "mdi:download", dlSpd);
     }
     const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    const _allowCtrlDlg = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (this._delugeItemBusy === hash) {
-      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-    } else if (this._delugeConfirm === hash) {
-      actionBtns = `
-      <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      if (!isCompleted && isPaused)
-        actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (!isCompleted && !isPaused && !isError)
-        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (isSeeding)
-        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlDlg) {
+      if (this._delugeItemBusy === hash) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._delugeConfirm === hash) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        if (!isCompleted && isPaused)
+          actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (!isCompleted && !isPaused && !isError)
+          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (isSeeding)
+          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
     }
     return `
     <div class="dl">
@@ -7304,8 +7383,7 @@ var _RenderLeft = class {
         ${!isCompleted && !isError && !isPaused ? this._pill("pill-teal", "mdi:upload", upSpd) : ""}
         ${isSeeding ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${done} / ${total}</b></span>
-        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
-        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7333,9 +7411,9 @@ var _RenderLeft = class {
         </div>
         <span class="col-hdr-title">SABnzbd</span>
         <div class="col-hdr-line"></div>
-        ${this._sabBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn sab-global-toggle${sabPaused ? " paused" : ""}" title="${sabPaused ? this._t("resumeSab") : this._t("pauseSab")}">
-               <ha-icon icon="${sabPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._sabBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn sab-global-toggle${sabPaused ? " paused" : ""}" title="${sabPaused ? this._t("resumeSab") : this._t("pauseSab")}">
+                 <ha-icon icon="${sabPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
       ${this._renderSabFailed()}
@@ -7348,8 +7426,9 @@ var _RenderLeft = class {
       const isRetrying = this._sabRetryBusy === s.nzo_id;
       const isDeleting = this._sabDeleteBusy === s.nzo_id;
       const isBusy = isRetrying || isDeleting;
-      const btns = isBusy ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : `<button class="tb tb-retry"  data-nzoid="${s.nzo_id}" title="${this._t("retry")}"><ha-icon icon="mdi:refresh" style="--mdc-icon-size:14px"></ha-icon></button>
-         <button class="tb tb-hist-del" data-nzoid="${s.nzo_id}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>`;
+      const _allowCtrlSab = this._cfgGet("downloads", "allowControls", true) !== false;
+      const btns = isBusy ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : _allowCtrlSab ? `<button class="tb tb-retry"  data-nzoid="${s.nzo_id}" title="${this._t("retry")}"><ha-icon icon="mdi:refresh" style="--mdc-icon-size:14px"></ha-icon></button>
+           <button class="tb tb-hist-del" data-nzoid="${s.nzo_id}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>` : "";
       return `
       <div class="dl dl-failed">
         <div class="dl-r1">
@@ -7408,20 +7487,23 @@ var _RenderLeft = class {
       speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
     }
     const nzoId = s.nzo_id || "";
+    const _allowCtrlSabItem = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (s._history) {
-      const isDeleting = this._sabDeleteBusy === nzoId;
-      actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzoid="${nzoId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      const isBusy = this._sabQueueBusy === nzoId;
-      if (isBusy) {
-        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-      } else if (this._sabQueueConfirm === nzoId) {
-        actionBtns = `
-        <button class="tb tb-cancel" data-sab-action="cancel" data-nzoid="${nzoId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-del"   data-sab-action="delete"  data-nzoid="${nzoId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlSabItem) {
+      if (s._history) {
+        const isDeleting = this._sabDeleteBusy === nzoId;
+        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzoid="${nzoId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
       } else {
-        actionBtns = `<button class="tb tb-remove" data-sab-action="confirm" data-nzoid="${nzoId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        const isBusy = this._sabQueueBusy === nzoId;
+        if (isBusy) {
+          actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+        } else if (this._sabQueueConfirm === nzoId) {
+          actionBtns = `
+          <button class="tb tb-cancel" data-sab-action="cancel" data-nzoid="${nzoId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+          <button class="tb tb-del"   data-sab-action="delete"  data-nzoid="${nzoId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        } else {
+          actionBtns = `<button class="tb tb-remove" data-sab-action="confirm" data-nzoid="${nzoId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        }
       }
     }
     return `
@@ -7456,9 +7538,9 @@ var _RenderLeft = class {
         ${this._appIcon("nzbget")}
         <span class="col-hdr-title">NZBGet</span>
         <div class="col-hdr-line"></div>
-        ${this._nzbgetBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn nzbget-global-toggle${paused ? " paused" : ""}" title="${paused ? this._t("resumeNzbget") : this._t("pauseNzbget")}">
-               <ha-icon icon="${paused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._nzbgetBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn nzbget-global-toggle${paused ? " paused" : ""}" title="${paused ? this._t("resumeNzbget") : this._t("pauseNzbget")}">
+                 <ha-icon icon="${paused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
       ${this._renderNzbgetFailed()}
@@ -7521,20 +7603,23 @@ var _RenderLeft = class {
       const pill = NZBGET_STATUS_PILLS[pillStatus] || { cls: "pill-gray", icon: "mdi:dots-horizontal", label: pillStatus || "\u2014" };
       speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
     }
+    const _allowCtrlNzb = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (isHistory) {
-      const isDeleting = this._nzbgetItemBusy === nzbId;
-      actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      const isBusy = this._nzbgetItemBusy === nzbId;
-      if (isBusy) {
-        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-      } else if (this._nzbgetConfirm === nzbId) {
-        actionBtns = `
-        <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlNzb) {
+      if (isHistory) {
+        const isDeleting = this._nzbgetItemBusy === nzbId;
+        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
       } else {
-        actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        const isBusy = this._nzbgetItemBusy === nzbId;
+        if (isBusy) {
+          actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+        } else if (this._nzbgetConfirm === nzbId) {
+          actionBtns = `
+          <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+          <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        } else {
+          actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        }
       }
     }
     const barCls = status === "FAILURE" ? "pf-red" : isHistory ? "pf-green" : ["LOADING_PARS", "VERIFYING_SOURCE", "VERIFYING_REPAIRED", "REPAIRING", "UNPACKING", "MOVING", "EXECUTING_SCRIPT"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange";
@@ -7624,9 +7709,9 @@ var _RenderLeft = class {
           <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
         </button>
       </div>
-      ${this._rtorrentBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn rtorrent-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
-             <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-           </button>`}
+      ${this._cfgGet("downloads", "allowControls", true) !== false ? this._rtorrentBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn rtorrent-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+             </button>` : ""}
     </div>
     ${items}
   </div>`;
@@ -7663,22 +7748,25 @@ var _RenderLeft = class {
       speedCol = this._pill("pill-green", "mdi:download", dlSpeed);
     }
     const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    const _allowCtrlRt = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (this._rtorrentItemBusy === hash) {
-      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-    } else if (this._rtorrentConfirm === hash) {
-      actionBtns = `
-      <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      if (!isCompleted && isPaused)
-        actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (!isCompleted && !isPaused && !isError)
-        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (isSeeding)
-        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlRt) {
+      if (this._rtorrentItemBusy === hash) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._rtorrentConfirm === hash) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        if (!isCompleted && isPaused)
+          actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (!isCompleted && !isPaused && !isError)
+          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (isSeeding)
+          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
     }
     return `
     <div class="dl">
@@ -7692,8 +7780,7 @@ var _RenderLeft = class {
         ${!isCompleted && !isError && !isPaused && !isChecking ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
         ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
         <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span>
-        <span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -9813,12 +9900,176 @@ var _WireMethods = class {
         }, 200);
       });
     };
-    this.shadowRoot.querySelectorAll(".trakt-seen-ol").forEach(
-      (btn) => _traktDismiss(
-        btn,
-        (type, slug, tmdbId) => this._callApi("POST", "arr_stack/trakt/history", { mediaType: type, slug, tmdbId })
-      )
-    );
+    const _traktConfetti = (card) => {
+      const colors = ["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#FF6FC8", "#FF9F1C", "#A8DADC", "#E63946", "#C77DFF", "#FFBE0B"];
+      const cw = card.offsetWidth || 100;
+      const ch = card.offsetHeight || 160;
+      const cx = cw / 2;
+      const cy = ch / 2;
+      const count = 38;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement("div");
+        p.className = "trakt-confetti-p";
+        const w = 2 + Math.random() * 3;
+        const h = 10 + Math.random() * 18;
+        const baseAngle = i / count * 360;
+        const jitter = (Math.random() - 0.5) * 22;
+        const dist = 32 + Math.random() * Math.min(cx, cy) * 0.9;
+        const rad = (baseAngle + jitter) * Math.PI / 180;
+        const tx = Math.cos(rad) * dist;
+        const ty = Math.sin(rad) * dist;
+        const rot = (Math.random() - 0.5) * 800;
+        const dur = 650 + Math.random() * 500;
+        const delay = Math.random() * 100;
+        Object.assign(p.style, {
+          width: w + "px",
+          height: h + "px",
+          background: colors[i % colors.length],
+          left: cx + "px",
+          top: cy + "px",
+          marginLeft: -w / 2 + "px",
+          marginTop: -h / 2 + "px"
+        });
+        card.appendChild(p);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          p.style.transition = `transform ${dur}ms ease-out ${delay}ms, opacity ${dur}ms ease-out ${delay}ms`;
+          p.style.transform = `translate(${tx}px,${ty}px) rotate(${rot}deg)`;
+          p.style.opacity = "0";
+        }));
+        setTimeout(() => p.remove(), dur + delay + 120);
+      }
+    };
+    const _STAR_COLORS = {
+      5: "rgba(255,255,255,0.85)",
+      4: "rgba(255,255,255,0.70)",
+      3: "rgba(255,255,255,0.55)",
+      2: "rgba(255,255,255,0.42)",
+      1: "rgba(255,255,255,0.30)"
+    };
+    const _buildStarsHtml = () => {
+      let h = '<div class="trakt-star-wrap">';
+      for (let s = 5; s >= 1; s--) {
+        h += `<span class="trakt-star" data-trakt-star="${s}" style="animation-delay:${(5 - s) * 45}ms;color:${_STAR_COLORS[s]}">\u2605</span>`;
+      }
+      h += `<span class="trakt-heart" data-trakt-heart="1" style="animation-delay:${5 * 45}ms">\u2665</span>`;
+      h += "</div>";
+      return h;
+    };
+    this.shadowRoot.querySelectorAll(".trakt-seen-ol").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (btn.classList.contains("trakt-rating-open")) {
+          btn.classList.remove("trakt-rating-open");
+          const _chars = (s) => s.toUpperCase().split("").join("<br>");
+          btn.innerHTML = `<span>${_chars(this._t("watched"))}</span>`;
+          return;
+        }
+        const card = btn.closest(".mc");
+        btn.classList.add("trakt-rating-open");
+        btn.innerHTML = _buildStarsHtml();
+        const _closeRating = (ev) => {
+          if (btn.contains(ev.target)) return;
+          btn.classList.remove("trakt-rating-open");
+          const _ch = (s) => s.toUpperCase().split("").join("<br>");
+          btn.innerHTML = `<span>${_ch(this._t("watched"))}</span>`;
+          this.shadowRoot.removeEventListener("click", _closeRating, true);
+        };
+        this.shadowRoot.addEventListener("click", _closeRating, true);
+        const slug = btn.dataset.traktSlug;
+        const type = btn.dataset.traktType;
+        const tmdbId = parseInt(btn.dataset.traktTmdb, 10);
+        const key = slug || String(tmdbId);
+        const allStars = [...btn.querySelectorAll("[data-trakt-star]")];
+        const heartEl = btn.querySelector("[data-trakt-heart]");
+        const wrapEl = btn.querySelector(".trakt-star-wrap");
+        const _resetStars = () => {
+          allStars.forEach((x) => {
+            x.style.color = _STAR_COLORS[parseInt(x.dataset.traktStar)] || "";
+            x.style.transform = "";
+          });
+          if (heartEl) heartEl.style.color = "";
+        };
+        allStars.forEach((s) => {
+          s.addEventListener("mouseenter", () => {
+            const val = parseInt(s.dataset.traktStar);
+            allStars.forEach((x) => {
+              const xv = parseInt(x.dataset.traktStar);
+              x.style.color = xv <= val ? "#FFD700" : "rgba(255,255,255,0.25)";
+              x.style.transform = xv === val ? "scale(1.25)" : "";
+            });
+            if (heartEl) heartEl.style.color = "rgba(255,255,255,0.25)";
+          });
+        });
+        if (heartEl) {
+          heartEl.addEventListener("mouseenter", () => {
+            allStars.forEach((x) => {
+              x.style.color = "rgba(255,255,255,0.25)";
+              x.style.transform = "";
+            });
+            heartEl.style.color = "#ff4466";
+          });
+        }
+        if (wrapEl) wrapEl.addEventListener("mouseleave", _resetStars);
+        btn.querySelectorAll("[data-trakt-star],[data-trakt-heart]").forEach((starEl) => {
+          starEl.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            this.shadowRoot.removeEventListener("click", _closeRating, true);
+            const stars = starEl.dataset.traktStar ? parseInt(starEl.dataset.traktStar) : null;
+            const rating = stars !== null ? stars * 2 : 10;
+            if (stars !== null) {
+              allStars.forEach((x) => {
+                const xv = parseInt(x.dataset.traktStar);
+                x.style.color = xv <= stars ? "#FFD700" : "rgba(255,255,255,0.15)";
+                x.style.transform = xv <= stars ? "scale(1.1)" : "";
+              });
+              if (heartEl) heartEl.style.color = "rgba(255,255,255,0.15)";
+            } else {
+              allStars.forEach((x) => {
+                x.style.color = "rgba(255,255,255,0.15)";
+                x.style.transform = "";
+              });
+              if (heartEl) {
+                heartEl.style.color = "#ff4466";
+                heartEl.style.transform = "scale(1.2)";
+              }
+            }
+            setTimeout(() => {
+              if (card) _traktConfetti(card);
+            }, 180);
+            setTimeout(() => {
+              if (card) {
+                card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+                card.style.opacity = "0";
+                card.style.transform = "scale(0.85)";
+              }
+              setTimeout(() => {
+                if (!this._traktWatching) this._traktWatching = /* @__PURE__ */ new Set();
+                this._traktWatching.add(key);
+                this._trakt = (this._trakt || []).filter((m) => (m._traktSlug || String(m.id)) !== key);
+                this._traktAnimateNext = true;
+                this._reRenderRight(true);
+                (async () => {
+                  try {
+                    await this._callApi("POST", "arr_stack/trakt/history", { mediaType: type, slug, tmdbId });
+                  } catch (_) {
+                  }
+                  try {
+                    await this._callApi("POST", "arr_stack/trakt/rate", { mediaType: type, slug, tmdbId, rating });
+                  } catch (_) {
+                  }
+                  try {
+                    await this._fetchTrakt();
+                    this._traktAnimateNext = true;
+                    this._reRenderRight(true);
+                  } catch (_) {
+                  }
+                })();
+              }, 320);
+            }, 580);
+          });
+        });
+      });
+    });
     this.shadowRoot.querySelectorAll(".trakt-ni-ol").forEach(
       (btn) => _traktDismiss(btn, (type, slug) => {
         const mediaType = type === "tv" ? "shows" : "movies";
@@ -10465,7 +10716,16 @@ var _WireTautulliMethods = class {
       btn.addEventListener("click", () => {
         const t = btn.dataset.tlTab;
         if (!t || !this._tautulliModal) return;
-        el.querySelectorAll("[data-tl-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-tl-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._tautulliModal.tab = t;
         const titleEl = el.querySelector("#tl-hdr-title");
         if (titleEl) titleEl.textContent = this._tlTabTitle(t);
@@ -11781,7 +12041,16 @@ var _WireJellystatMethods = class {
       btn.addEventListener("click", () => {
         const t = btn.dataset.jsTab;
         if (!t || !this._jellystatModal) return;
-        el.querySelectorAll("[data-js-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-js-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._jellystatModal.tab = t;
         const titleEl = el.querySelector("#js-hdr-title");
         if (titleEl) titleEl.textContent = this._jsTabTitle(t);
@@ -12316,7 +12585,10 @@ var _WireTraceaRrMethods = class {
         m.devHotspotsPage = 0;
         m.devUsersPage = 0;
         const _b1 = el.querySelector("#tra-body");
-        if (_b1) _b1.innerHTML = this._traBodyDevices();
+        if (_b1) {
+          _b1.innerHTML = this._traBodyDevices();
+          this._wireTracearrModalBody(_b1);
+        }
         return;
       }
       const devLeftTab = e.target.closest("[data-tra-dev-left-tab]");
@@ -12327,7 +12599,10 @@ var _WireTraceaRrMethods = class {
         m.devHealthPage = 0;
         m.devMatrixPage = 0;
         const _b2 = el.querySelector("#tra-body");
-        if (_b2) _b2.innerHTML = this._traBodyDevices();
+        if (_b2) {
+          _b2.innerHTML = this._traBodyDevices();
+          this._wireTracearrModalBody(_b2);
+        }
         return;
       }
       const devPage = e.target.closest("[data-tra-dev-page]");
@@ -12344,7 +12619,10 @@ var _WireTraceaRrMethods = class {
         const max = Math.max(0, Math.ceil(lens[view] / PAGE) - 1);
         m[key] = Math.max(0, Math.min(max, (m[key] || 0) + delta));
         const _b3 = el.querySelector("#tra-body");
-        if (_b3) _b3.innerHTML = this._traBodyDevices();
+        if (_b3) {
+          _b3.innerHTML = this._traBodyDevices();
+          this._wireTracearrModalBody(_b3);
+        }
         return;
       }
       const devSrvBtn = e.target.closest("[data-tra-dev-srv]");
@@ -12396,6 +12674,21 @@ var _WireTraceaRrMethods = class {
         m.bwUsers = null;
         m.bwUsersPage = 0;
         this._traLoadTab("bandwidth", el);
+        return;
+      }
+      const violsSrvBtn = e.target.closest("[data-tra-viols-srv]");
+      if (violsSrvBtn) {
+        const m = this._tracearrModal;
+        if (!m) return;
+        const sid = violsSrvBtn.dataset.traViolsSrv || null;
+        m.violsServerId = sid;
+        m.violsPage = 0;
+        try {
+          localStorage.setItem("arr-tra-srv", sid);
+        } catch (_) {
+        }
+        glass.querySelectorAll("[data-tra-viols-srv]").forEach((b) => b.classList.toggle("active", b === violsSrvBtn));
+        this._traLoadTab("violations", el);
         return;
       }
       const histSrvBtn = e.target.closest("[data-tra-hist-srv]");
@@ -12468,7 +12761,7 @@ var _WireTraceaRrMethods = class {
         { id: "rules", tab: "rules" },
         { id: "violations", tab: "violations" }
       ];
-      const _SRV_TABS = ["storage", "quality", "history", "activity", "statsUsers", "users", "watch", "devices", "bandwidth", "map"];
+      const _SRV_TABS = ["storage", "quality", "history", "activity", "statsUsers", "users", "watch", "devices", "bandwidth", "map", "violations"];
       const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
       const _updateMobileNav = () => {
         const panel = glass.querySelector("#tra-mobile-nav");
@@ -12828,20 +13121,20 @@ var _WireTraceaRrMethods = class {
         this._traLoadTab("users", modal());
       });
     });
-    const violsType = body.querySelector("#tra-viols-type");
-    if (violsType) {
-      violsType.addEventListener("change", () => {
+    const violsSev = body.querySelector("#tra-viols-sev");
+    if (violsSev) {
+      violsSev.addEventListener("change", () => {
         if (!this._tracearrModal) return;
-        this._tracearrModal.violsType = violsType.value || null;
+        this._tracearrModal.violsSeverity = violsSev.value || null;
         this._tracearrModal.violsPage = 0;
         this._traLoadTab("violations", modal());
       });
     }
-    const violsUser = body.querySelector("#tra-viols-user");
-    if (violsUser) {
-      violsUser.addEventListener("change", () => {
+    const violsStat = body.querySelector("#tra-viols-stat");
+    if (violsStat) {
+      violsStat.addEventListener("change", () => {
         if (!this._tracearrModal) return;
-        this._tracearrModal.violsUser = violsUser.value || null;
+        this._tracearrModal.violsStatus = violsStat.value || null;
         this._tracearrModal.violsPage = 0;
         this._traLoadTab("violations", modal());
       });
@@ -14129,19 +14422,27 @@ var _PopupMethods = class {
       if (newBody) newBody.scrollTop = savedBodyScroll;
     }
     if (this._isState === "results") {
+      const _gen = this._isMeasureGen = (this._isMeasureGen || 0) + 1;
       requestAnimationFrame(() => {
-        const wrap = this.shadowRoot?.querySelector("#popup-root .is-results-wrap");
-        const firstRow = wrap?.querySelector("tr[data-guid], .is-card");
-        if (wrap && firstRow) {
-          const rowH = Math.max(20, firstRow.getBoundingClientRect().height);
-          const wrapH = wrap.getBoundingClientRect().height;
-          const fits = Math.max(3, Math.floor(wrapH / rowH));
-          if (fits !== this._isPerPage) {
-            this._isPerPage = fits;
-            this._isPage = Math.min(this._isPage, Math.max(0, Math.ceil(this._applyIsFilters(this._isResults || []).length / fits) - 1));
-            root.innerHTML = this._renderPopup();
-            this._wirePopup();
-          }
+        if (this._isMeasureGen !== _gen) return;
+        const root2 = this.shadowRoot?.getElementById("popup-root");
+        const glass2 = root2?.querySelector(".popup-glass");
+        const panel = root2?.querySelector(".is-panel");
+        const hdr = root2?.querySelector(".is-panel-hdr");
+        const pager = root2?.querySelector('.is-panel > div[style*="flex-shrink"]');
+        const wrap = root2?.querySelector(".is-results-wrap");
+        const rows = wrap ? [...wrap.querySelectorAll("tbody tr, .is-card")] : [];
+        if (!glass2 || !panel || !hdr || !wrap || !rows.length) return;
+        const hdrBottom = hdr.getBoundingClientRect().bottom;
+        const glassVisBottom = Math.min(glass2.getBoundingClientRect().bottom, window.innerHeight);
+        const pagerH = pager ? pager.getBoundingClientRect().height : 0;
+        const available = glassVisBottom - hdrBottom - pagerH - 8;
+        const rowH = Math.max(20, ...rows.map((r) => r.getBoundingClientRect().height));
+        const fits = Math.max(1, Math.floor(available / rowH));
+        if (fits !== this._isPerPage) {
+          this._isPerPage = fits;
+          this._isPage = Math.min(this._isPage, Math.max(0, Math.ceil(this._applyIsFilters(this._isResults || []).length / fits) - 1));
+          this._renderPopupEl();
         }
       });
     }
@@ -15890,7 +16191,7 @@ var _TautulliSharedMethods = class {
     if (sec < 3600) return Math.floor(sec / 60) + "m ago";
     if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
     if (sec < 604800) return Math.floor(sec / 86400) + "d ago";
-    return d.toLocaleDateString();
+    return d.toLocaleDateString(this._locale);
   }
   _tlSearchInput(id, value) {
     const SEARCH_SVG = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--is-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
@@ -16028,7 +16329,7 @@ var _TautulliTableMethods = class {
       const ips = report[name] || [];
       const ipRows = ips.map((e) => {
         const d = e.lastSeen ? new Date(e.lastSeen * 1e3) : null;
-        const dateStr = d ? d.toLocaleDateString(void 0, { month: "short", day: "numeric", year: "numeric" }) : "\u2014";
+        const dateStr = d ? d.toLocaleDateString(this._locale, { month: "short", day: "numeric", year: "numeric" }) : "\u2014";
         return `<tr>
           <td style="padding:4px 8px;font-size:11px;font-family:monospace;color:var(--is-text)">${e.ip}</td>
           <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted)">${dateStr}</td>
@@ -17483,9 +17784,13 @@ var _TautulliMethods = class {
   _tlModalHtml(tab) {
     const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
     const allTabs = ["libraries", "users", "history", "graphs"];
-    const tabBtns = allTabs.map(
-      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-tl-tab="${t}">${this._tlTabLabel(t)}</button>`
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
+      return `<button class="is-f-btn${on ? " active" : ""}" data-tl-tab="${t}" style="${st}">${this._tlTabLabel(t)}</button>`;
+    }).join("");
     const sub = this._tlTabSubtitle(tab);
     const hdrInner = isMobile2 ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
            <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._tlTabTitle(tab)}</div>
@@ -18711,9 +19016,13 @@ var _JellystatMethods = class {
   _jsModalHtml(tab) {
     const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
     const allTabs = ["libraries", "users", "history", "graphs"];
-    const tabBtns = allTabs.map(
-      (t) => '<button class="is-f-btn' + (t === tab ? " active" : "") + '" data-js-tab="' + t + '">' + this._jsTabLabel(t) + "</button>"
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? "height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700" : "height:24px;box-sizing:border-box;padding:0 10px;color:" + _tc;
+      return '<button class="is-f-btn' + (on ? " active" : "") + '" data-js-tab="' + t + '" style="' + st + '">' + this._jsTabLabel(t) + "</button>";
+    }).join("");
     const hdrInner = isMobile2 ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0">' + ICONS.close + '</button></div><div class="is-filter">' + tabBtns + "</div>" : '<div style="flex:1;min-width:0"><div id="js-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div></div><div class="is-filter" style="flex-shrink:0">' + tabBtns + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">' + ICONS.close + "</button>";
     const hdrStyle = isMobile2 ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
     return '<div class="popup-overlay' + dayClass(this) + '" data-js-modal><div class="popup-glass tl-wide"><div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div><div class="popup-body" id="js-body" style="padding:' + (isMobile2 ? "12px 14px 16px" : "14px 22px 20px") + '"><div class="is-loading"><span>Loading\u2026</span></div></div></div></div>';
@@ -19372,21 +19681,26 @@ var _TraceaRrTableMethods = class {
     const isMob = window.matchMedia("(max-width:600px)").matches;
     const pp = this._tlCalcPerPage({ hasFilter: true });
     const pages = Math.max(1, Math.ceil(total / pp));
-    const TYPES = ["impossible_travel", "simultaneous_locations", "concurrent_streams", "device_velocity"];
+    const SEVERITIES = ["low", "medium", "high", "critical"];
+    const STATUSES = ["active", "resolved", "dismissed"];
+    const sevLbl = { low: "Low", medium: "Medium", high: "High", critical: "Critical" };
+    const statLbl = { active: "Active", resolved: "Resolved", dismissed: "Dismissed" };
     const filters = `<div class="tl-toolbar" style="flex-wrap:wrap">
-      <select id="tra-viols-type" style="${_TRA_SEL}">
-        <option value="">${this._t("traAllTypes")}</option>
-        ${TYPES.map((t) => `<option value="${t}"${m.violsType === t ? " selected" : ""}>${this._traViolTypeLabel(t)}</option>`).join("")}
+      <select id="tra-viols-sev" style="${_TRA_SEL}">
+        <option value="">All Severities</option>
+        ${SEVERITIES.map((s) => `<option value="${s}"${m.violsSeverity === s ? " selected" : ""}>${sevLbl[s]}</option>`).join("")}
       </select>
-      <select id="tra-viols-user" style="${_TRA_SEL}">
-        <option value="">${this._t("traAllUsers")}</option>
-        ${(m.violsUsers || []).map((u) => `<option value="${u.id}"${m.violsUser === u.id ? " selected" : ""}>${u.displayName || u.username}</option>`).join("")}
+      <select id="tra-viols-stat" style="${_TRA_SEL}">
+        <option value="">All Statuses</option>
+        ${STATUSES.map((s) => `<option value="${s}"${m.violsStatus === s ? " selected" : ""}>${statLbl[s]}</option>`).join("")}
       </select>
     </div>`;
+    const logHeading = `<div style="font-size:14px;font-weight:700;color:var(--is-text);margin:14px 0 8px">Violation Log</div>`;
     if (!viols.length) {
-      return filters + `<div style="display:flex;align-items:center;gap:10px;padding:24px;color:#34C759;font-size:14px">
-        <span style="width:10px;height:10px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;flex-shrink:0"></span>
-        ${this._t("traNoViolations")}
+      return filters + logHeading + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 24px;color:var(--is-text-muted)">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="font-size:14px;font-weight:600;color:var(--is-text)">No violations found</div>
+        <div style="font-size:12px">No violations have been recorded yet.</div>
       </div>`;
     }
     if (isMob) {
@@ -19411,7 +19725,7 @@ var _TraceaRrTableMethods = class {
           </div>
         </div>`;
       }).join("");
-      return filters + `<div>${cards}</div>` + this._tlMobPag("tra-viols-page", m.violsPage, pages);
+      return filters + logHeading + `<div>${cards}</div>` + this._tlMobPag("tra-viols-page", m.violsPage, pages);
     }
     const rows = viols.map((v) => {
       const sev = v.severity || "high";
@@ -19429,7 +19743,7 @@ var _TraceaRrTableMethods = class {
         <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${when}</td>
       </tr>`;
     }).join("");
-    return filters + `<div style="overflow-x:auto">
+    return filters + logHeading + `<div style="overflow-x:auto">
       <table class="tl-users-table">
         <thead><tr>
           <th>Severity</th>
@@ -19556,7 +19870,7 @@ var _TraceaRrTableMethods = class {
     const fmtDt = (iso) => {
       if (!iso) return "\u2014";
       const d = new Date(iso);
-      const date = d.toLocaleDateString("en", { month: "short", day: "numeric" });
+      const date = d.toLocaleDateString(this._locale, { month: "short", day: "numeric" });
       const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
       return { date, time };
     };
@@ -19732,7 +20046,7 @@ var _TraceaRrTableMethods = class {
     const fmtDt = (iso) => {
       if (!iso) return null;
       const d = new Date(iso);
-      return d.toLocaleDateString("en", { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+      return d.toLocaleDateString(this._locale, { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
     };
     const row = (label, value) => value != null && value !== "" && value !== "\u2014" ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px">
            <span style="font-size:11px;color:var(--is-text-muted);flex-shrink:0">${label}</span>
@@ -20493,14 +20807,14 @@ var _TraceaRrTableMethods = class {
         </mask>
       </defs>
       ${yTicks.map((v) => `<line x1="${PL}" y1="${ptY(v * 1024).toFixed(1)}" x2="${VBW - PR}" y2="${ptY(v * 1024).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`).join("")}
-      ${spreadBandPath ? `<path d="${spreadBandPath}" fill="${SPRD_HEX}" fill-opacity="0.12"/>` : ""}
-      ${spreadHiPts.length >= 2 ? `<line x1="${spreadHiPts[0].x.toFixed(1)}" y1="${spreadHiPts[0].y.toFixed(1)}" x2="${spreadHiPts[spreadHiPts.length - 1].x.toFixed(1)}" y2="${spreadHiPts[spreadHiPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke"/>` : ""}
-      ${spreadLoPts.length >= 2 ? `<line x1="${spreadLoPts[0].x.toFixed(1)}" y1="${spreadLoPts[0].y.toFixed(1)}" x2="${spreadLoPts[spreadLoPts.length - 1].x.toFixed(1)}" y2="${spreadLoPts[spreadLoPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke"/>` : ""}
+      ${spreadBandPath ? `<path d="${spreadBandPath}" fill="${SPRD_HEX}" fill-opacity="0.12" style="animation:fade-in 0.8s ease-out both"/>` : ""}
+      ${spreadHiPts.length >= 2 ? `<line x1="${spreadHiPts[0].x.toFixed(1)}" y1="${spreadHiPts[0].y.toFixed(1)}" x2="${spreadHiPts[spreadHiPts.length - 1].x.toFixed(1)}" y2="${spreadHiPts[spreadHiPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke" style="animation:fade-in 0.8s ease-out both"/>` : ""}
+      ${spreadLoPts.length >= 2 ? `<line x1="${spreadLoPts[0].x.toFixed(1)}" y1="${spreadLoPts[0].y.toFixed(1)}" x2="${spreadLoPts[spreadLoPts.length - 1].x.toFixed(1)}" y2="${spreadLoPts[spreadLoPts.length - 1].y.toFixed(1)}" stroke="${SPRD_HEX}" stroke-width="1" stroke-opacity="0.5" vector-effect="non-scaling-stroke" style="animation:fade-in 0.8s ease-out both"/>` : ""}
       <path d="${areaPath(histCoords, baseY)}" fill="url(#tras-gh)" style="animation:fade-in 0.8s ease-out both"/>
       ${nowX ? `<line x1="${nowX}" y1="${PT}" x2="${nowX}" y2="${baseY}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 3"/>` : ""}
       <path d="${linePath(histCoords, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="2" vector-effect="non-scaling-stroke" class="tl-g-anim-line"/>
-      ${showPred && predWithJoint.length > 1 ? `<path d="${linePath(predWithJoint, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke" mask="url(#tras-dot-mask)"/>` : ""}
-      ${histDots}${predDots}
+      ${showPred && predWithJoint.length > 1 ? `<path d="${linePath(predWithJoint, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke" mask="url(#tras-dot-mask)" style="animation:fade-in 0.8s ease-out both"/>` : ""}
+      ${histDots}${predDots ? `<g style="animation:fade-in 0.8s ease-out both">${predDots}</g>` : ""}
       ${hitCols}
     `;
     const storSvg = `<div class="tl-g-wrap" style="position:relative;padding-left:36px">
@@ -21998,8 +22312,10 @@ var _TraceaRrMethods = class {
       violsTotal: 0,
       violsPage: 0,
       violsPerPage: 20,
-      violsUser: null,
-      violsType: null,
+      violsSeverity: null,
+      violsStatus: null,
+      violsServerId: null,
+      violsServers: [],
       // map
       mapData: null,
       mapPeriod: "month",
@@ -22246,7 +22562,7 @@ var _TraceaRrMethods = class {
       const expanded = active;
       const subHtml = expanded ? g.sub.map(([tid, tlbl, tico]) => {
         const isActive = currentTab === tid;
-        const subSt = isActive ? `${subH}background:rgba(0,122,255,0.25);color:#007AFF;border-color:rgba(0,122,255,0.5);font-size:10px;display:inline-flex;align-items:center;gap:4px` : `${subH}background:rgba(0,122,255,0.13);color:${txtClr};border-color:rgba(0,122,255,0.3);font-size:10px;display:inline-flex;align-items:center;gap:4px`;
+        const subSt = isActive ? `${subH}background:rgba(0,122,255,0.35);color:${txtClr};border-color:rgba(0,122,255,0.6);font-size:10px;display:inline-flex;align-items:center;gap:4px` : `${subH}background:rgba(0,122,255,0.13);color:${txtClr};border-color:rgba(0,122,255,0.3);font-size:10px;display:inline-flex;align-items:center;gap:4px`;
         return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
       }).join("") : "";
       return `<div style="display:flex;align-items:center;gap:4px">` + btn + `<div data-tra-sub="${g.id}" style="display:flex;gap:4px;overflow:hidden;max-width:${expanded ? "500px" : "0"};transition:max-width 0.25s ease">${subHtml}</div></div>`;
@@ -22471,19 +22787,41 @@ var _TraceaRrMethods = class {
       this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.usersServerId, "data-tra-usr-srv");
     } else if (tab === "violations") {
       const pp = this._tlCalcPerPage({ hasFilter: true });
-      let q = `pageSize=${pp}&page=${m.violsPage + 1}`;
-      if (m.violsUser) q += `&userId=${m.violsUser}`;
-      if (m.violsType) q += `&type=${m.violsType}`;
-      const [vr, ur] = await Promise.all([
+      let q = `pageSize=${pp}&page=${m.violsPage + 1}&orderBy=createdAt&orderDir=desc`;
+      if (m.violsSeverity) q += `&severity=${m.violsSeverity}`;
+      if (m.violsStatus) q += `&status=${m.violsStatus}`;
+      if (m.violsServerId) q += `&serverId=${m.violsServerId}`;
+      const [vr, sr] = await Promise.all([
         this._traApiFetch(`violations?${q}`),
-        this._traApiFetch("users?pageSize=100")
+        this._traApiFetch("health")
       ]);
       if (!this._tracearrModal) return;
       m.violsData = vr?.data || [];
       m.violsTotal = vr?.meta?.total || 0;
-      m.violsUsers = ur?.data || [];
+      m.violsServers = sr?.servers || [];
+      if (m.violsServerId === null && m.violsServers.length > 0) {
+        const _pk = (s) => {
+          const t = (s.type || "").toLowerCase();
+          return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
+        };
+        let _saved = null;
+        try {
+          _saved = localStorage.getItem("arr-tra-srv");
+        } catch (_) {
+        }
+        const _validSaved = _saved && m.violsServers.find((s) => s.id === _saved);
+        m.violsServerId = _validSaved ? _saved : [...m.violsServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+        if (m.violsServerId) {
+          this._traLoadTab("violations", modal);
+          return;
+        }
+      }
       body.innerHTML = this._traBodyViolations();
       this._wireTracearrModalBody(body);
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.violsServers, m.violsServerId, "data-tra-viols-srv", (s) => {
+        const t = (s.type || "").toLowerCase();
+        return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
+      });
     } else if (tab === "history") {
       const isMobH = window.matchMedia("(max-width:600px)").matches;
       const pp = this._tlCalcPerPage({ hasFilter: true, filterH: isMobH ? 120 : 40, rowH: isMobH ? 80 : 44, bar: 0 });
@@ -22565,37 +22903,50 @@ var _TraceaRrMethods = class {
       this._wireTracearrModalBody(body);
       this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.activityServerId, "data-tra-act-srv");
     } else if (tab === "statsUsers") {
-      if (!m.staleServers) {
-        const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
-        if (this._tracearrModal) {
-          const srvMap = /* @__PURE__ */ new Map();
-          for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
-        }
-      }
-      if (!this._tracearrModal) return;
-      if (!m.statsUsersServerId && (m.staleServers || []).length > 0) {
-        const _pk = (n) => {
-          const s = (n || "").toLowerCase();
-          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
-        };
-        let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
-        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
-        m.statsUsersServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
-      }
       const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-      const _p = m.statsUsersPeriod || "30d";
+      const _p = m.statsUsersPeriod || "month";
+      const _suKeyFn = (s) => {
+        const t = (s.type || s.name || "").toLowerCase();
+        return t.includes("jellyfin") ? "jellyfin" : t.includes("plex") ? "plex" : t.includes("emby") ? "emby" : null;
+      };
+      if (!m.statsUsersServers) {
+        const _r0 = await this._traStatsFetch(`top-users?period=${_p}&timezone=${_tz}`);
+        if (!this._tracearrModal) return;
+        const _avail = _r0?.availableFilters?.servers;
+        if (_avail?.length) {
+          m.statsUsersServers = _avail;
+        } else if (!m.staleServers) {
+          const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
+          if (this._tracearrModal) {
+            const srvMap = /* @__PURE__ */ new Map();
+            for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
+            m.statsUsersServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          }
+        } else {
+          m.statsUsersServers = m.staleServers;
+        }
+        if (!this._tracearrModal) return;
+        if (!m.statsUsersServerId && (m.statsUsersServers || []).length > 0) {
+          const _pk = (s) => {
+            const t = _suKeyFn(s);
+            return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
+          };
+          let _saved = null;
+          try {
+            _saved = localStorage.getItem("arr-tra-srv");
+          } catch (_) {
+          }
+          const _validSaved = _saved && m.statsUsersServers.find((s) => s.id === _saved);
+          m.statsUsersServerId = _validSaved ? _saved : [...m.statsUsersServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+        }
+      }
       const _sQ = m.statsUsersServerId ? `&serverId=${m.statsUsersServerId}` : "";
       const r = await this._traStatsFetch(`top-users?period=${_p}&timezone=${_tz}${_sQ}`);
       if (!this._tracearrModal) return;
       m.statsUsersData = r?.data || r || [];
       body.innerHTML = this._traBodyStatsUsers();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.statsUsersServerId, "data-tra-su-srv");
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.statsUsersServers || [], m.statsUsersServerId, "data-tra-su-srv", _suKeyFn);
     } else if (tab === "quality") {
       if (!m.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
@@ -23146,7 +23497,7 @@ var _ActivityRenderMethods = class {
   }
   _actHistoryCard() {
     const cache = this._actHistoryCache;
-    const grabbed = cache === null ? null : (cache || []).filter((r) => r.eventType === "grabbed" || r.eventType === "downloadFolderImported");
+    const grabbed = cache === null ? null : cache || [];
     const histMax = this._actCardMax("history");
     const content = grabbed === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : grabbed.length === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoHistory")}</div>` : grabbed.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
@@ -23273,9 +23624,13 @@ var _ActivityRenderMethods = class {
     const isMobile2 = window.matchMedia("(max-width:600px)").matches;
     const allTabs = ["queue", "history", "blocklist", "missing"];
     const tabLabels = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") };
-    const tabBtns = allTabs.map(
-      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-act-tab="${t}">${tabLabels[t]}</button>`
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
+      return `<button class="is-f-btn${on ? " active" : ""}" data-act-tab="${t}" style="${st}">${tabLabels[t]}</button>`;
+    }).join("");
     const hdrInner = isMobile2 ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
            <div id="act-hdr-title" style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
            <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
@@ -23404,7 +23759,7 @@ var _ActivityRenderMethods = class {
       const addedLbl = item.added ? (() => {
         try {
           const dt = new Date(item.added);
-          return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" });
+          return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" });
         } catch {
           return "";
         }
@@ -23797,7 +24152,7 @@ var _ActivityRenderMethods = class {
       if (!d) return "\u2014";
       try {
         const dt = new Date(d);
-        return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit" });
+        return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(this._locale, { hour: "2-digit", minute: "2-digit" });
       } catch {
         return d;
       }
@@ -23818,7 +24173,7 @@ var _ActivityRenderMethods = class {
         const dateShortBl = (() => {
           try {
             const dt = new Date(r.date);
-            return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" });
+            return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" });
           } catch {
             return fmtDate(r.date);
           }
@@ -24178,7 +24533,7 @@ var _ActivityRenderMethods = class {
     const fmtDate = (d) => {
       if (!d) return "\u2014";
       try {
-        return new Date(d).toLocaleDateString(void 0, { year: "numeric", month: "short", day: "numeric" });
+        return new Date(d).toLocaleDateString(this._locale, { year: "numeric", month: "short", day: "numeric" });
       } catch {
         return d;
       }
@@ -24510,7 +24865,16 @@ var _WireActivityMethods = class {
       btn.addEventListener("click", async () => {
         const t = btn.dataset.actTab;
         if (!t || !this._activityModal) return;
-        el.querySelectorAll("[data-act-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-act-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._activityModal.tab = t;
         const tabLabel = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") }[t] || t;
         const subEl = el.querySelector("#act-hdr-sub");
@@ -25681,7 +26045,7 @@ var _WireActivityMethods = class {
       const fmtDate = (d) => {
         if (!d) return "";
         try {
-          return new Date(d).toLocaleDateString(void 0, { month: "short", day: "numeric", year: "numeric" });
+          return new Date(d).toLocaleDateString(this._locale, { month: "short", day: "numeric", year: "numeric" });
         } catch {
           return d;
         }
@@ -26061,9 +26425,13 @@ var _WireProwlarrMethods = class {
   _pwModalHtml(tab) {
     const allTabs = ["indexers", "apps", "history", "stats"];
     const tabLabels = { indexers: "Indexers", apps: "Applications", stats: "Statistics", history: "History" };
-    const tabBtns = allTabs.map(
-      (t) => `<button class="is-f-btn${t === tab ? " active" : ""}" data-pw-tab="${t}">${tabLabels[t]}</button>`
-    ).join("");
+    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _tc = _day ? "#000" : "#fff";
+    const tabBtns = allTabs.map((t) => {
+      const on = t === tab;
+      const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
+      return `<button class="is-f-btn${on ? " active" : ""}" data-pw-tab="${t}" style="${st}">${tabLabels[t]}</button>`;
+    }).join("");
     const hdrInner = isMobile() ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
            <div id="pw-hdr-title" style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
            <button class="popup-close" id="pw-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
@@ -26092,7 +26460,16 @@ var _WireProwlarrMethods = class {
       btn.addEventListener("click", async () => {
         const t = btn.dataset.pwTab;
         if (!t || !this._prowlarrModal) return;
-        el.querySelectorAll("[data-pw-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _tc = _day ? "#000" : "#fff";
+        el.querySelectorAll("[data-pw-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.style.background = on ? "rgba(0,122,255,0.25)" : "";
+          b.style.color = on ? "#fff" : _tc;
+          b.style.borderColor = on ? "rgba(0,122,255,0.5)" : "";
+          b.style.fontWeight = on ? "700" : "";
+        });
         this._prowlarrModal.tab = t;
         const titleEl = el.querySelector("#pw-hdr-title");
         const labels = { indexers: "Indexers", apps: "Applications", stats: "Statistics", history: "History" };
@@ -26257,7 +26634,7 @@ var _WireProwlarrMethods = class {
     };
     const fmtDate = (d) => {
       try {
-        return new Date(d).toLocaleDateString(void 0, { month: "short", day: "numeric", year: "2-digit" });
+        return new Date(d).toLocaleDateString(this._locale, { month: "short", day: "numeric", year: "2-digit" });
       } catch {
         return "\u2014";
       }
@@ -27499,8 +27876,8 @@ var _WireProwlarrMethods = class {
       try {
         const dt = new Date(d), now = /* @__PURE__ */ new Date();
         if (dt.toDateString() === now.toDateString())
-          return dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
-        return dt.toLocaleDateString(void 0, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(void 0, { hour: "2-digit", minute: "2-digit" });
+          return dt.toLocaleTimeString(this._locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+        return dt.toLocaleDateString(this._locale, { month: "short", day: "numeric" }) + " " + dt.toLocaleTimeString(this._locale, { hour: "2-digit", minute: "2-digit" });
       } catch {
         return d;
       }
@@ -27654,7 +28031,7 @@ var _WireProwlarrMethods = class {
     const evtLabel = { indexerQuery: "Search", releaseGrabbed: "Grab", indexerRss: "RSS", indexerAuth: "Auth" };
     const fmtDate = (d) => {
       try {
-        return new Date(d).toLocaleString();
+        return new Date(d).toLocaleString(this._locale);
       } catch {
         return d;
       }
@@ -28278,6 +28655,7 @@ var ArrStackCard = class extends HTMLElement {
     this._kodiLastFetch = 0;
     this._kodiEntityIds = /* @__PURE__ */ new Set();
     this._overseerrConfigured = null;
+    this._tmdbPinged = false;
     this._seerrRadarr = null;
     this._seerrRadarr2 = null;
     this._confirmRemove = null;
@@ -28726,12 +29104,15 @@ var ArrStackCard = class extends HTMLElement {
     if (h > 0) return `${h}h ${m}min`;
     return `${m} min`;
   }
+  get _locale() {
+    return this._hass?.locale?.language || "en";
+  }
   fmtDate(dateStr) {
     if (!dateStr) return "";
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return "";
-      return `${d.getDate()}. ${d.getMonth() + 1}.`;
+      return d.toLocaleDateString(this._locale, { month: "numeric", day: "numeric" });
     } catch {
       return "";
     }
@@ -29491,9 +29872,20 @@ var ArrStackCard = class extends HTMLElement {
       if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
       requestAnimationFrame(() => {
         this._checkBadgeOverflow();
+        this._fixPeerChips();
       });
     });
     this._trimActivityCards();
+  }
+  _fixPeerChips() {
+    this.shadowRoot?.querySelectorAll(".dl-r2 .dm-peer").forEach((el) => {
+      el.style.display = "";
+      const r2 = el.closest(".dl-r2");
+      if (!r2) return;
+      if (el.getBoundingClientRect().right > r2.getBoundingClientRect().right + 2) {
+        el.style.display = "none";
+      }
+    });
   }
   // ─────────────────────────────────────────────
   // Left column
