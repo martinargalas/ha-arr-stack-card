@@ -193,6 +193,19 @@ var ArrStackCardEditor = class extends HTMLElement {
           <span class="row-label">Usenet items per page</span>
           <input type="number" data-group="downloads" data-key="usenetItems" value="${this._cfg("downloads", "usenetItems", 3)}" min="1" max="20"/>
         </div>
+        <div class="row">
+          <span class="row-label">Show storage card</span>
+          <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showStorage" ${this._cfg("downloads", "showStorage", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+        </div>
+        <div class="row">
+          <span class="row-label">Show total speed card</span>
+          <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showTotalSpeed" ${this._cfg("downloads", "showTotalSpeed", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+        </div>
+        <div class="row">
+          <span class="row-label">Allow download controls</span>
+          <label class="toggle"><input type="checkbox" data-group="downloads" data-key="allowControls" ${this._cfg("downloads", "allowControls", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+        </div>
+        <div class="hint">When disabled, play/pause and delete buttons are hidden. Category filters remain accessible.</div>
       </div>
 
       <!-- Discover -->
@@ -7133,8 +7146,10 @@ var _RenderLeft = class {
         <div class="dc-val"><span class="pill-orange dc-pill">${fmtGB(delugeFreeBytes)} ${this._t("free")}</span></div>
       </div>`;
     }
-    const speedStyle = diskChip ? "" : "flex:1";
-    const speedChip = `
+    const showStorage = this._cfgGet("downloads", "showStorage", true) !== false;
+    const showTotalSpeed = this._cfgGet("downloads", "showTotalSpeed", true) !== false;
+    const speedStyle = showStorage && diskChip ? "" : "flex:1";
+    const speedChip = showTotalSpeed ? `
     <div class="disk-chip" style="${speedStyle}">
       <div class="dc-label">${this._t("totalSpeed")}</div>
       <div class="dc-val" style="display:flex;gap:6px;align-items:center">
@@ -7142,8 +7157,10 @@ var _RenderLeft = class {
         ${hasUpload ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ""}
       </div>
       <div class="dc-sub speed-chip-sub">${speedSub}</div>
-    </div>`;
-    return `<div class="disk-row">${speedChip}${diskChip}</div>`;
+    </div>` : "";
+    const _diskChip = showStorage ? diskChip : "";
+    if (!speedChip && !_diskChip) return "";
+    return `<div class="disk-row">${speedChip}${_diskChip}</div>`;
   }
   _renderQbit() {
     if (!this._qbitConfigured) return "";
@@ -7178,9 +7195,9 @@ var _RenderLeft = class {
             <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
-        ${this._qbitBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn qbit-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
-               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._qbitBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn qbit-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+                 <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
     </div>`;
@@ -7221,22 +7238,25 @@ var _RenderLeft = class {
     const pbarClass = isError ? "pf-red" : isStalledDL ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
     const hash = t.hash || "";
     const isPaused = state === "pausedDL" || state === "pausedUP" || state === "stoppedDL" || state === "stoppedUP";
+    const _allowCtrl = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (this._qbitItemBusy === hash) {
-      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-    } else if (this._confirmRemove === hash) {
-      actionBtns = `
-      <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      if (!isCompleted && isPaused)
-        actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (!isCompleted && !isPaused && !isError)
-        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (isSeeding)
-        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrl) {
+      if (this._qbitItemBusy === hash) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._confirmRemove === hash) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        if (!isCompleted && isPaused)
+          actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (!isCompleted && !isPaused && !isError)
+          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (isSeeding)
+          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
     }
     return `
     <div class="dl">
@@ -7291,9 +7311,9 @@ var _RenderLeft = class {
             <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
-        ${this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
-               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+                 <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
     </div>`;
@@ -7329,22 +7349,25 @@ var _RenderLeft = class {
       speedCol = this._pill("pill-green", "mdi:download", dlSpd);
     }
     const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    const _allowCtrlDlg = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (this._delugeItemBusy === hash) {
-      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-    } else if (this._delugeConfirm === hash) {
-      actionBtns = `
-      <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      if (!isCompleted && isPaused)
-        actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (!isCompleted && !isPaused && !isError)
-        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (isSeeding)
-        actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlDlg) {
+      if (this._delugeItemBusy === hash) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._delugeConfirm === hash) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        if (!isCompleted && isPaused)
+          actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (!isCompleted && !isPaused && !isError)
+          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (isSeeding)
+          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
     }
     return `
     <div class="dl">
@@ -7387,9 +7410,9 @@ var _RenderLeft = class {
         </div>
         <span class="col-hdr-title">SABnzbd</span>
         <div class="col-hdr-line"></div>
-        ${this._sabBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn sab-global-toggle${sabPaused ? " paused" : ""}" title="${sabPaused ? this._t("resumeSab") : this._t("pauseSab")}">
-               <ha-icon icon="${sabPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._sabBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn sab-global-toggle${sabPaused ? " paused" : ""}" title="${sabPaused ? this._t("resumeSab") : this._t("pauseSab")}">
+                 <ha-icon icon="${sabPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
       ${this._renderSabFailed()}
@@ -7402,8 +7425,9 @@ var _RenderLeft = class {
       const isRetrying = this._sabRetryBusy === s.nzo_id;
       const isDeleting = this._sabDeleteBusy === s.nzo_id;
       const isBusy = isRetrying || isDeleting;
-      const btns = isBusy ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : `<button class="tb tb-retry"  data-nzoid="${s.nzo_id}" title="${this._t("retry")}"><ha-icon icon="mdi:refresh" style="--mdc-icon-size:14px"></ha-icon></button>
-         <button class="tb tb-hist-del" data-nzoid="${s.nzo_id}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>`;
+      const _allowCtrlSab = this._cfgGet("downloads", "allowControls", true) !== false;
+      const btns = isBusy ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;flex-shrink:0"></span>` : _allowCtrlSab ? `<button class="tb tb-retry"  data-nzoid="${s.nzo_id}" title="${this._t("retry")}"><ha-icon icon="mdi:refresh" style="--mdc-icon-size:14px"></ha-icon></button>
+           <button class="tb tb-hist-del" data-nzoid="${s.nzo_id}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:14px"></ha-icon></button>` : "";
       return `
       <div class="dl dl-failed">
         <div class="dl-r1">
@@ -7462,20 +7486,23 @@ var _RenderLeft = class {
       speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
     }
     const nzoId = s.nzo_id || "";
+    const _allowCtrlSabItem = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (s._history) {
-      const isDeleting = this._sabDeleteBusy === nzoId;
-      actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzoid="${nzoId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      const isBusy = this._sabQueueBusy === nzoId;
-      if (isBusy) {
-        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-      } else if (this._sabQueueConfirm === nzoId) {
-        actionBtns = `
-        <button class="tb tb-cancel" data-sab-action="cancel" data-nzoid="${nzoId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-del"   data-sab-action="delete"  data-nzoid="${nzoId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlSabItem) {
+      if (s._history) {
+        const isDeleting = this._sabDeleteBusy === nzoId;
+        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzoid="${nzoId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
       } else {
-        actionBtns = `<button class="tb tb-remove" data-sab-action="confirm" data-nzoid="${nzoId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        const isBusy = this._sabQueueBusy === nzoId;
+        if (isBusy) {
+          actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+        } else if (this._sabQueueConfirm === nzoId) {
+          actionBtns = `
+          <button class="tb tb-cancel" data-sab-action="cancel" data-nzoid="${nzoId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+          <button class="tb tb-del"   data-sab-action="delete"  data-nzoid="${nzoId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        } else {
+          actionBtns = `<button class="tb tb-remove" data-sab-action="confirm" data-nzoid="${nzoId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        }
       }
     }
     return `
@@ -7510,9 +7537,9 @@ var _RenderLeft = class {
         ${this._appIcon("nzbget")}
         <span class="col-hdr-title">NZBGet</span>
         <div class="col-hdr-line"></div>
-        ${this._nzbgetBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn nzbget-global-toggle${paused ? " paused" : ""}" title="${paused ? this._t("resumeNzbget") : this._t("pauseNzbget")}">
-               <ha-icon icon="${paused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-             </button>`}
+        ${this._cfgGet("downloads", "allowControls", true) !== false ? this._nzbgetBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn nzbget-global-toggle${paused ? " paused" : ""}" title="${paused ? this._t("resumeNzbget") : this._t("pauseNzbget")}">
+                 <ha-icon icon="${paused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+               </button>` : ""}
       </div>
       ${items}
       ${this._renderNzbgetFailed()}
@@ -7575,20 +7602,23 @@ var _RenderLeft = class {
       const pill = NZBGET_STATUS_PILLS[pillStatus] || { cls: "pill-gray", icon: "mdi:dots-horizontal", label: pillStatus || "\u2014" };
       speedCol = `<span class="status-pill ${pill.cls}"><ha-icon icon="${pill.icon}" style="--mdc-icon-size:11px"></ha-icon> ${pill.label}</span>`;
     }
+    const _allowCtrlNzb = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (isHistory) {
-      const isDeleting = this._nzbgetItemBusy === nzbId;
-      actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      const isBusy = this._nzbgetItemBusy === nzbId;
-      if (isBusy) {
-        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-      } else if (this._nzbgetConfirm === nzbId) {
-        actionBtns = `
-        <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlNzb) {
+      if (isHistory) {
+        const isDeleting = this._nzbgetItemBusy === nzbId;
+        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
       } else {
-        actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        const isBusy = this._nzbgetItemBusy === nzbId;
+        if (isBusy) {
+          actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+        } else if (this._nzbgetConfirm === nzbId) {
+          actionBtns = `
+          <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+          <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        } else {
+          actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        }
       }
     }
     const barCls = status === "FAILURE" ? "pf-red" : isHistory ? "pf-green" : ["LOADING_PARS", "VERIFYING_SOURCE", "VERIFYING_REPAIRED", "REPAIRING", "UNPACKING", "MOVING", "EXECUTING_SCRIPT"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange";
@@ -7678,9 +7708,9 @@ var _RenderLeft = class {
           <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
         </button>
       </div>
-      ${this._rtorrentBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn rtorrent-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
-             <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
-           </button>`}
+      ${this._cfgGet("downloads", "allowControls", true) !== false ? this._rtorrentBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn rtorrent-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
+               <ha-icon icon="${allPaused ? "mdi:play" : "mdi:pause"}" style="--mdc-icon-size:16px"></ha-icon>
+             </button>` : ""}
     </div>
     ${items}
   </div>`;
@@ -7717,22 +7747,25 @@ var _RenderLeft = class {
       speedCol = this._pill("pill-green", "mdi:download", dlSpeed);
     }
     const pbarClass = isError ? "pf-red" : isPaused ? "pf-orange" : isSeeding ? "pf-teal" : isCompleted ? "pf-green" : "pf-blue";
+    const _allowCtrlRt = this._cfgGet("downloads", "allowControls", true) !== false;
     let actionBtns = "";
-    if (this._rtorrentItemBusy === hash) {
-      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-    } else if (this._rtorrentConfirm === hash) {
-      actionBtns = `
-      <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-      <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
-    } else {
-      if (!isCompleted && isPaused)
-        actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (!isCompleted && !isPaused && !isError)
-        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      if (isSeeding)
-        actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-      actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+    if (_allowCtrlRt) {
+      if (this._rtorrentItemBusy === hash) {
+        actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+      } else if (this._rtorrentConfirm === hash) {
+        actionBtns = `
+        <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
+        <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      } else {
+        if (!isCompleted && isPaused)
+          actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (!isCompleted && !isPaused && !isError)
+          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        if (isSeeding)
+          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+      }
     }
     return `
     <div class="dl">
