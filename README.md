@@ -373,6 +373,12 @@ styles:
 
 ---
 
+## Analytics
+
+Arr Stack Card sends an anonymous ping on load (install count, card version). No personal data is collected — only a hashed hostname and version string. You can view live usage stats at [argalas.org/arr-stats](https://argalas.org/arr-stats).
+
+---
+
 ## License
 
 MIT
