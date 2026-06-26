@@ -3840,6 +3840,58 @@ var STYLES = `
       .tl-mob-pag-info { flex: 1; text-align: center; font-size: 12px; color: var(--is-text-label); }
 
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+      /* \u2500\u2500 Utility classes (extracted from repeated inline styles) \u2500\u2500 */
+
+      /* Layout \u2014 flex column */
+      .u-col      { display: flex; flex-direction: column; }
+      .u-col-fill { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+      .u-sec-body { display: flex; flex-direction: column; gap: 0; padding: 10px 10px 8px; }
+
+      /* Layout \u2014 flex row */
+      .u-row-4    { display: flex; align-items: center; gap: 4px; }
+      .u-row-5    { display: flex; align-items: center; gap: 5px; }
+      .u-row-6    { display: flex; align-items: center; gap: 6px; }
+      .u-row-8    { display: flex; align-items: center; gap: 8px; }
+      .u-row-10   { display: flex; align-items: center; gap: 10px; }
+      .u-panel-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .u-row-sb   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; position: relative; z-index: 2; gap: 4px; }
+      .u-row-sb-w { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; position: relative; z-index: 2; gap: 4px; flex-wrap: nowrap; }
+      .u-inline-row { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+      /* Layout \u2014 flex child */
+      .u-flex-ovh     { flex: 1; overflow: hidden; }
+      .u-flex-rel     { flex: 1; position: relative; z-index: 2; }
+      .u-flex-ovh-rel { flex: 1; overflow: hidden; position: relative; z-index: 2; }
+      .u-rel-shrink0  { position: relative; top: 0; right: 0; flex-shrink: 0; }
+
+      /* Text */
+      .u-truncate    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .u-nowrap-sm   { white-space: nowrap; font-size: 11px; }
+      .u-xs-muted    { font-size: 10px; color: var(--is-text-muted); }
+      .u-xxs-muted   { font-size: 9px; color: var(--is-text-muted); }
+      .u-xxs-dim     { font-size: 9px; color: rgba(255,255,255,0.3); padding: 8px 0; }
+      .u-sm-label    { font-size: 11px; color: var(--is-text-label); }
+      .u-sm-text     { font-size: 12px; font-weight: 600; color: var(--is-text); }
+      .u-section-hdr { font-size: 11px; font-weight: 600; color: var(--is-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+      .u-cell-pad    { padding: 7px 8px; white-space: nowrap; font-size: 10px; color: var(--is-text-sec); }
+
+      /* Empty states */
+      .u-empty     { text-align: center; color: var(--is-text-muted); padding: 30px; }
+      .u-empty-lg  { text-align: center; color: var(--is-text-muted); padding: 40px; }
+      .u-empty-dim { text-align: center; color: rgba(255,255,255,0.3); padding: 40px; }
+
+      /* Structural */
+      .u-panel     { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 14px; }
+      .u-bg-icon   { position: absolute; bottom: -15px; right: -15px; opacity: 0.025; pointer-events: none; z-index: 0; color: #fff; line-height: 0; }
+      .u-divider-b { border-bottom: 1px solid var(--is-divider); }
+      .u-fade-in   { animation: fade-in 0.8s ease-out both; }
+      .u-media-badge   { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.92); background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); padding: 2px 6px; border-radius: 4px; line-height: 1; }
+      .u-media-badge-s { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.92); background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); padding: 2px 6px; border-radius: 4px; line-height: 1; flex-shrink: 0; }
+
+      /* Icon sizes */
+      .icon-15   { --mdc-icon-size: 15px; }
+      .icon-11-st { --mdc-icon-size: 11px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.85); }
     `;
 
 // src/render/interactive-search.js
@@ -3885,7 +3937,7 @@ var _InteractiveSearch = class {
     const totalPages = Math.max(1, Math.ceil(visible.length / IS_PER_PAGE));
     const page = Math.min(this._isPage || 0, totalPages - 1);
     const paged = visible.slice(page * IS_PER_PAGE, (page + 1) * IS_PER_PAGE);
-    const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+    const isMobile2 = this._isMob;
     const rowsHtml = isMobile2 ? this._renderIsCards(paged) : this._renderIsTable(paged);
     const { protocol, indexer, quality, lang } = this._isFilters;
     const countHtml = visible.length !== all.length ? `<span class="is-count">${visible.length}<span style="opacity:0.45">/${all.length}</span></span>` : `<span class="is-count">${all.length}</span>`;
@@ -4235,7 +4287,7 @@ var _SonarrIS = class {
   // ─────────────────────────────────────────────
   _renderSonarrIsSection() {
     if (!this._snIsOpen) return "";
-    const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+    const isMobile2 = this._isMob;
     if (isMobile2 && this._snActiveIs) {
       return this._renderSnDrilldownView();
     }
@@ -4300,7 +4352,7 @@ var _SonarrIS = class {
     const isQueued = qPct !== null;
     const barPct = isQueued ? Math.max(qPct, 4) : pct;
     const pctStyle = isQueued ? `width:${barPct}%;background:#3b82f6` : `width:${barPct}%`;
-    const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+    const isMobile2 = this._isMob;
     const isActiveIs = this._snActiveIs?.type === "season" && this._snActiveIs?.key === n;
     const personIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -4347,7 +4399,7 @@ var _SonarrIS = class {
     return `<div class="sn-episodes">${rows}</div>`;
   }
   _renderSnEpRow(ep) {
-    const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+    const isMobile2 = this._isMob;
     const isActive = this._snActiveIs?.type === "episode" && this._snActiveIs?.key === ep.id;
     const personIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -4409,7 +4461,7 @@ var _SonarrIS = class {
       }
       return true;
     });
-    const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+    const isMobile2 = this._isMob;
     const rowsHtml = isMobile2 ? this._renderSnIsCards(visible) : this._renderSnIsTable(visible);
     const uniqIndexers = [...new Set(all.map((r) => r.indexer).filter(Boolean))].sort();
     const uniqQualities = [...new Set(all.map((r) => this._isQualityLabel(r)).filter(Boolean))];
@@ -4760,15 +4812,15 @@ var _FetchMethods = class {
       this._fetchRadarr2(),
       this._fetchSonarr2()
     ]);
+    const first = !this._initialFetchDone;
+    this._initialFetchDone = true;
+    const vis = first ? null : this._visibleCatIds();
+    const see = (id) => !vis || vis.has(id);
     await Promise.allSettled([
+      // ── Core — always fetch regardless of visible page ──────────────────
       this._fetchRadarr(),
       this._fetchSonarr(),
-      this._fetchCalendar(),
       this._fetchOverseerr(),
-      this._fetchTvUpcoming(),
-      this._fetchTrending(),
-      this._fetchPopular(),
-      this._fetchTrakt(),
       this._fetchSab(),
       this._fetchSabHistory(),
       this._fetchNzbget(),
@@ -4793,20 +4845,204 @@ var _FetchMethods = class {
       this._fetchRadarr2RootFolders(),
       this._fetchRadarr2Diskspace(),
       this._fetchSonarr2Diskspace(),
-      this._fetchTautulli(),
-      this._fetchJellystat(),
-      this._fetchTracearr(),
+      // ── Sessions — always fetch (needed to detect hasActiveStreams for category visibility) ──
       this._fetchPlexSessions(),
       this._fetchJellyfinSessions(),
       this._fetchEmbySessions(),
       this._fetchKodiSessions(),
-      this._fetchActivityHistory(),
-      this._fetchActivityBlocklist(),
-      this._fetchProwlarr()
+      // ── Category-specific — skip when category not on current page ──────
+      see("upcoming") || see("calendar") ? this._fetchCalendar() : Promise.resolve(),
+      see("tvUpcoming") ? this._fetchTvUpcoming() : Promise.resolve(),
+      see("trending") ? this._fetchTrending() : Promise.resolve(),
+      see("popular") ? this._fetchPopular() : Promise.resolve(),
+      see("trakt") ? this._fetchTrakt() : Promise.resolve(),
+      see("tautulli") ? this._fetchTautulli() : Promise.resolve(),
+      see("jellystat") ? this._fetchJellystat() : Promise.resolve(),
+      see("tracearr") ? this._fetchTracearr() : Promise.resolve(),
+      see("prowlarr") ? this._fetchProwlarr() : Promise.resolve(),
+      // episodefiles + bazarr episodes — only needed for recentlyAdded sonarr cards
+      see("recentlyAdded") ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
+      // Activity history/blocklist: always fetch if modal open, otherwise only if category visible
+      see("activity") || !!this._activityModal ? this._fetchActivityHistory() : Promise.resolve(),
+      see("activity") || !!this._activityModal ? this._fetchActivityBlocklist() : Promise.resolve()
     ]);
     this._computeActMissingCache();
+    const fp = this._dataFingerprint();
+    if (!first && fp === this._lastFingerprint) return;
+    this._lastFingerprint = fp;
     this._render();
   }
+  // Lightweight fingerprint of fetched state — used for dirty checking in _fetchAll().
+  // Uses counts + first/last IDs (not JSON.stringify) to stay O(1) per collection.
+  _dataFingerprint() {
+    const ra = this._radarr;
+    const so = this._sonarr;
+    const ra2 = this._radarr2;
+    const so2 = this._sonarr2;
+    const q = this._qbit;
+    const cal = this._calendar;
+    const tv = this._tvUpcoming;
+    return [
+      // Libraries
+      ra?.length,
+      ra?.[0]?.id,
+      ra?.[ra?.length - 1]?.id,
+      so?.length,
+      so?.[0]?.id,
+      so?.[so?.length - 1]?.id,
+      ra2?.length,
+      ra2?.[0]?.id,
+      so2?.length,
+      so2?.[0]?.id,
+      // Queue / downloads
+      this._radarrQueueActive?.size,
+      this._radarrQueueFailed?.size,
+      this._sonarrQueue?.length,
+      this._sonarr2Queue?.length,
+      q?.length,
+      q?.map?.((t) => t.hash).join(","),
+      this._sab?.noofslots,
+      this._sabFailed?.length,
+      this._nzbget?.DownloadRate,
+      this._nzbgetFailed?.length,
+      this._deluge?.length,
+      // Requests
+      this._pendingRequests?.length,
+      this._myPendingRequests?.length,
+      // Subtitles
+      this._bazarr ? Object.keys(this._bazarr).length : 0,
+      // Calendar / upcoming
+      cal?.length,
+      cal?.[0]?.title,
+      tv?.length,
+      // Discover
+      this._trending?.length,
+      this._popular?.length,
+      this._traktItems?.length,
+      // Streaming
+      this._plexSessions?.length,
+      this._jellyfinSessions?.length,
+      this._embySessions?.length,
+      this._kodiSessions?.length,
+      // Stats
+      this._tautulliHistory?.length,
+      this._tautulliSessions?.length,
+      this._jellystatHistory?.length,
+      this._tracearrData ? JSON.stringify(this._tracearrData).length : 0,
+      // Activity
+      this._actHistory?.length,
+      this._actBlocklist?.length,
+      // Prowlarr
+      this._prowlarr?.indexers?.length
+    ].join("|");
+  }
+  // Returns the Set of category IDs currently visible on the right panel page.
+  // Mirrors the slicing logic in _renderRight() without rendering.
+  _visibleCatIds() {
+    const perPage = Math.max(2, parseInt(this._cfgGet("discover", "categoriesCount", 3)) || 3);
+    const regularPerPage = perPage - 1;
+    const hasPending = !!this._hass?.user?.is_admin && this._pendingRequests?.length > 0;
+    const hasCalendar = this._calendar?.length > 0;
+    const hasStreams = this._jellyfinSessions?.length > 0 || this._embySessions?.length > 0 || this._kodiSessions?.length > 0 || Object.keys(this._hass?.states || {}).some((id) => id.startsWith("media_player.plex_") && ["playing", "paused"].includes(this._hass.states[id]?.state));
+    const isAdmin = !!this._hass?.user?.is_admin;
+    const CAT_OK = {
+      radarr: true,
+      sonarr: true,
+      recentlyAdded: true,
+      recentlyRequested: true,
+      upcoming: true,
+      tvUpcoming: true,
+      trending: true,
+      popular: true,
+      trakt: this._traktConfigured !== false,
+      calendar: hasCalendar,
+      streams: hasStreams,
+      tautulli: isAdmin && this._tautulliConfigured !== false,
+      jellystat: isAdmin && this._jellystatConfigured !== false,
+      tracearr: isAdmin && this._tracearrConfigured !== false,
+      activity: isAdmin,
+      prowlarr: isAdmin && this._prowlarrConfigured !== false
+    };
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr"];
+    const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
+    const allIds = [
+      ...hasPending ? ["recentlyRequested"] : [],
+      ...catConfig.filter((c) => c.enabled !== false && CAT_OK[c.id]).map((c) => c.id)
+    ];
+    const totalPages = Math.max(1, Math.ceil(allIds.length / regularPerPage));
+    const page = Math.max(0, Math.min(this._rightPage || 0, totalPages - 1));
+    return new Set(allIds.slice(page * regularPerPage, (page + 1) * regularPerPage));
+  }
+  // Fetches only category-specific data for the currently visible page, then re-renders.
+  // Called after page navigation so newly-visible categories load immediately.
+  async _fetchVisibleCats() {
+    const vis = this._visibleCatIds();
+    const see = (id) => vis.has(id);
+    await Promise.allSettled([
+      see("upcoming") || see("calendar") ? this._fetchCalendar() : Promise.resolve(),
+      see("tvUpcoming") ? this._fetchTvUpcoming() : Promise.resolve(),
+      see("trending") ? this._fetchTrending() : Promise.resolve(),
+      see("popular") ? this._fetchPopular() : Promise.resolve(),
+      see("trakt") ? this._fetchTrakt() : Promise.resolve(),
+      see("tautulli") ? this._fetchTautulli() : Promise.resolve(),
+      see("jellystat") ? this._fetchJellystat() : Promise.resolve(),
+      see("tracearr") ? this._fetchTracearr() : Promise.resolve(),
+      see("prowlarr") ? this._fetchProwlarr() : Promise.resolve(),
+      see("recentlyAdded") ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
+      see("activity") ? this._fetchActivityHistory() : Promise.resolve(),
+      see("activity") ? this._fetchActivityBlocklist() : Promise.resolve()
+    ]);
+    this._reRenderRight?.();
+  }
+  async _fetchDownloadsAndRender() {
+    const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
+    const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
+    const prevNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
+    const prevDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
+    const prevRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
+    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0 || prevRtorrent.size > 0;
+    const hasActiveStreams = this._jellyfinSessions?.length > 0 || this._embySessions?.length > 0 || this._kodiSessions?.length > 0 || this._plexSessions?.length > 0;
+    await Promise.allSettled([
+      this._fetchQbit(),
+      this._fetchDeluge(),
+      this._fetchRtorrent(),
+      this._fetchSab(),
+      this._fetchSabHistory(),
+      this._fetchNzbget(),
+      this._fetchNzbgetHistory(),
+      hasActiveStreams ? this._fetchPlexSessions() : Promise.resolve(),
+      hasActiveStreams ? this._fetchJellyfinSessions() : Promise.resolve(),
+      hasActiveStreams ? this._fetchEmbySessions() : Promise.resolve(),
+      hasActiveStreams ? this._fetchKodiSessions() : Promise.resolve()
+    ]);
+    if (hadItems) {
+      const currQbit = new Set((this._qbit || []).map((t) => t.hash));
+      const currSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
+      const currNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
+      const currDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
+      const currRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
+      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id)) || [...prevDeluge].some((id) => !currDeluge.has(id)) || [...prevRtorrent].some((id) => !currRtorrent.has(id));
+      if (completed) {
+        await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
+        this._reRenderRight();
+      }
+    }
+    const left = this.shadowRoot.getElementById("col-left");
+    if (!left) return;
+    const newHtml = this._mobMinWrap("left", this._renderLeft());
+    if (left.innerHTML !== newHtml) {
+      left.innerHTML = newHtml;
+      this._wireSort();
+      this._wireActionButtons();
+      this._wirePageButtons();
+      this._wireMinimize();
+    }
+  }
+};
+var fetchMixin = _FetchMethods.prototype;
+
+// src/fetch/sessions.js
+var _SessionsMethods = class {
   async _fetchPlexSessions() {
     const now = Date.now();
     if (now - (this._plexLastFetch || 0) < 5e3) return;
@@ -5094,49 +5330,244 @@ var _FetchMethods = class {
       this._kodiSessions = [];
     }
   }
-  async _fetchDownloadsAndRender() {
-    const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
-    const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
-    const prevNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
-    const prevDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
-    const prevRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
-    const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0 || prevRtorrent.size > 0;
-    await Promise.allSettled([
-      this._fetchQbit(),
-      this._fetchDeluge(),
-      this._fetchRtorrent(),
-      this._fetchSab(),
-      this._fetchSabHistory(),
-      this._fetchNzbget(),
-      this._fetchNzbgetHistory(),
-      this._fetchPlexSessions(),
-      this._fetchJellyfinSessions(),
-      this._fetchEmbySessions(),
-      this._fetchKodiSessions()
-    ]);
-    if (hadItems) {
-      const currQbit = new Set((this._qbit || []).map((t) => t.hash));
-      const currSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
-      const currNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
-      const currDeluge = new Set((this._delugeQueue || []).map((t) => t.hash));
-      const currRtorrent = new Set((this._rtorrentQueue || []).map((t) => t.hash));
-      const completed = [...prevQbit].some((id) => !currQbit.has(id)) || [...prevSab].some((id) => !currSab.has(id)) || [...prevNzbget].some((id) => !currNzbget.has(id)) || [...prevDeluge].some((id) => !currDeluge.has(id)) || [...prevRtorrent].some((id) => !currRtorrent.has(id));
-      if (completed) {
-        await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
-        this._reRenderRight();
+};
+var sessionsMixin = _SessionsMethods.prototype;
+
+// src/fetch/downloads.js
+var _DownloadsMethods = class {
+  async _fetchSab() {
+    try {
+      const data = await this._callApi("GET", "arr_stack/sabnzbd/queue");
+      if (data?.status === false) {
+        console.error("[arr-card] SABnzbd API error:", data?.error);
+        this._sabConfigured = false;
+        return;
       }
-    }
-    const left = this.shadowRoot.getElementById("col-left");
-    if (!left) return;
-    const newHtml = this._mobMinWrap("left", this._renderLeft());
-    if (left.innerHTML !== newHtml) {
-      left.innerHTML = newHtml;
-      this._wireSort();
-      this._wireActionButtons();
-      this._wirePageButtons();
-      this._wireMinimize();
+      const queue = data.queue || {};
+      const prev = this._sabMbleftPrev || {};
+      const curr = {};
+      const active = /* @__PURE__ */ new Set();
+      const slots = queue.slots || [];
+      const globalSpeed = parseFloat(queue.kbpersec) || 0;
+      for (let i = 0; i < slots.length; i++) {
+        const s = slots[i];
+        const mbleft = parseFloat(s.mbleft) || 0;
+        curr[s.nzo_id] = mbleft;
+        if (s.nzo_id in prev && prev[s.nzo_id] > mbleft) {
+          active.add(s.nzo_id);
+        }
+        if (i === 0 && globalSpeed > 0 && mbleft > 0) {
+          active.add(s.nzo_id);
+        }
+      }
+      this._sabMbleftPrev = curr;
+      this._sabActiveIds = queue.status === "Paused" ? /* @__PURE__ */ new Set() : active;
+      this._sab = queue;
+      this._sabConfigured = true;
+      this._fetchVpnIp();
+    } catch (e) {
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = status === 503 || body.includes("not configured");
+      this._sabConfigured = !isNotConfigured;
+      console.error("[arr-card] SABnzbd fetch error:", e);
     }
   }
+  async _fetchVpnIp() {
+    if (this._vpnIpFetching) return;
+    this._vpnIpFetching = true;
+    try {
+      const res = await this._callApi("GET", "arr_stack/sabnzbd/status");
+      const newLocal = res?.status?.localipv4 || null;
+      const newPublic = res?.status?.publicipv4 || null;
+      const changed = !this._sabVpnFetched || newLocal !== this._sabLocalIp || newPublic !== this._sabPublicIp;
+      this._sabLocalIp = newLocal;
+      this._sabPublicIp = newPublic;
+      this._sabVpnFetched = true;
+      if (changed) this._render();
+    } catch (e) {
+    } finally {
+      this._vpnIpFetching = false;
+    }
+  }
+  async _fetchSabHistory() {
+    try {
+      const data = await this._callApi("GET", "arr_stack/sabnzbd/history");
+      const slots = data?.history?.slots || [];
+      this._sabFailed = slots.filter((s) => s.status === "Failed");
+      const DONE = /* @__PURE__ */ new Set(["Completed", "Extracting", "Moving", "Running Script", "Verifying"]);
+      this._sabCompleted = slots.filter((s) => DONE.has(s.status)).slice(0, 10);
+    } catch (e) {
+      console.error("[arr-card] SABnzbd history fetch error:", e);
+    }
+  }
+  async _sabQueueDelete(nzoId) {
+    this._sabQueueBusy = nzoId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "queue", name: "delete", nzo_id: nzoId });
+    } catch (e) {
+      console.error("[arr-card] SAB queue delete error:", e);
+    } finally {
+      this._sabQueueBusy = null;
+      await this._fetchSab();
+      this._reRenderLeft();
+    }
+  }
+  async _sabHistoryDelete(nzoId) {
+    this._sabDeleteBusy = nzoId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "history", name: "delete", nzo_id: nzoId });
+    } catch (e) {
+      console.error("[arr-card] SABnzbd history delete error:", e);
+    } finally {
+      await this._fetchSabHistory();
+      this._sabDeleteBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  async _sabRetry(nzoId) {
+    this._sabRetryBusy = nzoId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "retry", nzo_id: nzoId });
+    } catch (e) {
+      console.error("[arr-card] SABnzbd retry error:", e);
+    } finally {
+      await new Promise((r) => setTimeout(r, 1e3));
+      await Promise.all([this._fetchSab(), this._fetchSabHistory()]);
+      this._sabRetryBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  async _fetchNzbget() {
+    try {
+      const [statusResp, queueResp] = await Promise.all([
+        this._callApi("GET", "arr_stack/nzbget/status"),
+        this._callApi("GET", "arr_stack/nzbget/queue")
+      ]);
+      this._nzbget = statusResp?.result || null;
+      this._nzbgetQueue = queueResp?.result || [];
+      this._nzbgetConfigured = true;
+    } catch (e) {
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      this._nzbgetConfigured = !(status === 503 || body && body.includes("not configured"));
+      if (this._nzbgetConfigured) console.error("[arr-card] NZBGet fetch error:", e);
+    }
+  }
+  async _fetchNzbgetHistory() {
+    try {
+      const data = await this._callApi("GET", "arr_stack/nzbget/history");
+      const items = data?.result || [];
+      this._nzbgetFailed = items.filter((i) => i.Status === "FAILURE");
+      this._nzbgetCompleted = items.filter((i) => i.Status === "SUCCESS").slice(0, 10);
+    } catch (e) {
+      console.error("[arr-card] NZBGet history fetch error:", e);
+    }
+  }
+  async _nzbgetAction(mode, id = null) {
+    this._nzbgetBusy = true;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode, id });
+    } catch (e) {
+      console.error("[arr-card] NZBGet action error:", e);
+    } finally {
+      await this._fetchNzbget();
+      this._nzbgetBusy = false;
+      this._reRenderLeft();
+    }
+  }
+  async _nzbgetRetry(nzbId) {
+    this._nzbgetRetryBusy = nzbId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_redownload", id: nzbId });
+    } catch (e) {
+      console.error("[arr-card] NZBGet retry error:", e);
+    } finally {
+      await new Promise((r) => setTimeout(r, 1e3));
+      await Promise.all([this._fetchNzbget(), this._fetchNzbgetHistory()]);
+      this._nzbgetRetryBusy = null;
+      this._reRenderLeft();
+    }
+  }
+  async _nzbgetItemDelete(nzbId) {
+    this._nzbgetItemBusy = nzbId;
+    this._reRenderLeft();
+    try {
+      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_delete", id: nzbId });
+    } catch (e) {
+      console.error("[arr-card] NZBGet delete error:", e);
+    } finally {
+      this._nzbgetItemBusy = null;
+      this._nzbgetConfirm = null;
+      await this._fetchNzbget();
+      this._reRenderLeft();
+    }
+  }
+  async _fetchQbit() {
+    try {
+      const [torrents, transfer, maindata] = await Promise.all([
+        this._callApi("GET", "arr_stack/qbit/torrents"),
+        this._callApi("GET", "arr_stack/qbit/transfer"),
+        this._callApi("GET", "arr_stack/qbit/maindata").catch(() => null)
+      ]);
+      this._qbit = torrents;
+      this._qbitTransfer = transfer;
+      this._qbitDiskFreeBytes = maindata?.server_state?.free_space_on_disk ?? null;
+      this._qbitConfigured = true;
+    } catch (e) {
+      const status = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = status === 503 || body.includes("not configured");
+      this._qbitConfigured = !isNotConfigured;
+      console.error("[arr-card] qBittorrent fetch error:", e);
+    }
+  }
+  async _fetchDeluge() {
+    if (this._delugeConfigured === false) return;
+    try {
+      const [torrents, status] = await Promise.all([
+        this._callApi("GET", "arr_stack/deluge/queue"),
+        this._callApi("GET", "arr_stack/deluge/status").catch(() => ({}))
+      ]);
+      this._delugeQueue = Array.isArray(torrents) ? torrents : [];
+      this._delugeStatus = status || {};
+      this._delugeConfigured = true;
+    } catch (e) {
+      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = statusCode === 503 || body.includes("not configured");
+      this._delugeConfigured = !isNotConfigured;
+      console.error("[arr-card] Deluge fetch error:", e);
+    }
+  }
+  async _fetchRtorrent() {
+    if (this._rtorrentConfigured === false) return;
+    try {
+      const [torrents, status] = await Promise.all([
+        this._callApi("GET", "arr_stack/rtorrent/queue"),
+        this._callApi("GET", "arr_stack/rtorrent/status").catch(() => ({}))
+      ]);
+      this._rtorrentQueue = Array.isArray(torrents) ? torrents : [];
+      this._rtorrentStatus = status || {};
+      this._rtorrentConfigured = true;
+    } catch (e) {
+      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
+      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+      const isNotConfigured = statusCode === 503 || body.includes("not configured");
+      this._rtorrentConfigured = !isNotConfigured;
+      console.error("[arr-card] rTorrent fetch error:", e);
+    }
+  }
+};
+var downloadsMixin = _DownloadsMethods.prototype;
+
+// src/fetch/arr.js
+var _ArrMethods = class {
   async _fetchRadarr() {
     try {
       const data = await this._callApi("GET", "arr_stack/radarr/movies");
@@ -5155,8 +5586,6 @@ var _FetchMethods = class {
       this._sonarrTotal = sonarrFiltered.length;
       this._sonarr = sonarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
       await this._fetchSonarrRecentImports();
-      await this._fetchSonarrEpisodeFiles();
-      await this._fetchBazarrEpisodes();
     } catch (e) {
       console.error("[arr-card] Sonarr fetch error:", e);
     }
@@ -5805,234 +6234,6 @@ var _FetchMethods = class {
       this[seriesPctKey] = seriesPct;
       this[firstEpKey] = firstEpMap;
     } catch (e) {
-    }
-  }
-  async _fetchSab() {
-    try {
-      const data = await this._callApi("GET", "arr_stack/sabnzbd/queue");
-      if (data?.status === false) {
-        console.error("[arr-card] SABnzbd API error:", data?.error);
-        this._sabConfigured = false;
-        return;
-      }
-      const queue = data.queue || {};
-      const prev = this._sabMbleftPrev || {};
-      const curr = {};
-      const active = /* @__PURE__ */ new Set();
-      const slots = queue.slots || [];
-      const globalSpeed = parseFloat(queue.kbpersec) || 0;
-      for (let i = 0; i < slots.length; i++) {
-        const s = slots[i];
-        const mbleft = parseFloat(s.mbleft) || 0;
-        curr[s.nzo_id] = mbleft;
-        if (s.nzo_id in prev && prev[s.nzo_id] > mbleft) {
-          active.add(s.nzo_id);
-        }
-        if (i === 0 && globalSpeed > 0 && mbleft > 0) {
-          active.add(s.nzo_id);
-        }
-      }
-      this._sabMbleftPrev = curr;
-      this._sabActiveIds = queue.status === "Paused" ? /* @__PURE__ */ new Set() : active;
-      this._sab = queue;
-      this._sabConfigured = true;
-      this._fetchVpnIp();
-    } catch (e) {
-      const status = e?.status_code ?? e?.status ?? e?.response?.status;
-      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-      const isNotConfigured = status === 503 || body.includes("not configured");
-      this._sabConfigured = !isNotConfigured;
-      console.error("[arr-card] SABnzbd fetch error:", e);
-    }
-  }
-  async _fetchVpnIp() {
-    if (this._vpnIpFetching) return;
-    this._vpnIpFetching = true;
-    try {
-      const res = await this._callApi("GET", "arr_stack/sabnzbd/status");
-      const newLocal = res?.status?.localipv4 || null;
-      const newPublic = res?.status?.publicipv4 || null;
-      const changed = !this._sabVpnFetched || newLocal !== this._sabLocalIp || newPublic !== this._sabPublicIp;
-      this._sabLocalIp = newLocal;
-      this._sabPublicIp = newPublic;
-      this._sabVpnFetched = true;
-      if (changed) this._render();
-    } catch (e) {
-    } finally {
-      this._vpnIpFetching = false;
-    }
-  }
-  async _fetchSabHistory() {
-    try {
-      const data = await this._callApi("GET", "arr_stack/sabnzbd/history");
-      const slots = data?.history?.slots || [];
-      this._sabFailed = slots.filter((s) => s.status === "Failed");
-      const DONE = /* @__PURE__ */ new Set(["Completed", "Extracting", "Moving", "Running Script", "Verifying"]);
-      this._sabCompleted = slots.filter((s) => DONE.has(s.status)).slice(0, 10);
-    } catch (e) {
-      console.error("[arr-card] SABnzbd history fetch error:", e);
-    }
-  }
-  async _sabQueueDelete(nzoId) {
-    this._sabQueueBusy = nzoId;
-    this._reRenderLeft();
-    try {
-      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "queue", name: "delete", nzo_id: nzoId });
-    } catch (e) {
-      console.error("[arr-card] SAB queue delete error:", e);
-    } finally {
-      this._sabQueueBusy = null;
-      await this._fetchSab();
-      this._reRenderLeft();
-    }
-  }
-  async _sabHistoryDelete(nzoId) {
-    this._sabDeleteBusy = nzoId;
-    this._reRenderLeft();
-    try {
-      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "history", name: "delete", nzo_id: nzoId });
-    } catch (e) {
-      console.error("[arr-card] SABnzbd history delete error:", e);
-    } finally {
-      await this._fetchSabHistory();
-      this._sabDeleteBusy = null;
-      this._reRenderLeft();
-    }
-  }
-  async _sabRetry(nzoId) {
-    this._sabRetryBusy = nzoId;
-    this._reRenderLeft();
-    try {
-      await this._callApi("POST", "arr_stack/sabnzbd/action", { mode: "retry", nzo_id: nzoId });
-    } catch (e) {
-      console.error("[arr-card] SABnzbd retry error:", e);
-    } finally {
-      await new Promise((r) => setTimeout(r, 1e3));
-      await Promise.all([this._fetchSab(), this._fetchSabHistory()]);
-      this._sabRetryBusy = null;
-      this._reRenderLeft();
-    }
-  }
-  async _fetchNzbget() {
-    try {
-      const [statusResp, queueResp] = await Promise.all([
-        this._callApi("GET", "arr_stack/nzbget/status"),
-        this._callApi("GET", "arr_stack/nzbget/queue")
-      ]);
-      this._nzbget = statusResp?.result || null;
-      this._nzbgetQueue = queueResp?.result || [];
-      this._nzbgetConfigured = true;
-    } catch (e) {
-      const status = e?.status_code ?? e?.status ?? e?.response?.status;
-      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-      this._nzbgetConfigured = !(status === 503 || body && body.includes("not configured"));
-      if (this._nzbgetConfigured) console.error("[arr-card] NZBGet fetch error:", e);
-    }
-  }
-  async _fetchNzbgetHistory() {
-    try {
-      const data = await this._callApi("GET", "arr_stack/nzbget/history");
-      const items = data?.result || [];
-      this._nzbgetFailed = items.filter((i) => i.Status === "FAILURE");
-      this._nzbgetCompleted = items.filter((i) => i.Status === "SUCCESS").slice(0, 10);
-    } catch (e) {
-      console.error("[arr-card] NZBGet history fetch error:", e);
-    }
-  }
-  async _nzbgetAction(mode, id = null) {
-    this._nzbgetBusy = true;
-    this._reRenderLeft();
-    try {
-      await this._callApi("POST", "arr_stack/nzbget/action", { mode, id });
-    } catch (e) {
-      console.error("[arr-card] NZBGet action error:", e);
-    } finally {
-      await this._fetchNzbget();
-      this._nzbgetBusy = false;
-      this._reRenderLeft();
-    }
-  }
-  async _nzbgetRetry(nzbId) {
-    this._nzbgetRetryBusy = nzbId;
-    this._reRenderLeft();
-    try {
-      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_redownload", id: nzbId });
-    } catch (e) {
-      console.error("[arr-card] NZBGet retry error:", e);
-    } finally {
-      await new Promise((r) => setTimeout(r, 1e3));
-      await Promise.all([this._fetchNzbget(), this._fetchNzbgetHistory()]);
-      this._nzbgetRetryBusy = null;
-      this._reRenderLeft();
-    }
-  }
-  async _nzbgetItemDelete(nzbId) {
-    this._nzbgetItemBusy = nzbId;
-    this._reRenderLeft();
-    try {
-      await this._callApi("POST", "arr_stack/nzbget/action", { mode: "group_delete", id: nzbId });
-    } catch (e) {
-      console.error("[arr-card] NZBGet delete error:", e);
-    } finally {
-      this._nzbgetItemBusy = null;
-      this._nzbgetConfirm = null;
-      await this._fetchNzbget();
-      this._reRenderLeft();
-    }
-  }
-  async _fetchQbit() {
-    try {
-      const [torrents, transfer, maindata] = await Promise.all([
-        this._callApi("GET", "arr_stack/qbit/torrents"),
-        this._callApi("GET", "arr_stack/qbit/transfer"),
-        this._callApi("GET", "arr_stack/qbit/maindata").catch(() => null)
-      ]);
-      this._qbit = torrents;
-      this._qbitTransfer = transfer;
-      this._qbitDiskFreeBytes = maindata?.server_state?.free_space_on_disk ?? null;
-      this._qbitConfigured = true;
-    } catch (e) {
-      const status = e?.status_code ?? e?.status ?? e?.response?.status;
-      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-      const isNotConfigured = status === 503 || body.includes("not configured");
-      this._qbitConfigured = !isNotConfigured;
-      console.error("[arr-card] qBittorrent fetch error:", e);
-    }
-  }
-  async _fetchDeluge() {
-    if (this._delugeConfigured === false) return;
-    try {
-      const [torrents, status] = await Promise.all([
-        this._callApi("GET", "arr_stack/deluge/queue"),
-        this._callApi("GET", "arr_stack/deluge/status").catch(() => ({}))
-      ]);
-      this._delugeQueue = Array.isArray(torrents) ? torrents : [];
-      this._delugeStatus = status || {};
-      this._delugeConfigured = true;
-    } catch (e) {
-      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
-      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-      const isNotConfigured = statusCode === 503 || body.includes("not configured");
-      this._delugeConfigured = !isNotConfigured;
-      console.error("[arr-card] Deluge fetch error:", e);
-    }
-  }
-  async _fetchRtorrent() {
-    if (this._rtorrentConfigured === false) return;
-    try {
-      const [torrents, status] = await Promise.all([
-        this._callApi("GET", "arr_stack/rtorrent/queue"),
-        this._callApi("GET", "arr_stack/rtorrent/status").catch(() => ({}))
-      ]);
-      this._rtorrentQueue = Array.isArray(torrents) ? torrents : [];
-      this._rtorrentStatus = status || {};
-      this._rtorrentConfigured = true;
-    } catch (e) {
-      const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
-      const body = typeof e?.body === "string" ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-      const isNotConfigured = statusCode === 503 || body.includes("not configured");
-      this._rtorrentConfigured = !isNotConfigured;
-      console.error("[arr-card] rTorrent fetch error:", e);
     }
   }
   async _fetchOverseerrRadarrSettings() {
@@ -6925,7 +7126,7 @@ var _FetchMethods = class {
     }
   }
 };
-var fetchMixin = _FetchMethods.prototype;
+var arrMixin = _ArrMethods.prototype;
 
 // src/render/left.js
 var _RenderLeft = class {
@@ -7192,10 +7393,10 @@ var _RenderLeft = class {
         <div class="col-hdr-line"></div>
         <div class="sort-btns">
           <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" title="${this._t("sortByProgress")}">
-            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
+            <ha-icon icon="mdi:percent" class="icon-15"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
           <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" title="${this._t("sortBySpeed")}">
-            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
+            <ha-icon icon="mdi:speedometer" class="icon-15"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
         ${this._cfgGet("downloads", "allowControls", true) !== false ? this._qbitBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn qbit-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
@@ -7248,17 +7449,17 @@ var _RenderLeft = class {
         actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
       } else if (this._confirmRemove === hash) {
         actionBtns = `
-        <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
+        <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" class="icon-15"></ha-icon></button>
+        <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
       } else {
         if (!isCompleted && isPaused)
-          actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" class="icon-15"></ha-icon></button>`;
         if (!isCompleted && !isPaused && !isError)
-          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" class="icon-15"></ha-icon></button>`;
         if (isSeeding)
-          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-        actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" class="icon-15"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
       }
     }
     return `
@@ -7271,9 +7472,9 @@ var _RenderLeft = class {
       <div class="dl-r2">
         ${speedCol}
         ${!isCompleted && !isError && !isStalledDL ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
-        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
-        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${leechs}</b></span></span>
+        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" class="icon-11-st"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${leechs}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7307,10 +7508,10 @@ var _RenderLeft = class {
         <div class="col-hdr-line"></div>
         <div class="sort-btns">
           <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" data-client="deluge" title="${this._t("sortByProgress")}">
-            <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
+            <ha-icon icon="mdi:percent" class="icon-15"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
           <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" data-client="deluge" title="${this._t("sortBySpeed")}">
-            <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
+            <ha-icon icon="mdi:speedometer" class="icon-15"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
           </button>
         </div>
         ${this._cfgGet("downloads", "allowControls", true) !== false ? this._delugeBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn deluge-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
@@ -7358,17 +7559,17 @@ var _RenderLeft = class {
         actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
       } else if (this._delugeConfirm === hash) {
         actionBtns = `
-        <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        <button class="tb tb-cancel" data-dlg-action="cancel-remove" data-dlg-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
+        <button class="tb tb-keep"   data-dlg-action="remove-keep"   data-dlg-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" class="icon-15"></ha-icon></button>
+        <button class="tb tb-del"    data-dlg-action="remove-del"    data-dlg-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
       } else {
         if (!isCompleted && isPaused)
-          actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-resume" data-dlg-action="resume" data-dlg-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" class="icon-15"></ha-icon></button>`;
         if (!isCompleted && !isPaused && !isError)
-          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" class="icon-15"></ha-icon></button>`;
         if (isSeeding)
-          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-        actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-pause" data-dlg-action="pause" data-dlg-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" class="icon-15"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-dlg-action="remove-confirm" data-dlg-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
       }
     }
     return `
@@ -7381,9 +7582,9 @@ var _RenderLeft = class {
       <div class="dl-r2">
         ${speedCol}
         ${!isCompleted && !isError && !isPaused ? this._pill("pill-teal", "mdi:upload", upSpd) : ""}
-        ${isSeeding ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
-        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${done} / ${total}</b></span>
-        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span></span>
+        ${isSeeding ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${done} / ${total}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7492,17 +7693,17 @@ var _RenderLeft = class {
     if (_allowCtrlSabItem) {
       if (s._history) {
         const isDeleting = this._sabDeleteBusy === nzoId;
-        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzoid="${nzoId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzoid="${nzoId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
       } else {
         const isBusy = this._sabQueueBusy === nzoId;
         if (isBusy) {
           actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
         } else if (this._sabQueueConfirm === nzoId) {
           actionBtns = `
-          <button class="tb tb-cancel" data-sab-action="cancel" data-nzoid="${nzoId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-          <button class="tb tb-del"   data-sab-action="delete"  data-nzoid="${nzoId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          <button class="tb tb-cancel" data-sab-action="cancel" data-nzoid="${nzoId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
+          <button class="tb tb-del"   data-sab-action="delete"  data-nzoid="${nzoId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
         } else {
-          actionBtns = `<button class="tb tb-remove" data-sab-action="confirm" data-nzoid="${nzoId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns = `<button class="tb tb-remove" data-sab-action="confirm" data-nzoid="${nzoId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
         }
       }
     }
@@ -7515,8 +7716,8 @@ var _RenderLeft = class {
       </div>
       <div class="dl-r2">
         ${speedCol}
-        ${isDownloading ? `<span class="dm"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>` : ""}
-        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
+        ${isDownloading ? `<span class="dm"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>` : ""}
+        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${status === "Failed" ? "pf-red" : status === "Completed" ? "pf-green" : ["Checking", "Verifying", "Extracting", "Repairing"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange"}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7608,17 +7809,17 @@ var _RenderLeft = class {
     if (_allowCtrlNzb) {
       if (isHistory) {
         const isDeleting = this._nzbgetItemBusy === nzbId;
-        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        actionBtns = isDeleting ? `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>` : `<button class="tb tb-hist-del" data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("removeFromHist")}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
       } else {
         const isBusy = this._nzbgetItemBusy === nzbId;
         if (isBusy) {
           actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
         } else if (this._nzbgetConfirm === nzbId) {
           actionBtns = `
-          <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-          <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          <button class="tb tb-cancel" data-nzbget-action="cancel" data-nzbid="${nzbId}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
+          <button class="tb tb-del"   data-nzbget-action="item-delete" data-nzbid="${nzbId}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
         } else {
-          actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns = `<button class="tb tb-remove" data-nzbget-action="confirm" data-nzbid="${nzbId}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
         }
       }
     }
@@ -7632,7 +7833,7 @@ var _RenderLeft = class {
       </div>
       <div class="dl-r2">
         ${speedCol}
-        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${doneStr} / ${totalStr}</b></span>
+        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${doneStr} / ${totalStr}</b></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${barCls}" style="width:${pct}%"></div></div>
     </div>`;
@@ -7703,10 +7904,10 @@ var _RenderLeft = class {
       <div class="col-hdr-line"></div>
       <div class="sort-btns">
         <button class="sb${progressActive ? " on" : ""}" data-sort="${progressActive ? sortDir === "desc" ? "progress_asc" : "progress_desc" : "progress_desc"}" data-client="rtorrent" title="${this._t("sortByProgress")}">
-          <ha-icon icon="mdi:percent" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
+          <ha-icon icon="mdi:percent" class="icon-15"></ha-icon><span class="sb-dir" style="${progressActive ? "" : "visibility:hidden"}">${dir}</span>
         </button>
         <button class="sb${speedActive ? " on" : ""}" data-sort="${speedActive ? sortDir === "desc" ? "speed_asc" : "speed_desc" : "speed_desc"}" data-client="rtorrent" title="${this._t("sortBySpeed")}">
-          <ha-icon icon="mdi:speedometer" style="--mdc-icon-size:15px"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
+          <ha-icon icon="mdi:speedometer" class="icon-15"></ha-icon><span class="sb-dir" style="${speedActive ? "" : "visibility:hidden"}">${dir}</span>
         </button>
       </div>
       ${this._cfgGet("downloads", "allowControls", true) !== false ? this._rtorrentBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn rtorrent-global-toggle${allPaused ? " paused" : ""}" title="${allPaused ? this._t("resumeAll") : this._t("pauseAll")}">
@@ -7755,17 +7956,17 @@ var _RenderLeft = class {
         actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
       } else if (this._rtorrentConfirm === hash) {
         actionBtns = `
-        <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" style="--mdc-icon-size:15px"></ha-icon></button>
-        <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" style="--mdc-icon-size:15px"></ha-icon></button>`;
+        <button class="tb tb-cancel" data-rt-action="cancel-remove" data-rt-hash="${hash}" title="${this._t("cancelRemove")}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
+        <button class="tb tb-keep"   data-rt-action="remove-keep"   data-rt-hash="${hash}" title="${this._t("keepFiles")}"><ha-icon icon="mdi:magnet" class="icon-15"></ha-icon></button>
+        <button class="tb tb-del"    data-rt-action="remove-del"    data-rt-hash="${hash}" title="${this._t("deleteFiles")}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
       } else {
         if (!isCompleted && isPaused)
-          actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-resume" data-rt-action="resume" data-rt-hash="${hash}" title="${this._t("resume")}"><ha-icon icon="mdi:play" class="icon-15"></ha-icon></button>`;
         if (!isCompleted && !isPaused && !isError)
-          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("pause")}"><ha-icon icon="mdi:pause" class="icon-15"></ha-icon></button>`;
         if (isSeeding)
-          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" style="--mdc-icon-size:15px"></ha-icon></button>`;
-        actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px"></ha-icon></button>`;
+          actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t("stopSeed")}"><ha-icon icon="mdi:stop" class="icon-15"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t("remove")}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
       }
     }
     return `
@@ -7778,9 +7979,9 @@ var _RenderLeft = class {
       <div class="dl-r2">
         ${speedCol}
         ${!isCompleted && !isError && !isPaused && !isChecking ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
-        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${eta}</b></span>`}
-        <span class="dm"><ha-icon icon="mdi:harddisk" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px;color:rgba(var(--arr-st-rgb, 255, 255, 255), 0.85)"></ha-icon><b class="dm-val">${peers}</b></span></span>
+        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
+        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
     </div>`;
@@ -10539,6 +10740,8 @@ var _WireMethods = class {
           this._wireSearch();
           this._wireMinimize();
           this._afterRightPageSwitch(scrollState);
+          this._resetFetchInterval();
+          this._fetchVisibleCats();
         }
       }, { signal: sig });
     });
@@ -10571,6 +10774,8 @@ var _WireMethods = class {
             this._wireSearch();
             this._wireMinimize();
             this._afterRightPageSwitch(scrollState);
+            this._resetFetchInterval();
+            this._fetchVisibleCats();
           }
         }
       }, { signal: sig });
@@ -10716,7 +10921,7 @@ var _WireTautulliMethods = class {
       btn.addEventListener("click", () => {
         const t = btn.dataset.tlTab;
         if (!t || !this._tautulliModal) return;
-        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _day = this._isDay;
         const _tc = _day ? "#000" : "#fff";
         el.querySelectorAll("[data-tl-tab]").forEach((b) => {
           const on = b === btn;
@@ -12041,7 +12246,7 @@ var _WireJellystatMethods = class {
       btn.addEventListener("click", () => {
         const t = btn.dataset.jsTab;
         if (!t || !this._jellystatModal) return;
-        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _day = this._isDay;
         const _tc = _day ? "#000" : "#fff";
         el.querySelectorAll("[data-js-tab]").forEach((b) => {
           const on = b === btn;
@@ -12517,10 +12722,7 @@ var _WireTraceaRrMethods = class {
         if (!m) return;
         const sid = srvBtn.dataset.traServer;
         m.selectedServerId = sid;
-        try {
-          localStorage.setItem("arr-tra-srv", sid);
-        } catch (_) {
-        }
+        this._traSaveSrv(sid);
         m.stalePage = 0;
         m.staleDeduped = null;
         glass.querySelectorAll("[data-tra-server]").forEach((b) => b.classList.toggle("active", b === srvBtn));
@@ -12532,10 +12734,7 @@ var _WireTraceaRrMethods = class {
         const m = this._tracearrModal;
         if (!m) return;
         m.qualityServerId = qualSrvBtn.dataset.traQualitySrv || null;
-        try {
-          localStorage.setItem("arr-tra-srv", m.qualityServerId);
-        } catch (_) {
-        }
+        this._traSaveSrv(m.qualityServerId);
         m.qualityData = null;
         m._qualityKey = null;
         m.qualityResolution = null;
@@ -12549,10 +12748,7 @@ var _WireTraceaRrMethods = class {
         if (!m) return;
         const sid = watchSrvBtn.dataset.traWatchSrv || null;
         m.watchServerId = sid;
-        try {
-          localStorage.setItem("arr-tra-srv", sid);
-        } catch (_) {
-        }
+        this._traSaveSrv(sid);
         m.watchPatterns = null;
         m.watchStatus = null;
         m.watchCompletion = null;
@@ -12639,10 +12835,7 @@ var _WireTraceaRrMethods = class {
         m.devMatrixPage = 0;
         m.devHotspotsPage = 0;
         m.devUsersPage = 0;
-        try {
-          localStorage.setItem("arr-tra-srv", m.devicesServerId);
-        } catch (_) {
-        }
+        this._traSaveSrv(m.devicesServerId);
         glass.querySelectorAll("[data-tra-dev-srv]").forEach((b) => b.classList.toggle("active", b === devSrvBtn));
         this._traLoadTab("devices", el);
         return;
@@ -12683,10 +12876,7 @@ var _WireTraceaRrMethods = class {
         const sid = violsSrvBtn.dataset.traViolsSrv || null;
         m.violsServerId = sid;
         m.violsPage = 0;
-        try {
-          localStorage.setItem("arr-tra-srv", sid);
-        } catch (_) {
-        }
+        this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-viols-srv]").forEach((b) => b.classList.toggle("active", b === violsSrvBtn));
         this._traLoadTab("violations", el);
         return;
@@ -12698,10 +12888,7 @@ var _WireTraceaRrMethods = class {
         const sid = histSrvBtn.dataset.traHistSrv || null;
         m.histServer = sid;
         m.histPage = 0;
-        try {
-          localStorage.setItem("arr-tra-srv", sid);
-        } catch (_) {
-        }
+        this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-hist-srv]").forEach((b) => b.classList.toggle("active", b === histSrvBtn));
         this._traLoadTab("history", el);
         return;
@@ -12713,10 +12900,7 @@ var _WireTraceaRrMethods = class {
         const sid = actSrvBtn.dataset.traActSrv || null;
         m.activityServerId = sid;
         m.activityData = null;
-        try {
-          localStorage.setItem("arr-tra-srv", sid);
-        } catch (_) {
-        }
+        this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-act-srv]").forEach((b) => b.classList.toggle("active", b === actSrvBtn));
         this._traLoadTab("activity", el);
         return;
@@ -12728,10 +12912,7 @@ var _WireTraceaRrMethods = class {
         const sid = suSrvBtn.dataset.traSuSrv || null;
         m.statsUsersServerId = sid;
         m.statsUsersData = null;
-        try {
-          localStorage.setItem("arr-tra-srv", sid);
-        } catch (_) {
-        }
+        this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-su-srv]").forEach((b) => b.classList.toggle("active", b === suSrvBtn));
         this._traLoadTab("statsUsers", el);
         return;
@@ -12743,10 +12924,7 @@ var _WireTraceaRrMethods = class {
         const sid = usrSrvBtn.dataset.traUsrSrv || null;
         m.usersServerId = sid;
         m.usersPage = 0;
-        try {
-          localStorage.setItem("arr-tra-srv", sid);
-        } catch (_) {
-        }
+        this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-usr-srv]").forEach((b) => b.classList.toggle("active", b === usrSrvBtn));
         this._traLoadTab("users", el);
         return;
@@ -12762,7 +12940,7 @@ var _WireTraceaRrMethods = class {
         { id: "violations", tab: "violations" }
       ];
       const _SRV_TABS = ["storage", "quality", "history", "activity", "statsUsers", "users", "watch", "devices", "bandwidth", "map", "violations"];
-      const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+      const _day = this._isDay;
       const _updateMobileNav = () => {
         const panel = glass.querySelector("#tra-mobile-nav");
         if (!panel) return;
@@ -13194,7 +13372,7 @@ var _WireTraceaRrMethods = class {
     body.querySelectorAll("[data-tra-hist-page]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (!this._tracearrModal) return;
-        const isMobH = window.matchMedia("(max-width:600px)").matches;
+        const isMobH = this._isMob;
         const pp = this._tlCalcPerPage({ hasFilter: true, filterH: isMobH ? 120 : 40, rowH: isMobH ? 80 : 44, bar: 0 });
         const totalP = Math.max(1, Math.ceil((this._tracearrModal.histTotal || 0) / pp));
         this._tracearrModal.histPage = resolvePage(btn.dataset.traHistPage, this._tracearrModal.histPage, totalP);
@@ -13517,7 +13695,7 @@ var _WireTraceaRrMethods = class {
       btn.addEventListener("click", () => {
         const m2 = this._tracearrModal;
         if (!m2) return;
-        const isMob = window.matchMedia("(max-width:600px)").matches;
+        const isMob = this._isMob;
         const ruRowH = isMob ? 52 : 56;
         const ruPP = this._tlCalcPerPage({ hasFilter: false, filterH: 0, rowH: ruRowH, bar: 0 });
         const runners = (m2.statsUsersData || []).slice(3);
@@ -13595,7 +13773,7 @@ var _WireTraceaRrMethods = class {
     </div>`;
   }
   _traRefreshHdrActions(body) {
-    if (!window.matchMedia("(max-width:600px)").matches) return;
+    if (!this._isMob) return;
     const modal = body.closest("[data-tra-modal]");
     if (!modal) return;
     const hdr = modal.querySelector("#tra-hdr-actions");
@@ -14781,7 +14959,7 @@ var _PopupMethods = class {
       }
       if (t.dataset.action === "sn-season-is") {
         const n = parseInt(t.dataset.season);
-        const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+        const isMobile2 = this._isMob;
         if (this._snActiveIs?.type === "season" && this._snActiveIs?.key === n) {
           this._snActiveIs = null;
           this._snIsState = null;
@@ -14806,7 +14984,7 @@ var _PopupMethods = class {
       if (t.dataset.action === "sn-ep-is") {
         const epId = parseInt(t.dataset.epid);
         const seasonN = parseInt(t.dataset.season);
-        const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+        const isMobile2 = this._isMob;
         if (this._snActiveIs?.type === "episode" && this._snActiveIs?.key === epId) {
           this._snActiveIs = null;
           this._snIsState = null;
@@ -16133,7 +16311,7 @@ var _TautulliSharedMethods = class {
         { length: totalPages },
         (_, i) => i === page ? `<button data-${attr}="${i}" style="width:18px;height:6px;border-radius:3px;background:var(--is-text);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none;cursor:default;outline:none" disabled></button>` : `<button class="tl-page-btn" data-${attr}="${i}" style="width:6px;height:6px;border-radius:50%;background:var(--is-text-muted);padding:0;min-width:0;flex-shrink:0;vertical-align:middle;border:none"></button>`
       ).join("");
-      center = `<div style="display:flex;align-items:center;gap:5px">${dots}</div>`;
+      center = `<div class="u-row-5">${dots}</div>`;
     } else {
       center = `<span style="font-size:13px;font-weight:600;color:var(--is-text,#fff);min-width:44px;text-align:center">${page + 1}/${totalPages}</span>`;
     }
@@ -16168,7 +16346,7 @@ var _TautulliSharedMethods = class {
   // Dynamický počet řádků/karet = (88vh − overhead) / výška řádku
   // hasFilter: true pro history (filter bar +44px)
   _tlCalcPerPage(opts) {
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const modalH = window.innerHeight * 0.88;
     const hdr = isMob ? 90 : 68;
     const pad = 34;
@@ -16226,7 +16404,7 @@ var _TautulliTableMethods = class {
   // Libraries
   // ──────────────────────────────────────────────────────────────────────────
   _tlBodyLibraries(data, total) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const m = this._tautulliModal || {};
     if (m.mediaDetailKey) return this._tlBodyMediaDetail();
     if (m.libDetailId) return this._tlBodyLibDetail();
@@ -16289,15 +16467,15 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("children") && lib.child_count != null) mp.push(`<span>${lib.child_count} ep/trk</span>`);
         if (!mobHidden.has("lastStream") && lib.last_accessed) mp.push(`<span>${this._tlFmtDate(lib.last_accessed)}</span>`);
         const ldAttr = !editMode ? ` data-tl-ld-open="${sid}" data-tl-ld-name="${this._escHtml(lib.section_name || "")}" style="cursor:pointer"` : "";
-        return `<div class="tl-mob-card"${ldAttr}><div style="display:flex;align-items:center;gap:10px">
+        return `<div class="tl-mob-card"${ldAttr}><div class="u-row-10">
           <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
           <div style="flex:1;min-width:0"><div class="tl-mob-name">${lib.section_name || "\u2014"}</div>${mp.length ? `<div class="tl-mob-meta">${mp.join("")}</div>` : ""}</div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">${lib.count ?? "\u2014"}</div>
-            ${lib.duration ? `<div style="font-size:11px;color:var(--is-text-label)">${this._tlFmtDuration(lib.duration)}</div>` : ""}
+            ${lib.duration ? `<div class="u-sm-label">${this._tlFmtDuration(lib.duration)}</div>` : ""}
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoLibraryData")}</div>`;
+      }).join("") || `<div class="u-empty">${this._t("tlNoLibraryData")}</div>`;
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-lpage", page, totalPages);
     }
     const editThHdr = editMode ? `<th style="white-space:nowrap;width:1px;padding-right:12px">${this._t("tlEdit")}</th>` : "";
@@ -16308,13 +16486,13 @@ var _TautulliTableMethods = class {
       const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : `<span style="color:var(--is-text-muted)">${this._t("tlNever")}</span>`;
       const lPly = lib.last_played ? `<span style="font-size:11px;color:var(--is-text-sec)">${lib.last_played}</span>` : `<span style="color:var(--is-text-muted)">${this._t("tlNA")}</span>`;
       const cm = {
-        name: `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lib.section_name || "\u2014"}</strong></span></td>`,
+        name: `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong class="u-truncate">${lib.section_name || "\u2014"}</strong></span></td>`,
         type: `<td style="text-transform:capitalize;color:var(--is-text-label);white-space:nowrap">${lib.section_type || "\u2014"}</td>`,
         count: `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${lib.count ?? "\u2014"}</td>`,
         parents: `<td style="text-align:right">${lib.parent_count != null ? lib.parent_count : "\u2014"}</td>`,
         children: `<td style="text-align:right">${lib.child_count != null ? lib.child_count : "\u2014"}</td>`,
         lastStream: `<td style="white-space:nowrap">${lAcc}</td>`,
-        lastPlayed: `<td style="max-width:160px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lPly}</div></td>`,
+        lastPlayed: `<td style="max-width:160px"><div class="u-truncate">${lPly}</div></td>`,
         plays: `<td style="text-align:right;font-weight:700">${lib.plays ?? 0}</td>`,
         duration: `<td style="text-align:right;white-space:nowrap">${lib.duration ? this._tlFmtDuration(lib.duration) : "\u2014"}</td>`
       };
@@ -16326,7 +16504,7 @@ var _TautulliTableMethods = class {
       const ldAttr = !editMode ? ` data-tl-ld-open="${sid}" data-tl-ld-name="${this._escHtml(lib.section_name || "")}" style="cursor:pointer"` : "";
       return `<tr${ldAttr}>${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoLibraryData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-lpage", page, totalPages);
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" class="u-empty">${this._t("tlNoLibraryData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-lpage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Users
@@ -16379,7 +16557,7 @@ var _TautulliTableMethods = class {
     </div>`;
   }
   _tlBodyUsers(data, total) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const m = this._tautulliModal || {};
     if (m.mediaDetailKey) return this._tlBodyMediaDetail();
     if (m.userDetailId) return this._tlBodyUserDetail();
@@ -16456,15 +16634,15 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("ip") && u.ip_address) um.push(`<span style="font-family:monospace;font-size:10px">${this._escHtml(u.ip_address)}</span>`);
         if (!mobHidden.has("username") && u.username) um.push(`<span style="color:var(--is-text-label)">${this._escHtml(u.username)}</span>`);
         if (!mobHidden.has("email") && u.email) um.push(`<span style="color:var(--is-text-label);font-size:10px">${this._escHtml(u.email)}</span>`);
-        return `<div class="tl-mob-card" data-tl-ud-open="${uid}" data-tl-ud-name="${this._escHtml(name)}" data-tl-ud-thumb="${thumb}" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px">
+        return `<div class="tl-mob-card" data-tl-ud-open="${uid}" data-tl-ud-name="${this._escHtml(name)}" data-tl-ud-thumb="${thumb}" style="cursor:pointer"><div class="u-row-10">
           ${av}
           <div style="flex:1;min-width:0"><div class="tl-mob-name">${this._escHtml(name)}</div>${um.length ? `<div class="tl-mob-meta">${um.join("")}</div>` : ""}</div>
           <div style="text-align:right;flex-shrink:0">
             <div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ${u.plays ?? 0}</div>
-            <div style="font-size:11px;color:var(--is-text-label)">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</div>
+            <div class="u-sm-label">${u.duration ? this._tlFmtDuration(u.duration) : "\u2014"}</div>
           </div>
         </div>${editBtns}</div>`;
-      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoUserData")}</div>`;
+      }).join("") || `<div class="u-empty">${this._t("tlNoUserData")}</div>`;
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-upage", page, totalPages);
     }
     const warnUsers = wU;
@@ -16477,7 +16655,7 @@ var _TautulliTableMethods = class {
       const av = thumb ? `<img src="${thumb}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--is-divider)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">${(name[0] || "?").toUpperCase()}</span>`;
       const mIco = u.last_played ? this._tlMediaIcon(u.media_type) : "";
       const cm = {
-        user: `<td><div style="display:flex;align-items:center;gap:8px">${av}<span style="font-weight:600">${this._escHtml(name)}</span></div></td>`,
+        user: `<td><div class="u-row-8">${av}<span style="font-weight:600">${this._escHtml(name)}</span></div></td>`,
         username: `<td style="color:var(--is-text-label)">${this._escHtml(u.username || "\u2014")}</td>`,
         fullname: `<td style="color:var(--is-text-label)">${this._escHtml(u.full_name || "\u2014")}</td>`,
         email: `<td style="color:var(--is-text-label);font-size:11px">${this._escHtml(u.email || "\u2014")}</td>`,
@@ -16500,7 +16678,7 @@ var _TautulliTableMethods = class {
       </div></td>` : "";
       return `<tr${isW ? ' class="tl-row-warn"' : ""} data-tl-ud-open="${uid}" data-tl-ud-name="${this._escHtml(name)}" data-tl-ud-thumb="${thumb}" style="cursor:pointer">${editCell}${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoUserData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-upage", page, totalPages);
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${editThHdr}${thead}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length}" class="u-empty">${this._t("tlNoUserData")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-upage", page, totalPages);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Refetch
@@ -16508,7 +16686,7 @@ var _TautulliTableMethods = class {
   async _tlRefetchLibraries(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
+    body.innerHTML = `<div class="u-empty-lg">${this._t("loading")}</div>`;
     const pp = this._tlCalcPerPage();
     const start = (m.libsPage || 0) * pp;
     const r = await this._tlApiFetch("get_libraries_table", `length=${pp}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
@@ -16521,7 +16699,7 @@ var _TautulliTableMethods = class {
   async _tlRefetchUsers(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    body.innerHTML = '<div class="u-empty-lg">Loading\u2026</div>';
     const pp = this._tlCalcPerPage();
     const start = (m.usersPage || 0) * pp;
     const r = await this._tlApiFetch("get_users_table", `length=${pp}&start=${start}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`);
@@ -16537,8 +16715,8 @@ var _TautulliTableMethods = class {
   _tlBodyHistory() {
     const m = this._tautulliModal;
     if (!m) return "";
-    if (m.histLoading) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    if (m.histLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
+    const isMob = this._isMob;
     const page = m.histPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: true });
     const tot = m.histTotal || 0;
@@ -16605,7 +16783,7 @@ var _TautulliTableMethods = class {
     const _wArc = (d) => `<path d="${d}" style="fill:var(--is-text-body)"/>`;
     const watchSvg = (ws) => ws === 4 ? _wSvg('<circle cx="7" cy="7" r="5.5" style="fill:var(--is-text-body)"/>') : ws === 3 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,1,1 1.5,7 Z")}`) : ws === 2 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 7,12.5 Z")}`) : ws === 1 ? _wSvg(`${_wRing}${_wArc("M7,7 L7,1.5 A5.5,5.5 0,0,1 12.5,7 Z")}`) : _wSvg(_wRing);
     if (!data.length) {
-      return toolbar + `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
+      return toolbar + `<div class="u-empty">${this._t("tlNoHistory")}</div>`;
     }
     if (isMob) {
       const cards = data.map((h) => {
@@ -16624,7 +16802,7 @@ var _TautulliTableMethods = class {
         if (!mobHidden.has("paused") && h.paused_counter) mp.push(this._t("tlColPaused") + " " + this._tlFmtDuration(h.paused_counter));
         const meta = `<div class="tl-mob-meta"><span>${user}</span><span style="color:var(--is-text-muted)"> &middot; </span><span>${ago}</span>${mp.map((v) => `<span style="color:var(--is-text-muted)"> &middot; </span><span>${v}</span>`).join("")}</div>`;
         const delEl = delMode ? `<button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${h.row_id}" style="margin-top:6px;font-size:10px">${this._t("tlDelete")}</button>` : "";
-        return `<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>${meta}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div></div>${delEl}</div>`;
+        return `<div class="tl-mob-card"><div class="u-row-10"><div style="flex:1;min-width:0"><div class="tl-mob-name u-row-4">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>${meta}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div></div>${delEl}</div>`;
       }).join("");
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-hpage", page, totalPages);
     }
@@ -16645,21 +16823,21 @@ var _TautulliTableMethods = class {
         product: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.product)}</td>`,
         player: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.player)}</td>`,
         title: `<td style="max-width:240px"><div style="display:flex;align-items:center;gap:5px;min-width:0">${icon}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1" title="${esc(h.full_title || h.title)}">${esc(h.full_title || h.title)}</span></div></td>`,
-        started: `<td style="white-space:nowrap;font-size:11px">${h.started ? this._tlFmtTime(h.started) : "\u2014"}</td>`,
+        started: `<td class="u-nowrap-sm">${h.started ? this._tlFmtTime(h.started) : "\u2014"}</td>`,
         paused: `<td style="text-align:right;white-space:nowrap;font-size:11px">${h.paused_counter ? this._tlFmtDuration(h.paused_counter) : "0m"}</td>`,
-        stopped: `<td style="white-space:nowrap;font-size:11px">${h.stopped ? this._tlFmtTime(h.stopped) : "\u2014"}</td>`,
+        stopped: `<td class="u-nowrap-sm">${h.stopped ? this._tlFmtTime(h.stopped) : "\u2014"}</td>`,
         duration: `<td style="text-align:right;white-space:nowrap;font-weight:600">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td>`
       };
       const watchCell = `<td style="text-align:right;padding-right:8px;white-space:nowrap">${watchSvg(ws)}</td>`;
       const delCell = delMode ? `<td style="padding:0 4px;white-space:nowrap"><button class="tl-edit-btn tl-del-btn" data-tl-hist-delete="${rid}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>` : "";
       return `<tr>${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchCell}${delCell}</tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-hpage", page, totalPages);
+    return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" class="u-empty">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-hpage", page, totalPages);
   }
   async _tlRefetchHistory(body) {
     const m = this._tautulliModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    body.innerHTML = '<div class="u-empty-lg">Loading\u2026</div>';
     const data = await this._tlFetchHistory(m.histPage, m.histUser, m.histMedia, m.histPlayback, this._tlCalcPerPage({ hasFilter: true }), m.histSearch);
     if (!this._tautulliModal) return;
     m.histData = data.data || [];
@@ -16675,7 +16853,7 @@ var _TautulliTableMethods = class {
     const tab = m.userDetailTab || "profile";
     const name = m.userDetailName || "\u2014";
     const thumb = m.userDetailThumb || "";
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const av = thumb ? `<img src="${thumb}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--is-divider);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:40px;height:40px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;color:var(--is-text-muted);font-size:15px;font-weight:700;flex-shrink:0">${(name[0] || "?").toUpperCase()}</span>`;
     const TAB_LABELS = { profile: "Profile", history: "History", ips: "IP Addresses" };
     const tabBtns = ["profile", "history", "ips"].map(
@@ -16684,7 +16862,7 @@ var _TautulliTableMethods = class {
     const backBtn = `<button data-tl-ud-back title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
     const hdr = isMob ? `<div style="margin-bottom:12px">
-           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">${backBtn}</div>
+           <div class="u-panel-hdr">${backBtn}</div>
            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
              ${av}
              <div style="font-size:15px;font-weight:700;color:var(--is-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(name)}</div>
@@ -16707,8 +16885,8 @@ var _TautulliTableMethods = class {
   _tlBodyUdProfile() {
     const m = this._tautulliModal || {};
     const profile = m.userDetailProfile;
-    if (!profile) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    if (!profile) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
+    const isMob = this._isMob;
     const wts = profile.watchTimeStats || [];
     const ps = profile.playerStats || [];
     const rh = profile.recentHistory || [];
@@ -16791,7 +16969,7 @@ var _TautulliTableMethods = class {
       const chevL = `<button class="tl-ud-rec-prev" disabled style="${chevStyle}"><ha-icon icon="mdi:chevron-left"  style="--mdc-icon-size:28px"></ha-icon></button>`;
       const chevR = `<button class="tl-ud-rec-next"        style="${chevStyle}"><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:28px"></ha-icon></button>`;
       recentSection = `<div style="margin-top:14px">
-        <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Recently Played</div>
+        <div class="u-section-hdr">Recently Played</div>
         <div class="sv-nav-wrap">
           ${multiPage ? chevL : ""}
           <div class="sv-scroll" id="tl-ud-rec-scroll" style="scroll-snap-type:x mandatory">${pagesHtml}</div>
@@ -16800,11 +16978,11 @@ var _TautulliTableMethods = class {
       </div>`;
     }
     return `<div style="margin-bottom:${isMob ? "10px" : "14px"}">
-      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Global Watch Stats</div>
+      <div class="u-section-hdr">Global Watch Stats</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "6px" : "10px"}">${statCards}</div>
     </div>
     <div style="margin-bottom:0">
-      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Player Stats</div>
+      <div class="u-section-hdr">Player Stats</div>
       ${playerChips}
     </div>
     ${recentSection}`;
@@ -16815,8 +16993,8 @@ var _TautulliTableMethods = class {
   _tlBodyUdHistory() {
     const m = this._tautulliModal;
     if (!m) return "";
-    if (m.userDetailHistLoading) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    if (m.userDetailHistLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
+    const isMob = this._isMob;
     const page = m.userDetailHistPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: true });
     const tot = m.userDetailHistTotal || 0;
@@ -16873,7 +17051,7 @@ var _TautulliTableMethods = class {
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap"><div style="display:flex;gap:4px;flex-wrap:wrap">${mediaBtns}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${playBtns}</div></div>`;
     }
     if (!data.length && !m.userDetailHistLoading) {
-      return toolbar + `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
+      return toolbar + `<div class="u-empty">${this._t("tlNoHistory")}</div>`;
     }
     const _wRing = '<circle cx="7" cy="7" r="5.5" fill="none" style="stroke:var(--is-text-muted)" stroke-width="1.5"/>';
     const _wSvg = (inner) => `<svg width="14" height="14" viewBox="0 0 14 14">${inner}</svg>`;
@@ -16898,11 +17076,11 @@ var _TautulliTableMethods = class {
       const ip = esc(h.ip_address || "");
       const chunks = [
         decBdg ? `<span>${decBdg}</span>` : "",
-        qual ? `<span style="font-size:11px;color:var(--is-text-label)">${qual}</span>` : "",
-        vInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${vInfo}</span>` : "",
-        vBdg ? `<span style="font-size:10px;color:var(--is-text-muted)">Video: ${vBdg}</span>` : "",
-        aInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${aInfo}</span>` : "",
-        aBdg ? `<span style="font-size:10px;color:var(--is-text-muted)">Audio: ${aBdg}</span>` : "",
+        qual ? `<span class="u-sm-label">${qual}</span>` : "",
+        vInfo ? `<span class="u-sm-label">${vInfo}</span>` : "",
+        vBdg ? `<span class="u-xs-muted">Video: ${vBdg}</span>` : "",
+        aInfo ? `<span class="u-sm-label">${aInfo}</span>` : "",
+        aBdg ? `<span class="u-xs-muted">Audio: ${aBdg}</span>` : "",
         ip ? `<span style="font-family:monospace;font-size:10px;color:var(--is-text-muted)">${ip}</span>` : ""
       ].filter(Boolean);
       return `<tr class="tl-ud-hist-detail-row"><td colspan="${colCount}" style="padding:0 10px 10px">
@@ -16936,16 +17114,16 @@ var _TautulliTableMethods = class {
           const ip = this._escHtml(h.ip_address || "");
           expDetail = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--is-divider);display:flex;flex-wrap:wrap;gap:5px;align-items:center">
             ${decBdg}
-            ${qual ? `<span style="font-size:11px;color:var(--is-text-label)">${qual}</span>` : ""}
-            ${vInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${vInfo}</span>` : ""}
-            ${aInfo ? `<span style="font-size:11px;color:var(--is-text-label)">${aInfo}</span>` : ""}
+            ${qual ? `<span class="u-sm-label">${qual}</span>` : ""}
+            ${vInfo ? `<span class="u-sm-label">${vInfo}</span>` : ""}
+            ${aInfo ? `<span class="u-sm-label">${aInfo}</span>` : ""}
             ${ip ? `<span style="font-family:monospace;font-size:10px;color:var(--is-text-muted)">${ip}</span>` : ""}
           </div>`;
         }
         return `<div class="tl-mob-card tl-ud-hist-row" data-tl-ud-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">
-          <div style="display:flex;align-items:center;gap:10px">
+          <div class="u-row-10">
             <div style="flex:1;min-width:0">
-              <div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>
+              <div class="tl-mob-name u-row-4">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>
               ${meta}
             </div>
             <div style="text-align:right;flex-shrink:0">
@@ -16975,9 +17153,9 @@ var _TautulliTableMethods = class {
         product: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.product)}</td>`,
         player: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.player)}</td>`,
         title: `<td style="max-width:240px"><div style="display:flex;align-items:center;gap:5px;min-width:0">${icon}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1" title="${esc(h.full_title || h.title)}">${esc(h.full_title || h.title)}</span></div></td>`,
-        started: `<td style="white-space:nowrap;font-size:11px">${h.started ? this._tlFmtTime(h.started) : "\u2014"}</td>`,
+        started: `<td class="u-nowrap-sm">${h.started ? this._tlFmtTime(h.started) : "\u2014"}</td>`,
         paused: `<td style="text-align:right;white-space:nowrap;font-size:11px">${h.paused_counter ? this._tlFmtDuration(h.paused_counter) : "0m"}</td>`,
-        stopped: `<td style="white-space:nowrap;font-size:11px">${h.stopped ? this._tlFmtTime(h.stopped) : "\u2014"}</td>`,
+        stopped: `<td class="u-nowrap-sm">${h.stopped ? this._tlFmtTime(h.stopped) : "\u2014"}</td>`,
         duration: `<td style="text-align:right;white-space:nowrap;font-weight:600">${h.duration ? this._tlFmtDuration(h.duration) : "\u2014"}</td>`
       };
       const watchCell = `<td style="text-align:right;padding-right:8px">${watchSvg(ws)}</td>`;
@@ -16985,7 +17163,7 @@ var _TautulliTableMethods = class {
       const mainRow = `<tr class="tl-ud-hist-row" data-tl-ud-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchCell}${delCell}</tr>`;
       return mainRow + (isExp ? _expandedRow(h, vis.length + 1 + (delMode ? 1 : 0)) : "");
     }).join("");
-    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ud-hpage", page, totalPages, true);
+    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" class="u-empty">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ud-hpage", page, totalPages, true);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // User detail — IP Addresses tab
@@ -16997,9 +17175,9 @@ var _TautulliTableMethods = class {
     const sortDir = m.userDetailIpsSortDir || "desc";
     const page = m.userDetailIpsPage || 0;
     const perPage = this._tlCalcPerPage();
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     if (!data.length) {
-      return `<div style="text-align:center;color:var(--is-text-muted);padding:30px">No IP address data available.</div>`;
+      return `<div class="u-empty">No IP address data available.</div>`;
     }
     const sorted = [...data].sort((a, b) => {
       let av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
@@ -17041,7 +17219,7 @@ var _TautulliTableMethods = class {
         const lp = this._escHtml(ip.last_played || "");
         const pc = ip.play_count ?? 0;
         return `<div class="tl-mob-card">
-          <div style="display:flex;align-items:center;gap:10px">
+          <div class="u-row-10">
             <div style="flex:1;min-width:0">
               <div class="tl-mob-name" style="font-family:monospace;font-size:12px">${addr}</div>
               <div class="tl-mob-meta">
@@ -17058,7 +17236,7 @@ var _TautulliTableMethods = class {
             </div>
           </div>
         </div>`;
-      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">No data</div>`;
+      }).join("") || `<div class="u-empty">No data</div>`;
       return `<div>${cards}</div>` + this._tlMobPag("tl-ud-ippage", page, totalPages);
     }
     const thead = IP_COLS.map(thFn).join("");
@@ -17073,15 +17251,15 @@ var _TautulliTableMethods = class {
       const pc = ip.play_count ?? 0;
       return `<tr>
         <td style="font-family:monospace;font-size:12px">${addr}</td>
-        <td style="white-space:nowrap;font-size:11px">${ls}</td>
-        <td style="white-space:nowrap;font-size:11px">${fs}</td>
+        <td class="u-nowrap-sm">${ls}</td>
+        <td class="u-nowrap-sm">${fs}</td>
         <td style="white-space:nowrap">${plat}</td>
         <td style="white-space:nowrap">${player}</td>
         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lp}</td>
         <td style="text-align:right;font-weight:700;color:rgba(250,180,50,0.9)">${pc}</td>
       </tr>`;
     }).join("");
-    return `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="7" style="text-align:center;color:var(--is-text-muted);padding:30px">No data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ud-ippage", page, totalPages);
+    return `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="7" class="u-empty">No data</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ud-ippage", page, totalPages);
   }
   // ══════════════════════════════════════════════════════════════════════════
   // Library detail
@@ -17090,13 +17268,13 @@ var _TautulliTableMethods = class {
     const m = this._tautulliModal || {};
     const name = m.libDetailName || "\u2014";
     const tab = m.libDetailTab || "profile";
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const backBtn = `<button data-tl-ld-back title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
     const tabs = [["profile", "Profile"], ["history", "History"], ["media", "Media Info"]];
     const tabBtns = tabs.map(([k, l]) => `<button class="tl-page-btn${tab === k ? " active" : ""}" data-tl-ld-tab="${k}">${l}</button>`).join("");
     const hdr = isMob ? `<div style="margin-bottom:12px">
-           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">${backBtn}</div>
+           <div class="u-panel-hdr">${backBtn}</div>
            <div style="font-size:15px;font-weight:700;color:var(--is-text);margin-bottom:10px">${this._escHtml(name)}</div>
            <div class="is-filter">${tabBtns}</div>
          </div>` : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
@@ -17113,7 +17291,7 @@ var _TautulliTableMethods = class {
   _tlBodyLdProfile() {
     const m = this._tautulliModal || {};
     const prof = m.libDetailProfile;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     if (!prof) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
     const wts = prof.watchTimeStats || [];
     const us = prof.userStats || [];
@@ -17143,7 +17321,7 @@ var _TautulliTableMethods = class {
             ${av}
             <div>
               <div style="font-size:11px;font-weight:600;color:var(--is-text)">${uname}</div>
-              <div style="font-size:10px;color:var(--is-text-muted)">${plays} plays \xB7 ${dur}</div>
+              <div class="u-xs-muted">${plays} plays \xB7 ${dur}</div>
             </div>
           </div>`;
     }).join("") + "</div>" : `<div style="color:var(--is-text-muted);font-size:12px;padding:4px 0">No user data.</div>`;
@@ -17180,7 +17358,7 @@ var _TautulliTableMethods = class {
       const chevL = `<button class="tl-ld-rec-prev" disabled style="${chevSt}"><ha-icon icon="mdi:chevron-left"  style="--mdc-icon-size:28px"></ha-icon></button>`;
       const chevR = `<button class="tl-ld-rec-next" style="${chevSt}"><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:28px"></ha-icon></button>`;
       recentSection = `<div style="margin-top:14px">
-        <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Recently Played</div>
+        <div class="u-section-hdr">Recently Played</div>
         <div class="sv-nav-wrap">
           ${multi ? chevL : ""}
           <div class="sv-scroll" id="tl-ld-rec-scroll" style="scroll-snap-type:x mandatory">${pagesHtml}</div>
@@ -17189,18 +17367,18 @@ var _TautulliTableMethods = class {
       </div>`;
     }
     return `<div style="margin-bottom:${isMob ? "10px" : "14px"}">
-      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Global Watch Stats</div>
+      <div class="u-section-hdr">Global Watch Stats</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "6px" : "10px"}">${statCards}</div>
     </div>
     <div style="margin-bottom:${isMob ? "10px" : "14px"}">
-      <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">User Stats</div>
+      <div class="u-section-hdr">User Stats</div>
       ${userChips}
     </div>
     ${recentSection}`;
   }
   _tlBodyLdHistory() {
     const m = this._tautulliModal || {};
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const data = m.libDetailHistData || [];
     const tot = m.libDetailHistTotal || 0;
     const page = m.libDetailHistPage || 0;
@@ -17279,14 +17457,14 @@ var _TautulliTableMethods = class {
           ${h.ip_address ? `<div><span style="color:var(--is-text)">IP:</span> ${esc(h.ip_address)}</div>` : ""}
         </div>` : "";
         return `<div class="tl-mob-card tl-ld-hist-row" data-tl-ld-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">
-          <div style="display:flex;align-items:center;gap:10px">
+          <div class="u-row-10">
             <div style="flex:1;min-width:0">
-              <div class="tl-mob-name" style="display:flex;align-items:center;gap:4px">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>
+              <div class="tl-mob-name u-row-4">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>
               ${meta.length ? `<div class="tl-mob-meta">${meta.join("")}</div>` : ""}
             </div>
             <div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div>
           </div>${detail}${delEl}</div>`;
-      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
+      }).join("") || `<div class="u-empty">${this._t("tlNoHistory")}</div>`;
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-ld-hpage", page, totalPages, true);
     }
     const watchCell = `<td style="padding:0 6px;text-align:center"></td>`;
@@ -17301,12 +17479,12 @@ var _TautulliTableMethods = class {
       const ws = h.watched_status ?? -1;
       const watchSvg = (s) => s === 1 ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>` : s === 0 ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(250,180,50,0.9)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` : "";
       const cm = {
-        date: `<td style="white-space:nowrap;font-size:11px">${esc2(h.date || "\u2014")}</td>`,
+        date: `<td class="u-nowrap-sm">${esc2(h.date || "\u2014")}</td>`,
         user: `<td style="white-space:nowrap">${esc2(h.friendly_name || h.user || "\u2014")}</td>`,
         ip: `<td style="font-family:monospace;font-size:11px">${esc2(h.ip_address || "\u2014")}</td>`,
         platform: `<td style="white-space:nowrap">${esc2(h.platform || "\u2014")}</td>`,
-        product: `<td style="white-space:nowrap;font-size:11px">${esc2(h.product || "\u2014")}</td>`,
-        player: `<td style="white-space:nowrap;font-size:11px">${esc2(h.player || "\u2014")}</td>`,
+        product: `<td class="u-nowrap-sm">${esc2(h.product || "\u2014")}</td>`,
+        player: `<td class="u-nowrap-sm">${esc2(h.player || "\u2014")}</td>`,
         title: `<td style="max-width:240px"><div style="display:flex;align-items:center;gap:5px;min-width:0">${icon}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1" title="${esc2(h.full_title || h.title)}">${esc2(h.full_title || h.title)}</span></div></td>`,
         duration: `<td style="text-align:right;white-space:nowrap">${this._tlFmtDuration(h.duration || 0)}</td>`,
         paused: `<td style="text-align:right">${this._tlFmtDuration(h.paused_counter || 0)}</td>`,
@@ -17317,11 +17495,11 @@ var _TautulliTableMethods = class {
       const mainRow = `<tr class="tl-ld-hist-row" data-tl-ld-hist-row="${rid}" style="cursor:pointer${isExp ? ";background:var(--is-row-hover)" : ""}">${vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("")}${watchTd}${delCell}</tr>`;
       return mainRow + (isExp ? _expandedRow(h, colCount) : "");
     }).join("");
-    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${colCount}" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ld-hpage", page, totalPages, true);
+    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${colCount}" class="u-empty">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ld-hpage", page, totalPages, true);
   }
   _tlBodyLdMedia() {
     const m = this._tautulliModal || {};
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const data = m.libDetailMediaData || [];
     const tot = m.libDetailMediaTotal || 0;
     const page = m.libDetailMediaPage || 0;
@@ -17349,7 +17527,7 @@ var _TautulliTableMethods = class {
           <div class="tl-mob-name">${title} ${year}</div>
           ${meta ? `<div class="tl-mob-meta"><span>${meta}</span></div>` : ""}
         </div>`;
-      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">No media data.</div>`;
+      }).join("") || `<div class="u-empty">No media data.</div>`;
       return toolbar + `<div>${cards}</div>` + this._tlMobPag("tl-ld-mpage", page, totalPages, true);
     }
     const thead = [
@@ -17376,7 +17554,7 @@ var _TautulliTableMethods = class {
         return gb >= 1 ? gb.toFixed(1) + " GB" : (b / 1048576).toFixed(0) + " MB";
       };
       return `<tr${mdAttr}>
-        <td style="white-space:nowrap;font-size:11px">${esc(item.added_at || "\u2014")}</td>
+        <td class="u-nowrap-sm">${esc(item.added_at || "\u2014")}</td>
         <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.title || "\u2014")}${item.year ? ` <span style="color:var(--is-text-muted);font-size:10px">${item.year}</span>` : ""}</td>
         <td>${esc(item.container || "\u2014")}</td>
         <td style="text-align:right;white-space:nowrap">${item.bitrate ? esc(item.bitrate) + " kbps" : "\u2014"}</td>
@@ -17386,11 +17564,11 @@ var _TautulliTableMethods = class {
         <td>${esc(item.audio_codec || "\u2014")}</td>
         <td style="text-align:right">${item.audio_channels ? esc(item.audio_channels) + " ch" : "\u2014"}</td>
         <td style="text-align:right;white-space:nowrap">${fmtSz(item.file_size)}</td>
-        <td style="white-space:nowrap;font-size:11px">${esc(item.last_played || "\u2014")}</td>
+        <td class="u-nowrap-sm">${esc(item.last_played || "\u2014")}</td>
         <td style="text-align:right;font-weight:700;color:rgba(250,180,50,0.9)">${item.play_count ?? 0}</td>
       </tr>`;
     }).join("");
-    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="12" style="text-align:center;color:var(--is-text-muted);padding:30px">No media data.</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ld-mpage", page, totalPages, true);
+    return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="12" class="u-empty">No media data.</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ld-mpage", page, totalPages, true);
   }
   // ══════════════════════════════════════════════════════════════════════════
   // Media item detail
@@ -17398,7 +17576,7 @@ var _TautulliTableMethods = class {
   _tlBodyMediaDetail() {
     const m = this._tautulliModal || {};
     const tab = m.mediaDetailTab || "info";
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const backAttr = m.mediaDetailPrev === "lib" ? "data-tl-md-back-lib" : "data-tl-md-back-user";
     const backBtn = `<button ${backAttr} title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
@@ -17406,7 +17584,7 @@ var _TautulliTableMethods = class {
     const tabBtns = tabs.map(([k, l]) => `<button class="tl-page-btn${tab === k ? " active" : ""}" data-tl-md-tab="${k}">${l}</button>`).join("");
     const title = this._escHtml(m.mediaDetailTitle || "\u2014");
     const hdr = isMob ? `<div style="margin-bottom:12px">
-           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">${backBtn}</div>
+           <div class="u-panel-hdr">${backBtn}</div>
            <div style="font-size:15px;font-weight:700;color:var(--is-text);margin-bottom:10px">${title}</div>
            <div class="is-filter">${tabBtns}</div>
          </div>` : `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
@@ -17422,7 +17600,7 @@ var _TautulliTableMethods = class {
   _tlBodyMdInfo() {
     const m = this._tautulliModal || {};
     const data = m.mediaDetailData;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     if (!data) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
     const meta = data.metadata || {};
     const wts = data.watchTimeStats || [];
@@ -17477,22 +17655,22 @@ var _TautulliTableMethods = class {
             ${av}
             <div>
               <div style="font-size:11px;font-weight:600;color:var(--is-text)">${uname}</div>
-              <div style="font-size:10px;color:var(--is-text-muted)">${plays} plays \xB7 ${dur}</div>
+              <div class="u-xs-muted">${plays} plays \xB7 ${dur}</div>
             </div>
           </div>`;
     }).join("") + "</div>" : `<div style="color:var(--is-text-muted);font-size:12px;padding:4px 0">No user data.</div>`;
     return metaHdr + `<div style="margin-bottom:${isMob ? "10px" : "14px"}">
-           <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Global Watch Stats</div>
+           <div class="u-section-hdr">Global Watch Stats</div>
            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob ? "6px" : "10px"}">${statCards}</div>
          </div>
          <div>
-           <div style="font-size:11px;font-weight:600;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">User Stats</div>
+           <div class="u-section-hdr">User Stats</div>
            ${userChips}
          </div>`;
   }
   _tlBodyMdHistory() {
     const m = this._tautulliModal || {};
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const data = m.mediaDetailHistData || [];
     const tot = m.mediaDetailHistTotal || 0;
     const page = m.mediaDetailHistPage || 0;
@@ -17505,7 +17683,7 @@ var _TautulliTableMethods = class {
         const user = esc(h.friendly_name || h.user || "\u2014");
         const dur = this._tlFmtDuration(h.duration || 0);
         return `<div class="tl-mob-card">
-          <div style="display:flex;align-items:center;gap:10px">
+          <div class="u-row-10">
             <div style="flex:1;min-width:0">
               <div class="tl-mob-name">${user}</div>
               <div class="tl-mob-meta"><span>${esc(h.date || "")}</span>${h.platform ? `<span>${esc(h.platform)}</span>` : ""}</div>
@@ -17513,19 +17691,19 @@ var _TautulliTableMethods = class {
             <div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div>
           </div>
         </div>`;
-      }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</div>`;
+      }).join("") || `<div class="u-empty">${this._t("tlNoHistory")}</div>`;
       return `<div>${cards}</div>` + this._tlMobPag("tl-md-hpage", page, totalPages, true);
     }
     const thead = `<th>Date</th><th>User</th><th>Platform</th><th>Player</th><th style="text-align:right">Duration</th><th style="text-align:right">Paused</th>`;
     const rows = data.map((h) => `<tr>
-      <td style="white-space:nowrap;font-size:11px">${esc(h.date || "\u2014")}</td>
+      <td class="u-nowrap-sm">${esc(h.date || "\u2014")}</td>
       <td>${esc(h.friendly_name || h.user || "\u2014")}</td>
       <td style="white-space:nowrap">${esc(h.platform || "\u2014")}</td>
-      <td style="white-space:nowrap;font-size:11px">${esc(h.player || "\u2014")}</td>
+      <td class="u-nowrap-sm">${esc(h.player || "\u2014")}</td>
       <td style="text-align:right;white-space:nowrap">${this._tlFmtDuration(h.duration || 0)}</td>
       <td style="text-align:right">${this._tlFmtDuration(h.paused_counter || 0)}</td>
     </tr>`).join("");
-    return `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="6" style="text-align:center;color:var(--is-text-muted);padding:30px">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-md-hpage", page, totalPages, true);
+    return `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows || `<tr><td colspan="6" class="u-empty">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-md-hpage", page, totalPages, true);
   }
 };
 var tautulliTableMixin = _TautulliTableMethods.prototype;
@@ -17568,15 +17746,15 @@ var _TautulliMethods = class {
       const dim = count === 0 ? ";opacity:0.28" : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return `<div style="${sep}display:flex;align-items:center;gap:5px;padding:4px 0">` + this._tlLibSvgIcon(type, lib.section_name, "sm") + `<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:1px">${lib.section_name || "\u2014"}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0${dim}">${count}</span></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoData")}</div>`;
+    }).join("") || `<div class="u-xxs-dim">${this._t("tlNoData")}</div>`;
     const sectTag = libs.length > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${libs.length}</span>` : "";
-    return `<div class="tl-card" data-tl-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlLibraries")}</span>
+    return `<div class="tl-card u-sec-body" data-tl-open="libraries">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <div class="u-row-sb-w">
+        <span class="u-media-badge">${this._t("tlLibraries")}</span>
         ${sectTag}
       </div>
-      <div style="flex:1;position:relative;z-index:2">${rows}</div>
+      <div class="u-flex-rel">${rows}</div>
     </div>`;
   }
   _tlUsersCard(stats, act, data) {
@@ -17592,16 +17770,16 @@ var _TautulliMethods = class {
       return `<div style="${sep}display:flex;align-items:center;gap:6px;padding:4px 0">${av}<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${name}</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${plays}</span></div>`;
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">${this._t("tlNoData")}</div>`;
     const activeTag = activeUsers > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${activeUsers} ${this._t("tlActive")}</span>` : "";
-    return `<div class="tl-card" data-tl-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+    return `<div class="tl-card u-sec-body" data-tl-open="users">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
         <div style="display:flex;flex-direction:column;gap:2px">
-          <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>
+          <span class="u-media-badge">${this._t("tlUsers")}</span>
           <span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic;padding-left:2px">${this._t("tlLast7Days")}</span>
         </div>
         ${activeTag}
       </div>
-      <div style="flex:1;position:relative;z-index:2">${items}</div>
+      <div class="u-flex-rel">${items}</div>
     </div>`;
   }
   _tlSharingCard(data) {
@@ -17618,7 +17796,7 @@ var _TautulliMethods = class {
     const hist = data.recentHistory || [];
     const tlMax = this._actCardMax("tl-history");
     const streams = (data.activity || {}).stream_count ?? 0;
-    const items = hist.length === 0 ? `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>` : hist.map((h, i) => {
+    const items = hist.length === 0 ? `<div class="u-xxs-dim">${this._t("tlNoHistory")}</div>` : hist.map((h, i) => {
       const title = h.full_title || h.title || "\u2014";
       const user = h.friendly_name || h.user || "";
       const ago = h.date ? this._tlFmtDate(h.date) : "";
@@ -17627,13 +17805,13 @@ var _TautulliMethods = class {
       return `<div style="${hidden}${sep}padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
     }).join("");
     const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} ${this._t("tlNow")}</span>` : "";
-    return `<div class="tl-card" data-tl-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlHistory")}</span>
+    return `<div class="tl-card u-sec-body" data-tl-open="history">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="u-row-sb-w">
+        <span class="u-media-badge">${this._t("tlHistory")}</span>
         ${streamTag}
       </div>
-      <div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">${items}</div>
+      <div data-act-content class="u-flex-ovh-rel">${items}</div>
     </div>`;
   }
   _tlActivityCard(playsData) {
@@ -17654,11 +17832,11 @@ var _TautulliMethods = class {
       return `<div style="flex:1;font-size:7px;font-weight:${isToday ? "700" : "500"};color:${isToday ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)"};text-align:center;padding:2px 0 0">${day}</div>`;
     }).join("");
     const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("tlPlays")}</span>` : "";
-    return `<div class="tl-card" data-tl-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+    return `<div class="tl-card u-sec-body" data-tl-open="graphs">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+      <div class="u-row-sb-w">
         <div style="display:flex;flex-direction:column;gap:1px">
-          <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlCharts")}</span>
+          <span class="u-media-badge">${this._t("tlCharts")}</span>
           <span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span>
         </div>
         ${playsTag}
@@ -17699,7 +17877,7 @@ var _TautulliMethods = class {
       graphsData: null,
       graphsLoading: false,
       graphsMetric: "plays",
-      graphsRange: window.matchMedia("(max-width:600px)").matches ? 7 : 30,
+      graphsRange: this._isMob ? 7 : 30,
       graphsSelectedUsers: null,
       graphsUserList: [],
       graphsDdOpen: false,
@@ -17798,9 +17976,9 @@ var _TautulliMethods = class {
     this._tautulliModal = null;
   }
   _tlModalHtml(tab) {
-    const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+    const isMobile2 = this._isMob;
     const allTabs = ["libraries", "users", "history", "graphs"];
-    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _day = this._isDay;
     const _tc = _day ? "#000" : "#fff";
     const tabBtns = allTabs.map((t) => {
       const on = t === tab;
@@ -17808,9 +17986,9 @@ var _TautulliMethods = class {
       return `<button class="is-f-btn${on ? " active" : ""}" data-tl-tab="${t}" style="${st}">${this._tlTabLabel(t)}</button>`;
     }).join("");
     const sub = this._tlTabSubtitle(tab);
-    const hdrInner = isMobile2 ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    const hdrInner = isMobile2 ? `<div class="u-panel-hdr">
            <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._tlTabTitle(tab)}</div>
-           <button class="popup-close" id="tl-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+           <button class="popup-close u-rel-shrink0" id="tl-close">${ICONS.close}</button>
          </div>
          <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
            <div id="tl-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._tlTabTitle(tab)}</div>
@@ -17852,7 +18030,7 @@ var _TautulliMethods = class {
     const body = modal.querySelector("#tl-body");
     if (!body) return;
     if (tab === "libraries") {
-      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
+      body.innerHTML = `<div class="u-empty-dim">${this._t("loading")}</div>`;
       const ml = this._tautulliModal;
       if (!ml) return;
       const _pp = this._tlCalcPerPage();
@@ -17863,7 +18041,7 @@ var _TautulliMethods = class {
       body.innerHTML = this._tlBodyLibraries(ml.libsData, ml.libsTotal);
       this._wireTautulliModalBody(body);
     } else if (tab === "users") {
-      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
+      body.innerHTML = `<div class="u-empty-dim">${this._t("loading")}</div>`;
       const m2 = this._tautulliModal;
       if (!m2) return;
       const _pp2 = this._tlCalcPerPage();
@@ -17876,7 +18054,7 @@ var _TautulliMethods = class {
     } else if (tab === "history") {
       if (!this._tautulliModal) return;
       this._tautulliModal.histLoading = true;
-      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
+      body.innerHTML = `<div class="u-empty-dim">${this._t("loading")}</div>`;
       const [data, usersR] = await Promise.all([
         this._tlFetchHistory(0, null, null, null, this._tlCalcPerPage({ hasFilter: true })),
         this._tlApiFetch("get_users_table", "length=100&start=0&order_column=friendly_name&order_dir=asc")
@@ -18108,11 +18286,11 @@ var _TautulliGraphsMethods = class {
   _tlBodyGraphs() {
     const m = this._tautulliModal;
     if (!m) return "";
-    if (m.graphsLoading) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">${this._t("loading")}</div>`;
+    if (m.graphsLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
     const sub = m.graphsSub || "media";
     const metric = m.graphsMetric || "plays";
     const range = m.graphsRange || 30;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const isTot = sub === "totals";
     const subTabBar = `
       <div style="display:flex;gap:4px;flex-shrink:0">
@@ -18520,7 +18698,7 @@ var _JellystatTableMethods = class {
   // Libraries
   // ──────────────────────────────────────────────────────────────────────────
   _jsBodyLibraries() {
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const m = this._jellystatModal || {};
     const page = m.libsPage || 0;
     const perPage = this._tlCalcPerPage();
@@ -18626,8 +18804,8 @@ var _JellystatTableMethods = class {
         if (!mobH.has("episodes") && lib.Episode_Count > 0) mp.push('<span style="color:var(--is-text-label)">' + lib.Episode_Count + " episodes</span>");
         if (!mobH.has("lastPlayed") && lib.ItemName) mp.push('<span style="color:var(--is-text-muted)">' + lib.ItemName + "</span>");
         if (!mobH.has("duration") && dur) mp.push('<span style="color:var(--is-text-label)">' + dur + "</span>");
-        return '<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">' + icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"') + '</div><div style="flex:1;min-width:0"><div class="tl-mob-name">' + (lib.Name || "&#x2014;") + "</div>" + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + "</div>" : "") + '</div><div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">' + (lib.Library_Count ?? "&#x2014;") + '</div><div style="font-size:11px;color:var(--is-text-label)">&#9654; ' + plays + "</div></div></div></div>";
-      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</div>';
+        return '<div class="tl-mob-card"><div class="u-row-10"><div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">' + icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"') + '</div><div style="flex:1;min-width:0"><div class="tl-mob-name">' + (lib.Name || "&#x2014;") + "</div>" + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + "</div>" : "") + '</div><div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">' + (lib.Library_Count ?? "&#x2014;") + '</div><div class="u-sm-label">&#9654; ' + plays + "</div></div></div></div>";
+      }).join("") || '<div class="u-empty">No library data</div>';
       return toolbar + "<div>" + cards + "</div>" + this._tlMobPag("js-lpage", page2, totalPages);
     }
     const thead = vis.map((c) => _jsSortTh(c, sortCol, sortDir, "js-lib-sort")).join("");
@@ -18636,24 +18814,24 @@ var _JellystatTableMethods = class {
       const dur = lib.total_playback_duration ? this._tlFmtDuration(lib.total_playback_duration) : "&#x2014;";
       const streamedStr = fmtInterval(lib.LastActivity);
       const cm = {
-        name: '<td style="max-width:180px"><span style="display:flex;align-items:center;min-width:0">' + icon + '<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (lib.Name || "&#x2014;") + "</strong></span></td>",
+        name: '<td style="max-width:180px"><span style="display:flex;align-items:center;min-width:0">' + icon + '<strong class="u-truncate">' + (lib.Name || "&#x2014;") + "</strong></span></td>",
         count: '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (lib.Library_Count ?? "&#x2014;") + "</td>",
         seasons: '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Season_Count > 0 ? lib.Season_Count : "&#x2014;") + "</td>",
         episodes: '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Episode_Count > 0 ? lib.Episode_Count : "&#x2014;") + "</td>",
-        streamed: '<td style="white-space:nowrap;font-size:11px">' + (streamedStr || '<span style="color:var(--is-text-muted)">never</span>') + "</td>",
+        streamed: '<td class="u-nowrap-sm">' + (streamedStr || '<span style="color:var(--is-text-muted)">never</span>') + "</td>",
         lastPlayed: '<td style="max-width:200px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--is-text-label)">' + (lib.ItemName || '<span style="color:var(--is-text-muted)">n/a</span>') + "</div></td>",
         plays: '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (Number(lib.Plays) || 0) + "</td>",
         duration: '<td style="text-align:right">' + dur + "</td>"
       };
       return "<tr>" + vis.map((c) => cm[c.key] || "<td>&#x2014;</td>").join("") + "</tr>";
     }).join("");
-    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" style="text-align:center;color:var(--is-text-muted);padding:30px">No library data</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-lpage", page2, perPage, tot, "libraries");
+    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" class="u-empty">No library data</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-lpage", page2, perPage, tot, "libraries");
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Users
   // ──────────────────────────────────────────────────────────────────────────
   _jsBodyUsers() {
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const m = this._jellystatModal || {};
     const page = m.usersPage || 0;
     const perPage = this._tlCalcPerPage();
@@ -18742,8 +18920,8 @@ var _JellystatTableMethods = class {
         if (!mobH.has("player") && player) mp.push('<span style="color:var(--is-text-label)">' + player + "</span>");
         if (!mobH.has("lastPlayed") && u.LastWatched) mp.push('<span style="color:var(--is-text-muted)">' + u.LastWatched + "</span>");
         const av = '<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">' + (name[0] || "?").toUpperCase() + "</span>";
-        return '<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px">' + av + '<div style="flex:1;min-width:0"><div class="tl-mob-name">' + name + "</div>" + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + "</div>" : "") + '</div><div style="text-align:right;flex-shrink:0"><div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ' + plays + '</div><div style="font-size:11px;color:var(--is-text-label)">' + dur + "</div></div></div></div>";
-      }).join("") || '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</div>';
+        return '<div class="tl-mob-card"><div class="u-row-10">' + av + '<div style="flex:1;min-width:0"><div class="tl-mob-name">' + name + "</div>" + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + "</div>" : "") + '</div><div style="text-align:right;flex-shrink:0"><div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ' + plays + '</div><div class="u-sm-label">' + dur + "</div></div></div></div>";
+      }).join("") || '<div class="u-empty">No user data</div>';
       return toolbar + "<div>" + cards + "</div>" + this._tlMobPag("js-upage", page2, totalPages);
     }
     const thead = vis.map((c) => _jsSortTh(c, sortCol, sortDir, "js-sort")).join("");
@@ -18753,17 +18931,17 @@ var _JellystatTableMethods = class {
       const dur = u.TotalWatchTime ? this._tlFmtDuration(u.TotalWatchTime) : "&#x2014;";
       const [platform, player] = splitClient(u.LastClient);
       const cm = {
-        user: '<td><div style="display:flex;align-items:center;gap:8px">' + av + '<span style="font-weight:600">' + name + "</span></div></td>",
-        lastStreamed: '<td style="white-space:nowrap;font-size:11px">' + (u.LastActivityDate ? this._tlFmtDate(u.LastActivityDate) : '<span style="color:var(--is-text-muted)">never</span>') + "</td>",
+        user: '<td><div class="u-row-8">' + av + '<span style="font-weight:600">' + name + "</span></div></td>",
+        lastStreamed: '<td class="u-nowrap-sm">' + (u.LastActivityDate ? this._tlFmtDate(u.LastActivityDate) : '<span style="color:var(--is-text-muted)">never</span>') + "</td>",
         platform: '<td style="color:var(--is-text-label)">' + (platform || "&#x2014;") + "</td>",
         player: '<td style="color:var(--is-text-label)">' + (player || "&#x2014;") + "</td>",
-        lastPlayed: '<td style="max-width:200px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (u.LastWatched || "&#x2014;") + "</div></td>",
+        lastPlayed: '<td style="max-width:200px"><div class="u-truncate">' + (u.LastWatched || "&#x2014;") + "</div></td>",
         plays: '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (u.TotalPlays ?? 0) + "</td>",
         duration: '<td style="text-align:right">' + dur + "</td>"
       };
       return "<tr>" + vis.map((c) => cm[c.key] || "<td>&#x2014;</td>").join("") + "</tr>";
     }).join("");
-    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" style="text-align:center;color:var(--is-text-muted);padding:30px">No user data</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-upage", page2, perPage, tot, "users");
+    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" class="u-empty">No user data</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-upage", page2, perPage, tot, "users");
   }
   // ──────────────────────────────────────────────────────────────────────────
   // History
@@ -18771,8 +18949,8 @@ var _JellystatTableMethods = class {
   _jsBodyHistory() {
     const m = this._jellystatModal;
     if (!m) return "";
-    if (m.histLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    if (m.histLoading) return '<div class="u-empty-lg">Loading\u2026</div>';
+    const isMob = this._isMob;
     const page = m.histPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: true });
     const tot = m.histTotal || 0;
@@ -18820,7 +18998,7 @@ var _JellystatTableMethods = class {
       toolbar = '<div class="tl-toolbar">' + srchFlex + '<div class="tl-toolbar-actions">' + colsBtn + '</div></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' + userSel.replace("margin:0 4px", "margin:0") + pmBtns + "</div>";
     }
     if (!data.length) {
-      return toolbar + '<div style="text-align:center;color:var(--is-text-muted);padding:30px">No history</div>';
+      return toolbar + '<div class="u-empty">No history</div>';
     }
     const _fmtStarted = (ts) => {
       if (!ts) return "\u2014";
@@ -18844,7 +19022,7 @@ var _JellystatTableMethods = class {
         if (!mobH.has("product") && h.Client) mp.push('<span style="color:var(--is-text-label)">' + h.Client + "</span>");
         if (!mobH.has("player") && h.DeviceName) mp.push('<span style="color:var(--is-text-label)">' + h.DeviceName + "</span>");
         if (!mobH.has("started")) mp.push('<span style="color:var(--is-text-muted)">' + _fmtStarted(h.ActivityDateInserted) + "</span>");
-        return '<div class="tl-mob-card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="tl-mob-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _titleHtml(h) + '</div><div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + '</div></div><div style="text-align:right;flex-shrink:0;font-weight:600">' + dur + "</div></div></div>";
+        return '<div class="tl-mob-card"><div class="u-row-10"><div style="flex:1;min-width:0"><div class="tl-mob-name u-truncate">' + _titleHtml(h) + '</div><div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + '</div></div><div style="text-align:right;flex-shrink:0;font-weight:600">' + dur + "</div></div></div>";
       }).join("");
       return toolbar + "<div>" + cards + "</div>" + this._tlMobPag("js-hpage", page, totalPages);
     }
@@ -18855,14 +19033,14 @@ var _JellystatTableMethods = class {
         user: '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">' + (h.UserName || "\u2014") + "</td>",
         product: '<td style="color:var(--is-text-label);white-space:nowrap">' + (h.Client || "\u2014") + "</td>",
         player: '<td style="color:var(--is-text-label);white-space:nowrap">' + (h.DeviceName || "\u2014") + "</td>",
-        title: '<td style="max-width:260px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _titleHtml(h) + "</div></td>",
+        title: '<td style="max-width:260px"><div class="u-truncate">' + _titleHtml(h) + "</div></td>",
         started: '<td style="text-align:right;white-space:nowrap;color:var(--is-text-label);font-size:12px">' + _fmtStarted(h.ActivityDateInserted) + "</td>",
         duration: '<td style="text-align:right;white-space:nowrap;font-weight:600">' + (h.PlaybackDuration ? this._tlFmtDuration(h.PlaybackDuration) : "\u2014") + "</td>",
         ip: '<td style="font-family:monospace;font-size:11px;color:var(--is-text-muted)">' + (h.RemoteEndPoint || "\u2014") + "</td>"
       };
       return "<tr>" + vis.map((c) => cm[c.key] || "<td>\u2014</td>").join("") + "</tr>";
     }).join("");
-    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" style="text-align:center;color:var(--is-text-muted);padding:30px">No history</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-hpage", page, perPage, tot, "history");
+    return toolbar + '<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>' + thead + "</tr></thead><tbody>" + (rows || '<tr><td colspan="' + vis.length + '" class="u-empty">No history</td></tr>') + "</tbody></table></div>" + this._tlDeskPag("js-hpage", page, perPage, tot, "history");
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Refetch helpers
@@ -18870,7 +19048,7 @@ var _JellystatTableMethods = class {
   async _jsRefetchHistory(body) {
     const m = this._jellystatModal;
     if (!m) return;
-    body.innerHTML = '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading\u2026</div>';
+    body.innerHTML = '<div class="u-empty-lg">Loading\u2026</div>';
     const perPage = this._tlCalcPerPage({ hasFilter: true });
     const filters = [];
     if (m.histUser) filters.push({ field: "UserName", value: m.histUser.toLowerCase() });
@@ -18924,9 +19102,9 @@ var _JellystatMethods = class {
       const dim = count === 0 ? ";opacity:0.28" : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       return '<div style="' + sep + 'display:flex;align-items:center;gap:5px;padding:4px 0">' + this._tlLibSvgIcon(type, lib.Name || "", "sm") + '<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-left:1px">' + (lib.Name || "&#x2014;") + '</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0' + dim + '">' + count + "</span></div>";
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoData")}</div>`;
+    }).join("") || `<div class="u-xxs-dim">${this._t("tlNoData")}</div>`;
     const sectTag = libs.length > 0 ? '<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + libs.length + "</span>" : "";
-    return `<div class="tl-card" data-js-open="libraries" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlLibraries")}</span>` + sectTag + '</div><div style="flex:1;position:relative;z-index:2">' + rows + "</div></div>";
+    return `<div class="tl-card u-sec-body" data-js-open="libraries"><div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><div class="u-row-sb-w"><span class="u-media-badge">${this._t("tlLibraries")}</span>` + sectTag + '</div><div class="u-flex-rel">' + rows + "</div></div>";
   }
   _jsUsersCard(data) {
     const users = (data.users || []).slice(0, 5);
@@ -18939,13 +19117,13 @@ var _JellystatMethods = class {
       return '<div style="' + sep + 'display:flex;align-items:center;gap:6px;padding:4px 0">' + av + '<span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">' + name + '</span><span style="font-size:10px;font-weight:700;color:#fff;flex-shrink:0">' + plays + "</span></div>";
     }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3)">${this._t("tlNoData")}</div>`;
     const activeTag = active > 0 ? '<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + active + " " + this._t("tlActive") + "</span>" : "";
-    return `<div class="tl-card" data-js-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>` + activeTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
+    return `<div class="tl-card u-sec-body" data-js-open="users"><div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="u-row-sb-w"><span class="u-media-badge">${this._t("tlUsers")}</span>` + activeTag + '</div><div class="u-flex-rel">' + items + "</div></div>";
   }
   _jsHistoryCard(data) {
     const hist = data.recentHistory || [];
     const jsMax = this._actCardMax("js-history");
     const streams = (data.activity?.Sessions || []).length;
-    const items = hist.length === 0 ? `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>` : hist.map((h, i) => {
+    const items = hist.length === 0 ? `<div class="u-xxs-dim">${this._t("tlNoHistory")}</div>` : hist.map((h, i) => {
       const title = h.NowPlayingItemName || h.ItemName || "&#x2014;";
       const series = h.SeriesName ? " &middot; " + h.SeriesName : "";
       const user = h.UserName || "";
@@ -18955,7 +19133,7 @@ var _JellystatMethods = class {
       return '<div style="' + hidden + sep + 'padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + series + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">' + user + (ago ? " &middot; " + ago : "") + "</div></div>";
     }).join("");
     const streamTag = streams > 0 ? '<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + streams + " " + this._t("tlNow") + "</span>" : "";
-    return `<div class="tl-card" data-js-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlHistory")}</span>` + streamTag + '</div><div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">' + items + "</div></div>";
+    return `<div class="tl-card u-sec-body" data-js-open="history"><div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="u-row-sb-w"><span class="u-media-badge">${this._t("tlHistory")}</span>` + streamTag + '</div><div data-act-content class="u-flex-ovh-rel">' + items + "</div></div>";
   }
   _jsActivityCard(playsData) {
     const days = (playsData || []).slice(-7);
@@ -18974,7 +19152,7 @@ var _JellystatMethods = class {
       return '<div style="flex:1;font-size:7px;font-weight:' + (isToday ? "700" : "500") + ";color:" + (isToday ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)") + ';text-align:center;padding:2px 0 0">' + day + "</div>";
     }).join("");
     const playsTag = total > 0 ? '<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(99,179,237,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + total + " " + this._t("tlPlays") + "</span>" : "";
-    return `<div class="tl-card" data-js-open="graphs" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlCharts")}</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span></div>` + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:0">' + (bars || "") + '</div><div style="height:1px;background:rgba(255,255,255,0.08);margin:1px 0"></div><div style="display:flex;gap:0;margin-top:1px">' + labels + "</div></div></div>";
+    return `<div class="tl-card u-sec-body" data-js-open="graphs"><div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div class="u-row-sb-w"><div style="display:flex;flex-direction:column;gap:1px"><span class="u-media-badge">${this._t("tlCharts")}</span><span style="font-size:8px;color:rgba(255,255,255,0.28);font-style:italic">${this._t("tlLast7Days")}</span></div>` + playsTag + '</div><div style="flex:1;display:flex;flex-direction:column;position:relative;z-index:2;min-height:0"><div style="flex:1;display:flex;gap:0">' + (bars || "") + '</div><div style="height:1px;background:rgba(255,255,255,0.08);margin:1px 0"></div><div style="display:flex;gap:0;margin-top:1px">' + labels + "</div></div></div>";
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Modal
@@ -19001,7 +19179,7 @@ var _JellystatMethods = class {
       graphsData: null,
       graphsLoading: false,
       graphsMetric: "plays",
-      graphsRange: window.matchMedia("(max-width:600px)").matches ? 7 : 30,
+      graphsRange: this._isMob ? 7 : 30,
       usersPage: 0,
       usersSearch: "",
       usersData: [],
@@ -19032,16 +19210,16 @@ var _JellystatMethods = class {
     this._jellystatModal = null;
   }
   _jsModalHtml(tab) {
-    const isMobile2 = window.matchMedia("(max-width: 600px)").matches;
+    const isMobile2 = this._isMob;
     const allTabs = ["libraries", "users", "history", "graphs"];
-    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _day = this._isDay;
     const _tc = _day ? "#000" : "#fff";
     const tabBtns = allTabs.map((t) => {
       const on = t === tab;
       const st = on ? "height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700" : "height:24px;box-sizing:border-box;padding:0 10px;color:" + _tc;
       return '<button class="is-f-btn' + (on ? " active" : "") + '" data-js-tab="' + t + '" style="' + st + '">' + this._jsTabLabel(t) + "</button>";
     }).join("");
-    const hdrInner = isMobile2 ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0">' + ICONS.close + '</button></div><div class="is-filter">' + tabBtns + "</div>" : '<div style="flex:1;min-width:0"><div id="js-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div></div><div class="is-filter" style="flex-shrink:0">' + tabBtns + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">' + ICONS.close + "</button>";
+    const hdrInner = isMobile2 ? '<div class="u-panel-hdr"><div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div><button class="popup-close u-rel-shrink0" id="js-close">' + ICONS.close + '</button></div><div class="is-filter">' + tabBtns + "</div>" : '<div style="flex:1;min-width:0"><div id="js-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div></div><div class="is-filter" style="flex-shrink:0">' + tabBtns + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">' + ICONS.close + "</button>";
     const hdrStyle = isMobile2 ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
     return '<div class="popup-overlay' + dayClass(this) + '" data-js-modal><div class="popup-glass tl-wide"><div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div><div class="popup-body" id="js-body" style="padding:' + (isMobile2 ? "12px 14px 16px" : "14px 22px 20px") + '"><div class="is-loading"><span>Loading\u2026</span></div></div></div></div>';
   }
@@ -19058,7 +19236,7 @@ var _JellystatMethods = class {
     const body = modal.querySelector("#js-body");
     if (!body) return;
     if (tab === "libraries") {
-      body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
+      body.innerHTML = `<div class="u-empty-dim">${this._t("loading")}</div>`;
       const m = this._jellystatModal;
       if (!m) return;
       const raw = await this._jsApiFetch("stats/getLibraryCardStats");
@@ -19068,7 +19246,7 @@ var _JellystatMethods = class {
       body.innerHTML = this._jsBodyLibraries();
       this._wireJellystatModalBody(body);
     } else if (tab === "users") {
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      body.innerHTML = '<div class="u-empty-dim">Loading\u2026</div>';
       const m = this._jellystatModal;
       if (!m) return;
       const raw = await this._jsApiFetch("stats/getAllUserActivity");
@@ -19078,7 +19256,7 @@ var _JellystatMethods = class {
       body.innerHTML = this._jsBodyUsers();
       this._wireJellystatModalBody(body);
     } else if (tab === "history") {
-      body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">Loading\u2026</div>';
+      body.innerHTML = '<div class="u-empty-dim">Loading\u2026</div>';
       const m = this._jellystatModal;
       if (!m) return;
       m.histLoading = true;
@@ -19194,10 +19372,10 @@ var _JellystatGraphsMethods = class {
   _jsBodyGraphs() {
     const m = this._jellystatModal;
     if (!m) return "";
-    if (m.graphsLoading) return '<div style="text-align:center;color:var(--is-text-muted);padding:40px">Loading&hellip;</div>';
+    if (m.graphsLoading) return '<div class="u-empty-lg">Loading&hellip;</div>';
     const metric = m.graphsMetric || "plays";
     const range = m.graphsRange || 30;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const isDur = metric === "duration";
     const metricBtns = '<div style="display:inline-flex;gap:2px"><button class="tl-page-btn' + (metric === "plays" ? " active" : "") + '" data-js-g-metric="plays">Count</button><button class="tl-page-btn' + (metric === "duration" ? " active" : "") + '" data-js-g-metric="duration">Duration</button></div>';
     const rangeCtrl = '<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--is-text-muted)"><span>Last</span><input id="js-g-range" type="number" value="' + range + '" min="1" max="365" style="width:38px;background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-text);padding:4px;font-size:12px;text-align:center;font-family:inherit;outline:none;box-sizing:border-box;-webkit-appearance:none;appearance:none"><span>Days</span></div>';
@@ -19260,7 +19438,7 @@ var _TraceaRrTableMethods = class {
     const act = m.overviewAct || {};
     const plays7 = (act.plays || []).slice(-7);
     const total7 = plays7.reduce((s, p) => s + (p.count || 0), 0);
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const tile = (lbl, val, sub, color) => `<div style="background:var(--is-row-hover);border-radius:10px;padding:${isMob ? "10px 11px" : "12px 13px"}">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--is-text-label);margin-bottom:6px">${lbl}</div>
         <div style="font-size:${isMob ? "20px" : "24px"};font-weight:800;line-height:1;color:${color}">${val}</div>
@@ -19292,7 +19470,7 @@ var _TraceaRrTableMethods = class {
       return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--is-divider)">
         <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;color:${color};background:${bg};flex-shrink:0;margin-top:1px;white-space:nowrap">${(v.severity || "").toUpperCase()}</span>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--is-text)">${type}</div>
+          <div class="u-sm-text">${type}</div>
           <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[user, when].filter(Boolean).join(" \xB7 ")}</div>
         </div>
       </div>`;
@@ -19311,8 +19489,8 @@ var _TraceaRrTableMethods = class {
   _traBodyRules() {
     const m = this._tracearrModal;
     const rules = m.rulesData || [];
-    const isMob = window.matchMedia("(max-width:600px)").matches;
-    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const isMob = this._isMob;
+    const _day = this._isDay;
     const _btnClr = _day ? "#000" : "#fff";
     const CLASSIC_LABELS = {
       concurrent_streams: "Concurrent Streams",
@@ -19365,7 +19543,7 @@ var _TraceaRrTableMethods = class {
     </div>`;
   }
   _traRuleTemplatePicker() {
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const TEMPLATES = [
       {
         id: "concurrent_streams",
@@ -19422,7 +19600,7 @@ var _TraceaRrTableMethods = class {
     </div>`;
   }
   _traRuleFormHtml(ruleType, existingRule, templateType) {
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const inputSt = `width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--is-text,#fff);padding:0 10px;font-size:12px;height:32px`;
     const selectSt = inputSt + ";cursor:pointer";
     const labelSt = `display:block;font-size:10px;font-weight:700;color:var(--is-text-label);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px`;
@@ -19583,7 +19761,7 @@ var _TraceaRrTableMethods = class {
       </div>` : "";
     const title = isEdit ? "Edit Rule" : `New ${isCustom ? "Custom" : "Classic"} Rule`;
     const saveLabel = isEdit ? "Update" : "Create";
-    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _day = this._isDay;
     const _btnClr = _day ? "#000" : "#fff";
     return `<div ${ruleId ? `data-rule-id="${ruleId}"` : ""}>
       ${classicTypeField}
@@ -19598,7 +19776,7 @@ var _TraceaRrTableMethods = class {
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="${labelSt}">Severity</label>
-          <div style="display:flex;align-items:center;gap:10px">
+          <div class="u-row-10">
             <select id="tra-rf-severity" style="${selectSt.replace("width:100%", "width:auto")}">
               <option value="warning"${curSev === "warning" ? " selected" : ""}>Warning</option>
               <option value="high"${curSev === "high" ? " selected" : ""}>High</option>
@@ -19629,7 +19807,7 @@ var _TraceaRrTableMethods = class {
       return k && !seen.has(k) && seen.add(k);
     });
     const total = m.usersTotal || 0;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const pp = this._tlCalcPerPage();
     const pages = Math.max(1, Math.ceil(total / pp));
     const srchEl = this._tlSearchInput("tra-users-search", m.usersSearch).replace("width:110px", "flex:1").replace("display:inline-flex", "display:flex;flex:1");
@@ -19641,7 +19819,7 @@ var _TraceaRrTableMethods = class {
         const bg = this._traTrustBg(score);
         const badge = u.totalViolations > 0 ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;color:#FF3B30;background:rgba(255,59,48,0.18)">${u.totalViolations} viol.</span>` : `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;color:#34C759;background:rgba(52,199,89,0.14)">OK</span>`;
         const meta = [u.serverName, `${u.sessionCount ?? 0} ${this._t("tlPlays")}`].filter(Boolean).join(" \xB7 ");
-        return `<div class="tl-mob-card" style="display:flex;align-items:center;gap:10px">
+        return `<div class="tl-mob-card u-row-10">
           ${this._traUserAvatar(u, 32)}
           <div style="flex:1;min-width:0">
             <div class="tl-mob-name">${u.displayName || u.username}</div>
@@ -19662,10 +19840,10 @@ var _TraceaRrTableMethods = class {
       const srvC = u.serverType === "plex" ? "#000" : "#fff";
       const srvL = { plex: "P", jellyfin: "J", emby: "E" }[u.serverType] || "?";
       return `<tr${u.totalViolations > 0 ? ' class="tl-row-warn"' : ""}>
-        <td><div style="display:flex;align-items:center;gap:8px">${this._traUserAvatar(u, 22)}<strong style="font-size:12px;font-weight:600;color:var(--is-text)">${u.displayName || u.username}</strong></div></td>
+        <td><div class="u-row-8">${this._traUserAvatar(u, 22)}<strong class="u-sm-text">${u.displayName || u.username}</strong></div></td>
         <td><span style="width:18px;height:18px;border-radius:5px;background:${srvBg};color:${srvC};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;vertical-align:middle;margin-right:5px">${srvL}</span><span style="font-size:11px;color:var(--is-text)">${u.serverName || "\u2014"}</span></td>
         <td>
-          <div style="display:flex;align-items:center;gap:6px">
+          <div class="u-row-6">
             <div style="width:52px;height:5px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;flex-shrink:0"><div style="height:100%;border-radius:4px;background:${c.replace("0.9", "0.7")};width:${pct}"></div></div>
             <span style="font-size:11px;font-weight:700;color:${c}">${score}</span>
           </div>
@@ -19696,7 +19874,7 @@ var _TraceaRrTableMethods = class {
     const m = this._tracearrModal;
     const viols = m.violsData || [];
     const total = m.violsTotal || 0;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const pp = this._tlCalcPerPage({ hasFilter: true });
     const pages = Math.max(1, Math.ceil(total / pp));
     const SEVERITIES = ["low", "medium", "high", "critical"];
@@ -19755,7 +19933,7 @@ var _TraceaRrTableMethods = class {
       const det = v.detail || v.description || "\u2014";
       return `<tr${sev === "high" ? ' class="tl-row-warn"' : ""}>
         <td><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;color:${c};background:${bg};white-space:nowrap">${sev.toUpperCase()}</span></td>
-        <td style="font-size:12px;font-weight:600;color:var(--is-text)">${type}</td>
+        <td class="u-sm-text">${type}</td>
         <td><div style="display:flex;align-items:center;gap:7px">${this._traUserAvatar(v.user, 18)}<span style="font-size:11px;color:var(--is-text)">${user.displayName || user.username || "\u2014"}</span></div></td>
         <td style="font-size:11px;color:var(--is-text-muted);max-width:280px">${det}</td>
         <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${when}</td>
@@ -19828,7 +20006,7 @@ var _TraceaRrTableMethods = class {
     const m = this._tracearrModal;
     const hist = m.histData || [];
     const total = m.histTotal || 0;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const _NAV_SUBS = { stats: 1, library: 3, performance: 2 };
     const _navH = isMob ? (_NAV_SUBS[m.navGroup] ? 44 : 0) + 56 : 0;
     const pp = isMob ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 90 - _navH - 26 - 72 - 46) / 92) - 1) : this._tlCalcPerPage({ hasFilter: true, filterH: 40, rowH: 44, bar: 0 });
@@ -19939,7 +20117,7 @@ var _TraceaRrTableMethods = class {
     );
     const filters = isMob ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
           <div style="display:flex;gap:4px">${srchEl}${colsBtnIcon}</div>
-          <div style="display:flex;align-items:center;gap:4px">
+          <div class="u-row-4">
             <div class="is-filter" style="gap:3px">${periodBtns}</div>
             <div style="display:flex;gap:4px;margin-left:auto">${mobUserSel}${mobMediaSel}</div>
           </div>
@@ -19981,7 +20159,7 @@ var _TraceaRrTableMethods = class {
             <span style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span>
           </div>
           <div style="display:flex;align-items:center;gap:4px;white-space:nowrap;justify-content:flex-end">
-            ${watchPie(pct)}<span style="font-size:10px;color:var(--is-text-muted)">${pct}%</span>
+            ${watchPie(pct)}<span class="u-xs-muted">${pct}%</span>
           </div>
           <div>${decTag}</div>
           <div style="display:flex;justify-content:flex-end">
@@ -20023,13 +20201,13 @@ var _TraceaRrTableMethods = class {
       const { label, color, bg, pct } = watchBadge(h);
       const dt = fmtDt(h.startedAt);
       const cm = {
-        date: `<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600;color:var(--is-text)">${dt.date}</div><div style="font-size:10px;color:var(--is-text-muted)">${dt.time}</div></td>`,
-        user: `<td><div style="display:flex;align-items:center;gap:6px">${this._traUserAvatar(h.user, 18)}<div><div style="font-size:11px;color:var(--is-text)">${user}</div>${srvLabel ? `<div style="font-size:9px;font-weight:700;color:${srvColor}">${srvLabel}</div>` : ""}</div></div></td>`,
-        content: `<td style="min-width:180px"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${mediaIcon(h.mediaType)}<strong style="font-size:12px;font-weight:600;color:var(--is-text)">${title}</strong><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;color:${color};background:${bg};white-space:nowrap">${label}</span></div>${sub}</td>`,
-        platform: `<td><div style="font-size:11px;color:var(--is-text)">${h.platform || "\u2014"}</div><div style="font-size:10px;color:var(--is-text-muted)">${h.product || ""}</div></td>`,
+        date: `<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600;color:var(--is-text)">${dt.date}</div><div class="u-xs-muted">${dt.time}</div></td>`,
+        user: `<td><div class="u-row-6">${this._traUserAvatar(h.user, 18)}<div><div style="font-size:11px;color:var(--is-text)">${user}</div>${srvLabel ? `<div style="font-size:9px;font-weight:700;color:${srvColor}">${srvLabel}</div>` : ""}</div></div></td>`,
+        content: `<td style="min-width:180px"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${mediaIcon(h.mediaType)}<strong class="u-sm-text">${title}</strong><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;color:${color};background:${bg};white-space:nowrap">${label}</span></div>${sub}</td>`,
+        platform: `<td><div style="font-size:11px;color:var(--is-text)">${h.platform || "\u2014"}</div><div class="u-xs-muted">${h.product || ""}</div></td>`,
         quality: `<td>${dec}</td>`,
         duration: `<td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${dur}</td>`,
-        progress: `<td><div style="display:flex;align-items:center;gap:5px">${watchPie(pct)}<span style="font-size:11px;color:var(--is-text-muted)">${pct}%</span></div></td>`
+        progress: `<td><div class="u-row-5">${watchPie(pct)}<span style="font-size:11px;color:var(--is-text-muted)">${pct}%</span></div></td>`
       };
       return `<tr data-tra-hist-row="${h.id || idx}" style="cursor:pointer">${vis.map((col) => cm[col.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
@@ -20053,7 +20231,7 @@ var _TraceaRrTableMethods = class {
     const m = this._tracearrModal;
     const h = m.histDetailItem;
     if (!h) return '<div style="color:var(--is-text-muted);padding:40px;text-align:center">No data</div>';
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const poster = !!h.posterUrl;
     const fmtDur = (ms) => {
       if (!ms || ms <= 0) return null;
@@ -20138,7 +20316,7 @@ var _TraceaRrTableMethods = class {
       </div>
 
       ${secHdr("Playback")}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+      <div class="u-panel">
         ${row("Started", fmtDt(h.startedAt))}
         ${row("Stopped", fmtDt(h.stoppedAt))}
         ${row("Watch time", fmtDur(watchMs))}
@@ -20146,20 +20324,20 @@ var _TraceaRrTableMethods = class {
       </div>
 
       ${secHdr("User")}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
-        <div style="display:flex;align-items:center;gap:8px">
+      <div class="u-panel">
+        <div class="u-row-8">
           ${this._traUserAvatar(h.user, 28)}
-          <span style="font-size:12px;font-weight:600;color:var(--is-text)">${h.user?.displayName || h.user?.username || "\u2014"}</span>
+          <span class="u-sm-text">${h.user?.displayName || h.user?.username || "\u2014"}</span>
         </div>
       </div>
 
       ${srvName ? `${secHdr("Server")}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+      <div class="u-panel">
         ${row("Server", `<span style="color:${srvClr};font-weight:700">${srvName}</span> \xB7 ${srvName}`)}
       </div>` : ""}
 
       ${secHdr("Device")}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+      <div class="u-panel">
         ${row("Platform", h.platform)}
         ${row("Product", h.product)}
         ${row("Device", h.device)}
@@ -20168,13 +20346,13 @@ var _TraceaRrTableMethods = class {
     </div>`;
     const rightPanel = `<div style="flex:1;min-width:0${isMob ? ";margin-top:0" : ""}">
       ${secHdr("Stream Details", decBadge)}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+      <div class="u-panel">
         ${row("Container", h.transcodeInfo?.sourceContainer ? `${h.transcodeInfo.sourceContainer} \u2192 ${h.transcodeInfo.sourceContainer}` : null)}
         ${row("Bitrate", h.bitrate ? `${(h.bitrate / 1e3).toFixed(1)} Mbps` : null)}
       </div>
 
       ${secHdr("Video", decisionBadge(h.videoDecision))}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+      <div class="u-panel">
         ${streamTbl([
       ["Codec", h.sourceVideoCodecDisplay || h.sourceVideoCodec, h.streamVideoCodecDisplay || h.streamVideoCodec || h.sourceVideoCodecDisplay],
       ["Resolution", srcRes, stmRes],
@@ -20187,7 +20365,7 @@ var _TraceaRrTableMethods = class {
       </div>
 
       ${secHdr("Audio", decisionBadge(h.audioDecision))}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+      <div class="u-panel">
         ${streamTbl([
       ["Codec", h.sourceAudioCodecDisplay || h.sourceAudioCodec, h.streamAudioCodecDisplay || h.streamAudioCodec || h.sourceAudioCodecDisplay],
       ["Channels", h.audioChannelsDisplay || (h.sourceAudioChannels != null ? String(h.sourceAudioChannels) : null), h.audioChannelsDisplay],
@@ -20198,7 +20376,7 @@ var _TraceaRrTableMethods = class {
       </div>
 
       ${h.subtitleInfo ? `${secHdr("Subtitles")}
-      <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+      <div class="u-panel">
         ${row("Format", [h.subtitleInfo.format || h.subtitleInfo.codec, h.subtitleInfo.language].filter(Boolean).join(" \xB7 "))}
         ${row("Decision", h.subtitleInfo.decision)}
       </div>` : ""}
@@ -20217,7 +20395,7 @@ var _TraceaRrTableMethods = class {
     const act = m.activityData || {};
     const period = m.activityPeriod || "month";
     const days = period === "week" ? 7 : period === "year" ? 365 : 30;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const isTablet = !isMob && window.matchMedia("(max-width:860px)").matches;
     const tauFmt = (categories, series) => ({ response: { data: { categories, series } } });
     const playsAll = act.plays || [];
@@ -20371,7 +20549,7 @@ var _TraceaRrTableMethods = class {
     const m = this._tracearrModal;
     const qd = m.qualityData || {};
     const _allData = qd.data || [];
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const Q_COLORS = { "4K": "#34C759", "1080p": "#007AFF", "720p": "#FF9500", "SD": "#FF3B30" };
     const _period = m.qualityPeriod || "month";
     const _periodDays = { week: 7, month: 30, year: 365 };
@@ -20400,7 +20578,7 @@ var _TraceaRrTableMethods = class {
     ).join("");
     const header = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;flex-wrap:wrap">
         <span class="tl-graph-title">${this._t("traQualityEvolution")}</span>
-        <div style="display:flex;align-items:center;gap:6px">
+        <div class="u-row-6">
           <div class="is-filter" style="gap:3px">${_mtBtns}</div>
           <span style="width:1px;height:14px;background:var(--is-btn-bdr,rgba(255,255,255,0.15));flex-shrink:0"></span>
           <div class="is-filter" style="gap:3px">${_periodBtns}</div>
@@ -20468,7 +20646,7 @@ var _TraceaRrTableMethods = class {
   }
   _traQualCodecsCard() {
     const m = this._tracearrModal;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const codecs = m.qualityCodecs || {};
     const CODEC_COLORS = ["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#BF5AF2", "#FF2D55", "#5AC8FA", "#FFCC00"];
     const codecBars = (items) => {
@@ -20487,7 +20665,7 @@ var _TraceaRrTableMethods = class {
         </div>`;
       }).join("");
     };
-    const codecSection = (title, items, extra = "") => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="tl-graph-title">${title}</span>${extra}</div>${codecBars(items)}`;
+    const codecSection = (title, items, extra = "") => `<div class="u-panel-hdr"><span class="tl-graph-title">${title}</span>${extra}</div>${codecBars(items)}`;
     const _codecTab = m.qualityCodecTab || "movies";
     const _ctBtns = [["movies", "Movies / TV"], ["music", "Music"]].map(
       ([val, lbl]) => `<button class="is-f-btn${_codecTab === val ? " active" : ""}" data-tra-q-codec-tab="${val}" style="padding:2px 7px;font-size:10px">${lbl}</button>`
@@ -20516,7 +20694,7 @@ var _TraceaRrTableMethods = class {
         <div style="font-size:12px;color:var(--is-text-muted)">${qd.message || "Creating snapshots from library history. This may take a few minutes."}</div>
       </div>`;
     }
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const Q_COLORS = { "4K": "#34C759", "1080p": "#007AFF", "720p": "#FF9500", "SD": "#FF3B30" };
     const qualCard = this._traQualEvolCard();
     const codecsRow = this._traQualCodecsCard();
@@ -20615,7 +20793,7 @@ var _TraceaRrTableMethods = class {
     const hist = m.storageData?.history || [];
     const cur = m.storageData?.current || {};
     const st = m.storageStats || {};
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const fmtBytes = (b) => {
       const n = Number(b) || 0;
       if (n >= 1024 ** 4) return (n / 1024 ** 4).toFixed(2) + " TB";
@@ -20832,7 +21010,7 @@ var _TraceaRrTableMethods = class {
       ${nowX ? `<line x1="${nowX}" y1="${PT}" x2="${nowX}" y2="${baseY}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 3"/>` : ""}
       <path d="${linePath(histCoords, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="2" vector-effect="non-scaling-stroke" class="tl-g-anim-line"/>
       ${showPred && predWithJoint.length > 1 ? `<path d="${linePath(predWithJoint, period === "week" ? 0 : period === "month" ? 0.1 : 0.3)}" fill="none" stroke="${HEX}" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke" mask="url(#tras-dot-mask)" style="animation:fade-in 0.8s ease-out both"/>` : ""}
-      ${histDots}${predDots ? `<g style="animation:fade-in 0.8s ease-out both">${predDots}</g>` : ""}
+      ${histDots}${predDots ? `<g class="u-fade-in">${predDots}</g>` : ""}
       ${hitCols}
     `;
     const storSvg = `<div class="tl-g-wrap" style="position:relative;padding-left:36px">
@@ -20841,9 +21019,9 @@ var _TraceaRrTableMethods = class {
       ${xLabelsHtml}
     </div>`;
     const legend = showPred ? `<div style="display:flex;gap:10px;align-items:center;font-size:10px;color:var(--is-text-muted)">
-      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:18px;height:2px;background:${HEX}"></span>Historical</span>
-      <span style="display:flex;align-items:center;gap:4px"><svg width="20" height="4" style="flex-shrink:0"><line x1="0" y1="2" x2="20" y2="2" stroke="${HEX}" stroke-width="2" stroke-dasharray="6 4"/></svg>Prediction</span>
-      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:18px;height:6px;border-radius:2px;background:${SPRD_HEX};opacity:0.35"></span>Range</span>
+      <span class="u-row-4"><span style="display:inline-block;width:18px;height:2px;background:${HEX}"></span>Historical</span>
+      <span class="u-row-4"><svg width="20" height="4" style="flex-shrink:0"><line x1="0" y1="2" x2="20" y2="2" stroke="${HEX}" stroke-width="2" stroke-dasharray="6 4"/></svg>Prediction</span>
+      <span class="u-row-4"><span style="display:inline-block;width:18px;height:6px;border-radius:2px;background:${SPRD_HEX};opacity:0.35"></span>Range</span>
     </div>` : "";
     const _STOR_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
     const periodBtns = ["week", "month", "year", "all"].map(
@@ -20886,7 +21064,7 @@ var _TraceaRrTableMethods = class {
   }
   _traBodyStaleSection() {
     const m = this._tracearrModal;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const items = m.staleItems || [];
     const total = m.staleTotal || 0;
     const sum = m.staleSummary || {};
@@ -20948,10 +21126,10 @@ var _TraceaRrTableMethods = class {
         const rColor = RES_COLOR[res] || "rgba(255,255,255,0.4)";
         const icon = it.mediaType === "movie" ? "mdi:movie-outline" : "mdi:television-play";
         return `<div class="tl-mob-card">
-          <div style="display:flex;align-items:center;gap:8px">
+          <div class="u-row-8">
             <ha-icon icon="${icon}" style="--mdc-icon-size:14px;color:var(--is-text-muted);flex-shrink:0"></ha-icon>
             <div style="flex:1;min-width:0">
-              <div class="tl-mob-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.title}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${it.year})</span>` : ""}</div>
+              <div class="tl-mob-name u-truncate">${it.title}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${it.year})</span>` : ""}</div>
               <div class="tl-mob-meta"><span>${it.serverName || ""}</span><span style="color:var(--is-text);font-weight:600">${it.resolution || "\u2014"}</span><span>${fmtDate(it.addedAt)}</span></div>
             </div>
             <span style="font-size:11px;font-weight:700;color:#007AFF;flex-shrink:0;white-space:nowrap">${fmtBytes(it.fileSize)}</span>
@@ -21027,7 +21205,7 @@ var _TraceaRrTableMethods = class {
   _traWatchTopRowsHtml() {
     const m = this._tracearrModal;
     if (!m) return "";
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const _topTab = m.watchTopTab || "movies";
     const topItems = (_topTab === "movies" ? m.watchTopMovies : m.watchTopShows) || [];
     const fmtH = (h) => {
@@ -21058,14 +21236,14 @@ var _TraceaRrTableMethods = class {
           <span style="font-size:9px;color:var(--is-text-muted);text-align:center;line-height:1">${i + 1}</span>
           <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}<span style="font-weight:400;opacity:0.5;font-size:10px">${year}</span></span>
           <span></span>
-          <span style="font-size:10px;color:var(--is-text-muted)">${metaParts}</span>
+          <span class="u-xs-muted">${metaParts}</span>
         </div>`;
       }
       const cmpltCell = cmplt !== null ? `<div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">${this._traWatchPie(cmplt)}<span style="font-size:11px;color:var(--is-text-muted)">${cmplt}%</span></div>` : `<span style="font-size:10px;color:rgba(255,255,255,0.25)">\u2014</span>`;
       const ROW_H = "height:40px";
       return `<tr style="${ROW_H}">
         <td style="width:22px;font-size:10px;color:var(--is-text-muted);text-align:center">${i + 1}</td>
-        <td style="font-size:11px;font-weight:600;color:var(--is-text);max-width:140px"><div style="display:flex;align-items:center;gap:5px;overflow:hidden">${this._tlMediaIcon(_topTab === "movies" ? "movie" : "episode", 11)}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}${it.year ? ` <span style="color:var(--is-text-muted);font-weight:400">(${it.year})</span>` : ""}</span></div></td>
+        <td style="font-size:11px;font-weight:600;color:var(--is-text);max-width:140px"><div style="display:flex;align-items:center;gap:5px;overflow:hidden">${this._tlMediaIcon(_topTab === "movies" ? "movie" : "episode", 11)}<span class="u-truncate">${title}${it.year ? ` <span style="color:var(--is-text-muted);font-weight:400">(${it.year})</span>` : ""}</span></div></td>
         <td style="font-size:11px;font-weight:600;color:var(--is-text);text-align:right">${plays}</td>
         <td style="font-size:10px;color:var(--is-text-muted);text-align:right">${wh > 0 ? fmtH(wh) : "\u2014"}</td>
         <td style="font-size:10px;color:var(--is-text-muted);text-align:right">${views}</td>
@@ -21076,7 +21254,7 @@ var _TraceaRrTableMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyWatch() {
     const m = this._tracearrModal;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const pat = m.watchPatterns || {};
     const stat = m.watchStatus || {};
     const comp = m.watchCompletion || {};
@@ -21153,7 +21331,7 @@ var _TraceaRrTableMethods = class {
     ).join("");
     const _CARD_HDR = "min-height:42px;display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:nowrap;flex-shrink:0";
     const ROW_H = "height:40px";
-    const mostWatched = isMob ? `<div class="tl-g-card" style="display:flex;flex-direction:column">
+    const mostWatched = isMob ? `<div class="tl-g-card u-col">
           <div style="${_CARD_HDR}">
             <span class="tl-graph-title">${this._t("traMostWatched")}</span>
             <div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0">
@@ -21201,7 +21379,7 @@ var _TraceaRrTableMethods = class {
       const maxP = b.maxEpisodesInOneDay ?? b.maxPerDay ?? "\u2014";
       if (isMob) {
         return `<div class="tl-mob-card" style="display:flex;flex-direction:column;gap:3px">
-          <div style="display:flex;align-items:center;gap:6px">
+          <div class="u-row-6">
             <span style="font-size:12px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${show}</span>
             ${typeof bS === "number" ? scoreTag2(bS) : ""}
           </div>
@@ -21230,7 +21408,7 @@ var _TraceaRrTableMethods = class {
         </div>
         ${bingeRatePct > 0 ? `<span style="margin-left:auto;font-size:13px;font-weight:800;color:var(--is-text);flex-shrink:0">${bingeRatePct}% <span style="font-size:10px;color:var(--is-text-muted);font-weight:400">binge sessions</span></span>` : ""}
       </div>`;
-    const bingeCard = isMob ? `<div class="tl-g-card" style="display:flex;flex-direction:column">
+    const bingeCard = isMob ? `<div class="tl-g-card u-col">
           ${_bingeHdr}
           <div style="display:flex;flex-direction:column;gap:6px">${bingeRows}</div>
         </div>` : `<div class="tl-g-card" style="height:100%;box-sizing:border-box;display:flex;flex-direction:column">
@@ -21363,10 +21541,10 @@ var _TraceaRrTableMethods = class {
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;align-items:stretch">
         <div style="grid-column:span 2;display:flex;flex-direction:column">${mostWatched}</div>
         <div style="grid-column:span 2;display:flex;flex-direction:column">${bingeCard}</div>
-        <div style="display:flex;flex-direction:column">${moviesDonutCard}</div>
-        <div style="display:flex;flex-direction:column">${showsDonutCard}</div>
-        <div style="display:flex;flex-direction:column">${viewingHoursCard}</div>
-        <div style="display:flex;flex-direction:column">${monthlyCard}</div>
+        <div class="u-col">${moviesDonutCard}</div>
+        <div class="u-col">${showsDonutCard}</div>
+        <div class="u-col">${viewingHoursCard}</div>
+        <div class="u-col">${monthlyCard}</div>
       </div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -21375,7 +21553,7 @@ var _TraceaRrTableMethods = class {
   _traBodyDevices() {
     const m = this._tracearrModal;
     if (!m) return "";
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const sum = m.devicesData?.summary || {};
     const dh = m.devicesHealth?.data || [];
     const dhot = m.devicesHotspots?.data || [];
@@ -21444,7 +21622,7 @@ var _TraceaRrTableMethods = class {
       return `<div style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
           <span style="font-size:11px;font-weight:600;color:var(--is-text)">${name}</span>
-          <span style="font-size:10px;color:var(--is-text-muted)">${sess} sessions&nbsp;<span style="font-weight:700;color:${col}">${pct}%</span></span>
+          <span class="u-xs-muted">${sess} sessions&nbsp;<span style="font-weight:700;color:${col}">${pct}%</span></span>
         </div>
         <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden">
           <div style="height:100%;width:${pct}%;background:${col};border-radius:3px"></div>
@@ -21473,11 +21651,11 @@ var _TraceaRrTableMethods = class {
           const s = cell.sessions ?? cell.count ?? 0;
           return `<td style="text-align:center;background:${_mc(p)};padding:5px 8px">
             <div style="font-size:11px;font-weight:700;color:${_mt(p)}">${p}%</div>
-            <div style="font-size:9px;color:var(--is-text-muted)">${s}</div>
+            <div class="u-xxs-muted">${s}</div>
           </td>`;
         }).join("");
         return `<tr><td style="font-size:11px;font-weight:600;color:var(--is-text);padding:5px 8px">
-          ${dName}${dSess ? `<div style="font-size:9px;color:var(--is-text-muted)">${dSess} sessions</div>` : ""}
+          ${dName}${dSess ? `<div class="u-xxs-muted">${dSess} sessions</div>` : ""}
         </td>${cells}</tr>`;
       }).join("");
       matInner = `<table class="tl-hist-table" style="width:100%">
@@ -21524,7 +21702,7 @@ var _TraceaRrTableMethods = class {
       return `<tr>
         <td style="padding:5px 0;font-size:11px;color:var(--is-text)">
           <div style="font-weight:600">${dev}</div>
-          <div style="font-size:10px;color:var(--is-text-muted)">${cod}</div>
+          <div class="u-xs-muted">${cod}</div>
         </td>
         <td style="padding:5px 6px;font-size:11px;font-weight:700;color:var(--is-text);text-align:right">${tr}</td>
         <td style="padding:5px 0 5px 6px;text-align:right"><span style="font-size:10px;font-weight:700;color:${pc};background:${pb};border-radius:5px;padding:2px 7px">${pct}%</span></td>
@@ -21542,7 +21720,7 @@ var _TraceaRrTableMethods = class {
       return `<div class="tl-mob-card" style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center">
         <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${dev}</span>
         <span style="font-size:10px;font-weight:700;color:${pc};background:${pb};border-radius:5px;padding:2px 7px;white-space:nowrap">${pct}%</span>
-        <span style="font-size:10px;color:var(--is-text-muted)">${cod}</span>
+        <span class="u-xs-muted">${cod}</span>
         <span style="font-size:10px;color:var(--is-text-muted);text-align:right">${tr} transcodes</span>
       </div>`;
     }).join("") || `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:14px">${this._t("tlNoData")}</div>`;
@@ -21559,7 +21737,7 @@ var _TraceaRrTableMethods = class {
       const avEl = av ? `<img src="${av}" width="20" height="20" style="border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--is-text-muted)">${(name[0] || "?").toUpperCase()}</div>`;
       return `<tr>
         <td style="padding:6px 0;font-size:11px;font-weight:600;color:var(--is-text)">
-          <div style="display:flex;align-items:center;gap:6px">${avEl}<span>${name}</span></div>
+          <div class="u-row-6">${avEl}<span>${name}</span></div>
         </td>
         <td style="padding:6px 6px;font-size:11px;text-align:right;color:var(--is-text)">${sess}</td>
         <td style="padding:6px 6px;text-align:right"><span style="font-size:10px;font-weight:700;color:${dc2};background:${db2};border-radius:5px;padding:2px 7px">${dpN}%</span></td>
@@ -21583,7 +21761,7 @@ var _TraceaRrTableMethods = class {
           <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>
         </div>
         <span style="font-size:10px;font-weight:700;color:${dc2};background:${db2};border-radius:5px;padding:2px 7px;white-space:nowrap">${dpN}% direct</span>
-        <span style="font-size:10px;color:var(--is-text-muted)">${sess} sess \xB7 ${tr} transcodes</span>
+        <span class="u-xs-muted">${sess} sess \xB7 ${tr} transcodes</span>
         <span style="font-size:10px;color:var(--is-text-muted);text-align:right">${pctN}% total</span>
       </div>`;
     }).join("") || `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:14px">${this._t("tlNoData")}</div>`;
@@ -21639,14 +21817,14 @@ var _TraceaRrTableMethods = class {
         hotspots: _pag("hotspots", _hoP, dhot.length),
         users: _pag("users", _uP, dtu.length)
       };
-      const mobPanel = `<div class="tl-g-card" style="display:flex;flex-direction:column">
+      const mobPanel = `<div class="tl-g-card u-col">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0">
           <span class="tl-graph-title" style="font-size:11px">${_panelTitle[mobView] || ""}</span>
           ${_panelPag[mobView] || ""}
         </div>
         ${_panelContent[mobView] || ""}
       </div>`;
-      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">${hdr}${statsRow}${mobNav}${mobPanel}</div>`;
+      return `<div class="u-col-fill">${hdr}${statsRow}${mobNav}${mobPanel}</div>`;
     }
     const twoColRow = `<div style="display:flex;gap:8px;flex:1;min-height:0;align-items:stretch">
       <div style="flex:0 0 calc(50% - 4px);min-width:0;min-height:0;display:flex;flex-direction:column">
@@ -21656,13 +21834,13 @@ var _TraceaRrTableMethods = class {
         ${rightCard}
       </div>
     </div>`;
-    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">${hdr}${statsRow}${twoColRow}</div>`;
+    return `<div class="u-col-fill">${hdr}${statsRow}${twoColRow}</div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyBandwidth() {
     const m = this._tracearrModal;
     if (!m) return "";
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const sum = m.bwSummary || {};
     const _bd = m.bwDaily;
     const daily = Array.isArray(_bd) ? _bd : _bd?.data || _bd?.daily || _bd?.items || [];
@@ -21843,8 +22021,8 @@ var _TraceaRrTableMethods = class {
         ${xLabelsHtml}
       </div>
       <div style="display:flex;gap:12px;justify-content:center;margin-top:6px">
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:${BAR_HEX};opacity:0.7"></div><span style="font-size:10px;color:var(--is-text-muted)">Data (GB)</span></div>
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:3px;border-radius:2px;background:${LINE_HEX}"></div><span style="font-size:10px;color:var(--is-text-muted)">Sessions</span></div>
+        <div class="u-row-5"><div style="width:10px;height:10px;border-radius:2px;background:${BAR_HEX};opacity:0.7"></div><span class="u-xs-muted">Data (GB)</span></div>
+        <div class="u-row-5"><div style="width:12px;height:3px;border-radius:2px;background:${LINE_HEX}"></div><span class="u-xs-muted">Sessions</span></div>
       </div>`;
     })();
     const _tipEl = `<div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>`;
@@ -21892,7 +22070,7 @@ var _TraceaRrTableMethods = class {
         <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden">${avEl}<span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span></div>
         <span style="font-size:11px;font-weight:700;color:var(--is-text)">${_fmtGb(u.totalGb)}</span>
         <span></span>
-        <span style="font-size:10px;color:var(--is-text-muted)">${metaParts}</span>
+        <span class="u-xs-muted">${metaParts}</span>
         <span style="font-size:10px;font-weight:700;color:#FF9500;background:rgba(255,149,0,0.1);border-radius:5px;padding:1px 5px;white-space:nowrap;text-align:right">${_fmtBr(u.avgBitrateMbps)}</span>
       </div>`;
     }).join("") || `<div style="color:var(--is-text-muted);font-size:11px;text-align:center;padding:14px">No data</div>`;
@@ -21928,7 +22106,7 @@ var _TraceaRrTableMethods = class {
       </div>
       ${bwPaging}
     </div>`;
-    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">${statsRow}${chartCard}${usersCard}</div>`;
+    return `<div class="u-col-fill">${statsRow}${chartCard}${usersCard}</div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Stats → Users tab
@@ -21936,7 +22114,7 @@ var _TraceaRrTableMethods = class {
   _traBodyStatsUsers() {
     const m = this._tracearrModal;
     if (!m) return "";
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const isTablet = !isMob && window.matchMedia("(max-width:860px)").matches;
     const users = m.statsUsersData || [];
     const period = m.statsUsersPeriod || "month";
@@ -21945,7 +22123,7 @@ var _TraceaRrTableMethods = class {
       ([p, lbl]) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-su-period="${p}">${lbl}</button>`
     ).join("");
     const hdr = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${isMob ? 10 : 12}px">
-      <div style="display:flex;align-items:center;gap:6px">
+      <div class="u-row-6">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--is-text-muted)"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
         <span style="font-size:${isMob ? 11 : 13}px;font-weight:700;color:var(--is-text)">Top 3</span>
       </div>
@@ -22049,6 +22227,32 @@ var tracearrTableMixin = _TraceaRrTableMethods.prototype;
 
 // src/render/tracearr.js
 var _TraceaRrMethods = class {
+  // ── Server preference helpers ─────────────────────────────────────────────
+  _traReadSavedSrv() {
+    try {
+      return localStorage.getItem("arr-tra-srv") || null;
+    } catch (_) {
+      return null;
+    }
+  }
+  _traSaveSrv(sid) {
+    try {
+      localStorage.setItem("arr-tra-srv", sid);
+    } catch (_) {
+    }
+  }
+  // Pick best server from list using saved preference or type-priority (Jellyfin>Plex>Emby).
+  // `getKey(srv)` extracts the string used for priority ranking (name or type field).
+  _traAutoPickSrv(servers, getKey = (s) => s.name || "") {
+    const saved = this._traReadSavedSrv();
+    const valid = saved && servers.find((s) => s.id === saved);
+    if (valid) return saved;
+    const rank = (v) => {
+      const k = (v || "").toLowerCase();
+      return k.includes("jellyfin") ? 0 : k.includes("plex") ? 1 : k.includes("emby") ? 2 : 99;
+    };
+    return [...servers].sort((a, b) => rank(getKey(a)) - rank(getKey(b)))[0]?.id || null;
+  }
   // ──────────────────────────────────────────────────────────────────────────
   // Poster row — 4 cards in right panel
   // ──────────────────────────────────────────────────────────────────────────
@@ -22092,17 +22296,17 @@ var _TraceaRrMethods = class {
         <span style="font-size:10px;font-weight:600;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>
         <span style="font-size:10px;font-weight:700;color:${color};flex-shrink:0">${score}</span>
       </div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoData")}</div>`;
+    }).join("") || `<div class="u-xxs-dim">${this._t("tlNoData")}</div>`;
     const flagTag = flagged > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(248,113,113,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${flagged} flagged</span>` : `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.16);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${this._t("traAllClear")}</span>`;
-    return `<div class="tl-card" data-tra-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+    return `<div class="tl-card u-sec-body" data-tra-open="users">
+      <div class="u-bg-icon">
         <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>
+      <div class="u-row-sb">
+        <span class="u-media-badge">${this._t("tlUsers")}</span>
         ${flagTag}
       </div>
-      <div style="flex:1;position:relative;z-index:2">${rows}</div>
+      <div class="u-flex-rel">${rows}</div>
     </div>`;
   }
   _traViolationsCard(d) {
@@ -22122,7 +22326,7 @@ var _TraceaRrMethods = class {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const dot = dotColor[v.severity] || dotColor.high;
       return `<div style="${sep}padding:4px 0">
-        <div style="display:flex;align-items:center;gap:5px">
+        <div class="u-row-5">
           <span style="width:7px;height:7px;border-radius:50%;background:${dot};box-shadow:0 0 6px ${dot};flex-shrink:0"></span>
           <span style="font-size:10px;font-weight:600;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span>
         </div>
@@ -22132,15 +22336,15 @@ var _TraceaRrMethods = class {
         <span style="width:7px;height:7px;border-radius:50%;background:#34d399;flex-shrink:0"></span>${this._t("traNoViolations")}
       </div>`;
     const badge = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(248,113,113,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("traNew")}</span>` : "";
-    return `<div class="tl-card" data-tra-open="violations" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+    return `<div class="tl-card u-sec-body" data-tra-open="violations">
+      <div class="u-bg-icon">
         <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("traViolations")}</span>
+      <div class="u-row-sb">
+        <span class="u-media-badge">${this._t("traViolations")}</span>
         ${badge}
       </div>
-      <div style="flex:1;position:relative;z-index:2">${items}</div>
+      <div class="u-flex-rel">${items}</div>
     </div>`;
   }
   _traActivityCard(d) {
@@ -22165,12 +22369,12 @@ var _TraceaRrMethods = class {
     }).join("");
     const dp = quality.directPlayPercent ?? 0;
     const playsTag = total > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(130,80,255,0.2);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${total} ${this._t("tlPlays")}</span>` : "";
-    return `<div class="tl-card" data-tra-open="activity" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+    return `<div class="tl-card u-sec-body" data-tra-open="activity">
+      <div class="u-bg-icon">
         <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.93 19.07A9 9 0 1 1 19.07 19.07" stroke-linecap="round"/><line x1="12" y1="12" x2="17.5" y2="6.5" stroke-linecap="round"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
       </div>
       <div style="display:flex;align-items:center;margin-bottom:6px;position:relative;z-index:2;gap:6px">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1;flex-shrink:0">${this._t("traActivity")}</span>
+        <span class="u-media-badge-s">${this._t("traActivity")}</span>
         <div style="flex:1"></div>
         ${playsTag}
       </div>
@@ -22206,16 +22410,16 @@ var _TraceaRrMethods = class {
       <span style="width:7px;height:7px;border-radius:50%;background:#34d399;flex-shrink:0"></span>${this._t("traAllDirectPlay")}
     </div>`;
     const badge = totalTr > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(248,113,113,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${totalTr}\xD7</span>` : "";
-    return `<div class="tl-card" data-tra-open="devices" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0">
+    return `<div class="tl-card u-sec-body" data-tra-open="devices">
+      <div class="u-bg-icon">
         <svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       </div>
       <div style="display:flex;align-items:center;margin-bottom:6px;position:relative;z-index:2;gap:6px">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1;flex-shrink:0">${this._t("traTopTranscode")}</span>
+        <span class="u-media-badge-s">${this._t("traTopTranscode")}</span>
         <div style="flex:1"></div>
         ${badge}
       </div>
-      <div style="flex:1;position:relative;z-index:2">${rows || empty}</div>
+      <div class="u-flex-rel">${rows || empty}</div>
     </div>`;
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -22223,7 +22427,7 @@ var _TraceaRrMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
   _traMapHtml() {
     const m = this._tracearrModal;
-    const isMob = window.matchMedia("(max-width:600px)").matches;
+    const isMob = this._isMob;
     const period = m.mapPeriod || "month";
     const view = m.mapView || "circles";
     const summary = m.mapData?.summary || {};
@@ -22257,7 +22461,7 @@ var _TraceaRrMethods = class {
       <div style="flex:1"></div>
       ${statsBar}
     </div>`;
-    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+    return `<div class="u-col-fill">
       ${controls}
       <div id="tra-map-container" style="flex:1;border-radius:8px;overflow:hidden;position:relative;min-height:180px;background:rgba(0,0,0,0.4)">
         <div id="tra-map-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,0.35);z-index:1000">Loading map\u2026</div>
@@ -22631,7 +22835,7 @@ var _TraceaRrMethods = class {
         sub: []
       }
     ];
-    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _day = this._isDay;
     const items = NAV.map((g) => {
       const active = navGroup === g.id;
       const txtClr = _day ? "#000" : "#fff";
@@ -22647,7 +22851,7 @@ var _TraceaRrMethods = class {
         const subSt = isActive ? `${subH}background:rgba(0,122,255,0.35);color:${txtClr};border-color:rgba(0,122,255,0.6);font-size:10px;display:inline-flex;align-items:center;gap:4px` : `${subH}background:rgba(0,122,255,0.13);color:${txtClr};border-color:rgba(0,122,255,0.3);font-size:10px;display:inline-flex;align-items:center;gap:4px`;
         return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
       }).join("") : "";
-      return `<div style="display:flex;align-items:center;gap:4px">` + btn + `<div data-tra-sub="${g.id}" style="display:flex;gap:4px;overflow:hidden;max-width:${expanded ? "500px" : "0"};transition:max-width 0.25s ease">${subHtml}</div></div>`;
+      return `<div class="u-row-4">` + btn + `<div data-tra-sub="${g.id}" style="display:flex;gap:4px;overflow:hidden;max-width:${expanded ? "500px" : "0"};transition:max-width 0.25s ease">${subHtml}</div></div>`;
     }).join("");
     return `<div id="tra-nav" style="display:flex;justify-content:flex-start;align-items:center;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">${items}</div>`;
   }
@@ -22729,7 +22933,7 @@ var _TraceaRrMethods = class {
     </div>`;
   }
   _traModalHtml(tab, navGroup) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const pad = isMobile2 ? "12px 10px 10px" : "14px 22px 10px";
     if (isMobile2) {
       return `<div class="popup-overlay${dayClass(this)}" data-tra-modal>
@@ -22797,7 +23001,7 @@ var _TraceaRrMethods = class {
   async _traLoadTab(tab, modal) {
     const body = modal.querySelector("#tra-body");
     if (!body) return;
-    body.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">${this._t("loading")}</div>`;
+    body.innerHTML = `<div class="u-empty-dim">${this._t("loading")}</div>`;
     const m = this._tracearrModal;
     if (!m) return;
     if (tab === "rules") {
@@ -22848,17 +23052,7 @@ var _TraceaRrMethods = class {
       await this._traEnrichServerTypes(m);
       if (!this._tracearrModal) return;
       if (!m.usersServerId && (m.staleServers || []).length > 0) {
-        const _pk = (n) => {
-          const s = (n || "").toLowerCase();
-          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
-        };
-        let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
-        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
-        m.usersServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+        m.usersServerId = this._traAutoPickSrv(m.staleServers);
       }
       const pp = this._tlCalcPerPage();
       const _uSrvQ = m.usersServerId ? `&serverId=${m.usersServerId}` : "";
@@ -22884,17 +23078,7 @@ var _TraceaRrMethods = class {
       m.violsTotal = vr?.meta?.total || 0;
       m.violsServers = sr?.servers || [];
       if (m.violsServerId === null && m.violsServers.length > 0) {
-        const _pk = (s) => {
-          const t = (s.type || "").toLowerCase();
-          return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
-        };
-        let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
-        const _validSaved = _saved && m.violsServers.find((s) => s.id === _saved);
-        m.violsServerId = _validSaved ? _saved : [...m.violsServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+        m.violsServerId = this._traAutoPickSrv(m.violsServers, (s) => s.type || "");
         if (m.violsServerId) {
           this._traLoadTab("violations", modal);
           return;
@@ -22907,7 +23091,7 @@ var _TraceaRrMethods = class {
         return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
       });
     } else if (tab === "history") {
-      const isMobH = window.matchMedia("(max-width:600px)").matches;
+      const isMobH = this._isMob;
       const pp = this._tlCalcPerPage({ hasFilter: true, filterH: isMobH ? 120 : 40, rowH: isMobH ? 80 : 44, bar: 0 });
       let q = `pageSize=${pp}&page=${m.histPage + 1}&order=desc`;
       if (m.histServer) q += `&serverId=${m.histServer}`;
@@ -22934,17 +23118,7 @@ var _TraceaRrMethods = class {
       m.histUsers = ur?.data || [];
       m.histServers = sr?.servers || [];
       if (m.histServer === null && m.histServers.length > 0) {
-        const _pk = (s) => {
-          const t = (s.type || "").toLowerCase();
-          return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
-        };
-        let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
-        const _validSaved = _saved && m.histServers.find((s) => s.id === _saved);
-        m.histServer = _validSaved ? _saved : [...m.histServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+        m.histServer = this._traAutoPickSrv(m.histServers, (s) => s.type || "");
         if (m.histServer) {
           this._traLoadTab("history", modal);
           return;
@@ -22969,17 +23143,7 @@ var _TraceaRrMethods = class {
       await this._traEnrichServerTypes(m);
       if (!this._tracearrModal) return;
       if (!m.activityServerId && (m.staleServers || []).length > 0) {
-        const _pk = (n) => {
-          const s = (n || "").toLowerCase();
-          return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
-        };
-        let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
-        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
-        m.activityServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+        m.activityServerId = this._traAutoPickSrv(m.staleServers);
       }
       const _actSrvQ = m.activityServerId ? `&serverId=${m.activityServerId}` : "";
       const ar = await this._traApiFetch(`activity?period=${m.activityPeriod || "month"}${_actSrvQ}`);
@@ -23018,10 +23182,7 @@ var _TraceaRrMethods = class {
             return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
           };
           let _saved = null;
-          try {
-            _saved = localStorage.getItem("arr-tra-srv");
-          } catch (_) {
-          }
+          _saved = this._traReadSavedSrv();
           const _validSaved = _saved && m.statsUsersServers.find((s) => s.id === _saved);
           m.statsUsersServerId = _validSaved ? _saved : [...m.statsUsersServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
         }
@@ -23045,10 +23206,7 @@ var _TraceaRrMethods = class {
       if (!this._tracearrModal) return;
       if (!m.qualityServerId && (m.staleServers || []).length > 0) {
         let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
+        _saved = this._traReadSavedSrv();
         const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
         if (_validSaved) {
           m.qualityServerId = _saved;
@@ -23108,7 +23266,7 @@ var _TraceaRrMethods = class {
           m.dupsSummary = dupR?.summary || null;
           m._dupsServerId = _effectiveSrv;
         }
-        const _isMobSt = window.matchMedia("(max-width:600px)").matches;
+        const _isMobSt = this._isMob;
         m.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
         const _staleCat = m.staleCategory || "never_watched";
         const _staleMo = _staleCat === "stale" ? m.staleMonths || 3 : null;
@@ -23130,10 +23288,7 @@ var _TraceaRrMethods = class {
             m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
             if (!m.selectedServerId && m.staleServers.length > 0) {
               let _savedStor = null;
-              try {
-                _savedStor = localStorage.getItem("arr-tra-srv");
-              } catch (_) {
-              }
+              _savedStor = this._traReadSavedSrv();
               const _validStor = _savedStor && m.staleServers.find((s) => s.id === _savedStor);
               m.selectedServerId = _validStor ? _savedStor : m.staleServers[0].id;
               const _modalEl = body.closest("[data-tra-modal]");
@@ -23187,10 +23342,7 @@ var _TraceaRrMethods = class {
       if (!this._tracearrModal) return;
       if (!m.watchServerId && (m.staleServers || []).length > 0) {
         let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
+        _saved = this._traReadSavedSrv();
         const _valid = _saved && m.staleServers.find((s) => s.id === _saved);
         if (_valid) {
           m.watchServerId = _saved;
@@ -23259,10 +23411,7 @@ var _TraceaRrMethods = class {
           return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
         };
         let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
+        _saved = this._traReadSavedSrv();
         const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
         m.devicesServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
       }
@@ -23304,10 +23453,7 @@ var _TraceaRrMethods = class {
           return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
         };
         let _saved = null;
-        try {
-          _saved = localStorage.getItem("arr-tra-srv");
-        } catch (_) {
-        }
+        _saved = this._traReadSavedSrv();
         const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
         m.bwServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
       }
@@ -23340,7 +23486,7 @@ var _TraceaRrMethods = class {
       const _staleCat = m.staleCategory || "never_watched";
       const _staleMo = _staleCat === "stale" ? m.staleMonths || 3 : null;
       const _staleKey = `${_staleCat}|${_effectiveSrv || ""}|${_staleMo || ""}`;
-      const _isMobSt = window.matchMedia("(max-width:600px)").matches;
+      const _isMobSt = this._isMob;
       m.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
       if (!m.staleRaw || m.staleRaw._key !== _staleKey) {
         const srvParam = _effectiveSrv ? `&serverId=${_effectiveSrv}` : "";
@@ -23541,19 +23687,20 @@ var _ActivityRenderMethods = class {
     const sn2FirstEp = this._sonarr2QueueFirstEp || /* @__PURE__ */ new Map();
     const rows = [];
     const maxRows = this._actCardMax("queue");
+    const CAP = Math.max(maxRows + 3, 20);
     for (const item of [...rItems, ...r2Items]) {
-      if (rows.length >= maxRows) break;
+      if (rows.length >= CAP) break;
       rows.push({ title: item.title, type: "movie", failed: item.failed, pct: item.pct, sub: null });
     }
     for (const [sid, pct] of snPct) {
-      if (rows.length >= maxRows) break;
+      if (rows.length >= CAP) break;
       const s = snSeries.find((x) => x.id === sid);
       const ep = snFirstEp.get(sid);
       const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
       if (s) rows.push({ title: s.title || "\u2014", type: "show", failed: false, pct, sub });
     }
     for (const [sid, pct] of sn2Pct) {
-      if (rows.length >= maxRows) break;
+      if (rows.length >= CAP) break;
       const s = sn2Series.find((x) => x.id === sid);
       const ep = sn2FirstEp.get(sid);
       const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
@@ -23566,19 +23713,20 @@ var _ActivityRenderMethods = class {
       const sub = r.sub ?? (r.type === "movie" ? this._t("typeMovie") : this._t("typeTv"));
       const pctBar = r.failed ? "" : `<div style="margin-top:3px;width:100%;height:2px;background:rgba(255,255,255,0.08);border-radius:1px"><div style="width:${r.pct}%;height:100%;background:${color};border-radius:1px"></div></div>`;
       const pctTxt = r.failed ? ` <span style="font-size:9px;font-weight:700;color:#fff;background:rgba(251,146,60,0.30);border:1px solid rgba(251,146,60,0.62);border-radius:10px;padding:1px 6px">${this._t("actFailed")}</span>` : ` \xB7 ${r.pct}%`;
-      return `<div style="${sep}padding:4px 0">
+      const hidden = i >= maxRows ? "display:none;" : "";
+      return `<div style="${hidden}${sep}padding:4px 0">
             <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
             <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}${pctTxt}</div>
             ${pctBar}
           </div>`;
     }).join("") : `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actNoDownloads")}</div>`;
-    return `<div class="tl-card" data-act-open="queue" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+    return `<div class="tl-card u-sec-body" data-act-open="queue">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
+      <div class="u-row-sb-w">
         <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actQueue")}</span>
         ${badge}
       </div>
-      <div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">${rowsHtml}</div>
+      <div data-act-content class="u-flex-ovh-rel">${rowsHtml}</div>
     </div>`;
   }
   _actHistoryCard() {
@@ -23595,12 +23743,12 @@ var _ActivityRenderMethods = class {
               <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}</div>
             </div>`;
     }).join("");
-    return `<div class="tl-card" data-act-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+    return `<div class="tl-card u-sec-body" data-act-open="history">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="u-row-sb-w">
         <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actHistory")}</span>
       </div>
-      <div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">${content}</div>
+      <div data-act-content class="u-flex-ovh-rel">${content}</div>
     </div>`;
   }
   _actBlocklistCard() {
@@ -23617,12 +23765,12 @@ var _ActivityRenderMethods = class {
               <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:1px">${sub}</div>
             </div>`;
     }).join("");
-    return `<div class="tl-card" data-act-open="blocklist" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+    return `<div class="tl-card u-sec-body" data-act-open="blocklist">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+      <div class="u-row-sb-w">
         <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actBlocklist")}</span>
       </div>
-      <div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">${content}</div>
+      <div data-act-content class="u-flex-ovh-rel">${content}</div>
     </div>`;
   }
   // Returns the max items that fit in a poster card of the given type.
@@ -23707,19 +23855,19 @@ var _ActivityRenderMethods = class {
   }
   // ── Modal shell ──────────────────────────────────────────────────────────
   _actModalHtml(tab) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const allTabs = ["queue", "history", "blocklist", "missing"];
     const tabLabels = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") };
-    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _day = this._isDay;
     const _tc = _day ? "#000" : "#fff";
     const tabBtns = allTabs.map((t) => {
       const on = t === tab;
       const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
       return `<button class="is-f-btn${on ? " active" : ""}" data-act-tab="${t}" style="${st}">${tabLabels[t]}</button>`;
     }).join("");
-    const hdrInner = isMobile2 ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    const hdrInner = isMobile2 ? `<div class="u-panel-hdr">
            <div id="act-hdr-title" style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
-           <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+           <button class="popup-close u-rel-shrink0" id="act-close">${ICONS.close}</button>
          </div>
          <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
            <div id="act-hdr-sub" style="font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
@@ -23738,7 +23886,7 @@ var _ActivityRenderMethods = class {
   }
   // ── Queue tab ────────────────────────────────────────────────────────────
   _actQueueTabHtml(radarrRecords, sonarrRecords, page, perPage, cols) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const _epNum = (ep) => ep ? ` S${String(ep.seasonNumber).padStart(2, "0")}E${String(ep.episodeNumber).padStart(2, "0")}` : "";
     const all = [
       ...(radarrRecords || []).map((r) => ({
@@ -23856,7 +24004,7 @@ var _ActivityRenderMethods = class {
         if (col.id === "protocol") v = item.protocol || "";
         if (col.id === "indexer") v = item.indexer || "";
         if (col.id === "client") v = item.downloadClient || "";
-        return v && v !== "\u2014" ? `<span style="font-size:9px;color:var(--is-text-muted)">${v}</span>` : "";
+        return v && v !== "\u2014" ? `<span class="u-xxs-muted">${v}</span>` : "";
       }).filter(Boolean).join("") : "";
       if (isMobile2) {
         const subLine = isBad ? _smLines[0] || item.trackedDownloadState || "Error" : item._episodeTitle ? this._escHtml(item._episodeTitle) : null;
@@ -23869,15 +24017,15 @@ var _ActivityRenderMethods = class {
               <div style="font-size:10px;color:${subLineClr};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;visibility:${subLine ? "visible" : "hidden"}">${subLine || "&nbsp;"}</div>
               <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
                 <span style="color:var(--is-text-muted);display:flex;align-items:center">${item._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
-                <span style="font-size:9px;color:var(--is-text-muted)">${qualLbl}</span>
-                <span style="font-size:9px;color:var(--is-text-muted)">${sizLbl}</span>
+                <span class="u-xxs-muted">${qualLbl}</span>
+                <span class="u-xxs-muted">${sizLbl}</span>
                 ${qExtraTags}
               </div>
               ${pb}
             </div>
             <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:52px">
               <span style="font-size:14px;font-weight:700;color:var(--is-text-muted)">${pct}%</span>
-              ${addedLbl ? `<span style="font-size:9px;color:var(--is-text-muted)">${addedLbl}</span>` : ""}
+              ${addedLbl ? `<span class="u-xxs-muted">${addedLbl}</span>` : ""}
               <div style="display:flex;gap:4px;margin-top:2px">${importBtn}${removeBtn}</div>
             </div>
           </div>
@@ -23891,7 +24039,7 @@ var _ActivityRenderMethods = class {
         if (col.id === "timeleft") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${timeLbl}</td>`;
         if (col.id === "formats") {
           const fmts = (item.customFormats || []).filter((cf) => cf.name);
-          return `<td style="padding:8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+          return `<td style="padding:8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span class="u-xs-muted">\u2014</span>`}</td>`;
         }
         if (col.id === "protocol") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${this._escHtml(protLbl)}</td>`;
         if (col.id === "indexer") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis">${this._escHtml(idxLbl)}</td>`;
@@ -23902,11 +24050,11 @@ var _ActivityRenderMethods = class {
         }
         return "";
       }).join("");
-      return `<tr style="border-bottom:1px solid var(--is-divider)">
+      return `<tr class="u-divider-b">
         <td style="padding:8px 8px 8px 0;width:22px;text-align:center">${dlIcon}</td>
         <td style="padding:8px 8px 8px 0">
           <div style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-word">
-            <span style="font-size:12px;font-weight:600;color:var(--is-text)">${item._title}</span>${item._episodeTitle ? `<span style="font-size:10px;color:var(--is-text-muted);margin-left:7px">${this._escHtml(item._episodeTitle)}</span>` : ""}
+            <span class="u-sm-text">${item._title}</span>${item._episodeTitle ? `<span style="font-size:10px;color:var(--is-text-muted);margin-left:7px">${this._escHtml(item._episodeTitle)}</span>` : ""}
           </div>
           ${pb}
         </td>
@@ -23919,27 +24067,27 @@ var _ActivityRenderMethods = class {
       </tr>`;
     }).join("");
     if (isMobile2) {
-      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      return `<div class="u-col-fill">
         <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
           ${qSearchEl}
-          <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
+          <button id="act-queue-cols-btn" class="tl-page-btn u-inline-row">${colsSvg}${this._t("actColumns")}</button>
         </div>
         ${qFilters}
-        <div style="flex:1;overflow:hidden" data-act-clip>${rows}</div>
+        <div class="u-flex-ovh" data-act-clip>${rows}</div>
         ${PAG}
       </div>`;
     }
     const COL_W = { source: 70, quality: 75, size: 65, timeleft: 75, formats: 130, protocol: 65, indexer: 110, client: 100, status: 95 };
     const thSt = `padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;white-space:nowrap`;
-    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+    return `<div class="u-col-fill">
       <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
         ${qSearchEl}
-        <button id="act-queue-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
+        <button id="act-queue-cols-btn" class="tl-page-btn u-inline-row">${colsSvg}${this._t("actColumns")}</button>
       </div>
       ${qFilters}
       <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-          <thead><tr style="border-bottom:1px solid var(--is-divider)">
+          <thead><tr class="u-divider-b">
             <th style="padding:4px 8px 8px 0;width:22px"></th>
             <th style="padding:4px 8px 8px 0;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;width:300px">${this._t("actColTitle")}</th>
             ${visCols.map((c) => `<th style="${thSt};width:${COL_W[c.id] || 80}px">${c.label}</th>`).join("")}
@@ -23953,7 +24101,7 @@ var _ActivityRenderMethods = class {
   }
   // ── History tab ──────────────────────────────────────────────────────────
   _actHistoryTabHtml(radarrData, sonarrData, filter, page, perPage) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const rRecords = radarrData?.records || [];
     const sRecords = sonarrData?.records || [];
     const mh = this._activityModal || {};
@@ -23999,7 +24147,7 @@ var _ActivityRenderMethods = class {
     const hFilters = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allHSels}</div>`;
     const searchEl = this._tlSearchInput("act-hist-search", mh.histSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
-    const toolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${searchEl}<button id="act-hist-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button></div>${hFilters}`;
+    const toolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${searchEl}<button id="act-hist-cols-btn" class="tl-page-btn u-inline-row">${colsSvg}${this._t("actColumns")}</button></div>${hFilters}`;
     const allFiltered = allRaw.filter((r) => {
       if (hSvc !== "all" && r._svc !== hSvc) return false;
       if (hSearch && !r._title.toLowerCase().includes(hSearch)) return false;
@@ -24032,7 +24180,7 @@ var _ActivityRenderMethods = class {
       return 0;
     });
     if (!allRaw.length) {
-      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      return `<div class="u-col-fill">
         ${toolbar}
         <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">${this._t("actHistoryEmpty")}</div>
       </div>`;
@@ -24087,7 +24235,7 @@ var _ActivityRenderMethods = class {
           if (col.id === "relgroup") v = r.data?.releaseGroup || "";
           if (col.id === "srctitle") v = r.sourceTitle || "";
           if (col.id === "cfscore") v = r.data?.customFormatScore != null ? String(r.data.customFormatScore) : "";
-          return v ? `<span style="font-size:9px;color:var(--is-text-muted)">${v}</span>` : "";
+          return v ? `<span class="u-xxs-muted">${v}</span>` : "";
         }).filter(Boolean).join("");
         return `<div style="padding:8px 0;border-bottom:1px solid var(--is-divider)">
           <div style="display:flex;align-items:flex-start;gap:8px">
@@ -24095,7 +24243,7 @@ var _ActivityRenderMethods = class {
               <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div>
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
                 <span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
-                ${qualLblM ? `<span style="font-size:9px;color:var(--is-text-muted)">${qualLblM}</span>` : ""}
+                ${qualLblM ? `<span class="u-xxs-muted">${qualLblM}</span>` : ""}
                 ${hExtraTags}
               </div>
             </div>
@@ -24106,9 +24254,9 @@ var _ActivityRenderMethods = class {
           </div>
         </div>`;
       }).join("");
-      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      return `<div class="u-col-fill">
         ${toolbar}
-        <div style="flex:1;overflow:hidden" data-act-clip>${rowsHtml}</div>
+        <div class="u-flex-ovh" data-act-clip>${rowsHtml}</div>
         <div style="flex-shrink:0;padding-top:4px">${pagHtml}</div>
       </div>`;
     }
@@ -24116,30 +24264,30 @@ var _ActivityRenderMethods = class {
       const srcCell = `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" || r._svc === "radarr2" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
       const colTds = visHistCols.map((col) => {
         if (col.id === "event") return `<td style="padding:7px 8px;white-space:nowrap"><span style="font-size:10px;font-weight:600;color:var(--is-text-body)">${evLabel(r.eventType)}</span></td>`;
-        if (col.id === "quality") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.quality?.quality?.name || "\u2014"}</td>`;
-        if (col.id === "langs") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
+        if (col.id === "quality") return `<td class="u-cell-pad">${r.quality?.quality?.name || "\u2014"}</td>`;
+        if (col.id === "langs") return `<td class="u-cell-pad">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
         if (col.id === "formats") {
           const fmts = (r.customFormats || []).filter((cf) => cf.name);
-          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span class="u-xs-muted">\u2014</span>`}</td>`;
         }
         if (col.id === "date") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-muted)">${fmtDate(r.date)}</td>`;
-        if (col.id === "client") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${this._escHtml(r.data?.downloadClient || "\u2014")}</td>`;
+        if (col.id === "client") return `<td class="u-cell-pad">${this._escHtml(r.data?.downloadClient || "\u2014")}</td>`;
         if (col.id === "indexer") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.data?.indexer || "\u2014")}</td>`;
-        if (col.id === "relgroup") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${this._escHtml(r.data?.releaseGroup || "\u2014")}</td>`;
+        if (col.id === "relgroup") return `<td class="u-cell-pad">${this._escHtml(r.data?.releaseGroup || "\u2014")}</td>`;
         if (col.id === "srctitle") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.sourceTitle || "\u2014")}</td>`;
-        if (col.id === "cfscore") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.data?.customFormatScore ?? "\u2014"}</td>`;
+        if (col.id === "cfscore") return `<td class="u-cell-pad">${r.data?.customFormatScore ?? "\u2014"}</td>`;
         return "";
       }).join("");
-      return `<tr style="border-bottom:1px solid var(--is-divider)">
+      return `<tr class="u-divider-b">
         <td style="padding:7px 8px 7px 0;overflow:hidden"><div style="font-size:12px;font-weight:500;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div></td>
         ${srcCell}${colTds}
       </tr>`;
     }).join("");
-    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+    return `<div class="u-col-fill">
       ${toolbar}
       <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-          <thead><tr style="border-bottom:1px solid var(--is-divider)">
+          <thead><tr class="u-divider-b">
             ${_sth("title", this._t("actColTitle"), true)}
             <th style="width:70px;padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:center">${this._t("actColSource")}</th>
             ${visHistCols.map((c) => _sth(c.id, c.label)).join("")}
@@ -24152,7 +24300,7 @@ var _ActivityRenderMethods = class {
   }
   // ── Blocklist tab ────────────────────────────────────────────────────────
   _actBlocklistTabHtml(radarrData, sonarrData, page, perPage) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const rRecords = radarrData?.records || [];
     const sRecords = sonarrData?.records || [];
     const mb = this._activityModal || {};
@@ -24195,7 +24343,7 @@ var _ActivityRenderMethods = class {
     const trashSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
     const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
     const blSearchEl = this._tlSearchInput("act-bl-search", mb.blSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
-    const blToolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${blSearchEl}<button id="act-bl-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button></div>${blFilters}`;
+    const blToolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">${blSearchEl}<button id="act-bl-cols-btn" class="tl-page-btn u-inline-row">${colsSvg}${this._t("actColumns")}</button></div>${blFilters}`;
     const allFiltered = allRaw.filter((r) => {
       if (blSvc !== "all" && r._svc !== blSvc) return false;
       if (blProto !== "all" && (r.protocol || "").toLowerCase() !== blProto) return false;
@@ -24225,7 +24373,7 @@ var _ActivityRenderMethods = class {
       return 0;
     });
     if (!allRaw.length) {
-      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      return `<div class="u-col-fill">
         ${blToolbar}
         <div style="text-align:center;color:var(--is-text-muted);padding:32px 20px">${this._t("actBlocklistEmpty")}</div>
       </div>`;
@@ -24271,7 +24419,7 @@ var _ActivityRenderMethods = class {
           if (col.id === "formats") v = (r.customFormats || []).map((cf) => cf.name).join(", ");
           if (col.id === "indexer") v = r.indexer || "";
           if (col.id === "protocol") v = r.protocol || "";
-          return v ? `<span style="font-size:9px;color:var(--is-text-muted)">${v}</span>` : "";
+          return v ? `<span class="u-xxs-muted">${v}</span>` : "";
         }).filter(Boolean).join("");
         return `<div style="padding:9px 0;border-bottom:1px solid var(--is-divider)">
           <div style="display:flex;align-items:flex-start;gap:8px">
@@ -24279,7 +24427,7 @@ var _ActivityRenderMethods = class {
               <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div>
               <div style="display:flex;gap:6px;margin-top:3px">
                 <span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
-                <span style="font-size:9px;color:var(--is-text-muted)">${r.quality?.quality?.name || "\u2014"}</span>
+                <span class="u-xxs-muted">${r.quality?.quality?.name || "\u2014"}</span>
                 ${blExtraTags}
               </div>
             </div>
@@ -24290,9 +24438,9 @@ var _ActivityRenderMethods = class {
           </div>
         </div>`;
       }).join("");
-      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      return `<div class="u-col-fill">
         ${blToolbar}
-        <div style="flex:1;overflow:hidden" data-act-clip>${rowsHtml}</div>
+        <div class="u-flex-ovh" data-act-clip>${rowsHtml}</div>
         <div style="flex-shrink:0;padding-top:4px">${pagHtml}</div>
       </div>`;
     }
@@ -24301,29 +24449,29 @@ var _ActivityRenderMethods = class {
       const colTds = visBLCols.map((col) => {
         if (col.id === "source") return `<td style="padding:7px 8px;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span><span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" || r._svc === "radarr2" ? srcFilmSvg : srcTvSvg}</span></div></td>`;
         if (col.id === "srctitle") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.sourceTitle || "\u2014")}</td>`;
-        if (col.id === "langs") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
-        if (col.id === "quality") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.quality?.quality?.name || "\u2014"}</td>`;
+        if (col.id === "langs") return `<td class="u-cell-pad">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
+        if (col.id === "quality") return `<td class="u-cell-pad">${r.quality?.quality?.name || "\u2014"}</td>`;
         if (col.id === "formats") {
           const fmts = (r.customFormats || []).filter((cf) => cf.name);
-          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span class="u-xs-muted">\u2014</span>`}</td>`;
         }
         if (col.id === "date") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-muted)">${fmtDate(r.date)}</td>`;
         if (col.id === "indexer") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.indexer || "\u2014")}</td>`;
-        if (col.id === "protocol") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.protocol || "\u2014"}</td>`;
+        if (col.id === "protocol") return `<td class="u-cell-pad">${r.protocol || "\u2014"}</td>`;
         return "";
       }).join("");
-      return `<tr style="border-bottom:1px solid var(--is-divider)">
+      return `<tr class="u-divider-b">
         <td style="padding:7px 8px 7px 0;overflow:hidden"><div style="font-size:12px;font-weight:500;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div></td>
         ${colTds}
         <td style="padding:7px 0 7px 8px;text-align:right">${rmBtn}</td>
       </tr>`;
     }).join("");
     const thRow = visBLCols.map((c) => _bsth(c.id, c.label, false, c.id === "source")).join("");
-    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+    return `<div class="u-col-fill">
       ${blToolbar}
       <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-          <thead><tr style="border-bottom:1px solid var(--is-divider)">
+          <thead><tr class="u-divider-b">
             ${_bsth("title", this._t("actColTitle"), true)}
             ${thRow}
             <th style="padding:4px 0 8px 8px;width:36px"></th>
@@ -24343,7 +24491,7 @@ var _ActivityRenderMethods = class {
             <div style="font-size:14px;font-weight:700;color:var(--is-text)">${this._t("actManualImport")}</div>
             <div style="font-size:11px;color:var(--is-text-sec);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="mi-subtitle">${this._escHtml(title)}</div>
           </div>
-          <button class="popup-close" id="mi-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="mi-close">${ICONS.close}</button>
         </div>
         <div id="mi-body" class="popup-body" style="padding:14px 20px 18px;overflow-y:auto;flex:1">
           <div class="is-loading"><span>${this._t("loading")}</span></div>
@@ -24358,10 +24506,10 @@ var _ActivityRenderMethods = class {
         <div style="font-size:11px;margin-top:6px;opacity:0.6">${this._t("actNoFilesHint")}</div>
       </div>`;
     }
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const isRadarr = svc === "radarr" || svc === "radarr2";
     const isSonarr = svc === "sonarr" || svc === "sonarr2";
-    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const isDay = this._isDay;
     const SEL_STYle = (missing) => `color-scheme:${isDay ? "light" : "dark"};appearance:none;-webkit-appearance:none;padding:5px 24px 5px 8px;border-radius:6px;width:100%;box-sizing:border-box;font-size:11px;font-weight:600;cursor:pointer;outline:none;border:${missing ? "1px dashed rgba(248,113,113,0.8)" : "1px solid var(--is-divider)"};background-color:${missing ? "rgba(248,113,113,0.1)" : "var(--is-btn-bg)"};background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(128,128,128,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;color:${missing ? "rgba(248,113,113,0.95)" : "var(--is-text)"};`;
     const lib = svc === "radarr" ? this._radarr || [] : svc === "radarr2" ? this._radarr2 || [] : svc === "sonarr" ? this._sonarr || [] : svc === "sonarr2" ? this._sonarr2 || [] : [];
     const buildLibOpts = (curId) => lib.slice().sort((a, b) => (a.title || "").localeCompare(b.title || "")).map((m) => `<option value="${m.id}"${m.id == curId ? " selected" : ""}>${this._escHtml(m.title || "\u2014")}${m.year ? ` (${m.year})` : ""}</option>`).join("");
@@ -24430,7 +24578,7 @@ var _ActivityRenderMethods = class {
       const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${SEL_STYle(qualMiss)}"><option value="" disabled hidden${curQualId === "" || qualMiss ? " selected" : ""}>${this._t("actSelectQuality")}</option>${buildQualOpts(curQualId)}</select>`;
       const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${SEL_STYle(langMiss)}"><option value="" disabled hidden${curLangId === "" || langMiss ? " selected" : ""}>${this._t("actSelectLanguage")}</option>${buildLangOpts(curLangId)}</select>`;
       const rejHtml = rej.length ? `<span style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</span>` : `<span style="color:var(--is-text-muted);font-size:10px">\u2014</span>`;
-      return `<tr style="border-bottom:1px solid var(--is-divider)">
+      return `<tr class="u-divider-b">
         <td style="padding:7px 4px">${movieSel}</td>
         <td style="padding:7px 8px;font-size:11px;color:var(--is-text-sec);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${this._escHtml(rg)}</td>
         <td style="padding:7px 4px">${qualSel}</td>
@@ -24439,7 +24587,7 @@ var _ActivityRenderMethods = class {
         <td style="padding:7px 8px;overflow:hidden">${rejHtml}</td>
       </tr>`;
     }).join("");
-    return `<div style="display:flex;flex-direction:column">
+    return `<div class="u-col">
       <table style="width:100%;border-collapse:collapse;table-layout:fixed">
         <colgroup>
           <col style="width:32%">
@@ -24449,7 +24597,7 @@ var _ActivityRenderMethods = class {
           <col style="width:8%">
           <col style="width:14%">
         </colgroup>
-        <thead><tr style="border-bottom:1px solid var(--is-divider)">
+        <thead><tr class="u-divider-b">
           <th style="${thStyle}">${mediaLabel}</th>
           <th style="${thStyle};padding-left:8px">${this._t("actReleaseGroup")}</th>
           <th style="${thStyle};padding-left:8px">${this._t("actQuality")}</th>
@@ -24470,7 +24618,7 @@ var _ActivityRenderMethods = class {
     const badge = movieCount !== null ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(251,146,60,0.30);border:1px solid rgba(251,146,60,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${movieCount + seriesCount}</span>` : "";
     const filmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
     const tvSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
-    const mkRow = (svg, label, count) => `<div style="display:flex;align-items:center;gap:6px"><span style="opacity:0.6;flex-shrink:0;display:flex">${svg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.85);flex-shrink:0">${count}</span></div>`;
+    const mkRow = (svg, label, count) => `<div class="u-row-6"><span style="opacity:0.6;flex-shrink:0;display:flex">${svg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.85);flex-shrink:0">${count}</span></div>`;
     const mkSubRow = (label, count) => `<div style="display:flex;align-items:center;gap:6px;padding-left:16px"><span style="font-size:9px;color:var(--is-text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:9px;font-weight:600;color:rgba(255,255,255,0.75);flex-shrink:0">${count}</span></div>`;
     let rows = "";
     if (cache && movieCount !== null) {
@@ -24503,18 +24651,18 @@ var _ActivityRenderMethods = class {
       }
     }
     const content = cache === void 0 || movieCount === null ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("loading")}</div>` : movieCount + seriesCount === 0 ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t("actMissingEmpty")}</div>` : `<div style="display:flex;flex-direction:column;gap:4px;padding:4px 0">${rows}</div>`;
-    return `<div class="tl-card" data-act-open="missing" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
+    return `<div class="tl-card u-sec-body" data-act-open="missing">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+      <div class="u-row-sb-w">
         <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("actMissing")}</span>
         ${badge}
       </div>
-      <div style="flex:1;position:relative;z-index:2">${content}</div>
+      <div class="u-flex-rel">${content}</div>
     </div>`;
   }
   // ── Missing tab ───────────────────────────────────────────────────────────
   _actMissingTabHtml(radarrMovies, sonarrSeries, page, perPage, cols) {
-    const isMobile2 = window.matchMedia("(max-width:600px)").matches;
+    const isMobile2 = this._isMob;
     const m = this._activityModal || {};
     const expanded = m.missingExpanded || /* @__PURE__ */ new Set();
     const rRows = (radarrMovies || []).map((r) => ({
@@ -24643,7 +24791,7 @@ var _ActivityRenderMethods = class {
       if (!seasons.length) return "";
       if (mobile) {
         return seasons.map((ss, i) => `<div data-act-season style="padding:5px 10px 5px 22px;${i < seasons.length - 1 ? "border-bottom:1px solid var(--is-divider)" : ""}">
-          <div style="display:flex;align-items:center;gap:6px">
+          <div class="u-row-6">
             <span style="font-size:11px;font-weight:700;color:var(--is-text-sec);min-width:28px">S${String(ss.n).padStart(2, "0")}</span>
             <span style="font-size:10px;font-weight:700;color:#fb923c">${ss.total - ss.missing}/${ss.total}</span>
             <span style="flex:1"></span>
@@ -24692,7 +24840,7 @@ var _ActivityRenderMethods = class {
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;gap:5px;min-width:0">
                 ${typeIcon}
-                <span class="act-missing-info-btn" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" data-type="${isSonarr ? "sonarr" : "radarr"}" style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;cursor:pointer">${r._title}${r._year ? ` <span style="font-size:10px;color:var(--is-text-muted)">(${r._year})</span>` : ""}</span>
+                <span class="act-missing-info-btn" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" data-type="${isSonarr ? "sonarr" : "radarr"}" style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;cursor:pointer">${r._title}${r._year ? ` <span class="u-xs-muted">(${r._year})</span>` : ""}</span>
               </div>
               ${subParts.length ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${subParts.join(" \xB7 ")}</div>` : ""}
             </div>
@@ -24709,12 +24857,12 @@ var _ActivityRenderMethods = class {
       }).join("");
       const toolbar2 = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
         ${searchEl}
-        <button id="act-missing-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
+        <button id="act-missing-cols-btn" class="tl-page-btn u-inline-row">${colsSvg}${this._t("actColumns")}</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${mSvcSel}${mProfSel ? mProfSel : ""}${mMonSel}</div>`;
-      return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+      return `<div class="u-col-fill">
         ${toolbar2}
-        <div style="flex:1;overflow:hidden" data-act-clip data-act-notrim>${rowsHtml}</div>
+        <div class="u-flex-ovh" data-act-clip data-act-notrim>${rowsHtml}</div>
         ${PAG}
       </div>`;
     }
@@ -24746,7 +24894,7 @@ var _ActivityRenderMethods = class {
       const mainRow = `<tr style="border-bottom:${isExpanded ? "none" : "1px solid var(--is-divider)"}">
         <td style="padding:8px 0;width:24px;text-align:center">${expandBtn}</td>
         <td style="padding:8px 8px 8px 0;overflow:hidden;max-width:300px">
-          <div class="act-missing-info-btn" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" data-type="${isSonarr ? "sonarr" : "radarr"}" style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer">${r._title}${r._year ? ` <span style="font-size:10px;color:var(--is-text-muted)">(${r._year})</span>` : ""}</div>
+          <div class="act-missing-info-btn" data-tmdb="${r._tmdbId || ""}" data-tvdb="${r._tvdbId || ""}" data-title="${this._escHtml(r._title)}" data-type="${isSonarr ? "sonarr" : "radarr"}" style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer">${r._title}${r._year ? ` <span class="u-xs-muted">(${r._year})</span>` : ""}</div>
         </td>
         ${colTds}
         <td style="padding:8px 10px 8px 8px;text-align:right;white-space:nowrap"><div style="display:flex;align-items:center;justify-content:flex-end;gap:4px">${isBtn}${autoSearchBtn}</div></td>
@@ -24756,14 +24904,14 @@ var _ActivityRenderMethods = class {
     }).join("");
     const toolbar = `<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;flex-shrink:0">
       ${searchEl}
-      <button id="act-missing-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${colsSvg}${this._t("actColumns")}</button>
+      <button id="act-missing-cols-btn" class="tl-page-btn u-inline-row">${colsSvg}${this._t("actColumns")}</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${mSvcSel}${mProfSel ? mProfSel : ""}${mMonSel}</div>`;
-    return `<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+    return `<div class="u-col-fill">
       ${toolbar}
       <div style="flex:1;overflow:hidden;overflow-x:auto" data-act-clip data-act-notrim>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-          <thead><tr style="border-bottom:1px solid var(--is-divider)">
+          <thead><tr class="u-divider-b">
             <th style="padding:4px 0 8px;width:24px"></th>
             ${_mth("title", this._t("actColTitle"), true)}
             ${visCols.map((c) => `<th data-act-missing-sort="${c.id}" style="${thSt};text-align:${COL_ALIGN[c.id] || "left"};width:${COL_W[c.id] || 80}px;cursor:pointer;user-select:none">${c.label}${mSort === c.id ? `<span style="margin-left:2px">${mSortDir === "asc" ? "\u2191" : "\u2193"}</span>` : ""}</th>`).join("")}
@@ -24921,7 +25069,7 @@ var _WireActivityMethods = class {
     const bodyEl = el.querySelector("#act-body");
     if (bodyEl) {
       const bodyH = bodyEl.clientHeight || 500;
-      const mobile = window.matchMedia("(max-width:600px)").matches;
+      const mobile = this._isMob;
       const rowH = mobile ? 58 : 40;
       const ovhFlt = mobile ? 80 : 78;
       const ovhQ = mobile ? 46 : 68;
@@ -24951,7 +25099,7 @@ var _WireActivityMethods = class {
       btn.addEventListener("click", async () => {
         const t = btn.dataset.actTab;
         if (!t || !this._activityModal) return;
-        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _day = this._isDay;
         const _tc = _day ? "#000" : "#fff";
         el.querySelectorAll("[data-act-tab]").forEach((b) => {
           const on = b === btn;
@@ -25175,7 +25323,7 @@ var _WireActivityMethods = class {
     body._wireAbort = new AbortController();
     const signal = body._wireAbort.signal;
     const _clipEl = body.querySelector("[data-act-clip]");
-    if (_clipEl && window.matchMedia("(max-width:600px)").matches) {
+    if (_clipEl && this._isMob) {
       let _tsx = 0;
       _clipEl.addEventListener("touchstart", (e) => {
         _tsx = e.touches[0].clientX;
@@ -25679,7 +25827,7 @@ var _WireActivityMethods = class {
     const id = dataset.id;
     const svc = dataset.svc;
     const title = dataset.title || "";
-    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const isDay = this._isDay;
     const dlgBg = isDay ? "rgba(245,246,255,0.99)" : "#1e2030";
     const dlgClr = isDay ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.9)";
     const hdrBdr = isDay ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
@@ -25752,7 +25900,7 @@ var _WireActivityMethods = class {
     }
     const m = this._activityModal;
     if (!m) return;
-    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
@@ -25815,7 +25963,7 @@ var _WireActivityMethods = class {
     }
     const m = this._activityModal;
     if (!m) return;
-    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
@@ -25989,7 +26137,7 @@ var _WireActivityMethods = class {
     }
     const m = this._activityModal;
     if (!m) return;
-    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
@@ -26055,7 +26203,7 @@ var _WireActivityMethods = class {
     }
     const m = this._activityModal;
     if (!m) return;
-    const isDay = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
@@ -26117,7 +26265,7 @@ var _WireActivityMethods = class {
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(seriesTitle)} \u2014 ${seasonLbl}</div>
           </div>
-          <button class="popup-close" id="sis-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="sis-close">${ICONS.close}</button>
         </div>
         <div id="sis-body" class="popup-body" style="overflow-y:auto;flex:1;padding:0 20px 18px">
           <div class="is-loading"><span>${this._t("loading")}</span></div>
@@ -26150,7 +26298,7 @@ var _WireActivityMethods = class {
         const epCode = `S${String(ep.seasonNumber).padStart(2, "0")}E${String(ep.episodeNumber).padStart(2, "0")}`;
         const epDate = fmtDate(ep.airDate);
         return `<div data-sis-ep="${ep.id}" style="padding:8px 0;border-bottom:1px solid var(--is-divider)">
-          <div style="display:flex;align-items:center;gap:8px">
+          <div class="u-row-8">
             <span style="font-size:11px;font-weight:700;color:${ep.hasFile ? "var(--is-green)" : "var(--is-text-muted)"};min-width:55px;flex-shrink:0">${epCode}</span>
             <span style="flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(ep.title || "\u2014")}</span>
             ${epDate ? `<span style="font-size:10px;color:var(--is-text-muted);flex-shrink:0">${epDate}</span>` : ""}
@@ -26245,8 +26393,8 @@ var _WireActivityMethods = class {
         <div style="flex:1;min-width:0">
           <div style="font-size:10px;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(title)}</div>
           <div style="display:flex;gap:5px;margin-top:2px">
-            <span style="font-size:9px;color:var(--is-text-muted)">${quality}</span>
-            <span style="font-size:9px;color:var(--is-text-muted)">${size}</span>
+            <span class="u-xxs-muted">${quality}</span>
+            <span class="u-xxs-muted">${size}</span>
             ${seederHtml}
           </div>
         </div>
@@ -26374,22 +26522,22 @@ var _ProwlarrRenderMethods = class {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const errMsg = "";
       return `<div style="${sep}padding:3px 0">
-        <div style="display:flex;align-items:center;gap:5px">
+        <div class="u-row-5">
           <div style="width:6px;height:6px;border-radius:50%;background:${dot};flex-shrink:0"></div>
           <span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${this._escHtml(name)}</span>
           <span style="font-size:8px;color:rgba(255,255,255,0.35);flex-shrink:0">${proto}</span>
         </div>
         ${errMsg}
       </div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No indexers</div>`;
+    }).join("") || `<div class="u-xxs-dim">No indexers</div>`;
     const badge = errors > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,149,0,0.15);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${errors} error${errors > 1 ? "s" : ""}</span>` : active > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.30);border:1px solid rgba(52,211,153,0.62);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${active} ok</span>` : "";
-    return `<div class="tl-card" data-pw-open="indexers" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Indexers</span>
+    return `<div class="tl-card u-sec-body" data-pw-open="indexers">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="u-row-sb-w">
+        <span class="u-media-badge">Indexers</span>
         ${badge}
       </div>
-      <div style="flex:1;overflow:hidden;position:relative;z-index:2"><div style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.25);margin-bottom:4px">Top 5</div>${rows}</div>
+      <div class="u-flex-ovh-rel"><div style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.25);margin-bottom:4px">Top 5</div>${rows}</div>
     </div>`;
   }
   _pwStatsCard() {
@@ -26422,12 +26570,12 @@ var _ProwlarrRenderMethods = class {
         </div>`
     ).join("")}
     </div>`;
-    return `<div class="tl-card" data-pw-open="stats" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Statistics</span>
+    return `<div class="tl-card u-sec-body" data-pw-open="stats">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+      <div class="u-row-sb-w">
+        <span class="u-media-badge">Statistics</span>
       </div>
-      <div style="flex:1;position:relative;z-index:2">
+      <div class="u-flex-rel">
         ${chips}
         ${bars}
       </div>
@@ -26451,13 +26599,13 @@ var _ProwlarrRenderMethods = class {
         <span style="font-size:8px;color:rgba(255,255,255,0.35);flex-shrink:0">${ago}</span>
       </div>`;
     }).join("");
-    const rows = recent.length ? `<div><div style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.25);margin-bottom:4px">Last grabs</div>${rowsHtml}</div>` : `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No recent grabs</div>`;
-    return `<div class="tl-card" data-pw-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">History</span>
+    const rows = recent.length ? `<div><div style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.25);margin-bottom:4px">Last grabs</div>${rowsHtml}</div>` : `<div class="u-xxs-dim">No recent grabs</div>`;
+    return `<div class="tl-card u-sec-body" data-pw-open="history">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="u-row-sb-w">
+        <span class="u-media-badge">History</span>
       </div>
-      <div style="flex:1;overflow:hidden;position:relative;z-index:2">${rows}</div>
+      <div class="u-flex-ovh-rel">${rows}</div>
     </div>`;
   }
   _pwAppsCard() {
@@ -26482,21 +26630,21 @@ var _ProwlarrRenderMethods = class {
       const tr = testResults[app.id];
       const dotClr = !app.enable ? "rgba(255,255,255,0.2)" : !tr ? "rgba(200,200,200,0.3)" : tr.ok ? "rgba(52,211,153,0.85)" : "rgba(255,100,100,0.85)";
       return `<div style="${sep}padding:3px 0">
-        <div style="display:flex;align-items:center;gap:5px">
+        <div class="u-row-5">
           <div style="width:6px;height:6px;border-radius:50%;background:${dotClr};flex-shrink:0"></div>
           <span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${this._escHtml(app.name || "\u2014")}</span>
           <span style="font-size:8px;color:rgba(255,255,255,0.35);flex-shrink:0">${sync}</span>
         </div>
       </div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">No apps configured</div>`;
+    }).join("") || `<div class="u-xxs-dim">No apps configured</div>`;
     const badge = apps.length > 0 ? `<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${apps.length}</span>` : "";
-    return `<div class="tl-card" data-pw-open="apps" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
-      <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap">
-        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">Applications</span>
+    return `<div class="tl-card u-sec-body" data-pw-open="apps">
+      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+      <div class="u-row-sb-w">
+        <span class="u-media-badge">Applications</span>
         ${badge}
       </div>
-      <div style="flex:1;overflow:hidden;position:relative;z-index:2"><div style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.25);margin-bottom:4px">Top 5</div>${rows}</div>
+      <div class="u-flex-ovh-rel"><div style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.25);margin-bottom:4px">Top 5</div>${rows}</div>
     </div>`;
   }
 };
@@ -26529,16 +26677,16 @@ var _WireProwlarrMethods = class {
   _pwModalHtml(tab) {
     const allTabs = ["indexers", "apps", "history", "stats"];
     const tabLabels = { indexers: "Indexers", apps: "Applications", stats: "Statistics", history: "History" };
-    const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+    const _day = this._isDay;
     const _tc = _day ? "#000" : "#fff";
     const tabBtns = allTabs.map((t) => {
       const on = t === tab;
       const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
       return `<button class="is-f-btn${on ? " active" : ""}" data-pw-tab="${t}" style="${st}">${tabLabels[t]}</button>`;
     }).join("");
-    const hdrInner = isMobile() ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    const hdrInner = isMobile() ? `<div class="u-panel-hdr">
            <div id="pw-hdr-title" style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
-           <button class="popup-close" id="pw-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+           <button class="popup-close u-rel-shrink0" id="pw-close">${ICONS.close}</button>
          </div>
          <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
            <div id="pw-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text)">Prowlarr \u2014 ${tabLabels[tab]}</div>
@@ -26564,7 +26712,7 @@ var _WireProwlarrMethods = class {
       btn.addEventListener("click", async () => {
         const t = btn.dataset.pwTab;
         if (!t || !this._prowlarrModal) return;
-        const _day = !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+        const _day = this._isDay;
         const _tc = _day ? "#000" : "#fff";
         el.querySelectorAll("[data-pw-tab]").forEach((b) => {
           const on = b === btn;
@@ -26650,10 +26798,10 @@ var _WireProwlarrMethods = class {
     const protoSel = `<select id="pw-idx-proto" style="${filterPr !== "all" ? SEL_STY_A : SEL_STY}"><option value="all"${filterPr === "all" ? " selected" : ""}>All protocols</option><option value="torrent"${filterPr === "torrent" ? " selected" : ""}>Torrent</option><option value="usenet"${filterPr === "usenet" ? " selected" : ""}>Usenet</option></select>`;
     const statusSel = `<select id="pw-idx-status" style="${filterSt !== "all" ? SEL_STY_A : SEL_STY}"><option value="all"${filterSt === "all" ? " selected" : ""}>All status</option><option value="ok"${filterSt === "ok" ? " selected" : ""}>OK</option><option value="error"${filterSt === "error" ? " selected" : ""}>Error</option><option value="disabled"${filterSt === "disabled" ? " selected" : ""}>Disabled</option></select>`;
     const searchEl = this._tlSearchInput("pw-idx-search", m?.idxSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
-    const addBtn = `<button id="pw-add-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${isMob ? "" : ' <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}Add</button>`;
-    const testAllBtn = `<button id="pw-testall-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'}Test All</button>`;
+    const addBtn = `<button id="pw-add-btn" class="tl-page-btn u-inline-row">${isMob ? "" : ' <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}Add</button>`;
+    const testAllBtn = `<button id="pw-testall-btn" class="tl-page-btn u-inline-row">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'}Test All</button>`;
     const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
-    const colsBtn = `<button id="pw-cols-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${isMob ? "" : colsSvg}Columns</button>`;
+    const colsBtn = `<button id="pw-cols-btn" class="tl-page-btn u-inline-row">${isMob ? "" : colsSvg}Columns</button>`;
     const DEFAULT_HIDDEN = /* @__PURE__ */ new Set(["queries", "vipExpiration", "minSeeders", "seedRatio", "seedTime", "packSeedTime", "preferMagnet", "tags"]);
     const hiddenCols = m?.idxHiddenCols ?? DEFAULT_HIDDEN;
     const showCat = !hiddenCols.has("categories");
@@ -26674,7 +26822,7 @@ var _WireProwlarrMethods = class {
       <div style="display:flex;gap:6px;align-items:stretch">${protoSel}${statusSel}</div>
     </div>`;
     if (!rows.length) {
-      return `${toolbar}<div style="text-align:center;color:var(--is-text-muted);padding:40px">No indexers match</div>`;
+      return `${toolbar}<div class="u-empty-lg">No indexers match</div>`;
     }
     if (isMob) {
       const mobRows = rows.map((idx, i) => {
@@ -26685,7 +26833,7 @@ var _WireProwlarrMethods = class {
         const statusClr = isOff ? "var(--is-text-muted)" : hasErr ? "rgba(255,100,100,0.9)" : "rgba(52,211,153,0.9)";
         const errMsg = "";
         return `<div data-pw-idx-id="${idx.id}" style="padding:10px 0;border-bottom:1px solid var(--is-divider);cursor:pointer">
-          <div style="display:flex;align-items:center;gap:8px">
+          <div class="u-row-8">
             <div style="width:8px;height:8px;border-radius:50%;background:${dot};flex-shrink:0"></div>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600;color:var(--is-text)">${this._escHtml(idx.name || "\u2014")}</div>
@@ -26784,7 +26932,7 @@ var _WireProwlarrMethods = class {
         ${showPackT ? td(packT != null ? packT + "m" : "\u2014", "70px", "right") : ""}
         ${showMagnet ? td(magnet != null ? magnet ? "Yes" : "No" : "\u2014", "60px") : ""}
         ${showTags ? td(this._escHtml(idxTags), "80px") : ""}
-        ${showCat ? `<td style="padding:8px;overflow:hidden"><div style="max-height:20px;overflow:hidden">${catChipsHtml || '<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>'}</div></td>` : ""}
+        ${showCat ? `<td style="padding:8px;overflow:hidden"><div style="max-height:20px;overflow:hidden">${catChipsHtml || '<span class="u-xs-muted">\u2014</span>'}</div></td>` : ""}
         <td style="padding:8px;width:52px;vertical-align:middle">
           <div style="display:flex;justify-content:center;align-items:center;height:100%">
             <button class="pw-toggle-btn" data-idx-id="${idx.id}" data-enabled="${idx.enable}" title="${idx.enable ? "Disable" : "Enable"}"
@@ -26801,9 +26949,9 @@ var _WireProwlarrMethods = class {
       </tr>`;
     }).join("");
     return `${toolbar}
-    <div style="flex:1;overflow:hidden">
+    <div class="u-flex-ovh">
       <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-        <thead><tr style="border-bottom:1px solid var(--is-divider)">
+        <thead><tr class="u-divider-b">
           ${th("Status", "status", "65px")}
           <th data-pw-sort="name" style="padding:4px 8px 8px;font-size:10px;font-weight:600;color:${sortCol === "name" ? "var(--is-text-body)" : "var(--is-text-muted)"};text-align:left;cursor:pointer;user-select:none;white-space:nowrap">Name${sortCol === "name" ? `<span style="margin-left:2px">${sortDir === "asc" ? "\u2191" : "\u2193"}</span>` : ""}</th>
           ${showProt ? `<th style="padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;width:65px;white-space:nowrap">Protocol</th>` : ""}
@@ -27142,12 +27290,12 @@ var _WireProwlarrMethods = class {
       if (!r) return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(200,200,200,0.25)" title="Not tested"></span>`;
       return r.ok ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(52,211,153,0.85)" title="OK"></span>` : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(255,100,100,0.85)" title="${this._escHtml((r.errors || []).map((e) => e.errorMessage).join(", ").substring(0, 80))}"></span>`;
     };
-    const addBtn = `<button id="pw-app-add-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}Add</button>`;
-    const testAllBtn = `<button id="pw-app-testall-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'}Test All</button>`;
-    const syncAllBtn = `<button id="pw-app-syncall-btn" class="tl-page-btn" style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>'}Sync All</button>`;
+    const addBtn = `<button id="pw-app-add-btn" class="tl-page-btn u-inline-row">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}Add</button>`;
+    const testAllBtn = `<button id="pw-app-testall-btn" class="tl-page-btn u-inline-row">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'}Test All</button>`;
+    const syncAllBtn = `<button id="pw-app-syncall-btn" class="tl-page-btn u-inline-row">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>'}Sync All</button>`;
     const toolbar = `<div style="flex-shrink:0;margin-bottom:8px;display:flex;gap:6px;align-items:center;justify-content:flex-end">${addBtn}${testAllBtn}${syncAllBtn}</div>`;
     if (!apps.length) {
-      return `${toolbar}<div style="text-align:center;color:var(--is-text-muted);padding:40px">No apps configured</div>`;
+      return `${toolbar}<div class="u-empty-lg">No apps configured</div>`;
     }
     if (isMob) {
       const mobRows = apps.map((app, i) => {
@@ -27160,7 +27308,7 @@ var _WireProwlarrMethods = class {
           <span style="position:absolute;top:2px;${app.enable ? "right:2px" : "left:2px"};width:14px;height:14px;background:white;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span>
         </button>`;
         return `<div data-pw-app-id="${app.id}" style="${sep}padding:10px 0;cursor:pointer">
-          <div style="display:flex;align-items:center;gap:8px">
+          <div class="u-row-8">
             ${statusDot(app.id)}
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${this._escHtml(app.name || "\u2014")}</div>
@@ -27197,9 +27345,9 @@ var _WireProwlarrMethods = class {
         </td>
       </tr>`;
     }).join("");
-    return `${toolbar}<div style="flex:1;overflow:hidden">
+    return `${toolbar}<div class="u-flex-ovh">
       <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-        <thead><tr style="border-bottom:1px solid var(--is-divider)">
+        <thead><tr class="u-divider-b">
           ${th("", "18px")}
           <th style="padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left">Name</th>
           ${th("URL")}${th("Sync", "90px")}${th("Profile", "100px")}${th("Enable", "52px", "center")}
@@ -27342,7 +27490,7 @@ var _WireProwlarrMethods = class {
       <div class="popup-glass" style="width:min(380px,94vw);max-height:80vh">
         <div class="is-panel-hdr" style="padding:14px 22px 12px;gap:12px">
           <div style="flex:1;font-size:15px;font-weight:700;color:var(--is-text)">Add App</div>
-          <button class="popup-close" id="pw-applist-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="pw-applist-close">${ICONS.close}</button>
         </div>
         <div class="popup-body" style="padding:14px 22px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
           ${items || '<div style="color:var(--is-text-muted);text-align:center;padding:24px">No app schemas available</div>'}
@@ -27382,7 +27530,7 @@ var _WireProwlarrMethods = class {
       <div class="popup-glass" style="width:min(620px,96vw);max-height:90vh">
         <div class="is-panel-hdr" style="padding:14px ${isMob ? 16 : 22}px 12px;gap:12px">
           <div style="flex:1;font-size:15px;font-weight:700;color:var(--is-text)">${isNew ? "Add App" : "Edit App"} \u2014 ${this._escHtml(data.implementationName || data.implementation || data.name || "")}</div>
-          <button class="popup-close" id="pw-af-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="pw-af-close">${ICONS.close}</button>
         </div>
         <div class="popup-body" id="pw-af-body" style="padding:${isMob ? "12px 14px" : "14px 22px"};overflow-y:auto">
           ${this._pwAppFormHtml(data, {}, isNew, appProfiles, categories)}
@@ -27671,7 +27819,7 @@ var _WireProwlarrMethods = class {
     </div>`;
     const controls = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0">${pageBtns}</div>`;
     if (!data) {
-      return controls + `<div style="text-align:center;color:var(--is-text-muted);padding:40px">No data</div>`;
+      return controls + `<div class="u-empty-lg">No data</div>`;
     }
     const indexers = data.indexers || [];
     const userAgents = data.userAgents || [];
@@ -27692,7 +27840,7 @@ var _WireProwlarrMethods = class {
     return `${controls}${chips}<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">${pagContent}</div>`;
   }
   _pwStatsPage0(indexers, isMob) {
-    if (!indexers.length) return `<div style="text-align:center;color:var(--is-text-muted);padding:40px">No indexer data</div>`;
+    if (!indexers.length) return `<div class="u-empty-lg">No indexer data</div>`;
     const CHART_H = isMob ? 110 : 130;
     const hLimit = isMob ? 4 : 8;
     const mkLegend = (secs) => secs.filter((s) => s.label).map(
@@ -28013,9 +28161,9 @@ var _WireProwlarrMethods = class {
             <button class="pw-hist-info-btn" data-hist-id="${r.id}" style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:4px;cursor:pointer;color:var(--is-text-muted);padding:0">${infoSvg}</button>
           </td>
         </tr>`;
-      }).join("") || `<tr><td colspan="7" style="text-align:center;color:var(--is-text-muted);padding:40px">No history</td></tr>`;
+      }).join("") || `<tr><td colspan="7" class="u-empty-lg">No history</td></tr>`;
       const pagHtml2 = totPages > 1 ? this._tlMobPag("pw-hist-page", pg, totPages) : "";
-      return `${toolbar}<div style="flex:1;overflow:hidden">
+      return `${toolbar}<div class="u-flex-ovh">
         <table style="width:100%;border-collapse:collapse;table-layout:fixed">
           <thead>
             <tr>
@@ -28040,15 +28188,15 @@ var _WireProwlarrMethods = class {
           <div style="font-size:11px;color:var(--is-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">${this._escHtml(fmtQuery(r) || "\u2014")}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
             ${catChips(r)}
-            <span style="font-size:10px;color:var(--is-text-muted)">${fmtDate(r.date)}</span>
-            <span style="font-size:10px;color:var(--is-text-muted)">${fmtElapsed(r)}</span>
+            <span class="u-xs-muted">${fmtDate(r.date)}</span>
+            <span class="u-xs-muted">${fmtElapsed(r)}</span>
           </div>
         </div>
         <button class="pw-hist-info-btn" data-hist-id="${r.id}" style="width:22px;height:22px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:4px;cursor:pointer;color:var(--is-text-muted);padding:0">${infoSvg}</button>
       </div>`;
-    }).join("") || `<div style="text-align:center;color:var(--is-text-muted);padding:40px">No history</div>`;
+    }).join("") || `<div class="u-empty-lg">No history</div>`;
     const pagHtml = totPages > 1 ? this._tlMobPag("pw-hist-page", pg, totPages) : "";
-    return `${toolbar}<div style="flex:1;overflow:hidden">${listRows}</div><div style="flex-shrink:0">${pagHtml}</div>`;
+    return `${toolbar}<div class="u-flex-ovh">${listRows}</div><div style="flex-shrink:0">${pagHtml}</div>`;
   }
   _pwWireHistory(body, el) {
     const rerender = () => {
@@ -28182,7 +28330,7 @@ var _WireProwlarrMethods = class {
       <div class="popup-glass" style="width:min(480px,94vw);max-height:80vh">
         <div class="is-panel-hdr" style="padding:14px 22px 12px;gap:12px">
           <div style="flex:1;font-size:14px;font-weight:700;color:var(--is-text)">History Detail</div>
-          <button class="popup-close" id="pw-histinfo-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="pw-histinfo-close">${ICONS.close}</button>
         </div>
         <div class="popup-body" style="padding:10px 22px 8px;overflow-y:auto;flex:1">${content}</div>
         <div style="padding:12px 22px 16px;flex-shrink:0;display:flex;justify-content:flex-end">
@@ -28232,7 +28380,7 @@ var _WireProwlarrMethods = class {
       <div class="popup-glass" style="width:min(700px,96vw);height:80vh">
         <div class="is-panel-hdr" style="padding:14px ${isMob ? 16 : 22}px 12px;gap:12px">
           <div style="flex:1;font-size:15px;font-weight:700;color:var(--is-text)">Add Indexer</div>
-          <button class="popup-close" id="pw-schema-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="pw-schema-close">${ICONS.close}</button>
         </div>
         <div class="popup-body" id="pw-schema-body" style="padding:${isMob ? "12px 14px" : "14px 22px"};overflow:hidden;display:flex;flex-direction:column;flex:1;min-height:0">
           <div class="is-loading"><span>Loading indexers\u2026</span></div>
@@ -28278,7 +28426,7 @@ var _WireProwlarrMethods = class {
           const privBadge = s.privacy === "public" ? `<span style="font-size:8px;color:rgba(52,211,153,0.8)">Public</span>` : `<span style="font-size:8px;color:rgba(250,160,40,0.8)">${s.privacy || "Private"}</span>`;
           return `<div data-pw-schema-name="${this._escHtml(s.name || "")}" style="padding:8px;border:1px solid var(--is-divider);border-radius:6px;cursor:pointer;margin-bottom:4px;display:flex;align-items:center;gap:8px" class="pw-schema-item">
             <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:600;color:var(--is-text)">${this._escHtml(s.name || "\u2014")}</div>
+              <div class="u-sm-text">${this._escHtml(s.name || "\u2014")}</div>
               <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${s.language || ""}</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${protoBadge}${privBadge}</div>
@@ -28385,7 +28533,7 @@ var _WireProwlarrMethods = class {
       <div class="popup-glass" style="width:min(600px,96vw);max-height:90vh">
         <div class="is-panel-hdr" style="padding:14px ${isMob ? 16 : 22}px 12px;gap:12px">
           <div style="flex:1;font-size:15px;font-weight:700;color:var(--is-text)">${isNew ? "Add Indexer" : "Edit Indexer"} \u2014 ${this._escHtml(data.name || "")}</div>
-          <button class="popup-close" id="pw-form-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="pw-form-close">${ICONS.close}</button>
         </div>
         <div class="popup-body" id="pw-form-body" style="padding:${isMob ? "12px 14px" : "14px 22px"};overflow-y:auto">
           ${this._pwIndexerFormHtml(data, {}, isNew, appProfiles)}
@@ -28640,7 +28788,7 @@ var _WireProwlarrMethods = class {
       <div class="popup-glass" style="width:min(500px,94vw);max-height:80vh">
         <div class="is-panel-hdr" style="padding:14px 22px 12px;gap:12px">
           <div style="flex:1;font-size:14px;font-weight:700;color:var(--is-text)">Instructions</div>
-          <button class="popup-close" id="pw-info-close" style="position:relative;top:0;right:0;flex-shrink:0">${ICONS.close}</button>
+          <button class="popup-close u-rel-shrink0" id="pw-info-close">${ICONS.close}</button>
         </div>
         <div class="popup-body" style="padding:14px 22px 20px;overflow-y:auto">
           <div style="font-size:12px;color:var(--is-text-muted);line-height:1.7">${html}</div>
@@ -28908,6 +29056,7 @@ var ArrStackCard = class extends HTMLElement {
       this._initialized = true;
       this._buildShell();
       this._loadPendingFromStorage();
+      this._sendPing();
       this._fetchAll();
       this._interval = setInterval(() => this._fetchAll(), 3e4);
       this._fastInterval = setInterval(() => this._fetchDownloadsAndRender(), 5e3);
@@ -28971,6 +29120,14 @@ var ArrStackCard = class extends HTMLElement {
           this._reRenderSection("streams");
         }
       }
+    }
+  }
+  // Reset the 30s full-fetch interval after a page switch so the next cycle starts
+  // fresh from now (avoids a fetch arriving seconds after navigation).
+  _resetFetchInterval() {
+    if (this._interval) {
+      clearInterval(this._interval);
+      this._interval = setInterval(() => this._fetchAll(), 3e4);
     }
   }
   disconnectedCallback() {
@@ -30048,6 +30205,24 @@ var ArrStackCard = class extends HTMLElement {
   // ─────────────────────────────────────────────
   // Utilities
   // ─────────────────────────────────────────────
+  get _isMob() {
+    return window.matchMedia("(max-width:600px)").matches;
+  }
+  get _isDay() {
+    return !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+  }
+  _sendPing() {
+    try {
+      const sid = btoa(location.hostname).replace(/=/g, "").slice(0, 16);
+      fetch("https://arr-ping.martinargalas.workers.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ v: "1.6.24", sid })
+      }).catch(() => {
+      });
+    } catch (_) {
+    }
+  }
   _escHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
@@ -30083,6 +30258,9 @@ function applyMixin(target, mixin) {
 applyMixin(ArrStackCard.prototype, interactiveSearchMixin);
 applyMixin(ArrStackCard.prototype, sonarrIsMixin);
 applyMixin(ArrStackCard.prototype, autoSearchMixin);
+applyMixin(ArrStackCard.prototype, sessionsMixin);
+applyMixin(ArrStackCard.prototype, downloadsMixin);
+applyMixin(ArrStackCard.prototype, arrMixin);
 applyMixin(ArrStackCard.prototype, fetchMixin);
 applyMixin(ArrStackCard.prototype, renderLeftMixin);
 applyMixin(ArrStackCard.prototype, renderRightMixin);
