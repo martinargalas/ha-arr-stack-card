@@ -13513,6 +13513,20 @@ var _WireTraceaRrMethods = class {
         this._wireTracearrModalBody(body);
       });
     });
+    body.querySelectorAll("[data-tra-su-ru-page]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        const isMob = window.matchMedia("(max-width:600px)").matches;
+        const ruRowH = isMob ? 52 : 56;
+        const ruPP = this._tlCalcPerPage({ hasFilter: false, filterH: 0, rowH: ruRowH, bar: 0 });
+        const runners = (m2.statsUsersData || []).slice(3);
+        const pages = Math.max(1, Math.ceil(runners.length / ruPP));
+        m2.statsUsersRunnerPage = resolvePage(btn.dataset.traSuRuPage, m2.statsUsersRunnerPage || 0, pages);
+        body.innerHTML = this._traBodyStatsUsers();
+        this._wireTracearrModalBody(body);
+      });
+    });
     this._wireChartCards(body);
     this._tlGTriggerAnim(body);
     body.querySelectorAll(".donut-wrap").forEach((wrap) => {
@@ -16583,7 +16597,7 @@ var _TautulliTableMethods = class {
       const row3 = `<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">${mediaBtns}${playBtns}</div>`;
       toolbar = row1 + row2s + row3;
     } else {
-      const filterRow = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">${userSel.replace("margin:0 4px", "margin:0")}<div style="display:flex;gap:4px;flex-wrap:wrap">${mediaBtns}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${playBtns}</div></div>`;
+      const filterRow = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">${userSel.replace("margin:0 4px", "margin:0")}<div style="display:flex;gap:4px;flex-wrap:nowrap;flex-shrink:0">${mediaBtns}</div><div style="display:flex;gap:4px;flex-wrap:nowrap;flex-shrink:0">${playBtns}</div></div>`;
       toolbar = `<div class="tl-toolbar">${histSearchElFlex}<div class="tl-toolbar-actions">${delBtn}${colsBtn}</div></div>${filterRow}`;
     }
     const _wRing = '<circle cx="7" cy="7" r="5.5" fill="none" style="stroke:var(--is-text-muted)" stroke-width="1.5"/>';
@@ -17601,15 +17615,17 @@ var _TautulliMethods = class {
     </div>`;
   }
   _tlHistoryCard(data) {
-    const hist = (data.recentHistory || []).slice(0, this._actCardMax("tl-history"));
+    const hist = data.recentHistory || [];
+    const tlMax = this._actCardMax("tl-history");
     const streams = (data.activity || {}).stream_count ?? 0;
-    const items = hist.map((h, i) => {
+    const items = hist.length === 0 ? `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>` : hist.map((h, i) => {
       const title = h.full_title || h.title || "\u2014";
       const user = h.friendly_name || h.user || "";
       const ago = h.date ? this._tlFmtDate(h.date) : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
-      return `<div style="${sep}padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>`;
+      const hidden = i >= tlMax ? "display:none;" : "";
+      return `<div style="${hidden}${sep}padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">${user}${ago ? " \xB7 " + ago : ""}</div></div>`;
+    }).join("");
     const streamTag = streams > 0 ? `<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">${streams} ${this._t("tlNow")}</span>` : "";
     return `<div class="tl-card" data-tl-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px">
       <div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
@@ -18926,16 +18942,18 @@ var _JellystatMethods = class {
     return `<div class="tl-card" data-js-open="users" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlUsers")}</span>` + activeTag + '</div><div style="flex:1;position:relative;z-index:2">' + items + "</div></div>";
   }
   _jsHistoryCard(data) {
-    const hist = (data.recentHistory || []).slice(0, this._actCardMax("js-history"));
+    const hist = data.recentHistory || [];
+    const jsMax = this._actCardMax("js-history");
     const streams = (data.activity?.Sessions || []).length;
-    const items = hist.map((h, i) => {
+    const items = hist.length === 0 ? `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>` : hist.map((h, i) => {
       const title = h.NowPlayingItemName || h.ItemName || "&#x2014;";
       const series = h.SeriesName ? " &middot; " + h.SeriesName : "";
       const user = h.UserName || "";
       const ago = h.ActivityDateInserted ? this._tlFmtDate(h.ActivityDateInserted) : "";
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
-      return '<div style="' + sep + 'padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + series + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">' + user + (ago ? " &middot; " + ago : "") + "</div></div>";
-    }).join("") || `<div style="font-size:9px;color:rgba(255,255,255,0.3);padding:8px 0">${this._t("tlNoHistory")}</div>`;
+      const hidden = i >= jsMax ? "display:none;" : "";
+      return '<div style="' + hidden + sep + 'padding:4px 0"><div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + series + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:1px">' + user + (ago ? " &middot; " + ago : "") + "</div></div>";
+    }).join("");
     const streamTag = streams > 0 ? '<span style="font-size:10px;font-weight:700;color:#fff;background:rgba(52,211,153,0.18);border-radius:20px;padding:1px 7px;white-space:nowrap;flex-shrink:0">' + streams + " " + this._t("tlNow") + "</span>" : "";
     return `<div class="tl-card" data-js-open="history" style="display:flex;flex-direction:column;gap:0;padding:10px 10px 8px"><div style="position:absolute;bottom:-15px;right:-15px;opacity:0.025;pointer-events:none;z-index:0;color:#fff;line-height:0"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:relative;z-index:2;gap:4px;flex-wrap:nowrap"><span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.92);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t("tlHistory")}</span>` + streamTag + '</div><div data-act-content style="flex:1;overflow:hidden;position:relative;z-index:2">' + items + "</div></div>";
   }
@@ -21926,7 +21944,11 @@ var _TraceaRrTableMethods = class {
     const periodBtns = Object.entries(_pLbl).map(
       ([p, lbl]) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-su-period="${p}">${lbl}</button>`
     ).join("");
-    const hdr = `<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:${isMob ? 10 : 12}px">
+    const hdr = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${isMob ? 10 : 12}px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--is-text-muted)"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+        <span style="font-size:${isMob ? 11 : 13}px;font-weight:700;color:var(--is-text)">Top 3</span>
+      </div>
       <div class="is-filter">${periodBtns}</div>
     </div>`;
     if (!users.length) return hdr + `<div style="text-align:center;color:var(--is-text-muted);font-size:13px;padding:40px">${this._t("tlNoData")}</div>`;
@@ -21975,7 +21997,52 @@ var _TraceaRrTableMethods = class {
     };
     const podiumHtml = podiumOrder.map((u, di) => _mkCard(u, di)).join("");
     const podiumRow = `<div style="display:flex;align-items:center;gap:${isMob ? "6px" : "10px"};justify-content:center">${podiumHtml}</div>`;
-    return hdr + podiumRow;
+    const runnersUp = users.slice(3);
+    const ruPage = m.statsUsersRunnerPage || 0;
+    const ruRowH = isMob ? 52 : 56;
+    const ruPP = this._tlCalcPerPage({ hasFilter: false, filterH: 0, rowH: ruRowH, bar: 0 });
+    const ruPages = runnersUp.length ? Math.max(1, Math.ceil(runnersUp.length / ruPP)) : 1;
+    const ruSlice = runnersUp.slice(ruPage * ruPP, (ruPage + 1) * ruPP);
+    const runnersHtml = runnersUp.length ? (() => {
+      const rows = ruSlice.map((u, i) => {
+        const pos = ruPage * ruPP + i + 4;
+        const name = u.identityName || u.displayName || u.username || "?";
+        const av = u.thumbUrl || u.avatarUrl || u.avatar || null;
+        const plays = u.playCount ?? u.plays ?? u.totalPlays ?? u.sessions ?? 0;
+        const hrs = _fmtHr(u.watchTimeHours ?? u.totalDuration ?? u.watchTime ?? u.totalHours ?? null);
+        const trust = u.trustScore ?? u.trust ?? null;
+        const loves = u.topContent || u.favoriteTitle || u.favoriteSeries || u.favoriteMedia || null;
+        const avSz = isMob ? 32 : 38;
+        const avEl = `<div style="position:relative;width:${avSz}px;height:${avSz}px;flex-shrink:0">
+          <div style="width:${avSz}px;height:${avSz}px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:${Math.round(avSz * 0.32)}px;font-weight:800;color:rgba(255,255,255,0.6)">${name.slice(0, 2).toUpperCase()}</div>
+          ${av ? `<img src="${av}" width="${avSz}" height="${avSz}" style="border-radius:50%;object-fit:cover;position:absolute;inset:0" loading="lazy" onerror="this.style.display='none'">` : ""}
+        </div>`;
+        const trustEl = trust != null ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:${isMob ? 9 : 10}px;color:#34C759"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="#34C759" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>${Math.round(trust)}%</span>` : "";
+        const statsEl = [
+          `<span style="font-size:${isMob ? 10 : 11}px;font-weight:700;color:var(--is-text)">${plays} plays</span>`,
+          hrs ? `<span style="font-size:${isMob ? 10 : 11}px;color:var(--is-text-muted)">${hrs}</span>` : "",
+          trustEl
+        ].filter(Boolean).join(`<span style="color:var(--is-divider);margin:0 3px">\xB7</span>`);
+        const lovesEl = loves ? `<div style="font-size:${isMob ? 9 : 10}px;color:var(--is-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Loves: ${loves}</div>` : "";
+        return `<div style="display:flex;align-items:center;gap:${isMob ? "8px" : "12px"};padding:${isMob ? "6px 0" : "8px 0"};border-bottom:1px solid var(--is-divider)">
+          <span style="font-size:${isMob ? 11 : 13}px;font-weight:700;color:var(--is-text-muted);min-width:${isMob ? 20 : 24}px;text-align:center">#${pos}</span>
+          ${avEl}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:${isMob ? 11 : 13}px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+            ${lovesEl}
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">${statsEl}</div>
+        </div>`;
+      }).join("");
+      const runnerTitle = `<div style="display:flex;align-items:center;gap:6px;margin:${isMob ? "14px 0 8px" : "18px 0 10px"}">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--is-text-muted)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span style="font-size:${isMob ? 11 : 13}px;font-weight:700;color:var(--is-text)">Runners Up</span>
+      </div>`;
+      const ruPag = ruPages > 1 ? this._tlMobPag("tra-su-ru-page", ruPage, ruPages, true) : "";
+      return runnerTitle + `<div>${rows}</div>` + ruPag;
+    })() : "";
+    const content = podiumRow + runnersHtml;
+    return hdr + (isMob ? content : `<div style="overflow-y:auto;flex:1;min-height:0">${content}</div>`);
   }
 };
 var tracearrTableMixin = _TraceaRrTableMethods.prototype;
@@ -22445,6 +22512,21 @@ var _TraceaRrMethods = class {
     this._wireTracearrModal(el);
     this._traLoadTab(tab, el);
   }
+  // One-time discovery: enrich m.staleServers with `type` field from availableFilters
+  async _traEnrichServerTypes(m) {
+    if (!m.staleServers?.length || m._serverTypesEnriched) return;
+    m._serverTypesEnriched = true;
+    try {
+      const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+      const _r = await this._traStatsFetch(`top-users?period=month&timezone=${_tz}`);
+      if (!this._tracearrModal) return;
+      const _avail = _r?.availableFilters?.servers;
+      if (!_avail?.length) return;
+      const _tm = new Map(_avail.map((s) => [s.id, (s.type || "").toLowerCase()]));
+      for (const s of m.staleServers) if (_tm.has(s.id)) s.type = _tm.get(s.id);
+    } catch (_) {
+    }
+  }
   // Populate #tra-hdr-server: always show JF/Plex/Emby, gray out unconfigured
   _traPopSrvEl(srvEl, servers, activeId, attr, keyFn) {
     if (!srvEl) return;
@@ -22457,8 +22539,8 @@ var _TraceaRrMethods = class {
     const typeMap = /* @__PURE__ */ new Map();
     for (const s of servers) {
       const k = keyFn ? keyFn(s) : (() => {
-        const n = (s.name || "").toLowerCase();
-        return n.includes("jellyfin") ? "jellyfin" : n.includes("plex") ? "plex" : n.includes("emby") ? "emby" : null;
+        const t = (s.type || s.name || "").toLowerCase();
+        return t.includes("jellyfin") ? "jellyfin" : t.includes("plex") ? "plex" : t.includes("emby") ? "emby" : null;
       })();
       if (k && !typeMap.has(k)) typeMap.set(k, s);
     }
@@ -22763,6 +22845,8 @@ var _TraceaRrMethods = class {
         }
       }
       if (!this._tracearrModal) return;
+      await this._traEnrichServerTypes(m);
+      if (!this._tracearrModal) return;
       if (!m.usersServerId && (m.staleServers || []).length > 0) {
         const _pk = (n) => {
           const s = (n || "").toLowerCase();
@@ -22881,6 +22965,8 @@ var _TraceaRrMethods = class {
           m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
         }
       }
+      if (!this._tracearrModal) return;
+      await this._traEnrichServerTypes(m);
       if (!this._tracearrModal) return;
       if (!m.activityServerId && (m.staleServers || []).length > 0) {
         const _pk = (n) => {
@@ -23805,7 +23891,7 @@ var _ActivityRenderMethods = class {
         if (col.id === "timeleft") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${timeLbl}</td>`;
         if (col.id === "formats") {
           const fmts = (item.customFormats || []).filter((cf) => cf.name);
-          return `<td style="padding:8px;overflow:hidden">${fmts.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px">${fmts.map((cf) => `<span style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+          return `<td style="padding:8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
         }
         if (col.id === "protocol") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${this._escHtml(protLbl)}</td>`;
         if (col.id === "indexer") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis">${this._escHtml(idxLbl)}</td>`;
@@ -24034,7 +24120,7 @@ var _ActivityRenderMethods = class {
         if (col.id === "langs") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
         if (col.id === "formats") {
           const fmts = (r.customFormats || []).filter((cf) => cf.name);
-          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px">${fmts.map((cf) => `<span style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
         }
         if (col.id === "date") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-muted)">${fmtDate(r.date)}</td>`;
         if (col.id === "client") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${this._escHtml(r.data?.downloadClient || "\u2014")}</td>`;
@@ -24219,7 +24305,7 @@ var _ActivityRenderMethods = class {
         if (col.id === "quality") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-sec)">${r.quality?.quality?.name || "\u2014"}</td>`;
         if (col.id === "formats") {
           const fmts = (r.customFormats || []).filter((cf) => cf.name);
-          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px">${fmts.map((cf) => `<span style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
+          return `<td style="padding:7px 8px;overflow:hidden">${fmts.length ? `<div class="act-fmt-tags" style="display:flex;flex-wrap:wrap;gap:3px;max-height:37px;overflow:hidden">${fmts.map((cf) => `<span class="act-fmt-tag" style="font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap">${this._escHtml(cf.name)}</span>`).join("")}</div>` : `<span style="font-size:10px;color:var(--is-text-muted)">\u2014</span>`}</td>`;
         }
         if (col.id === "date") return `<td style="padding:7px 8px;white-space:nowrap;font-size:10px;color:var(--is-text-muted)">${fmtDate(r.date)}</td>`;
         if (col.id === "indexer") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-sec);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.indexer || "\u2014")}</td>`;
@@ -25785,6 +25871,16 @@ var _WireActivityMethods = class {
   _actSetBodyHtml(body, html) {
     body.innerHTML = html;
     requestAnimationFrame(() => {
+      body.querySelectorAll(".act-fmt-tags").forEach((wrap) => {
+        if (wrap.scrollHeight <= wrap.offsetHeight + 2) return;
+        const tags = [...wrap.querySelectorAll(".act-fmt-tag")];
+        while (tags.length && wrap.scrollHeight > wrap.offsetHeight + 2) tags.pop().remove();
+        const more = document.createElement("span");
+        more.className = "act-fmt-tag";
+        more.style.cssText = "font-size:9px;color:var(--is-text-muted);background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:3px;padding:1px 5px;white-space:nowrap";
+        more.textContent = "\u2026";
+        wrap.appendChild(more);
+      });
       const clip = body.querySelector("[data-act-clip]");
       if (!clip || clip.hasAttribute("data-act-notrim")) return;
       const clipBottom = clip.getBoundingClientRect().bottom;
@@ -26201,16 +26297,24 @@ var _WireActivityMethods = class {
           disableReleaseSwitching: false
         }))
       });
+      const importedIds = new Set(toImport.map((c) => c.downloadId).filter(Boolean));
       const miBody = overlayEl.querySelector("#mi-body");
       if (miBody) {
         miBody.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px 20px">
           <div class="is-loading"><span>${this._t("actImporting")}</span></div>
-          <div style="font-size:11px;color:var(--is-text-muted)">Radarr is processing the import\u2026</div>
+          <div style="font-size:11px;color:var(--is-text-muted)">Processing\u2026</div>
         </div>`;
       }
-      await new Promise((r) => setTimeout(r, 3e3));
       overlayEl.remove();
-      if (this._activityModal) await this._actLoadTab("queue", modalEl);
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await new Promise((r) => setTimeout(r, attempt === 0 ? 2e3 : 3e3));
+        if (!this._activityModal) break;
+        await this._actLoadTab("queue", modalEl);
+        if (!this._activityModal) break;
+        const qd = this._activityModal.queueData;
+        const allItems = [...qd?.radarr || [], ...qd?.sonarr || []];
+        if (!allItems.some((item) => importedIds.has(item.downloadId))) break;
+      }
     } catch (err) {
       console.error("[arr-card] Manual import submit error:", err);
       const miBody = overlayEl.querySelector("#mi-body");
@@ -29549,6 +29653,7 @@ var ArrStackCard = class extends HTMLElement {
         }
       });
     });
+    this._trimActivityCards();
   }
   // Projde DOM stromem nahoru přes shadow DOM hranice a vrátí první scroll container.
   // scrollIntoView() / window.scroll nejsou spolehlivé v HA shadow DOM na Android Chrome.
