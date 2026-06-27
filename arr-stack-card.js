@@ -390,7 +390,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "jellystat", enabled: false },
       { id: "tracearr", enabled: false },
       { id: "activity", enabled: false },
-      { id: "prowlarr", enabled: false }
+      { id: "prowlarr", enabled: false },
+      { id: "library", enabled: false }
     ];
   }
   _getCats() {
@@ -417,7 +418,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       jellystat: "Statistics (Jellyfin)",
       tracearr: "Streaming Statistics (Tracearr)",
       activity: "Activity (Queue / History / Blocklist)",
-      prowlarr: "Prowlarr (Indexers / Stats / History)"
+      prowlarr: "Prowlarr (Indexers / Stats / History)",
+      library: "Library (Movies & TV Shows)"
     }[id] || id;
   }
   _defaultClients() {
@@ -3165,6 +3167,9 @@ var STYLES = `
       }
       .is-f-btn:hover  { background: var(--is-btn-hbg); color: var(--is-btn-hclr); }
       .is-f-btn.active { background: var(--is-btn-bg); border-color: var(--is-btn-bdr); color: var(--is-text); }
+      .is-tab-lg .is-f-btn {
+        height: 28px !important; box-sizing: border-box !important; padding: 0 12px !important; font-size: 11px !important;
+      }
 
       .is-loading {
         display: flex; flex-direction: column;
@@ -3892,6 +3897,63 @@ var STYLES = `
       /* Icon sizes */
       .icon-15   { --mdc-icon-size: 15px; }
       .icon-11-st { --mdc-icon-size: 11px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.85); }
+
+      /* \u2500\u2500 Library category \u2500\u2500 */
+      .lib-tile-card { position: relative; cursor: pointer; border-radius: 10px; overflow: hidden; }
+      .lib-tile-grid {
+        position: relative; aspect-ratio: 2/3;
+        display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+        overflow: hidden; border-radius: 10px;
+      }
+      .lib-sub-poster { overflow: hidden; }
+      .lib-sub-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .lib-sub-empty { background: rgba(255,255,255,0.05); }
+      .lib-tile-dim {
+        position: absolute; inset: 0; background: rgba(0,0,0,0.15);
+        z-index: 1; pointer-events: none;
+      }
+      .lib-tile-arrow {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        z-index: 2; pointer-events: none;
+        opacity: 0; transition: opacity .18s;
+      }
+      .lib-tile-card:hover .lib-tile-arrow { opacity: 1; }
+      .lib-tile-card:hover .smp-btn { transform: scale(1.1); }
+      .lib-tile-card .media-type-tag { z-index: 3; }
+
+      /* \u2500\u2500 Library modal controls \u2500\u2500 */
+      .lib-search-input {
+        flex: 1; min-width: 0; height: 30px; border-radius: 7px; padding: 0 10px;
+        border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg);
+        color: var(--is-text-body); font-size: 12px; font-family: inherit; outline: none;
+      }
+      .lib-search-input::placeholder { opacity: 0.45; }
+      .lib-sort-sel {
+        height: 30px; border-radius: 7px; padding: 0 8px;
+        border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg);
+        color: var(--is-text-body); font-size: 12px; font-family: inherit; outline: none; cursor: pointer;
+      }
+      .lib-sort-dir-btn {
+        height: 30px; width: 30px; border-radius: 7px; flex-shrink: 0;
+        border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg);
+        color: var(--is-text-body); font-size: 14px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .lib-view-btn {
+        height: 28px; width: 28px; border-radius: 6px; flex-shrink: 0;
+        border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg);
+        color: var(--is-text-body); cursor: pointer;
+        display: flex; align-items: center; justify-content: center; transition: all .15s;
+      }
+      .lib-view-active { background: rgba(10,132,255,0.25); border-color: rgba(10,132,255,0.5); }
+      .lib-fb {
+        height: 26px; padding: 0 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+        border: 1px solid var(--is-btn-bdr); background: var(--is-btn-bg);
+        color: var(--is-text-body); cursor: pointer; transition: all .15s;
+      }
+      .lib-fb-active { background: rgba(10,132,255,0.25); border-color: rgba(10,132,255,0.5); }
+      .lib-table-row { cursor: pointer; }
+      .lib-table-row:hover td { background: var(--is-row-hover, rgba(255,255,255,0.05)); }
     `;
 
 // src/render/interactive-search.js
@@ -4995,6 +5057,7 @@ var _FetchMethods = class {
     this._reRenderRight?.();
   }
   async _fetchDownloadsAndRender() {
+    if (this._popup) return;
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
     const prevNzbget = new Set((this._nzbgetQueue || []).map((s) => s.NZBID));
@@ -8005,7 +8068,7 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr"];
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr", "library"];
     const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
     const hasActiveStreams = (this._jellyfinSessions || []).length > 0 || (this._embySessions || []).length > 0 || (this._kodiSessions || []).length > 0 || Object.keys(states).some((id) => {
@@ -8029,7 +8092,8 @@ var _RenderRight = class {
       jellystat: this._hass?.user?.is_admin && this._jellystatConfigured !== false ? () => this._renderJellystat() : null,
       tracearr: this._hass?.user?.is_admin && this._tracearrConfigured !== false ? () => this._renderTracearr() : null,
       activity: this._hass?.user?.is_admin ? () => this._renderActivity() : null,
-      prowlarr: this._hass?.user?.is_admin && this._prowlarrConfigured !== false ? () => this._renderProwlarr() : null
+      prowlarr: this._hass?.user?.is_admin && this._prowlarrConfigured !== false ? () => this._renderProwlarr() : null,
+      library: this._radarr?.length || this._sonarr?.length ? () => this._renderLibrary() : null
     };
     const regularCategories = [
       ...hasPending ? [() => this._renderPendingRequests()] : [],
@@ -14684,15 +14748,46 @@ var _PopupMethods = class {
         if (e.target.closest(".plex-cast-dropdown")) return;
         _resetPopupTransient();
         this._popup = null;
+        this._libReturnState = null;
         this._renderPopupEl();
       });
     }
     if (closeBtn) {
+      if (this._libReturnState) {
+        const _backArrow = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+        closeBtn.innerHTML = _backArrow;
+      }
       closeBtn.addEventListener("click", () => {
         _resetPopupTransient();
         this._popup = null;
         this._isState = null;
-        this._renderPopupEl();
+        if (this._libReturnState) {
+          const saved = this._libReturnState;
+          this._libReturnState = null;
+          this._renderPopupEl();
+          this._openLibModal(saved.typeKey === "movies" ? "movies" : saved.typeKey === "tv" ? "tv" : saved.qualityKey || "all");
+          const m = this._libModal;
+          if (m) {
+            m.typeKey = saved.typeKey;
+            m.qualityKey = saved.qualityKey;
+            m.instFilter = saved.instFilter;
+            m.search = saved.search;
+            m.sort = saved.sort;
+            m.sortDir = saved.sortDir;
+            m.view = saved.view;
+            m.filter = saved.filter;
+            m.page = saved.page;
+            const libEl = this.shadowRoot.querySelector("[data-lib-modal]");
+            const bodyEl = libEl?.querySelector("#lib-body");
+            if (bodyEl?.clientHeight > 0) {
+              m._bodyH = bodyEl.clientHeight;
+              bodyEl.innerHTML = this._libBodyHtml();
+              this._wireLibModalBody(libEl);
+            }
+          }
+        } else {
+          this._renderPopupEl();
+        }
       });
     }
     if (glass) glass.addEventListener("click", (e) => {
@@ -17977,6 +18072,7 @@ var _TautulliMethods = class {
   }
   _tlModalHtml(tab) {
     const isMobile2 = this._isMob;
+    const _tabLg = !isMobile2 && window.matchMedia("(max-width:860px)").matches ? " is-tab-lg" : "";
     const allTabs = ["libraries", "users", "history", "graphs"];
     const _day = this._isDay;
     const _tc = _day ? "#000" : "#fff";
@@ -17994,7 +18090,7 @@ var _TautulliMethods = class {
            <div id="tl-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._tlTabTitle(tab)}</div>
            ${sub ? `<div id="tl-hdr-sub" style="font-size:12px;color:var(--is-text-sec);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>` : ""}
          </div>
-         <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         <div class="is-filter${_tabLg}" style="flex-shrink:0">${tabBtns}</div>
          <button class="popup-close" id="tl-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">${ICONS.close}</button>`;
     const hdrStyle = isMobile2 ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
     return `<div class="popup-overlay${dayClass(this)}" data-tl-modal>
@@ -19211,6 +19307,7 @@ var _JellystatMethods = class {
   }
   _jsModalHtml(tab) {
     const isMobile2 = this._isMob;
+    const _tabLg = !isMobile2 && window.matchMedia("(max-width:860px)").matches ? " is-tab-lg" : "";
     const allTabs = ["libraries", "users", "history", "graphs"];
     const _day = this._isDay;
     const _tc = _day ? "#000" : "#fff";
@@ -19219,7 +19316,7 @@ var _JellystatMethods = class {
       const st = on ? "height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700" : "height:24px;box-sizing:border-box;padding:0 10px;color:" + _tc;
       return '<button class="is-f-btn' + (on ? " active" : "") + '" data-js-tab="' + t + '" style="' + st + '">' + this._jsTabLabel(t) + "</button>";
     }).join("");
-    const hdrInner = isMobile2 ? '<div class="u-panel-hdr"><div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div><button class="popup-close u-rel-shrink0" id="js-close">' + ICONS.close + '</button></div><div class="is-filter">' + tabBtns + "</div>" : '<div style="flex:1;min-width:0"><div id="js-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div></div><div class="is-filter" style="flex-shrink:0">' + tabBtns + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">' + ICONS.close + "</button>";
+    const hdrInner = isMobile2 ? '<div class="u-panel-hdr"><div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div><button class="popup-close u-rel-shrink0" id="js-close">' + ICONS.close + '</button></div><div class="is-filter">' + tabBtns + "</div>" : '<div style="flex:1;min-width:0"><div id="js-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + this._jsTabTitle(tab) + '</div></div><div class="is-filter' + _tabLg + '" style="flex-shrink:0">' + tabBtns + '</div><button class="popup-close" id="js-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">' + ICONS.close + "</button>";
     const hdrStyle = isMobile2 ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
     return '<div class="popup-overlay' + dayClass(this) + '" data-js-modal><div class="popup-glass tl-wide"><div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div><div class="popup-body" id="js-body" style="padding:' + (isMobile2 ? "12px 14px 16px" : "14px 22px 20px") + '"><div class="is-loading"><span>Loading\u2026</span></div></div></div></div>';
   }
@@ -23643,6 +23740,1054 @@ var _TraceaRrMethods = class {
 };
 var tracearrMixin = _TraceaRrMethods.prototype;
 
+// src/render/library.js
+var _LibraryMethods = class {
+  // ─── Section tile view ───────────────────────────────────────────────────
+  _renderLibrary() {
+    const tiles = [
+      this._libBuildTile("movies", "Movies", this._libMoviesData()),
+      this._libBuildTile("tv", "TV Shows", this._libTvData()),
+      this._libBuildTile("toprated", "Top Rated", this._libTopRatedData()),
+      this._libBuildTile("topquality", "Top Quality", this._libTopQualityData())
+    ].join("");
+    const cols = 4;
+    const grid = `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>`;
+    return `
+      <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+        ${this._sectionOverlayHtml("radarr", 25, 75, 0.18)}
+        <div class="col-hdr" style="margin-bottom:5px">
+          <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
+            ${this._appIcon("radarr", 24)}
+            ${this._appIcon("sonarr", 24)}
+          </div>
+          <span class="col-hdr-title">Library</span>
+          <div class="col-hdr-line"></div>
+        </div>
+        <div class="pg-wrap">
+          <button class="pg-btn pg-btn-ph" disabled>\u2039</button>
+          ${grid}
+          <button class="pg-btn pg-btn-ph" disabled>\u203A</button>
+        </div>
+      </div>`;
+  }
+  // ─── Tile data ────────────────────────────────────────────────────────────
+  _libMoviesData() {
+    return (this._radarr || []).filter((m) => m.hasFile).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 4).map((m) => ({ url: this._getRadarrPoster(m), title: m.title, _libType: "movie" }));
+  }
+  _libTvData() {
+    return (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount || 0) > 0).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 4).map((s) => ({ url: this._getSonarrPoster(s), title: s.title, _libType: "tv" }));
+  }
+  _libTopRatedData() {
+    return [
+      ...(this._radarr || []).filter((m) => m.hasFile).map((m) => ({
+        url: this._getRadarrPoster(m),
+        title: m.title,
+        _libType: "movie",
+        _score: m.ratings?.imdb?.value || m.ratings?.value || 0
+      })),
+      ...(this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount || 0) > 0).map((s) => ({
+        url: this._getSonarrPoster(s),
+        title: s.title,
+        _libType: "tv",
+        _score: s.ratings?.imdb?.value || s.ratings?.value || 0
+      }))
+    ].filter((i) => i._score > 0).sort((a, b) => b._score - a._score).slice(0, 4);
+  }
+  _libTopQualityData() {
+    const Q = ["2160p", "1080p", "720p", "480p"];
+    const rank = (q) => {
+      const i = Q.findIndex((r) => q.includes(r));
+      return i === -1 ? 99 : i;
+    };
+    return [
+      ...(this._radarr || []).filter((m) => m.hasFile).map((m) => ({
+        url: this._getRadarrPoster(m),
+        title: m.title,
+        _libType: "movie",
+        _rank: rank(m.movieFile?.quality?.quality?.name || "")
+      })),
+      ...(this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount || 0) > 0).map((s) => ({
+        url: this._getSonarrPoster(s),
+        title: s.title,
+        _libType: "tv",
+        _rank: 99
+      }))
+    ].sort((a, b) => a._rank - b._rank).slice(0, 4);
+  }
+  // ─── Tile card builder ────────────────────────────────────────────────────
+  _libBuildTile(key, label, posters) {
+    const slots = [0, 1, 2, 3].map((i) => {
+      const p = posters[i];
+      if (!p) return `<div class="lib-sub-poster lib-sub-empty"></div>`;
+      return p.url ? `<div class="lib-sub-poster"><img src="${p.url}" alt="${this._escHtml(p.title || "")}" loading="lazy" onerror="this.style.display='none'"></div>` : `<div class="lib-sub-poster lib-sub-empty"></div>`;
+    }).join("");
+    return `
+      <div class="mc lib-tile-card" data-lib-open="${key}">
+        <div class="lib-tile-grid">
+          ${slots}
+          <div class="lib-tile-dim"></div>
+        </div>
+        <span class="media-type-tag">${label}</span>
+      </div>`;
+  }
+  // ─── Modal open / close ───────────────────────────────────────────────────
+  _openLibModal(key) {
+    this.shadowRoot.querySelector("[data-lib-modal]")?.remove();
+    const typeKey = key === "movies" ? "movies" : key === "tv" ? "tv" : "all";
+    const qualityKey = key === "toprated" || key === "topquality" ? key : null;
+    const sortDef = qualityKey === "toprated" ? "imdb" : qualityKey === "topquality" ? "quality" : "added";
+    this._libModal = {
+      typeKey,
+      qualityKey,
+      instFilter: "all",
+      search: "",
+      sort: sortDef,
+      sortDir: "desc",
+      view: "posters",
+      page: 0,
+      filter: "all",
+      _editMode: false,
+      _selected: /* @__PURE__ */ new Set(),
+      _bulkDialog: null,
+      _bulkEdit: { monitored: "", qualityProfileId: "", minimumAvailability: "", rootFolderPath: "" },
+      _bulkTags: { tags: "", applyTags: "add" },
+      _bulkDelete: { addImportExclusion: true, deleteFiles: false }
+    };
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._libModalHtml();
+    const el = wrap.firstElementChild;
+    this.shadowRoot.appendChild(el);
+    const bodyEl = el.querySelector("#lib-body");
+    if (bodyEl?.clientHeight > 0) {
+      this._libModal._bodyH = bodyEl.clientHeight;
+      bodyEl.innerHTML = this._libBodyHtml();
+    }
+    this._wireLibModal(el);
+  }
+  _closeLibModal() {
+    this.shadowRoot.querySelector("[data-lib-modal]")?.remove();
+    this._libModal = null;
+  }
+  // ─── Modal HTML ───────────────────────────────────────────────────────────
+  _libModalHtml() {
+    const m = this._libModal;
+    const isMob = this._isMob;
+    const isTab = !isMob && window.matchMedia("(max-width:860px)").matches;
+    const _tabLg = isTab ? " is-tab-lg" : "";
+    const _ICO_MOVIE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
+    const _ICO_TV = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+    const G1_LABELS = { all: "All", movies: _ICO_MOVIE, tv: _ICO_TV };
+    const G1_LABELS_DSK = { all: "All", movies: "Movies", tv: "TV Shows" };
+    const G2 = [["toprated", "Top Rated"], ["topquality", "Top Quality"]];
+    const G2_MOB = [["toprated", "Rating"], ["topquality", "Quality"]];
+    const _tabSt = (on, accent, icon) => {
+      const pad = icon ? "0 8px" : "0 10px";
+      return on ? `height:24px;box-sizing:border-box;padding:${pad};background:${accent};color:#fff;border-color:${accent};font-weight:700;display:inline-flex;align-items:center` : `height:24px;box-sizing:border-box;padding:${pad};color:var(--is-text,#fff);display:inline-flex;align-items:center`;
+    };
+    const g1Btns = ["all", "movies", "tv"].map((k) => {
+      const on = k === m.typeKey;
+      const lbl = isMob ? G1_LABELS[k] : G1_LABELS_DSK[k];
+      const isIcon = isMob && k !== "all";
+      return `<button class="is-f-btn${on ? " active" : ""}" data-lib-tab-type="${k}" style="${_tabSt(on, "rgba(0,122,255,0.35)", isIcon)}">${lbl}</button>`;
+    }).join("");
+    const sep = `<span style="display:inline-block;width:1px;height:14px;background:rgba(255,255,255,0.2);margin:0 4px;flex-shrink:0;align-self:center"></span>`;
+    const g2Btns = G2.map(([k], i) => {
+      const on = k === m.qualityKey;
+      const lbl = isMob ? G2_MOB[i][1] : G2[i][1];
+      const arrow = on && isMob ? m.sortDir === "desc" ? " \u2193" : " \u2191" : "";
+      return `<button class="is-f-btn${on ? " active" : ""}" data-lib-tab-quality="${k}" style="${_tabSt(on, "rgba(255,160,0,0.35)", false)}">${lbl}${arrow}</button>`;
+    }).join("");
+    const hasMultiInst = !!(this._radarr2Configured || this._sonarr2Configured);
+    const g3Btns = hasMultiInst ? [["all", "Both Instances"], ["1", "1"], ["2", "2"]].map(([k, l]) => {
+      const on = (m.instFilter || "all") === k;
+      return `<button class="is-f-btn${on ? " active" : ""}" data-lib-tab-inst="${k}" style="${_tabSt(on, "rgba(88,86,214,0.35)", false)}">${l}</button>`;
+    }).join("") : "";
+    const tabBtnsMain = g1Btns + sep + g2Btns;
+    const tabBtns = tabBtnsMain + (!isMob && g3Btns ? sep + g3Btns : "");
+    const itemCount = this._libFilteredItems().length;
+    const countBadge = `<span style="font-size:11px;font-weight:500;opacity:0.5;margin-left:6px">${itemCount}</span>`;
+    const hdrPad = isMob ? "10px 12px" : "12px 20px";
+    const hdrInner = isMob ? `<div style="display:flex;align-items:stretch;gap:8px">
+           <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between">
+             <div style="font-size:15px;font-weight:700;color:var(--is-text)">Library</div>
+             <div style="font-size:11px;opacity:0.5;color:var(--is-text);text-align:center">${itemCount}</div>
+           </div>
+           <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+             <div class="is-filter" style="flex-wrap:wrap;gap:3px">${tabBtns}</div>
+             ${g3Btns ? `<div class="is-filter" style="flex-wrap:wrap;gap:3px">${g3Btns}</div>` : ""}
+           </div>
+           <button class="popup-close" id="lib-close" style="flex-shrink:0;align-self:flex-start">${ICONS.close}</button>
+         </div>` : `<div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--is-text);display:flex;align-items:baseline;gap:6px">Library${countBadge}<span id="lib-cmd-status" style="font-size:11px;font-weight:400;opacity:0.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span></div>
+         <div class="is-filter${_tabLg}" style="flex-shrink:0">${tabBtns}</div>
+         <button class="popup-close" id="lib-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">${ICONS.close}</button>`;
+    return `<div class="popup-overlay${dayClass(this)}" data-lib-modal>
+      <div class="popup-glass tl-wide">
+        <div class="is-panel-hdr" style="flex-direction:${isMob ? "column" : "row"};align-items:${isMob ? "stretch" : "center"};padding:${hdrPad};gap:${isMob ? "4px" : "8px"}">
+          ${hdrInner}
+        </div>
+        <div class="popup-body" id="lib-body" style="padding:${isMob ? "6px 10px 12px" : "8px 20px 16px"};display:flex;flex-direction:column;overflow:hidden">
+          ${this._libBodyHtml()}
+        </div>
+      </div>
+    </div>`;
+  }
+  // ─── Modal body (re-rendered on filter/sort/search/page change) ───────────
+  _libBodyHtml() {
+    const m = this._libModal;
+    const isMob = this._isMob;
+    const isTab = !isMob && window.matchMedia("(max-width:860px)").matches;
+    const allItems = this._libFilteredItems();
+    const vH = window.innerHeight;
+    const vW = window.innerWidth;
+    const bPad = isMob ? 18 : 24;
+    const tlbH = isMob ? 80 : 48;
+    const pagH = 48;
+    const availH = m._bodyH ? m._bodyH - bPad - tlbH - pagH : vH * 0.88 - 60 - bPad - tlbH - pagH;
+    let perPage;
+    if (m.view === "posters") {
+      const gap = 14;
+      const glassW = Math.min(1100, vW * 0.96);
+      const bodyPX = isMob ? 20 : 40;
+      const minW = isMob ? 70 : 90;
+      const maxC = Math.floor((glassW - bodyPX + gap) / (minW + gap));
+      const minC = isMob ? 2 : 3;
+      let bestCols = minC, bestPP = 0;
+      for (let c = minC; c <= maxC; c++) {
+        const pW = (glassW - bodyPX - gap * (c - 1)) / c;
+        const pH = pW * 1.5;
+        const r = Math.max(1, Math.floor((availH + gap) / (pH + gap)));
+        const pp = c * r;
+        if (pp > bestPP) {
+          bestPP = pp;
+          bestCols = c;
+        }
+      }
+      const posterW = (glassW - bodyPX - gap * (bestCols - 1)) / bestCols;
+      const posterH = posterW * 1.5;
+      const rows = Math.max(1, Math.floor((availH + gap) / (posterH + gap)));
+      perPage = bestCols * rows;
+      m._libCols = bestCols;
+    } else if (m.view === "overview") {
+      const rowH = 79 + 6;
+      perPage = Math.max(5, Math.floor((availH + 6) / rowH));
+    } else {
+      perPage = Math.max(5, Math.floor((availH - 30) / 38));
+    }
+    const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
+    const page = Math.min(m.page, totalPages - 1);
+    m._totalPages = totalPages;
+    const pageItems = allItems.slice(page * perPage, (page + 1) * perPage);
+    const _SRCH = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--is-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+    const _BST = `position:relative;height:28px;box-sizing:border-box;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;display:inline-flex;align-items:center;justify-content:space-between;gap:4px;padding:0 8px;cursor:pointer`;
+    const _CHEV = `<svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.5;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const _sel = (id, label, opts) => `<div style="${_BST}"><span style="font-size:11px;font-weight:600;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span>${_CHEV}<select id="${id}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px">${opts}</select></div>`;
+    const VIEW_OPTS = [["posters", "Posters"], ["overview", "Overview"], ["table", "Table"]];
+    const viewLabel = VIEW_OPTS.find(([v]) => v === m.view)?.[1] || "View";
+    const viewOpts = VIEW_OPTS.map(([v, l]) => `<option value="${v}"${m.view === v ? " selected" : ""}>${l}</option>`).join("");
+    const sortDefs = this._libSortOptions();
+    const sortLabel = sortDefs.find((s) => s.v === m.sort)?.label || "Sort";
+    const dirArrow = m.sortDir === "desc" ? " \u2193" : " \u2191";
+    const sortOpen = !!m._sortOpen;
+    const sortDropList = sortOpen ? `<div id="lib-sort-list" style="position:absolute;top:32px;left:0;z-index:200;background:var(--is-menu-bg,#1c1c1e);border:1px solid var(--is-divider,rgba(255,255,255,0.15));border-radius:8px;min-width:190px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.4)">
+      ${sortDefs.map((s) => {
+      const act = s.v === m.sort;
+      return `<div data-lib-sort-opt="${s.v}" style="padding:8px 12px;font-size:12px;cursor:pointer;color:var(--is-text);display:flex;align-items:center;justify-content:space-between;gap:8px;${act ? "font-weight:700;background:var(--is-row-hover,rgba(255,255,255,0.06))" : ""}">
+          <span style="pointer-events:none">${s.label}</span>
+          ${act ? `<span style="opacity:0.6;font-size:11px;pointer-events:none">${dirArrow.trim()}</span>` : ""}
+        </div>`;
+    }).join("")}
+    </div>` : "";
+    const sortSel = `<div id="lib-sort-wrap" style="position:relative;flex-shrink:0;min-width:0">
+      <div id="lib-sort-btn" style="${_BST};width:100%;box-sizing:border-box">
+        <span style="font-size:11px;font-weight:600;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0">${sortLabel}${dirArrow}</span>
+        ${_CHEV}
+      </div>
+      ${sortDropList}
+    </div>`;
+    const FILTER_OPTS = [["all", "All"], ["monitored", "Monitored Only"], ["unmonitored", "Unmonitored"], ["missing", "Missing"], ["wanted", "Wanted"], ["cutoff", "Cutoff Unmet"]];
+    const filterLabel = FILTER_OPTS.find(([v]) => v === m.filter)?.[1] || "Filter";
+    const filtOpts = FILTER_OPTS.map(([v, l]) => `<option value="${v}"${m.filter === v ? " selected" : ""}>${l}</option>`).join("");
+    const searchBar = `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;padding:0 7px;height:28px;box-sizing:border-box;flex:1;min-width:100px">
+        ${_SRCH}
+        <input id="lib-search" type="search" value="${this._escHtml(m.search)}" placeholder="Search\u2026" autocomplete="off" style="background:none;border:none;outline:none;color:var(--is-text,#fff);font-size:12px;line-height:1.4;flex:1;min-width:0;padding:0;margin:0;box-sizing:border-box">
+      </div>`;
+    const _btnStyle = `display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 9px;height:28px;border-radius:6px;border:1px solid var(--is-divider,rgba(255,255,255,0.12));background:var(--is-row-hover,rgba(255,255,255,0.06));color:var(--is-text,#fff);font-size:11px;cursor:pointer;white-space:nowrap;box-sizing:border-box`;
+    const _btnIconStyle = `display:inline-flex;align-items:center;justify-content:center;padding:0 7px;height:28px;border-radius:6px;border:1px solid var(--is-divider,rgba(255,255,255,0.12));background:var(--is-row-hover,rgba(255,255,255,0.06));color:var(--is-text,#fff);cursor:pointer;box-sizing:border-box`;
+    const _ICO_REFRESH = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+    const _ICO_RSS = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1" fill="currentColor"/></svg>`;
+    const actionBtnsText = `<div style="display:flex;gap:4px;flex-shrink:0">
+        <button data-lib-action="update-all" style="${_btnStyle}">${_ICO_REFRESH}Update All</button>
+        <button data-lib-action="rss-sync"   style="${_btnStyle}">${_ICO_RSS}RSS Sync</button>
+      </div>`;
+    const actionBtnsIcon = `<div style="display:flex;gap:4px;flex-shrink:0">
+        <button data-lib-action="update-all" style="${_btnIconStyle}">${_ICO_REFRESH}</button>
+        <button data-lib-action="rss-sync"   style="${_btnIconStyle}">${_ICO_RSS}</button>
+      </div>`;
+    const allSelected = m._editMode && m._selected?.size > 0 && allItems.length > 0 && m._selected.size >= allItems.length;
+    const hasSel = m._editMode && (m._selected?.size || 0) > 0;
+    const _dimBtn = (action, label, extraStyle = "") => {
+      const red = action === "bulk-delete" && hasSel;
+      return `<button data-lib-action="${action}" style="${_btnStyle}${hasSel ? "" : ";opacity:0.35;cursor:default"}${red ? ";background:rgba(229,57,53,0.25);border-color:rgba(229,57,53,0.5);color:#ff6b6b" : ""}${extraStyle}"${hasSel ? "" : " disabled"}>${label}</button>`;
+    };
+    const editBtns = m._editMode ? isMob ? `<div style="display:flex;align-items:center;gap:4px;width:100%">
+            ${_dimBtn("bulk-edit", "Edit", ";flex:1;justify-content:center")}
+            ${_dimBtn("bulk-tags", "Set Tags", ";flex:1;justify-content:center")}
+            ${_dimBtn("bulk-delete", "Delete", ";flex:1;justify-content:center")}
+            <span style="width:1px;height:18px;background:var(--is-divider,rgba(255,255,255,0.18));margin:0 2px;flex-shrink:0"></span>
+            <button data-lib-action="stop-edit"     style="${_btnStyle};flex-shrink:0">Stop Selecting</button>
+            <button data-lib-action="select-toggle" style="${_btnStyle};flex-shrink:0;min-width:82px;justify-content:center">${allSelected ? "Deselect All" : "Select All"}</button>
+          </div>` : `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto">
+            ${_dimBtn("bulk-edit", "Edit")}
+            ${_dimBtn("bulk-tags", "Set Tags")}
+            ${_dimBtn("bulk-delete", "Delete")}
+            <span style="width:1px;height:18px;background:var(--is-divider,rgba(255,255,255,0.18));margin:0 2px;flex-shrink:0"></span>
+            <button data-lib-action="stop-edit"     style="${_btnStyle}">Stop Selecting</button>
+            <button data-lib-action="select-toggle" style="${_btnStyle}">${allSelected ? "Deselect All" : "Select All"}</button>
+          </div>` : `<button data-lib-action="start-edit" style="${_btnStyle}">Edit</button>`;
+    const ctrlRow = isMob ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100%">
+          ${_sel("lib-view-sel", viewLabel, viewOpts)}
+          ${sortSel}
+          ${_sel("lib-filter-sel", filterLabel, filtOpts)}
+        </div>` : isTab ? `<div style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0">
+          ${actionBtnsIcon}
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:270px;flex-shrink:0">
+            ${_sel("lib-view-sel", viewLabel, viewOpts)}
+            ${sortSel}
+            ${_sel("lib-filter-sel", filterLabel, filtOpts)}
+          </div>
+        </div>` : `<div style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:300px;flex-shrink:0">
+            ${_sel("lib-view-sel", viewLabel, viewOpts)}
+            ${sortSel}
+            ${_sel("lib-filter-sel", filterLabel, filtOpts)}
+          </div>
+        </div>`;
+    const _ICO_EDIT = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const startEditBtn = `<button data-lib-action="start-edit" style="${_btnStyle}">${_ICO_EDIT}Edit</button>`;
+    const toolbar = isMob ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">${m._editMode ? editBtns : `${searchBar}${actionBtnsIcon}<button data-lib-action="start-edit" style="${_btnStyle};padding:0 8px">${_ICO_EDIT}</button>`}</div>
+          ${ctrlRow}
+        </div>` : `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+          ${m._editMode ? editBtns : `${searchBar}${ctrlRow}${isTab ? actionBtnsIcon : actionBtnsText}${startEditBtn}`}
+        </div>`;
+    let contentHtml;
+    if (m.view === "posters") {
+      const cols = m._libCols || (isMob ? 4 : 7);
+      contentHtml = `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>`;
+    } else if (m.view === "overview") {
+      contentHtml = `<div style="display:flex;flex-direction:column;gap:6px;overflow:hidden">${pageItems.map((i) => this._libOverviewCard(i)).join("")}</div>`;
+    } else {
+      contentHtml = `<div style="overflow:hidden;flex:1;min-height:0">${this._libTableHtml(pageItems)}</div>`;
+    }
+    const pagHtml = this._tlMobPag("lib-page", page, totalPages, true);
+    const pagWrap = pagHtml ? `<div style="flex-shrink:0">${pagHtml}</div>` : "";
+    const dialogHtml = m._bulkDialog ? `<div style="position:absolute;inset:0;z-index:20;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;border-radius:8px">${this._libBulkDialogHtml()}</div>` : "";
+    return `<div style="flex-shrink:0">${toolbar}</div><div style="flex:1;min-height:0;overflow:hidden;position:relative">${contentHtml}${dialogHtml}</div>` + pagWrap;
+  }
+  _libBulkDialogHtml() {
+    const m = this._libModal;
+    const sel = [...m._selected || []];
+    const allItems = this._libAllItems();
+    const selItems = allItems.filter((i) => sel.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
+    const hasMovies = selItems.some((i) => i._libType === "movie");
+    const hasShows = selItems.some((i) => i._libType === "tv");
+    const _dStyle = `background:var(--is-bg,#1c1c2e);border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:10px;padding:20px 24px;min-width:380px;max-width:min(540px,90vw);box-sizing:border-box`;
+    const _hStyle = `font-size:14px;font-weight:700;color:var(--is-text,#fff);margin:0 0 16px`;
+    const _rowStyle = `display:flex;align-items:center;gap:12px;margin-bottom:12px`;
+    const _labelStyle = `font-size:12px;color:var(--is-text,#fff);opacity:0.8;min-width:110px;text-align:right`;
+    const _selStyle = `flex:1;background:var(--is-row-hover,rgba(255,255,255,0.07));border:1px solid var(--is-divider,rgba(255,255,255,0.15));border-radius:6px;color:var(--is-text,#fff);font-size:12px;padding:5px 8px;height:30px`;
+    const _footStyle = `display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--is-divider,rgba(255,255,255,0.1))`;
+    const _cancelBtn = `<button data-lib-action="bulk-cancel" style="padding:0 14px;height:30px;border-radius:6px;border:1px solid var(--is-divider,rgba(255,255,255,0.2));background:transparent;color:var(--is-text,#fff);font-size:12px;cursor:pointer">Cancel</button>`;
+    if (m._bulkDialog === "delete") {
+      const n = selItems.length;
+      const label = hasMovies && hasShows ? "items" : hasMovies ? `movie${n > 1 ? "s" : ""}` : `series`;
+      const titles = selItems.slice(0, 8).map((i) => `<li>${this._escHtml(i.title || "")}</li>`).join("");
+      const more = selItems.length > 8 ? `<li style="opacity:0.5">\u2026and ${selItems.length - 8} more</li>` : "";
+      return `<div style="${_dStyle}">
+        <p style="${_hStyle}">Delete Selected ${hasMovies && hasShows ? "Items" : hasMovies ? "Movie" : "Series"}</p>
+        <div style="${_rowStyle}"><label style="${_labelStyle}">Add List Exclusion</label>
+          <input type="checkbox" id="bd-excl"${m._bulkDelete.addImportExclusion ? " checked" : ""} style="width:15px;height:15px;cursor:pointer">
+          <span style="font-size:11px;opacity:0.6">Prevent from being re-added by lists</span></div>
+        <div style="${_rowStyle}"><label style="${_labelStyle}">Delete Files</label>
+          <input type="checkbox" id="bd-files"${m._bulkDelete.deleteFiles ? " checked" : ""} style="width:15px;height:15px;cursor:pointer">
+          <span style="font-size:11px;opacity:0.6">Delete folder and its contents</span></div>
+        <p style="font-size:12px;color:var(--is-text,#fff);opacity:0.8;margin:12px 0 4px">Are you sure you want to delete ${n} selected ${label}?</p>
+        <ul style="font-size:12px;opacity:0.7;margin:0;padding-left:18px;line-height:1.8">${titles}${more}</ul>
+        <div style="${_footStyle}">${_cancelBtn}<button data-lib-action="bulk-delete-confirm" style="padding:0 14px;height:30px;border-radius:6px;border:none;background:#e53935;color:#fff;font-size:12px;cursor:pointer;font-weight:600">Delete</button></div>
+      </div>`;
+    }
+    if (m._bulkDialog === "tags") {
+      return `<div style="${_dStyle}">
+        <p style="${_hStyle}">Tags</p>
+        <div style="${_rowStyle}"><label style="${_labelStyle}">Tags</label>
+          <input id="bt-tags" type="text" value="${this._escHtml(m._bulkTags.tags)}" placeholder="tag1, tag2\u2026" style="flex:1;${_selStyle.replace("height:30px", "height:30px;box-sizing:border-box")}"></div>
+        <div style="${_rowStyle}"><label style="${_labelStyle}">Apply Tags</label>
+          <select id="bt-mode" style="${_selStyle}">
+            <option value="add"${m._bulkTags.applyTags === "add" ? " selected" : ""}>Add</option>
+            <option value="remove"${m._bulkTags.applyTags === "remove" ? " selected" : ""}>Remove</option>
+            <option value="replace"${m._bulkTags.applyTags === "replace" ? " selected" : ""}>Replace</option>
+          </select></div>
+        <div style="${_footStyle}">${_cancelBtn}<button data-lib-action="bulk-tags-confirm" style="padding:0 14px;height:30px;border-radius:6px;border:none;background:rgba(0,122,255,0.85);color:#fff;font-size:12px;cursor:pointer;font-weight:600">Apply</button></div>
+      </div>`;
+    }
+    const profiles = (hasMovies ? this._radarrProfiles || [] : []).concat(hasShows ? this._sonarrProfiles || [] : []);
+    const uniqueProfiles = [...new Map(profiles.map((p) => [p.id, p])).values()];
+    const profileOpts = `<option value="">No Change</option>` + uniqueProfiles.map((p) => `<option value="${p.id}"${m._bulkEdit.qualityProfileId == p.id ? " selected" : ""}>${this._escHtml(p.name)}</option>`).join("");
+    const monOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m._bulkEdit.monitored === v ? " selected" : ""}>${["No Change", "Monitored", "Unmonitored"][i]}</option>`).join("");
+    const availOpts = ["", "announced", "inCinemas", "released", "tba"].map((v, i) => `<option value="${v}"${m._bulkEdit.minimumAvailability === v ? " selected" : ""}>${["No Change", "Announced", "In Cinemas", "Released", "TBA"][i]}</option>`).join("");
+    const title = hasMovies && hasShows ? "Items" : hasMovies ? "Movies" : "Series";
+    return `<div style="${_dStyle}">
+      <p style="${_hStyle}">Edit Selected ${title}</p>
+      <div style="${_rowStyle}"><label style="${_labelStyle}">Monitored</label><select id="be-mon" style="${_selStyle}">${monOpts}</select></div>
+      <div style="${_rowStyle}"><label style="${_labelStyle}">Quality Profile</label><select id="be-qual" style="${_selStyle}">${profileOpts}</select></div>
+      ${hasMovies ? `<div style="${_rowStyle}"><label style="${_labelStyle}">Min Availability</label><select id="be-avail" style="${_selStyle}">${availOpts}</select></div>` : ""}
+      <p style="font-size:11px;opacity:0.5;margin:0 0 4px;text-align:right">${selItems.length} ${title.toLowerCase()} selected</p>
+      <div style="${_footStyle}">${_cancelBtn}<button data-lib-action="bulk-edit-confirm" style="padding:0 14px;height:30px;border-radius:6px;border:none;background:rgba(0,122,255,0.85);color:#fff;font-size:12px;cursor:pointer;font-weight:600">Apply Changes</button></div>
+    </div>`;
+  }
+  // ─── Modal poster card ────────────────────────────────────────────────────
+  _libPosterCard(item) {
+    const m = this._libModal;
+    const isMovie = item._libType === "movie";
+    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const title = this._escHtml(item.title || "");
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id);
+    const popupType = isMovie ? "radarr" : "sonarr";
+    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+    const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
+    const rating = item.ratings?.imdb?.value || item.ratings?.value;
+    const ratingHtml = rating ? `<div style="margin-bottom:2px"><span class="imdb">\u2B50 ${rating.toFixed(1)}</span></div>` : "";
+    const statusBar = `<div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:${this._libStatusColor(item)};z-index:3"></div>`;
+    const typeTag = `<span class="media-type-tag" style="position:absolute;top:5px;left:5px;z-index:4">${isMovie ? "Movie" : "Show"}</span>`;
+    const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
+    const checked = m._editMode && m._selected?.has(selKey);
+    const checkHtml = m._editMode ? `<div data-lib-sel="${selKey}" style="position:absolute;top:5px;right:5px;z-index:5;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.85);background:${checked ? "rgba(0,122,255,0.9)" : "rgba(0,0,0,0.45)"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
+    const popupAttr = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+    return `
+      <div class="mc"${popupAttr}>
+        <div style="position:absolute;inset:0;overflow:hidden">${img}</div>
+        ${this._mcGrad("rgba(0,0,0,0.7)", `${ratingHtml}<div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+        ${typeTag}
+        ${checkHtml}
+        ${statusBar}
+      </div>`;
+  }
+  // ─── Modal table ──────────────────────────────────────────────────────────
+  _libTableHtml(items) {
+    const isMob = this._isMob;
+    const _icoMov = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
+    const _icoTv = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+    if (isMob) {
+      const rows2 = items.map((item) => {
+        const m = this._libModal;
+        const isMovie = item._libType === "movie";
+        const title = this._escHtml(item.title || "");
+        const year = item.year || "";
+        const rating = item.ratings?.imdb?.value || item.ratings?.value;
+        const quality = item.movieFile?.quality?.quality?.name || (item.qualityProfileName ? item.qualityProfileName : "");
+        const popupType = isMovie ? "radarr" : "sonarr";
+        const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+        const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+        const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
+        const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
+        const checked = m._editMode && m._selected?.has(selKey);
+        const checkEl = m._editMode ? `<div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
+        const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+        const meta = [year, rating ? `\u2B50 ${rating.toFixed(1)}` : "", quality].filter(Boolean).join(" \xB7 ");
+        return `<div class="lib-table-row"${popupAttrs} style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07))">
+          ${checkEl}
+          <span style="display:inline-flex;flex-shrink:0">${isMovie ? _icoMov : _icoTv}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
+            ${meta ? `<div style="font-size:10px;opacity:0.5;color:var(--is-text,#fff);margin-top:1px">${meta}</div>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+      return `<div style="overflow-y:auto">${rows2}</div>`;
+    }
+    const rows = items.map((item) => {
+      const m = this._libModal;
+      const isMovie = item._libType === "movie";
+      const title = this._escHtml(item.title || "");
+      const year = item.year || "\u2014";
+      const rating = item.ratings?.imdb?.value || item.ratings?.value;
+      const ratingTxt = rating ? `\u2B50 ${rating.toFixed(1)}` : "\u2014";
+      const quality = item.movieFile?.quality?.quality?.name || (item.qualityProfileName ? item.qualityProfileName : "\u2014");
+      const popupType = isMovie ? "radarr" : "sonarr";
+      const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+      const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+      const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
+      const typeTag = `<span style="display:inline-flex;align-items:center;flex-shrink:0;margin-right:6px">${isMovie ? _icoMov : _icoTv}</span>`;
+      const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
+      const checked = m._editMode && m._selected?.has(selKey);
+      const checkCell = m._editMode ? `<td style="width:28px;padding:0 6px"><div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div></td>` : "";
+      const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+      return `<tr class="lib-table-row"${popupAttrs}>
+        ${checkCell}<td style="display:flex;align-items:center;gap:0">${typeTag}${title}</td>
+        <td>${year}</td>
+        <td>${ratingTxt}</td>
+        <td>${quality}</td>
+      </tr>`;
+    }).join("");
+    return `<table class="tl-users-table lib-table" style="width:100%">
+      <thead><tr>
+        <th>Title</th><th>Year</th><th>Rating</th><th>Quality</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+  // ─── Overview card ────────────────────────────────────────────────────────
+  _libOverviewCard(item) {
+    const isMovie = item._libType === "movie";
+    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const title = this._escHtml(item.title || "");
+    const year = item.year || "";
+    const rating = item.ratings?.imdb?.value || item.ratings?.value;
+    const quality = item.movieFile?.quality?.quality?.name || "";
+    const size = item.movieFile?.size || item.statistics?.sizeOnDisk || 0;
+    const sizeTxt = size ? size > 1e9 ? (size / 1e9).toFixed(1) + " GB" : (size / 1e6).toFixed(0) + " MB" : "";
+    const studio = item.studio || "";
+    const overview = this._escHtml((item.overview || "").slice(0, 160));
+    const popupType = isMovie ? "radarr" : "sonarr";
+    const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
+    const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
+    const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
+    const m = this._libModal;
+    const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
+    const checked = m._editMode && m._selected?.has(selKey);
+    const checkHtml = m._editMode ? `<div data-lib-sel="${selKey}" style="width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;align-self:center;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
+    const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+    const monDot = `<span style="width:6px;height:6px;border-radius:50%;background:${item.monitored ? "#34C759" : "rgba(255,255,255,0.25)"};display:inline-block;flex-shrink:0"></span>`;
+    const meta = [year && `<span>${year}</span>`, quality && `<span>${quality}</span>`, sizeTxt && `<span>${sizeTxt}</span>`, studio && `<span>${studio}</span>`].filter(Boolean).join('<span style="opacity:0.3;margin:0 3px">\xB7</span>');
+    const imgHtml = poster ? `<img src="${poster}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
+    return `<div class="lib-table-row"${popupAttrs} style="display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:8px;background:var(--is-row-hover,rgba(255,255,255,0.04))">
+      ${checkHtml}
+      <div style="width:42px;height:63px;flex-shrink:0;border-radius:5px;overflow:hidden;background:rgba(255,255,255,0.08)">${imgHtml}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+          ${monDot}
+          <span style="font-size:12px;font-weight:700;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span>
+        </div>
+        <div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px;display:flex;flex-wrap:wrap;align-items:center">${meta}</div>
+        ${overview ? `<div style="font-size:10px;color:var(--is-text-muted);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${overview}</div>` : ""}
+      </div>
+      ${rating ? `<span class="imdb" style="flex-shrink:0;align-self:center">\u2B50 ${rating.toFixed(1)}</span>` : ""}
+    </div>`;
+  }
+  // ─── Data helpers ─────────────────────────────────────────────────────────
+  _libFilteredItems() {
+    const m = this._libModal;
+    let items = this._libAllItems();
+    if (m.filter === "monitored") items = items.filter((i) => i.monitored);
+    if (m.filter === "unmonitored") items = items.filter((i) => !i.monitored);
+    if (m.filter === "missing") items = items.filter((i) => i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0);
+    if (m.filter === "wanted") items = items.filter((i) => i.monitored && (i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0));
+    if (m.filter === "cutoff") items = items.filter((i) => i._libType === "movie" ? !!i.movieFile?.qualityCutoffNotMet : false);
+    if (m.search) {
+      const q = m.search.toLowerCase();
+      items = items.filter((i) => (i.title || "").toLowerCase().includes(q) || (i.originalTitle || "").toLowerCase().includes(q));
+    }
+    const dir = m.sortDir === "desc" ? -1 : 1;
+    return [...items].sort((a, b) => {
+      switch (m.sort) {
+        case "status":
+          return dir * ((a.monitored ? 1 : 0) - (b.monitored ? 1 : 0)) || dir * ((a.hasFile || a.statistics?.episodeFileCount ? 1 : 0) - (b.hasFile || b.statistics?.episodeFileCount ? 1 : 0));
+        case "title":
+          return dir * (a.title || "").localeCompare(b.title || "");
+        case "studio":
+          return dir * (a.studio || "").localeCompare(b.studio || "");
+        case "qualprof":
+          return dir * (a.qualityProfileName || "").localeCompare(b.qualityProfileName || "");
+        case "added":
+          return dir * (new Date(a.added || 0) - new Date(b.added || 0));
+        case "year":
+          return dir * ((a.year || 0) - (b.year || 0));
+        case "cinema":
+          return dir * (new Date(a.inCinemas || 0) - new Date(b.inCinemas || 0));
+        case "digital":
+          return dir * (new Date(a.digitalRelease || 0) - new Date(b.digitalRelease || 0));
+        case "physical":
+          return dir * (new Date(a.physicalRelease || 0) - new Date(b.physicalRelease || 0));
+        case "tmdb":
+          return dir * ((a.ratings?.tmdb?.value || 0) - (b.ratings?.tmdb?.value || 0));
+        case "imdb":
+          return dir * ((a.ratings?.imdb?.value || 0) - (b.ratings?.imdb?.value || 0));
+        case "popularity":
+          return dir * ((a.popularity || 0) - (b.popularity || 0));
+        case "size":
+          return dir * ((a.movieFile?.size || a.statistics?.sizeOnDisk || 0) - (b.movieFile?.size || b.statistics?.sizeOnDisk || 0));
+        case "cert":
+          return dir * (a.certification || "").localeCompare(b.certification || "");
+        case "origtitle":
+          return dir * (a.originalTitle || "").localeCompare(b.originalTitle || "");
+        case "origlang":
+          return dir * (a.originalLanguage?.name || "").localeCompare(b.originalLanguage?.name || "");
+        case "quality": {
+          const Q = ["2160p", "1080p", "720p", "480p"];
+          const qa = Q.findIndex((r) => (a.movieFile?.quality?.quality?.name || "").includes(r));
+          const qb = Q.findIndex((r) => (b.movieFile?.quality?.quality?.name || "").includes(r));
+          return dir * ((qa === -1 ? 99 : qa) - (qb === -1 ? 99 : qb));
+        }
+        default:
+          return 0;
+      }
+    });
+  }
+  _libAllItems() {
+    const m = this._libModal;
+    const r1 = this._radarr || [];
+    const r2 = this._radarr2Configured ? this._radarr2 || [] : [];
+    const s1 = this._sonarr || [];
+    const s2 = this._sonarr2Configured ? this._sonarr2 || [] : [];
+    const inst = m.instFilter || "all";
+    const movieSrc = inst === "1" ? r1.map((i) => ({ ...i, _libInst: "1" })) : inst === "2" ? r2.map((i) => ({ ...i, _libInst: "2" })) : [...r1.map((i) => ({ ...i, _libInst: "1" })), ...r2.map((i) => ({ ...i, _libInst: "2" }))];
+    const tvSrc = inst === "1" ? s1.map((i) => ({ ...i, _libInst: "1" })) : inst === "2" ? s2.map((i) => ({ ...i, _libInst: "2" })) : [...s1.map((i) => ({ ...i, _libInst: "1" })), ...s2.map((i) => ({ ...i, _libInst: "2" }))];
+    const movies = movieSrc.map((i) => ({ ...i, _libType: "movie" }));
+    const tv = tvSrc.map((i) => ({ ...i, _libType: "tv" }));
+    let base;
+    if (m.typeKey === "movies") base = movies;
+    else if (m.typeKey === "tv") base = tv;
+    else base = [...movies, ...tv];
+    if (m.qualityKey === "toprated") base = base.filter((i) => (i.ratings?.imdb?.value || i.ratings?.value || 0) > 0);
+    return base;
+  }
+  _libSortOptions() {
+    const m = this._libModal;
+    const all = [
+      { v: "status", label: "Monitored/Status" },
+      { v: "title", label: "Title" },
+      { v: "studio", label: "Studio" },
+      { v: "qualprof", label: "Quality Profile" },
+      { v: "added", label: "Added" },
+      { v: "year", label: "Year" },
+      { v: "cinema", label: "In Cinemas" },
+      { v: "digital", label: "Digital Release" },
+      { v: "physical", label: "Physical Release" },
+      { v: "tmdb", label: "TMDb Rating" },
+      { v: "imdb", label: "IMDb Rating" },
+      { v: "popularity", label: "Popularity" },
+      { v: "quality", label: "Quality" },
+      { v: "size", label: "Size on Disk" },
+      { v: "cert", label: "Certification" },
+      { v: "origtitle", label: "Original Title" },
+      { v: "origlang", label: "Original Language" }
+    ];
+    if (m.typeKey === "tv" && !m.qualityKey) return all.filter((o) => !["studio", "cinema", "digital", "physical", "cert", "quality"].includes(o.v));
+    return all;
+  }
+  _libStatusColor(item) {
+    const isMovie = item._libType === "movie";
+    if (isMovie) {
+      if (!item.hasFile) return item.monitored ? "#2980b9" : "#555";
+      if (item.movieFile?.qualityCutoffNotMet) return "#e67e22";
+      return item.monitored ? "#27ae60" : "#5a9e71";
+    } else {
+      const count = item.statistics?.episodeFileCount || 0;
+      if (count === 0) return item.monitored ? "#2980b9" : "#555";
+      const total = item.statistics?.episodeCount || 0;
+      if (total > 0 && count < total) return item.monitored ? "#27ae60" : "#5a9e71";
+      return item.monitored ? "#27ae60" : "#5a9e71";
+    }
+  }
+};
+var libraryMixin = _LibraryMethods.prototype;
+
+// src/wire/library.js
+var _LibraryWireMethods = class {
+  _wireLibraryTiles(right) {
+    right.addEventListener("click", (e) => {
+      const tile = e.target.closest("[data-lib-open]");
+      if (!tile) return;
+      this._openLibModal(tile.dataset.libOpen);
+    });
+  }
+  _wireLibModal(el) {
+    const glass = el.querySelector(".popup-glass");
+    if (!glass) return;
+    el.addEventListener("click", (e) => {
+      if (!glass.contains(e.target)) this._closeLibModal();
+    });
+    glass.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (e.target.closest("#lib-close")) {
+        this._closeLibModal();
+        return;
+      }
+      const selEl = e.target.closest("[data-lib-sel]");
+      if (selEl) {
+        const key = selEl.dataset.libSel;
+        const m = this._libModal;
+        if (!m?._editMode) return;
+        if (m._selected.has(key)) m._selected.delete(key);
+        else m._selected.add(key);
+        this._libRerenderBody(el);
+        return;
+      }
+      const actionBtn = e.target.closest("[data-lib-action]");
+      if (actionBtn) {
+        const action = actionBtn.dataset.libAction;
+        const m = this._libModal;
+        if (action === "start-edit") {
+          m._editMode = true;
+          m._selected = /* @__PURE__ */ new Set();
+          this._libRerenderBody(el);
+          return;
+        }
+        if (action === "stop-edit") {
+          m._editMode = false;
+          m._selected = /* @__PURE__ */ new Set();
+          this._libRerenderBody(el);
+          return;
+        }
+        if (action === "select-toggle") {
+          const allItems = this._libFilteredItems();
+          const allSelected = m._selected.size >= allItems.length;
+          if (allSelected) {
+            m._selected = /* @__PURE__ */ new Set();
+          } else {
+            allItems.forEach((i) => m._selected.add(`${i._libType}-${i._libInst || "1"}-${i.id}`));
+          }
+          this._libRerenderBody(el);
+          return;
+        }
+        if (action === "bulk-edit") {
+          m._bulkDialog = "edit";
+          this._libRerenderBody(el);
+          const fetches = [];
+          if (!this._radarrProfiles?.length) fetches.push(this._fetchRadarrProfiles?.());
+          if (!this._sonarrProfiles?.length) fetches.push(this._fetchSonarrProfiles?.());
+          if (!this._radarr2Profiles?.length && this._radarr2Configured) fetches.push(this._fetchRadarr2Profiles?.());
+          if (fetches.length) Promise.all(fetches).then(() => {
+            if (this._libModal?._bulkDialog === "edit") this._libRerenderBody(el);
+          }).catch(() => {
+          });
+          return;
+        }
+        if (action === "bulk-tags") {
+          m._bulkDialog = "tags";
+          this._libRerenderBody(el);
+          return;
+        }
+        if (action === "bulk-delete") {
+          m._bulkDialog = "delete";
+          this._libRerenderBody(el);
+          return;
+        }
+        if (action === "bulk-cancel") {
+          m._bulkDialog = null;
+          this._libRerenderBody(el);
+          return;
+        }
+        if (action === "bulk-delete-confirm") {
+          const dlg = el.querySelector("#lib-body");
+          const exclEl = dlg?.querySelector("#bd-excl");
+          const filesEl = dlg?.querySelector("#bd-files");
+          if (exclEl) m._bulkDelete.addImportExclusion = exclEl.checked;
+          if (filesEl) m._bulkDelete.deleteFiles = filesEl.checked;
+          const selArr = [...m._selected];
+          const allItems = this._libAllItems();
+          const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
+          const movieIds = selItems.filter((i) => i._libType === "movie").map((i) => i.id);
+          const seriesIds = selItems.filter((i) => i._libType === "tv").map((i) => i.id);
+          const body = { addImportExclusion: m._bulkDelete.addImportExclusion, deleteFiles: m._bulkDelete.deleteFiles };
+          const calls = [];
+          if (movieIds.length) calls.push(this._callApi("DELETE", "arr_stack/radarr/movie-editor", { ...body, movieIds }));
+          if (seriesIds.length) calls.push(this._callApi("DELETE", "arr_stack/sonarr/series-editor", { ...body, seriesIds }));
+          Promise.all(calls).then(() => {
+            m._bulkDialog = null;
+            m._editMode = false;
+            m._selected = /* @__PURE__ */ new Set();
+            this._libRerenderBody(el);
+            this._fetchAll();
+          }).catch((e2) => console.warn("[lib] bulk delete failed", e2));
+          return;
+        }
+        if (action === "bulk-tags-confirm") {
+          const dlg = el.querySelector("#lib-body");
+          const tagsEl = dlg?.querySelector("#bt-tags");
+          const modeEl = dlg?.querySelector("#bt-mode");
+          m._bulkTags.tags = tagsEl?.value || "";
+          m._bulkTags.applyTags = modeEl?.value || "add";
+          const selArr = [...m._selected];
+          const allItems = this._libAllItems();
+          const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
+          const movieIds = selItems.filter((i) => i._libType === "movie").map((i) => i.id);
+          const seriesIds = selItems.filter((i) => i._libType === "tv").map((i) => i.id);
+          const tagNames = m._bulkTags.tags.split(",").map((t) => t.trim()).filter(Boolean);
+          const calls = [];
+          if (movieIds.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", { movieIds, tags: tagNames, applyTags: m._bulkTags.applyTags }));
+          if (seriesIds.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", { seriesIds, tags: tagNames, applyTags: m._bulkTags.applyTags }));
+          Promise.all(calls).then(() => {
+            m._bulkDialog = null;
+            this._libRerenderBody(el);
+          }).catch((e2) => console.warn("[lib] bulk tags failed", e2));
+          return;
+        }
+        if (action === "bulk-edit-confirm") {
+          const dlg = el.querySelector("#lib-body");
+          const monEl = dlg?.querySelector("#be-mon");
+          const qualEl = dlg?.querySelector("#be-qual");
+          const availEl = dlg?.querySelector("#be-avail");
+          m._bulkEdit.monitored = monEl?.value || "";
+          m._bulkEdit.qualityProfileId = qualEl?.value || "";
+          m._bulkEdit.minimumAvailability = availEl?.value || "";
+          const selArr = [...m._selected];
+          const allItems = this._libAllItems();
+          const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
+          const movieIds = selItems.filter((i) => i._libType === "movie").map((i) => i.id);
+          const seriesIds = selItems.filter((i) => i._libType === "tv").map((i) => i.id);
+          const mkBody = (ids, key) => {
+            const b = { [key]: ids };
+            if (m._bulkEdit.monitored) b.monitored = m._bulkEdit.monitored === "true";
+            if (m._bulkEdit.qualityProfileId) b.qualityProfileId = +m._bulkEdit.qualityProfileId;
+            if (m._bulkEdit.minimumAvailability) b.minimumAvailability = m._bulkEdit.minimumAvailability;
+            return b;
+          };
+          const calls = [];
+          if (movieIds.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", mkBody(movieIds, "movieIds")));
+          if (seriesIds.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", mkBody(seriesIds, "seriesIds")));
+          Promise.all(calls).then(() => {
+            m._bulkDialog = null;
+            this._libRerenderBody(el);
+            this._fetchAll();
+          }).catch((e2) => console.warn("[lib] bulk edit failed", e2));
+          return;
+        }
+        const inst = m?.instFilter || "all";
+        const useR = m?.typeKey !== "tv";
+        const useS = m?.typeKey !== "movies";
+        if (action === "update-all" && (useR && useS || inst === "all")) {
+          const label = action === "rss-sync" ? "RSS Sync" : "Update All";
+          const allTypes = useR && useS;
+          const allInst = inst === "all" && (this._radarr2Configured || this._sonarr2Configured);
+          const parts = [];
+          if (allTypes) parts.push("Movies + TV Shows");
+          if (allInst) parts.push("all instances");
+          const scope = parts.length ? ` for ${parts.join(" and ")}` : "";
+          if (!window.confirm(`${label} will run${scope}. Continue?`)) return;
+        }
+        const svcs = [];
+        if (useR) {
+          if (inst !== "2") svcs.push("radarr");
+          if (inst !== "1" && this._radarr2Configured) svcs.push("radarr2");
+        }
+        if (useS) {
+          if (inst !== "2") svcs.push("sonarr");
+          if (inst !== "1" && this._sonarr2Configured) svcs.push("sonarr2");
+        }
+        const cmdName = (svc, a) => {
+          if (a === "rss-sync") return "RssSync";
+          return svc.startsWith("sonarr") ? "RefreshSeries" : "RefreshMovie";
+        };
+        const _setStatus = (txt) => {
+          const s = this.shadowRoot?.querySelector("#lib-cmd-status");
+          if (s) s.textContent = txt;
+        };
+        const _pollCmd = async (svc, id) => {
+          for (let i = 0; i < 30; i++) {
+            await new Promise((r) => setTimeout(r, 2e3));
+            if (!this._libModal) return;
+            try {
+              const c = await this._callApi("GET", `arr_stack/${svc}/command/${id}`);
+              const msg = c?.message || "";
+              _setStatus(`${svc}: ${msg}`);
+              if (c?.status === "completed" || c?.status === "failed") {
+                return;
+              }
+            } catch {
+            }
+          }
+        };
+        actionBtn.style.opacity = "0.5";
+        setTimeout(() => {
+          if (actionBtn.isConnected) actionBtn.style.opacity = "";
+        }, 800);
+        const _status = action === "rss-sync" ? () => {
+        } : _setStatus;
+        _status("Starting\u2026");
+        svcs.forEach(async (svc) => {
+          try {
+            const res = await this._callApi("POST", `arr_stack/${svc}/command`, { name: cmdName(svc, action) });
+            if (res?.id) {
+              _status(`${svc}: ${res.message || "Running\u2026"}`);
+              if (action !== "rss-sync") _pollCmd(svc, res.id);
+            }
+          } catch (err) {
+            console.warn(`[lib] ${svc} ${action} failed:`, err);
+          }
+        });
+        return;
+      }
+      const card = e.target.closest("[data-lib-popup]");
+      if (card) {
+        const type = card.dataset.libPopup;
+        const tmdbId = card.dataset.tmdbid || null;
+        const tvdbId = card.dataset.tvdbid || null;
+        const title = card.dataset.title || "";
+        this._libReturnState = { ...this._libModal };
+        this._closeLibModal();
+        this._openPopup(type, tmdbId, tvdbId, title);
+        return;
+      }
+      const typeTab = e.target.closest("[data-lib-tab-type]");
+      if (typeTab) {
+        const key = typeTab.dataset.libTabType;
+        if (key !== this._libModal.typeKey) {
+          this._libModal.typeKey = key;
+          this._libModal.sort = "added";
+          this._libModal.sortDir = "desc";
+          this._libModal.filter = "all";
+          this._libModal.search = "";
+          this._libModal.page = 0;
+          this._libRerenderModal(el);
+        }
+        return;
+      }
+      const instTab = e.target.closest("[data-lib-tab-inst]");
+      if (instTab) {
+        const key = instTab.dataset.libTabInst;
+        if (key !== (this._libModal.instFilter || "all")) {
+          this._libModal.instFilter = key;
+          this._libModal.page = 0;
+          this._libRerenderModal(el);
+        }
+        return;
+      }
+      const qualTab = e.target.closest("[data-lib-tab-quality]");
+      if (qualTab) {
+        const key = qualTab.dataset.libTabQuality;
+        if (key === this._libModal.qualityKey) {
+          this._libModal.qualityKey = null;
+          this._libModal.sort = "added";
+        } else {
+          this._libModal.qualityKey = key;
+          this._libModal.sort = key === "toprated" ? "imdb" : "quality";
+        }
+        this._libModal.sortDir = "desc";
+        this._libModal.page = 0;
+        this._libRerenderModal(el);
+        return;
+      }
+      if (e.target.closest("#lib-sort-btn")) {
+        this._libModal._sortOpen = !this._libModal._sortOpen;
+        this._libRerenderBody(el);
+        return;
+      }
+      const sortOpt = e.target.closest("[data-lib-sort-opt]");
+      if (sortOpt) {
+        const v = sortOpt.dataset.libSortOpt;
+        if (v === this._libModal.sort) {
+          this._libModal.sortDir = this._libModal.sortDir === "desc" ? "asc" : "desc";
+        } else {
+          this._libModal.sort = v;
+          this._libModal.sortDir = "desc";
+        }
+        this._libModal._sortOpen = false;
+        this._libModal.page = 0;
+        this._libRerenderBody(el);
+        return;
+      }
+      if (this._libModal._sortOpen && !e.target.closest("#lib-sort-wrap")) {
+        this._libModal._sortOpen = false;
+        this._libRerenderBody(el);
+        return;
+      }
+      const pageBtn = e.target.closest("[data-lib-page]");
+      if (pageBtn && !pageBtn.disabled) {
+        const val = pageBtn.dataset.libPage;
+        const tp = this._libModal._totalPages || 1;
+        let p = this._libModal.page;
+        if (val === "first") p = 0;
+        else if (val === "prev") p = Math.max(0, p - 1);
+        else if (val === "next") p = Math.min(tp - 1, p + 1);
+        else if (val === "last") p = tp - 1;
+        else p = parseInt(val, 10);
+        this._libModal.page = p;
+        this._libRerenderBody(el);
+        return;
+      }
+    });
+    this._wireLibModalBody(el);
+    let _resizeTimer = null;
+    const _onResize = () => {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(() => {
+        if (!this._libModal || !el.isConnected) {
+          window.removeEventListener("resize", _onResize);
+          return;
+        }
+        const bodyEl = el.querySelector("#lib-body");
+        if (bodyEl?.clientHeight > 0) {
+          this._libModal._bodyH = bodyEl.clientHeight;
+        }
+        this._libRerenderBody(el);
+      }, 150);
+    };
+    window.addEventListener("resize", _onResize);
+  }
+  _libRerenderModal(el) {
+    if (!this._libModal) return;
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._libModalHtml();
+    const newEl = wrap.firstElementChild;
+    el.replaceWith(newEl);
+    this._wireLibModal(newEl);
+  }
+  _libRerenderBody(el) {
+    const body = el.querySelector("#lib-body");
+    if (!body || !this._libModal) return;
+    const prevSearch = el.querySelector("#lib-search");
+    const searchFocused = prevSearch && this.shadowRoot?.activeElement === prevSearch;
+    const sel = prevSearch?.selectionStart ?? null;
+    body.innerHTML = this._libBodyHtml();
+    this._wireLibModalBody(el);
+    if (searchFocused) {
+      const inp = el.querySelector("#lib-search");
+      if (inp) {
+        inp.focus();
+        try {
+          inp.setSelectionRange(sel, sel);
+        } catch {
+        }
+      }
+    }
+  }
+  _wireLibModalBody(el) {
+    const glass = el.querySelector(".popup-glass");
+    if (!glass) return;
+    const viewSel = glass.querySelector("#lib-view-sel");
+    if (viewSel) {
+      viewSel.addEventListener("change", () => {
+        this._libModal.view = viewSel.value;
+        this._libModal.page = 0;
+        this._libRerenderBody(el);
+      });
+    }
+    const filtSel = glass.querySelector("#lib-filter-sel");
+    if (filtSel) {
+      filtSel.addEventListener("change", () => {
+        this._libModal.filter = filtSel.value;
+        this._libModal.page = 0;
+        this._libRerenderBody(el);
+      });
+    }
+    const searchEl = glass.querySelector("#lib-search");
+    if (searchEl) {
+      let _t;
+      searchEl.addEventListener("input", () => {
+        clearTimeout(_t);
+        _t = setTimeout(() => {
+          this._libModal.search = searchEl.value;
+          this._libModal.page = 0;
+          this._libRerenderBody(el);
+        }, 220);
+      });
+    }
+  }
+};
+var libraryWireMixin = _LibraryWireMethods.prototype;
+
 // src/render/activity.js
 var _ActivityRenderMethods = class {
   // ── Right-panel card row ─────────────────────────────────────────────────
@@ -23856,6 +25001,7 @@ var _ActivityRenderMethods = class {
   // ── Modal shell ──────────────────────────────────────────────────────────
   _actModalHtml(tab) {
     const isMobile2 = this._isMob;
+    const _tabLg = !isMobile2 && window.matchMedia("(max-width:860px)").matches ? " is-tab-lg" : "";
     const allTabs = ["queue", "history", "blocklist", "missing"];
     const tabLabels = { queue: this._t("actTabQueue"), history: this._t("actTabHistory"), blocklist: this._t("actTabBlocklist"), missing: this._t("actTabMissing") };
     const _day = this._isDay;
@@ -23872,7 +25018,7 @@ var _ActivityRenderMethods = class {
          <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
            <div id="act-hdr-sub" style="font-size:15px;font-weight:700;color:var(--is-text)">${tabLabels[tab]}</div>
          </div>
-         <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         <div class="is-filter${_tabLg}" style="flex-shrink:0">${tabBtns}</div>
          <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">${ICONS.close}</button>`;
     const hdrStyle = isMobile2 ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
     return `<div class="popup-overlay${dayClass(this)}" data-act-modal>
@@ -26679,6 +27825,7 @@ var _WireProwlarrMethods = class {
     const tabLabels = { indexers: "Indexers", apps: "Applications", stats: "Statistics", history: "History" };
     const _day = this._isDay;
     const _tc = _day ? "#000" : "#fff";
+    const _tabLg = !isMobile() && window.matchMedia("(max-width:860px)").matches ? " is-tab-lg" : "";
     const tabBtns = allTabs.map((t) => {
       const on = t === tab;
       const st = on ? `height:24px;box-sizing:border-box;padding:0 10px;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-weight:700` : `height:24px;box-sizing:border-box;padding:0 10px;color:${_tc}`;
@@ -26691,7 +27838,7 @@ var _WireProwlarrMethods = class {
          <div class="is-filter">${tabBtns}</div>` : `<div style="flex:1;min-width:0">
            <div id="pw-hdr-title" style="font-size:15px;font-weight:700;color:var(--is-text)">Prowlarr \u2014 ${tabLabels[tab]}</div>
          </div>
-         <div class="is-filter" style="flex-shrink:0">${tabBtns}</div>
+         <div class="is-filter${_tabLg}" style="flex-shrink:0">${tabBtns}</div>
          <button class="popup-close" id="pw-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:flex-start;margin-left:4px">${ICONS.close}</button>`;
     const hdrStyle = isMobile() ? "padding:14px 16px 12px;flex-direction:column;align-items:stretch" : "padding:14px 22px 12px;gap:12px;flex-wrap:wrap";
     return `<div class="popup-overlay${dayClass(this)}" data-pw-modal>
@@ -29847,6 +30994,7 @@ var ArrStackCard = class extends HTMLElement {
     this._wireTracearrPosters(right);
     this._wireActivityPosters(right);
     this._wireProwlarrPosters(right);
+    this._wireLibraryTiles(right);
     this._trimActivityCards();
     if (this._searchActive) {
       requestAnimationFrame(() => {
@@ -30128,6 +31276,7 @@ var ArrStackCard = class extends HTMLElement {
     if (right) this._wireTracearrPosters(right);
     if (right) this._wireActivityPosters(right);
     if (right) this._wireProwlarrPosters(right);
+    if (right) this._wireLibraryTiles(right);
     this._renderPopupEl();
     this._wireMinimize();
     requestAnimationFrame(() => {
@@ -30217,7 +31366,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.24", sid })
+        body: JSON.stringify({ v: "dev", sid })
       }).catch(() => {
       });
     } catch (_) {
@@ -30281,6 +31430,8 @@ applyMixin(ArrStackCard.prototype, jellystatGraphsMixin);
 applyMixin(ArrStackCard.prototype, wireTracearrMixin);
 applyMixin(ArrStackCard.prototype, tracearrTableMixin);
 applyMixin(ArrStackCard.prototype, tracearrMixin);
+applyMixin(ArrStackCard.prototype, libraryMixin);
+applyMixin(ArrStackCard.prototype, libraryWireMixin);
 applyMixin(ArrStackCard.prototype, activityRenderMixin);
 applyMixin(ArrStackCard.prototype, wireActivityMixin);
 applyMixin(ArrStackCard.prototype, prowlarrRenderMixin);
