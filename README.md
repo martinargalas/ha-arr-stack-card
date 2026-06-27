@@ -103,6 +103,20 @@ The right panel is modular. You choose which sections appear and in what order v
 - **Movies** — full Radarr library with download status, IMDB rating, audio language tags, and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab. Cast to a Plex device directly from the popup (requires Plex, see below).
 - **TV Shows** — full Sonarr library with per-season progress bars, ratings, and subtitle status. **Upcoming episodes calendar** with air dates. Interactive Search per season or episode. Cast to Plex supported as with movies.
 
+#### Library browser
+
+A full-screen library panel for browsing and managing your entire movie and TV show collection. Open it from the right panel via the **Library** section button.
+
+- **Overview and table view** — switch between poster grid and a compact list with ratings, quality, file size, and status at a glance
+- **Filter and sort** — filter by Movies, TV Shows, or both; sort by Recently Added, Title, Rating, or Quality; search by title
+- **Multiple instances** — when two Radarr or Sonarr instances are configured, switch between them or view everything together with the **Both Instances** tab
+- **Bulk edit** — select individual items or use Select All, then:
+  - Change quality profile across the whole selection
+  - Add or remove tags
+  - Delete titles (removes from Radarr/Sonarr)
+- **Update All** — trigger a metadata refresh across your selected movies or shows; **RSS Sync** — pull the latest feed from your indexers
+- Item count shown in the header so you always know how many titles match your current filter
+
 #### Discovery & Recommendations
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
@@ -294,6 +308,8 @@ categories:
     enabled: false
   - id: activity
     enabled: false
+  - id: library
+    enabled: true
   - id: prowlarr
     enabled: false
 
@@ -351,6 +367,7 @@ styles:
 | `tautulli` | Statistics (Tautulli) |
 | `jellystat` | Statistics (Jellystat) |
 | `tracearr` | Statistics (Tracearr) *(beta)* |
+| `library` | Library browser (Radarr / Sonarr — bulk edit, sort, filter) |
 | `activity` | Activity Queue (admin only) |
 | `prowlarr` | Indexers (Prowlarr) |
 
