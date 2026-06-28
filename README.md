@@ -96,26 +96,25 @@ The left panel appears when at least one download manager is configured. You can
 
 The right panel is modular. You choose which sections appear and in what order via the visual editor. Each section can be enabled or disabled independently.
 
-#### Library (Radarr / Sonarr)
+#### Movies & TV Shows
 
-- **Recently Added** — mixed movies + TV shows with files, sorted by download date.
-- **Recently Requested** — monitored movies and shows not yet downloaded, with download status.
-- **Movies** — full Radarr library with download status, IMDB rating, audio language tags, and Bazarr subtitle status. Popup with poster, overview, ratings, and trailer link. **Interactive Search** — live indexer results with one-click grab. Cast to a Plex device directly from the popup (requires Plex, see below).
-- **TV Shows** — full Sonarr library with per-season progress bars, ratings, and subtitle status. **Upcoming episodes calendar** with air dates. Interactive Search per season or episode. Cast to Plex supported as with movies.
+- **Recently Added** — your latest downloads, movies and shows mixed, sorted by date.
+- **Recently Requested** — titles you've requested that are still downloading or waiting.
+- **Movies** — your full movie collection with download status, ratings, audio tracks, and subtitle availability. Click any title to open a detail popup with poster, overview, ratings, and a trailer link. From there you can run an **Interactive Search** to manually pick a release, or cast directly to a Plex device.
+- **TV Shows** — your full series collection with per-season progress, ratings, and subtitle status. Includes an **upcoming episodes calendar** with air dates. Interactive Search and Plex cast available here too.
 
-#### Library browser
+#### Library
 
-A full-screen library panel for browsing and managing your entire movie and TV show collection. Open it from the right panel via the **Library** section button.
+A full-screen panel for browsing and managing your entire movie and TV show collection. Open it via the **Library** button in the right panel. Enabled by default for new installs.
 
-- **Overview and table view** — switch between poster grid and a compact list with ratings, quality, file size, and status at a glance
-- **Filter and sort** — filter by Movies, TV Shows, or both; sort by Recently Added, Title, Rating, or Quality; search by title
-- **Multiple instances** — when two Radarr or Sonarr instances are configured, switch between them or view everything together with the **Both Instances** tab
-- **Bulk edit** — select individual items or use Select All, then:
-  - Change quality profile across the whole selection
-  - Add or remove tags
-  - Delete titles (removes from Radarr/Sonarr)
-- **Update All** — trigger a metadata refresh across your selected movies or shows; **RSS Sync** — pull the latest feed from your indexers
-- Item count shown in the header so you always know how many titles match your current filter
+- **Poster and table view** — switch between a resizable poster grid and a compact list with ratings, quality, file size, and status at a glance. In poster view, drag the grip handle to adjust column count on the fly — preference is saved per session.
+- **Status badges** — each poster shows whether a title is available, downloading, missing, or waiting for a quality upgrade. Subtitle availability shown where configured.
+- **Filter and sort** — filter by Movies, TV Shows, or both; sort by Recently Added, Title, Rating, or Quality; search by title.
+- **Top Quality** — filter to see only movies that have a file but haven't reached your preferred quality yet.
+- **Multiple instances** — if you run two separate movie or TV servers, switch between them or browse everything together in the **Both Instances** tab.
+- **Bulk actions** — select individual titles or use Select All, then change quality profile, add or remove tags, or delete titles. Changes apply immediately to the right server.
+- **Update All** — refresh metadata for your selection; **RSS Sync** — pull the latest releases from your indexers.
+- Item count shown in the header so you always know how many titles match your current filter.
 
 #### Discovery & Recommendations
 
