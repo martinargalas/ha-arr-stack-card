@@ -391,7 +391,18 @@ styles:
 
 ## Analytics
 
-Arr Stack Card sends an anonymous ping on load (install count, card version). No personal data is collected — only a hashed hostname and version string. You can view live usage stats at [argalas.org/arr-stats](https://argalas.org/arr-stats).
+Arr Stack Card sends one anonymous ping per 24 hours. The following data is collected:
+
+| Field | What it contains |
+|-------|-----------------|
+| **Card version** | e.g. `1.6.28` |
+| **Anonymous site ID** | Short hash of your Home Assistant hostname — cannot be reversed to identify you or your server |
+| **Enabled integrations** | Which services are configured (e.g. Plex, Bazarr, qBittorrent) — no credentials, URLs, or settings |
+| **Mobile flag** | Whether the card is shown on a screen narrower than 600 px |
+
+No IP addresses, hostnames, usernames, media titles, or any personally identifiable information are sent or stored. Rate-limited to one ping per IP per 24 hours.
+
+Live usage stats (public): [argalas.org/arr-stats](https://argalas.org/arr-stats)
 
 ---
 
