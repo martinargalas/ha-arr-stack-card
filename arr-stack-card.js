@@ -391,7 +391,7 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "tracearr", enabled: false },
       { id: "activity", enabled: false },
       { id: "prowlarr", enabled: false },
-      { id: "library", enabled: false }
+      { id: "library", enabled: true }
     ];
   }
   _getCats() {
@@ -4828,9 +4828,20 @@ var autoSearchMixin = _AutoSearchMethods.prototype;
 
 // src/fetch/index.js
 var _FetchMethods = class {
-  _callApi(method, path, body) {
+  async _callApi(method, path, body) {
     const p = this._debug ? path + (path.includes("?") ? "&" : "?") + "_debug=1" : path;
-    return this._hass.callApi(method, p, body);
+    try {
+      return await this._hass.callApi(method, p, body);
+    } catch (err) {
+      if (err?.status === 401 && this._hass.connection?.refreshAccessToken) {
+        try {
+          await this._hass.connection.refreshAccessToken();
+        } catch (_) {
+        }
+        return this._hass.callApi(method, p, body);
+      }
+      throw err;
+    }
   }
   async _fetchCapabilities() {
     if (this._capsLoaded) return;
@@ -18301,12 +18312,26 @@ var _TL_G_VBW = 1e3;
 var _TL_G_SVH = 200;
 var _TL_G_DISP = 200;
 var _P = { l: 12, r: 6, t: 18, b: 6 };
-function _tlGHex(n, si) {
-  if (_TL_G_HEX[n]) return _TL_G_HEX[n];
-  if (si !== void 0) return _TL_G_FALLBACK[si % _TL_G_FALLBACK.length];
-  let h = 0;
-  for (let i = 0; i < n.length; i++) h = h * 31 + n.charCodeAt(i) & 65535;
-  return _TL_G_FALLBACK[h % _TL_G_FALLBACK.length];
+function _tlGAssignColors(series) {
+  const used = /* @__PURE__ */ new Set();
+  const map = {};
+  for (const s of series) {
+    if (_TL_G_HEX[s.name]) {
+      map[s.name] = _TL_G_HEX[s.name];
+      used.add(_TL_G_HEX[s.name]);
+    }
+  }
+  let fi = 0;
+  for (const s of series) {
+    if (!map[s.name]) {
+      while (fi < _TL_G_FALLBACK.length && used.has(_TL_G_FALLBACK[fi])) fi++;
+      const c = _TL_G_FALLBACK[fi % _TL_G_FALLBACK.length];
+      map[s.name] = c;
+      used.add(c);
+      fi++;
+    }
+  }
+  return map;
 }
 function _tlGAttr(v) {
   return String(v).replace(/"/g, "&quot;");
@@ -18444,8 +18469,9 @@ var _TautulliGraphsMethods = class {
   // ── Card wrapper ──────────────────────────────────────────────────────────
   _tlGCard(title, rawData, chartHtml) {
     const series = (rawData?.response?.data?.series || []).filter((s) => s.name !== "Total");
+    const colMap = _tlGAssignColors(series);
     const legend = series.map(
-      (s, si) => `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)"><span style="width:7px;height:7px;border-radius:2px;background:${_tlGHex(s.name, si)};flex-shrink:0;display:inline-block;opacity:0.9"></span>${s.name}</span>`
+      (s) => `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)"><span style="width:7px;height:7px;border-radius:2px;background:${colMap[s.name]};flex-shrink:0;display:inline-block;opacity:0.9"></span>${s.name}</span>`
     ).join("");
     return `<div class="tl-g-card" style="position:relative">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
@@ -18487,8 +18513,9 @@ var _TautulliGraphsMethods = class {
     const baseY = _P.t + cH;
     const cid = opts.chartId || "g";
     const isDur = !!opts.isDuration;
+    const colMapB = _tlGAssignColors(series);
     const defs = "<defs>" + series.map((s, si) => {
-      const h = _tlGHex(s.name, si);
+      const h = colMapB[s.name];
       return `<linearGradient id="tl-gb-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.92"/><stop offset="100%" stop-color="${h}" stop-opacity="0.42"/></linearGradient>`;
     }).join("") + "</defs>";
     const serGrad = {};
@@ -18507,9 +18534,9 @@ var _TautulliGraphsMethods = class {
       const x = _P.l + i * slotW + (slotW - bw) / 2;
       const total = series.reduce((s, ser) => s + ((ser.data || [])[i] || 0), 0);
       const sorted = series.slice().sort((a, b) => ((a.data || [])[i] || 0) - ((b.data || [])[i] || 0));
-      const tipVals = sorted.filter((s) => ((s.data || [])[i] || 0) > 0).reverse().map((s, si) => {
+      const tipVals = sorted.filter((s) => ((s.data || [])[i] || 0) > 0).reverse().map((s) => {
         const v = (s.data || [])[i] || 0;
-        return { n: s.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(s.name, si) };
+        return { n: s.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: colMapB[s.name] };
       });
       const tipData = _tlGAttr(JSON.stringify({
         lbl: cat,
@@ -18523,7 +18550,7 @@ var _TautulliGraphsMethods = class {
           const v = (ser.data || [])[i] || 0;
           if (!v) return;
           const h = v / maxV * cH;
-          const fill = serGrad[ser.name] || _tlGHex(ser.name, series.indexOf(ser));
+          const fill = serGrad[ser.name] || colMapB[ser.name];
           const isTop = si2 === sorted.length - 1 || sorted.slice(si2 + 1).every((s2) => !((s2.data || [])[i] || 0));
           curY -= h;
           const pathD = isTop ? this._tlGRoundedTop(x, curY, bw, h, rr) : `M${x},${curY + h} L${x},${curY} L${x + bw},${curY} L${x + bw},${curY + h} Z`;
@@ -18585,8 +18612,9 @@ var _TautulliGraphsMethods = class {
         cat: cats[i]
       }));
     });
+    const colMapL = _tlGAssignColors(series);
     let di = series.map((s, si) => {
-      const h = _tlGHex(s.name, si);
+      const h = colMapL[s.name];
       return `<linearGradient id="tl-gl-${cid}-${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stop-color="${h}" stop-opacity="0.18"/><stop offset="100%" stop-color="${h}" stop-opacity="0"/></linearGradient>`;
     }).join("");
     if (!noDots) series.forEach((ser, si) => {
@@ -18606,13 +18634,13 @@ var _TautulliGraphsMethods = class {
     series.forEach((ser, si) => {
       const pts = seriesPts[si];
       if (!pts.some((p) => p.v > 0)) return;
-      const hex = _tlGHex(ser.name, si);
+      const hex = colMapL[ser.name];
       out += `<path d="${this._tlGSmoothArea(pts, baseY)}" style="fill:url(#tl-gl-${cid}-${si});animation:fade-in 0.8s ease-out both"/>`;
       out += `<path d="${this._tlGSmoothLine(pts)}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="tl-g-anim-line"${noDots ? "" : ` mask="url(#tl-lmask-${cid}-${si})"`}/>`;
     });
     if (!noDots) series.forEach((ser, si) => {
       const pts = seriesPts[si];
-      const hex = _tlGHex(ser.name, si);
+      const hex = colMapL[ser.name];
       pts.forEach((p) => {
         if (!p.v) return;
         const tipJson = _tlGAttr(JSON.stringify({ lbl: p.cat, name: ser.name, val: p.v, hex }));
@@ -18621,9 +18649,9 @@ var _TautulliGraphsMethods = class {
     });
     cats.forEach((cat, i) => {
       const rx = colL(i), rw = colR(i) - rx;
-      const tipVals = series.map((ser, si) => {
+      const tipVals = series.map((ser) => {
         const v = (ser.data || [])[i] || 0;
-        return { n: ser.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: _tlGHex(ser.name, si) };
+        return { n: ser.name, v, fv: isDur ? _tlGFmtDur(v) : v, hex: colMapL[ser.name] };
       }).filter((v) => v.v > 0).sort((a, b) => b.v - a.v);
       const tot = tipVals.reduce((s, v) => s + v.v, 0);
       const td = _tlGAttr(JSON.stringify({ lbl: cat, tot, ftot: isDur ? _tlGFmtDur(tot) : null, vals: tipVals }));
@@ -23789,7 +23817,7 @@ var _LibraryMethods = class {
         url: this._getSonarrPoster(s),
         title: s.title,
         _libType: "tv",
-        _score: s.ratings?.imdb?.value || s.ratings?.value || 0
+        _score: s.ratings?.imdb?.value || s.ratings?.tmdb?.value || s.ratings?.tvdb?.value || s.ratings?.tvMaze?.value || s.ratings?.trakt?.value || s.ratings?.value || 0
       }))
     ].filter((i) => i._score > 0).sort((a, b) => b._score - a._score).slice(0, 4);
   }
@@ -23833,23 +23861,30 @@ var _LibraryMethods = class {
   // ─── Modal open / close ───────────────────────────────────────────────────
   _openLibModal(key) {
     this.shadowRoot.querySelector("[data-lib-modal]")?.remove();
-    const typeKey = key === "movies" ? "movies" : key === "tv" ? "tv" : "all";
+    const typeKey = key === "movies" || key === "topquality" ? "movies" : key === "tv" ? "tv" : "all";
     const qualityKey = key === "toprated" || key === "topquality" ? key : null;
     const sortDef = qualityKey === "toprated" ? "imdb" : qualityKey === "topquality" ? "quality" : "added";
+    let _saved = {};
+    try {
+      _saved = JSON.parse(localStorage.getItem("arr-lib-tabs") || "{}");
+    } catch (_) {
+    }
+    const isTabNow = !this._isMob && window.matchMedia("(max-width:860px)").matches;
     this._libModal = {
       typeKey,
       qualityKey,
-      instFilter: "all",
+      instFilter: _saved.instFilter || "all",
       search: "",
       sort: sortDef,
-      sortDir: "desc",
-      view: "posters",
+      sortDir: _saved.sortDir || "desc",
+      view: _saved.view || "posters",
       page: 0,
-      filter: "all",
+      filter: _saved.filter || "all",
+      _libCols: !this._isMob ? _saved.tabCols || 0 : 0,
       _editMode: false,
       _selected: /* @__PURE__ */ new Set(),
       _bulkDialog: null,
-      _bulkEdit: { monitored: "", qualityProfileId: "", minimumAvailability: "", rootFolderPath: "" },
+      _bulkEdit: { monitored: "", qualityProfileId: "", minimumAvailability: "", rootFolderPath: "", monitorNewItems: "", seriesType: "", seasonFolder: "" },
       _bulkTags: { tags: "", applyTags: "add" },
       _bulkDelete: { addImportExclusion: true, deleteFiles: false }
     };
@@ -23865,6 +23900,13 @@ var _LibraryMethods = class {
     this._wireLibModal(el);
   }
   _closeLibModal() {
+    if (this._libModal) {
+      try {
+        const { typeKey, instFilter, qualityKey, sort, sortDir, view, filter, _libCols } = this._libModal;
+        localStorage.setItem("arr-lib-tabs", JSON.stringify({ typeKey, instFilter, qualityKey, sort, sortDir, view, filter, tabCols: _libCols || 0 }));
+      } catch (_) {
+      }
+    }
     this.shadowRoot.querySelector("[data-lib-modal]")?.remove();
     this._libModal = null;
   }
@@ -23886,9 +23928,11 @@ var _LibraryMethods = class {
     };
     const g1Btns = ["all", "movies", "tv"].map((k) => {
       const on = k === m.typeKey;
+      const disabled = m.qualityKey === "topquality" && k !== "movies";
       const lbl = isMob ? G1_LABELS[k] : G1_LABELS_DSK[k];
       const isIcon = isMob && k !== "all";
-      return `<button class="is-f-btn${on ? " active" : ""}" data-lib-tab-type="${k}" style="${_tabSt(on, "rgba(0,122,255,0.35)", isIcon)}">${lbl}</button>`;
+      const disStyle = disabled ? ";opacity:0.3;pointer-events:none;cursor:default" : "";
+      return `<button class="is-f-btn${on ? " active" : ""}" data-lib-tab-type="${k}" style="${_tabSt(on, "rgba(0,122,255,0.35)", isIcon)}${disStyle}"${disabled ? " disabled" : ""}>${lbl}</button>`;
     }).join("");
     const sep = `<span style="display:inline-block;width:1px;height:14px;background:rgba(255,255,255,0.2);margin:0 4px;flex-shrink:0;align-self:center"></span>`;
     const g2Btns = G2.map(([k], i) => {
@@ -23948,25 +23992,30 @@ var _LibraryMethods = class {
       const gap = 14;
       const glassW = Math.min(1100, vW * 0.96);
       const bodyPX = isMob ? 20 : 40;
-      const minW = isMob ? 70 : 90;
-      const maxC = Math.floor((glassW - bodyPX + gap) / (minW + gap));
-      const minC = isMob ? 2 : 3;
-      let bestCols = minC, bestPP = 0;
-      for (let c = minC; c <= maxC; c++) {
-        const pW = (glassW - bodyPX - gap * (c - 1)) / c;
-        const pH = pW * 1.5;
-        const r = Math.max(1, Math.floor((availH + gap) / (pH + gap)));
-        const pp = c * r;
-        if (pp > bestPP) {
-          bestPP = pp;
-          bestCols = c;
+      let bestCols = m._libCols || 0;
+      if (!bestCols) {
+        const minW = isMob ? 70 : 90;
+        const maxC = Math.floor((glassW - bodyPX + gap) / (minW + gap));
+        const minC = isMob ? 2 : 3;
+        let bestPP = 0;
+        for (let c = minC; c <= maxC; c++) {
+          const pW = (glassW - bodyPX - gap * (c - 1)) / c;
+          const pH = pW * 1.5;
+          const r = Math.max(1, Math.floor((availH + gap) / (pH + gap)));
+          const pp = c * r;
+          if (pp > bestPP) {
+            bestPP = pp;
+            bestCols = c;
+          }
         }
+        m._libCols = bestCols;
       }
       const posterW = (glassW - bodyPX - gap * (bestCols - 1)) / bestCols;
       const posterH = posterW * 1.5;
-      const rows = Math.max(1, Math.floor((availH + gap) / (posterH + gap)));
+      const rowsBase = Math.max(1, Math.floor((availH + gap) / (posterH + gap)));
+      const extraClip = (rowsBase + 1) * posterH + rowsBase * gap - availH;
+      const rows = extraClip < posterH * 0.15 ? rowsBase + 1 : rowsBase;
       perPage = bestCols * rows;
-      m._libCols = bestCols;
     } else if (m.view === "overview") {
       const rowH = 79 + 6;
       perPage = Math.max(5, Math.floor((availH + 6) / rowH));
@@ -24073,14 +24122,26 @@ var _LibraryMethods = class {
     let contentHtml;
     if (m.view === "posters") {
       const cols = m._libCols || (isMob ? 4 : 7);
-      contentHtml = `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>`;
+      contentHtml = `<div id="lib-poster-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>`;
     } else if (m.view === "overview") {
       contentHtml = `<div style="display:flex;flex-direction:column;gap:6px;overflow:hidden">${pageItems.map((i) => this._libOverviewCard(i)).join("")}</div>`;
     } else {
       contentHtml = `<div style="overflow:hidden;flex:1;min-height:0">${this._libTableHtml(pageItems)}</div>`;
     }
     const pagHtml = this._tlMobPag("lib-page", page, totalPages, true);
-    const pagWrap = pagHtml ? `<div style="flex-shrink:0">${pagHtml}</div>` : "";
+    const LIB_COLS_MIN = 3, LIB_COLS_MAX = 12, LIB_TRACK_W = 120, LIB_INSET = 7;
+    const dragHandle = !isMob && m.view === "posters" ? (() => {
+      const cur = m._libCols || 7;
+      const thumbPx = Math.round((cur - LIB_COLS_MIN) / (LIB_COLS_MAX - LIB_COLS_MIN) * (LIB_TRACK_W - LIB_INSET * 2)) + LIB_INSET;
+      return `<div id="lib-drag-handle" style="position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;padding:6px 0 6px 8px;touch-action:none;user-select:none;cursor:ew-resize">
+        <svg width="8" height="14" viewBox="0 0 8 14" fill="var(--is-text,#fff)" opacity="0.4"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/><circle cx="6" cy="2" r="1.5"/><circle cx="6" cy="7" r="1.5"/><circle cx="6" cy="12" r="1.5"/></svg>
+        <div id="lib-drag-track" style="position:relative;width:${LIB_TRACK_W}px;height:3px;background:rgba(255,255,255,0.18);border-radius:2px;cursor:ew-resize">
+          <div style="position:absolute;top:0;left:0;width:${thumbPx}px;height:100%;background:rgba(255,255,255,0.45);border-radius:2px;pointer-events:none"></div>
+          <div id="lib-drag-thumb" style="position:absolute;top:50%;left:${thumbPx}px;transform:translateY(-50%);width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,0.85);box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;margin-left:-6px"></div>
+        </div>
+      </div>`;
+    })() : "";
+    const pagWrap = pagHtml || dragHandle ? `<div style="flex-shrink:0;position:relative;${dragHandle && !pagHtml ? "height:36px" : ""}">${pagHtml}${dragHandle}</div>` : "";
     const dialogHtml = m._bulkDialog ? `<div style="position:absolute;inset:0;z-index:20;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;border-radius:8px">${this._libBulkDialogHtml()}</div>` : "";
     return `<div style="flex-shrink:0">${toolbar}</div><div style="flex:1;min-height:0;overflow:hidden;position:relative">${contentHtml}${dialogHtml}</div>` + pagWrap;
   }
@@ -24135,12 +24196,23 @@ var _LibraryMethods = class {
     const profileOpts = `<option value="">No Change</option>` + uniqueProfiles.map((p) => `<option value="${p.id}"${m._bulkEdit.qualityProfileId == p.id ? " selected" : ""}>${this._escHtml(p.name)}</option>`).join("");
     const monOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m._bulkEdit.monitored === v ? " selected" : ""}>${["No Change", "Monitored", "Unmonitored"][i]}</option>`).join("");
     const availOpts = ["", "announced", "inCinemas", "released", "tba"].map((v, i) => `<option value="${v}"${m._bulkEdit.minimumAvailability === v ? " selected" : ""}>${["No Change", "Announced", "In Cinemas", "Released", "TBA"][i]}</option>`).join("");
-    const title = hasMovies && hasShows ? "Items" : hasMovies ? "Movies" : "Series";
+    const monNewOpts = ["", "all", "none", "latest"].map((v, i) => `<option value="${v}"${m._bulkEdit.monitorNewItems === v ? " selected" : ""}>${["No Change", "All", "None", "Latest"][i]}</option>`).join("");
+    const serTypeOpts = ["", "standard", "daily", "anime"].map((v, i) => `<option value="${v}"${m._bulkEdit.seriesType === v ? " selected" : ""}>${["No Change", "Standard", "Daily", "Anime"][i]}</option>`).join("");
+    const sfOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m._bulkEdit.seasonFolder === v ? " selected" : ""}>${["No Change", "Yes", "No"][i]}</option>`).join("");
+    const mixed = hasMovies && hasShows;
+    const title = mixed ? "Items" : hasMovies ? "Movies" : "Series";
+    const _appCol = (txt) => mixed ? `<span style="font-size:10px;opacity:0.45;white-space:nowrap;min-width:90px">${txt}</span>` : "";
+    const _row = (label, ctrl, app) => `<div style="${_rowStyle}""><label style="${_labelStyle}">${label}</label>${ctrl}${_appCol(app)}</div>`;
+    const hdrRow = mixed ? `<div style="${_rowStyle};margin-bottom:4px"><span style="${_labelStyle}"></span><span style="flex:1"></span><span style="font-size:10px;font-weight:600;opacity:0.5;min-width:90px">Applies to</span></div>` : "";
     return `<div style="${_dStyle}">
       <p style="${_hStyle}">Edit Selected ${title}</p>
-      <div style="${_rowStyle}"><label style="${_labelStyle}">Monitored</label><select id="be-mon" style="${_selStyle}">${monOpts}</select></div>
-      <div style="${_rowStyle}"><label style="${_labelStyle}">Quality Profile</label><select id="be-qual" style="${_selStyle}">${profileOpts}</select></div>
-      ${hasMovies ? `<div style="${_rowStyle}"><label style="${_labelStyle}">Min Availability</label><select id="be-avail" style="${_selStyle}">${availOpts}</select></div>` : ""}
+      ${hdrRow}
+      ${_row("Monitored", `<select id="be-mon" style="${_selStyle}">${monOpts}</select>`, "Movies + Series")}
+      ${_row("Quality Profile", `<select id="be-qual" style="${_selStyle}">${profileOpts}</select>`, "Movies + Series")}
+      ${hasMovies ? _row("Min Availability", `<select id="be-avail" style="${_selStyle}">${availOpts}</select>`, "Movies only") : ""}
+      ${hasShows ? _row("Monitor New Items", `<select id="be-monnew" style="${_selStyle}">${monNewOpts}</select>`, "Series only") : ""}
+      ${hasShows ? _row("Series Type", `<select id="be-sertype" style="${_selStyle}">${serTypeOpts}</select>`, "Series only") : ""}
+      ${hasShows ? _row("Season Folder", `<select id="be-sf" style="${_selStyle}">${sfOpts}</select>`, "Series only") : ""}
       <p style="font-size:11px;opacity:0.5;margin:0 0 4px;text-align:right">${selItems.length} ${title.toLowerCase()} selected</p>
       <div style="${_footStyle}">${_cancelBtn}<button data-lib-action="bulk-edit-confirm" style="padding:0 14px;height:30px;border-radius:6px;border:none;background:rgba(0,122,255,0.85);color:#fff;font-size:12px;cursor:pointer;font-weight:600">Apply Changes</button></div>
     </div>`;
@@ -24156,7 +24228,7 @@ var _LibraryMethods = class {
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
     const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
     const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
-    const rating = item.ratings?.imdb?.value || item.ratings?.value;
+    const rating = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.tvdb?.value || item.ratings?.value;
     const ratingHtml = rating ? `<div style="margin-bottom:2px"><span class="imdb">\u2B50 ${rating.toFixed(1)}</span></div>` : "";
     const statusBar = `<div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:${this._libStatusColor(item)};z-index:3"></div>`;
     const typeTag = `<span class="media-type-tag" style="position:absolute;top:5px;left:5px;z-index:4">${isMovie ? "Movie" : "Show"}</span>`;
@@ -24164,11 +24236,48 @@ var _LibraryMethods = class {
     const checked = m._editMode && m._selected?.has(selKey);
     const checkHtml = m._editMode ? `<div data-lib-sel="${selKey}" style="position:absolute;top:5px;right:5px;z-index:5;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.85);background:${checked ? "rgba(0,122,255,0.9)" : "rgba(0,0,0,0.45)"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
     const popupAttr = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+    const small = (m._libCols || 0) >= 8;
+    const _b = (cls, icon, text) => small ? `<span class="badge ${cls}">${icon}</span>` : this._badge(cls, icon, text);
+    let statusBadge = "";
+    if (!m._editMode) {
+      let badgeHtml = "";
+      if (isMovie) {
+        const dlFailed = this._radarrQueueFailed?.has(item.id);
+        const dlActive = this._radarrQueueActive?.has(item.id);
+        if (item.hasFile && item.movieFile?.qualityCutoffNotMet) badgeHtml = _b("b-cutoff", "\u26A1", "Upgrade");
+        else if (item.hasFile) badgeHtml = _b("b-st-avail", "\u2713", this._t("badgeAvailable"));
+        else if (dlFailed) badgeHtml = _b("b-missing", "\u2717", this._t("badgeFailed"));
+        else if (dlActive) badgeHtml = _b("b-dl", "\u2193", this._t("badgeDownloading"));
+        else badgeHtml = _b("b-missing", "\u2717", this._t("badgeMissing"));
+      } else {
+        const fc = item.statistics?.episodeFileCount || 0;
+        const tc = item.statistics?.totalEpisodeCount || 0;
+        if (fc === 0 && tc > 0) badgeHtml = _b("b-missing", "\u2717", this._t("badgeMissing"));
+        else if (fc < tc) badgeHtml = small ? `<span class="badge b-partial">${fc}</span>` : `<span class="badge b-partial">${fc}/<span class="b-txt">${tc}</span></span>`;
+        else if (fc > 0) badgeHtml = _b("b-st-avail", "\u2713", this._t("badgeAvailable"));
+      }
+      statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
+    }
+    let subBadge = "";
+    if (!small && !m._editMode && isMovie && item.hasFile) {
+      const bz = this._bazarrConfigured ? this._bazarr[item.id] : null;
+      if (bz) {
+        if (bz.missing.length > 0) {
+          const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = this._badgeIcon("b-sub-miss", "mdi:subtitles-outline", langs);
+        } else if (bz.subtitles.length > 0) {
+          const langs = this._topLangs(bz.subtitles.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
+          subBadge = this._badgeIcon("b-sub-ok", "mdi:subtitles", langs);
+        }
+      }
+    }
+    const extraBadges = subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${subBadge}</div>` : "";
     return `
       <div class="mc"${popupAttr}>
         <div style="position:absolute;inset:0;overflow:hidden">${img}</div>
-        ${this._mcGrad("rgba(0,0,0,0.7)", `${ratingHtml}<div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+        ${this._mcGrad("rgba(0,0,0,0.7)", `${ratingHtml}${extraBadges}<div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
         ${typeTag}
+        ${statusBadge}
         ${checkHtml}
         ${statusBar}
       </div>`;
@@ -24311,8 +24420,11 @@ var _LibraryMethods = class {
           return dir * (new Date(a.physicalRelease || 0) - new Date(b.physicalRelease || 0));
         case "tmdb":
           return dir * ((a.ratings?.tmdb?.value || 0) - (b.ratings?.tmdb?.value || 0));
-        case "imdb":
-          return dir * ((a.ratings?.imdb?.value || 0) - (b.ratings?.imdb?.value || 0));
+        case "imdb": {
+          const ra = a.ratings?.imdb?.value || a.ratings?.tmdb?.value || a.ratings?.tvdb?.value || a.ratings?.tvMaze?.value || a.ratings?.trakt?.value || a.ratings?.value || 0;
+          const rb = b.ratings?.imdb?.value || b.ratings?.tmdb?.value || b.ratings?.tvdb?.value || b.ratings?.tvMaze?.value || b.ratings?.trakt?.value || b.ratings?.value || 0;
+          return dir * (ra - rb);
+        }
         case "popularity":
           return dir * ((a.popularity || 0) - (b.popularity || 0));
         case "size":
@@ -24327,7 +24439,9 @@ var _LibraryMethods = class {
           const Q = ["2160p", "1080p", "720p", "480p"];
           const qa = Q.findIndex((r) => (a.movieFile?.quality?.quality?.name || "").includes(r));
           const qb = Q.findIndex((r) => (b.movieFile?.quality?.quality?.name || "").includes(r));
-          return dir * ((qa === -1 ? 99 : qa) - (qb === -1 ? 99 : qb));
+          const ra = qa === -1 ? -1 : Q.length - qa;
+          const rb = qb === -1 ? -1 : Q.length - qb;
+          return dir * (ra - rb);
         }
         default:
           return 0;
@@ -24349,7 +24463,8 @@ var _LibraryMethods = class {
     if (m.typeKey === "movies") base = movies;
     else if (m.typeKey === "tv") base = tv;
     else base = [...movies, ...tv];
-    if (m.qualityKey === "toprated") base = base.filter((i) => (i.ratings?.imdb?.value || i.ratings?.value || 0) > 0);
+    if (m.qualityKey === "toprated") base = base.filter((i) => (i.ratings?.imdb?.value || i.ratings?.tmdb?.value || i.ratings?.tvdb?.value || i.ratings?.tvMaze?.value || i.ratings?.trakt?.value || i.ratings?.value || 0) > 0);
+    if (m.qualityKey === "topquality") base = base.filter((i) => i._libType === "movie" && !!i.hasFile);
     return base;
   }
   _libSortOptions() {
@@ -24526,27 +24641,37 @@ var _LibraryWireMethods = class {
         }
         if (action === "bulk-edit-confirm") {
           const dlg = el.querySelector("#lib-body");
-          const monEl = dlg?.querySelector("#be-mon");
-          const qualEl = dlg?.querySelector("#be-qual");
-          const availEl = dlg?.querySelector("#be-avail");
-          m._bulkEdit.monitored = monEl?.value || "";
-          m._bulkEdit.qualityProfileId = qualEl?.value || "";
-          m._bulkEdit.minimumAvailability = availEl?.value || "";
+          const dlgEl = el.querySelector("#lib-body");
+          m._bulkEdit.monitored = dlgEl?.querySelector("#be-mon")?.value || "";
+          m._bulkEdit.qualityProfileId = dlgEl?.querySelector("#be-qual")?.value || "";
+          m._bulkEdit.minimumAvailability = dlgEl?.querySelector("#be-avail")?.value || "";
+          m._bulkEdit.monitorNewItems = dlgEl?.querySelector("#be-monnew")?.value || "";
+          m._bulkEdit.seriesType = dlgEl?.querySelector("#be-sertype")?.value || "";
+          m._bulkEdit.seasonFolder = dlgEl?.querySelector("#be-sf")?.value || "";
           const selArr = [...m._selected];
           const allItems = this._libAllItems();
           const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
           const movieIds = selItems.filter((i) => i._libType === "movie").map((i) => i.id);
           const seriesIds = selItems.filter((i) => i._libType === "tv").map((i) => i.id);
-          const mkBody = (ids, key) => {
-            const b = { [key]: ids };
+          const mkMovieBody = (ids) => {
+            const b = { movieIds: ids };
             if (m._bulkEdit.monitored) b.monitored = m._bulkEdit.monitored === "true";
             if (m._bulkEdit.qualityProfileId) b.qualityProfileId = +m._bulkEdit.qualityProfileId;
             if (m._bulkEdit.minimumAvailability) b.minimumAvailability = m._bulkEdit.minimumAvailability;
             return b;
           };
+          const mkSeriesBody = (ids) => {
+            const b = { seriesIds: ids };
+            if (m._bulkEdit.monitored) b.monitored = m._bulkEdit.monitored === "true";
+            if (m._bulkEdit.qualityProfileId) b.qualityProfileId = +m._bulkEdit.qualityProfileId;
+            if (m._bulkEdit.monitorNewItems) b.monitorNewItems = m._bulkEdit.monitorNewItems;
+            if (m._bulkEdit.seriesType) b.seriesType = m._bulkEdit.seriesType;
+            if (m._bulkEdit.seasonFolder) b.seasonFolder = m._bulkEdit.seasonFolder === "true";
+            return b;
+          };
           const calls = [];
-          if (movieIds.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", mkBody(movieIds, "movieIds")));
-          if (seriesIds.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", mkBody(seriesIds, "seriesIds")));
+          if (movieIds.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", mkMovieBody(movieIds)));
+          if (seriesIds.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", mkSeriesBody(seriesIds)));
           Promise.all(calls).then(() => {
             m._bulkDialog = null;
             this._libRerenderBody(el);
@@ -24663,6 +24788,7 @@ var _LibraryWireMethods = class {
         } else {
           this._libModal.qualityKey = key;
           this._libModal.sort = key === "toprated" ? "imdb" : "quality";
+          if (key === "topquality") this._libModal.typeKey = "movies";
         }
         this._libModal.sortDir = "desc";
         this._libModal.page = 0;
@@ -24709,6 +24835,7 @@ var _LibraryWireMethods = class {
       }
     });
     this._wireLibModalBody(el);
+    this._wireLibDragHandle(el);
     let _resizeTimer = null;
     const _onResize = () => {
       clearTimeout(_resizeTimer);
@@ -24726,6 +24853,58 @@ var _LibraryWireMethods = class {
     };
     window.addEventListener("resize", _onResize);
   }
+  _wireLibDragHandle(el) {
+    const handle = el.querySelector("#lib-drag-handle");
+    const track = el.querySelector("#lib-drag-track");
+    const thumb = el.querySelector("#lib-drag-thumb");
+    if (!handle || !track) return;
+    const MIN = 3, MAX = 12, INSET = 7;
+    let startX = 0, startCols = 0;
+    const _thumbPx = (cols, tW) => Math.round((cols - MIN) / (MAX - MIN) * (tW - INSET * 2)) + INSET;
+    const _updateUI = (cols) => {
+      const tW = track.getBoundingClientRect().width || 120;
+      const px = _thumbPx(cols, tW);
+      if (thumb) {
+        thumb.style.left = px + "px";
+      }
+      const fill = track.firstElementChild;
+      if (fill) {
+        fill.style.left = "0";
+        fill.style.width = px + "px";
+      }
+      const grid = el.querySelector("#lib-poster-grid");
+      if (grid) grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+    };
+    const _colsFromDx = (dx) => {
+      const tW = track.getBoundingClientRect().width || 120;
+      const eff = tW - INSET * 2;
+      const startPx = _thumbPx(startCols, tW) - INSET;
+      const newFrac = Math.max(0, Math.min(1, (startPx + dx) / eff));
+      return Math.max(MIN, Math.min(MAX, MIN + Math.round(newFrac * (MAX - MIN))));
+    };
+    handle.addEventListener("pointerdown", (e) => {
+      startX = e.clientX;
+      startCols = this._libModal._libCols || 5;
+      handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!handle.hasPointerCapture(e.pointerId)) return;
+      _updateUI(_colsFromDx(e.clientX - startX));
+    });
+    handle.addEventListener("pointerup", (e) => {
+      if (!handle.hasPointerCapture(e.pointerId)) return;
+      const newCols = _colsFromDx(e.clientX - startX);
+      this._libModal._libCols = newCols;
+      try {
+        const s = JSON.parse(localStorage.getItem("arr-lib-tabs") || "{}");
+        s.tabCols = newCols;
+        localStorage.setItem("arr-lib-tabs", JSON.stringify(s));
+      } catch (_) {
+      }
+      this._libRerenderBody(el);
+    });
+  }
   _libRerenderModal(el) {
     if (!this._libModal) return;
     const wrap = document.createElement("div");
@@ -24742,6 +24921,7 @@ var _LibraryWireMethods = class {
     const sel = prevSearch?.selectionStart ?? null;
     body.innerHTML = this._libBodyHtml();
     this._wireLibModalBody(el);
+    this._wireLibDragHandle(el);
     if (searchFocused) {
       const inp = el.querySelector("#lib-search");
       if (inp) {
@@ -31366,7 +31546,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "dev", sid })
+        body: JSON.stringify({ v: "1.6.26", sid })
       }).catch(() => {
       });
     } catch (_) {
