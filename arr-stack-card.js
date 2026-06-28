@@ -4870,6 +4870,10 @@ var _FetchMethods = class {
   }
   async _fetchAll() {
     await this._fetchCapabilities();
+    if (!this._pingSent) {
+      this._pingSent = true;
+      this._sendPing();
+    }
     if (this._overseerrConfigured === null) {
       await this._fetchOverseerrRadarrSettings();
       if (this._overseerrConfigured !== false) {
@@ -30408,7 +30412,6 @@ var ArrStackCard = class extends HTMLElement {
       this._initialized = true;
       this._buildShell();
       this._loadPendingFromStorage();
-      this._sendPing();
       this._fetchAll();
       this._interval = setInterval(() => this._fetchAll(), 3e4);
       this._fastInterval = setInterval(() => this._fetchDownloadsAndRender(), 5e3);
@@ -31568,10 +31571,24 @@ var ArrStackCard = class extends HTMLElement {
   _sendPing() {
     try {
       const sid = btoa(location.hostname).replace(/=/g, "").slice(0, 16);
+      const svcs = [
+        this._radarr2Configured !== false && "radarr2",
+        this._sonarr2Configured !== false && "sonarr2",
+        this._overseerrConfigured !== false && "overseerr",
+        this._bazarrConfigured !== false && "bazarr",
+        this._plexConfigured !== false && "plex",
+        this._tautulliConfigured !== false && "tautulli",
+        this._jellystatConfigured !== false && "jellystat",
+        this._qbitConfigured !== false && "qbit",
+        this._sabConfigured !== false && "sabnzbd",
+        this._nzbgetConfigured !== false && "nzbget",
+        this._delugeConfigured !== false && "deluge",
+        this._traktConfigured !== false && "trakt"
+      ].filter(Boolean);
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.27", sid })
+        body: JSON.stringify({ v: "1.6.28", sid, svcs, mob: this._isMob ? 1 : 0 })
       }).catch(() => {
       });
     } catch (_) {
