@@ -24191,9 +24191,13 @@ var _LibraryMethods = class {
         <div style="${_footStyle}">${_cancelBtn}<button data-lib-action="bulk-tags-confirm" style="padding:0 14px;height:30px;border-radius:6px;border:none;background:rgba(0,122,255,0.85);color:#fff;font-size:12px;cursor:pointer;font-weight:600">Apply</button></div>
       </div>`;
     }
-    const profiles = (hasMovies ? this._radarrProfiles || [] : []).concat(hasShows ? this._sonarrProfiles || [] : []);
-    const uniqueProfiles = [...new Map(profiles.map((p) => [p.id, p])).values()];
-    const profileOpts = `<option value="">No Change</option>` + uniqueProfiles.map((p) => `<option value="${p.id}"${m._bulkEdit.qualityProfileId == p.id ? " selected" : ""}>${this._escHtml(p.name)}</option>`).join("");
+    const hasMov1 = selItems.some((i) => i._libType === "movie" && (i._libInst || "1") === "1");
+    const hasMov2 = selItems.some((i) => i._libType === "movie" && i._libInst === "2");
+    const hasShw1 = selItems.some((i) => i._libType === "tv" && (i._libInst || "1") === "1");
+    const hasShw2 = selItems.some((i) => i._libType === "tv" && i._libInst === "2");
+    const profiles = [].concat(hasMov1 ? this._radarrProfiles || [] : []).concat(hasMov2 ? this._radarr2Profiles || [] : []).concat(hasShw1 ? this._sonarrProfiles || [] : []).concat(hasShw2 ? this._sonarr2Profiles || [] : []);
+    const uniqueProfiles = [...new Map(profiles.map((p) => [p.name, p])).values()];
+    const profileOpts = `<option value="">No Change</option>` + uniqueProfiles.map((p) => `<option value="${this._escHtml(p.name)}"${m._bulkEdit.qualityProfileId === p.name ? " selected" : ""}>${this._escHtml(p.name)}</option>`).join("");
     const monOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m._bulkEdit.monitored === v ? " selected" : ""}>${["No Change", "Monitored", "Unmonitored"][i]}</option>`).join("");
     const availOpts = ["", "announced", "inCinemas", "released", "tba"].map((v, i) => `<option value="${v}"${m._bulkEdit.minimumAvailability === v ? " selected" : ""}>${["No Change", "Announced", "In Cinemas", "Released", "TBA"][i]}</option>`).join("");
     const monNewOpts = ["", "all", "none", "latest"].map((v, i) => `<option value="${v}"${m._bulkEdit.monitorNewItems === v ? " selected" : ""}>${["No Change", "All", "None", "Latest"][i]}</option>`).join("");
@@ -24603,13 +24607,22 @@ var _LibraryWireMethods = class {
           const selArr = [...m._selected];
           const allItems = this._libAllItems();
           const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
-          const movieIds = selItems.filter((i) => i._libType === "movie").map((i) => i.id);
-          const seriesIds = selItems.filter((i) => i._libType === "tv").map((i) => i.id);
+          const movies1 = selItems.filter((i) => i._libType === "movie" && (i._libInst || "1") === "1").map((i) => i.id);
+          const movies2 = selItems.filter((i) => i._libType === "movie" && i._libInst === "2").map((i) => i.id);
+          const series1 = selItems.filter((i) => i._libType === "tv" && (i._libInst || "1") === "1").map((i) => i.id);
+          const series2 = selItems.filter((i) => i._libType === "tv" && i._libInst === "2").map((i) => i.id);
           const body = { addImportExclusion: m._bulkDelete.addImportExclusion, deleteFiles: m._bulkDelete.deleteFiles };
           const calls = [];
-          if (movieIds.length) calls.push(this._callApi("DELETE", "arr_stack/radarr/movie-editor", { ...body, movieIds }));
-          if (seriesIds.length) calls.push(this._callApi("DELETE", "arr_stack/sonarr/series-editor", { ...body, seriesIds }));
+          if (movies1.length) calls.push(this._callApi("DELETE", "arr_stack/radarr/movie-editor", { ...body, movieIds: movies1 }));
+          if (movies2.length) calls.push(this._callApi("DELETE", "arr_stack/radarr2/movie-editor", { ...body, movieIds: movies2 }));
+          if (series1.length) calls.push(this._callApi("DELETE", "arr_stack/sonarr/series-editor", { ...body, seriesIds: series1 }));
+          if (series2.length) calls.push(this._callApi("DELETE", "arr_stack/sonarr2/series-editor", { ...body, seriesIds: series2 }));
           Promise.all(calls).then(() => {
+            const m1s = new Set(movies1), m2s = new Set(movies2), s1s = new Set(series1), s2s = new Set(series2);
+            if (m1s.size) this._radarr = (this._radarr || []).filter((x) => !m1s.has(x.id));
+            if (m2s.size) this._radarr2 = (this._radarr2 || []).filter((x) => !m2s.has(x.id));
+            if (s1s.size) this._sonarr = (this._sonarr || []).filter((x) => !s1s.has(x.id));
+            if (s2s.size) this._sonarr2 = (this._sonarr2 || []).filter((x) => !s2s.has(x.id));
             m._bulkDialog = null;
             m._editMode = false;
             m._selected = /* @__PURE__ */ new Set();
@@ -24627,12 +24640,16 @@ var _LibraryWireMethods = class {
           const selArr = [...m._selected];
           const allItems = this._libAllItems();
           const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
-          const movieIds = selItems.filter((i) => i._libType === "movie").map((i) => i.id);
-          const seriesIds = selItems.filter((i) => i._libType === "tv").map((i) => i.id);
+          const movies1 = selItems.filter((i) => i._libType === "movie" && (i._libInst || "1") === "1").map((i) => i.id);
+          const movies2 = selItems.filter((i) => i._libType === "movie" && i._libInst === "2").map((i) => i.id);
+          const series1 = selItems.filter((i) => i._libType === "tv" && (i._libInst || "1") === "1").map((i) => i.id);
+          const series2 = selItems.filter((i) => i._libType === "tv" && i._libInst === "2").map((i) => i.id);
           const tagNames = m._bulkTags.tags.split(",").map((t) => t.trim()).filter(Boolean);
           const calls = [];
-          if (movieIds.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", { movieIds, tags: tagNames, applyTags: m._bulkTags.applyTags }));
-          if (seriesIds.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", { seriesIds, tags: tagNames, applyTags: m._bulkTags.applyTags }));
+          if (movies1.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", { movieIds: movies1, tags: tagNames, applyTags: m._bulkTags.applyTags }));
+          if (movies2.length) calls.push(this._callApi("PUT", "arr_stack/radarr2/movie-editor", { movieIds: movies2, tags: tagNames, applyTags: m._bulkTags.applyTags }));
+          if (series1.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", { seriesIds: series1, tags: tagNames, applyTags: m._bulkTags.applyTags }));
+          if (series2.length) calls.push(this._callApi("PUT", "arr_stack/sonarr2/series-editor", { seriesIds: series2, tags: tagNames, applyTags: m._bulkTags.applyTags }));
           Promise.all(calls).then(() => {
             m._bulkDialog = null;
             this._libRerenderBody(el);
@@ -24651,27 +24668,35 @@ var _LibraryWireMethods = class {
           const selArr = [...m._selected];
           const allItems = this._libAllItems();
           const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
-          const movieIds = selItems.filter((i) => i._libType === "movie").map((i) => i.id);
-          const seriesIds = selItems.filter((i) => i._libType === "tv").map((i) => i.id);
-          const mkMovieBody = (ids) => {
+          const movies1 = selItems.filter((i) => i._libType === "movie" && (i._libInst || "1") === "1").map((i) => i.id);
+          const movies2 = selItems.filter((i) => i._libType === "movie" && i._libInst === "2").map((i) => i.id);
+          const series1 = selItems.filter((i) => i._libType === "tv" && (i._libInst || "1") === "1").map((i) => i.id);
+          const series2 = selItems.filter((i) => i._libType === "tv" && i._libInst === "2").map((i) => i.id);
+          const _selProfName = m._bulkEdit.qualityProfileId || null;
+          const _resolvePid = (profs) => _selProfName ? profs.find((p) => p.name === _selProfName)?.id ?? null : null;
+          const mkMovieBody = (ids, profs) => {
             const b = { movieIds: ids };
             if (m._bulkEdit.monitored) b.monitored = m._bulkEdit.monitored === "true";
-            if (m._bulkEdit.qualityProfileId) b.qualityProfileId = +m._bulkEdit.qualityProfileId;
+            const pid = _resolvePid(profs);
+            if (pid) b.qualityProfileId = pid;
             if (m._bulkEdit.minimumAvailability) b.minimumAvailability = m._bulkEdit.minimumAvailability;
             return b;
           };
-          const mkSeriesBody = (ids) => {
+          const mkSeriesBody = (ids, profs) => {
             const b = { seriesIds: ids };
             if (m._bulkEdit.monitored) b.monitored = m._bulkEdit.monitored === "true";
-            if (m._bulkEdit.qualityProfileId) b.qualityProfileId = +m._bulkEdit.qualityProfileId;
+            const pid = _resolvePid(profs);
+            if (pid) b.qualityProfileId = pid;
             if (m._bulkEdit.monitorNewItems) b.monitorNewItems = m._bulkEdit.monitorNewItems;
             if (m._bulkEdit.seriesType) b.seriesType = m._bulkEdit.seriesType;
             if (m._bulkEdit.seasonFolder) b.seasonFolder = m._bulkEdit.seasonFolder === "true";
             return b;
           };
           const calls = [];
-          if (movieIds.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", mkMovieBody(movieIds)));
-          if (seriesIds.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", mkSeriesBody(seriesIds)));
+          if (movies1.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", mkMovieBody(movies1, this._radarrProfiles || [])));
+          if (movies2.length) calls.push(this._callApi("PUT", "arr_stack/radarr2/movie-editor", mkMovieBody(movies2, this._radarr2Profiles || [])));
+          if (series1.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", mkSeriesBody(series1, this._sonarrProfiles || [])));
+          if (series2.length) calls.push(this._callApi("PUT", "arr_stack/sonarr2/series-editor", mkSeriesBody(series2, this._sonarr2Profiles || [])));
           Promise.all(calls).then(() => {
             m._bulkDialog = null;
             this._libRerenderBody(el);
@@ -31546,7 +31571,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.26", sid })
+        body: JSON.stringify({ v: "1.6.27", sid })
       }).catch(() => {
       });
     } catch (_) {
