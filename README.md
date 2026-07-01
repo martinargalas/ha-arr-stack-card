@@ -69,6 +69,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | Tracearr *(beta)* | Watch history, statistics, and usage graphs | Optional |
 | Prowlarr | Indexer management and search statistics | Optional |
 | Trakt | Personalised movie & show recommendations | Optional |
+| Gluetun | VPN status indicator in the downloads panel | Optional |
 
 Services not configured in the integration are hidden automatically — no manual configuration needed.
 
@@ -86,6 +87,22 @@ The left panel appears when at least one download manager is configured. You can
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume. **VPN shield indicator** — green when VPN tunnel is active, red when off.
 - **NZBGet** — NZB queue with progress, post-processing status, failed history with retry/delete, global pause/resume.
 - **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Disks are deduplicated automatically. If your media is spread across multiple disks, use the chevron arrows to page through them.
+- **Gluetun VPN** — when Gluetun is configured, a shield badge appears in the downloads panel showing your VPN status, public IP, country, and provider logo.
+
+#### Gluetun setup
+
+Gluetun requires its control server API to be reachable from Home Assistant. Three things are needed:
+
+1. **Expose port 8000** in your Gluetun container (map it to any host port, e.g. `8002:8000`).
+2. **Create an API key config** at `/gluetun/auth/config.toml` inside the container (bind-mounted from your host):
+   ```toml
+   [[roles]]
+   name = "admin"
+   auth = "apikey"
+   apikey = "your-api-key"
+   routes = ["GET /v1/vpn/status", "GET /v1/publicip/ip"]
+   ```
+3. **Enter the URL and API key** in the Arr Stack Integration settings — use the host address HA can reach, e.g. `http://192.168.1.10:8002`.
 
 ### Right panel — configurable sections
 
