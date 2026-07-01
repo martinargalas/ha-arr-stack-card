@@ -1,8 +1,3 @@
-> [!IMPORTANT]
-> **Existing users — action required**
->
-> If you use **Upcoming Movies, New Shows, Trending, or Popular** categories **without Seerr**, these sections may show nothing. The TMDB API key bundled in the integration was refreshed on 2026-06-24, which invalidated the previous key. Please update both the **card** and the **integration** to the latest version via HACS.
-
 # Arr Stack Card
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
@@ -115,6 +110,14 @@ A full-screen panel for browsing and managing your entire movie and TV show coll
 - **Bulk actions** — select individual titles or use Select All, then change quality profile, add or remove tags, or delete titles. Changes apply immediately to the right server.
 - **Update All** — refresh metadata for your selection; **RSS Sync** — pull the latest releases from your indexers.
 - Item count shown in the header so you always know how many titles match your current filter.
+
+#### Calendar
+
+Upcoming movies and TV episodes from Radarr and Sonarr — both instances included when configured — sorted by air/release date. Posters show a movie or show badge and the episode number where applicable.
+
+Click the **calendar icon** next to the pagination arrows to open the **weekly calendar modal**: a full 7-day overview of what's coming up. Navigate week by week with the arrow buttons or jump back to the current week at any time. Use the **All / Shows / Movies** tabs to focus on what you care about — your last selected tab is remembered. Today's column is highlighted in blue.
+
+On mobile the modal switches to a compact day-by-day row layout so posters stay readable without zooming.
 
 #### Discovery & Recommendations
 
@@ -361,7 +364,7 @@ styles:
 | `trending` | Trending |
 | `popular` | Popular Movies |
 | `trakt` | Trakt Recommendations |
-| `calendar` | Episode Calendar (Sonarr) |
+| `calendar` | Calendar — upcoming movies & episodes (Radarr + Sonarr), with weekly modal view |
 | `streams` | Now Playing (Plex / Jellyfin / Emby / Kodi) — auto-hidden when nothing plays |
 | `tautulli` | Statistics (Tautulli) |
 | `jellystat` | Statistics (Jellystat) |

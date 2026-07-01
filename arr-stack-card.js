@@ -202,6 +202,10 @@ var ArrStackCardEditor = class extends HTMLElement {
           <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showTotalSpeed" ${this._cfg("downloads", "showTotalSpeed", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
         </div>
         <div class="row">
+          <span class="row-label">Show VPN card</span>
+          <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showVpnCard" ${this._cfg("downloads", "showVpnCard", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+        </div>
+        <div class="row">
           <span class="row-label">Allow download controls</span>
           <label class="toggle"><input type="checkbox" data-group="downloads" data-key="allowControls" ${this._cfg("downloads", "allowControls", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
         </div>
@@ -645,9 +649,13 @@ var ARR_I18N = {
     trendingMovies: "Trendy",
     typeMovie: "Film",
     typeTv: "Seri\xE1l",
+    tabAll: "V\u0161e",
+    tabMovies: "Filmy",
+    tabTvShows: "Seri\xE1ly",
     seeMore: "Dal\u0161\xED",
     popularMovies: "Popul\xE1rn\xED filmy",
     newEpisodes: "Nov\xE9 epizody",
+    catCalendar: "Kalend\xE1\u0159",
     // Statistiky
     totalSpeed: "Celkov\xE1 rychlost",
     storage: "Kapacita ulo\u017Ei\u0161t\u011B",
@@ -1068,9 +1076,13 @@ var ARR_I18N = {
     trendingMovies: "Trending",
     typeMovie: "Movie",
     typeTv: "Show",
+    tabAll: "All",
+    tabMovies: "Movies",
+    tabTvShows: "Shows",
     seeMore: "More",
     popularMovies: "Popular Movies",
     newEpisodes: "New Episodes",
+    catCalendar: "Calendar",
     totalSpeed: "Total Speed",
     storage: "Storage",
     free: "free",
@@ -1617,6 +1629,17 @@ var STYLES = `
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          DISK CHIPS
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+      .vpn-bar {
+        display: flex; align-items: center; gap: 8px;
+        border-radius: 999px; padding: 8px 10px;
+        font-size: 12px; font-weight: 500;
+        background: rgba(var(--arr-pbb-rgb, 255,255,255), 0.08);
+        border: 1px solid rgba(255,255,255,0.18);
+      }
+      .vpn-bar-online  { color: #4ade80; }
+      .vpn-bar-offline { color: #f87171; }
+      .vpn-bar-label   { flex: 1; }
+
       .disk-row { display: flex; gap: 6px; }
 
       .disk-chip {
@@ -1955,6 +1978,7 @@ var STYLES = `
       .dm-peer { display: flex; gap: 4px; flex-shrink: 0; }
 
       .dm { font-size: 11px; color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.55); display: flex; align-items: center; gap: 2px; }
+      .dm ha-icon { display: flex; }
       .dm b { font-weight: 700; }
       .dm-val { color: rgba(var(--arr-st-rgb, 255, 255, 255), 0.5); font-weight: 700; }
 
@@ -1986,7 +2010,8 @@ var STYLES = `
       /* Value pill in disk chips */
       .pill-orange.dc-pill { padding: 1px 6px; font-size: 13px; font-weight: 800; }
       /* Status pill in torrent rows */
-      .status-pill { padding: 1px 8px; font-size: 10px; }
+      .status-pill { padding: 1px 8px; font-size: 10px; line-height: 1; }
+      .status-pill ha-icon { display: flex; }
 
       .pbar { height: 2px; background: rgba(255,255,255,0.18); border-radius: 1px; overflow: hidden; }
       .pbar-fill { height: 100%; border-radius: 1px; }
@@ -2707,7 +2732,7 @@ var STYLES = `
       /* Denn\xED re\u017Eim (sun.sun = above_horizon) */
       .popup-overlay.popup-day {
         --is-overlay-bg: rgba(255,255,255,0.65);
-        --is-glass-bg:   rgba(255,255,255,0.14);
+        --is-glass-bg:   rgba(235,238,245,0.55);
         --is-glass-bdr:  rgba(255,255,255,0.90);
         --is-glass-blur: blur(40px) saturate(200%);
         --is-shine:      linear-gradient(120deg,rgba(255,255,255,0.95),rgba(255,255,255,0.50) 25%,rgba(255,255,255,0.15) 50%,transparent 70%);
@@ -2779,6 +2804,198 @@ var STYLES = `
       .popup-glass.is-wide { width: min(900px, 94vw); }
       /* Extra-wide modal pro Tautulli statistics \u2014 pevn\xE1 v\xFD\u0161ka eliminuje skok p\u0159i p\u0159ep\xEDn\xE1n\xED tab\u016F */
       .popup-glass.tl-wide { width: min(1100px, 96vw); height: 88vh; }
+      /* Calendar week modal */
+      .cal-modal-glass {
+        width: min(1200px, 98vw);
+        max-width: 98vw;
+        height: 88vh;
+        max-height: 88vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .cal-modal-hdr {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px 14px;
+        min-height: 52px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        flex-shrink: 0;
+      }
+      .cal-modal-glass .popup-close {
+        position: static;
+        flex-shrink: 0;
+        margin-left: 4px;
+        box-shadow: none;
+      }
+      .cal-week-label {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .cal-nav-btn { padding: 4px 10px; border-radius: 8px; }
+      .cal-close-btn { margin-left: 4px; }
+      .cal-hdr-btn { padding: 3px 7px; border-radius: 8px; display: flex; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid var(--is-btn-bdr); color: var(--is-btn-clr); backdrop-filter: blur(2px); }
+      .cal-hdr-btn:hover { background: rgba(255,255,255,0.1); }
+      .cal-modal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        padding: 8px;
+        flex: 1;
+        overflow: hidden;
+        min-height: 0;
+      }
+      .cal-day-col {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        overflow: hidden;
+      }
+      .cal-day-col.cal-day-today { background: rgba(255,255,255,0.04); }
+      .cal-day-col.cal-day-today .cal-day-hdr { background: rgba(0,122,255,0.18); border-bottom-color: rgba(0,122,255,0.3); }
+      .cal-day-hdr {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px 4px 5px;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+      }
+      .cal-day-name {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        opacity: 0.55;
+        text-transform: uppercase;
+      }
+      .cal-day-num {
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.2;
+        opacity: 0.9;
+      }
+      .cal-day-num-today { color: #60a5fa; opacity: 1; }
+
+      /* \u2500\u2500 Calendar day mode overrides \u2500\u2500 */
+      .popup-day .cal-modal-hdr { border-bottom-color: rgba(0,0,0,0.1); }
+      .popup-day .cal-week-label { color: rgba(0,0,0,0.85); }
+      .popup-day .cal-day-col { background: rgba(0,0,0,0.04); }
+      .popup-day .cal-day-col.cal-day-today { background: rgba(0,0,0,0.04); }
+      .popup-day .cal-day-col.cal-day-today .cal-day-hdr { background: rgba(0,122,255,0.22); border-bottom-color: rgba(0,122,255,0.45); }
+      .popup-day .cal-day-hdr { border-bottom-color: rgba(0,0,0,0.08); }
+      .popup-day .cal-day-name { color: rgba(0,0,0,0.55); }
+      .popup-day .cal-day-num { color: rgba(0,0,0,0.85); }
+      .cal-day-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 0;
+      }
+      .cal-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 14px;
+        flex-shrink: 0;
+        gap: 8px;
+      }
+
+      /* \u2500\u2500 Calendar modal \u2014 mobile row layout \u2500\u2500 */
+      @media (max-width: 700px) {
+        #cal-overlay { align-items: flex-end; }
+        .cal-modal-glass {
+          width: 100%;
+          max-width: 100%;
+          height: 85vh;
+          max-height: 85vh;
+          border-radius: 20px 20px 0 0;
+          border-bottom: none;
+        }
+        .cal-modal-glass::before { border-radius: 20px 20px 0 0; }
+        .cal-modal-hdr { padding: 10px 12px; }
+        .cal-week-label {
+          position: static;
+          transform: none;
+          width: auto;
+          text-align: left;
+          margin-right: auto;
+          font-size: 12px;
+        }
+        .cal-modal-grid {
+          grid-template-columns: 1fr;
+          overflow-y: auto;
+          overflow-x: hidden;
+          gap: 4px;
+        }
+        .cal-day-col.cal-day-empty { opacity: 0.4; }
+        .cal-day-col { flex-direction: row; }
+        .cal-day-hdr {
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          width: 38px;
+          min-width: 38px;
+          flex-shrink: 0;
+          border-bottom: none;
+          border-right: 1px solid rgba(255,255,255,0.07);
+          padding: 8px 4px;
+          gap: 4px;
+        }
+        .popup-day .cal-day-hdr { border-right-color: rgba(0,0,0,0.08); }
+        .cal-day-col.cal-day-today .cal-day-hdr { border-right-color: rgba(0,122,255,0.3); }
+        .cal-day-name {
+          writing-mode: vertical-lr;
+          text-orientation: upright;
+          font-size: 8px;
+          letter-spacing: 1px;
+        }
+        .cal-day-num { font-size: 13px; }
+        .cal-day-body {
+          flex-direction: row;
+          overflow-x: auto;
+          overflow-y: visible;
+          scroll-snap-type: x mandatory;
+          padding: 6px;
+          gap: 6px;
+        }
+        .cal-day-body .mc {
+          width: 80px;
+          min-width: 80px;
+          height: auto;
+          aspect-ratio: 2/3;
+          flex-shrink: 0;
+          scroll-snap-align: start;
+        }
+        .cal-day-body .mc .media-type-tag,
+        .cal-day-body .mc .badge {
+          font-size: 9px;
+          padding: 2px 5px;
+          border-radius: 3px;
+        }
+      }
+      .cal-nav-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 8px;
+      }
 
       /* Scrollable body below the backdrop */
       .popup-body {
@@ -3841,6 +4058,7 @@ var STYLES = `
       .tl-mob-meta { display: flex; gap: 10px; font-size: 11px; color: var(--is-text-label); flex-wrap: wrap; }
       .tl-mob-edit { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
       .tl-icon-btn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+      .tl-pill-btn { height: 36px; border-radius: 20px; padding: 0 16px; font-size: 12px; }
       .tl-mob-pag { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
       .tl-mob-pag-info { flex: 1; text-align: center; font-size: 12px; color: var(--is-text-label); }
 
@@ -4864,6 +5082,7 @@ var _FetchMethods = class {
       if (!caps.tracearr) this._tracearrConfigured = false;
       if (!caps.trakt) this._traktConfigured = false;
       if (!caps.prowlarr) this._prowlarrConfigured = false;
+      if (!caps.gluetun) this._gluetunConfigured = false;
       this._seerrType = caps.seerrType || "overseerr";
     } catch (_) {
     }
@@ -4917,6 +5136,7 @@ var _FetchMethods = class {
       this._fetchSonarrRootFolders(),
       this._fetchRadarrDiskspace(),
       this._fetchSonarrDiskspace(),
+      this._fetchGluetun(),
       this._fetchRadarr2Profiles(),
       this._fetchRadarr2Tags(),
       this._fetchRadarr2RootFolders(),
@@ -5114,6 +5334,39 @@ var _FetchMethods = class {
       this._wireActionButtons();
       this._wirePageButtons();
       this._wireMinimize();
+    }
+  }
+  async _fetchGluetun() {
+    if (this._gluetunConfigured === false) return;
+    try {
+      const [status, ip] = await Promise.all([
+        this._callApi("GET", "arr_stack/gluetun/status"),
+        this._callApi("GET", "arr_stack/gluetun/ip")
+      ]);
+      this._gluetunConfigured = true;
+      this._gluetunStatus = status?.status || null;
+      this._gluetunCountry = ip?.country || null;
+      this._gluetunIp = ip?.public_ip || null;
+      const orgStr = `${ip?.isp || ""} ${ip?.organization || ""}`.toLowerCase();
+      const PROVIDERS = [
+        ["surfshark", /surfshark|m247/],
+        ["nordvpn", /nordvpn|nord\s+security/],
+        ["mullvadvpn", /mullvad/],
+        ["protonvpn", /proton\s*vpn|protonvpn/],
+        ["expressvpn", /expressvpn|express\s+vpn/],
+        ["ipvanish", /ipvanish/],
+        ["cyberghostvpn", /cyberghost/],
+        ["privateinternetaccess", /private.internet.access|\bpia\b/],
+        ["hidemyass", /hidemyass|\bhma\b/]
+      ];
+      const match = PROVIDERS.find(([, re]) => re.test(orgStr));
+      this._gluetunProvider = match ? match[0] : null;
+    } catch (e) {
+      if (e?.status === 503) {
+        this._gluetunConfigured = false;
+        return;
+      }
+      this._gluetunStatus = null;
     }
   }
 };
@@ -5781,27 +6034,94 @@ var _ArrMethods = class {
       console.error("[arr-card] Sonarr episode files fetch error:", e);
     }
   }
+  _pickReleaseDate(m) {
+    const todayMs = Date.now();
+    return [m.digitalRelease, m.physicalRelease, m.inCinemasDate].filter(Boolean).map((d) => d.split("T")[0]).filter((d) => new Date(d).getTime() >= todayMs - 864e5).sort()[0] || null;
+  }
   async _fetchCalendar() {
     try {
       const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const end = new Date(Date.now() + 60 * 864e5).toISOString().split("T")[0];
-      const fetches = [this._callApi("GET", `arr_stack/sonarr/calendar?start=${today}&end=${end}`).catch(() => [])];
-      if (this._sonarr2Configured !== false) {
-        fetches.push(this._callApi("GET", `arr_stack/sonarr2/calendar?start=${today}&end=${end}`).catch(() => []));
-      }
-      const results = await Promise.all(fetches);
-      const all = results.flat();
-      const seen = /* @__PURE__ */ new Map();
-      for (const ep of all) {
-        const sid = ep.seriesId;
-        if (!seen.has(sid) || new Date(ep.airDate) < new Date(seen.get(sid).airDate)) {
-          seen.set(sid, ep);
+      const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw] = await Promise.all([
+        this._callApi("GET", `arr_stack/sonarr/calendar?start=${today}&end=${end}`).catch(() => []),
+        this._callApi("GET", `arr_stack/radarr/calendar?start=${today}&end=${end}`).catch(() => []),
+        this._sonarr2Configured !== false ? this._callApi("GET", `arr_stack/sonarr2/calendar?start=${today}&end=${end}`).catch(() => []) : Promise.resolve([]),
+        this._radarr2Configured !== false ? this._callApi("GET", `arr_stack/radarr2/calendar?start=${today}&end=${end}`).catch(() => []) : Promise.resolve([])
+      ]);
+      const tvSeen = /* @__PURE__ */ new Map();
+      for (const ep of [...sonarrRaw || [], ...sonarr2Raw || []]) {
+        const key = ep.series?.tvdbId || ep.seriesId;
+        if (!tvSeen.has(key) || new Date(ep.airDate) < new Date(tvSeen.get(key).airDate)) {
+          tvSeen.set(key, ep);
         }
       }
-      this._calendar = Array.from(seen.values()).sort((a, b) => new Date(a.airDate) - new Date(b.airDate)).slice(0, 32);
+      const movieSeen = /* @__PURE__ */ new Map();
+      for (const m of [...radarrRaw || [], ...radarr2Raw || []]) {
+        const key = m.tmdbId || m.id;
+        if (movieSeen.has(key)) continue;
+        const releaseDate = this._pickReleaseDate(m);
+        if (!releaseDate) continue;
+        movieSeen.set(key, { ...m, _mediaType: "movie", airDate: releaseDate.split("T")[0], series: m });
+      }
+      this._calendar = [...Array.from(tvSeen.values()), ...Array.from(movieSeen.values())].sort((a, b) => new Date(a.airDate) - new Date(b.airDate)).slice(0, 32);
     } catch (e) {
-      console.error("[arr-card] Sonarr calendar fetch error:", e);
+      console.error("[arr-card] Calendar fetch error:", e);
     }
+  }
+  _calWeekRange(offset) {
+    const now = /* @__PURE__ */ new Date();
+    const daysSinceMon = (now.getDay() + 6) % 7;
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - daysSinceMon + offset * 7);
+    mon.setHours(0, 0, 0, 0);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    sun.setHours(23, 59, 59, 999);
+    return { start: mon, end: sun };
+  }
+  async _fetchCalendarWeek(weekOffset) {
+    this._calendarModalLoading = true;
+    this._renderCalendarModalEl();
+    const { start, end } = this._calWeekRange(weekOffset);
+    const startStr = start.toISOString().split("T")[0];
+    const endStr = end.toISOString().split("T")[0];
+    try {
+      const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw] = await Promise.all([
+        this._callApi("GET", `arr_stack/sonarr/calendar?start=${startStr}&end=${endStr}`).catch(() => []),
+        this._callApi("GET", `arr_stack/radarr/calendar?start=${startStr}&end=${endStr}`).catch(() => []),
+        this._sonarr2Configured !== false ? this._callApi("GET", `arr_stack/sonarr2/calendar?start=${startStr}&end=${endStr}`).catch(() => []) : Promise.resolve([]),
+        this._radarr2Configured !== false ? this._callApi("GET", `arr_stack/radarr2/calendar?start=${startStr}&end=${endStr}`).catch(() => []) : Promise.resolve([])
+      ]);
+      const seen = /* @__PURE__ */ new Set();
+      const tvItems = [...sonarrRaw || [], ...sonarr2Raw || []].filter((ep) => {
+        const tvdbId = ep.series?.tvdbId || ep.tvdbId || ep.seriesId;
+        const key = `${tvdbId}-${ep.seasonNumber}-${ep.episodeNumber}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      const seenM = /* @__PURE__ */ new Set();
+      const movieItems = [...radarrRaw || [], ...radarr2Raw || []].filter((m) => {
+        const key = m.tmdbId || m.id;
+        if (seenM.has(key)) return false;
+        seenM.add(key);
+        return true;
+      }).map((m) => {
+        const releaseDate = this._pickReleaseDate(m);
+        return {
+          ...m,
+          _mediaType: "movie",
+          airDate: releaseDate ? releaseDate.split("T")[0] : null,
+          series: m
+        };
+      }).filter((m) => m.airDate);
+      this._calendarModalData = [...tvItems, ...movieItems];
+    } catch (e) {
+      console.error("[arr-card] Calendar week fetch error:", e);
+      this._calendarModalData = [];
+    }
+    this._calendarModalLoading = false;
+    this._renderCalendarModalEl();
   }
   // Returns discover service prefix — 'overseerr' when configured, 'tmdb' as fallback
   get _discoverSvc() {
@@ -7207,6 +7527,98 @@ var _ArrMethods = class {
 var arrMixin = _ArrMethods.prototype;
 
 // src/render/left.js
+var _CC = {
+  "germany": "de",
+  "netherlands": "nl",
+  "united kingdom": "gb",
+  "france": "fr",
+  "united states": "us",
+  "canada": "ca",
+  "australia": "au",
+  "japan": "jp",
+  "singapore": "sg",
+  "sweden": "se",
+  "norway": "no",
+  "denmark": "dk",
+  "finland": "fi",
+  "switzerland": "ch",
+  "austria": "at",
+  "belgium": "be",
+  "spain": "es",
+  "italy": "it",
+  "portugal": "pt",
+  "poland": "pl",
+  "czech republic": "cz",
+  "hungary": "hu",
+  "romania": "ro",
+  "bulgaria": "bg",
+  "ukraine": "ua",
+  "russia": "ru",
+  "turkey": "tr",
+  "india": "in",
+  "south korea": "kr",
+  "hong kong": "hk",
+  "taiwan": "tw",
+  "brazil": "br",
+  "mexico": "mx",
+  "argentina": "ar",
+  "chile": "cl",
+  "colombia": "co",
+  "south africa": "za",
+  "israel": "il",
+  "uae": "ae",
+  "united arab emirates": "ae",
+  "new zealand": "nz",
+  "ireland": "ie",
+  "luxembourg": "lu",
+  "latvia": "lv",
+  "lithuania": "lt",
+  "estonia": "ee",
+  "slovakia": "sk",
+  "slovenia": "si",
+  "croatia": "hr",
+  "serbia": "rs",
+  "greece": "gr",
+  "cyprus": "cy",
+  "malta": "mt",
+  "iceland": "is",
+  "moldova": "md",
+  "georgia": "ge",
+  "armenia": "am",
+  "azerbaijan": "az",
+  "kazakhstan": "kz",
+  "thailand": "th",
+  "vietnam": "vn",
+  "indonesia": "id",
+  "malaysia": "my",
+  "philippines": "ph",
+  "pakistan": "pk",
+  "nigeria": "ng",
+  "kenya": "ke",
+  "ghana": "gh",
+  "morocco": "ma",
+  "albania": "al",
+  "north macedonia": "mk",
+  "montenegro": "me",
+  "saudi arabia": "sa",
+  "qatar": "qa",
+  "kuwait": "kw",
+  "bahrain": "bh",
+  "oman": "om",
+  "china": "cn",
+  "egypt": "eg",
+  "myanmar": "mm",
+  "cambodia": "kh",
+  "mongolia": "mn",
+  "jordan": "jo",
+  "iran": "ir",
+  "iraq": "iq"
+};
+function _countryFlag(name) {
+  const cc = _CC[name?.toLowerCase()];
+  if (!cc) return "";
+  return [...cc.toUpperCase()].map((c) => String.fromCodePoint(127462 + c.charCodeAt(0) - 65)).join("");
+}
 var _RenderLeft = class {
   _renderLeft() {
     if (!this._capsLoaded) return "";
@@ -7229,7 +7641,9 @@ var _RenderLeft = class {
     const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured, rtorrent: this._rtorrentConfigured };
     const parts = allClients.filter((c) => c.enabled !== false && configured[c.id]).map((c) => this[renderers[c.id]]()).filter(Boolean);
     if (!parts.length) return "";
+    const vpnBar = this._renderVpnBar();
     return `
+    ${vpnBar}${vpnBar ? '<div class="spacer"></div>' : ""}
     ${this._renderDiskRow()}
     <div class="spacer"></div>
     ${parts.join('<div class="spacer"></div>')}
@@ -7678,16 +8092,7 @@ var _RenderLeft = class {
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${allSlots.length === 0 && (!this._sabFailed || this._sabFailed.length === 0) ? this._sectionOverlayHtml("sab", 15, 85, 0.15, 55, 20) : allSlots.length >= this._perPage("sab") ? this._sectionOverlayHtml("sab", 15, 85, 0.23) : this._sectionOverlayHtml("sab", 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
-        <div style="position:relative;flex-shrink:0;display:inline-flex;width:26px;height:26px">
-          ${this._appIcon("sab")}
-          ${(() => {
-      if (!this._sabVpnFetched) return "";
-      const vpnOn = !!this._sabLocalIp;
-      const icon = vpnOn ? "mdi:shield-check" : "mdi:shield-off";
-      const cls = vpnOn ? "vpn-shield-ok" : "vpn-shield-fail";
-      return `<ha-icon icon="${icon}" class="vpn-shield ${cls}" style="--mdc-icon-size:13px;position:absolute;bottom:-4px;right:-5px"></ha-icon>`;
-    })()}
-        </div>
+        ${this._appIcon("sab")}
         <span class="col-hdr-title">SABnzbd</span>
         <div class="col-hdr-line"></div>
         ${this._cfgGet("downloads", "allowControls", true) !== false ? this._sabBusy ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>` : `<button class="action-btn sab-global-toggle${sabPaused ? " paused" : ""}" title="${sabPaused ? this._t("resumeSab") : this._t("pauseSab")}">
@@ -8062,6 +8467,23 @@ var _RenderLeft = class {
         <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>
       </div>
       <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  _renderVpnBar() {
+    if (this._gluetunConfigured === false) return "";
+    if (this._cfgGet("downloads", "showVpnCard", true) === false) return "";
+    if (this._gluetunConfigured === null) return "";
+    const online = this._gluetunStatus === "running";
+    const cls = online ? "vpn-bar-online" : "vpn-bar-offline";
+    const details = [this._gluetunCountry, this._gluetunIp].filter(Boolean).join(" \u2022 ");
+    const useMdi = this._cfgGet("styles", "applicationIcons", "real") === "mdi";
+    const shieldFallback = online ? `<ha-icon icon="mdi:shield-check" style="--mdc-icon-size:18px;flex-shrink:0"></ha-icon>` : "";
+    const providerLogo = online && this._gluetunProvider && !useMdi ? `<img src="https://cdn.simpleicons.org/${this._gluetunProvider}" width="18" height="18" style="flex-shrink:0;opacity:0.9" alt="">` : shieldFallback;
+    const tag = online ? `<span class="g" style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff">VPN Active</span>` : `<span class="pill-red" style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff">VPN Offline</span>`;
+    return `
+    <div class="vpn-bar ${cls}">
+      ${tag}${details ? `<span style="margin-left:auto;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#fff">${_countryFlag(this._gluetunCountry) ? _countryFlag(this._gluetunCountry) + " " : ""}${details}</span>` : ""}
+      ${online && providerLogo ? `<span style="display:inline-flex;align-items:center;gap:5px;color:#fff;font-size:11px;font-weight:700;margin-left:-4px">\u2022${providerLogo}</span>` : ""}
     </div>`;
   }
 };
@@ -8790,21 +9212,56 @@ var _RenderRight = class {
     </div>`;
   }
   _renderCalendar() {
+    const calSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+    const calSvgLg = `<svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     let grid = "";
     if (!this._calendar || this._calendar.length === 0) {
       grid = `<div class="placeholder">${this._t("noEpisodes")}</div>`;
     } else {
       const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
-      grid = this._pagedGrid(this._calendar, "calendar", (ep) => this._renderCalendarCard(ep), cols);
+      const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
+      const itemsBefore = showMorePage * cols - 1;
+      let items = this._calendar;
+      if (items.length > itemsBefore) {
+        const teasers = items.slice(-4);
+        const cells = Array.from({ length: 4 }, (_, i) => {
+          const ep = teasers[i];
+          if (!ep) return `<div style="width:100%;height:100%;background:rgba(255,255,255,0.06)"></div>`;
+          const isMovie = ep._mediaType === "movie";
+          const series = ep.series || {};
+          const url = isMovie ? this._getRadarrPoster(series) : this._getSonarrPoster(series);
+          return url ? `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">` : `<div style="width:100%;height:100%;background:rgba(255,255,255,0.06)"></div>`;
+        }).join("");
+        const smpCard = `<div class="mc smp-card" data-action="open-cal-modal">
+        <div class="smp-full">
+          <div class="smp-posters">${cells}</div>
+          <div class="smp-overlay">
+            <div class="smp-btn">${calSvgLg}</div>
+            <span class="smp-cta">${this._t("seeMore")}</span>
+          </div>
+        </div>
+      </div>`;
+        items = [...items.slice(0, itemsBefore), { _isCalSeeMore: true, _smpCard: smpCard }];
+      }
+      grid = this._pagedGrid(items, "calendar", (ep) => {
+        if (ep._isCalSeeMore) return ep._smpCard;
+        return this._renderCalendarCard(ep);
+      }, cols);
     }
+    const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black 80%,transparent 100%)`;
+    const dualOverlay = this._categoryOverlaysEnabled ? `<div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 15%,${this._brandColor("radarr", 0.23)} 0%,transparent 48%),radial-gradient(circle at 75% 15%,${this._brandColor("sonarr", 0.23)} 0%,transparent 48%);mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>` : "";
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${this._sectionOverlayHtml("sonarr")}
+      ${dualOverlay}
       <div class="col-hdr" style="margin-bottom:5px">
-        ${this._appIcon("sonarr", 24)}
-        <span class="col-hdr-title">${this._t("newEpisodes")}</span>
+        <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
+          ${this._appIcon("radarr", 24)}
+          ${this._appIcon("sonarr", 24)}
+        </div>
+        <span class="col-hdr-title">${this._t("catCalendar")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("calendar", this._calendar || [])}
+        <button class="smp-hdr-btn" data-action="open-cal-modal" title="Weekly calendar">${calSvg}</button>
       </div>
       ${grid}
     </div>`;
@@ -9551,25 +10008,48 @@ var _MediaCardMethods = class {
       ${overlay}
     </div>`;
   }
-  _renderCalendarCard(ep) {
+  _renderCalendarModalCard(ep) {
     const series = ep.series || {};
-    const title = this._escHtml(series.title || ep.seriesTitle || "Unknown");
-    const s = String(ep.seasonNumber || 0).padStart(2, "0");
-    const e = String(ep.episodeNumber || 0).padStart(2, "0");
-    const badge = `S${s}E${e}`;
-    const dateStr = this.fmtDate(ep.airDateUtc || ep.airDate);
-    const poster = this._getSonarrPoster(series);
+    const isMovie = ep._mediaType === "movie";
+    const title = this._escHtml(series.title || ep.seriesTitle || ep.title || "Unknown");
+    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
+    const poster = isMovie ? this._getRadarrPoster(series) : this._getSonarrPoster(series);
+    const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = this._mcImg(poster, "\u{1F4FA}", ep.series?.id || ep.seriesId);
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", ep.series?.id || ep.seriesId || ep.id);
+    const epBadge = !isMovie ? `<span class="badge b-ep">S${String(ep.seasonNumber || 0).padStart(2, "0")}E${String(ep.episodeNumber || 0).padStart(2, "0")}</span>` : "";
     return `
-    <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
+    <div class="mc" data-popup="${popup}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
       ${img}
-      ${this._mcGrad(grad, `<div style="margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:4px">
-          ${dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : "<span></span>"}
-          <span class="badge b-ep">${badge}</span>
-        </div>
-        <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+      <div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;flex-direction:column;gap:3px;align-items:flex-start">
+        <span class="media-type-tag" style="position:static">${typeTag}</span>
+        ${epBadge}
+      </div>
+      ${this._mcGrad(grad, `<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
+    </div>`;
+  }
+  _renderCalendarCard(ep) {
+    const isMovie = ep._mediaType === "movie";
+    const series = ep.series || {};
+    const title = this._escHtml(series.title || ep.seriesTitle || ep.title || "Unknown");
+    const dateStr = this.fmtDate(ep.airDate);
+    const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
+    const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
+    const poster = isMovie ? this._getRadarrPoster(series) : this._getSonarrPoster(series);
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", ep.series?.id || ep.seriesId || ep.id);
+    const epBadge = !isMovie ? `<span class="badge b-ep">S${String(ep.seasonNumber || 0).padStart(2, "0")}E${String(ep.episodeNumber || 0).padStart(2, "0")}</span>` : "";
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    return `
+    <div class="mc" data-popup="${popup}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ep.tmdbId || ""}" data-title="${title}">
+      ${img}
+      <div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;flex-direction:column;gap:3px;align-items:flex-start">
+        <span class="media-type-tag" style="position:static">${typeTag}</span>
+        ${epBadge}
+      </div>
+      ${dateStr ? `<span class="media-type-tag" style="position:absolute;top:6px;right:6px;left:auto">${dateStr}</span>` : ""}
+      ${this._mcGrad(grad, `<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
 };
@@ -10861,6 +11341,15 @@ var _WireMethods = class {
     });
     if (scope === this.shadowRoot) this._wireSwipe(sig);
     if (scope === this.shadowRoot) this._wireStickyNav();
+    scope.querySelectorAll('[data-action="open-cal-modal"]').forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        this._calendarModalOpen = true;
+        this._calendarWeekOffset = 0;
+        this._calendarModalData = [];
+        this._renderCalendarModalEl();
+        await this._fetchCalendarWeek(0);
+      }, { signal: sig });
+    });
     scope.querySelectorAll(".pg-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const section = btn.dataset.section;
@@ -14381,6 +14870,11 @@ var _PopupMethods = class {
     return this._hass?.states?.["sun.sun"]?.state === "above_horizon";
   }
   async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = null) {
+    if (this._calendarModalOpen) {
+      this._calReturnState = true;
+      this._calendarModalOpen = false;
+      this._renderCalendarModalEl();
+    }
     this._isState = null;
     this._isInstance = "radarr";
     this._isResults = [];
@@ -14502,7 +14996,7 @@ var _PopupMethods = class {
       this._popup = { ...data, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series };
       {
         const _isMovieRt = type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE;
-        if (tmdbId && (!_isMovieRt || !_radarrId)) {
+        if (tmdbId && (!_isMovieRt || !_radarrId) && this._overseerrConfigured !== false) {
           const _rtPath = _isMovieRt ? `arr_stack/overseerr/movie/${tmdbId}/ratings` : `arr_stack/overseerr/tv/${tmdbId}/ratings`;
           this._callApi("GET", _rtPath).then((rt) => {
             if (this._popup && this._popup._type === type) {
@@ -14665,6 +15159,127 @@ var _PopupMethods = class {
     return { _type: type, _localData: true, title, overview: "", relatedVideos: [] };
   }
   // ─────────────────────────────────────────────
+  // Calendar modal
+  // ─────────────────────────────────────────────
+  _renderCalendarModal() {
+    const offset = this._calendarWeekOffset || 0;
+    const { start, end } = this._calWeekRange(offset);
+    const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+    const localDateStr = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+    const now = /* @__PURE__ */ new Date();
+    const todayStr = localDateStr(now);
+    const activeTab = this._calendarTab || "tv";
+    const filteredData = activeTab === "all" ? this._calendarModalData || [] : (this._calendarModalData || []).filter(
+      (ep) => activeTab === "movie" ? ep._mediaType === "movie" : ep._mediaType !== "movie"
+    );
+    const byDay = {};
+    for (const ep of filteredData) {
+      const key = (ep.airDate || "").split("T")[0];
+      if (!byDay[key]) byDay[key] = [];
+      byDay[key].push(ep);
+    }
+    const cols = DAY_NAMES.map((name, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const dateStr = localDateStr(d);
+      const isToday = dateStr === todayStr;
+      const episodes = byDay[dateStr] || [];
+      const cards = episodes.map((ep) => this._renderCalendarModalCard(ep)).join("");
+      return `
+      <div class="cal-day-col${isToday ? " cal-day-today" : ""}${episodes.length === 0 ? " cal-day-empty" : ""}">
+        <div class="cal-day-hdr">
+          <span class="cal-day-name">${name}</span>
+          <span class="cal-day-num${isToday ? " cal-day-num-today" : ""}">${d.getDate()}</span>
+        </div>
+        <div class="cal-day-body">${cards}</div>
+      </div>`;
+    }).join("");
+    const loading = this._calendarModalLoading ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);border-radius:inherit;z-index:10"><span class="action-spinner" style="width:28px;height:28px"></span></div>` : "";
+    const chevL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>`;
+    const chevR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>`;
+    const chevLL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><polyline points="18 18 12 12 18 6"/><polyline points="12 18 6 12 12 6"/></svg>`;
+    const chevRR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><polyline points="6 18 12 12 6 6"/><polyline points="12 18 18 12 12 6"/></svg>`;
+    const closeX = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const isCurrentWeek = offset === 0;
+    const btnSty = "display:inline-flex;align-items:center;gap:4px;padding:5px 10px";
+    const footer = `<div style="display:flex;align-items:center;justify-content:center;gap:6px">
+    <button class="tl-page-btn tl-icon-btn" data-cal-action="prev-month" style="${btnSty}">${chevLL}</button>
+    <button class="tl-page-btn tl-icon-btn" data-cal-action="prev"       style="${btnSty}">${chevL}</button>
+    <button class="tl-page-btn tl-pill-btn" data-cal-action="this-week"${isCurrentWeek ? " disabled" : ""}>This week</button>
+    <button class="tl-page-btn tl-icon-btn" data-cal-action="next"       style="${btnSty}">${chevR}</button>
+    <button class="tl-page-btn tl-icon-btn" data-cal-action="next-month" style="${btnSty}">${chevRR}</button>
+  </div>`;
+    const isDay = this._isDay;
+    const tc = isDay ? "#000" : "#fff";
+    const tabSt = (t) => activeTab === t ? `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-size:10px;font-weight:700` : `height:24px;box-sizing:border-box;font-size:10px;color:${tc}`;
+    const tabs = `<div style="display:flex;gap:4px">
+    <button class="is-f-btn" data-cal-action="tab-all"   style="${tabSt("all")}">${this._t("tabAll")}</button>
+    <button class="is-f-btn" data-cal-action="tab-tv"    style="${tabSt("tv")}">${this._t("tabTvShows")}</button>
+    <button class="is-f-btn" data-cal-action="tab-movie" style="${tabSt("movie")}">${this._t("tabMovies")}</button>
+  </div>`;
+    return `
+    <div class="popup-overlay${isDay ? " popup-day" : ""}" id="cal-overlay">
+      <div class="popup-glass cal-modal-glass" id="cal-glass">
+        ${loading}
+        <div class="cal-modal-hdr">
+          <span class="cal-week-label">${this._fmtWeekRange(start, end)}</span>
+          <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
+            ${tabs}
+            <button class="popup-close" data-cal-action="close" style="position:static;flex-shrink:0;margin-left:4px">${closeX}</button>
+          </div>
+        </div>
+        <div class="cal-modal-grid">${cols}</div>
+        <div class="cal-modal-footer">${footer}</div>
+      </div>
+    </div>`;
+  }
+  _wireCalendarModal() {
+    const root = this.shadowRoot?.getElementById("cal-modal-root");
+    if (!root) return;
+    const overlay = root.querySelector("#cal-overlay");
+    const glass = root.querySelector("#cal-glass");
+    if (!overlay || !glass) return;
+    overlay.addEventListener("click", () => {
+      this._calendarModalOpen = false;
+      this._renderCalendarModalEl();
+    });
+    glass.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const action = e.target.closest("[data-cal-action]")?.dataset.calAction;
+      if (!action) return;
+      if (action === "close") {
+        this._calendarModalOpen = false;
+        this._renderCalendarModalEl();
+        return;
+      }
+      if (action === "this-week") {
+        this._calendarWeekOffset = 0;
+        await this._fetchCalendarWeek(0);
+        return;
+      }
+      if (action === "prev-month" || action === "next-month") {
+        this._calendarWeekOffset = (this._calendarWeekOffset || 0) + (action === "next-month" ? 4 : -4);
+        await this._fetchCalendarWeek(this._calendarWeekOffset);
+        return;
+      }
+      if (action === "prev" || action === "next") {
+        this._calendarWeekOffset = (this._calendarWeekOffset || 0) + (action === "next" ? 1 : -1);
+        await this._fetchCalendarWeek(this._calendarWeekOffset);
+        return;
+      }
+      if (action === "tab-all" || action === "tab-tv" || action === "tab-movie") {
+        this._calendarTab = action === "tab-movie" ? "movie" : action === "tab-tv" ? "tv" : "all";
+        localStorage.setItem("arr-cal-tab", this._calendarTab);
+        this._renderCalendarModalEl();
+      }
+    });
+  }
+  // ─────────────────────────────────────────────
   // Popup: render popup HTML into popup-root
   // ─────────────────────────────────────────────
   _renderPopupEl() {
@@ -14764,18 +15379,26 @@ var _PopupMethods = class {
         _resetPopupTransient();
         this._popup = null;
         this._libReturnState = null;
+        this._calReturnState = false;
         this._renderPopupEl();
       });
     }
     if (closeBtn) {
-      if (this._libReturnState) {
-        const _backArrow = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+      const _backArrow = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+      if (this._libReturnState || this._calReturnState) {
         closeBtn.innerHTML = _backArrow;
       }
       closeBtn.addEventListener("click", () => {
         _resetPopupTransient();
         this._popup = null;
         this._isState = null;
+        if (this._calReturnState) {
+          this._calReturnState = false;
+          this._calendarModalOpen = true;
+          this._renderPopupEl();
+          this._renderCalendarModalEl();
+          return;
+        }
         if (this._libReturnState) {
           const saved = this._libReturnState;
           this._libReturnState = null;
@@ -30189,6 +30812,12 @@ var ArrStackCard = class extends HTMLElement {
     this._sonarr2Configured = null;
     this._sonarr2ByTvdb = /* @__PURE__ */ new Map();
     this._calendar = [];
+    this._calendarModalOpen = false;
+    this._calendarWeekOffset = 0;
+    this._calendarModalData = [];
+    this._calendarModalLoading = false;
+    this._calReturnState = false;
+    this._calendarTab = localStorage.getItem("arr-cal-tab") || "all";
     this._upcoming = [];
     this._tvUpcoming = [];
     this._trending = [];
@@ -30226,6 +30855,11 @@ var ArrStackCard = class extends HTMLElement {
     this._delugeBusy = false;
     this._delugeItemBusy = null;
     this._delugeConfirm = null;
+    this._gluetunConfigured = null;
+    this._gluetunStatus = null;
+    this._gluetunCountry = null;
+    this._gluetunIp = null;
+    this._gluetunProvider = null;
     this._rtorrentConfigured = null;
     this._rtorrentStatus = {};
     this._rtorrentQueue = [];
@@ -30732,6 +31366,16 @@ var ArrStackCard = class extends HTMLElement {
     } catch {
       return "";
     }
+  }
+  _fmtWeekRange(start, end) {
+    const locale = this._locale;
+    const fmt = this._hass?.locale?.date_format || "DMY";
+    const mon = (d) => new Intl.DateTimeFormat(locale, { month: "short" }).format(d);
+    const s = start.getDate(), sm = mon(start);
+    const e = end.getDate(), em = mon(end), y = end.getFullYear();
+    if (fmt === "MDY") return `${sm} ${s} \u2013 ${em} ${e}, ${y}`;
+    if (fmt === "YMD") return `${y} ${sm} ${s} \u2013 ${em} ${e}`;
+    return `${s} ${sm} \u2013 ${e} ${em} ${y}`;
   }
   fmtPct(ratio) {
     if (ratio === void 0 || ratio === null || isNaN(ratio)) return "0%";
@@ -31453,8 +32097,11 @@ var ArrStackCard = class extends HTMLElement {
       varStyle.textContent = `:host { ${customVars.join("; ")}; }`;
       this.shadowRoot.appendChild(varStyle);
     }
+    const calModalRoot = document.createElement("div");
+    calModalRoot.id = "cal-modal-root";
     this.shadowRoot.appendChild(wrapper);
     this.shadowRoot.appendChild(popupRoot);
+    this.shadowRoot.appendChild(calModalRoot);
     this._applyTheme();
   }
   // ─────────────────────────────────────────────
@@ -31486,6 +32133,7 @@ var ArrStackCard = class extends HTMLElement {
     if (right) this._wireProwlarrPosters(right);
     if (right) this._wireLibraryTiles(right);
     this._renderPopupEl();
+    this._renderCalendarModalEl();
     this._wireMinimize();
     requestAnimationFrame(() => {
       if (!window.matchMedia("(max-width: 900px)").matches) this._measureAndLockHeight();
@@ -31495,6 +32143,15 @@ var ArrStackCard = class extends HTMLElement {
       });
     });
     this._trimActivityCards();
+  }
+  _renderCalendarModalEl() {
+    const root = this.shadowRoot?.getElementById("cal-modal-root");
+    if (!root) return;
+    root.innerHTML = this._calendarModalOpen ? this._renderCalendarModal() : "";
+    if (this._calendarModalOpen) {
+      this._wireCalendarModal();
+      this._wirePopup();
+    }
   }
   _fixPeerChips() {
     this.shadowRoot?.querySelectorAll(".dl-r2 .dm-peer").forEach((el) => {
@@ -31583,12 +32240,13 @@ var ArrStackCard = class extends HTMLElement {
         this._sabConfigured !== false && "sabnzbd",
         this._nzbgetConfigured !== false && "nzbget",
         this._delugeConfigured !== false && "deluge",
-        this._traktConfigured !== false && "trakt"
+        this._traktConfigured !== false && "trakt",
+        this._gluetunConfigured !== false && "gluetun"
       ].filter(Boolean);
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.28", sid, svcs, mob: this._isMob ? 1 : 0 })
+        body: JSON.stringify({ v: "1.6.29", sid, svcs, mob: this._isMob ? 1 : 0 })
       }).catch(() => {
       });
     } catch (_) {
