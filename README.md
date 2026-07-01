@@ -113,11 +113,7 @@ A full-screen panel for browsing and managing your entire movie and TV show coll
 
 #### Calendar
 
-Upcoming movies and TV episodes from Radarr and Sonarr — both instances included when configured — sorted by air/release date. Posters show a movie or show badge and the episode number where applicable.
-
-Click the **calendar icon** next to the pagination arrows to open the **weekly calendar modal**: a full 7-day overview of what's coming up. Navigate week by week with the arrow buttons or jump back to the current week at any time. Use the **All / Shows / Movies** tabs to focus on what you care about — your last selected tab is remembered. Today's column is highlighted in blue.
-
-On mobile the modal switches to a compact day-by-day row layout so posters stay readable without zooming.
+Upcoming movies and TV episodes from Radarr and Sonarr. Click the calendar icon to open a weekly view with tabs for All, Shows, and Movies.
 
 #### Discovery & Recommendations
 
