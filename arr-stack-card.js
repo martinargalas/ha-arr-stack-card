@@ -60,8 +60,8 @@ var ArrStackCardEditor = class extends HTMLElement {
   _toHex(val, fallback) {
     if (!val) return fallback;
     if (/^#/.test(val)) return val;
-    const m = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-    if (m) return "#" + [m[1], m[2], m[3]].map((n) => parseInt(n).toString(16).padStart(2, "0")).join("");
+    const m2 = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (m2) return "#" + [m2[1], m2[2], m2[3]].map((n) => parseInt(n).toString(16).padStart(2, "0")).join("");
     return fallback;
   }
   _render() {
@@ -247,6 +247,14 @@ var ArrStackCardEditor = class extends HTMLElement {
           <input type="text" data-group="discover" data-key="oneClickDefaultShowProfile" value="${this._cfg("discover", "oneClickDefaultShowProfile", "")}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
         </div>
         <div class="hint">Quality profile name from Sonarr (Settings \u2192 Profiles \u2192 Name). Leave empty to use Sonarr default.</div>
+        <div class="row">
+          <span class="row-label">Poster rating</span>
+          <select data-group="discover" data-key="ratingProvider" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <option value="imdb" ${this._cfg("discover", "ratingProvider", "imdb") === "imdb" ? "selected" : ""}>IMDb</option>
+            <option value="tmdb" ${this._cfg("discover", "ratingProvider", "imdb") === "tmdb" ? "selected" : ""}>TMDB</option>
+          </select>
+        </div>
+        <div class="hint">Rating provider shown on poster cards.</div>
       </div>
 
       <!-- Left Panel \u2014 Download Clients -->
@@ -503,6 +511,12 @@ var ArrStackCardEditor = class extends HTMLElement {
       el.addEventListener("change", () => {
         const existing = this._config[el.dataset.group] || {};
         this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: el.checked } });
+      });
+    });
+    this.shadowRoot.querySelectorAll("select[data-group]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const existing = this._config[el.dataset.group] || {};
+        this._update({ [el.dataset.group]: { ...existing, [el.dataset.key]: el.value } });
       });
     });
     this.shadowRoot.querySelectorAll("select[data-style-key]").forEach((el) => {
@@ -2277,6 +2291,7 @@ var STYLES = `
         border-radius: 50%; border: 1px solid rgba(var(--accent-rgb),0.50);
         cursor: pointer; flex-shrink: 0; margin-left: auto;
         display: flex; align-items: center; justify-content: center;
+        line-height: 0;
         backdrop-filter: blur(8px);
       }
 
@@ -3034,6 +3049,7 @@ var STYLES = `
       }
 
       .popup-close:hover { background: #0071e3; transform: scale(1.08); }
+      .popup-cast-corner { position: absolute; top: 12px; right: 58px; z-index: 10; }
       .popup-close:active { transform: scale(0.94); }
 
       .popup-backdrop {
@@ -3132,10 +3148,10 @@ var STYLES = `
       /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
          POPUP \u2014 IS BUTTON + ADMIN BADGE
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
-      .popup-title   { font-size: 18px; font-weight: 800; color: var(--is-text); margin: 0 0 5px; line-height: 1.2; }
+      .popup-title   { font-size: 18px; font-weight: 800; color: var(--is-text); margin: 0 0 5px; line-height: 1.2; display: flex; align-items: center; gap: 7px; }
       .popup-mon-btn {
-        display: inline-flex; align-items: center; justify-content: center;
-        padding: 0; margin-left: 7px; vertical-align: -1px;
+        display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        padding: 0;
         border: none; background: transparent;
         color: var(--is-text); cursor: pointer; opacity: 0.85;
         transition: opacity 0.12s;
@@ -3219,9 +3235,9 @@ var STYLES = `
       .inst-chip {
         display: inline-flex; align-items: center; gap: 4px;
         font-size: 10px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase;
-        padding: 2px 7px 2px 6px; border-radius: 10px; border: 1px solid; line-height: 1;
+        padding: 0 7px 0 6px; height: 18px; border-radius: 10px; border: 1px solid;
       }
-      .ic-icon { font-size: 11px; font-weight: 900; line-height: 1; }
+      .ic-icon { font-size: 11px; font-weight: 900; line-height: 1; display: inline-flex; align-items: center; }
       .ic--available   { color: #4ade80; border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.08); }
       .ic--downloading { color: #60a5fa; border-color: rgba(96,165,250,0.35); background: rgba(96,165,250,0.08); }
       .ic--failed      { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
@@ -3398,7 +3414,7 @@ var STYLES = `
       .is-results-wrap { overflow-y: auto; overflow-x: hidden; flex: 1; min-height: 0; }
 
       /* \u2500\u2500 TABLE \u2500\u2500 */
-      .is-table { width: 100%; border-collapse: collapse; }
+      .is-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       .is-table thead th {
         padding: 5px 8px; text-align: left; font-size: 9px; font-weight: 700;
         text-transform: uppercase; letter-spacing: 0.09em; color: var(--is-text-label);
@@ -3479,7 +3495,7 @@ var STYLES = `
 
       .is-rel-title {
         display: block; font-size: 11px; font-weight: 500; color: var(--is-text-body);
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .is-rel-age  { font-size: 9px; color: var(--is-text-muted); margin-top: 1px; display: block; }
       .is-rej-row  { font-size: 9px; line-height: 1.4; color: var(--is-rej-clr); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: calc(9px * 1.4 * 2); }
@@ -3694,6 +3710,7 @@ var STYLES = `
         text-transform: uppercase;
         color: var(--is-text-label);
         margin-bottom: 4px;
+        padding-left: 16px;
       }
 
       /* Season row */
@@ -4403,6 +4420,10 @@ var _InteractiveSearch = class {
       </tr>`;
     }).join("");
     return `<table class="is-table">
+      <colgroup>
+        <col style="width:50px"><col><col style="width:75px">
+        <col style="width:52px"><col style="width:72px"><col style="width:38px"><col style="width:68px"><col style="width:58px"><col style="width:76px">
+      </colgroup>
       <thead><tr>
         ${th("src", "Src")}${th("title", "Title")}${th("indexer", "Indexer")}
         ${th("size", "Size")}${th("peers", "Peers")}${th("lang", "Lang")}${th("quality", "Quality")}${th("score", "Score")}<th></th>
@@ -4438,6 +4459,7 @@ var _InteractiveSearch = class {
   // Interactive Search — fetch + grab
   // ─────────────────────────────────────────────
   async _fetchInteractiveSearch(radarrId, instance = "radarr") {
+    this._markActivated();
     this._isInstance = instance;
     this._isState = "loading";
     this._isResults = [];
@@ -4476,11 +4498,11 @@ var _InteractiveSearch = class {
           const movies = await this._hass.callApi("GET", `arr_stack/${svc}/movies`).catch(() => []);
           if (instance === "radarr2") {
             if (Array.isArray(movies)) {
-              const filtered = movies.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
+              const filtered = movies.filter((m2) => m2.added && m2.added !== "0001-01-01T00:00:00Z");
               this._radarr2 = filtered;
               const map = /* @__PURE__ */ new Map();
-              filtered.forEach((m) => {
-                if (m.tmdbId) map.set(String(m.tmdbId), m);
+              filtered.forEach((m2) => {
+                if (m2.tmdbId) map.set(String(m2.tmdbId), m2);
               });
               this._radarr2ByTmdb = map;
             }
@@ -4488,7 +4510,7 @@ var _InteractiveSearch = class {
             if (Array.isArray(movies)) this._radarr = movies;
           }
           const pool = instance === "radarr2" ? this._radarr2 : this._radarr;
-          addedMovie = (pool || []).find((m) => String(m.tmdbId) === String(tmdbId));
+          addedMovie = (pool || []).find((m2) => String(m2.tmdbId) === String(tmdbId));
         }
         radarrId = addedMovie?.id ?? null;
         if (!radarrId) throw new Error(this._t("isNoRadarrId"));
@@ -4531,6 +4553,7 @@ var _InteractiveSearch = class {
     this._renderPopupEl();
   }
   async _grabRelease(guid, indexerId) {
+    this._markActivated();
     this._isGrabbing = guid;
     this._renderPopupEl();
     try {
@@ -4540,6 +4563,15 @@ var _InteractiveSearch = class {
       await this._hass.callApi("POST", `arr_stack/${svc}/release`, release);
       this._isGrabbed.add(guid);
       this._dlTriggeredBy = "is";
+      const radarrId = release.movieId;
+      const cache = svc === "radarr2" ? this._radarr2 || [] : this._radarr || [];
+      const movie = cache.find((m2) => m2.id === radarrId);
+      if (movie && !movie.monitored) {
+        this._hass.callApi("PUT", `arr_stack/${svc}/movie/${radarrId}`, { ...movie, monitored: true }).catch(() => {
+        });
+        if (svc === "radarr2") this._radarr2 = cache.map((m2) => m2.id === radarrId ? { ...m2, monitored: true } : m2);
+        else this._radarr = cache.map((m2) => m2.id === radarrId ? { ...m2, monitored: true } : m2);
+      }
     } catch (e) {
       console.error("[arr-card] grab error:", e);
       const prev = this._isError;
@@ -4799,6 +4831,10 @@ var _SonarrIS = class {
       </tr>`;
     }).join("");
     return `<table class="is-table">
+      <colgroup>
+        <col style="width:50px"><col><col style="width:75px">
+        <col style="width:52px"><col style="width:48px"><col style="width:38px"><col style="width:68px"><col style="width:58px"><col style="width:52px">
+      </colgroup>
       <thead><tr>
         ${th("src", "Src")}${th("title", "Title")}${th("indexer", "Indexer")}
         ${th("size", "Size")}${th("peers", "Peers")}${th("lang", "Lang")}${th("quality", "Quality")}${th("score", "Score")}<th></th>
@@ -5902,7 +5938,7 @@ var _ArrMethods = class {
   async _fetchRadarr() {
     try {
       const data = await this._callApi("GET", "arr_stack/radarr/movies");
-      const radarrFiltered = data.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
+      const radarrFiltered = data.filter((m2) => m2.added && m2.added !== "0001-01-01T00:00:00Z");
       this._radarrTotal = radarrFiltered.length;
       this._radarr = radarrFiltered.sort((a, b) => new Date(b.added) - new Date(a.added));
     } catch (e) {
@@ -5932,12 +5968,12 @@ var _ArrMethods = class {
         this._radarr2Configured = false;
         return;
       }
-      const filtered = data.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
+      const filtered = data.filter((m2) => m2.added && m2.added !== "0001-01-01T00:00:00Z");
       this._radarr2 = filtered.sort((a, b) => new Date(b.added) - new Date(a.added));
       this._radarr2Total = filtered.length;
       this._radarr2Configured = true;
       const map = /* @__PURE__ */ new Map();
-      for (const m of filtered) if (m.tmdbId) map.set(String(m.tmdbId), m);
+      for (const m2 of filtered) if (m2.tmdbId) map.set(String(m2.tmdbId), m2);
       this._radarr2ByTmdb = map;
     } catch (e) {
       if (this._radarr2Configured === null) this._radarr2Configured = false;
@@ -6022,8 +6058,8 @@ var _ArrMethods = class {
         const r = results[i];
         if (r.status === "fulfilled" && Array.isArray(r.value) && r.value.length > 0) {
           const epNum = (f) => {
-            const m = (f.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
-            return m ? parseInt(m[1]) * 1e4 + parseInt(m[2]) : 0;
+            const m2 = (f.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
+            return m2 ? parseInt(m2[1]) * 1e4 + parseInt(m2[2]) : 0;
           };
           const sorted = r.value.sort((a, b) => epNum(b) - epNum(a));
           epFiles[recent[i].id] = sorted[0];
@@ -6034,9 +6070,9 @@ var _ArrMethods = class {
       console.error("[arr-card] Sonarr episode files fetch error:", e);
     }
   }
-  _pickReleaseDate(m) {
+  _pickReleaseDate(m2) {
     const todayMs = Date.now();
-    return [m.digitalRelease, m.physicalRelease, m.inCinemasDate].filter(Boolean).map((d) => d.split("T")[0]).filter((d) => new Date(d).getTime() >= todayMs - 864e5).sort()[0] || null;
+    return [m2.digitalRelease, m2.physicalRelease, m2.inCinemasDate].filter(Boolean).map((d) => d.split("T")[0]).filter((d) => new Date(d).getTime() >= todayMs - 864e5).sort()[0] || null;
   }
   async _fetchCalendar() {
     try {
@@ -6056,12 +6092,12 @@ var _ArrMethods = class {
         }
       }
       const movieSeen = /* @__PURE__ */ new Map();
-      for (const m of [...radarrRaw || [], ...radarr2Raw || []]) {
-        const key = m.tmdbId || m.id;
+      for (const m2 of [...radarrRaw || [], ...radarr2Raw || []]) {
+        const key = m2.tmdbId || m2.id;
         if (movieSeen.has(key)) continue;
-        const releaseDate = this._pickReleaseDate(m);
+        const releaseDate = this._pickReleaseDate(m2);
         if (!releaseDate) continue;
-        movieSeen.set(key, { ...m, _mediaType: "movie", airDate: releaseDate.split("T")[0], series: m });
+        movieSeen.set(key, { ...m2, _mediaType: "movie", airDate: releaseDate.split("T")[0], series: m2 });
       }
       this._calendar = [...Array.from(tvSeen.values()), ...Array.from(movieSeen.values())].sort((a, b) => new Date(a.airDate) - new Date(b.airDate)).slice(0, 32);
     } catch (e) {
@@ -6101,20 +6137,20 @@ var _ArrMethods = class {
         return true;
       });
       const seenM = /* @__PURE__ */ new Set();
-      const movieItems = [...radarrRaw || [], ...radarr2Raw || []].filter((m) => {
-        const key = m.tmdbId || m.id;
+      const movieItems = [...radarrRaw || [], ...radarr2Raw || []].filter((m2) => {
+        const key = m2.tmdbId || m2.id;
         if (seenM.has(key)) return false;
         seenM.add(key);
         return true;
-      }).map((m) => {
-        const releaseDate = this._pickReleaseDate(m);
+      }).map((m2) => {
+        const releaseDate = this._pickReleaseDate(m2);
         return {
-          ...m,
+          ...m2,
           _mediaType: "movie",
           airDate: releaseDate ? releaseDate.split("T")[0] : null,
-          series: m
+          series: m2
         };
-      }).filter((m) => m.airDate);
+      }).filter((m2) => m2.airDate);
       this._calendarModalData = [...tvItems, ...movieItems];
     } catch (e) {
       console.error("[arr-card] Calendar week fetch error:", e);
@@ -6202,7 +6238,7 @@ var _ArrMethods = class {
     try {
       const data = await this._callApi("GET", "arr_stack/trakt/recommendations?limit=40");
       if (Array.isArray(data)) {
-        this._trakt = this._traktWatching?.size ? data.filter((m) => !this._traktWatching.has(m._traktSlug || String(m.id))) : data;
+        this._trakt = this._traktWatching?.size ? data.filter((m2) => !this._traktWatching.has(m2._traktSlug || String(m2.id))) : data;
       }
     } catch (e) {
       if (e?.status === 503) {
@@ -6308,24 +6344,24 @@ var _ArrMethods = class {
       this._reRenderRight();
     }
   }
-  async _openTvRequestOverlay(m, source = "tvUpcoming") {
-    this._tvRequestPending = { show: m, seasons: null, selected: null, profileId: null, mediaId: m.id, loading: true, source };
+  async _openTvRequestOverlay(m2, source = "tvUpcoming") {
+    this._tvRequestPending = { show: m2, seasons: null, selected: null, profileId: null, mediaId: m2.id, loading: true, source };
     this._reRenderRight();
     await Promise.allSettled([
       (async () => {
         let seasons = [];
         if (this._overseerrConfigured !== false) {
           try {
-            const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${m.id}`);
+            const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${m2.id}`);
             seasons = (detail.seasons || []).filter((s) => s.seasonNumber > 0).map((s) => s.seasonNumber).sort((a, b) => a - b);
           } catch (_) {
           }
         }
         if (!seasons.length) {
-          let tvdbId = m.externalIds?.tvdbId || m.tvdbId;
+          let tvdbId = m2.externalIds?.tvdbId || m2.tvdbId;
           if (!tvdbId && this._overseerrConfigured === false) {
             try {
-              const ext = await this._callApi("GET", `arr_stack/tmdb/tv/${m.id}`);
+              const ext = await this._callApi("GET", `arr_stack/tmdb/tv/${m2.id}`);
               tvdbId = ext?.externalIds?.tvdbId;
             } catch (_) {
             }
@@ -6366,6 +6402,7 @@ var _ArrMethods = class {
     }
   }
   async _addOverseerrTvRequest(mediaId, seasons, profileId, tagId = null, rootFolder = null, use2 = false) {
+    this._markActivated();
     const showId = this._tvRequestPending?.show?.id;
     if (showId) {
       this._optimisticRequested.add(showId);
@@ -6402,6 +6439,7 @@ var _ArrMethods = class {
   }
   // ─── Direct add (bez Overseerr) ────────────────────────────────────────────
   async _addDirectMovieRequest(tmdbId, profileId, tagId, rootFolder, instance = "radarr") {
+    this._markActivated();
     const svc = instance === "radarr2" ? "radarr2" : "radarr";
     const profiles = instance === "radarr2" ? this._radarr2Profiles : this._radarrProfiles;
     const rootFolders = instance === "radarr2" ? this._radarr2RootFolders : this._radarrRootFolders;
@@ -6426,6 +6464,7 @@ var _ArrMethods = class {
     }
   }
   async _addDirectTvRequest(show, seasons, profileId, tagId, rootFolder, inst = "sonarr") {
+    this._markActivated();
     const showId = show?.id;
     const tvdbId = show?.externalIds?.tvdbId || show?.tvdbId;
     if (!tvdbId) return;
@@ -6460,7 +6499,7 @@ var _ArrMethods = class {
           qualityProfileId: pId,
           rootFolderPath: rf,
           monitored: true,
-          addOptions: { searchForMissingEpisodes: true, searchForCutoffUnmetEpisodes: false, monitor: "none" },
+          addOptions: { searchForMissingEpisodes: true, searchForCutoffUnmetEpisodes: false },
           ...tagId ? { tags: [parseInt(tagId)] } : {}
         });
       } catch (_) {
@@ -6884,6 +6923,23 @@ var _ArrMethods = class {
       await this._callApi("POST", `arr_stack/${snSvc}/release`, release);
       this._snIsGrabbed.add(guid);
       this._dlTriggeredBy = "is";
+      const seriesId = release.seriesId;
+      const seasonNumber = release.seasonNumber;
+      const snCache = this._snIsInstance === "sonarr2" ? this._sonarr2 || [] : this._sonarr || [];
+      const series = snCache.find((s) => s.id === seriesId);
+      if (series && seriesId) {
+        const updated = {
+          ...series,
+          monitored: true,
+          seasons: (series.seasons || []).map(
+            (s) => s.seasonNumber === seasonNumber ? { ...s, monitored: true } : s
+          )
+        };
+        this._callApi("PUT", `arr_stack/${snSvc}/series/${seriesId}`, updated).catch(() => {
+        });
+        if (this._snIsInstance === "sonarr2") this._sonarr2 = snCache.map((s) => s.id === seriesId ? updated : s);
+        else this._sonarr = snCache.map((s) => s.id === seriesId ? updated : s);
+      }
     } catch (e) {
       console.error("[arr-card] Sonarr grab error:", e);
       const prev = this._snIsError;
@@ -6906,18 +6962,18 @@ var _ArrMethods = class {
           this._callApi("GET", `arr_stack/radarr/lookup?term=${encodeURIComponent(query)}`),
           this._callApi("GET", `arr_stack/sonarr/lookup?term=${encodeURIComponent(query)}`)
         ]);
-        const movies = (movieRaw.status === "fulfilled" && Array.isArray(movieRaw.value) ? movieRaw.value : []).filter((m) => m.tmdbId).map((m) => ({
-          id: m.tmdbId,
+        const movies = (movieRaw.status === "fulfilled" && Array.isArray(movieRaw.value) ? movieRaw.value : []).filter((m2) => m2.tmdbId).map((m2) => ({
+          id: m2.tmdbId,
           mediaType: "movie",
-          title: m.title || "",
-          posterPath: m.remotePoster || null,
-          overview: m.overview || "",
-          releaseDate: m.year ? `${m.year}-01-01` : "",
-          genres: (m.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
-          ratings: m.ratings || {},
-          voteAverage: m.ratings?.tmdb?.value || m.ratings?.imdb?.value || 0,
-          images: m.images || [],
-          youTubeTrailerId: m.youTubeTrailerId || null,
+          title: m2.title || "",
+          posterPath: m2.remotePoster || null,
+          overview: m2.overview || "",
+          releaseDate: m2.year ? `${m2.year}-01-01` : "",
+          genres: (m2.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          ratings: m2.ratings || {},
+          voteAverage: m2.ratings?.tmdb?.value || m2.ratings?.imdb?.value || 0,
+          images: m2.images || [],
+          youTubeTrailerId: m2.youTubeTrailerId || null,
           mediaInfo: null
         }));
         const shows = (tvRaw.status === "fulfilled" && Array.isArray(tvRaw.value) ? tvRaw.value : []).filter((s) => s.tvdbId).map((s) => ({
@@ -6962,6 +7018,7 @@ var _ArrMethods = class {
     }, 80);
   }
   async _addOverseerrRequest(mediaId, profileId = null, tagId = null, rootFolder = null, use4k = false) {
+    this._markActivated();
     this._optimisticRequested.add(mediaId);
     this._withdrawnIds.delete(mediaId);
     this._requestPending = null;
@@ -7128,6 +7185,7 @@ var _ArrMethods = class {
   // Auto Search — Radarr
   // ─────────────────────────────────────────────
   async _triggerRadarrAutoSearch(instance = "radarr") {
+    this._markActivated();
     const svc = instance === "radarr2" ? "radarr2" : "radarr";
     const d = this._popup;
     const movieId = instance === "radarr2" ? d._radarr2Id : d._radarrId;
@@ -7178,11 +7236,11 @@ var _ArrMethods = class {
         if (added?.id) {
           if (instance === "radarr2") {
             if (!this._radarr2) this._radarr2 = [];
-            if (!this._radarr2.find((m) => m.id === added.id)) this._radarr2.push(added);
+            if (!this._radarr2.find((m2) => m2.id === added.id)) this._radarr2.push(added);
             d._radarr2Id = added.id;
           } else {
             if (!this._radarr) this._radarr = [];
-            if (!this._radarr.find((m) => m.id === added.id)) this._radarr.push(added);
+            if (!this._radarr.find((m2) => m2.id === added.id)) this._radarr.push(added);
             d._radarrId = added.id;
           }
         }
@@ -7203,6 +7261,7 @@ var _ArrMethods = class {
   // Auto Search — Sonarr (add series + seasons)
   // ─────────────────────────────────────────────
   async _addSeriesForAs(instance = "sonarr") {
+    this._markActivated();
     const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
     this._dlTriggeredBy = "as";
     this._asState = "adding";
@@ -8613,16 +8672,16 @@ var _RenderRight = class {
     const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
     const sPage = cols * 2;
     const sp = this._searchPage || 0;
-    const cards = this._searchResults.slice(sp * sPage, (sp + 1) * sPage).map((m) => {
-      const isMovie = m.mediaType === "movie";
-      const title = this._escHtml(m.title || m.name || "");
-      const tmdbId = m.id;
+    const cards = this._searchResults.slice(sp * sPage, (sp + 1) * sPage).map((m2) => {
+      const isMovie = m2.mediaType === "movie";
+      const title = this._escHtml(m2.title || m2.name || "");
+      const tmdbId = m2.id;
       const popupType = isMovie ? POPUP_TYPE.MOVIE : POPUP_TYPE.TV;
       const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-      const poster = m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w342${m.posterPath}` : "";
+      const poster = m2.posterPath ? m2.posterPath.startsWith("http") ? m2.posterPath : `https://image.tmdb.org/t/p/w342${m2.posterPath}` : "";
       const radarrEntry = isMovie && Array.isArray(this._radarr) ? this._radarr.find((r) => r.tmdbId === tmdbId) : null;
-      const sonarrEntry = !isMovie && Array.isArray(this._sonarr) ? this._sonarr.find((s) => tmdbId && s.tmdbId === tmdbId) || this._sonarr.find((s) => m.tvdbId && s.tvdbId === m.tvdbId) : null;
-      const mediaStatus = m.mediaInfo?.status;
+      const sonarrEntry = !isMovie && Array.isArray(this._sonarr) ? this._sonarr.find((s) => tmdbId && s.tmdbId === tmdbId) || this._sonarr.find((s) => m2.tvdbId && s.tvdbId === m2.tvdbId) : null;
+      const mediaStatus = m2.mediaInfo?.status;
       const _inOptimistic = this._optimisticRequested.has(tmdbId);
       const _withdrawn = this._withdrawnIds.has(tmdbId);
       const _hasPending = this._familyPendingIds.has(tmdbId);
@@ -8631,7 +8690,7 @@ var _RenderRight = class {
       const _stale = mediaStatus >= 3 && !inLib && !_inOptimistic && !_hasPending;
       const _isAvail = (hasFile || mediaStatus === 5) && !_withdrawn && !_stale;
       const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inLib) && !_withdrawn && !hasFile && !_stale;
-      const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(tmdbId);
+      const _reqId = m2.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(tmdbId);
       const searchReqKey = "search-" + tmdbId;
       const _isAdmin = this._hass.user.is_admin;
       const _noSeerr = this._overseerrConfigured === false;
@@ -8662,17 +8721,80 @@ var _RenderRight = class {
       }
       const posterHtml = poster ? `<img src="${poster}" alt="${title}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : `<div class="search-mc-ph ${this._grad(tmdbId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
       const reqOverlay = isMovie && this._requestPending?.reqKey === searchReqKey ? this._renderRequestOverlay(tmdbId, tmdbId) : "";
-      const tvdbAttr = !isMovie && m.tvdbId ? ` data-tvdbid="${m.tvdbId}"` : "";
+      const tvdbAttr = !isMovie && m2.tvdbId ? ` data-tvdbid="${m2.tvdbId}"` : "";
       return `
       <div class="mc" data-popup="${popupType}" data-tmdbid="${tmdbId}"${tvdbAttr} data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""} style="position:relative">
         ${posterHtml}
         <span class="media-type-tag">${typeTag}</span>
         ${statusBadge}
-        ${this._mcGrad(gradColor, `${m.ratings?.imdb?.value || m.voteAverage ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${(m.ratings?.imdb?.value || m.voteAverage).toFixed(1)}</span></div>` : ""}<div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
+        ${this._mcGrad(gradColor, `${this._ratingBadge({ ...m2, ratings: (radarrEntry || sonarrEntry)?.ratings || m2.ratings })}<div style="font-size:10px;font-weight:600;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
         ${reqOverlay}
       </div>`;
     }).join("");
     return `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr);row-gap:10px">${cards}</div>`;
+  }
+  _ratingBadge(m2, inline = false) {
+    const prov = this._ratingProvider;
+    const ratings = m2.ratings || {};
+    const tmdbId = String(m2.id || m2.tmdbId || "");
+    const isMovie = m2._mediaType !== "tv" && m2.mediaType !== "tv";
+    const cached = tmdbId ? this._posterRatingsCache.get(tmdbId) : void 0;
+    let raw, display, icon, bdrClr, bgClr;
+    switch (prov) {
+      case "tmdb":
+        raw = ratings.tmdb?.value ?? m2.voteAverage;
+        if (!raw) return "";
+        display = (Math.round(raw * 10) / 10).toFixed(1);
+        icon = `<svg width="30" height="11" viewBox="0 0 64 28" style="flex-shrink:0"><rect width="64" height="28" rx="4" fill="#0d253f"/><text x="32" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="800" fill="#01b4e4">TMDB</text></svg>`;
+        bdrClr = "rgba(1,180,228,0.45)";
+        bgClr = "rgba(1,180,228,0.22)";
+        break;
+      case "trakt":
+        raw = ratings.trakt?.value;
+        if (!raw) return "";
+        display = (Math.round(raw * 10) / 10).toFixed(1);
+        icon = `<svg width="24" height="11" viewBox="0 0 64 28" style="flex-shrink:0"><rect width="64" height="28" rx="4" fill="#1a1a1a"/><text x="32" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="900" fill="#e8191a">trakt</text></svg>`;
+        bdrClr = "rgba(232,25,26,0.45)";
+        bgClr = "rgba(232,25,26,0.22)";
+        break;
+      case "rottenTomatoes": {
+        const rtVal = ratings.rottenTomatoes?.value ?? cached?.rt ?? null;
+        if (rtVal == null) {
+          if (cached === void 0 && tmdbId) this._fetchPosterRating(tmdbId, isMovie);
+          return "";
+        }
+        display = `${Math.round(rtVal)}%`;
+        icon = `<svg width="10" height="10" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#FA320A" d="M12 7.5c-5 0-8.5 3-8.5 7.8 0 4.4 3.8 6.7 8.5 6.7s8.5-2.3 8.5-6.7c0-4.8-3.5-7.8-8.5-7.8z"/><path fill="#00912D" d="M11.8 7.6c.2-2 1.5-3.6 3.6-4.1-1 1.2-1.2 2.1-1.2 2.1s2-1.6 4.1-1c-1.5 1-2 2.3-2 2.3s1.7-.7 3.2-.2c-2 1.5-4.2 1.4-5.7 1.1-.5-.1-1.4-.2-2-.2z"/></svg>`;
+        bdrClr = "rgba(250,50,10,0.45)";
+        bgClr = "rgba(250,50,10,0.22)";
+        raw = rtVal;
+        break;
+      }
+      case "metacritic": {
+        const mcVal = ratings.metacritic?.value ?? cached?.metacritic ?? null;
+        if (mcVal == null) {
+          if (cached === void 0 && tmdbId) this._fetchPosterRating(tmdbId, isMovie);
+          return "";
+        }
+        display = `${Math.round(mcVal)}`;
+        icon = `<svg width="26" height="11" viewBox="0 0 64 28" style="flex-shrink:0"><rect width="64" height="28" rx="4" fill="#ffcc33"/><text x="32" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="900" fill="#000">meta</text></svg>`;
+        bdrClr = "rgba(255,204,51,0.45)";
+        bgClr = "rgba(255,204,51,0.22)";
+        raw = mcVal;
+        break;
+      }
+      default: {
+        raw = ratings.imdb?.value || m2.voteAverage;
+        if (!raw) return "";
+        display = (Math.round(raw * 10) / 10).toFixed(1);
+        icon = `<svg width="24" height="11" viewBox="0 0 64 28" style="flex-shrink:0"><rect width="64" height="28" rx="4" fill="#F5C518"/><text x="32" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="900" fill="#000">IMDb</text></svg>`;
+        bdrClr = "rgba(245,197,24,0.45)";
+        bgClr = "rgba(245,197,24,0.22)";
+      }
+    }
+    if (!display) return "";
+    const badge = `<span class="imdb" style="border-color:${bdrClr};background:${bgClr};padding:2px 3px 2px 3px;gap:3px">${icon}<span style="line-height:1;display:block;margin-top:-1px">${display}</span></span>`;
+    return inline ? badge : `<div style="margin-bottom:3px">${badge}</div>`;
   }
   _pageIndicator(section, itemsOrCount, perPage = 4) {
     const count = Array.isArray(itemsOrCount) ? itemsOrCount.length : itemsOrCount || 0;
@@ -8727,7 +8849,7 @@ var _RenderRight = class {
   }
   _renderRadarr() {
     const smpCount = this._smpPageCount(this._radarr, "radarr");
-    const grid = this._radarr.length === 0 ? `<div class="placeholder">${this._t("noRadarr")}</div>` : this._pagedGridWithSmp(this._radarr, "radarr", (m) => this._renderRadarrCard(m));
+    const grid = this._radarr.length === 0 ? `<div class="placeholder">${this._t("noRadarr")}</div>` : this._pagedGridWithSmp(this._radarr, "radarr", (m2) => this._renderRadarrCard(m2));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
@@ -8832,12 +8954,14 @@ var _RenderRight = class {
   _renderRecentlyAdded() {
     const items = this.recentlyAdded;
     const smpCount = this._smpPageCount(items, "recentlyAdded");
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyAdded", (m) => this._renderRecentlyAddedCard(m));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyAdded", (m2) => this._renderRecentlyAddedCard(m2));
+    const noSeerr = this._overseerrConfigured === false;
+    const headerIcon = noSeerr ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon("radarr", 24)}${this._appIcon("sonarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${this._sectionOverlayHtml(this._discoverIconKey())}
+      ${noSeerr ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        ${this._appIcon(this._discoverIconKey(), 24)}
+        ${headerIcon}
         <span class="col-hdr-title">${this._t("recentlyAdded")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("recentlyAdded", smpCount)}
@@ -8849,12 +8973,14 @@ var _RenderRight = class {
   _renderRecentlyRequested() {
     const items = this.recentlyRequested;
     const smpCount = this._smpPageCount(items, "recentlyRequested");
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyRequested", (m) => this._renderRecentlyRequestedCard(m));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyRequested", (m2) => this._renderRecentlyRequestedCard(m2));
+    const noSeerrRq = this._overseerrConfigured === false;
+    const headerIconRq = noSeerrRq ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon("radarr", 24)}${this._appIcon("sonarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${this._sectionOverlayHtml(this._discoverIconKey())}
+      ${noSeerrRq ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
-        ${this._appIcon(this._discoverIconKey(), 24)}
+        ${headerIconRq}
         <span class="col-hdr-title">${this._t("recentlyRequested")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("recentlyRequested", smpCount)}
@@ -8872,7 +8998,7 @@ var _RenderRight = class {
     } else if (items.length === 0) {
       grid = `<div class="placeholder">${this._t("loading")}</div>`;
     } else {
-      grid = this._pagedGridWithSmp(items, "upcoming", (m) => this._renderUpcomingCard(m, { reqKey: "upcoming-" + m.id }));
+      grid = this._pagedGridWithSmp(items, "upcoming", (m2) => this._renderUpcomingCard(m2, { reqKey: "upcoming-" + m2.id }));
     }
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
@@ -8891,7 +9017,7 @@ var _RenderRight = class {
     const items = this._tvUpcoming || [];
     const smpCount = this._smpPageCount(items, "tvUpcoming");
     const p = this._tvRequestPending?.source === "tvUpcoming" ? this._tvRequestPending : null;
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "tvUpcoming", (m) => this._renderTvUpcomingCard(m));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "tvUpcoming", (m2) => this._renderTvUpcomingCard(m2));
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}position:relative;">
       ${this._sectionOverlayHtml(this._discoverIconKey())}
@@ -8984,7 +9110,7 @@ var _RenderRight = class {
     const items = this._trending || [];
     const smpCount = this._smpPageCount(items, "trending");
     const p = this._tvRequestPending?.source === "trending" ? this._tvRequestPending : null;
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trending", (m) => this._renderTrendingCard(m));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trending", (m2) => this._renderTrendingCard(m2));
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}position:relative;">
       ${this._sectionOverlayHtml(this._discoverIconKey())}
@@ -9003,7 +9129,7 @@ var _RenderRight = class {
     const items = this._trakt || [];
     const smpCount = this._smpPageCount(items, "trakt");
     const p = this._tvRequestPending?.source === "trakt" ? this._tvRequestPending : null;
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trakt", (m) => this._renderTraktCard(m));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trakt", (m2) => this._renderTraktCard(m2));
     return `
     <div class="sec-card has-gradient" data-trakt-sec style="${this._sectionStyle()}">
       ${this._sectionOverlayHtml("trakt", 25, 75, 0.4)}
@@ -9021,9 +9147,9 @@ var _RenderRight = class {
   // Returns a right-arrow button for the section header that opens the overlay at page 0
   _seeMoreBtn(section) {
     if (!this._hasSeeMore(section)) return "";
-    return `<button class="smp-hdr-btn" data-action="overlay-open" data-sec="${section}" data-page="0">
+    return `<button class="smp-hdr-btn" data-action="overlay-open" data-sec="${section}" data-page="0" style="width:28px;height:28px;margin:-2px 0;flex-shrink:0">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-         stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+         stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
       <path d="M5 12h14M13 6l6 6-6 6"/>
     </svg>
   </button>`;
@@ -9044,13 +9170,13 @@ var _RenderRight = class {
     const teasers = items.slice(-4);
     const cells = [];
     for (let i = 0; i < 4; i++) {
-      const m = teasers[i];
-      if (m && cfg) {
-        const url = cfg.getPosterUrl(m);
+      const m2 = teasers[i];
+      if (m2 && cfg) {
+        const url = cfg.getPosterUrl(m2);
         if (url) {
           cells.push(`<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`);
         } else {
-          cells.push(`<div class="${this._grad(m.id)}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px">${cfg.emoji(m)}</div>`);
+          cells.push(`<div class="${this._grad(m2.id)}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px">${cfg.emoji(m2)}</div>`);
         }
       } else {
         cells.push(`<div style="width:100%;height:100%;background:rgba(255,255,255,0.06)"></div>`);
@@ -9085,7 +9211,7 @@ var _RenderRight = class {
     const page = this._overlay.page || 0;
     const totalPages = Math.ceil(items.length / perPage);
     const pageItems = items.slice(page * perPage, (page + 1) * perPage);
-    const gridHtml = pageItems.map((m, i) => cfg.renderCard(m, i)).join("");
+    const gridHtml = pageItems.map((m2, i) => cfg.renderCard(m2, i)).join("");
     const pageInd = totalPages > 1 ? `<span class="sec-page-ind">${page + 1}<span class="sec-page-sep">/</span>${totalPages}</span>` : "";
     const [gposL = 15, gposR = 85, go = 0.35] = cfg.gradPos || [];
     return `
@@ -9197,7 +9323,7 @@ var _RenderRight = class {
   _renderPopular() {
     const items = this._popular || [];
     const smpCount = this._smpPageCount(items, "popular");
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "popular", (m) => this._renderUpcomingCard(m, { showDate: false, reqKey: "popular-" + m.id }));
+    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "popular", (m2) => this._renderUpcomingCard(m2, { showDate: false, reqKey: "popular-" + m2.id }));
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${this._sectionOverlayHtml(this._discoverIconKey())}
@@ -9212,7 +9338,7 @@ var _RenderRight = class {
     </div>`;
   }
   _renderCalendar() {
-    const calSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+    const calSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     const calSvgLg = `<svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     let grid = "";
     if (!this._calendar || this._calendar.length === 0) {
@@ -9261,7 +9387,7 @@ var _RenderRight = class {
         <span class="col-hdr-title">${this._t("catCalendar")}</span>
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("calendar", this._calendar || [])}
-        <button class="smp-hdr-btn" data-action="open-cal-modal" title="Weekly calendar">${calSvg}</button>
+        <button class="smp-hdr-btn" data-action="open-cal-modal" title="Weekly calendar" style="width:28px;height:28px;margin:-2px 0;flex-shrink:0">${calSvg}</button>
       </div>
       ${grid}
     </div>`;
@@ -9622,9 +9748,9 @@ var _MediaCardMethods = class {
     ];
     return ordered.slice(0, 2);
   }
-  _getRadarrPoster(m) {
-    if (!m.images) return null;
-    const img = m.images.find((i) => i.coverType === "poster");
+  _getRadarrPoster(m2) {
+    if (!m2.images) return null;
+    const img = m2.images.find((i) => i.coverType === "poster");
     return img ? img.remoteUrl : null;
   }
   _getSonarrPoster(s) {
@@ -9632,28 +9758,28 @@ var _MediaCardMethods = class {
     const img = s.images.find((i) => i.coverType === "poster");
     return img ? img.remoteUrl : null;
   }
-  _qualityBadge2(m) {
+  _qualityBadge2(m2) {
     if (!this._radarr2Configured) return "";
-    const m2 = m.tmdbId ? this._radarr2ByTmdb.get(String(m.tmdbId)) : null;
-    if (!m2) return "";
-    const inR2 = m2.hasFile;
-    const inR1 = m.hasFile;
+    const m22 = m2.tmdbId ? this._radarr2ByTmdb.get(String(m2.tmdbId)) : null;
+    if (!m22) return "";
+    const inR2 = m22.hasFile;
+    const inR1 = m2.hasFile;
     const style = "font-size:8px;padding:1px 4px;border-radius:3px;color:#fff;font-weight:700;letter-spacing:.3px";
     if (inR1 && inR2) return `<span class="badge b-r2" style="background:linear-gradient(90deg,rgba(0,120,255,0.85),rgba(140,40,220,0.85));${style}">R+R2</span>`;
     if (inR2) return `<span class="badge b-r2" style="background:rgba(140,40,220,0.85);${style}">R2</span>`;
     return "";
   }
-  _renderRadarrCard(m) {
-    const poster = this._getRadarrPoster(m);
-    const title = this._escHtml(m.title || "Unknown");
+  _renderRadarrCard(m2) {
+    const poster = this._getRadarrPoster(m2);
+    const title = this._escHtml(m2.title || "Unknown");
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const ratingVal = m.ratings?.imdb?.value || m.ratings?.tmdb?.value || 0;
+    const ratingVal = m2.ratings?.imdb?.value || m2.ratings?.tmdb?.value || 0;
     const rating = ratingVal ? ratingVal.toFixed(1) : "";
-    const hasFile = m.hasFile;
-    const cutoffNotMet = m.movieFile?.qualityCutoffNotMet;
-    const dlFailed = this._radarrQueueFailed.has(m.id);
-    const dlActive = this._radarrQueueActive.has(m.id);
+    const hasFile = m2.hasFile;
+    const cutoffNotMet = m2.movieFile?.qualityCutoffNotMet;
+    const dlFailed = this._radarrQueueFailed.has(m2.id);
+    const dlActive = this._radarrQueueActive.has(m2.id);
     let badgeHtml = "";
     if (hasFile && cutoffNotMet) {
       badgeHtml = this._badge("b-cutoff", "\u26A1", "Upgrade");
@@ -9667,21 +9793,21 @@ var _MediaCardMethods = class {
       badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     }
     const statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
-    const qualBadge4k = this._qualityBadge2(m);
+    const qualBadge4k = this._qualityBadge2(m2);
     let audioBadge = "";
     let subBadge = "";
     if (hasFile) {
       let audioLangs = [];
-      if (Array.isArray(m.movieFile?.languages) && m.movieFile.languages.length > 0) {
-        audioLangs = m.movieFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
-      } else if (m.movieFile?.mediaInfo?.audioLanguages) {
-        audioLangs = m.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
+      if (Array.isArray(m2.movieFile?.languages) && m2.movieFile.languages.length > 0) {
+        audioLangs = m2.movieFile.languages.map((l) => this._langCode(l.name || "")).filter(Boolean);
+      } else if (m2.movieFile?.mediaInfo?.audioLanguages) {
+        audioLangs = m2.movieFile.mediaInfo.audioLanguages.split(/\s*[\/,]\s*/).map((l) => this._langCode(l.trim())).filter(Boolean);
       }
       if (audioLangs.length > 0) {
         const codes = this._topLangs(audioLangs).join(" | ");
         audioBadge = this._badgeIcon("b-audio", "mdi:volume-high", codes);
       }
-      const bz = this._bazarrConfigured ? this._bazarr[m.id] : null;
+      const bz = this._bazarrConfigured ? this._bazarr[m2.id] : null;
       if (bz) {
         if (bz.missing.length > 0) {
           const langs = this._topLangs(bz.missing.map((s) => (s.code2 || s.name || "?").toUpperCase())).join(" | ");
@@ -9692,12 +9818,12 @@ var _MediaCardMethods = class {
         }
       }
     }
-    const img = this._mcImg(poster, "\u{1F3AC}", m.id);
+    const img = this._mcImg(poster, "\u{1F3AC}", m2.id);
     return `
-    <div class="mc" data-popup="${POPUP_TYPE.RADARR}" data-tmdbid="${m.tmdbId}" data-title="${title}">
+    <div class="mc" data-popup="${POPUP_TYPE.RADARR}" data-tmdbid="${m2.tmdbId}" data-title="${title}">
       ${img}
       ${statusBadge}
-      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+      ${this._mcGrad(grad, `${this._ratingBadge(m2)}
         ${audioBadge || subBadge || qualBadge4k ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}${qualBadge4k}</div>` : ""}
         <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
@@ -9726,7 +9852,7 @@ var _MediaCardMethods = class {
     <div class="mc" data-popup="${POPUP_TYPE.SONARR}" data-tvdbid="${s.tvdbId}" data-tmdbid="${s.tmdbId || ""}" data-title="${title}">
       ${img}
       ${statusBadge}
-      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+      ${this._mcGrad(grad, `${this._ratingBadge(m)}
         <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
@@ -9824,7 +9950,7 @@ var _MediaCardMethods = class {
       ${img}
       <span class="media-type-tag">${typeTag}</span>
       ${statusBadge}
-      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+      ${this._mcGrad(grad, `${this._ratingBadge(item)}
         ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
         <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
@@ -9863,25 +9989,25 @@ var _MediaCardMethods = class {
       ${img}
       <span class="media-type-tag">${typeTag}</span>
       ${statusBadge}
-      ${this._mcGrad(grad, `${rating ? `<div style="margin-bottom:3px"><span class="imdb">\u2B50 ${rating}</span></div>` : ""}
+      ${this._mcGrad(grad, `${this._ratingBadge(item)}
         <div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>`)}
     </div>`;
   }
-  _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = "", overlayIndex = null, source = "tvUpcoming", watchedBtn = "", traktOverlays = "" } = {}) {
-    const title = this._escHtml(m.name || m.originalName || "Unknown");
-    const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
-    const dateStr = this.fmtDate(m.firstAirDate || m.first_air_date);
-    const mediaStatus = m.mediaInfo?.status;
-    const sonarrEntry = Array.isArray(this._sonarr) && this._sonarr.find((s) => s.tmdbId === m.id);
+  _renderTvUpcomingCard(m2, { showDate = true, showRating = false, typeTag = "", overlayIndex = null, source = "tvUpcoming", watchedBtn = "", traktOverlays = "" } = {}) {
+    const title = this._escHtml(m2.name || m2.originalName || "Unknown");
+    const rating = m2.voteAverage ? m2.voteAverage.toFixed(1) : "?";
+    const dateStr = this.fmtDate(m2.firstAirDate || m2.first_air_date);
+    const mediaStatus = m2.mediaInfo?.status;
+    const sonarrEntry = Array.isArray(this._sonarr) && this._sonarr.find((s) => s.tmdbId === m2.id);
     const inSonarr = !!sonarrEntry;
     const inSonarrAvail = !!(sonarrEntry && sonarrEntry.statistics?.episodeFileCount > 0);
-    const _inOptimistic = this._optimisticRequested.has(m.id);
-    const _withdrawn = this._withdrawnIds.has(m.id);
-    const _hasPending = this._familyPendingIds.has(m.id);
+    const _inOptimistic = this._optimisticRequested.has(m2.id);
+    const _withdrawn = this._withdrawnIds.has(m2.id);
+    const _hasPending = this._familyPendingIds.has(m2.id);
     const _stale = mediaStatus >= 3 && !inSonarr && !_inOptimistic && !_hasPending;
     const _isAvail = (inSonarrAvail || mediaStatus === 5) && !_withdrawn && !_stale;
     const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inSonarr) && !_withdrawn && !inSonarrAvail && !_stale;
-    const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m.id);
+    const _reqId = m2.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m2.id);
     const _isAdmin = this._hass.user.is_admin;
     const _noSeerr = this._overseerrConfigured === false;
     let actionBtn = "";
@@ -9891,11 +10017,11 @@ var _MediaCardMethods = class {
       if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         actionBtn = "";
       } else {
-        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
+        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m2.id}">\u2715</button>` : "";
         actionBtn = withdrawBtn;
       }
     } else {
-      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}" data-source="${source}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
+      actionBtn = `<button class="btn-add tv-req-open" data-showid="${m2.id}" data-title="${title}" data-source="${source}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
     }
     let statusBadge = "";
     if (_isAvail) {
@@ -9910,59 +10036,59 @@ var _MediaCardMethods = class {
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const tagHtml = typeTag ? `<span class="media-type-tag"><span class="b-txt">${typeTag}</span></span>` : "";
-    const img = this._mcImg(m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w342${m.posterPath}` : null, "\u{1F4FA}", m.id);
+    const img = this._mcImg(m2.posterPath ? m2.posterPath.startsWith("http") ? m2.posterPath : `https://image.tmdb.org/t/p/w342${m2.posterPath}` : null, "\u{1F4FA}", m2.id);
     return `
-    <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+    <div class="mc" data-popup="${POPUP_TYPE.TV}" data-tmdbid="${m2.id}" data-title="${title}"${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
       ${traktOverlays}
       ${tagHtml}
       ${statusBadge}
-      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
+      ${this._mcGrad(grad, `${showDate && dateStr ? `<div style="margin-bottom:3px"><span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span></div>` : showRating ? this._ratingBadge(m2) : ""}<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
     </div>`;
   }
-  _renderTraktCard(m, overlayIndex = null) {
-    const normalized = Object.assign({}, m, {
-      name: m.name || m.title,
-      originalName: m.originalName || m.title,
-      firstAirDate: m.firstAirDate || m.releaseDate,
-      releaseDate: m.releaseDate
+  _renderTraktCard(m2, overlayIndex = null) {
+    const normalized = Object.assign({}, m2, {
+      name: m2.name || m2.title,
+      originalName: m2.originalName || m2.title,
+      firstAirDate: m2.firstAirDate || m2.releaseDate,
+      releaseDate: m2.releaseDate
     });
-    const alreadyHidden = this._traktWatching?.has(m._traktSlug || String(m.id));
-    const traktData = `data-trakt-slug="${m._traktSlug || ""}" data-trakt-type="${m.mediaType}" data-trakt-tmdb="${m.id}"`;
+    const alreadyHidden = this._traktWatching?.has(m2._traktSlug || String(m2.id));
+    const traktData = `data-trakt-slug="${m2._traktSlug || ""}" data-trakt-type="${m2.mediaType}" data-trakt-tmdb="${m2.id}"`;
     const _chars = (s) => s.toUpperCase().split("").join("<br>");
     const traktOverlays = alreadyHidden ? "" : `<div class="trakt-seen-ol" ${traktData}><span>${_chars(this._t("watched"))}</span></div><div class="trakt-ni-ol"   ${traktData}><span>${_chars(this._t("skip"))}</span></div>`;
-    if (m.mediaType === "tv") {
+    if (m2.mediaType === "tv") {
       return this._renderTvUpcomingCard(normalized, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trakt", traktOverlays });
     }
-    return this._renderUpcomingCard(normalized, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trakt-" + m.id, traktOverlays });
+    return this._renderUpcomingCard(normalized, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trakt-" + m2.id, traktOverlays });
   }
-  _renderTrendingCard(m, overlayIndex = null) {
-    if (m.mediaType === "tv") {
-      return this._renderTvUpcomingCard(m, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trending" });
+  _renderTrendingCard(m2, overlayIndex = null) {
+    if (m2.mediaType === "tv") {
+      return this._renderTvUpcomingCard(m2, { showDate: false, showRating: true, typeTag: this._t("typeTv"), overlayIndex, source: "trending" });
     }
-    return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trending-" + m.id });
+    return this._renderUpcomingCard(m2, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex, reqKey: "trending-" + m2.id });
   }
-  _renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = "", overlayIndex = null, reqKey = String(m.id), watchedBtn = "", traktOverlays = "" } = {}) {
-    const title = this._escHtml(m.title || "Unknown");
-    const rating = m.voteAverage ? m.voteAverage.toFixed(1) : "?";
-    const dateStr = this.fmtDate(m.releaseDate);
-    const radarrEntry = Array.isArray(this._radarr) && this._radarr.find((r) => r.tmdbId === m.id);
+  _renderUpcomingCard(m2, { showDate = true, showRating = !showDate, typeTag = "", overlayIndex = null, reqKey = String(m2.id), watchedBtn = "", traktOverlays = "" } = {}) {
+    const title = this._escHtml(m2.title || "Unknown");
+    const rating = m2.voteAverage ? m2.voteAverage.toFixed(1) : "?";
+    const dateStr = this.fmtDate(m2.releaseDate);
+    const radarrEntry = Array.isArray(this._radarr) && this._radarr.find((r) => r.tmdbId === m2.id);
     const inRadarr = !!radarrEntry;
     const inRadarrAvail = !!(radarrEntry && radarrEntry.hasFile);
     const inRadarrDownloading = !!(radarrEntry && !radarrEntry.hasFile && this._radarrQueueActive.has(radarrEntry.id));
-    const radarr2Entry = this._radarr2ByTmdb?.get(String(m.id));
+    const radarr2Entry = this._radarr2ByTmdb?.get(String(m2.id));
     const inRadarr2 = !!radarr2Entry;
     const inRadarr2Avail = !!(radarr2Entry && radarr2Entry.hasFile);
     const inRadarr2Downloading = !!(radarr2Entry && !radarr2Entry.hasFile && this._radarr2QueueActive?.has(radarr2Entry.id));
-    const mediaStatus = m.mediaInfo?.status;
-    const _inOptimistic = this._optimisticRequested.has(m.id);
-    const _withdrawn = this._withdrawnIds.has(m.id);
-    const _hasPending = this._familyPendingIds.has(m.id);
+    const mediaStatus = m2.mediaInfo?.status;
+    const _inOptimistic = this._optimisticRequested.has(m2.id);
+    const _withdrawn = this._withdrawnIds.has(m2.id);
+    const _hasPending = this._familyPendingIds.has(m2.id);
     const _stale = mediaStatus >= 3 && !inRadarr && !inRadarr2 && !_inOptimistic && !_hasPending;
     const _isAvail = (inRadarrAvail || inRadarr2Avail || mediaStatus === 5) && !_withdrawn && !_stale;
     const _isReq = (mediaStatus >= 2 || _inOptimistic || _hasPending || inRadarr || inRadarr2) && !_withdrawn && !inRadarrAvail && !inRadarr2Avail && !_stale;
     const _isDownloading = inRadarrDownloading || inRadarr2Downloading;
-    const _reqId = m.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m.id);
+    const _reqId = m2.mediaInfo?.requests?.[0]?.id || this._familyPendingIds.get(m2.id);
     const _isAdmin = this._hass.user.is_admin;
     const _noSeerr2 = this._overseerrConfigured === false;
     let actionBtn = "";
@@ -9974,11 +10100,11 @@ var _MediaCardMethods = class {
       } else if (_isAdmin || _noSeerr2 || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         actionBtn = "";
       } else {
-        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
+        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m2.id}">\u2715</button>` : "";
         actionBtn = withdrawBtn;
       }
     } else {
-      actionBtn = `<button class="btn-add req-open" data-movieid="${m.id}" data-tmdb="${m.id}" data-reqkey="${reqKey}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
+      actionBtn = `<button class="btn-add req-open" data-movieid="${m2.id}" data-tmdb="${m2.id}" data-reqkey="${reqKey}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
     }
     let statusBadge = "";
     if (_isAvail) {
@@ -9992,19 +10118,19 @@ var _MediaCardMethods = class {
         statusBadge = this._statusBadge(this._badge("b-st-pend", "\u23F1", this._t("badgePending")));
       }
     }
-    const overlay = this._requestPending?.reqKey === reqKey ? this._renderRequestOverlay(m.id, m.id) : "";
+    const overlay = this._requestPending?.reqKey === reqKey ? this._renderRequestOverlay(m2.id, m2.id) : "";
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const posterPath = m.posterPath || m.poster_path || null;
-    const img = this._mcImg(posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m.id);
+    const posterPath = m2.posterPath || m2.poster_path || null;
+    const img = this._mcImg(posterPath ? posterPath.startsWith("http") ? posterPath : `https://image.tmdb.org/t/p/w342${posterPath}` : null, "\u{1F3AC}", m2.id);
     const tagHtml = typeTag ? `<span class="media-type-tag"><span class="b-txt">${typeTag}</span></span>` : "";
     return `
-    <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
+    <div class="mc" data-popup="${POPUP_TYPE.MOVIE}" data-tmdbid="${m2.id}" data-title="${title}"${radarrEntry ? ` data-radarrid="${radarrEntry.id}"` : ""}${overlayIndex !== null ? ` data-oi="${overlayIndex}"` : ""}>
       ${img}
       ${traktOverlays}
       ${tagHtml}
       ${statusBadge}
-      ${this._mcGrad(grad, `${showDate && dateStr || showRating && rating !== "?" ? `<div style="margin-bottom:3px">${showDate && dateStr ? `<span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span>` : `<span class="imdb">\u2B50 ${rating}</span>`}</div>` : ""}<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
+      ${this._mcGrad(grad, `${showDate && dateStr ? `<div style="margin-bottom:3px"><span style="font-size:9px;color:${tc};opacity:0.85">${dateStr}</span></div>` : showRating ? this._ratingBadge(m2) : ""}<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${actionBtn ? "padding-right:20px" : ""}">${title}</div>${actionBtn ? `<div style="position:absolute;bottom:8px;right:10px">${actionBtn}</div>` : ""}`)}
       ${overlay}
     </div>`;
   }
@@ -10078,8 +10204,8 @@ var _ThemeMethods = class {
       if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
       return `${r}, ${g}, ${b}`;
     }
-    const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-    if (m) return `${m[1]}, ${m[2]}, ${m[3]}`;
+    const m2 = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (m2) return `${m2[1]}, ${m2[2]}, ${m2[3]}`;
     return null;
   }
   // Inject theme CSS custom properties derived from config into shadow DOM
@@ -10186,6 +10312,7 @@ var themeMixin = _ThemeMethods.prototype;
 // src/wire/index.js
 var _WireMethods = class {
   async _qbitAction(hash, action, deleteFiles = false) {
+    this._markActivated();
     const isGlobal = action === "pauseAll" || action === "resumeAll";
     if (isGlobal) {
       this._qbitBusy = true;
@@ -10256,6 +10383,7 @@ var _WireMethods = class {
   // SABnzbd action API
   // ─────────────────────────────────────────────
   async _sabAction(mode) {
+    this._markActivated();
     this._sabBusy = true;
     this._reRenderLeft();
     try {
@@ -10570,7 +10698,7 @@ var _WireMethods = class {
         const showId = parseInt(btn.dataset.showid, 10);
         if (!showId) return;
         const tvSource = btn.dataset.source || "tvUpcoming";
-        const show = tvSource === "trending" ? this._trending.find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "search" ? (this._searchResults || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "trakt" ? (this._trakt || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "popular" ? (this._popular || []).find((m) => m.id === showId && m.mediaType === "tv") : (this._tvUpcoming || []).find((m) => m.id === showId);
+        const show = tvSource === "trending" ? this._trending.find((m2) => m2.id === showId && m2.mediaType === "tv") : tvSource === "search" ? (this._searchResults || []).find((m2) => m2.id === showId && m2.mediaType === "tv") : tvSource === "trakt" ? (this._trakt || []).find((m2) => m2.id === showId && m2.mediaType === "tv") : tvSource === "popular" ? (this._popular || []).find((m2) => m2.id === showId && m2.mediaType === "tv") : (this._tvUpcoming || []).find((m2) => m2.id === showId);
         const fromTrending = tvSource === "trending";
         const fromSearch = tvSource === "search";
         if (!show) return;
@@ -10642,7 +10770,7 @@ var _WireMethods = class {
         setTimeout(() => {
           if (!this._traktWatching) this._traktWatching = /* @__PURE__ */ new Set();
           this._traktWatching.add(key);
-          this._trakt = (this._trakt || []).filter((m) => (m._traktSlug || String(m.id)) !== key);
+          this._trakt = (this._trakt || []).filter((m2) => (m2._traktSlug || String(m2.id)) !== key);
           this._traktAnimateNext = true;
           this._reRenderRight(true);
           (async () => {
@@ -10805,7 +10933,7 @@ var _WireMethods = class {
               setTimeout(() => {
                 if (!this._traktWatching) this._traktWatching = /* @__PURE__ */ new Set();
                 this._traktWatching.add(key);
-                this._trakt = (this._trakt || []).filter((m) => (m._traktSlug || String(m.id)) !== key);
+                this._trakt = (this._trakt || []).filter((m2) => (m2._traktSlug || String(m2.id)) !== key);
                 this._traktAnimateNext = true;
                 this._reRenderRight(true);
                 (async () => {
@@ -10852,6 +10980,7 @@ var _WireMethods = class {
         const reqId = parseInt(btn.dataset.reqid, 10);
         btn.disabled = true;
         btn.textContent = "\u2026";
+        this._markActivated();
         this._approvePendingRequest(reqId);
       });
     });
@@ -10861,6 +10990,7 @@ var _WireMethods = class {
         const reqId = parseInt(btn.dataset.reqid, 10);
         btn.disabled = true;
         btn.textContent = "\u2026";
+        this._markActivated();
         this._declinePendingRequest(reqId);
       });
     });
@@ -11512,8 +11642,8 @@ var _WireTautulliMethods = class {
     body.querySelector("#tl-ip-report-toggle")?.addEventListener("click", async () => {
       if (!this._tautulliModal) return;
       this._tautulliModal.ipReportOpen = !this._tautulliModal.ipReportOpen;
-      const m = this._tautulliModal;
-      const r2 = await this._tlApiFetch("get_users_table", `length=50&start=${(m.usersPage || 0) * 50}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`).catch(() => null);
+      const m2 = this._tautulliModal;
+      const r2 = await this._tlApiFetch("get_users_table", `length=50&start=${(m2.usersPage || 0) * 50}&order_column=${m2.usersSortCol || "plays"}&order_dir=${m2.usersSortDir || "desc"}`).catch(() => null);
       body.innerHTML = this._tlBodyUsers(r2?.response?.data?.data);
       this._wireTautulliModalBody(body);
     });
@@ -11621,17 +11751,17 @@ var _WireTautulliMethods = class {
     body.querySelectorAll("[data-tl-hpage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const m = this._tautulliModal;
-        const totalPages = Math.max(1, Math.ceil(m.histTotal / (m.histPerPage || 25)));
+        const m2 = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m2.histTotal / (m2.histPerPage || 25)));
         const val = btn.dataset.tlHpage;
-        let p = m.histPage || 0;
+        let p = m2.histPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.histPage) return;
-        m.histPage = p;
+        if (p === m2.histPage) return;
+        m2.histPage = p;
         await this._tlRefetchHistory(body);
       });
     });
@@ -11789,8 +11919,8 @@ var _WireTautulliMethods = class {
         if (e.target.closest("button")) return;
         if (!this._tautulliModal) return;
         const rid = row.dataset.tlUdHistRow;
-        const m = this._tautulliModal;
-        m.userDetailHistExpandedRow = m.userDetailHistExpandedRow === rid ? null : rid;
+        const m2 = this._tautulliModal;
+        m2.userDetailHistExpandedRow = m2.userDetailHistExpandedRow === rid ? null : rid;
         body.innerHTML = this._tlBodyUserDetail();
         this._wireTautulliModalBody(body);
       });
@@ -11808,17 +11938,17 @@ var _WireTautulliMethods = class {
     body.querySelectorAll("[data-tl-ud-hpage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const m = this._tautulliModal;
-        const totalPages = Math.max(1, Math.ceil(m.userDetailHistTotal / this._tlCalcPerPage({ hasFilter: true })));
+        const m2 = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m2.userDetailHistTotal / this._tlCalcPerPage({ hasFilter: true })));
         const val = btn.dataset.tlUdHpage;
-        let p = m.userDetailHistPage || 0;
+        let p = m2.userDetailHistPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.userDetailHistPage) return;
-        m.userDetailHistPage = p;
+        if (p === m2.userDetailHistPage) return;
+        m2.userDetailHistPage = p;
         await this._tlRefetchUdHistory(body);
       });
     });
@@ -11826,14 +11956,14 @@ var _WireTautulliMethods = class {
       th.addEventListener("click", () => {
         if (!this._tautulliModal) return;
         const col = th.dataset.tlUdIpSort;
-        const m = this._tautulliModal;
-        if (m.userDetailIpsSortCol === col) {
-          m.userDetailIpsSortDir = m.userDetailIpsSortDir === "asc" ? "desc" : "asc";
+        const m2 = this._tautulliModal;
+        if (m2.userDetailIpsSortCol === col) {
+          m2.userDetailIpsSortDir = m2.userDetailIpsSortDir === "asc" ? "desc" : "asc";
         } else {
-          m.userDetailIpsSortCol = col;
-          m.userDetailIpsSortDir = "desc";
+          m2.userDetailIpsSortCol = col;
+          m2.userDetailIpsSortDir = "desc";
         }
-        m.userDetailIpsPage = 0;
+        m2.userDetailIpsPage = 0;
         body.innerHTML = this._tlBodyUserDetail();
         this._wireTautulliModalBody(body);
       });
@@ -11841,17 +11971,17 @@ var _WireTautulliMethods = class {
     body.querySelectorAll("[data-tl-ud-ippage]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (!this._tautulliModal) return;
-        const m = this._tautulliModal;
-        const totalPages = Math.max(1, Math.ceil((m.userDetailIpsData || []).length / this._tlCalcPerPage()));
+        const m2 = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil((m2.userDetailIpsData || []).length / this._tlCalcPerPage()));
         const val = btn.dataset.tlUdIppage;
-        let p = m.userDetailIpsPage || 0;
+        let p = m2.userDetailIpsPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.userDetailIpsPage) return;
-        m.userDetailIpsPage = p;
+        if (p === m2.userDetailIpsPage) return;
+        m2.userDetailIpsPage = p;
         body.innerHTML = this._tlBodyUserDetail();
         this._wireTautulliModalBody(body);
       });
@@ -11873,16 +12003,16 @@ var _WireTautulliMethods = class {
     body.querySelectorAll("[data-tl-ld-tab]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const m = this._tautulliModal;
+        const m2 = this._tautulliModal;
         const tab = btn.dataset.tlLdTab;
-        m.libDetailTab = tab;
-        if (tab === "history" && !m.libDetailHistData?.length) {
+        m2.libDetailTab = tab;
+        if (tab === "history" && !m2.libDetailHistData?.length) {
           body.innerHTML = this._tlBodyLibDetail();
           this._wireTautulliModalBody(body);
           await this._tlRefetchLdHistory(body);
           return;
         }
-        if (tab === "media" && !m.libDetailMediaData?.length) {
+        if (tab === "media" && !m2.libDetailMediaData?.length) {
           body.innerHTML = this._tlBodyLibDetail();
           this._wireTautulliModalBody(body);
           await this._tlRefetchLdMedia(body);
@@ -12000,19 +12130,19 @@ var _WireTautulliMethods = class {
     });
     body.querySelectorAll("[data-tl-ld-hpage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const m = this._tautulliModal;
-        if (!m) return;
+        const m2 = this._tautulliModal;
+        if (!m2) return;
         const val = btn.dataset.tlLdHpage;
         const perPage = this._tlCalcPerPage({ hasFilter: true });
-        const totalPages = Math.max(1, Math.ceil(m.libDetailHistTotal / perPage));
-        let p = m.libDetailHistPage || 0;
+        const totalPages = Math.max(1, Math.ceil(m2.libDetailHistTotal / perPage));
+        let p = m2.libDetailHistPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.libDetailHistPage) return;
-        m.libDetailHistPage = p;
+        if (p === m2.libDetailHistPage) return;
+        m2.libDetailHistPage = p;
         await this._tlRefetchLdHistory(body);
       });
     });
@@ -12037,18 +12167,18 @@ var _WireTautulliMethods = class {
     });
     body.querySelectorAll("[data-tl-ld-mpage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const m = this._tautulliModal;
-        if (!m) return;
+        const m2 = this._tautulliModal;
+        if (!m2) return;
         const val = btn.dataset.tlLdMpage;
-        const totalPages = Math.max(1, Math.ceil(m.libDetailMediaTotal / 25));
-        let p = m.libDetailMediaPage || 0;
+        const totalPages = Math.max(1, Math.ceil(m2.libDetailMediaTotal / 25));
+        let p = m2.libDetailMediaPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.libDetailMediaPage) return;
-        m.libDetailMediaPage = p;
+        if (p === m2.libDetailMediaPage) return;
+        m2.libDetailMediaPage = p;
         await this._tlRefetchLdMedia(body);
       });
     });
@@ -12077,10 +12207,10 @@ var _WireTautulliMethods = class {
     body.querySelectorAll("[data-tl-md-tab]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const m = this._tautulliModal;
+        const m2 = this._tautulliModal;
         const tab = btn.dataset.tlMdTab;
-        m.mediaDetailTab = tab;
-        if (tab === "history" && !m.mediaDetailHistData?.length) {
+        m2.mediaDetailTab = tab;
+        if (tab === "history" && !m2.mediaDetailHistData?.length) {
           body.innerHTML = this._tlBodyMediaDetail();
           this._wireTautulliModalBody(body);
           await this._tlRefetchMdHistory(body);
@@ -12093,19 +12223,19 @@ var _WireTautulliMethods = class {
     });
     body.querySelectorAll("[data-tl-md-hpage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const m = this._tautulliModal;
-        if (!m) return;
+        const m2 = this._tautulliModal;
+        if (!m2) return;
         const val = btn.dataset.tlMdHpage;
         const perPage = this._tlCalcPerPage({ hasFilter: false });
-        const totalPages = Math.max(1, Math.ceil(m.mediaDetailHistTotal / perPage));
-        let p = m.mediaDetailHistPage || 0;
+        const totalPages = Math.max(1, Math.ceil(m2.mediaDetailHistTotal / perPage));
+        let p = m2.mediaDetailHistPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.mediaDetailHistPage) return;
-        m.mediaDetailHistPage = p;
+        if (p === m2.mediaDetailHistPage) return;
+        m2.mediaDetailHistPage = p;
         await this._tlRefetchMdHistory(body);
       });
     });
@@ -12146,17 +12276,17 @@ var _WireTautulliMethods = class {
     body.querySelectorAll("[data-tl-lpage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const m = this._tautulliModal;
-        const totalPages = Math.max(1, Math.ceil(m.libsTotal / m.libsPerPage));
+        const m2 = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m2.libsTotal / m2.libsPerPage));
         const val = btn.dataset.tlLpage;
-        let p = m.libsPage;
+        let p = m2.libsPage;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.libsPage) return;
-        m.libsPage = p;
+        if (p === m2.libsPage) return;
+        m2.libsPage = p;
         await this._tlRefetchLibraries(body);
       });
     });
@@ -12266,17 +12396,17 @@ var _WireTautulliMethods = class {
     body.querySelectorAll("[data-tl-upage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._tautulliModal) return;
-        const m = this._tautulliModal;
-        const totalPages = Math.max(1, Math.ceil(m.usersTotal / m.usersPerPage));
+        const m2 = this._tautulliModal;
+        const totalPages = Math.max(1, Math.ceil(m2.usersTotal / m2.usersPerPage));
         const val = btn.dataset.tlUpage;
-        let p = m.usersPage;
+        let p = m2.usersPage;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.usersPage) return;
-        m.usersPage = p;
+        if (p === m2.usersPage) return;
+        m2.usersPage = p;
         await this._tlRefetchUsers(body);
       });
     });
@@ -12376,27 +12506,27 @@ var _WireTautulliMethods = class {
   // ── User detail helpers ───────────────────────────────────────────────────
   async _tlOpenUserDetail(userId, name, thumb, body) {
     if (!this._tautulliModal) return;
-    const m = this._tautulliModal;
-    m.userDetailId = userId;
-    m.userDetailName = name;
-    m.userDetailThumb = thumb;
-    m.userDetailTab = "profile";
-    m.userDetailProfile = null;
-    m.userDetailHistData = [];
-    m.userDetailHistTotal = 0;
-    m.userDetailHistPage = 0;
-    m.userDetailHistMedia = null;
-    m.userDetailHistPlayback = null;
-    m.userDetailHistSearch = "";
-    m.userDetailHistExpandedRow = null;
-    m.userDetailIpsData = [];
-    m.userDetailIpsPage = 0;
+    const m2 = this._tautulliModal;
+    m2.userDetailId = userId;
+    m2.userDetailName = name;
+    m2.userDetailThumb = thumb;
+    m2.userDetailTab = "profile";
+    m2.userDetailProfile = null;
+    m2.userDetailHistData = [];
+    m2.userDetailHistTotal = 0;
+    m2.userDetailHistPage = 0;
+    m2.userDetailHistMedia = null;
+    m2.userDetailHistPlayback = null;
+    m2.userDetailHistSearch = "";
+    m2.userDetailHistExpandedRow = null;
+    m2.userDetailIpsData = [];
+    m2.userDetailIpsPage = 0;
     body.style.overflowY = "hidden";
     body.innerHTML = this._tlBodyUserDetail();
     this._wireTautulliModalBody(body);
     const profile = await this._tlFetchUserProfile(userId);
     if (!this._tautulliModal || this._tautulliModal.userDetailId !== userId) return;
-    m.userDetailProfile = profile;
+    m2.userDetailProfile = profile;
     body.innerHTML = this._tlBodyUserDetail();
     this._wireTautulliModalBody(body);
     this._tlLoadUdThumbs(body);
@@ -12425,129 +12555,129 @@ var _WireTautulliMethods = class {
     }
   }
   async _tlRefetchUdHistory(body) {
-    const m = this._tautulliModal;
-    if (!m || !m.userDetailId) return;
-    m.userDetailHistLoading = true;
+    const m2 = this._tautulliModal;
+    if (!m2 || !m2.userDetailId) return;
+    m2.userDetailHistLoading = true;
     body.innerHTML = this._tlBodyUserDetail();
     this._wireTautulliModalBody(body);
     const data = await this._tlFetchHistory(
-      m.userDetailHistPage,
-      m.userDetailId,
-      m.userDetailHistMedia,
-      m.userDetailHistPlayback,
+      m2.userDetailHistPage,
+      m2.userDetailId,
+      m2.userDetailHistMedia,
+      m2.userDetailHistPlayback,
       this._tlCalcPerPage({ hasFilter: true }),
-      m.userDetailHistSearch
+      m2.userDetailHistSearch
     );
     if (!this._tautulliModal) return;
-    m.userDetailHistLoading = false;
-    m.userDetailHistData = data.data || [];
-    m.userDetailHistTotal = data.recordsFiltered || 0;
+    m2.userDetailHistLoading = false;
+    m2.userDetailHistData = data.data || [];
+    m2.userDetailHistTotal = data.recordsFiltered || 0;
     body.innerHTML = this._tlBodyUserDetail();
     this._wireTautulliModalBody(body);
   }
   // ── Library detail helpers ───────────────────────────────────────────────
   async _tlOpenLibDetail(sectionId, name, body) {
     if (!this._tautulliModal) return;
-    const m = this._tautulliModal;
-    m.libDetailId = sectionId;
-    m.libDetailName = name;
-    m.libDetailTab = "profile";
-    m.libDetailProfile = null;
-    m.libDetailHistData = [];
-    m.libDetailHistTotal = 0;
-    m.libDetailHistPage = 0;
-    m.libDetailHistMedia = null;
-    m.libDetailHistPlayback = null;
-    m.libDetailHistSearch = "";
-    m.libDetailHistExpandedRow = null;
-    m.libDetailMediaData = [];
-    m.libDetailMediaTotal = 0;
-    m.libDetailMediaPage = 0;
-    m.libDetailMediaSearch = "";
-    m.libDetailMediaSort = "added_at";
-    m.libDetailMediaDir = "desc";
+    const m2 = this._tautulliModal;
+    m2.libDetailId = sectionId;
+    m2.libDetailName = name;
+    m2.libDetailTab = "profile";
+    m2.libDetailProfile = null;
+    m2.libDetailHistData = [];
+    m2.libDetailHistTotal = 0;
+    m2.libDetailHistPage = 0;
+    m2.libDetailHistMedia = null;
+    m2.libDetailHistPlayback = null;
+    m2.libDetailHistSearch = "";
+    m2.libDetailHistExpandedRow = null;
+    m2.libDetailMediaData = [];
+    m2.libDetailMediaTotal = 0;
+    m2.libDetailMediaPage = 0;
+    m2.libDetailMediaSearch = "";
+    m2.libDetailMediaSort = "added_at";
+    m2.libDetailMediaDir = "desc";
     body.style.overflowY = "hidden";
     body.innerHTML = this._tlBodyLibDetail();
     this._wireTautulliModalBody(body);
     const profile = await this._tlFetchLibProfile(sectionId);
     if (!this._tautulliModal || this._tautulliModal.libDetailId !== sectionId) return;
-    m.libDetailProfile = profile;
+    m2.libDetailProfile = profile;
     body.innerHTML = this._tlBodyLibDetail();
     this._wireTautulliModalBody(body);
     this._tlLoadUdThumbs(body);
   }
   async _tlRefetchLdHistory(body) {
-    const m = this._tautulliModal;
-    if (!m || !m.libDetailId) return;
-    m.libDetailHistLoading = true;
+    const m2 = this._tautulliModal;
+    if (!m2 || !m2.libDetailId) return;
+    m2.libDetailHistLoading = true;
     body.innerHTML = this._tlBodyLibDetail();
     this._wireTautulliModalBody(body);
     const perPage = this._tlCalcPerPage({ hasFilter: true });
     const data = await this._tlFetchLibHistory(
-      m.libDetailId,
-      m.libDetailHistPage,
-      m.libDetailHistMedia,
-      m.libDetailHistPlayback,
-      m.libDetailHistSearch,
+      m2.libDetailId,
+      m2.libDetailHistPage,
+      m2.libDetailHistMedia,
+      m2.libDetailHistPlayback,
+      m2.libDetailHistSearch,
       perPage
     );
     if (!this._tautulliModal) return;
-    m.libDetailHistLoading = false;
-    m.libDetailHistData = data.data || [];
-    m.libDetailHistTotal = data.recordsFiltered || 0;
+    m2.libDetailHistLoading = false;
+    m2.libDetailHistData = data.data || [];
+    m2.libDetailHistTotal = data.recordsFiltered || 0;
     body.innerHTML = this._tlBodyLibDetail();
     this._wireTautulliModalBody(body);
   }
   async _tlRefetchLdMedia(body) {
-    const m = this._tautulliModal;
-    if (!m || !m.libDetailId) return;
+    const m2 = this._tautulliModal;
+    if (!m2 || !m2.libDetailId) return;
     body.innerHTML = this._tlBodyLibDetail();
     this._wireTautulliModalBody(body);
     const data = await this._tlFetchLibMedia(
-      m.libDetailId,
-      m.libDetailMediaPage,
-      m.libDetailMediaSort,
-      m.libDetailMediaDir,
-      m.libDetailMediaSearch,
+      m2.libDetailId,
+      m2.libDetailMediaPage,
+      m2.libDetailMediaSort,
+      m2.libDetailMediaDir,
+      m2.libDetailMediaSearch,
       25
     );
     if (!this._tautulliModal) return;
-    m.libDetailMediaData = data.data || [];
-    m.libDetailMediaTotal = data.recordsTotal || 0;
+    m2.libDetailMediaData = data.data || [];
+    m2.libDetailMediaTotal = data.recordsTotal || 0;
     body.innerHTML = this._tlBodyLibDetail();
     this._wireTautulliModalBody(body);
   }
   // ── Media item detail helpers ────────────────────────────────────────────
   async _tlOpenMediaDetail(ratingKey, title, thumb, prev, body) {
     if (!this._tautulliModal) return;
-    const m = this._tautulliModal;
-    m.mediaDetailKey = ratingKey;
-    m.mediaDetailTitle = title;
-    m.mediaDetailThumb = thumb;
-    m.mediaDetailTab = "info";
-    m.mediaDetailData = null;
-    m.mediaDetailHistData = [];
-    m.mediaDetailHistTotal = 0;
-    m.mediaDetailHistPage = 0;
-    m.mediaDetailPrev = prev || "lib";
+    const m2 = this._tautulliModal;
+    m2.mediaDetailKey = ratingKey;
+    m2.mediaDetailTitle = title;
+    m2.mediaDetailThumb = thumb;
+    m2.mediaDetailTab = "info";
+    m2.mediaDetailData = null;
+    m2.mediaDetailHistData = [];
+    m2.mediaDetailHistTotal = 0;
+    m2.mediaDetailHistPage = 0;
+    m2.mediaDetailPrev = prev || "lib";
     body.style.overflowY = "hidden";
     body.innerHTML = this._tlBodyMediaDetail();
     this._wireTautulliModalBody(body);
     const data = await this._tlFetchMediaDetail(ratingKey);
     if (!this._tautulliModal || this._tautulliModal.mediaDetailKey !== ratingKey) return;
-    m.mediaDetailData = data;
+    m2.mediaDetailData = data;
     body.innerHTML = this._tlBodyMediaDetail();
     this._wireTautulliModalBody(body);
     this._tlLoadUdThumbs(body);
   }
   async _tlRefetchMdHistory(body) {
-    const m = this._tautulliModal;
-    if (!m || !m.mediaDetailKey) return;
+    const m2 = this._tautulliModal;
+    if (!m2 || !m2.mediaDetailKey) return;
     const perPage = this._tlCalcPerPage({ hasFilter: false });
-    const data = await this._tlFetchMediaHistory(m.mediaDetailKey, m.mediaDetailHistPage, perPage);
+    const data = await this._tlFetchMediaHistory(m2.mediaDetailKey, m2.mediaDetailHistPage, perPage);
     if (!this._tautulliModal) return;
-    m.mediaDetailHistData = data.data || [];
-    m.mediaDetailHistTotal = data.recordsFiltered || 0;
+    m2.mediaDetailHistData = data.data || [];
+    m2.mediaDetailHistTotal = data.recordsFiltered || 0;
     body.innerHTML = this._tlBodyMediaDetail();
     this._wireTautulliModalBody(body);
   }
@@ -12558,39 +12688,39 @@ var _WireTautulliMethods = class {
     if (!body) return;
     body.querySelectorAll("[data-tl-graph-sub]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const m = this._tautulliModal;
-        if (!m) return;
+        const m2 = this._tautulliModal;
+        if (!m2) return;
         const newSub = btn.dataset.tlGraphSub;
-        if (newSub === m.graphsSub) return;
-        m.graphsSub = newSub;
-        m.graphsData = null;
+        if (newSub === m2.graphsSub) return;
+        m2.graphsSub = newSub;
+        m2.graphsData = null;
         if (newSub === "totals") {
-          if (m.graphsRange > 60) m.graphsRange = 12;
+          if (m2.graphsRange > 60) m2.graphsRange = 12;
         } else {
-          if (m.graphsRange <= 60 && m.graphsSub === "totals") m.graphsRange = 30;
+          if (m2.graphsRange <= 60 && m2.graphsSub === "totals") m2.graphsRange = 30;
         }
         await this._tlRefetchGraphs(body);
       });
     });
     body.querySelectorAll("[data-tl-g-metric]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const m = this._tautulliModal;
-        if (!m) return;
+        const m2 = this._tautulliModal;
+        if (!m2) return;
         const v = btn.dataset.tlGMetric;
-        if (v === m.graphsMetric) return;
-        m.graphsMetric = v;
-        m.graphsData = null;
+        if (v === m2.graphsMetric) return;
+        m2.graphsMetric = v;
+        m2.graphsData = null;
         await this._tlRefetchGraphs(body);
       });
     });
     {
       let _gRangeTimer = null;
       const doRangeRefetch = async (inputEl) => {
-        const m = this._tautulliModal;
-        if (!m) return;
+        const m2 = this._tautulliModal;
+        if (!m2) return;
         const v = Math.max(1, parseInt(inputEl.value) || 1);
-        m.graphsRange = v;
-        m.graphsData = null;
+        m2.graphsRange = v;
+        m2.graphsData = null;
         await this._tlRefetchGraphs(body);
       };
       const rangeEl = body.querySelector("#tl-g-range");
@@ -12607,51 +12737,51 @@ var _WireTautulliMethods = class {
     }
     body.querySelector("#tl-g-dd-btn")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      const m = this._tautulliModal;
-      if (!m) return;
-      m.graphsDdOpen = !m.graphsDdOpen;
+      const m2 = this._tautulliModal;
+      if (!m2) return;
+      m2.graphsDdOpen = !m2.graphsDdOpen;
       const panel = body.querySelector("#tl-g-dd-panel");
-      if (panel) panel.style.display = m.graphsDdOpen ? "block" : "none";
+      if (panel) panel.style.display = m2.graphsDdOpen ? "block" : "none";
     });
     body.addEventListener("click", (e) => {
-      const m = this._tautulliModal;
-      if (!m || !m.graphsDdOpen) return;
+      const m2 = this._tautulliModal;
+      if (!m2 || !m2.graphsDdOpen) return;
       if (!e.target.closest("#tl-g-dd-wrap")) {
-        m.graphsDdOpen = false;
+        m2.graphsDdOpen = false;
         const panel = body.querySelector("#tl-g-dd-panel");
         if (panel) panel.style.display = "none";
       }
     });
     body.querySelector("#tl-g-dd-all")?.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const m = this._tautulliModal;
-      if (!m) return;
-      m.graphsSelectedUsers = null;
-      m.graphsData = null;
+      const m2 = this._tautulliModal;
+      if (!m2) return;
+      m2.graphsSelectedUsers = null;
+      m2.graphsData = null;
       await this._tlRefetchGraphs(body);
     });
     body.querySelector("#tl-g-dd-none")?.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const m = this._tautulliModal;
-      if (!m) return;
-      m.graphsSelectedUsers = /* @__PURE__ */ new Set();
-      m.graphsData = null;
+      const m2 = this._tautulliModal;
+      if (!m2) return;
+      m2.graphsSelectedUsers = /* @__PURE__ */ new Set();
+      m2.graphsData = null;
       await this._tlRefetchGraphs(body);
     });
     body.querySelectorAll("[data-tl-g-uid]").forEach((item) => {
       item.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const m = this._tautulliModal;
-        if (!m) return;
+        const m2 = this._tautulliModal;
+        if (!m2) return;
         const uid = item.dataset.tlGUid;
-        const sel = m.graphsSelectedUsers;
+        const sel = m2.graphsSelectedUsers;
         if (sel && sel.size === 1 && sel.has(uid)) {
-          m.graphsSelectedUsers = null;
+          m2.graphsSelectedUsers = null;
         } else {
-          m.graphsSelectedUsers = /* @__PURE__ */ new Set([uid]);
+          m2.graphsSelectedUsers = /* @__PURE__ */ new Set([uid]);
         }
-        m.graphsData = null;
-        m.graphsDdOpen = true;
+        m2.graphsData = null;
+        m2.graphsDdOpen = true;
         await this._tlRefetchGraphs(body);
         const panel = body.querySelector("#tl-g-dd-panel");
         if (panel) panel.style.display = "block";
@@ -12863,18 +12993,18 @@ var _WireJellystatMethods = class {
     body.querySelectorAll("[data-js-lpage]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (!this._jellystatModal) return;
-        const m = this._jellystatModal;
+        const m2 = this._jellystatModal;
         const perPage = this._tlCalcPerPage();
-        const totalPages = Math.max(1, Math.ceil((m.libsData?.length || 0) / perPage));
+        const totalPages = Math.max(1, Math.ceil((m2.libsData?.length || 0) / perPage));
         const val = btn.dataset.jsLpage;
-        let p = m.libsPage || 0;
+        let p = m2.libsPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.libsPage) return;
-        m.libsPage = p;
+        if (p === m2.libsPage) return;
+        m2.libsPage = p;
         body.innerHTML = this._jsBodyLibraries();
         this._wireJellystatModalBody(body);
       });
@@ -12950,18 +13080,18 @@ var _WireJellystatMethods = class {
     body.querySelectorAll("[data-js-upage]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (!this._jellystatModal) return;
-        const m = this._jellystatModal;
+        const m2 = this._jellystatModal;
         const perPage = this._tlCalcPerPage();
-        const totalPages = Math.max(1, Math.ceil((m.usersData?.length || 0) / perPage));
+        const totalPages = Math.max(1, Math.ceil((m2.usersData?.length || 0) / perPage));
         const val = btn.dataset.jsUpage;
-        let p = m.usersPage || 0;
+        let p = m2.usersPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.usersPage) return;
-        m.usersPage = p;
+        if (p === m2.usersPage) return;
+        m2.usersPage = p;
         body.innerHTML = this._jsBodyUsers();
         this._wireJellystatModalBody(body);
       });
@@ -13042,18 +13172,18 @@ var _WireJellystatMethods = class {
     body.querySelectorAll("[data-js-hpage]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!this._jellystatModal) return;
-        const m = this._jellystatModal;
+        const m2 = this._jellystatModal;
         const perPage = this._tlCalcPerPage({ hasFilter: true });
-        const totalPages = Math.max(1, Math.ceil(m.histTotal / perPage));
+        const totalPages = Math.max(1, Math.ceil(m2.histTotal / perPage));
         const val = btn.dataset.jsHpage;
-        let p = m.histPage || 0;
+        let p = m2.histPage || 0;
         if (val === "first") p = 0;
         else if (val === "prev") p = Math.max(0, p - 1);
         else if (val === "next") p = Math.min(totalPages - 1, p + 1);
         else if (val === "last") p = totalPages - 1;
         else p = parseInt(val);
-        if (p === m.histPage) return;
-        m.histPage = p;
+        if (p === m2.histPage) return;
+        m2.histPage = p;
         await this._jsRefetchHistory(body);
       });
     });
@@ -13104,22 +13234,22 @@ var _WireJellystatMethods = class {
     if (!body) return;
     body.querySelectorAll("[data-js-g-metric]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const m = this._jellystatModal;
-        if (!m) return;
+        const m2 = this._jellystatModal;
+        if (!m2) return;
         const v = btn.dataset.jsGMetric;
-        if (v === m.graphsMetric) return;
-        m.graphsMetric = v;
-        m.graphsData = null;
+        if (v === m2.graphsMetric) return;
+        m2.graphsMetric = v;
+        m2.graphsData = null;
         await this._jsRefetchGraphs(body);
       });
     });
     {
       let _jsRangeTimer = null;
       const doRangeRefetch = async (inputEl) => {
-        const m = this._jellystatModal;
-        if (!m) return;
-        m.graphsRange = Math.max(1, parseInt(inputEl.value) || 1);
-        m.graphsData = null;
+        const m2 = this._jellystatModal;
+        if (!m2) return;
+        m2.graphsRange = Math.max(1, parseInt(inputEl.value) || 1);
+        m2.graphsData = null;
         await this._jsRefetchGraphs(body);
       };
       const rangeEl = body.querySelector("#js-g-range");
@@ -13286,68 +13416,68 @@ var _WireTraceaRrMethods = class {
       }
       const srvBtn = e.target.closest("[data-tra-server]");
       if (srvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const sid = srvBtn.dataset.traServer;
-        m.selectedServerId = sid;
+        m2.selectedServerId = sid;
         this._traSaveSrv(sid);
-        m.stalePage = 0;
-        m.staleDeduped = null;
+        m2.stalePage = 0;
+        m2.staleDeduped = null;
         glass.querySelectorAll("[data-tra-server]").forEach((b) => b.classList.toggle("active", b === srvBtn));
         this._traLoadTab("storage", el);
         return;
       }
       const qualSrvBtn = e.target.closest("[data-tra-quality-srv]");
       if (qualSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
-        m.qualityServerId = qualSrvBtn.dataset.traQualitySrv || null;
-        this._traSaveSrv(m.qualityServerId);
-        m.qualityData = null;
-        m._qualityKey = null;
-        m.qualityResolution = null;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.qualityServerId = qualSrvBtn.dataset.traQualitySrv || null;
+        this._traSaveSrv(m2.qualityServerId);
+        m2.qualityData = null;
+        m2._qualityKey = null;
+        m2.qualityResolution = null;
         glass.querySelectorAll("[data-tra-quality-srv]").forEach((b) => b.classList.toggle("active", b === qualSrvBtn));
         this._traLoadTab("quality", el);
         return;
       }
       const watchSrvBtn = e.target.closest("[data-tra-watch-srv]");
       if (watchSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const sid = watchSrvBtn.dataset.traWatchSrv || null;
-        m.watchServerId = sid;
+        m2.watchServerId = sid;
         this._traSaveSrv(sid);
-        m.watchPatterns = null;
-        m.watchStatus = null;
-        m.watchCompletion = null;
-        m.watchTopMovies = null;
-        m.watchTopShows = null;
-        m.watchSrvKey = null;
-        m.watchSrvPeriodKey = null;
+        m2.watchPatterns = null;
+        m2.watchStatus = null;
+        m2.watchCompletion = null;
+        m2.watchTopMovies = null;
+        m2.watchTopShows = null;
+        m2.watchSrvKey = null;
+        m2.watchSrvPeriodKey = null;
         glass.querySelectorAll("[data-tra-watch-srv]").forEach((b) => b.classList.toggle("active", b === watchSrvBtn));
         this._traLoadTab("watch", el);
         return;
       }
       const devMobTab = e.target.closest("[data-tra-dev-mob-tab]");
       if (devMobTab) {
-        const m = this._tracearrModal;
-        if (!m) return;
-        m.devMobView = devMobTab.dataset.traDevMobTab;
-        m.devHealthPage = 0;
-        m.devMatrixPage = 0;
-        m.devHotspotsPage = 0;
-        m.devUsersPage = 0;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.devMobView = devMobTab.dataset.traDevMobTab;
+        m2.devHealthPage = 0;
+        m2.devMatrixPage = 0;
+        m2.devHotspotsPage = 0;
+        m2.devUsersPage = 0;
         const _b0 = el.querySelector("#tra-body");
         if (_b0) _b0.innerHTML = this._traBodyDevices();
         return;
       }
       const devRightTab = e.target.closest("[data-tra-dev-right-tab]");
       if (devRightTab) {
-        const m = this._tracearrModal;
-        if (!m) return;
-        m.devicesRightView = devRightTab.dataset.traDevRightTab;
-        m.devHotspotsPage = 0;
-        m.devUsersPage = 0;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.devicesRightView = devRightTab.dataset.traDevRightTab;
+        m2.devHotspotsPage = 0;
+        m2.devUsersPage = 0;
         const _b1 = el.querySelector("#tra-body");
         if (_b1) {
           _b1.innerHTML = this._traBodyDevices();
@@ -13357,11 +13487,11 @@ var _WireTraceaRrMethods = class {
       }
       const devLeftTab = e.target.closest("[data-tra-dev-left-tab]");
       if (devLeftTab) {
-        const m = this._tracearrModal;
-        if (!m) return;
-        m.devicesLeftView = devLeftTab.dataset.traDevLeftTab;
-        m.devHealthPage = 0;
-        m.devMatrixPage = 0;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.devicesLeftView = devLeftTab.dataset.traDevLeftTab;
+        m2.devHealthPage = 0;
+        m2.devMatrixPage = 0;
         const _b2 = el.querySelector("#tra-body");
         if (_b2) {
           _b2.innerHTML = this._traBodyDevices();
@@ -13371,17 +13501,17 @@ var _WireTraceaRrMethods = class {
       }
       const devPage = e.target.closest("[data-tra-dev-page]");
       if (devPage) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const [view, dir] = devPage.dataset.traDevPage.split("-");
         const delta = dir === "next" ? 1 : -1;
         const PAGE = 6;
-        const lens = { health: (m.devicesHealth?.data || []).length, matrix: (m.devicesMatrix?.devices || []).length, hotspots: (m.devicesHotspots?.data || []).length, users: (m.devicesUsers?.data || []).length };
+        const lens = { health: (m2.devicesHealth?.data || []).length, matrix: (m2.devicesMatrix?.devices || []).length, hotspots: (m2.devicesHotspots?.data || []).length, users: (m2.devicesUsers?.data || []).length };
         const keys = { health: "devHealthPage", matrix: "devMatrixPage", hotspots: "devHotspotsPage", users: "devUsersPage" };
         const key = keys[view];
         if (!key) return;
         const max = Math.max(0, Math.ceil(lens[view] / PAGE) - 1);
-        m[key] = Math.max(0, Math.min(max, (m[key] || 0) + delta));
+        m2[key] = Math.max(0, Math.min(max, (m2[key] || 0) + delta));
         const _b3 = el.querySelector("#tra-body");
         if (_b3) {
           _b3.innerHTML = this._traBodyDevices();
@@ -13391,34 +13521,34 @@ var _WireTraceaRrMethods = class {
       }
       const devSrvBtn = e.target.closest("[data-tra-dev-srv]");
       if (devSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
-        m.devicesServerId = devSrvBtn.dataset.traDevSrv || null;
-        m.devicesData = null;
-        m.devicesHealth = null;
-        m.devicesHotspots = null;
-        m.devicesMatrix = null;
-        m.devicesUsers = null;
-        m.devHealthPage = 0;
-        m.devMatrixPage = 0;
-        m.devHotspotsPage = 0;
-        m.devUsersPage = 0;
-        this._traSaveSrv(m.devicesServerId);
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.devicesServerId = devSrvBtn.dataset.traDevSrv || null;
+        m2.devicesData = null;
+        m2.devicesHealth = null;
+        m2.devicesHotspots = null;
+        m2.devicesMatrix = null;
+        m2.devicesUsers = null;
+        m2.devHealthPage = 0;
+        m2.devMatrixPage = 0;
+        m2.devHotspotsPage = 0;
+        m2.devUsersPage = 0;
+        this._traSaveSrv(m2.devicesServerId);
         glass.querySelectorAll("[data-tra-dev-srv]").forEach((b) => b.classList.toggle("active", b === devSrvBtn));
         this._traLoadTab("devices", el);
         return;
       }
       const bwSrvBtn = e.target.closest("[data-tra-bw-srv]");
       if (bwSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
-        m.bwServerId = bwSrvBtn.dataset.traBwSrv || null;
-        m.bwSummary = null;
-        m.bwDaily = null;
-        m.bwUsers = null;
-        m.bwUsersPage = 0;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.bwServerId = bwSrvBtn.dataset.traBwSrv || null;
+        m2.bwSummary = null;
+        m2.bwDaily = null;
+        m2.bwUsers = null;
+        m2.bwUsersPage = 0;
         try {
-          localStorage.setItem("arr-tra-srv", m.bwServerId);
+          localStorage.setItem("arr-tra-srv", m2.bwServerId);
         } catch (_) {
         }
         glass.querySelectorAll("[data-tra-bw-srv]").forEach((b) => b.classList.toggle("active", b === bwSrvBtn));
@@ -13427,23 +13557,23 @@ var _WireTraceaRrMethods = class {
       }
       const bwPeriodBtn = e.target.closest("[data-tra-bw-period]");
       if (bwPeriodBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
-        m.bwPeriod = bwPeriodBtn.dataset.traBwPeriod || "month";
-        m.bwSummary = null;
-        m.bwDaily = null;
-        m.bwUsers = null;
-        m.bwUsersPage = 0;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
+        m2.bwPeriod = bwPeriodBtn.dataset.traBwPeriod || "month";
+        m2.bwSummary = null;
+        m2.bwDaily = null;
+        m2.bwUsers = null;
+        m2.bwUsersPage = 0;
         this._traLoadTab("bandwidth", el);
         return;
       }
       const violsSrvBtn = e.target.closest("[data-tra-viols-srv]");
       if (violsSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const sid = violsSrvBtn.dataset.traViolsSrv || null;
-        m.violsServerId = sid;
-        m.violsPage = 0;
+        m2.violsServerId = sid;
+        m2.violsPage = 0;
         this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-viols-srv]").forEach((b) => b.classList.toggle("active", b === violsSrvBtn));
         this._traLoadTab("violations", el);
@@ -13451,11 +13581,11 @@ var _WireTraceaRrMethods = class {
       }
       const histSrvBtn = e.target.closest("[data-tra-hist-srv]");
       if (histSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const sid = histSrvBtn.dataset.traHistSrv || null;
-        m.histServer = sid;
-        m.histPage = 0;
+        m2.histServer = sid;
+        m2.histPage = 0;
         this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-hist-srv]").forEach((b) => b.classList.toggle("active", b === histSrvBtn));
         this._traLoadTab("history", el);
@@ -13463,11 +13593,11 @@ var _WireTraceaRrMethods = class {
       }
       const actSrvBtn = e.target.closest("[data-tra-act-srv]");
       if (actSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const sid = actSrvBtn.dataset.traActSrv || null;
-        m.activityServerId = sid;
-        m.activityData = null;
+        m2.activityServerId = sid;
+        m2.activityData = null;
         this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-act-srv]").forEach((b) => b.classList.toggle("active", b === actSrvBtn));
         this._traLoadTab("activity", el);
@@ -13475,11 +13605,11 @@ var _WireTraceaRrMethods = class {
       }
       const suSrvBtn = e.target.closest("[data-tra-su-srv]");
       if (suSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const sid = suSrvBtn.dataset.traSuSrv || null;
-        m.statsUsersServerId = sid;
-        m.statsUsersData = null;
+        m2.statsUsersServerId = sid;
+        m2.statsUsersData = null;
         this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-su-srv]").forEach((b) => b.classList.toggle("active", b === suSrvBtn));
         this._traLoadTab("statsUsers", el);
@@ -13487,11 +13617,11 @@ var _WireTraceaRrMethods = class {
       }
       const usrSrvBtn = e.target.closest("[data-tra-usr-srv]");
       if (usrSrvBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const sid = usrSrvBtn.dataset.traUsrSrv || null;
-        m.usersServerId = sid;
-        m.usersPage = 0;
+        m2.usersServerId = sid;
+        m2.usersPage = 0;
         this._traSaveSrv(sid);
         glass.querySelectorAll("[data-tra-usr-srv]").forEach((b) => b.classList.toggle("active", b === usrSrvBtn));
         this._traLoadTab("users", el);
@@ -13512,9 +13642,9 @@ var _WireTraceaRrMethods = class {
       const _updateMobileNav = () => {
         const panel = glass.querySelector("#tra-mobile-nav");
         if (!panel) return;
-        const m = this._tracearrModal;
+        const m2 = this._tracearrModal;
         const tmp = document.createElement("div");
-        tmp.innerHTML = this._traMobileNavHtml(m.tab, m.navGroup);
+        tmp.innerHTML = this._traMobileNavHtml(m2.tab, m2.navGroup);
         panel.innerHTML = tmp.firstElementChild.innerHTML;
       };
       const _applyNavActive = (groupId) => {
@@ -13529,8 +13659,8 @@ var _WireTraceaRrMethods = class {
       };
       const navBtn = e.target.closest("[data-tra-nav]");
       if (navBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const groupId = navBtn.dataset.traNav;
         const grp = _TRA_NAV.find((g) => g.id === groupId);
         if (!grp || !grp.tab && !grp.sub) return;
@@ -13539,15 +13669,15 @@ var _WireTraceaRrMethods = class {
           el2.style.maxWidth = "0";
         });
         if (grp.sub?.length) {
-          const expanding = m.navGroup !== groupId;
-          m.navGroup = expanding ? groupId : null;
-          _applyNavActive(m.navGroup);
+          const expanding = m2.navGroup !== groupId;
+          m2.navGroup = expanding ? groupId : null;
+          _applyNavActive(m2.navGroup);
           _collapseAllSubs();
           if (expanding) {
             const subEl = glass.querySelector(`[data-tra-sub="${groupId}"]`);
             if (subEl) {
               subEl.innerHTML = grp.sub.map(([tid, tlbl]) => {
-                const isActive = m.tab === tid;
+                const isActive = m2.tab === tid;
                 const _tc = _day ? "#000" : "#fff";
                 const subSt = isActive ? `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.25);color:#fff;border-color:rgba(0,122,255,0.5);font-size:10px;font-weight:700` : `height:24px;box-sizing:border-box;background:rgba(0,122,255,0.13);color:${_tc};border-color:rgba(0,122,255,0.3);font-size:10px`;
                 return `<button class="is-f-btn" data-tra-tab="${tid}" style="${subSt}">${tlbl}</button>`;
@@ -13557,8 +13687,8 @@ var _WireTraceaRrMethods = class {
           }
           _updateMobileNav();
         } else if (grp.tab) {
-          m.navGroup = groupId;
-          m.tab = grp.tab;
+          m2.navGroup = groupId;
+          m2.tab = grp.tab;
           _applyNavActive(groupId);
           _collapseAllSubs();
           const srvEl = glass.querySelector("#tra-hdr-server");
@@ -13570,11 +13700,11 @@ var _WireTraceaRrMethods = class {
       }
       const tabBtn = e.target.closest("[data-tra-tab]");
       if (tabBtn) {
-        const m = this._tracearrModal;
-        if (!m) return;
+        const m2 = this._tracearrModal;
+        if (!m2) return;
         const tab = tabBtn.dataset.traTab;
-        if (m.tab === tab) return;
-        m.tab = tab;
+        if (m2.tab === tab) return;
+        m2.tab = tab;
         glass.querySelectorAll("[data-tra-tab]").forEach((b) => {
           const on = b.dataset.traTab === tab;
           const _tc = _day ? "#000" : "#fff";
@@ -13604,9 +13734,9 @@ var _WireTraceaRrMethods = class {
         const crossedMobile = _lastBucket === 0 !== (bucket === 0);
         _lastBucket = bucket;
         if (crossedMobile) {
-          const m = this._tracearrModal;
-          const tab = m.tab;
-          const navGroup = m.navGroup;
+          const m2 = this._tracearrModal;
+          const tab = m2.tab;
+          const navGroup = m2.navGroup;
           el.remove();
           const wrap2 = document.createElement("div");
           wrap2.innerHTML = this._traModalHtml(tab, navGroup);
@@ -13625,8 +13755,8 @@ var _WireTraceaRrMethods = class {
   // Modal body wiring — called after every innerHTML replace
   // ──────────────────────────────────────────────────────────────────────────
   _wireTracearrModalBody(body) {
-    const m = this._tracearrModal;
-    if (!m) return;
+    const m2 = this._tracearrModal;
+    if (!m2) return;
     const modal = () => body.closest("[data-tra-modal]");
     const resolvePage = (val, current, total) => {
       if (val === "first") return 0;
@@ -13979,12 +14109,12 @@ var _WireTraceaRrMethods = class {
     body.querySelectorAll("[data-tra-hist-row]").forEach((row) => {
       row.addEventListener("click", async (e) => {
         if (e.target.closest("button,select,input,a")) return;
-        const m2 = this._tracearrModal;
-        if (!m2) return;
+        const m3 = this._tracearrModal;
+        if (!m3) return;
         const rowId = row.dataset.traHistRow;
-        const item = (m2.histData || []).find((h) => String(h.id) === rowId);
+        const item = (m3.histData || []).find((h) => String(h.id) === rowId);
         if (!item) return;
-        m2.histDetailItem = { ...item };
+        m3.histDetailItem = { ...item };
         body.innerHTML = this._traBodyHistDetail();
         this._wireTracearrModalBody(body);
         this._traRefreshHdrActions(body);
@@ -14003,9 +14133,9 @@ var _WireTraceaRrMethods = class {
     const detailBack = body.querySelector("#tra-hist-detail-back");
     if (detailBack) {
       detailBack.addEventListener("click", () => {
-        const m2 = this._tracearrModal;
-        if (!m2) return;
-        m2.histDetailItem = null;
+        const m3 = this._tracearrModal;
+        if (!m3) return;
+        m3.histDetailItem = null;
         body.innerHTML = this._traBodyHistory();
         this._wireTracearrModalBody(body);
         this._traRefreshHdrActions(body);
@@ -14021,11 +14151,11 @@ var _WireTraceaRrMethods = class {
     });
     body.querySelectorAll("[data-tra-map-view]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const m2 = this._tracearrModal;
-        if (!m2) return;
-        m2.mapView = btn.dataset.traMapView;
-        this._traMapPlotData(m2);
-        body.querySelectorAll("[data-tra-map-view]").forEach((b) => b.classList.toggle("active", b.dataset.traMapView === m2.mapView));
+        const m3 = this._tracearrModal;
+        if (!m3) return;
+        m3.mapView = btn.dataset.traMapView;
+        this._traMapPlotData(m3);
+        body.querySelectorAll("[data-tra-map-view]").forEach((b) => b.classList.toggle("active", b.dataset.traMapView === m3.mapView));
       });
     });
     const mapUserSel = body.querySelector("#tra-map-user-sel");
@@ -14048,11 +14178,11 @@ var _WireTraceaRrMethods = class {
     }
     modal()?.querySelectorAll("[data-tra-map-srv]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const m2 = this._tracearrModal;
-        if (!m2) return;
+        const m3 = this._tracearrModal;
+        if (!m3) return;
         const id = btn.dataset.traMapSrv;
-        m2.mapServerId = m2.mapServerId === id ? null : id;
-        m2.mapData = null;
+        m3.mapServerId = m3.mapServerId === id ? null : id;
+        m3.mapData = null;
         this._traLoadTab("map", modal());
       });
     });
@@ -14074,17 +14204,17 @@ var _WireTraceaRrMethods = class {
     body.querySelectorAll("[data-tra-dev-period]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (!this._tracearrModal) return;
-        const m2 = this._tracearrModal;
-        m2.devicesPeriod = btn.dataset.traDevPeriod;
-        m2.devicesData = null;
-        m2.devicesHealth = null;
-        m2.devicesHotspots = null;
-        m2.devicesMatrix = null;
-        m2.devicesUsers = null;
-        m2.devHealthPage = 0;
-        m2.devMatrixPage = 0;
-        m2.devHotspotsPage = 0;
-        m2.devUsersPage = 0;
+        const m3 = this._tracearrModal;
+        m3.devicesPeriod = btn.dataset.traDevPeriod;
+        m3.devicesData = null;
+        m3.devicesHealth = null;
+        m3.devicesHotspots = null;
+        m3.devicesMatrix = null;
+        m3.devicesUsers = null;
+        m3.devHealthPage = 0;
+        m3.devMatrixPage = 0;
+        m3.devHotspotsPage = 0;
+        m3.devUsersPage = 0;
         this._traLoadTab("devices", modal());
       });
     });
@@ -14130,15 +14260,15 @@ var _WireTraceaRrMethods = class {
         this._tracearrModal._qualityKey = null;
         const sec = body.querySelector("[data-tra-q-evol]");
         if (sec) {
-          const m2 = this._tracearrModal;
-          const _qSrvId = m2.qualityServerId || null;
-          const _qMt = m2.qualityMediaType || null;
+          const m3 = this._tracearrModal;
+          const _qSrvId = m3.qualityServerId || null;
+          const _qMt = m3.qualityMediaType || null;
           const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
           const _qQ = ["period=all", `timezone=${_tz}`, _qSrvId && `serverId=${_qSrvId}`, _qMt && `mediaType=${_qMt}`].filter(Boolean).join("&");
           const qr = await this._traLibFetch(`quality?${_qQ}`);
           if (!this._tracearrModal) return;
-          m2.qualityData = qr;
-          m2._qualityKey = `${_qSrvId}|${_qMt}`;
+          m3.qualityData = qr;
+          m3._qualityKey = `${_qSrvId}|${_qMt}`;
           sec.innerHTML = this._traQualEvolCard();
           this._wireTracearrModalBody(body);
         }
@@ -14177,25 +14307,25 @@ var _WireTraceaRrMethods = class {
     });
     body.querySelectorAll("[data-tra-w-period]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const m2 = this._tracearrModal;
-        if (!m2) return;
-        m2.watchPeriod = btn.dataset.traWPeriod;
-        m2.watchTopMovies = null;
-        m2.watchTopShows = null;
-        m2.watchSrvPeriodKey = null;
+        const m3 = this._tracearrModal;
+        if (!m3) return;
+        m3.watchPeriod = btn.dataset.traWPeriod;
+        m3.watchTopMovies = null;
+        m3.watchTopShows = null;
+        m3.watchSrvPeriodKey = null;
         body.querySelectorAll("[data-tra-w-period]").forEach((b) => b.classList.toggle("active", b.dataset.traWPeriod === btn.dataset.traWPeriod));
         const target = body.querySelector("[data-tra-watch-top]");
         if (target) target.innerHTML = `<div style="grid-column:1/-1;padding:24px;text-align:center;color:rgba(255,255,255,0.3);font-size:11px">${this._t("loading")}</div>`;
-        const _wSrvId = m2.watchServerId || m2.qualityServerId || m2.selectedServerId || null;
+        const _wSrvId = m3.watchServerId || m3.qualityServerId || m3.selectedServerId || null;
         const _wSrvQ = _wSrvId ? `&serverId=${_wSrvId}` : "";
         const [mov, sh] = await Promise.all([
-          this._traLibFetch(`top-movies?period=${m2.watchPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`),
-          this._traLibFetch(`top-shows?period=${m2.watchPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`)
+          this._traLibFetch(`top-movies?period=${m3.watchPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`),
+          this._traLibFetch(`top-shows?period=${m3.watchPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`)
         ]);
         if (!this._tracearrModal) return;
-        m2.watchTopMovies = mov?.items || mov || [];
-        m2.watchTopShows = sh?.items || sh || [];
-        m2.watchSrvPeriodKey = `${_wSrvId}|${m2.watchPeriod}`;
+        m3.watchTopMovies = mov?.items || mov || [];
+        m3.watchTopShows = sh?.items || sh || [];
+        m3.watchSrvPeriodKey = `${_wSrvId}|${m3.watchPeriod}`;
         const t2 = body.querySelector("[data-tra-watch-top]");
         if (t2) t2.innerHTML = this._traWatchTopRowsHtml();
       });
@@ -14216,15 +14346,15 @@ var _WireTraceaRrMethods = class {
     body.querySelectorAll("[data-tra-stale-sort]").forEach((th) => {
       th.addEventListener("click", () => {
         if (!this._tracearrModal) return;
-        const m2 = this._tracearrModal;
+        const m3 = this._tracearrModal;
         const col = th.dataset.traStaleSort;
-        if ((m2.staleSort || "fileSize") === col) {
-          m2.staleOrder = m2.staleOrder === "asc" ? "desc" : "asc";
+        if ((m3.staleSort || "fileSize") === col) {
+          m3.staleOrder = m3.staleOrder === "asc" ? "desc" : "asc";
         } else {
-          m2.staleSort = col;
-          m2.staleOrder = "desc";
+          m3.staleSort = col;
+          m3.staleOrder = "desc";
         }
-        m2.stalePage = 0;
+        m3.stalePage = 0;
         this._traRefreshStale(body);
       });
     });
@@ -14240,35 +14370,35 @@ var _WireTraceaRrMethods = class {
     body.querySelectorAll("[data-tra-stale-page]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (!this._tracearrModal) return;
-        const m2 = this._tracearrModal;
-        const pp = m2.stalePageSize || 10;
-        const totalP = Math.max(1, Math.ceil(m2.staleTotal / pp));
-        m2.stalePage = resolvePage(btn.dataset.traStalePage, m2.stalePage, totalP);
+        const m3 = this._tracearrModal;
+        const pp = m3.stalePageSize || 10;
+        const totalP = Math.max(1, Math.ceil(m3.staleTotal / pp));
+        m3.stalePage = resolvePage(btn.dataset.traStalePage, m3.stalePage, totalP);
         this._traRefreshStale(body);
       });
     });
     body.querySelectorAll("[data-tra-bw-users-page]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const m2 = this._tracearrModal;
-        if (!m2) return;
-        const users = Array.isArray(m2.bwUsers) ? m2.bwUsers : m2.bwUsers?.data || m2.bwUsers?.users || [];
-        const pp = m2.bwPageSize || 5;
+        const m3 = this._tracearrModal;
+        if (!m3) return;
+        const users = Array.isArray(m3.bwUsers) ? m3.bwUsers : m3.bwUsers?.data || m3.bwUsers?.users || [];
+        const pp = m3.bwPageSize || 5;
         const pages = Math.max(1, Math.ceil(users.length / pp));
-        m2.bwUsersPage = resolvePage(btn.dataset.traBwUsersPage, m2.bwUsersPage || 0, pages);
+        m3.bwUsersPage = resolvePage(btn.dataset.traBwUsersPage, m3.bwUsersPage || 0, pages);
         body.innerHTML = this._traBodyBandwidth();
         this._wireTracearrModalBody(body);
       });
     });
     body.querySelectorAll("[data-tra-su-ru-page]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const m2 = this._tracearrModal;
-        if (!m2) return;
+        const m3 = this._tracearrModal;
+        if (!m3) return;
         const isMob = this._isMob;
         const ruRowH = isMob ? 52 : 56;
         const ruPP = this._tlCalcPerPage({ hasFilter: false, filterH: 0, rowH: ruRowH, bar: 0 });
-        const runners = (m2.statsUsersData || []).slice(3);
+        const runners = (m3.statsUsersData || []).slice(3);
         const pages = Math.max(1, Math.ceil(runners.length / ruPP));
-        m2.statsUsersRunnerPage = resolvePage(btn.dataset.traSuRuPage, m2.statsUsersRunnerPage || 0, pages);
+        m3.statsUsersRunnerPage = resolvePage(btn.dataset.traSuRuPage, m3.statsUsersRunnerPage || 0, pages);
         body.innerHTML = this._traBodyStatsUsers();
         this._wireTracearrModalBody(body);
       });
@@ -14649,9 +14779,9 @@ var _PopupMethods = class {
         return tl && (tl === ql || tl === qn);
       });
     };
-    const m = (this._radarr || []).find((m3) => _titleMatch(m3));
-    const m2 = !m && (this._radarr2 || []).find((m3) => _titleMatch(m3));
-    const hit = m || m2;
+    const m2 = (this._radarr || []).find((m3) => _titleMatch(m3));
+    const m22 = !m2 && (this._radarr2 || []).find((m3) => _titleMatch(m3));
+    const hit = m2 || m22;
     if (hit) {
       let hitTmdbId = hit.tmdbId ? String(hit.tmdbId) : null;
       if (!hitTmdbId && this._overseerrConfigured !== false) {
@@ -14668,7 +14798,7 @@ var _PopupMethods = class {
         } catch (_) {
         }
       }
-      await this._openPopup(POPUP_TYPE.RADARR, hitTmdbId, null, hit.title, m?.id ?? null, m2?.id ?? null);
+      await this._openPopup(POPUP_TYPE.RADARR, hitTmdbId, null, hit.title, m2?.id ?? null, m22?.id ?? null);
       if (this._popup) {
         this._attachStreamData(entityId);
         this._renderPopupEl();
@@ -14917,7 +15047,7 @@ var _PopupMethods = class {
     let _radarr2Id = null;
     if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && (radarrId || radarr2IdHint || tmdbId)) {
       if (!radarr2IdHint) {
-        _radarrId = radarrId ?? (this._radarr || []).find((m) => String(m.tmdbId) === String(tmdbId))?.id ?? null;
+        _radarrId = radarrId ?? (this._radarr || []).find((m2) => String(m2.tmdbId) === String(tmdbId))?.id ?? null;
       }
       _radarr2Id = radarr2IdHint ?? (tmdbId ? this._radarr2ByTmdb?.get(String(tmdbId))?.id ?? null : null);
     }
@@ -15070,7 +15200,7 @@ var _PopupMethods = class {
   // Build popup data from local arrays when Overseerr is unavailable/fails
   _localFallbackData(type, tmdbId, tvdbId, title) {
     if (type === POPUP_TYPE.TV) {
-      const show = this._tvUpcoming?.find((m) => String(m.id) === String(tmdbId)) || (this._searchResults || []).find((m) => m.mediaType === "tv" && (tmdbId && String(m.id) === String(tmdbId) || tvdbId && String(m.tvdbId) === String(tvdbId)));
+      const show = this._tvUpcoming?.find((m2) => String(m2.id) === String(tmdbId)) || (this._searchResults || []).find((m2) => m2.mediaType === "tv" && (tmdbId && String(m2.id) === String(tmdbId) || tvdbId && String(m2.tvdbId) === String(tvdbId)));
       if (show) return {
         _type: POPUP_TYPE.TV,
         _localData: true,
@@ -15109,7 +15239,7 @@ var _PopupMethods = class {
       }
     }
     if (type === POPUP_TYPE.RADARR) {
-      const movie = this._radarr.find((m) => tmdbId && String(m.tmdbId) === String(tmdbId));
+      const movie = this._radarr.find((m2) => tmdbId && String(m2.tmdbId) === String(tmdbId));
       if (movie) {
         const fanart = movie.images?.find((i) => i.coverType === "fanart")?.remoteUrl || null;
         return {
@@ -15135,7 +15265,7 @@ var _PopupMethods = class {
         ...this._tvUpcoming || []
       ];
       const sr = _allDiscover.find(
-        (m) => tmdbId && String(m.id) === String(tmdbId) || tvdbId && m.tvdbId && String(m.tvdbId) === String(tvdbId)
+        (m2) => tmdbId && String(m2.id) === String(tmdbId) || tvdbId && m2.tvdbId && String(m2.tvdbId) === String(tvdbId)
       );
       if (sr) {
         const posterPath = sr.posterPath || null;
@@ -15167,9 +15297,9 @@ var _PopupMethods = class {
     const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
     const localDateStr = (d) => {
       const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const m2 = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
+      return `${y}-${m2}-${day}`;
     };
     const now = /* @__PURE__ */ new Date();
     const todayStr = localDateStr(now);
@@ -15349,7 +15479,7 @@ var _PopupMethods = class {
           const dd = this._popup;
           if (!castEntity || !dd) return;
           const _isMovT = dd._type === "radarr" || dd._type === "movie";
-          const tmdbId = dd.id || dd.tmdbId || (dd._radarrId ? (this._radarr || []).find((m) => m.id === dd._radarrId)?.tmdbId : null) || (dd._radarr2Id ? (this._radarr2 || []).find((m) => m.id === dd._radarr2Id)?.tmdbId : null);
+          const tmdbId = dd.id || dd.tmdbId || (dd._radarrId ? (this._radarr || []).find((m2) => m2.id === dd._radarrId)?.tmdbId : null) || (dd._radarr2Id ? (this._radarr2 || []).find((m2) => m2.id === dd._radarr2Id)?.tmdbId : null);
           const tvdbId = dd.externalIds?.tvdbId || dd._sonarrSeries?.tvdbId || dd._sonarr2Series?.tvdbId;
           this._plexCasting = castEntity;
           this._plexCastOpen = false;
@@ -15404,21 +15534,21 @@ var _PopupMethods = class {
           this._libReturnState = null;
           this._renderPopupEl();
           this._openLibModal(saved.typeKey === "movies" ? "movies" : saved.typeKey === "tv" ? "tv" : saved.qualityKey || "all");
-          const m = this._libModal;
-          if (m) {
-            m.typeKey = saved.typeKey;
-            m.qualityKey = saved.qualityKey;
-            m.instFilter = saved.instFilter;
-            m.search = saved.search;
-            m.sort = saved.sort;
-            m.sortDir = saved.sortDir;
-            m.view = saved.view;
-            m.filter = saved.filter;
-            m.page = saved.page;
+          const m2 = this._libModal;
+          if (m2) {
+            m2.typeKey = saved.typeKey;
+            m2.qualityKey = saved.qualityKey;
+            m2.instFilter = saved.instFilter;
+            m2.search = saved.search;
+            m2.sort = saved.sort;
+            m2.sortDir = saved.sortDir;
+            m2.view = saved.view;
+            m2.filter = saved.filter;
+            m2.page = saved.page;
             const libEl = this.shadowRoot.querySelector("[data-lib-modal]");
             const bodyEl = libEl?.querySelector("#lib-body");
             if (bodyEl?.clientHeight > 0) {
-              m._bodyH = bodyEl.clientHeight;
+              m2._bodyH = bodyEl.clientHeight;
               bodyEl.innerHTML = this._libBodyHtml();
               this._wireLibModalBody(libEl);
             }
@@ -15674,6 +15804,7 @@ var _PopupMethods = class {
       }
       if (t.dataset.action === "popup-monitor-toggle") {
         if (this._popupMonBusy) return;
+        this._markActivated();
         this._popupMonBusy = t.dataset.instance;
         this._renderPopupEl();
         this._togglePopupMonitor(t.dataset.instance);
@@ -15849,6 +15980,7 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "remove-yes") {
+        this._markActivated();
         this._removeFromLibrary(t.dataset.files === "true");
         return;
       }
@@ -15966,6 +16098,7 @@ var _PopupMethods = class {
         return;
       }
       if (t.dataset.action === "stream-terminate-confirm") {
+        this._markActivated();
         const sessionId = t.dataset.sessionId;
         if (!sessionId && !this._popup?._jfSessionId && !this._popup?._embySessionId && !this._popup?._kodiEntityId) return;
         const modal = this.shadowRoot?.querySelector(".plex-terminate-modal");
@@ -16135,11 +16268,11 @@ var _PopupMethods = class {
       if (inst === "radarr" || inst === "radarr2") {
         const arr = inst === "radarr2" ? this._radarr2 : this._radarr;
         const id = inst === "radarr2" ? d?._radarr2Id : d?._radarrId;
-        const movie = (arr || []).find((m) => m.id === id);
+        const movie = (arr || []).find((m2) => m2.id === id);
         if (movie) {
           const fresh = await this._callApi("PUT", `arr_stack/${inst}/movie/${id}`, { ...movie, monitored: !movie.monitored });
           const upd = fresh && fresh.id ? fresh : { ...movie, monitored: !movie.monitored };
-          const i = arr.findIndex((m) => m.id === id);
+          const i = arr.findIndex((m2) => m2.id === id);
           if (i >= 0) arr[i] = { ...arr[i], ...upd };
         }
       } else {
@@ -16351,8 +16484,8 @@ var _PopupMethods = class {
     const hasDualSonarr = !!this._sonarr2Configured;
     const singleInstance = d._radarrId ? "radarr" : d._radarr2Id ? "radarr2" : "radarr";
     const [isl1, isl2] = this._seerrRadarr2?.is4k ? ["HD", "4K"] : _instLabels(this._seerrRadarr?.name, this._seerrRadarr2?.name, "Radarr 1", "Radarr 2");
-    const _re1 = d._radarrId ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
-    const _re2 = d._radarr2Id ? (this._radarr2 || []).find((m) => m.id === d._radarr2Id) : null;
+    const _re1 = d._radarrId ? (this._radarr || []).find((m2) => m2.id === d._radarrId) : null;
+    const _re2 = d._radarr2Id ? (this._radarr2 || []).find((m2) => m2.id === d._radarr2Id) : null;
     const _se1 = d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const _se2 = d._sonarr2Series?.id ? (this._sonarr2 || []).find((s) => s.id === d._sonarr2Series.id) : null;
     const rInLib1 = !!_re1?.hasFile;
@@ -16459,8 +16592,8 @@ var _PopupMethods = class {
     const crossSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
     const canRemoveRadarr = isAdmin && isMovieType && (d._radarrId || d._radarr2Id);
     const canRemoveSonarr = isAdmin && isSonarrType && (d._sonarrSeries?.id || d._sonarr2Series?.id);
-    const radarrEntry = d._radarrId ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
-    const radarr2Entry = d._radarr2Id ? (this._radarr2 || []).find((m) => m.id === d._radarr2Id) : null;
+    const radarrEntry = d._radarrId ? (this._radarr || []).find((m2) => m2.id === d._radarrId) : null;
+    const radarr2Entry = d._radarr2Id ? (this._radarr2 || []).find((m2) => m2.id === d._radarr2Id) : null;
     const sonarrEntry = d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const sonarr2Entry = d._sonarr2Series?.id ? (this._sonarr2 || []).find((s) => s.id === d._sonarr2Series.id) : null;
     const hasFiles = !!(radarrEntry?.hasFile || radarr2Entry?.hasFile || sonarrEntry?.statistics?.episodeFileCount > 0 || sonarr2Entry?.statistics?.episodeFileCount > 0);
@@ -16480,7 +16613,7 @@ var _PopupMethods = class {
         downloading: { cls: "ic--downloading", icon: "" },
         failed: { cls: "ic--failed", icon: "\u2717" },
         missing: { cls: "ic--missing", icon: "\u2717" },
-        added: { cls: "ic--added", icon: "+" },
+        added: { cls: "ic--added", icon: "" },
         partial: { cls: "ic--partial", icon: "" },
         none: { cls: "ic--none", icon: "\u2013" }
       };
@@ -16544,7 +16677,7 @@ var _PopupMethods = class {
         instanceStatusHtml = `<div class="instance-status-row">${this._snInstChip(_instChip, "", sonarrEntry, null)}</div>`;
       }
     }
-    const _popupRadarrEntry = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE ? (this._radarr || []).find((m) => m.id === d._radarrId) : null;
+    const _popupRadarrEntry = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE ? (this._radarr || []).find((m2) => m2.id === d._radarrId) : null;
     const _popupSonarrEntry = (d._type === POPUP_TYPE.SONARR || d._type === POPUP_TYPE.TV) && d._sonarrSeries?.id ? (this._sonarr || []).find((s) => s.id === d._sonarrSeries.id) : null;
     const _popupTags = _popupRadarrEntry ? (_popupRadarrEntry.tags || []).map((id) => (this._radarrTags || []).find((t) => t.id === id)?.label).filter(Boolean) : _popupSonarrEntry ? (_popupSonarrEntry.tags || []).map((id) => (this._sonarrTags || []).find((t) => t.id === id)?.label).filter(Boolean) : [];
     const _tagIconSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:0.7"><path d="M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M17.41,11.58C17.77,11.94 18,12.44 18,13C18,13.55 17.78,14.05 17.41,14.41L12.41,19.41C12.05,19.78 11.55,20 11,20C10.45,20 9.95,19.78 9.58,19.41L2.59,12.42C2.22,12.05 2,11.55 2,11V6C2,4.89 2.89,4 4,4H9C9.55,4 10.05,4.22 10.41,4.58L17.41,11.58Z"/></svg>`;
@@ -16603,7 +16736,7 @@ var _PopupMethods = class {
         items.push([_icRt, `${Math.round(_rtOv.criticsScore)}%`]);
       }
       if (items.length) {
-        ratingsRow = `<div class="popup-ratings">${items.map(([ic, v]) => `<span style="display:inline-flex;align-items:center;gap:4px">${ic}<b style="font-size:12px;color:var(--is-text)">${v}</b></span>`).join("")}</div>`;
+        ratingsRow = `<div class="popup-ratings">${items.map(([ic, v]) => `<span style="display:inline-flex;align-items:center;gap:4px">${ic}<b style="font-size:12px;color:var(--is-text);line-height:1;display:block;margin-top:-1px">${v}</b></span>`).join("")}</div>`;
       }
     }
     let monTitleBtn = "";
@@ -16615,7 +16748,7 @@ var _PopupMethods = class {
       const _monI2 = isMovieType ? "radarr2" : "sonarr2";
       const _monAdded = [_monE1 && _monI1, _monE2 && _monI2].filter(Boolean);
       if (_monAdded.length) {
-        const _bmSvg = (mon, sz = 18) => mon ? `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+        const _bmSvg = (mon, sz = 20) => mon ? `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
         const _monSpin = `<span class="action-spinner" style="width:13px;height:13px;border-width:1.5px"></span>`;
         const _monAny = !!(_monE1?.monitored || _monE2?.monitored);
         const _monTitleTip = this._cfg?.localisation === "cs" ? "Monitoring" : "Monitoring";
@@ -16641,7 +16774,7 @@ var _PopupMethods = class {
       data-session-id="${this._escHtml(d._plexSessionId)}">
       ${stopSvg} ${this._t("stopPlayback")} ${chevronSvg}
     </button>` : "";
-    const wideClass = isActive || snIsActive ? " is-wide" : "";
+    const wideClass = "";
     const searchActive = isActive || snIsActive || asSonarrActive;
     const glassStyle = searchActive ? ' style="height:82vh"' : "";
     const backdropEl = searchActive ? "" : this._popupCastOpen && castPanelHtml ? `
@@ -16659,6 +16792,7 @@ var _PopupMethods = class {
     <div class="popup-overlay${dayClass(this)}">
       <div class="popup-glass${wideClass}"${glassStyle}>
         <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div class="popup-cast-corner">${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}</div>
         ${backdropEl}
         <div class="popup-body${searchActive ? " popup-body--search" : ""}${snIsActive && !isActive && !asActive ? " popup-body--sn-is" : ""}">
           <div class="popup-content"${searchActive ? ' style="padding-top:52px"' : ""}>
@@ -16666,7 +16800,6 @@ var _PopupMethods = class {
             <div class="popup-meta">
               <div style="display:flex;align-items:flex-start;gap:8px;margin:0 0 5px">
                 <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${title}${monTitleBtn}</h2>
-                ${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}
               </div>
               ${monExpandRow}
               ${subLine || ratingsRow ? `<div class="popup-subrow">${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}${ratingsRow}</div>` : ""}
@@ -16730,10 +16863,10 @@ var _PopupMethods = class {
     try {
       if (inst === "radarr2" && d._radarr2Id) {
         await this._hass.callApi("DELETE", `arr_stack/radarr2/movie/${d._radarr2Id}?deleteFiles=${df}&addExclusion=${ex}`);
-        this._radarr2 = (this._radarr2 || []).filter((m) => m.id !== d._radarr2Id);
+        this._radarr2 = (this._radarr2 || []).filter((m2) => m2.id !== d._radarr2Id);
       } else if ((inst === "radarr" || !inst.startsWith("sonarr")) && d._radarrId) {
         await this._hass.callApi("DELETE", `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}&addExclusion=${ex}`);
-        this._radarr = (this._radarr || []).filter((m) => m.id !== d._radarrId);
+        this._radarr = (this._radarr || []).filter((m2) => m2.id !== d._radarrId);
       } else if (inst === "sonarr2" && d._sonarr2Series?.id) {
         await this._hass.callApi("DELETE", `arr_stack/sonarr2/series/${d._sonarr2Series.id}?deleteFiles=${df}&addExclusion=${ex}`);
         this._sonarr2 = (this._sonarr2 || []).filter((s) => s.id !== d._sonarr2Series.id);
@@ -16817,6 +16950,7 @@ var _PopupMethods = class {
     </div>`;
   }
   async _addSeriesToSonarr(instance = "sonarr") {
+    this._markActivated();
     this._snIsState = "adding";
     this._renderPopupEl();
     const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
@@ -16908,8 +17042,8 @@ var _PopupMethods = class {
     const castSvg = `<svg viewBox="0 0 24 24" width="14" height="14" style="display:block"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3m0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7m0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10m20-7H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>`;
     const spinner = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>`;
     const _btnCommon = `flex-shrink:0;width:36px;height:36px;padding:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:background 0.15s,color 0.15s,border-color 0.15s`;
-    const btnBase = `${_btnCommon};border:1px solid var(--is-btn-bdr);background:var(--is-btn-bg);color:var(--is-btn-clr)`;
-    const btnActive = `${_btnCommon};border:1px solid var(--is-btn-abdr);background:var(--is-btn-abg);color:var(--is-btn-aclr)`;
+    const btnBase = `${_btnCommon};border:none;background:rgba(0,0,0,0.45);color:#fff`;
+    const btnActive = `${_btnCommon};border:1px solid rgba(0,122,255,0.5);background:rgba(0,122,255,0.25);color:#fff`;
     if (this._plexCasting) {
       return `<button disabled style="${btnBase};opacity:0.6">${spinner}</button>`;
     }
@@ -16958,10 +17092,10 @@ var _TL_MENU_STY = `position:absolute;right:0;top:calc(100% + 4px);background:va
 var _TautulliSharedMethods = class {
   // ── State helper ──────────────────────────────────────────────────────────
   _tlHidden(key, defaults) {
-    const m = this._tautulliModal;
-    if (!m) return new Set(defaults);
-    if (!m[key]) m[key] = new Set(defaults);
-    return m[key];
+    const m2 = this._tautulliModal;
+    if (!m2) return new Set(defaults);
+    if (!m2[key]) m2[key] = new Set(defaults);
+    return m2[key];
   }
   // ── Column prefs — HA user data (cross-device) ────────────────────────────
   async _tlLoadColPrefs() {
@@ -16973,11 +17107,11 @@ var _TautulliSharedMethods = class {
     }
   }
   _tlSaveColPrefs() {
-    const m = this._tautulliModal;
-    if (!m) return;
+    const m2 = this._tautulliModal;
+    if (!m2) return;
     const KEYS = ["libsHiddenCols", "libsMobHiddenCols", "usersHiddenCols", "usersMobHiddenCols", "histHiddenCols", "histMobHiddenCols", "udHistHiddenCols", "udHistMobHiddenCols", "ldHistHiddenCols", "ldHistMobHiddenCols"];
     const value = {};
-    for (const k of KEYS) if (m[k]) value[k] = [...m[k]];
+    for (const k of KEYS) if (m2[k]) value[k] = [...m2[k]];
     this._hass.callWS({ type: "frontend/store_user_data", key: "arr-tl-cols", value }).catch(() => {
     });
   }
@@ -17093,8 +17227,8 @@ var _TautulliSharedMethods = class {
   _tlFmtDuration(secs) {
     if (!secs) return "0m";
     const h = Math.floor(secs / 3600);
-    const m = Math.floor(secs % 3600 / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    const m2 = Math.floor(secs % 3600 / 60);
+    return h > 0 ? `${h}h ${m2}m` : `${m2}m`;
   }
   _tlFmtTime(ts) {
     if (!ts) return "\u2014";
@@ -17138,15 +17272,15 @@ var _TautulliTableMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
   _tlBodyLibraries(data, total) {
     const isMobile2 = this._isMob;
-    const m = this._tautulliModal || {};
-    if (m.mediaDetailKey) return this._tlBodyMediaDetail();
-    if (m.libDetailId) return this._tlBodyLibDetail();
-    const page = m.libsPage || 0;
+    const m2 = this._tautulliModal || {};
+    if (m2.mediaDetailKey) return this._tlBodyMediaDetail();
+    if (m2.libDetailId) return this._tlBodyLibDetail();
+    const page = m2.libsPage || 0;
     const perPage = this._tlCalcPerPage();
-    const sortCol = m.libsSortCol || "plays";
-    const sortDir = m.libsSortDir || "desc";
-    const editMode = m.libsEditMode || false;
-    const search = (m.libsSearch || "").toLowerCase().trim();
+    const sortCol = m2.libsSortCol || "plays";
+    const sortDir = m2.libsSortDir || "desc";
+    const editMode = m2.libsEditMode || false;
+    const search = (m2.libsSearch || "").toLowerCase().trim();
     const hidden = this._tlHidden("libsHiddenCols", ["type"]);
     const mobHidden = this._tlHidden("libsMobHiddenCols", ["type", "parents", "children", "lastStream"]);
     const filtered = search ? (data || []).filter((l) => (l.section_name || "").toLowerCase().includes(search)) : data || [];
@@ -17165,7 +17299,7 @@ var _TautulliTableMethods = class {
     ];
     const vis = COLS.filter((c) => !hidden.has(c.key));
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "name"), hidden, "data-tl-lib-col");
-    const deskColsBtn = this._tlColsMenu("tl-libs-cols-btn", "tl-libs-cols-menu", deskColItems, m.libsColsOpen);
+    const deskColsBtn = this._tlColsMenu("tl-libs-cols-btn", "tl-libs-cols-menu", deskColItems, m2.libsColsOpen);
     const MOB_LIB_COLS = [
       { key: "plays", label: this._t("tlColPlays") },
       { key: "lastPlayed", label: this._t("tlColLastPlayed") },
@@ -17175,9 +17309,9 @@ var _TautulliTableMethods = class {
       { key: "lastStream", label: this._t("tlColLastStreamedMob") }
     ];
     const mobColItems = this._tlColItems(MOB_LIB_COLS, mobHidden, "data-tl-lib-mob-col");
-    const mobColsBtn = this._tlColsMenu("tl-libs-mob-cols-btn", "tl-libs-mob-cols-menu", mobColItems, m.libsMobColsOpen);
+    const mobColsBtn = this._tlColsMenu("tl-libs-mob-cols-btn", "tl-libs-mob-cols-menu", mobColItems, m2.libsMobColsOpen);
     const editBtn = this._tlEditBtn("tl-libs-edit-btn", editMode);
-    const searchEl = this._tlSearchInput("tl-libs-search", m.libsSearch);
+    const searchEl = this._tlSearchInput("tl-libs-search", m2.libsSearch);
     const colsBtn = isMobile2 ? mobColsBtn : deskColsBtn;
     const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const toolbar = `<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${editBtn}${colsBtn}</div></div>`;
@@ -17244,9 +17378,9 @@ var _TautulliTableMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
   _tlIpReport() {
     const tl = this._tautulli || {};
-    const m = this._tautulliModal || {};
+    const m2 = this._tautulliModal || {};
     if (!tl.sharingDetected || tl.sharingAcked) return "";
-    const open = m.ipReportOpen !== false;
+    const open = m2.ipReportOpen !== false;
     const threshold = this._config?.security?.ip_sharing_threshold ?? 2;
     const users = tl.sharingUsers || [];
     const report = tl.ipReport || {};
@@ -17291,15 +17425,15 @@ var _TautulliTableMethods = class {
   }
   _tlBodyUsers(data, total) {
     const isMobile2 = this._isMob;
-    const m = this._tautulliModal || {};
-    if (m.mediaDetailKey) return this._tlBodyMediaDetail();
-    if (m.userDetailId) return this._tlBodyUserDetail();
-    const page = m.usersPage || 0;
+    const m2 = this._tautulliModal || {};
+    if (m2.mediaDetailKey) return this._tlBodyMediaDetail();
+    if (m2.userDetailId) return this._tlBodyUserDetail();
+    const page = m2.usersPage || 0;
     const perPage = this._tlCalcPerPage();
-    const sortCol = m.usersSortCol || "plays";
-    const sortDir = m.usersSortDir || "desc";
-    const editMode = m.usersEditMode || false;
-    const search = (m.usersSearch || "").toLowerCase().trim();
+    const sortCol = m2.usersSortCol || "plays";
+    const sortDir = m2.usersSortDir || "desc";
+    const editMode = m2.usersEditMode || false;
+    const search = (m2.usersSearch || "").toLowerCase().trim();
     const hidden = this._tlHidden("usersHiddenCols", ["username", "fullname", "email"]);
     const mobHidden = this._tlHidden("usersMobHiddenCols", ["lastPlayed", "platform", "player", "ip", "username", "email"]);
     const filtered = search ? (data || []).filter((u) => [u.friendly_name || "", u.username || "", u.email || ""].some((v) => v.toLowerCase().includes(search))) : data || [];
@@ -17324,7 +17458,7 @@ var _TautulliTableMethods = class {
     const wU = tl2.sharingUsers || [];
     const banner = "";
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "user"), hidden, "data-tl-col");
-    const deskColsBtn = this._tlColsMenu("tl-users-cols-btn", "tl-users-cols-menu", deskColItems, m.usersColsOpen);
+    const deskColsBtn = this._tlColsMenu("tl-users-cols-btn", "tl-users-cols-menu", deskColItems, m2.usersColsOpen);
     const MOB_USR_COLS = [
       { key: "lastSeen", label: this._t("tlColLastSeen") },
       { key: "lastPlayed", label: this._t("tlColLastPlayed") },
@@ -17335,9 +17469,9 @@ var _TautulliTableMethods = class {
       { key: "email", label: this._t("tlColEmail") }
     ];
     const mobColItems = this._tlColItems(MOB_USR_COLS, mobHidden, "data-tl-usr-mob-col");
-    const mobColsBtn = this._tlColsMenu("tl-users-mob-cols-btn", "tl-users-mob-cols-menu", mobColItems, m.usersMobColsOpen);
+    const mobColsBtn = this._tlColsMenu("tl-users-mob-cols-btn", "tl-users-mob-cols-menu", mobColItems, m2.usersMobColsOpen);
     const editBtn = this._tlEditBtn("tl-users-edit-btn", editMode);
-    const searchEl = this._tlSearchInput("tl-users-search", m.usersSearch);
+    const searchEl = this._tlSearchInput("tl-users-search", m2.usersSearch);
     const colsBtn = isMobile2 ? mobColsBtn : deskColsBtn;
     const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const ipReport = this._tlIpReport();
@@ -17417,48 +17551,48 @@ var _TautulliTableMethods = class {
   // Refetch
   // ──────────────────────────────────────────────────────────────────────────
   async _tlRefetchLibraries(body) {
-    const m = this._tautulliModal;
-    if (!m) return;
+    const m2 = this._tautulliModal;
+    if (!m2) return;
     body.innerHTML = `<div class="u-empty-lg">${this._t("loading")}</div>`;
     const pp = this._tlCalcPerPage();
-    const start = (m.libsPage || 0) * pp;
-    const r = await this._tlApiFetch("get_libraries_table", `length=${pp}&start=${start}&order_column=${m.libsSortCol || "plays"}&order_dir=${m.libsSortDir || "desc"}`);
+    const start = (m2.libsPage || 0) * pp;
+    const r = await this._tlApiFetch("get_libraries_table", `length=${pp}&start=${start}&order_column=${m2.libsSortCol || "plays"}&order_dir=${m2.libsSortDir || "desc"}`);
     if (!this._tautulliModal) return;
-    m.libsData = r?.response?.data?.data || [];
-    m.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.libsData.length;
-    body.innerHTML = this._tlBodyLibraries(m.libsData, m.libsTotal);
+    m2.libsData = r?.response?.data?.data || [];
+    m2.libsTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m2.libsData.length;
+    body.innerHTML = this._tlBodyLibraries(m2.libsData, m2.libsTotal);
     this._wireTautulliModalBody(body);
   }
   async _tlRefetchUsers(body) {
-    const m = this._tautulliModal;
-    if (!m) return;
+    const m2 = this._tautulliModal;
+    if (!m2) return;
     body.innerHTML = '<div class="u-empty-lg">Loading\u2026</div>';
     const pp = this._tlCalcPerPage();
-    const start = (m.usersPage || 0) * pp;
-    const r = await this._tlApiFetch("get_users_table", `length=${pp}&start=${start}&order_column=${m.usersSortCol || "plays"}&order_dir=${m.usersSortDir || "desc"}`);
+    const start = (m2.usersPage || 0) * pp;
+    const r = await this._tlApiFetch("get_users_table", `length=${pp}&start=${start}&order_column=${m2.usersSortCol || "plays"}&order_dir=${m2.usersSortDir || "desc"}`);
     if (!this._tautulliModal) return;
-    m.usersData = r?.response?.data?.data || [];
-    m.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m.usersData.length;
-    body.innerHTML = this._tlBodyUsers(m.usersData, m.usersTotal);
+    m2.usersData = r?.response?.data?.data || [];
+    m2.usersTotal = r?.response?.data?.recordsFiltered || r?.response?.data?.recordsTotal || m2.usersData.length;
+    body.innerHTML = this._tlBodyUsers(m2.usersData, m2.usersTotal);
     this._wireTautulliModalBody(body);
   }
   // ──────────────────────────────────────────────────────────────────────────
   // History
   // ──────────────────────────────────────────────────────────────────────────
   _tlBodyHistory() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    if (m.histLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
+    const m2 = this._tautulliModal;
+    if (!m2) return "";
+    if (m2.histLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
     const isMob = this._isMob;
-    const page = m.histPage || 0;
+    const page = m2.histPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: true });
-    const tot = m.histTotal || 0;
-    const data = m.histData || [];
-    const media = m.histMedia || null;
-    const playback = m.histPlayback || null;
-    const delMode = m.histDeleteMode || false;
-    const users = m.histUsers || [];
-    const selUser = m.histUser || "";
+    const tot = m2.histTotal || 0;
+    const data = m2.histData || [];
+    const media = m2.histMedia || null;
+    const playback = m2.histPlayback || null;
+    const delMode = m2.histDeleteMode || false;
+    const users = m2.histUsers || [];
+    const selUser = m2.histUser || "";
     const hidden = this._tlHidden("histHiddenCols", ["ip", "paused", "stopped"]);
     const mobHidden = this._tlHidden("histMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
@@ -17497,8 +17631,8 @@ var _TautulliTableMethods = class {
       { key: "paused", label: this._t("tlColPaused") },
       { key: "stopped", label: this._t("tlColStopped") }
     ];
-    const colsBtn = isMob ? this._tlColsMenu("tl-hist-mob-cols-btn", "tl-hist-mob-cols-menu", this._tlColItems(MOB_HIST_PICKER, mobHidden, "data-tl-hist-mob-col"), m.histMobColsOpen) : this._tlColsMenu("tl-hist-cols-btn", "tl-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-hist-col"), m.histColsOpen);
-    const histSearchEl = this._tlSearchInput("tl-hist-search", m.histSearch);
+    const colsBtn = isMob ? this._tlColsMenu("tl-hist-mob-cols-btn", "tl-hist-mob-cols-menu", this._tlColItems(MOB_HIST_PICKER, mobHidden, "data-tl-hist-mob-col"), m2.histMobColsOpen) : this._tlColsMenu("tl-hist-cols-btn", "tl-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-hist-col"), m2.histColsOpen);
+    const histSearchEl = this._tlSearchInput("tl-hist-search", m2.histSearch);
     const histSearchElFlex = histSearchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     let toolbar;
     if (isMob) {
@@ -17568,13 +17702,13 @@ var _TautulliTableMethods = class {
     return toolbar + `<div style="overflow-x:auto"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${vis.length + 2}" class="u-empty">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-hpage", page, totalPages);
   }
   async _tlRefetchHistory(body) {
-    const m = this._tautulliModal;
-    if (!m) return;
+    const m2 = this._tautulliModal;
+    if (!m2) return;
     body.innerHTML = '<div class="u-empty-lg">Loading\u2026</div>';
-    const data = await this._tlFetchHistory(m.histPage, m.histUser, m.histMedia, m.histPlayback, this._tlCalcPerPage({ hasFilter: true }), m.histSearch);
+    const data = await this._tlFetchHistory(m2.histPage, m2.histUser, m2.histMedia, m2.histPlayback, this._tlCalcPerPage({ hasFilter: true }), m2.histSearch);
     if (!this._tautulliModal) return;
-    m.histData = data.data || [];
-    m.histTotal = data.recordsFiltered || 0;
+    m2.histData = data.data || [];
+    m2.histTotal = data.recordsFiltered || 0;
     body.innerHTML = this._tlBodyHistory();
     this._wireTautulliModalBody(body);
   }
@@ -17582,10 +17716,10 @@ var _TautulliTableMethods = class {
   // User detail — wrapper
   // ──────────────────────────────────────────────────────────────────────────
   _tlBodyUserDetail() {
-    const m = this._tautulliModal || {};
-    const tab = m.userDetailTab || "profile";
-    const name = m.userDetailName || "\u2014";
-    const thumb = m.userDetailThumb || "";
+    const m2 = this._tautulliModal || {};
+    const tab = m2.userDetailTab || "profile";
+    const name = m2.userDetailName || "\u2014";
+    const thumb = m2.userDetailThumb || "";
     const isMob = this._isMob;
     const av = thumb ? `<img src="${thumb}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--is-divider);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:40px;height:40px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;color:var(--is-text-muted);font-size:15px;font-weight:700;flex-shrink:0">${(name[0] || "?").toUpperCase()}</span>`;
     const TAB_LABELS = { profile: "Profile", history: "History", ips: "IP Addresses" };
@@ -17616,8 +17750,8 @@ var _TautulliTableMethods = class {
   // User detail — Profile tab
   // ──────────────────────────────────────────────────────────────────────────
   _tlBodyUdProfile() {
-    const m = this._tautulliModal || {};
-    const profile = m.userDetailProfile;
+    const m2 = this._tautulliModal || {};
+    const profile = m2.userDetailProfile;
     if (!profile) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
     const isMob = this._isMob;
     const wts = profile.watchTimeStats || [];
@@ -17724,18 +17858,18 @@ var _TautulliTableMethods = class {
   // User detail — History tab
   // ──────────────────────────────────────────────────────────────────────────
   _tlBodyUdHistory() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    if (m.userDetailHistLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
+    const m2 = this._tautulliModal;
+    if (!m2) return "";
+    if (m2.userDetailHistLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
     const isMob = this._isMob;
-    const page = m.userDetailHistPage || 0;
+    const page = m2.userDetailHistPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: true });
-    const tot = m.userDetailHistTotal || 0;
-    const data = m.userDetailHistData || [];
-    const media = m.userDetailHistMedia || null;
-    const playback = m.userDetailHistPlayback || null;
-    const delMode = m.userDetailHistDeleteMode || false;
-    const expRow = m.userDetailHistExpandedRow || null;
+    const tot = m2.userDetailHistTotal || 0;
+    const data = m2.userDetailHistData || [];
+    const media = m2.userDetailHistMedia || null;
+    const playback = m2.userDetailHistPlayback || null;
+    const delMode = m2.userDetailHistDeleteMode || false;
+    const expRow = m2.userDetailHistExpandedRow || null;
     const hidden = this._tlHidden("userDetailHistHiddenCols", ["ip", "paused", "stopped"]);
     const mobHidden = this._tlHidden("userDetailHistMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
@@ -17772,8 +17906,8 @@ var _TautulliTableMethods = class {
       { key: "paused", label: this._t("tlColPaused") },
       { key: "stopped", label: this._t("tlColStopped") }
     ];
-    const colsBtn = isMob ? this._tlColsMenu("tl-ud-hist-mob-cols-btn", "tl-ud-hist-mob-cols-menu", this._tlColItems(MOB_PICKER, mobHidden, "data-tl-ud-hist-mob-col"), m.userDetailHistMobColsOpen) : this._tlColsMenu("tl-ud-hist-cols-btn", "tl-ud-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-ud-hist-col"), m.userDetailHistColsOpen);
-    const searchEl = this._tlSearchInput("tl-ud-hist-search", m.userDetailHistSearch);
+    const colsBtn = isMob ? this._tlColsMenu("tl-ud-hist-mob-cols-btn", "tl-ud-hist-mob-cols-menu", this._tlColItems(MOB_PICKER, mobHidden, "data-tl-ud-hist-mob-col"), m2.userDetailHistMobColsOpen) : this._tlColsMenu("tl-ud-hist-cols-btn", "tl-ud-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-ud-hist-col"), m2.userDetailHistColsOpen);
+    const searchEl = this._tlSearchInput("tl-ud-hist-search", m2.userDetailHistSearch);
     const searchElFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     let toolbar;
     if (isMob) {
@@ -17783,7 +17917,7 @@ var _TautulliTableMethods = class {
       toolbar = `<div class="tl-toolbar">${searchElFlex}<div class="tl-toolbar-actions">${delBtn}${colsBtn}</div></div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap"><div style="display:flex;gap:4px;flex-wrap:wrap">${mediaBtns}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${playBtns}</div></div>`;
     }
-    if (!data.length && !m.userDetailHistLoading) {
+    if (!data.length && !m2.userDetailHistLoading) {
       return toolbar + `<div class="u-empty">${this._t("tlNoHistory")}</div>`;
     }
     const _wRing = '<circle cx="7" cy="7" r="5.5" fill="none" style="stroke:var(--is-text-muted)" stroke-width="1.5"/>';
@@ -17902,11 +18036,11 @@ var _TautulliTableMethods = class {
   // User detail — IP Addresses tab
   // ──────────────────────────────────────────────────────────────────────────
   _tlBodyUdIps() {
-    const m = this._tautulliModal || {};
-    const data = m.userDetailIpsData || [];
-    const sortCol = m.userDetailIpsSortCol || "last_seen";
-    const sortDir = m.userDetailIpsSortDir || "desc";
-    const page = m.userDetailIpsPage || 0;
+    const m2 = this._tautulliModal || {};
+    const data = m2.userDetailIpsData || [];
+    const sortCol = m2.userDetailIpsSortCol || "last_seen";
+    const sortDir = m2.userDetailIpsSortDir || "desc";
+    const page = m2.userDetailIpsPage || 0;
     const perPage = this._tlCalcPerPage();
     const isMob = this._isMob;
     if (!data.length) {
@@ -17998,9 +18132,9 @@ var _TautulliTableMethods = class {
   // Library detail
   // ══════════════════════════════════════════════════════════════════════════
   _tlBodyLibDetail() {
-    const m = this._tautulliModal || {};
-    const name = m.libDetailName || "\u2014";
-    const tab = m.libDetailTab || "profile";
+    const m2 = this._tautulliModal || {};
+    const name = m2.libDetailName || "\u2014";
+    const tab = m2.libDetailTab || "profile";
     const isMob = this._isMob;
     const backBtn = `<button data-tl-ld-back title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
@@ -18022,8 +18156,8 @@ var _TautulliTableMethods = class {
     return hdr + content;
   }
   _tlBodyLdProfile() {
-    const m = this._tautulliModal || {};
-    const prof = m.libDetailProfile;
+    const m2 = this._tautulliModal || {};
+    const prof = m2.libDetailProfile;
     const isMob = this._isMob;
     if (!prof) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
     const wts = prof.watchTimeStats || [];
@@ -18110,20 +18244,20 @@ var _TautulliTableMethods = class {
     ${recentSection}`;
   }
   _tlBodyLdHistory() {
-    const m = this._tautulliModal || {};
+    const m2 = this._tautulliModal || {};
     const isMob = this._isMob;
-    const data = m.libDetailHistData || [];
-    const tot = m.libDetailHistTotal || 0;
-    const page = m.libDetailHistPage || 0;
-    const media = m.libDetailHistMedia;
-    const playback = m.libDetailHistPlayback;
-    const search = m.libDetailHistSearch || "";
-    const delMode = m.libDetailHistDeleteMode;
+    const data = m2.libDetailHistData || [];
+    const tot = m2.libDetailHistTotal || 0;
+    const page = m2.libDetailHistPage || 0;
+    const media = m2.libDetailHistMedia;
+    const playback = m2.libDetailHistPlayback;
+    const search = m2.libDetailHistSearch || "";
+    const delMode = m2.libDetailHistDeleteMode;
     const hidden = this._tlHidden("libDetailHistHiddenCols", ["ip", "paused", "stopped"]);
     const mobHidden = this._tlHidden("libDetailHistMobHiddenCols", ["ip", "platform", "product", "player", "paused", "stopped"]);
     const perPage = this._tlCalcPerPage({ hasFilter: true });
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
-    if (m.libDetailHistLoading) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
+    if (m2.libDetailHistLoading) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
     const HIST_COLS = [
       { key: "date", label: "Date", sort: "date", right: false },
       { key: "user", label: "User", sort: "user", right: false },
@@ -18148,7 +18282,7 @@ var _TautulliTableMethods = class {
     const mediaBtns = [["", "All"], ["movie", "Movies"], ["episode", "Episodes"], ["track", "Music"], ["live", "Live TV"]].map(([v, l]) => `<button class="tl-page-btn${media === v ? " active" : ""}" data-tl-ld-hist-media="${v}" style="white-space:nowrap;flex-shrink:0">${l}</button>`).join("");
     const playBtns = [["", "All"], ["direct play", "Direct Play"], ["copy", "Direct Stream"], ["transcode", "Transcode"]].map(([v, l]) => `<button class="tl-page-btn${playback === v ? " active" : ""}" data-tl-ld-hist-play="${v}" style="white-space:nowrap;flex-shrink:0">${l}</button>`).join("");
     const delBtn = this._tlEditBtn("tl-ld-hist-del-mode", delMode, this._t("tlDelete"));
-    const colsMenu = isMob ? this._tlColsMenu("tl-ld-hist-mob-cols-btn", "tl-ld-hist-mob-cols-menu", this._tlColItems(MOB_PICKER, mobHidden, "data-tl-ld-hist-mob-col"), m.libDetailHistMobColsOpen) : this._tlColsMenu("tl-ld-hist-cols-btn", "tl-ld-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-ld-hist-col"), m.libDetailHistColsOpen);
+    const colsMenu = isMob ? this._tlColsMenu("tl-ld-hist-mob-cols-btn", "tl-ld-hist-mob-cols-menu", this._tlColItems(MOB_PICKER, mobHidden, "data-tl-ld-hist-mob-col"), m2.libDetailHistMobColsOpen) : this._tlColsMenu("tl-ld-hist-cols-btn", "tl-ld-hist-cols-menu", this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-tl-ld-hist-col"), m2.libDetailHistColsOpen);
     const searchEl = this._tlSearchInput("tl-ld-hist-search", search);
     const toolbar = `<div style="margin-bottom:10px">
       <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">${mediaBtns}${playBtns}</div>
@@ -18173,7 +18307,7 @@ var _TautulliTableMethods = class {
     if (isMob) {
       const cards = data.map((h) => {
         const rid = h.reference_id || h.session_key || Math.random();
-        const isExp = m.libDetailHistExpandedRow === rid;
+        const isExp = m2.libDetailHistExpandedRow === rid;
         const icon = this._tlMediaIcon(h.media_type || "", 14);
         const title = esc(h.full_title || h.title || "\u2014");
         const dur = this._tlFmtDuration(h.duration || 0);
@@ -18206,7 +18340,7 @@ var _TautulliTableMethods = class {
     const colCount = vis.length + 2;
     const rows = data.map((h) => {
       const rid = h.reference_id || h.session_key || Math.random();
-      const isExp = m.libDetailHistExpandedRow === rid;
+      const isExp = m2.libDetailHistExpandedRow === rid;
       const icon = this._tlMediaIcon(h.media_type || "", 12);
       const esc2 = (s) => this._escHtml(String(s ?? ""));
       const ws = h.watched_status ?? -1;
@@ -18231,14 +18365,14 @@ var _TautulliTableMethods = class {
     return toolbar + `<div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}${delHdr}</tr></thead><tbody>${rows || `<tr><td colspan="${colCount}" class="u-empty">${this._t("tlNoHistory")}</td></tr>`}</tbody></table></div>` + this._tlMobPag("tl-ld-hpage", page, totalPages, true);
   }
   _tlBodyLdMedia() {
-    const m = this._tautulliModal || {};
+    const m2 = this._tautulliModal || {};
     const isMob = this._isMob;
-    const data = m.libDetailMediaData || [];
-    const tot = m.libDetailMediaTotal || 0;
-    const page = m.libDetailMediaPage || 0;
-    const search = m.libDetailMediaSearch || "";
-    const sort = m.libDetailMediaSort || "added_at";
-    const dir = m.libDetailMediaDir || "desc";
+    const data = m2.libDetailMediaData || [];
+    const tot = m2.libDetailMediaTotal || 0;
+    const page = m2.libDetailMediaPage || 0;
+    const search = m2.libDetailMediaSearch || "";
+    const sort = m2.libDetailMediaSort || "added_at";
+    const dir = m2.libDetailMediaDir || "desc";
     const perPage = 25;
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const _sortTh = (key, label, right = false) => {
@@ -18307,15 +18441,15 @@ var _TautulliTableMethods = class {
   // Media item detail
   // ══════════════════════════════════════════════════════════════════════════
   _tlBodyMediaDetail() {
-    const m = this._tautulliModal || {};
-    const tab = m.mediaDetailTab || "info";
+    const m2 = this._tautulliModal || {};
+    const tab = m2.mediaDetailTab || "info";
     const isMob = this._isMob;
-    const backAttr = m.mediaDetailPrev === "lib" ? "data-tl-md-back-lib" : "data-tl-md-back-user";
+    const backAttr = m2.mediaDetailPrev === "lib" ? "data-tl-md-back-lib" : "data-tl-md-back-user";
     const backBtn = `<button ${backAttr} title="Back" style="width:32px;height:32px;border-radius:50%;background:var(--is-btn-bg);border:1px solid var(--is-divider);color:var(--is-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>`;
     const tabs = [["info", "Info"], ["history", "History"]];
     const tabBtns = tabs.map(([k, l]) => `<button class="tl-page-btn${tab === k ? " active" : ""}" data-tl-md-tab="${k}">${l}</button>`).join("");
-    const title = this._escHtml(m.mediaDetailTitle || "\u2014");
+    const title = this._escHtml(m2.mediaDetailTitle || "\u2014");
     const hdr = isMob ? `<div style="margin-bottom:12px">
            <div class="u-panel-hdr">${backBtn}</div>
            <div style="font-size:15px;font-weight:700;color:var(--is-text);margin-bottom:10px">${title}</div>
@@ -18331,8 +18465,8 @@ var _TautulliTableMethods = class {
     return hdr + content;
   }
   _tlBodyMdInfo() {
-    const m = this._tautulliModal || {};
-    const data = m.mediaDetailData;
+    const m2 = this._tautulliModal || {};
+    const data = m2.mediaDetailData;
     const isMob = this._isMob;
     if (!data) return `<div class="is-loading"><span>${this._t("loading")}</span></div>`;
     const meta = data.metadata || {};
@@ -18352,7 +18486,7 @@ var _TautulliTableMethods = class {
     if (meta.originally_available_at) metaRows.push(`<span style="color:var(--is-text-muted)">Aired:</span> ${esc(meta.originally_available_at)}`);
     if (meta.directors?.length) metaRows.push(`<span style="color:var(--is-text-muted)">Director:</span> ${meta.directors.map((d) => esc(d.tag || d)).join(", ")}`);
     if (meta.genres?.length) metaRows.push(`<span style="color:var(--is-text-muted)">Genres:</span> ${meta.genres.map((g) => esc(g.tag || g)).join(", ")}`);
-    const fullTitle = esc(meta.full_title || meta.title || m.mediaDetailTitle || "\u2014");
+    const fullTitle = esc(meta.full_title || meta.title || m2.mediaDetailTitle || "\u2014");
     const subtitle = meta.parent_title ? `${esc(meta.parent_title)}${meta.media_index ? " \xB7 E" + meta.media_index : ""}` : "";
     const summary = meta.summary ? `<div style="font-size:11px;color:var(--is-text-muted);margin-top:8px;line-height:1.5;max-height:60px;overflow:hidden">${esc(meta.summary)}</div>` : "";
     const metaHdr = `<div style="display:flex;gap:12px;margin-bottom:${isMob ? "12px" : "16px"}">
@@ -18402,11 +18536,11 @@ var _TautulliTableMethods = class {
          </div>`;
   }
   _tlBodyMdHistory() {
-    const m = this._tautulliModal || {};
+    const m2 = this._tautulliModal || {};
     const isMob = this._isMob;
-    const data = m.mediaDetailHistData || [];
-    const tot = m.mediaDetailHistTotal || 0;
-    const page = m.mediaDetailHistPage || 0;
+    const data = m2.mediaDetailHistData || [];
+    const tot = m2.mediaDetailHistTotal || 0;
+    const page = m2.mediaDetailHistPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: false });
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
     const esc = (s) => this._escHtml(String(s ?? ""));
@@ -18965,22 +19099,22 @@ function _tlGAttr(v) {
 }
 function _tlGFmtDur(sec) {
   if (!sec || sec <= 0) return "0";
-  const m = Math.floor(sec / 60);
-  if (m < 1) return sec + "s";
-  const h = Math.floor(m / 60);
-  if (h < 1) return m + "m";
+  const m2 = Math.floor(sec / 60);
+  if (m2 < 1) return sec + "s";
+  const h = Math.floor(m2 / 60);
+  if (h < 1) return m2 + "m";
   const d = Math.floor(h / 24);
-  if (d < 1) return h + "h " + (m % 60 > 0 ? m % 60 + "m" : "");
+  if (d < 1) return h + "h " + (m2 % 60 > 0 ? m2 % 60 + "m" : "");
   const mo = Math.floor(d / 30);
   if (mo < 1) return d + "d " + (h % 24 > 0 ? h % 24 + "h" : "");
   return mo + "mo " + (d % 30 > 0 ? d % 30 + "d" : "");
 }
 function _tlGFmtDurShort(sec) {
   if (!sec || sec <= 0) return "0";
-  const m = Math.floor(sec / 60);
-  if (m < 1) return sec + "s";
-  const h = Math.floor(m / 60);
-  if (h < 1) return m + "m";
+  const m2 = Math.floor(sec / 60);
+  if (m2 < 1) return sec + "s";
+  const h = Math.floor(m2 / 60);
+  if (h < 1) return m2 + "m";
   const d = Math.floor(h / 24);
   if (d < 1) return h + "h";
   return d + "d";
@@ -19032,12 +19166,12 @@ function _tlGXLabels(visibleLabels) {
 }
 var _TautulliGraphsMethods = class {
   _tlBodyGraphs() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    if (m.graphsLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
-    const sub = m.graphsSub || "media";
-    const metric = m.graphsMetric || "plays";
-    const range = m.graphsRange || 30;
+    const m2 = this._tautulliModal;
+    if (!m2) return "";
+    if (m2.graphsLoading) return `<div class="u-empty-lg">${this._t("loading")}</div>`;
+    const sub = m2.graphsSub || "media";
+    const metric = m2.graphsMetric || "plays";
+    const range = m2.graphsRange || 30;
     const isMob = this._isMob;
     const isTot = sub === "totals";
     const subTabBar = `
@@ -19067,7 +19201,7 @@ var _TautulliGraphsMethods = class {
          <div style="margin-bottom:12px">${subTabBar}</div>` : `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;flex-wrap:wrap">
            ${subTabBar}${rightControls}
          </div>`;
-    const gd = m.graphsData || {};
+    const gd = m2.graphsData || {};
     const isDur = metric === "duration";
     const BASE = { range, isDate: true, isDuration: isDur, isMob };
     let body = "";
@@ -19315,9 +19449,9 @@ var _TautulliGraphsMethods = class {
   }
   // ── User dropdown ─────────────────────────────────────────────────────────
   _tlGUserDropdown() {
-    const m = this._tautulliModal;
-    if (!m) return "";
-    const users = m.graphsUserList || [], sel = m.graphsSelectedUsers;
+    const m2 = this._tautulliModal;
+    if (!m2) return "";
+    const users = m2.graphsUserList || [], sel = m2.graphsSelectedUsers;
     let btnLabel = this._t("tlGAllUsers");
     if (sel && sel.size === 1) {
       const u = users.find((u2) => sel.has(String(u2.user_id)));
@@ -19349,12 +19483,12 @@ var _TautulliGraphsMethods = class {
   }
   // ── Fetch ─────────────────────────────────────────────────────────────────
   async _tlFetchGraphs() {
-    const m = this._tautulliModal;
-    const metric = m?.graphsMetric || "plays";
-    const range = m?.graphsRange || 30;
-    const sub = m?.graphsSub || "media";
+    const m2 = this._tautulliModal;
+    const metric = m2?.graphsMetric || "plays";
+    const range = m2?.graphsRange || 30;
+    const sub = m2?.graphsSub || "media";
     const yAxis = metric === "duration" ? "duration" : "plays";
-    const sel = m?.graphsSelectedUsers;
+    const sel = m2?.graphsSelectedUsers;
     const userParam = sel && sel.size === 1 ? `&user_id=${[...sel][0]}` : "";
     const base = `time_range=${range}&y_axis=${yAxis}${userParam}`;
     if (sub === "media") {
@@ -19376,14 +19510,14 @@ var _TautulliGraphsMethods = class {
     }
   }
   async _tlRefetchGraphs(body) {
-    const m = this._tautulliModal;
-    if (!m || !body) return;
-    m.graphsLoading = true;
+    const m2 = this._tautulliModal;
+    if (!m2 || !body) return;
+    m2.graphsLoading = true;
     body.innerHTML = this._tlBodyGraphs();
     const gd = await this._tlFetchGraphs();
     if (!this._tautulliModal) return;
-    m.graphsData = gd;
-    m.graphsLoading = false;
+    m2.graphsData = gd;
+    m2.graphsLoading = false;
     body.innerHTML = this._tlBodyGraphs();
     this._wireGraphControls(body);
     this._tlGTriggerAnim(body);
@@ -19399,10 +19533,10 @@ var tautulliGraphsMixin = _TautulliGraphsMethods.prototype;
 // src/render/jellystat-shared.js
 var _JellystatSharedMethods = class {
   _jsHidden(key, defaults) {
-    const m = this._jellystatModal;
-    if (!m) return new Set(defaults);
-    if (!m[key]) m[key] = new Set(defaults);
-    return m[key];
+    const m2 = this._jellystatModal;
+    if (!m2) return new Set(defaults);
+    if (!m2[key]) m2[key] = new Set(defaults);
+    return m2[key];
   }
   async _jsLoadColPrefs() {
     try {
@@ -19413,11 +19547,11 @@ var _JellystatSharedMethods = class {
     }
   }
   _jsSaveColPrefs() {
-    const m = this._jellystatModal;
-    if (!m) return;
+    const m2 = this._jellystatModal;
+    if (!m2) return;
     const KEYS = ["libsHiddenCols", "libsMobHiddenCols", "usersHiddenCols", "usersMobHiddenCols", "histHiddenCols", "histMobHiddenCols"];
     const value = {};
-    for (const k of KEYS) if (m[k]) value[k] = [...m[k]];
+    for (const k of KEYS) if (m2[k]) value[k] = [...m2[k]];
     this._hass.callWS({ type: "frontend/store_user_data", key: "arr-js-cols", value }).catch(() => {
     });
   }
@@ -19450,13 +19584,13 @@ var _JellystatTableMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
   _jsBodyLibraries() {
     const isMob = this._isMob;
-    const m = this._jellystatModal || {};
-    const page = m.libsPage || 0;
+    const m2 = this._jellystatModal || {};
+    const page = m2.libsPage || 0;
     const perPage = this._tlCalcPerPage();
-    const sortCol = m.libsSortCol || "plays";
-    const sortDir = m.libsSortDir || "desc";
-    const search = (m.libsSearch || "").toLowerCase().trim();
-    const data = m.libsData || [];
+    const sortCol = m2.libsSortCol || "plays";
+    const sortDir = m2.libsSortDir || "desc";
+    const search = (m2.libsSearch || "").toLowerCase().trim();
+    const data = m2.libsData || [];
     const hasSeasons = data.some((l) => l.Season_Count > 0);
     const hasEpisodes = data.some((l) => l.Episode_Count > 0);
     const hasStreamed = data.some((l) => l.LastActivity);
@@ -19525,7 +19659,7 @@ var _JellystatTableMethods = class {
     ];
     const vis = COLS.filter((c) => !hidden.has(c.key));
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "name"), hidden, "data-js-lib-col");
-    const deskColsBtn = this._tlColsMenu("js-libs-cols-btn", "js-libs-cols-menu", deskColItems, m.libsColsOpen);
+    const deskColsBtn = this._tlColsMenu("js-libs-cols-btn", "js-libs-cols-menu", deskColItems, m2.libsColsOpen);
     const MOB_LIB_COLS = [
       { key: "seasons", label: "Seasons/Albums" },
       { key: "episodes", label: "Episodes/Tracks" },
@@ -19534,9 +19668,9 @@ var _JellystatTableMethods = class {
       { key: "duration", label: "Duration" }
     ];
     const mobColItems = this._tlColItems(MOB_LIB_COLS, mobH, "data-js-lib-mob-col");
-    const mobColsBtn = this._tlColsMenu("js-libs-mob-cols-btn", "js-libs-mob-cols-menu", mobColItems, m.libsMobColsOpen);
+    const mobColsBtn = this._tlColsMenu("js-libs-mob-cols-btn", "js-libs-mob-cols-menu", mobColItems, m2.libsMobColsOpen);
     const colsBtn = isMob ? mobColsBtn : deskColsBtn;
-    const searchEl = this._tlSearchInput("js-libs-search", m.libsSearch);
+    const searchEl = this._tlSearchInput("js-libs-search", m2.libsSearch);
     const searchFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const toolbar = '<div class="tl-toolbar">' + searchFlex + '<div class="tl-toolbar-actions">' + colsBtn + "</div></div>";
     const _libIcon = (lib) => {
@@ -19583,13 +19717,13 @@ var _JellystatTableMethods = class {
   // ──────────────────────────────────────────────────────────────────────────
   _jsBodyUsers() {
     const isMob = this._isMob;
-    const m = this._jellystatModal || {};
-    const page = m.usersPage || 0;
+    const m2 = this._jellystatModal || {};
+    const page = m2.usersPage || 0;
     const perPage = this._tlCalcPerPage();
-    const sortCol = m.usersSortCol || "plays";
-    const sortDir = m.usersSortDir || "desc";
-    const search = (m.usersSearch || "").toLowerCase().trim();
-    const data = m.usersData || [];
+    const sortCol = m2.usersSortCol || "plays";
+    const sortDir = m2.usersSortDir || "desc";
+    const search = (m2.usersSearch || "").toLowerCase().trim();
+    const data = m2.usersData || [];
     const hasStreamed = data.some((u) => u.LastActivityDate);
     const hasClient = data.some((u) => u.LastClient);
     const hasLastPlayed = data.some((u) => u.LastWatched);
@@ -19646,7 +19780,7 @@ var _JellystatTableMethods = class {
     ];
     const vis = COLS.filter((c) => !hidden.has(c.key));
     const deskColItems = this._tlColItems(COLS.filter((c) => c.key !== "user"), hidden, "data-js-usr-col");
-    const deskColsBtn = this._tlColsMenu("js-users-cols-btn", "js-users-cols-menu", deskColItems, m.usersColsOpen);
+    const deskColsBtn = this._tlColsMenu("js-users-cols-btn", "js-users-cols-menu", deskColItems, m2.usersColsOpen);
     const MOB_USR_COLS = [
       { key: "lastStreamed", label: "Last Streamed" },
       { key: "platform", label: "Platform" },
@@ -19654,9 +19788,9 @@ var _JellystatTableMethods = class {
       { key: "lastPlayed", label: "Last Played" }
     ];
     const mobColItems = this._tlColItems(MOB_USR_COLS, mobH, "data-js-usr-mob-col");
-    const mobColsBtn = this._tlColsMenu("js-users-mob-cols-btn", "js-users-mob-cols-menu", mobColItems, m.usersMobColsOpen);
+    const mobColsBtn = this._tlColsMenu("js-users-mob-cols-btn", "js-users-mob-cols-menu", mobColItems, m2.usersMobColsOpen);
     const colsBtn = isMob ? mobColsBtn : deskColsBtn;
-    const searchEl = this._tlSearchInput("js-users-search", m.usersSearch);
+    const searchEl = this._tlSearchInput("js-users-search", m2.usersSearch);
     const searchFlex = searchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const toolbar = '<div class="tl-toolbar">' + searchFlex + '<div class="tl-toolbar-actions">' + colsBtn + "</div></div>";
     if (isMob) {
@@ -19698,17 +19832,17 @@ var _JellystatTableMethods = class {
   // History
   // ──────────────────────────────────────────────────────────────────────────
   _jsBodyHistory() {
-    const m = this._jellystatModal;
-    if (!m) return "";
-    if (m.histLoading) return '<div class="u-empty-lg">Loading\u2026</div>';
+    const m2 = this._jellystatModal;
+    if (!m2) return "";
+    if (m2.histLoading) return '<div class="u-empty-lg">Loading\u2026</div>';
     const isMob = this._isMob;
-    const page = m.histPage || 0;
+    const page = m2.histPage || 0;
     const perPage = this._tlCalcPerPage({ hasFilter: true });
-    const tot = m.histTotal || 0;
-    const data = m.histData || [];
-    const users = m.histUsers || [];
-    const selUser = m.histUser || "";
-    const selMethod = m.histPlayMethod || "";
+    const tot = m2.histTotal || 0;
+    const data = m2.histData || [];
+    const users = m2.histUsers || [];
+    const selUser = m2.histUser || "";
+    const selMethod = m2.histPlayMethod || "";
     const hidden = this._jsHidden("histHiddenCols", ["product", "player", "ip"]);
     const mobH = this._jsHidden("histMobHiddenCols", ["product", "player", "started", "ip"]);
     const totalPages = Math.max(1, Math.ceil(tot / perPage));
@@ -19733,14 +19867,14 @@ var _JellystatTableMethods = class {
       "js-hist-mob-cols-btn",
       "js-hist-mob-cols-menu",
       this._tlColItems([{ key: "product", label: "Product" }, { key: "player", label: "Player" }, { key: "started", label: "Started" }, { key: "ip", label: "IP" }], mobH, "data-js-hist-mob-col"),
-      m.histMobColsOpen
+      m2.histMobColsOpen
     ) : this._tlColsMenu(
       "js-hist-cols-btn",
       "js-hist-cols-menu",
       this._tlColItems(HIST_COLS.filter((c) => c.key !== "title"), hidden, "data-js-hist-col"),
-      m.histColsOpen
+      m2.histColsOpen
     );
-    const srchEl = this._tlSearchInput("js-hist-search", m.histSearch);
+    const srchEl = this._tlSearchInput("js-hist-search", m2.histSearch);
     const srchFlex = srchEl.replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     let toolbar;
     if (isMob) {
@@ -19797,20 +19931,20 @@ var _JellystatTableMethods = class {
   // Refetch helpers
   // ──────────────────────────────────────────────────────────────────────────
   async _jsRefetchHistory(body) {
-    const m = this._jellystatModal;
-    if (!m) return;
+    const m2 = this._jellystatModal;
+    if (!m2) return;
     body.innerHTML = '<div class="u-empty-lg">Loading\u2026</div>';
     const perPage = this._tlCalcPerPage({ hasFilter: true });
     const filters = [];
-    if (m.histUser) filters.push({ field: "UserName", value: m.histUser.toLowerCase() });
-    if (m.histPlayMethod) filters.push({ field: "PlayMethod", value: m.histPlayMethod.toLowerCase() });
-    let endpoint = "getHistory?page=" + ((m.histPage || 0) + 1) + "&size=" + perPage;
-    if (m.histSearch) endpoint += "&search=" + encodeURIComponent(m.histSearch);
+    if (m2.histUser) filters.push({ field: "UserName", value: m2.histUser.toLowerCase() });
+    if (m2.histPlayMethod) filters.push({ field: "PlayMethod", value: m2.histPlayMethod.toLowerCase() });
+    let endpoint = "getHistory?page=" + ((m2.histPage || 0) + 1) + "&size=" + perPage;
+    if (m2.histSearch) endpoint += "&search=" + encodeURIComponent(m2.histSearch);
     if (filters.length) endpoint += "&filters=" + encodeURIComponent(JSON.stringify(filters));
     const raw = await this._jsApiFetch(endpoint);
     if (!this._jellystatModal) return;
-    m.histData = raw?.results || (Array.isArray(raw) ? raw : []);
-    m.histTotal = raw?.pages != null ? raw.pages * perPage : raw?.totalCount ?? m.histData.length;
+    m2.histData = raw?.results || (Array.isArray(raw) ? raw : []);
+    m2.histTotal = raw?.pages != null ? raw.pages * perPage : raw?.totalCount ?? m2.histData.length;
     body.innerHTML = this._jsBodyHistory();
     this._wireJellystatModalBody(body);
   }
@@ -19989,39 +20123,39 @@ var _JellystatMethods = class {
     if (!body) return;
     if (tab === "libraries") {
       body.innerHTML = `<div class="u-empty-dim">${this._t("loading")}</div>`;
-      const m = this._jellystatModal;
-      if (!m) return;
+      const m2 = this._jellystatModal;
+      if (!m2) return;
       const raw = await this._jsApiFetch("stats/getLibraryCardStats");
       if (!this._jellystatModal) return;
-      m.libsData = Array.isArray(raw) ? raw : raw?.data || [];
-      m.libsTotal = m.libsData.length;
+      m2.libsData = Array.isArray(raw) ? raw : raw?.data || [];
+      m2.libsTotal = m2.libsData.length;
       body.innerHTML = this._jsBodyLibraries();
       this._wireJellystatModalBody(body);
     } else if (tab === "users") {
       body.innerHTML = '<div class="u-empty-dim">Loading\u2026</div>';
-      const m = this._jellystatModal;
-      if (!m) return;
+      const m2 = this._jellystatModal;
+      if (!m2) return;
       const raw = await this._jsApiFetch("stats/getAllUserActivity");
       if (!this._jellystatModal) return;
-      m.usersData = Array.isArray(raw) ? raw : raw?.data || raw?.users || [];
-      m.usersTotal = m.usersData.length;
+      m2.usersData = Array.isArray(raw) ? raw : raw?.data || raw?.users || [];
+      m2.usersTotal = m2.usersData.length;
       body.innerHTML = this._jsBodyUsers();
       this._wireJellystatModalBody(body);
     } else if (tab === "history") {
       body.innerHTML = '<div class="u-empty-dim">Loading\u2026</div>';
-      const m = this._jellystatModal;
-      if (!m) return;
-      m.histLoading = true;
+      const m2 = this._jellystatModal;
+      if (!m2) return;
+      m2.histLoading = true;
       const perPage = this._tlCalcPerPage({ hasFilter: true });
       const [histRaw, usersRaw] = await Promise.all([
         this._jsApiFetch("getHistory?page=1&size=" + perPage),
         this._jsApiFetch("stats/getAllUserActivity")
       ]);
       if (!this._jellystatModal) return;
-      m.histData = histRaw?.results || (Array.isArray(histRaw) ? histRaw : []);
-      m.histTotal = histRaw?.pages != null ? histRaw.pages * perPage : histRaw?.totalCount ?? m.histData.length;
-      m.histUsers = Array.isArray(usersRaw) ? usersRaw : usersRaw?.data || [];
-      m.histLoading = false;
+      m2.histData = histRaw?.results || (Array.isArray(histRaw) ? histRaw : []);
+      m2.histTotal = histRaw?.pages != null ? histRaw.pages * perPage : histRaw?.totalCount ?? m2.histData.length;
+      m2.histUsers = Array.isArray(usersRaw) ? usersRaw : usersRaw?.data || [];
+      m2.histLoading = false;
       body.innerHTML = this._jsBodyHistory();
       this._wireJellystatModalBody(body);
     } else if (tab === "graphs") {
@@ -20122,17 +20256,17 @@ function _jsPrepByHod(raw) {
 }
 var _JellystatGraphsMethods = class {
   _jsBodyGraphs() {
-    const m = this._jellystatModal;
-    if (!m) return "";
-    if (m.graphsLoading) return '<div class="u-empty-lg">Loading&hellip;</div>';
-    const metric = m.graphsMetric || "plays";
-    const range = m.graphsRange || 30;
+    const m2 = this._jellystatModal;
+    if (!m2) return "";
+    if (m2.graphsLoading) return '<div class="u-empty-lg">Loading&hellip;</div>';
+    const metric = m2.graphsMetric || "plays";
+    const range = m2.graphsRange || 30;
     const isMob = this._isMob;
     const isDur = metric === "duration";
     const metricBtns = '<div style="display:inline-flex;gap:2px"><button class="tl-page-btn' + (metric === "plays" ? " active" : "") + '" data-js-g-metric="plays">Count</button><button class="tl-page-btn' + (metric === "duration" ? " active" : "") + '" data-js-g-metric="duration">Duration</button></div>';
     const rangeCtrl = '<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--is-text-muted)"><span>Last</span><input id="js-g-range" type="number" value="' + range + '" min="1" max="365" style="width:38px;background:var(--is-btn-bg);border:1px solid var(--is-btn-bdr);border-radius:6px;color:var(--is-text);padding:4px;font-size:12px;text-align:center;font-family:inherit;outline:none;box-sizing:border-box;-webkit-appearance:none;appearance:none"><span>Days</span></div>';
     const controls = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;flex-wrap:wrap">' + metricBtns + rangeCtrl + "</div>";
-    const gd = m.graphsData || {};
+    const gd = m2.graphsData || {};
     const BASE = { range, isDate: false, isDuration: isDur, isMob };
     const barO = { isDuration: isDur, isMob };
     const pick = (obj) => isDur ? obj?.duration : obj?.plays;
@@ -20160,14 +20294,14 @@ var _JellystatGraphsMethods = class {
     };
   }
   async _jsRefetchGraphs(body) {
-    const m = this._jellystatModal;
-    if (!m || !body) return;
-    m.graphsLoading = true;
+    const m2 = this._jellystatModal;
+    if (!m2 || !body) return;
+    m2.graphsLoading = true;
     body.innerHTML = this._jsBodyGraphs();
     const gd = await this._jsFetchGraphs();
     if (!this._jellystatModal) return;
-    m.graphsData = gd;
-    m.graphsLoading = false;
+    m2.graphsData = gd;
+    m2.graphsLoading = false;
     body.innerHTML = this._jsBodyGraphs();
     this._wireJsGraphControls(body);
     this._tlGTriggerAnim(body);
@@ -20183,11 +20317,11 @@ var _TraceaRrTableMethods = class {
   // Overview tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyOverview() {
-    const m = this._tracearrModal;
-    const st = m.overviewStats || {};
-    const hlth = m.overviewHealth || {};
-    const viols = m.overviewViols || [];
-    const act = m.overviewAct || {};
+    const m2 = this._tracearrModal;
+    const st = m2.overviewStats || {};
+    const hlth = m2.overviewHealth || {};
+    const viols = m2.overviewViols || [];
+    const act = m2.overviewAct || {};
     const plays7 = (act.plays || []).slice(-7);
     const total7 = plays7.reduce((s, p) => s + (p.count || 0), 0);
     const isMob = this._isMob;
@@ -20239,8 +20373,8 @@ var _TraceaRrTableMethods = class {
   // Rules tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyRules() {
-    const m = this._tracearrModal;
-    const rules = m.rulesData || [];
+    const m2 = this._tracearrModal;
+    const rules = m2.rulesData || [];
     const isMob = this._isMob;
     const _day = this._isDay;
     const _btnClr = _day ? "#000" : "#fff";
@@ -20552,17 +20686,17 @@ var _TraceaRrTableMethods = class {
   // Users tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyUsers() {
-    const m = this._tracearrModal;
+    const m2 = this._tracearrModal;
     const seen = /* @__PURE__ */ new Set();
-    const users = (m.usersData || []).filter((u) => {
+    const users = (m2.usersData || []).filter((u) => {
       const k = u.id || u.username;
       return k && !seen.has(k) && seen.add(k);
     });
-    const total = m.usersTotal || 0;
+    const total = m2.usersTotal || 0;
     const isMob = this._isMob;
     const pp = this._tlCalcPerPage();
     const pages = Math.max(1, Math.ceil(total / pp));
-    const srchEl = this._tlSearchInput("tra-users-search", m.usersSearch).replace("width:110px", "flex:1").replace("display:inline-flex", "display:flex;flex:1");
+    const srchEl = this._tlSearchInput("tra-users-search", m2.usersSearch).replace("width:110px", "flex:1").replace("display:inline-flex", "display:flex;flex:1");
     const toolbar = `<div class="tl-toolbar">${srchEl}</div>`;
     if (isMob) {
       const cards = users.map((u) => {
@@ -20581,7 +20715,7 @@ var _TraceaRrTableMethods = class {
           <span style="font-size:14px;font-weight:800;color:${c};background:${bg};border-radius:8px;padding:3px 8px;flex-shrink:0">${score}</span>
         </div>`;
       }).join("") || `<div class="tl-mob-card" style="text-align:center;color:var(--is-text-muted)">${this._t("tlNoData")}</div>`;
-      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tra-users-page", m.usersPage, pages);
+      return toolbar + `<div>${cards}</div>` + this._tlMobPag("tra-users-page", m2.usersPage, pages);
     }
     const rows = users.map((u) => {
       const score = u.trustScore ?? 100;
@@ -20608,24 +20742,24 @@ var _TraceaRrTableMethods = class {
     return toolbar + `<div style="overflow-x:auto">
       <table class="tl-users-table">
         <thead><tr>
-          ${_traSortTh("displayName", this._t("traUser"), m.usersSortCol, m.usersSortDir)}
+          ${_traSortTh("displayName", this._t("traUser"), m2.usersSortCol, m2.usersSortDir)}
           <th>${this._t("traServer")}</th>
-          ${_traSortTh("trustScore", "Trust", m.usersSortCol, m.usersSortDir)}
-          ${_traSortTh("sessionCount", this._t("tlPlays"), m.usersSortCol, m.usersSortDir)}
-          ${_traSortTh("totalViolations", "Violations", m.usersSortCol, m.usersSortDir)}
+          ${_traSortTh("trustScore", "Trust", m2.usersSortCol, m2.usersSortDir)}
+          ${_traSortTh("sessionCount", this._t("tlPlays"), m2.usersSortCol, m2.usersSortDir)}
+          ${_traSortTh("totalViolations", "Violations", m2.usersSortCol, m2.usersSortDir)}
           <th>${this._t("traNaposledy")}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>` + this._tlMobPag("tra-users-page", m.usersPage, Math.max(1, Math.ceil(total / pp)));
+    </div>` + this._tlMobPag("tra-users-page", m2.usersPage, Math.max(1, Math.ceil(total / pp)));
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Violations tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyViolations() {
-    const m = this._tracearrModal;
-    const viols = m.violsData || [];
-    const total = m.violsTotal || 0;
+    const m2 = this._tracearrModal;
+    const viols = m2.violsData || [];
+    const total = m2.violsTotal || 0;
     const isMob = this._isMob;
     const pp = this._tlCalcPerPage({ hasFilter: true });
     const pages = Math.max(1, Math.ceil(total / pp));
@@ -20636,11 +20770,11 @@ var _TraceaRrTableMethods = class {
     const filters = `<div class="tl-toolbar" style="flex-wrap:wrap">
       <select id="tra-viols-sev" style="${_TRA_SEL}">
         <option value="">All Severities</option>
-        ${SEVERITIES.map((s) => `<option value="${s}"${m.violsSeverity === s ? " selected" : ""}>${sevLbl[s]}</option>`).join("")}
+        ${SEVERITIES.map((s) => `<option value="${s}"${m2.violsSeverity === s ? " selected" : ""}>${sevLbl[s]}</option>`).join("")}
       </select>
       <select id="tra-viols-stat" style="${_TRA_SEL}">
         <option value="">All Statuses</option>
-        ${STATUSES.map((s) => `<option value="${s}"${m.violsStatus === s ? " selected" : ""}>${statLbl[s]}</option>`).join("")}
+        ${STATUSES.map((s) => `<option value="${s}"${m2.violsStatus === s ? " selected" : ""}>${statLbl[s]}</option>`).join("")}
       </select>
     </div>`;
     const logHeading = `<div style="font-size:14px;font-weight:700;color:var(--is-text);margin:14px 0 8px">Violation Log</div>`;
@@ -20673,7 +20807,7 @@ var _TraceaRrTableMethods = class {
           </div>
         </div>`;
       }).join("");
-      return filters + logHeading + `<div>${cards}</div>` + this._tlMobPag("tra-viols-page", m.violsPage, pages);
+      return filters + logHeading + `<div>${cards}</div>` + this._tlMobPag("tra-viols-page", m2.violsPage, pages);
     }
     const rows = viols.map((v) => {
       const sev = v.severity || "high";
@@ -20702,7 +20836,7 @@ var _TraceaRrTableMethods = class {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>` + this._tlMobPag("tra-viols-page", m.violsPage, Math.max(1, Math.ceil(total / pp)));
+    </div>` + this._tlMobPag("tra-viols-page", m2.violsPage, Math.max(1, Math.ceil(total / pp)));
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Shared animated donut chart (matches Activity tab style)
@@ -20755,12 +20889,12 @@ var _TraceaRrTableMethods = class {
   // History tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyHistory() {
-    const m = this._tracearrModal;
-    const hist = m.histData || [];
-    const total = m.histTotal || 0;
+    const m2 = this._tracearrModal;
+    const hist = m2.histData || [];
+    const total = m2.histTotal || 0;
     const isMob = this._isMob;
     const _NAV_SUBS = { stats: 1, library: 3, performance: 2 };
-    const _navH = isMob ? (_NAV_SUBS[m.navGroup] ? 44 : 0) + 56 : 0;
+    const _navH = isMob ? (_NAV_SUBS[m2.navGroup] ? 44 : 0) + 56 : 0;
     const pp = isMob ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 90 - _navH - 26 - 72 - 46) / 92) - 1) : this._tlCalcPerPage({ hasFilter: true, filterH: 40, rowH: 44, bar: 0 });
     const pages = Math.max(1, Math.ceil(total / pp));
     const TRA_HIST_COLS = [
@@ -20772,21 +20906,21 @@ var _TraceaRrTableMethods = class {
       { key: "duration", label: "Duration" },
       { key: "progress", label: "Progress" }
     ];
-    if (!m.traHistHiddenCols) m.traHistHiddenCols = /* @__PURE__ */ new Set();
-    const hidden = m.traHistHiddenCols;
+    if (!m2.traHistHiddenCols) m2.traHistHiddenCols = /* @__PURE__ */ new Set();
+    const hidden = m2.traHistHiddenCols;
     const vis = TRA_HIST_COLS.filter((col) => !hidden.has(col.key));
     const toggleable = TRA_HIST_COLS.filter((col) => !col.always);
     const colsBtn = this._tlColsMenu(
       "tra-hist-cols-btn",
       "tra-hist-cols-menu",
       this._tlColItems(toggleable, hidden, "data-tra-hist-col"),
-      m.traHistColsOpen
+      m2.traHistColsOpen
     );
     const colsBtnIcon = this._tlColsMenu(
       "tra-hist-cols-btn",
       "tra-hist-cols-menu",
       this._tlColItems(toggleable, hidden, "data-tra-hist-col"),
-      m.traHistColsOpen,
+      m2.traHistColsOpen,
       true
     );
     const mediaIcon = (type) => this._tlMediaIcon(type || "", 12);
@@ -20823,25 +20957,25 @@ var _TraceaRrTableMethods = class {
       return { date, time };
     };
     const _SRV_CLR_F = { plex: "#e5a00d", jellyfin: "#7c4dff", emby: "#52b54b" };
-    const srvMapF = Object.fromEntries((m.histServers || []).map((s) => [s.id, s]));
+    const srvMapF = Object.fromEntries((m2.histServers || []).map((s) => [s.id, s]));
     const _srvSfx = (id) => {
       const s = srvMapF[id];
       if (!s?.type) return "";
       return " - " + (s.type.charAt(0).toUpperCase() + s.type.slice(1));
     };
-    const srvOpts = (m.histServers || []).map((s) => `<option value="${s.id}"${m.histServer === s.id ? " selected" : ""}>${s.name}</option>`).join("");
-    const filteredUsers = m.histServer ? (m.histUsers || []).filter((u) => u.serverId === m.histServer) : m.histUsers || [];
-    const uOpts = filteredUsers.map((u) => `<option value="${u.id}"${m.histUser === u.id ? " selected" : ""}>${u.displayName || u.username}${_srvSfx(u.serverId)}</option>`).join("");
-    const srchEl = this._tlSearchInput("tra-hist-search", m.histSearch).replace("width:110px", "flex:1").replace("display:inline-flex", "display:flex;flex:1");
+    const srvOpts = (m2.histServers || []).map((s) => `<option value="${s.id}"${m2.histServer === s.id ? " selected" : ""}>${s.name}</option>`).join("");
+    const filteredUsers = m2.histServer ? (m2.histUsers || []).filter((u) => u.serverId === m2.histServer) : m2.histUsers || [];
+    const uOpts = filteredUsers.map((u) => `<option value="${u.id}"${m2.histUser === u.id ? " selected" : ""}>${u.displayName || u.username}${_srvSfx(u.serverId)}</option>`).join("");
+    const srchEl = this._tlSearchInput("tra-hist-search", m2.histSearch).replace("width:110px", "flex:1").replace("display:inline-flex", "display:flex;flex:1");
     const _HIST_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
     const HIST_PERIODS = ["week", "month", "year", "all"];
     const periodBtns = HIST_PERIODS.map((p) => {
-      const active = (m.histPeriod || "all") === p;
+      const active = (m2.histPeriod || "all") === p;
       const mobSt = isMob && active ? "background:rgba(0,122,255,0.4);border-color:rgba(0,122,255,0.7);color:#fff" : "";
       return `<button class="is-f-btn${active ? " active" : ""}" data-tra-hist-period="${p}" style="${mobSt}">${_HIST_P_LBLS[p]}</button>`;
     }).join("");
     const userSel = `<select id="tra-hist-user" style="${_TRA_SEL}"><option value="">${this._t("traAllUsers")}</option>${uOpts}</select>`;
-    const mediaSel = `<select id="tra-hist-media" style="${_TRA_SEL}"><option value="">${this._t("traAllMedia")}</option><option value="movie"${m.histMedia === "movie" ? " selected" : ""}>Movie</option><option value="episode"${m.histMedia === "episode" ? " selected" : ""}>Episode</option><option value="track"${m.histMedia === "track" ? " selected" : ""}>Music</option></select>`;
+    const mediaSel = `<select id="tra-hist-media" style="${_TRA_SEL}"><option value="">${this._t("traAllMedia")}</option><option value="movie"${m2.histMedia === "movie" ? " selected" : ""}>Movie</option><option value="episode"${m2.histMedia === "episode" ? " selected" : ""}>Episode</option><option value="track"${m2.histMedia === "track" ? " selected" : ""}>Music</option></select>`;
     const _hi14 = (d) => `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">${d}</svg>`;
     const _mediaIco = (val) => {
       if (val === "movie") return _hi14('<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>');
@@ -20859,13 +20993,13 @@ var _TraceaRrTableMethods = class {
       "tra-hist-user",
       _hi14('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
       `<option value="">${this._t("traAllUsers")}</option>${uOpts}`,
-      !!m.histUser
+      !!m2.histUser
     );
     const mobMediaSel = _iconSel(
       "tra-hist-media",
-      _mediaIco(m.histMedia || ""),
-      `<option value="">${this._t("traAllMedia")}</option><option value="movie"${m.histMedia === "movie" ? " selected" : ""}>Movie</option><option value="episode"${m.histMedia === "episode" ? " selected" : ""}>Episode</option><option value="track"${m.histMedia === "track" ? " selected" : ""}>Music</option>`,
-      !!m.histMedia
+      _mediaIco(m2.histMedia || ""),
+      `<option value="">${this._t("traAllMedia")}</option><option value="movie"${m2.histMedia === "movie" ? " selected" : ""}>Movie</option><option value="episode"${m2.histMedia === "episode" ? " selected" : ""}>Episode</option><option value="track"${m2.histMedia === "track" ? " selected" : ""}>Music</option>`,
+      !!m2.histMedia
     );
     const filters = isMob ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
           <div style="display:flex;gap:4px">${srchEl}${colsBtnIcon}</div>
@@ -20923,7 +21057,7 @@ var _TraceaRrTableMethods = class {
           </div>
         </div>`;
       }).join("");
-      const pag2 = this._tlMobPag("tra-hist-page", m.histPage, pages);
+      const pag2 = this._tlMobPag("tra-hist-page", m2.histPage, pages);
       return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin:-10px -12px -16px">
         <div style="flex-shrink:0;padding:10px 12px 0">${filters}</div>
         <div style="flex:1;min-height:0;overflow:hidden">${cards}</div>
@@ -20945,9 +21079,9 @@ var _TraceaRrTableMethods = class {
       const durRaw = h.durationMs ? (() => {
         const s = Math.round(h.durationMs / 1e3);
         const h2 = Math.floor(s / 3600);
-        const m2 = Math.floor(s % 3600 / 60);
+        const m22 = Math.floor(s % 3600 / 60);
         const s2 = s % 60;
-        return h2 > 0 ? `${h2}h ${String(m2).padStart(2, "0")}m` : `${m2}m ${String(s2).padStart(2, "0")}s`;
+        return h2 > 0 ? `${h2}h ${String(m22).padStart(2, "0")}m` : `${m22}m ${String(s2).padStart(2, "0")}s`;
       })() : "\u2014";
       const dur = h.durationMs ? `<div style="display:inline-flex;align-items:center;gap:4px">${_CLK}<span>${durRaw}</span></div>` : "\u2014";
       const { label, color, bg, pct } = watchBadge(h);
@@ -20964,7 +21098,7 @@ var _TraceaRrTableMethods = class {
       return `<tr data-tra-hist-row="${h.id || idx}" style="cursor:pointer">${vis.map((col) => cm[col.key] || "<td>\u2014</td>").join("")}</tr>`;
     }).join("");
     const thead = vis.map((col) => `<th>${col.label}</th>`).join("");
-    const pag = this._tlMobPag("tra-hist-page", m.histPage, Math.max(1, Math.ceil(total / pp)), true);
+    const pag = this._tlMobPag("tra-hist-page", m2.histPage, Math.max(1, Math.ceil(total / pp)), true);
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;height:100%">
       <div style="flex-shrink:0">${filters}</div>
       <div style="flex:1;min-height:0;overflow-x:auto;overflow-y:auto">
@@ -20980,8 +21114,8 @@ var _TraceaRrTableMethods = class {
   // History — session detail view
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyHistDetail() {
-    const m = this._tracearrModal;
-    const h = m.histDetailItem;
+    const m2 = this._tracearrModal;
+    const h = m2.histDetailItem;
     if (!h) return '<div style="color:var(--is-text-muted);padding:40px;text-align:center">No data</div>';
     const isMob = this._isMob;
     const poster = !!h.posterUrl;
@@ -21014,7 +21148,7 @@ var _TraceaRrTableMethods = class {
     const decBadge = decisionBadge(h.videoDecision || (h.isTranscode ? "transcode" : "directplay"));
     const watchMs = h.startedAt && h.stoppedAt ? new Date(h.stoppedAt) - new Date(h.startedAt) : Number(h.durationMs) || 0;
     const _SRV_CLR = { plex: "#e5a00d", jellyfin: "#7c4dff", emby: "#52b54b" };
-    const srvMapF = Object.fromEntries((m.histServers || []).map((s) => [s.id, s]));
+    const srvMapF = Object.fromEntries((m2.histServers || []).map((s) => [s.id, s]));
     const srv = srvMapF[h.serverId];
     const srvType = (srv?.type || h.serverName || "").toLowerCase();
     const srvName = h.serverName || srv?.name || "";
@@ -21143,9 +21277,9 @@ var _TraceaRrTableMethods = class {
   // Activity tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyActivity() {
-    const m = this._tracearrModal;
-    const act = m.activityData || {};
-    const period = m.activityPeriod || "month";
+    const m2 = this._tracearrModal;
+    const act = m2.activityData || {};
+    const period = m2.activityPeriod || "month";
     const days = period === "week" ? 7 : period === "year" ? 365 : 30;
     const isMob = this._isMob;
     const isTablet = !isMob && window.matchMedia("(max-width:860px)").matches;
@@ -21298,12 +21432,12 @@ var _TraceaRrTableMethods = class {
   // Quality tab (library analytics)
   // ──────────────────────────────────────────────────────────────────────────
   _traQualEvolCard() {
-    const m = this._tracearrModal;
-    const qd = m.qualityData || {};
+    const m2 = this._tracearrModal;
+    const qd = m2.qualityData || {};
     const _allData = qd.data || [];
     const isMob = this._isMob;
     const Q_COLORS = { "4K": "#34C759", "1080p": "#007AFF", "720p": "#FF9500", "SD": "#FF3B30" };
-    const _period = m.qualityPeriod || "month";
+    const _period = m2.qualityPeriod || "month";
     const _periodDays = { week: 7, month: 30, year: 365 };
     const _sliced = _period === "all" ? _allData : _allData.slice(-(_periodDays[_period] || 30));
     const data = _period === "year" ? _sliced.filter((_, i) => i % 7 === 0 || i === _sliced.length - 1) : _period === "all" ? _sliced.filter((_, i) => i % 30 === 0 || i === _sliced.length - 1) : _sliced;
@@ -21317,7 +21451,7 @@ var _TraceaRrTableMethods = class {
       { label: "4K", color: Q_COLORS["4K"] }
     ];
     const _curPeriod = _period;
-    const _curMt = m.qualityMediaType || null;
+    const _curMt = m2.qualityMediaType || null;
     const _Q_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
     const _periodBtns = ["week", "month", "year", "all"].map(
       (p) => `<button class="is-f-btn${_curPeriod === p ? " active" : ""}" data-tra-q-period="${p}" style="padding:2px 7px;font-size:10px">${_Q_P_LBLS[p]}</button>`
@@ -21397,9 +21531,9 @@ var _TraceaRrTableMethods = class {
     return `<div class="tl-g-card" style="position:relative">${header}<div style="position:relative">${chartHtml}</div><div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div></div>`;
   }
   _traQualCodecsCard() {
-    const m = this._tracearrModal;
+    const m2 = this._tracearrModal;
     const isMob = this._isMob;
-    const codecs = m.qualityCodecs || {};
+    const codecs = m2.qualityCodecs || {};
     const CODEC_COLORS = ["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#BF5AF2", "#FF2D55", "#5AC8FA", "#FFCC00"];
     const codecBars = (items) => {
       if (!items?.length) return "";
@@ -21418,7 +21552,7 @@ var _TraceaRrTableMethods = class {
       }).join("");
     };
     const codecSection = (title, items, extra = "") => `<div class="u-panel-hdr"><span class="tl-graph-title">${title}</span>${extra}</div>${codecBars(items)}`;
-    const _codecTab = m.qualityCodecTab || "movies";
+    const _codecTab = m2.qualityCodecTab || "movies";
     const _ctBtns = [["movies", "Movies / TV"], ["music", "Music"]].map(
       ([val, lbl]) => `<button class="is-f-btn${_codecTab === val ? " active" : ""}" data-tra-q-codec-tab="${val}" style="padding:2px 7px;font-size:10px">${lbl}</button>`
     ).join("");
@@ -21437,8 +21571,8 @@ var _TraceaRrTableMethods = class {
     return `<div class="tl-g-card"><div style="display:grid;grid-template-columns:${_qCols};gap:${_qGap}">${_innerCols}</div></div>`;
   }
   _traBodyQuality() {
-    const m = this._tracearrModal;
-    const qd = m.qualityData || {};
+    const m2 = this._tracearrModal;
+    const qd = m2.qualityData || {};
     if (qd.status === "generating" || qd.message && !qd.data) {
       return `<div style="text-align:center;padding:48px 24px">
         <div style="font-size:28px;margin-bottom:12px">\u23F3</div>
@@ -21450,7 +21584,7 @@ var _TraceaRrTableMethods = class {
     const Q_COLORS = { "4K": "#34C759", "1080p": "#007AFF", "720p": "#FF9500", "SD": "#FF3B30" };
     const qualCard = this._traQualEvolCard();
     const codecsRow = this._traQualCodecsCard();
-    const res = m.qualityResolution || {};
+    const res = m2.qualityResolution || {};
     const _resSegs = (obj) => {
       if (!obj) return [];
       const c4k = obj.count4k ?? obj["4K"] ?? obj["4k"] ?? 0;
@@ -21541,10 +21675,10 @@ var _TraceaRrTableMethods = class {
   // Storage tab (library analytics)
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyStorage() {
-    const m = this._tracearrModal;
-    const hist = m.storageData?.history || [];
-    const cur = m.storageData?.current || {};
-    const st = m.storageStats || {};
+    const m2 = this._tracearrModal;
+    const hist = m2.storageData?.history || [];
+    const cur = m2.storageData?.current || {};
+    const st = m2.storageStats || {};
     const isMob = this._isMob;
     const fmtBytes = (b) => {
       const n = Number(b) || 0;
@@ -21558,8 +21692,8 @@ var _TraceaRrTableMethods = class {
         <div style="font-size:${isMob ? "13px" : "14px"};font-weight:800;line-height:1;color:${color};white-space:nowrap">${val}</div>
         ${sub ? `<div style="font-size:8px;color:var(--is-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>` : ""}
       </div>`;
-    const period = m.storagePeriod || "month";
-    const gr = m.storageData?.growthRate;
+    const period = m2.storagePeriod || "month";
+    const gr = m2.storageData?.growthRate;
     const growthVal = (() => {
       if (!gr) {
         const days = { week: 7, month: 30, year: 365 }[period];
@@ -21577,9 +21711,9 @@ var _TraceaRrTableMethods = class {
     })();
     const growthLabel = { week: "Growth/wk", month: "Growth/mo", year: "Growth/yr", all: "Total Growth" }[period] || "Growth";
     const growthSign = growthVal >= 0 ? "+" : "";
-    const dupG = m.dupsSummary?.totalGroups || 0;
-    const dupSav = Number(m.dupsSummary?.totalPotentialSavingsBytes || 0);
-    const stSum = m.staleSummary?.total || m.staleSummary?.neverWatched || {};
+    const dupG = m2.dupsSummary?.totalGroups || 0;
+    const dupSav = Number(m2.dupsSummary?.totalPotentialSavingsBytes || 0);
+    const stSum = m2.staleSummary?.total || m2.staleSummary?.neverWatched || {};
     const stCnt = stSum.count || 0;
     const stSz = Number(stSum.sizeBytes || 0);
     const tiles = `<div style="display:grid;grid-template-columns:repeat(${isMob ? 2 : 4},1fr);gap:${isMob ? "6px" : "8px"};margin-bottom:${isMob ? "6px" : "6px"}">
@@ -21590,7 +21724,7 @@ var _TraceaRrTableMethods = class {
     </div>`;
     const periodDays = { week: 7, month: 30, year: 365 };
     const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    const showPred = m.storagePredictions !== false && period !== "all";
+    const showPred = m2.storagePredictions !== false && period !== "all";
     const predDays = { week: 7, month: 30, year: 365, all: 30 }[period] || 30;
     const _rawSlice = period === "all" ? hist : hist.slice(-(periodDays[period] || 30));
     const _pastFull = _rawSlice.filter((d) => d.day <= today);
@@ -21640,30 +21774,30 @@ var _TraceaRrTableMethods = class {
       const n = pts.length;
       if (!n) return "";
       if (n < 2) return `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-      const dx = [], dy = [], m2 = [];
+      const dx = [], dy = [], m3 = [];
       for (let i = 0; i < n - 1; i++) {
         dx[i] = pts[i + 1].x - pts[i].x;
         dy[i] = pts[i + 1].y - pts[i].y;
-        m2[i] = dy[i] / dx[i];
+        m3[i] = dy[i] / dx[i];
       }
       const t = new Array(n);
-      t[0] = m2[0];
-      t[n - 1] = m2[n - 2];
-      for (let i = 1; i < n - 1; i++) t[i] = (m2[i - 1] + m2[i]) / 2;
+      t[0] = m3[0];
+      t[n - 1] = m3[n - 2];
+      for (let i = 1; i < n - 1; i++) t[i] = (m3[i - 1] + m3[i]) / 2;
       for (let i = 0; i < n - 1; i++) {
-        if (Math.abs(m2[i]) < 1e-10) {
+        if (Math.abs(m3[i]) < 1e-10) {
           t[i] = t[i + 1] = 0;
           continue;
         }
-        const a = t[i] / m2[i], b = t[i + 1] / m2[i];
+        const a = t[i] / m3[i], b = t[i + 1] / m3[i];
         if (a < 0 || b < 0) {
           t[i] = t[i + 1] = 0;
           continue;
         }
         const h = Math.sqrt(a * a + b * b);
         if (h > 3) {
-          t[i] = 3 * m2[i] / h * a;
-          t[i + 1] = 3 * m2[i] / h * b;
+          t[i] = 3 * m3[i] / h * a;
+          t[i + 1] = 3 * m3[i] / h * b;
         }
       }
       let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
@@ -21815,14 +21949,14 @@ var _TraceaRrTableMethods = class {
     return tiles + storCard + `<div data-tra-stale-wrap style="margin-top:6px">${this._traBodyStaleSection()}</div>`;
   }
   _traBodyStaleSection() {
-    const m = this._tracearrModal;
+    const m2 = this._tracearrModal;
     const isMob = this._isMob;
-    const items = m.staleItems || [];
-    const total = m.staleTotal || 0;
-    const sum = m.staleSummary || {};
-    const cat = m.staleCategory || "never_watched";
-    const page = m.stalePage || 0;
-    const pp = m.stalePageSize || 10;
+    const items = m2.staleItems || [];
+    const total = m2.staleTotal || 0;
+    const sum = m2.staleSummary || {};
+    const cat = m2.staleCategory || "never_watched";
+    const page = m2.stalePage || 0;
+    const pp = m2.stalePageSize || 10;
     const totalP = Math.max(1, Math.ceil(total / pp));
     const nwCnt = sum.neverWatched?.count ?? 0;
     const stCnt = sum.stale?.count ?? 0;
@@ -21842,7 +21976,7 @@ var _TraceaRrTableMethods = class {
       return this._t("traDaysAgo").replace("%d", diff);
     };
     const RES_COLOR = { "4k": "#BF5AF2", "1080p": "#007AFF", "720p": "#34C759", "480p": "#FF9500", "sd": "#FF9500" };
-    const mt = m.staleMediaType || "";
+    const mt = m2.staleMediaType || "";
     const _CHEV_DN_ST = `<svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.55;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>`;
     const _iconSelSt = (id, icon, opts, isActive) => {
       const bg = isActive ? "rgba(0,122,255,0.3)" : "var(--is-btn-bg)";
@@ -21855,7 +21989,7 @@ var _TraceaRrTableMethods = class {
     const typeSelEl = isMob ? _iconSelSt("tra-stale-type", _ALL_TYPES_ICO, typeOpts, !!mt) : `<select id="tra-stale-type" style="height:28px;box-sizing:border-box;padding:0 6px;font-size:12px;background:var(--is-btn-bg);color:var(--is-btn-clr);border:1px solid var(--is-btn-bdr);border-radius:6px;cursor:pointer;outline:none">${typeOpts}</select>`;
     const staleMonthsEl = (() => {
       if (cat !== "stale") return "";
-      const mo = m.staleMonths || 3;
+      const mo = m2.staleMonths || 3;
       const moOpts = `<option value="3" ${mo === 3 ? "selected" : ""}>Unwatched 3+ mo</option><option value="6" ${mo === 6 ? "selected" : ""}>Unwatched 6+ mo</option><option value="12" ${mo === 12 ? "selected" : ""}>Unwatched 1+ yr</option><option value="24" ${mo === 24 ? "selected" : ""}>Unwatched 2+ yr</option>`;
       return isMob ? _iconSelSt("tra-stale-months", _UNWATCHED_ICO, moOpts, mo !== 3) : `<select id="tra-stale-months" style="height:28px;box-sizing:border-box;padding:0 6px;font-size:12px;background:var(--is-btn-bg);color:var(--is-btn-clr);border:1px solid var(--is-btn-bdr);border-radius:6px;cursor:pointer;outline:none">${moOpts}</select>`;
     })();
@@ -21890,8 +22024,8 @@ var _TraceaRrTableMethods = class {
       }).join("");
       tableHtml = `<div>${rows}</div>`;
     } else {
-      const sortCol = m.staleSort || "fileSize";
-      const sortDir = m.staleOrder || "desc";
+      const sortCol = m2.staleSort || "fileSize";
+      const sortDir = m2.staleOrder || "desc";
       const sth = (col, lbl, align) => {
         const active = sortCol === col;
         const arrow = active ? sortDir === "asc" ? " \u2191" : " \u2193" : "";
@@ -21945,21 +22079,21 @@ var _TraceaRrTableMethods = class {
     return `${subTabs}${tableHtml}${pagination}`;
   }
   _traStalePagHtml() {
-    const m = this._tracearrModal;
-    const page = m.stalePage || 0;
-    const pp = m.stalePageSize || 3;
-    const totalP = Math.max(1, Math.ceil((m.staleTotal || 0) / pp));
+    const m2 = this._tracearrModal;
+    const page = m2.stalePage || 0;
+    const pp = m2.stalePageSize || 3;
+    const totalP = Math.max(1, Math.ceil((m2.staleTotal || 0) / pp));
     return this._tlMobPag("tra-stale-page", page, totalP, true) || "";
   }
   // ──────────────────────────────────────────────────────────────────────────
   // Watch tab (library analytics)
   // Partial refresh: only MW data rows (tbody innerHTML replacement)
   _traWatchTopRowsHtml() {
-    const m = this._tracearrModal;
-    if (!m) return "";
+    const m2 = this._tracearrModal;
+    if (!m2) return "";
     const isMob = this._isMob;
-    const _topTab = m.watchTopTab || "movies";
-    const topItems = (_topTab === "movies" ? m.watchTopMovies : m.watchTopShows) || [];
+    const _topTab = m2.watchTopTab || "movies";
+    const topItems = (_topTab === "movies" ? m2.watchTopMovies : m2.watchTopShows) || [];
     const fmtH = (h) => {
       if (h >= 24) return `${Math.floor(h / 24)}d ${Math.round(h % 24)}h`;
       return h >= 1 ? `${h.toFixed(1)}h` : `${Math.round(h * 60)}m`;
@@ -22005,13 +22139,13 @@ var _TraceaRrTableMethods = class {
   }
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyWatch() {
-    const m = this._tracearrModal;
+    const m2 = this._tracearrModal;
     const isMob = this._isMob;
-    const pat = m.watchPatterns || {};
-    const stat = m.watchStatus || {};
-    const comp = m.watchCompletion || {};
-    const topMovies = m.watchTopMovies || [];
-    const topShows = m.watchTopShows || [];
+    const pat = m2.watchPatterns || {};
+    const stat = m2.watchStatus || {};
+    const comp = m2.watchCompletion || {};
+    const topMovies = m2.watchTopMovies || [];
+    const topShows = m2.watchTopShows || [];
     const fmtHours = (h) => {
       const hh = Math.floor(h);
       const mm = Math.round((h - hh) * 60);
@@ -22038,10 +22172,10 @@ var _TraceaRrTableMethods = class {
     const totalShows = comp.episode?.summary?.totalItems ?? 0;
     const watchedShows = (comp.episode?.summary?.completedCount ?? 0) + (comp.episode?.summary?.inProgressCount ?? 0);
     const totalItems = totalMovies + totalShows || (stat.itemCount ?? 0);
-    const watchedItems = watchedMovies + watchedShows || (m.watchedTotal ?? 0);
+    const watchedItems = watchedMovies + watchedShows || (m2.watchedTotal ?? 0);
     const watchedPct = pct(watchedItems, totalItems);
     const binge = pat.bingeShows || [];
-    m.watchBinge = binge;
+    m2.watchBinge = binge;
     const bingeRatePct = Math.round(pat.summary?.bingeSessionsPct ?? 0);
     const _mdiSvg = (path, sz) => {
       const s = sz || 18;
@@ -22070,8 +22204,8 @@ var _TraceaRrTableMethods = class {
       ${statCard(_mdiSvg(_mdiCheck), completedCount || "\u2014", isMob ? "Completed" : this._t("traCompletion"))}
       ${statCard(_mdiSvg(_mdiTrend), hourVals.some((v) => v > 0) ? `${peakHourLabel} ${peakDay}` : "\u2014", isMob ? "Peak Hour" : this._t("traPeakHour"))}
     </div>`;
-    const _topTab = m.watchTopTab || "movies";
-    const _period = m.watchPeriod || "30d";
+    const _topTab = m2.watchTopTab || "movies";
+    const _period = m2.watchPeriod || "30d";
     const _periodMap = { "7d": "7d", "30d": "30d", "90d": "90d", "all": "all" };
     const _periodLbl = isMob ? { "7d": "W", "30d": "M", "90d": "3M", "all": "All" } : { "7d": "Week", "30d": "Month", "90d": "Quarter", "all": "All" };
     const _topItems = _topTab === "movies" ? topMovies : topShows;
@@ -22303,16 +22437,16 @@ var _TraceaRrTableMethods = class {
   // Device Compatibility tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyDevices() {
-    const m = this._tracearrModal;
-    if (!m) return "";
+    const m2 = this._tracearrModal;
+    if (!m2) return "";
     const isMob = this._isMob;
-    const sum = m.devicesData?.summary || {};
-    const dh = m.devicesHealth?.data || [];
-    const dhot = m.devicesHotspots?.data || [];
-    const dmat = m.devicesMatrix || {};
-    const dtu = m.devicesUsers?.data || [];
+    const sum = m2.devicesData?.summary || {};
+    const dh = m2.devicesHealth?.data || [];
+    const dhot = m2.devicesHotspots?.data || [];
+    const dmat = m2.devicesMatrix || {};
+    const dtu = m2.devicesUsers?.data || [];
     const PAGE = 6;
-    const period = m.devicesPeriod || "month";
+    const period = m2.devicesPeriod || "month";
     const _pLbl = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
     const periodBtns = Object.entries(_pLbl).map(
       ([p, lbl]) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-dev-period="${p}">${lbl}</button>`
@@ -22361,9 +22495,9 @@ var _TraceaRrTableMethods = class {
         <button class="tl-page-btn" data-tra-dev-page="${view}-next" style="padding:2px 5px;font-size:13px;${nd}">\u203A</button>
       </div>`;
     };
-    const _lv = m.devicesLeftView || "health";
-    const _hP = m.devHealthPage || 0;
-    const _mP = m.devMatrixPage || 0;
+    const _lv = m2.devicesLeftView || "health";
+    const _hP = m2.devHealthPage || 0;
+    const _mP = m2.devMatrixPage || 0;
     const _dpC = (p) => p >= 80 ? "#34C759" : p >= 50 ? "#FF9500" : "#FF3B30";
     const dhPage = dh.slice(_hP * PAGE, (_hP + 1) * PAGE);
     const healthRows = dhPage.map((d) => {
@@ -22437,9 +22571,9 @@ var _TraceaRrTableMethods = class {
       <div data-tra-dev-left-panel="health" style="flex:1;overflow-y:auto;${_lv === "health" ? "" : "display:none"}">${healthRows}</div>
       <div data-tra-dev-left-panel="matrix" style="flex:1;overflow-y:auto;${_lv === "matrix" ? "" : "display:none"}">${matInner}</div>
     </div>`;
-    const _rv = m.devicesRightView || "hotspots";
-    const _hoP = m.devHotspotsPage || 0;
-    const _uP = m.devUsersPage || 0;
+    const _rv = m2.devicesRightView || "hotspots";
+    const _hoP = m2.devHotspotsPage || 0;
+    const _uP = m2.devUsersPage || 0;
     const dhotPage = dhot.slice(_hoP * PAGE, (_hoP + 1) * PAGE);
     const _noData3 = `<tr><td colspan="3" style="text-align:center;color:var(--is-text-muted);font-size:11px;padding:12px">${this._t("tlNoData")}</td></tr>`;
     const hotRows = dhotPage.map((h) => {
@@ -22551,7 +22685,7 @@ var _TraceaRrTableMethods = class {
       <div data-tra-dev-panel="users" style="flex:1;overflow-y:auto;${_rv === "users" ? "" : "display:none"}">${usersHtml}</div>
     </div>`;
     if (isMob) {
-      const mobView = m.devMobView || m.devicesLeftView || "health";
+      const mobView = m2.devMobView || m2.devicesLeftView || "health";
       const _mobTabs = [["health", "Health"], ["matrix", "Matrix"], ["hotspots", "Hotspots"], ["users", "Users"]].map(
         ([v, lbl]) => `<button class="is-f-btn${mobView === v ? " active" : ""}" data-tra-dev-mob-tab="${v}" style="flex:1;font-size:10px;padding:4px 2px">${lbl}</button>`
       ).join("");
@@ -22590,13 +22724,13 @@ var _TraceaRrTableMethods = class {
   }
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyBandwidth() {
-    const m = this._tracearrModal;
-    if (!m) return "";
+    const m2 = this._tracearrModal;
+    if (!m2) return "";
     const isMob = this._isMob;
-    const sum = m.bwSummary || {};
-    const _bd = m.bwDaily;
+    const sum = m2.bwSummary || {};
+    const _bd = m2.bwDaily;
     const daily = Array.isArray(_bd) ? _bd : _bd?.data || _bd?.daily || _bd?.items || [];
-    const _bu = m.bwUsers;
+    const _bu = m2.bwUsers;
     const users = Array.isArray(_bu) ? _bu : _bu?.data || _bu?.users || _bu?.items || [];
     const _fmtGb = (gb) => {
       if (gb == null) return "\u2014";
@@ -22609,7 +22743,7 @@ var _TraceaRrTableMethods = class {
       return n >= 24 ? `${Math.floor(n / 24)}d ${Math.round(n % 24)}h` : `${n.toFixed(1)}h`;
     };
     const _fmtBr = (mbps) => mbps != null ? `${Number(mbps).toFixed(1)} Mbps` : "\u2014";
-    const period = m.bwPeriod || "month";
+    const period = m2.bwPeriod || "month";
     const _BW_P_LBLS = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
     const periodBtns = ["week", "month", "year", "all"].map(
       (p) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-bw-period="${p}">${_BW_P_LBLS[p]}</button>`
@@ -22787,8 +22921,8 @@ var _TraceaRrTableMethods = class {
       ${_tipEl}
     </div>`;
     const BW_PAGE = isMob ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 500) / 60)) : 5;
-    m.bwPageSize = BW_PAGE;
-    const bwPage = m.bwUsersPage || 0;
+    m2.bwPageSize = BW_PAGE;
+    const bwPage = m2.bwUsersPage || 0;
     const bwTotal = users.length;
     const bwPages = Math.max(1, Math.ceil(bwTotal / BW_PAGE));
     const pageUsers = users.slice(bwPage * BW_PAGE, (bwPage + 1) * BW_PAGE);
@@ -22864,12 +22998,12 @@ var _TraceaRrTableMethods = class {
   // Stats → Users tab
   // ──────────────────────────────────────────────────────────────────────────
   _traBodyStatsUsers() {
-    const m = this._tracearrModal;
-    if (!m) return "";
+    const m2 = this._tracearrModal;
+    if (!m2) return "";
     const isMob = this._isMob;
     const isTablet = !isMob && window.matchMedia("(max-width:860px)").matches;
-    const users = m.statsUsersData || [];
-    const period = m.statsUsersPeriod || "month";
+    const users = m2.statsUsersData || [];
+    const period = m2.statsUsersPeriod || "month";
     const _pLbl = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
     const periodBtns = Object.entries(_pLbl).map(
       ([p, lbl]) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-su-period="${p}">${lbl}</button>`
@@ -22928,7 +23062,7 @@ var _TraceaRrTableMethods = class {
     const podiumHtml = podiumOrder.map((u, di) => _mkCard(u, di)).join("");
     const podiumRow = `<div style="display:flex;align-items:center;gap:${isMob ? "6px" : "10px"};justify-content:center">${podiumHtml}</div>`;
     const runnersUp = users.slice(3);
-    const ruPage = m.statsUsersRunnerPage || 0;
+    const ruPage = m2.statsUsersRunnerPage || 0;
     const ruRowH = isMob ? 52 : 56;
     const ruPP = this._tlCalcPerPage({ hasFilter: false, filterH: 0, rowH: ruRowH, bar: 0 });
     const ruPages = runnersUp.length ? Math.max(1, Math.ceil(runnersUp.length / ruPP)) : 1;
@@ -23178,12 +23312,12 @@ var _TraceaRrMethods = class {
   // Map tab
   // ──────────────────────────────────────────────────────────────────────────
   _traMapHtml() {
-    const m = this._tracearrModal;
+    const m2 = this._tracearrModal;
     const isMob = this._isMob;
-    const period = m.mapPeriod || "month";
-    const view = m.mapView || "circles";
-    const summary = m.mapData?.summary || {};
-    const filters = m.mapData?.availableFilters || {};
+    const period = m2.mapPeriod || "month";
+    const view = m2.mapView || "circles";
+    const summary = m2.mapData?.summary || {};
+    const filters = m2.mapData?.availableFilters || {};
     const streams = summary.totalStreams ?? 0;
     const locs = summary.uniqueLocations ?? 0;
     const _pLbl = isMob ? { week: "W", month: "M", year: "Y", all: "All" } : { week: "Week", month: "Month", year: "Year", all: "All" };
@@ -23191,7 +23325,7 @@ var _TraceaRrMethods = class {
       ([p, lbl]) => `<button class="is-f-btn${period === p ? " active" : ""}" data-tra-map-period="${p}">${lbl}</button>`
     ).join("");
     const users = filters.users || [];
-    const userOpts = `<option value="">${isMob ? "Users" : "All users"}</option>` + users.map((u) => `<option value="${u.id}" ${m.mapUserId === u.id ? "selected" : ""}>${u.name || u.username || u.id}</option>`).join("");
+    const userOpts = `<option value="">${isMob ? "Users" : "All users"}</option>` + users.map((u) => `<option value="${u.id}" ${m2.mapUserId === u.id ? "selected" : ""}>${u.name || u.username || u.id}</option>`).join("");
     const selSt = "background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--is-text);font-size:11px;padding:4px 8px;cursor:pointer;";
     const viewToggle = `<div class="is-filter">
       <button class="is-f-btn${view === "heatmap" ? " active" : ""}" data-tra-map-view="heatmap">
@@ -23221,14 +23355,14 @@ var _TraceaRrMethods = class {
     </div>`;
   }
   async _initTraMap(body) {
-    const m = this._tracearrModal;
-    if (!m) return;
-    if (m._leafletMap) {
+    const m2 = this._tracearrModal;
+    if (!m2) return;
+    if (m2._leafletMap) {
       try {
-        m._leafletMap.remove();
+        m2._leafletMap.remove();
       } catch (_) {
       }
-      m._leafletMap = null;
+      m2._leafletMap = null;
     }
     if (!this.shadowRoot.querySelector("#tra-leaflet-css")) {
       const link = document.createElement("link");
@@ -23274,14 +23408,14 @@ var _TraceaRrMethods = class {
       maxZoom: 19,
       subdomains: "abcd"
     }).addTo(map);
-    m._leafletMap = map;
-    this._traMapPlotData(m);
+    m2._leafletMap = map;
+    this._traMapPlotData(m2);
   }
-  _traMapPlotData(m) {
-    if (!m?._leafletMap || !window.L) return;
-    const map = m._leafletMap;
-    const data = m.mapData?.data || [];
-    const view = m.mapView || "circles";
+  _traMapPlotData(m2) {
+    if (!m2?._leafletMap || !window.L) return;
+    const map = m2._leafletMap;
+    const data = m2.mapData?.data || [];
+    const view = m2.mapView || "circles";
     map.eachLayer((layer) => {
       if (layer._url === void 0) map.removeLayer(layer);
     });
@@ -23469,9 +23603,9 @@ var _TraceaRrMethods = class {
     this._traLoadTab(tab, el);
   }
   // One-time discovery: enrich m.staleServers with `type` field from availableFilters
-  async _traEnrichServerTypes(m) {
-    if (!m.staleServers?.length || m._serverTypesEnriched) return;
-    m._serverTypesEnriched = true;
+  async _traEnrichServerTypes(m2) {
+    if (!m2.staleServers?.length || m2._serverTypesEnriched) return;
+    m2._serverTypesEnriched = true;
     try {
       const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
       const _r = await this._traStatsFetch(`top-users?period=month&timezone=${_tz}`);
@@ -23479,7 +23613,7 @@ var _TraceaRrMethods = class {
       const _avail = _r?.availableFilters?.servers;
       if (!_avail?.length) return;
       const _tm = new Map(_avail.map((s) => [s.id, (s.type || "").toLowerCase()]));
-      for (const s of m.staleServers) if (_tm.has(s.id)) s.type = _tm.get(s.id);
+      for (const s of m2.staleServers) if (_tm.has(s.id)) s.type = _tm.get(s.id);
     } catch (_) {
     }
   }
@@ -23754,25 +23888,25 @@ var _TraceaRrMethods = class {
     const body = modal.querySelector("#tra-body");
     if (!body) return;
     body.innerHTML = `<div class="u-empty-dim">${this._t("loading")}</div>`;
-    const m = this._tracearrModal;
-    if (!m) return;
+    const m2 = this._tracearrModal;
+    if (!m2) return;
     if (tab === "rules") {
       const r = await this._traAdminFetch("GET", "v1/rules");
       if (!this._tracearrModal) return;
-      m.rulesData = r?.data || [];
+      m2.rulesData = r?.data || [];
       body.innerHTML = this._traBodyRules();
       this._wireTracearrModalBody(body);
       return;
     }
     if (tab === "map") {
-      const _p = m.mapPeriod || "month";
-      const _sQ = m.mapServerId ? `&serverId=${m.mapServerId}` : "";
-      const _uQ = m.mapUserId ? `&userId=${m.mapUserId}` : "";
+      const _p = m2.mapPeriod || "month";
+      const _sQ = m2.mapServerId ? `&serverId=${m2.mapServerId}` : "";
+      const _uQ = m2.mapUserId ? `&userId=${m2.mapUserId}` : "";
       const r = await this._traStatsFetch(`locations?period=${_p}${_sQ}${_uQ}`);
       if (!this._tracearrModal) return;
-      m.mapData = r;
+      m2.mapData = r;
       body.innerHTML = this._traMapHtml();
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), r?.availableFilters?.servers || [], m.mapServerId, "data-tra-map-srv");
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), r?.availableFilters?.servers || [], m2.mapServerId, "data-tra-map-srv");
       this._wireTracearrModalBody(body);
       this._initTraMap(body);
       return;
@@ -23785,73 +23919,73 @@ var _TraceaRrMethods = class {
         this._traApiFetch("activity?days=7")
       ]);
       if (!this._tracearrModal) return;
-      m.overviewStats = stats;
-      m.overviewHealth = health;
-      m.overviewViols = viols?.data || [];
-      m.overviewAct = act;
+      m2.overviewStats = stats;
+      m2.overviewHealth = health;
+      m2.overviewViols = viols?.data || [];
+      m2.overviewAct = act;
       body.innerHTML = this._traBodyOverview();
       this._wireTracearrModalBody(body);
     } else if (tab === "users") {
-      if (!m.staleServers) {
+      if (!m2.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
         if (this._tracearrModal) {
           const srvMap = /* @__PURE__ */ new Map();
           for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          m2.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
         }
       }
       if (!this._tracearrModal) return;
-      await this._traEnrichServerTypes(m);
+      await this._traEnrichServerTypes(m2);
       if (!this._tracearrModal) return;
-      if (!m.usersServerId && (m.staleServers || []).length > 0) {
-        m.usersServerId = this._traAutoPickSrv(m.staleServers);
+      if (!m2.usersServerId && (m2.staleServers || []).length > 0) {
+        m2.usersServerId = this._traAutoPickSrv(m2.staleServers);
       }
       const pp = this._tlCalcPerPage();
-      const _uSrvQ = m.usersServerId ? `&serverId=${m.usersServerId}` : "";
-      const r = await this._traApiFetch(`users?pageSize=${pp}&page=${m.usersPage + 1}&sort=${m.usersSortCol}&order=${m.usersSortDir}${m.usersSearch ? "&search=" + encodeURIComponent(m.usersSearch) : ""}${_uSrvQ}`);
+      const _uSrvQ = m2.usersServerId ? `&serverId=${m2.usersServerId}` : "";
+      const r = await this._traApiFetch(`users?pageSize=${pp}&page=${m2.usersPage + 1}&sort=${m2.usersSortCol}&order=${m2.usersSortDir}${m2.usersSearch ? "&search=" + encodeURIComponent(m2.usersSearch) : ""}${_uSrvQ}`);
       if (!this._tracearrModal) return;
-      m.usersData = r?.data || [];
-      m.usersTotal = r?.meta?.total || 0;
+      m2.usersData = r?.data || [];
+      m2.usersTotal = r?.meta?.total || 0;
       body.innerHTML = this._traBodyUsers();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.usersServerId, "data-tra-usr-srv");
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m2.staleServers, m2.usersServerId, "data-tra-usr-srv");
     } else if (tab === "violations") {
       const pp = this._tlCalcPerPage({ hasFilter: true });
-      let q = `pageSize=${pp}&page=${m.violsPage + 1}&orderBy=createdAt&orderDir=desc`;
-      if (m.violsSeverity) q += `&severity=${m.violsSeverity}`;
-      if (m.violsStatus) q += `&status=${m.violsStatus}`;
-      if (m.violsServerId) q += `&serverId=${m.violsServerId}`;
+      let q = `pageSize=${pp}&page=${m2.violsPage + 1}&orderBy=createdAt&orderDir=desc`;
+      if (m2.violsSeverity) q += `&severity=${m2.violsSeverity}`;
+      if (m2.violsStatus) q += `&status=${m2.violsStatus}`;
+      if (m2.violsServerId) q += `&serverId=${m2.violsServerId}`;
       const [vr, sr] = await Promise.all([
         this._traApiFetch(`violations?${q}`),
         this._traApiFetch("health")
       ]);
       if (!this._tracearrModal) return;
-      m.violsData = vr?.data || [];
-      m.violsTotal = vr?.meta?.total || 0;
-      m.violsServers = sr?.servers || [];
-      if (m.violsServerId === null && m.violsServers.length > 0) {
-        m.violsServerId = this._traAutoPickSrv(m.violsServers, (s) => s.type || "");
-        if (m.violsServerId) {
+      m2.violsData = vr?.data || [];
+      m2.violsTotal = vr?.meta?.total || 0;
+      m2.violsServers = sr?.servers || [];
+      if (m2.violsServerId === null && m2.violsServers.length > 0) {
+        m2.violsServerId = this._traAutoPickSrv(m2.violsServers, (s) => s.type || "");
+        if (m2.violsServerId) {
           this._traLoadTab("violations", modal);
           return;
         }
       }
       body.innerHTML = this._traBodyViolations();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.violsServers, m.violsServerId, "data-tra-viols-srv", (s) => {
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m2.violsServers, m2.violsServerId, "data-tra-viols-srv", (s) => {
         const t = (s.type || "").toLowerCase();
         return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
       });
     } else if (tab === "history") {
       const isMobH = this._isMob;
       const pp = this._tlCalcPerPage({ hasFilter: true, filterH: isMobH ? 120 : 40, rowH: isMobH ? 80 : 44, bar: 0 });
-      let q = `pageSize=${pp}&page=${m.histPage + 1}&order=desc`;
-      if (m.histServer) q += `&serverId=${m.histServer}`;
-      if (m.histUser) q += `&userId=${m.histUser}`;
-      if (m.histMedia) q += `&mediaType=${m.histMedia}`;
-      if (m.histSearch) q += `&search=${encodeURIComponent(m.histSearch)}`;
-      if (m.histPeriod) {
-        const days = m.histPeriod === "week" ? 7 : m.histPeriod === "month" ? 30 : 365;
+      let q = `pageSize=${pp}&page=${m2.histPage + 1}&order=desc`;
+      if (m2.histServer) q += `&serverId=${m2.histServer}`;
+      if (m2.histUser) q += `&userId=${m2.histUser}`;
+      if (m2.histMedia) q += `&mediaType=${m2.histMedia}`;
+      if (m2.histSearch) q += `&search=${encodeURIComponent(m2.histSearch)}`;
+      if (m2.histPeriod) {
+        const days = m2.histPeriod === "week" ? 7 : m2.histPeriod === "month" ? 30 : 365;
         const end = /* @__PURE__ */ new Date();
         end.setHours(23, 59, 59, 0);
         const start = new Date(Date.now() - days * 864e5);
@@ -23865,184 +23999,184 @@ var _TraceaRrMethods = class {
         this._traApiFetch("health")
       ]);
       if (!this._tracearrModal) return;
-      m.histData = hr?.data || [];
-      m.histTotal = hr?.meta?.total || 0;
-      m.histUsers = ur?.data || [];
-      m.histServers = sr?.servers || [];
-      if (m.histServer === null && m.histServers.length > 0) {
-        m.histServer = this._traAutoPickSrv(m.histServers, (s) => s.type || "");
-        if (m.histServer) {
+      m2.histData = hr?.data || [];
+      m2.histTotal = hr?.meta?.total || 0;
+      m2.histUsers = ur?.data || [];
+      m2.histServers = sr?.servers || [];
+      if (m2.histServer === null && m2.histServers.length > 0) {
+        m2.histServer = this._traAutoPickSrv(m2.histServers, (s) => s.type || "");
+        if (m2.histServer) {
           this._traLoadTab("history", modal);
           return;
         }
       }
       body.innerHTML = this._traBodyHistory();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.histServers, m.histServer, "data-tra-hist-srv", (s) => {
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m2.histServers, m2.histServer, "data-tra-hist-srv", (s) => {
         const t = (s.type || "").toLowerCase();
         return ["plex", "jellyfin", "emby"].includes(t) ? t : null;
       });
     } else if (tab === "activity") {
-      if (!m.staleServers) {
+      if (!m2.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
         if (this._tracearrModal) {
           const srvMap = /* @__PURE__ */ new Map();
           for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          m2.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
         }
       }
       if (!this._tracearrModal) return;
-      await this._traEnrichServerTypes(m);
+      await this._traEnrichServerTypes(m2);
       if (!this._tracearrModal) return;
-      if (!m.activityServerId && (m.staleServers || []).length > 0) {
-        m.activityServerId = this._traAutoPickSrv(m.staleServers);
+      if (!m2.activityServerId && (m2.staleServers || []).length > 0) {
+        m2.activityServerId = this._traAutoPickSrv(m2.staleServers);
       }
-      const _actSrvQ = m.activityServerId ? `&serverId=${m.activityServerId}` : "";
-      const ar = await this._traApiFetch(`activity?period=${m.activityPeriod || "month"}${_actSrvQ}`);
+      const _actSrvQ = m2.activityServerId ? `&serverId=${m2.activityServerId}` : "";
+      const ar = await this._traApiFetch(`activity?period=${m2.activityPeriod || "month"}${_actSrvQ}`);
       if (!this._tracearrModal) return;
-      m.activityData = ar;
+      m2.activityData = ar;
       body.innerHTML = this._traBodyActivity();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.activityServerId, "data-tra-act-srv");
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m2.staleServers, m2.activityServerId, "data-tra-act-srv");
     } else if (tab === "statsUsers") {
       const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-      const _p = m.statsUsersPeriod || "month";
+      const _p = m2.statsUsersPeriod || "month";
       const _suKeyFn = (s) => {
         const t = (s.type || s.name || "").toLowerCase();
         return t.includes("jellyfin") ? "jellyfin" : t.includes("plex") ? "plex" : t.includes("emby") ? "emby" : null;
       };
-      if (!m.statsUsersServers) {
+      if (!m2.statsUsersServers) {
         const _r0 = await this._traStatsFetch(`top-users?period=${_p}&timezone=${_tz}`);
         if (!this._tracearrModal) return;
         const _avail = _r0?.availableFilters?.servers;
         if (_avail?.length) {
-          m.statsUsersServers = _avail;
-        } else if (!m.staleServers) {
+          m2.statsUsersServers = _avail;
+        } else if (!m2.staleServers) {
           const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
           if (this._tracearrModal) {
             const srvMap = /* @__PURE__ */ new Map();
             for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-            m.statsUsersServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+            m2.statsUsersServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
           }
         } else {
-          m.statsUsersServers = m.staleServers;
+          m2.statsUsersServers = m2.staleServers;
         }
         if (!this._tracearrModal) return;
-        if (!m.statsUsersServerId && (m.statsUsersServers || []).length > 0) {
+        if (!m2.statsUsersServerId && (m2.statsUsersServers || []).length > 0) {
           const _pk = (s) => {
             const t = _suKeyFn(s);
             return t === "jellyfin" ? 0 : t === "plex" ? 1 : t === "emby" ? 2 : 99;
           };
           let _saved = null;
           _saved = this._traReadSavedSrv();
-          const _validSaved = _saved && m.statsUsersServers.find((s) => s.id === _saved);
-          m.statsUsersServerId = _validSaved ? _saved : [...m.statsUsersServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
+          const _validSaved = _saved && m2.statsUsersServers.find((s) => s.id === _saved);
+          m2.statsUsersServerId = _validSaved ? _saved : [...m2.statsUsersServers].sort((a, b) => _pk(a) - _pk(b))[0]?.id || null;
         }
       }
-      const _sQ = m.statsUsersServerId ? `&serverId=${m.statsUsersServerId}` : "";
+      const _sQ = m2.statsUsersServerId ? `&serverId=${m2.statsUsersServerId}` : "";
       const r = await this._traStatsFetch(`top-users?period=${_p}&timezone=${_tz}${_sQ}`);
       if (!this._tracearrModal) return;
-      m.statsUsersData = r?.data || r || [];
+      m2.statsUsersData = r?.data || r || [];
       body.innerHTML = this._traBodyStatsUsers();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.statsUsersServers || [], m.statsUsersServerId, "data-tra-su-srv", _suKeyFn);
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m2.statsUsersServers || [], m2.statsUsersServerId, "data-tra-su-srv", _suKeyFn);
     } else if (tab === "quality") {
-      if (!m.staleServers) {
+      if (!m2.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
         if (this._tracearrModal) {
           const srvMap = /* @__PURE__ */ new Map();
           for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          m2.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
         }
       }
       if (!this._tracearrModal) return;
-      if (!m.qualityServerId && (m.staleServers || []).length > 0) {
+      if (!m2.qualityServerId && (m2.staleServers || []).length > 0) {
         let _saved = null;
         _saved = this._traReadSavedSrv();
-        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
+        const _validSaved = _saved && m2.staleServers.find((s) => s.id === _saved);
         if (_validSaved) {
-          m.qualityServerId = _saved;
+          m2.qualityServerId = _saved;
         } else {
           const _pk = (n) => {
             const s = (n || "").toLowerCase();
             return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
           };
-          const _first = [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0];
-          if (_first) m.qualityServerId = _first.id;
+          const _first = [...m2.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0];
+          if (_first) m2.qualityServerId = _first.id;
         }
       }
-      const _qSrvId = m.qualityServerId || null;
-      const _qMt = m.qualityMediaType || null;
+      const _qSrvId = m2.qualityServerId || null;
+      const _qMt = m2.qualityMediaType || null;
       const _qKey = `${_qSrvId}|${_qMt}`;
       const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
       const _qQ = ["period=all", `timezone=${_tz}`, _qSrvId && `serverId=${_qSrvId}`, _qMt && `mediaType=${_qMt}`].filter(Boolean).join("&");
       const _qSrvQ = `?${_qQ}`;
-      if (!m.qualityResolution || m._qualityResSrvId !== _qSrvId) {
+      if (!m2.qualityResolution || m2._qualityResSrvId !== _qSrvId) {
         const _srvSuffix = _qSrvId ? `?serverId=${_qSrvId}` : "";
         const [res, cod] = await Promise.all([
           this._traLibFetch(`resolution${_srvSuffix}`),
           this._traLibFetch(`codecs${_srvSuffix}`)
         ]);
         if (!this._tracearrModal) return;
-        m.qualityResolution = res;
-        m.qualityCodecs = cod;
-        m._qualityResSrvId = _qSrvId;
+        m2.qualityResolution = res;
+        m2.qualityCodecs = cod;
+        m2._qualityResSrvId = _qSrvId;
       }
-      if (!m.qualityData || m._qualityKey !== _qKey) {
+      if (!m2.qualityData || m2._qualityKey !== _qKey) {
         const qr = await this._traLibFetch(`quality${_qSrvQ}`);
         if (!this._tracearrModal) return;
-        m.qualityData = qr;
-        m._qualityKey = _qKey;
+        m2.qualityData = qr;
+        m2._qualityKey = _qKey;
       }
       body.innerHTML = this._traBodyQuality();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m.staleServers, m.qualityServerId, "data-tra-quality-srv");
+      this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m2.staleServers, m2.qualityServerId, "data-tra-quality-srv");
     } else if (tab === "storage") {
       try {
-        const _effectiveSrv = m.selectedServerId || null;
+        const _effectiveSrv = m2.selectedServerId || null;
         const _srvQ = _effectiveSrv ? `&serverId=${_effectiveSrv}` : "";
-        if (!m.storageData || m._storageServerId !== _effectiveSrv) {
+        if (!m2.storageData || m2._storageServerId !== _effectiveSrv) {
           const [sr, st] = await Promise.all([
             this._traLibFetch(`storage?period=all${_srvQ}`),
             this._traLibFetch(`stats${_effectiveSrv ? `?serverId=${_effectiveSrv}` : ""}`)
           ]);
           if (!this._tracearrModal) return;
-          m.storageData = sr;
-          m.storageStats = st;
-          m._storageServerId = _effectiveSrv;
+          m2.storageData = sr;
+          m2.storageStats = st;
+          m2._storageServerId = _effectiveSrv;
         }
-        if (!m.dupsSummary || m._dupsServerId !== _effectiveSrv) {
+        if (!m2.dupsSummary || m2._dupsServerId !== _effectiveSrv) {
           const dupPath = _effectiveSrv ? `duplicates?serverId=${_effectiveSrv}&pageSize=1` : "duplicates?pageSize=1";
           const dupR = await this._traLibFetch(dupPath);
           if (!this._tracearrModal) return;
-          m.dupsSummary = dupR?.summary || null;
-          m._dupsServerId = _effectiveSrv;
+          m2.dupsSummary = dupR?.summary || null;
+          m2._dupsServerId = _effectiveSrv;
         }
         const _isMobSt = this._isMob;
-        m.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
-        const _staleCat = m.staleCategory || "never_watched";
-        const _staleMo = _staleCat === "stale" ? m.staleMonths || 3 : null;
+        m2.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
+        const _staleCat = m2.staleCategory || "never_watched";
+        const _staleMo = _staleCat === "stale" ? m2.staleMonths || 3 : null;
         const _staleKey = `${_staleCat}|${_effectiveSrv || ""}|${_staleMo || ""}`;
-        if (!m.staleRaw || m.staleRaw._key !== _staleKey) {
+        if (!m2.staleRaw || m2.staleRaw._key !== _staleKey) {
           const srvParam = _effectiveSrv ? `&serverId=${_effectiveSrv}` : "";
           const moParam = _staleMo ? `&months=${_staleMo}` : "";
           const staleR = await this._traLibFetch(
-            `stale?category=${_staleCat}&page=1&pageSize=100&sort=${m.staleSort || "fileSize"}&order=${m.staleOrder || "desc"}${srvParam}${moParam}`
+            `stale?category=${_staleCat}&page=1&pageSize=100&sort=${m2.staleSort || "fileSize"}&order=${m2.staleOrder || "desc"}${srvParam}${moParam}`
           );
           if (!this._tracearrModal) return;
-          m.staleSummary = staleR?.summary || null;
+          m2.staleSummary = staleR?.summary || null;
           const rawItems = staleR?.items || [];
-          m.staleRaw = Object.assign([...rawItems], { _key: _staleKey });
-          m.staleDeduped = null;
+          m2.staleRaw = Object.assign([...rawItems], { _key: _staleKey });
+          m2.staleDeduped = null;
           if (!_effectiveSrv) {
             const srvMap = /* @__PURE__ */ new Map();
             for (const it of rawItems) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-            m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
-            if (!m.selectedServerId && m.staleServers.length > 0) {
+            m2.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+            if (!m2.selectedServerId && m2.staleServers.length > 0) {
               let _savedStor = null;
               _savedStor = this._traReadSavedSrv();
-              const _validStor = _savedStor && m.staleServers.find((s) => s.id === _savedStor);
-              m.selectedServerId = _validStor ? _savedStor : m.staleServers[0].id;
+              const _validStor = _savedStor && m2.staleServers.find((s) => s.id === _savedStor);
+              m2.selectedServerId = _validStor ? _savedStor : m2.staleServers[0].id;
               const _modalEl = body.closest("[data-tra-modal]");
               if (_modalEl) {
                 this._traLoadTab("storage", _modalEl);
@@ -24051,14 +24185,14 @@ var _TraceaRrMethods = class {
             }
           }
         }
-        this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m.staleServers, m.selectedServerId, "data-tra-server");
+        this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m2.staleServers, m2.selectedServerId, "data-tra-server");
         let _filtered;
         if (_effectiveSrv) {
-          _filtered = m.staleRaw || [];
+          _filtered = m2.staleRaw || [];
         } else {
-          if (!m.staleDeduped) {
+          if (!m2.staleDeduped) {
             const seen = /* @__PURE__ */ new Map();
-            for (const it of m.staleRaw || []) {
+            for (const it of m2.staleRaw || []) {
               const key = `${it.title?.toLowerCase()}|${it.year}|${it.mediaType}`;
               if (seen.has(key)) {
                 const ex = seen.get(key);
@@ -24068,14 +24202,14 @@ var _TraceaRrMethods = class {
                 seen.set(key, { ...it });
               }
             }
-            m.staleDeduped = [...seen.values()];
+            m2.staleDeduped = [...seen.values()];
           }
-          _filtered = m.staleDeduped;
+          _filtered = m2.staleDeduped;
         }
-        const _pp = m.stalePageSize;
-        const _start = (m.stalePage || 0) * _pp;
-        m.staleItems = _filtered.slice(_start, _start + _pp);
-        m.staleTotal = _filtered.length;
+        const _pp = m2.stalePageSize;
+        const _start = (m2.stalePage || 0) * _pp;
+        m2.staleItems = _filtered.slice(_start, _start + _pp);
+        m2.staleTotal = _filtered.length;
         body.innerHTML = this._traBodyStorage();
         this._wireTracearrModalBody(body);
       } catch (err) {
@@ -24083,39 +24217,39 @@ var _TraceaRrMethods = class {
         body.innerHTML = `<div style="color:rgba(252,165,165,0.9);padding:20px;font-size:12px;font-family:monospace">Storage error: ${err?.message || err}</div>`;
       }
     } else if (tab === "watch") {
-      if (!m.staleServers) {
+      if (!m2.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
         if (this._tracearrModal) {
           const srvMap = /* @__PURE__ */ new Map();
           for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          m2.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
         }
       }
       if (!this._tracearrModal) return;
-      if (!m.watchServerId && (m.staleServers || []).length > 0) {
+      if (!m2.watchServerId && (m2.staleServers || []).length > 0) {
         let _saved = null;
         _saved = this._traReadSavedSrv();
-        const _valid = _saved && m.staleServers.find((s) => s.id === _saved);
+        const _valid = _saved && m2.staleServers.find((s) => s.id === _saved);
         if (_valid) {
-          m.watchServerId = _saved;
+          m2.watchServerId = _saved;
         } else {
           const _pk = (n) => {
             const s = (n || "").toLowerCase();
             return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
           };
-          const _first = [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0];
-          if (_first) m.watchServerId = _first.id;
+          const _first = [...m2.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0];
+          if (_first) m2.watchServerId = _first.id;
         }
       }
-      const _wSrvId = m.watchServerId || null;
-      const _wPeriod = m.watchPeriod || "30d";
+      const _wSrvId = m2.watchServerId || null;
+      const _wPeriod = m2.watchPeriod || "30d";
       const _wPKey = `${_wSrvId}|${_wPeriod}`;
       const _wSKey = _wSrvId || "";
       const _wTz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
       const _wSrvQ = _wSrvId ? `&serverId=${_wSrvId}` : "";
       const _wSrvQS = _wSrvId ? `?serverId=${_wSrvId}` : "";
       const fetches = [];
-      if (!m.watchPatterns || m.watchSrvKey !== _wSKey) {
+      if (!m2.watchPatterns || m2.watchSrvKey !== _wSKey) {
         fetches.push(Promise.all([
           this._traLibFetch(`patterns?periodWeeks=12&timezone=${_wTz}${_wSrvQ}`),
           this._traLibFetch(`status${_wSrvQS}`),
@@ -24124,53 +24258,53 @@ var _TraceaRrMethods = class {
           this._traLibFetch(`watch?page=1&pageSize=1${_wSrvQ}`)
         ]).then(([pat, stat, compMov, compEp, watchList]) => {
           if (!this._tracearrModal) return;
-          m.watchPatterns = pat;
-          m.watchStatus = stat;
-          m.watchCompletion = { movie: compMov, episode: compEp };
-          m.watchedTotal = watchList?.pagination?.total ?? watchList?.total ?? null;
-          m.watchSrvKey = _wSKey;
+          m2.watchPatterns = pat;
+          m2.watchStatus = stat;
+          m2.watchCompletion = { movie: compMov, episode: compEp };
+          m2.watchedTotal = watchList?.pagination?.total ?? watchList?.total ?? null;
+          m2.watchSrvKey = _wSKey;
         }));
       }
-      if (!m.watchTopMovies || m.watchSrvPeriodKey !== _wPKey) {
+      if (!m2.watchTopMovies || m2.watchSrvPeriodKey !== _wPKey) {
         fetches.push(Promise.all([
           this._traLibFetch(`top-movies?period=${_wPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`),
           this._traLibFetch(`top-shows?period=${_wPeriod}&sortBy=plays&sortOrder=desc&page=1&pageSize=5${_wSrvQ}`)
         ]).then(([mov, sh]) => {
           if (!this._tracearrModal) return;
-          m.watchTopMovies = mov?.items || mov || [];
-          m.watchTopShows = sh?.items || sh || [];
-          m.watchSrvPeriodKey = _wPKey;
+          m2.watchTopMovies = mov?.items || mov || [];
+          m2.watchTopShows = sh?.items || sh || [];
+          m2.watchSrvPeriodKey = _wPKey;
         }));
       }
       await Promise.all(fetches);
       if (!this._tracearrModal) return;
       body.innerHTML = this._traBodyWatch();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m.staleServers, m.watchServerId, "data-tra-watch-srv");
+      this._traPopSrvEl(body.closest("[data-tra-modal]")?.querySelector("#tra-hdr-server"), m2.staleServers, m2.watchServerId, "data-tra-watch-srv");
     } else if (tab === "devices") {
-      if (!m.staleServers) {
+      if (!m2.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
         if (this._tracearrModal) {
           const srvMap = /* @__PURE__ */ new Map();
           for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          m2.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
         }
       }
       if (!this._tracearrModal) return;
-      if (!m.devicesServerId && (m.staleServers || []).length > 0) {
+      if (!m2.devicesServerId && (m2.staleServers || []).length > 0) {
         const _pk = (n) => {
           const s = (n || "").toLowerCase();
           return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
         };
         let _saved = null;
         _saved = this._traReadSavedSrv();
-        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
-        m.devicesServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+        const _validSaved = _saved && m2.staleServers.find((s) => s.id === _saved);
+        m2.devicesServerId = _validSaved ? _saved : [...m2.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
       }
-      if (!m.devicesData) {
+      if (!m2.devicesData) {
         const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-        const _dp = m.devicesPeriod || "month";
-        const _dSrv = m.devicesServerId ? `&serverId=${m.devicesServerId}` : "";
+        const _dp = m2.devicesPeriod || "month";
+        const _dSrv = m2.devicesServerId ? `&serverId=${m2.devicesServerId}` : "";
         const _dQ = `period=${_dp}${_dSrv}&timezone=${_tz}`;
         const [dc, dh, dhot, dmat, dtu] = await Promise.all([
           this._traStatsFetch(`device-compatibility?${_dQ}&minSessions=5`),
@@ -24180,39 +24314,39 @@ var _TraceaRrMethods = class {
           this._traStatsFetch(`device-compatibility/top-transcoding-users?${_dQ}`)
         ]);
         if (!this._tracearrModal) return;
-        m.devicesData = dc;
-        m.devicesHealth = dh;
-        m.devicesHotspots = dhot;
-        m.devicesMatrix = dmat;
-        m.devicesUsers = dtu;
+        m2.devicesData = dc;
+        m2.devicesHealth = dh;
+        m2.devicesHotspots = dhot;
+        m2.devicesMatrix = dmat;
+        m2.devicesUsers = dtu;
       }
       body.innerHTML = this._traBodyDevices();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.devicesServerId, "data-tra-dev-srv");
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m2.staleServers, m2.devicesServerId, "data-tra-dev-srv");
     } else if (tab === "bandwidth") {
-      if (!m.staleServers) {
+      if (!m2.staleServers) {
         const _sr = await this._traLibFetch("stale?category=never_watched&page=1&pageSize=50");
         if (this._tracearrModal) {
           const srvMap = /* @__PURE__ */ new Map();
           for (const it of _sr?.items || []) if (it.serverId) srvMap.set(it.serverId, it.serverName || it.serverId);
-          m.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
+          m2.staleServers = [...srvMap.entries()].map(([id, name]) => ({ id, name }));
         }
       }
       if (!this._tracearrModal) return;
-      if (!m.bwServerId && (m.staleServers || []).length > 0) {
+      if (!m2.bwServerId && (m2.staleServers || []).length > 0) {
         const _pk = (n) => {
           const s = (n || "").toLowerCase();
           return s.includes("jellyfin") ? 0 : s.includes("plex") ? 1 : s.includes("emby") ? 2 : 99;
         };
         let _saved = null;
         _saved = this._traReadSavedSrv();
-        const _validSaved = _saved && m.staleServers.find((s) => s.id === _saved);
-        m.bwServerId = _validSaved ? _saved : [...m.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
+        const _validSaved = _saved && m2.staleServers.find((s) => s.id === _saved);
+        m2.bwServerId = _validSaved ? _saved : [...m2.staleServers].sort((a, b) => _pk(a.name) - _pk(b.name))[0]?.id || null;
       }
-      if (!m.bwSummary) {
+      if (!m2.bwSummary) {
         const _tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-        const _bp = m.bwPeriod || "month";
-        const _bSrv = m.bwServerId ? `&serverId=${m.bwServerId}` : "";
+        const _bp = m2.bwPeriod || "month";
+        const _bSrv = m2.bwServerId ? `&serverId=${m2.bwServerId}` : "";
         const _bQ = `period=${_bp}${_bSrv}&timezone=${_tz}`;
         const [bws, bwd, bwu] = await Promise.all([
           this._traStatsFetch(`bandwidth/summary?${_bQ}`),
@@ -24220,45 +24354,45 @@ var _TraceaRrMethods = class {
           this._traStatsFetch(`bandwidth/top-users?${_bQ}`)
         ]);
         if (!this._tracearrModal) return;
-        m.bwSummary = bws;
-        m.bwDaily = bwd;
-        m.bwUsers = bwu;
+        m2.bwSummary = bws;
+        m2.bwDaily = bwd;
+        m2.bwUsers = bwu;
       }
       body.innerHTML = this._traBodyBandwidth();
       this._wireTracearrModalBody(body);
-      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m.staleServers, m.bwServerId, "data-tra-bw-srv");
+      this._traPopSrvEl(modal.querySelector("#tra-hdr-server"), m2.staleServers, m2.bwServerId, "data-tra-bw-srv");
     }
   }
   // ── Refresh stale section only (no chart/tiles re-render) ────────────────
   async _traRefreshStale(body) {
-    const m = this._tracearrModal;
-    if (!m) return;
+    const m2 = this._tracearrModal;
+    if (!m2) return;
     try {
-      const _effectiveSrv = m.selectedServerId || null;
-      const _staleCat = m.staleCategory || "never_watched";
-      const _staleMo = _staleCat === "stale" ? m.staleMonths || 3 : null;
+      const _effectiveSrv = m2.selectedServerId || null;
+      const _staleCat = m2.staleCategory || "never_watched";
+      const _staleMo = _staleCat === "stale" ? m2.staleMonths || 3 : null;
       const _staleKey = `${_staleCat}|${_effectiveSrv || ""}|${_staleMo || ""}`;
       const _isMobSt = this._isMob;
-      m.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
-      if (!m.staleRaw || m.staleRaw._key !== _staleKey) {
+      m2.stalePageSize = _isMobSt ? Math.max(2, Math.floor((window.innerHeight * 0.88 - 594) / 54)) : Math.max(3, this._tlCalcPerPage({ bar: 320, rowH: 34 }));
+      if (!m2.staleRaw || m2.staleRaw._key !== _staleKey) {
         const srvParam = _effectiveSrv ? `&serverId=${_effectiveSrv}` : "";
         const moParam = _staleMo ? `&months=${_staleMo}` : "";
         const staleR = await this._traLibFetch(
-          `stale?category=${_staleCat}&page=1&pageSize=100&sort=${m.staleSort || "fileSize"}&order=${m.staleOrder || "desc"}${srvParam}${moParam}`
+          `stale?category=${_staleCat}&page=1&pageSize=100&sort=${m2.staleSort || "fileSize"}&order=${m2.staleOrder || "desc"}${srvParam}${moParam}`
         );
         if (!this._tracearrModal) return;
-        m.staleSummary = staleR?.summary || null;
+        m2.staleSummary = staleR?.summary || null;
         const rawItems = staleR?.items || [];
-        m.staleRaw = Object.assign([...rawItems], { _key: _staleKey });
-        m.staleDeduped = null;
+        m2.staleRaw = Object.assign([...rawItems], { _key: _staleKey });
+        m2.staleDeduped = null;
       }
       let _filtered;
       if (_effectiveSrv) {
-        _filtered = m.staleRaw || [];
+        _filtered = m2.staleRaw || [];
       } else {
-        if (!m.staleDeduped) {
+        if (!m2.staleDeduped) {
           const seen = /* @__PURE__ */ new Map();
-          for (const it of m.staleRaw || []) {
+          for (const it of m2.staleRaw || []) {
             const key = `${it.title?.toLowerCase()}|${it.year}|${it.mediaType}`;
             if (seen.has(key)) {
               const ex = seen.get(key);
@@ -24268,12 +24402,12 @@ var _TraceaRrMethods = class {
               seen.set(key, { ...it });
             }
           }
-          m.staleDeduped = [...seen.values()];
+          m2.staleDeduped = [...seen.values()];
         }
-        _filtered = m.staleDeduped;
+        _filtered = m2.staleDeduped;
       }
-      const _sCol = m.staleSort || "fileSize";
-      const _sDir = m.staleOrder === "asc" ? 1 : -1;
+      const _sCol = m2.staleSort || "fileSize";
+      const _sDir = m2.staleOrder === "asc" ? 1 : -1;
       _filtered = [..._filtered].sort((a, b) => {
         let va = a[_sCol], vb = b[_sCol];
         if (_sCol === "fileSize" || _sCol === "playCount" || _sCol === "watchCount") {
@@ -24284,10 +24418,10 @@ var _TraceaRrMethods = class {
         if (va > vb) return _sDir;
         return 0;
       });
-      if (m.staleMediaType) _filtered = _filtered.filter((it) => it.mediaType === m.staleMediaType);
-      const _pp = m.stalePageSize;
-      m.staleItems = _filtered.slice((m.stalePage || 0) * _pp, ((m.stalePage || 0) + 1) * _pp);
-      m.staleTotal = _filtered.length;
+      if (m2.staleMediaType) _filtered = _filtered.filter((it) => it.mediaType === m2.staleMediaType);
+      const _pp = m2.stalePageSize;
+      m2.staleItems = _filtered.slice((m2.stalePage || 0) * _pp, ((m2.stalePage || 0) + 1) * _pp);
+      m2.staleTotal = _filtered.length;
       const wrap = body.querySelector("[data-tra-stale-wrap]");
       if (wrap) {
         wrap.innerHTML = this._traBodyStaleSection();
@@ -24363,8 +24497,8 @@ var _TraceaRrMethods = class {
   }
   _traFmtDuration(ms) {
     if (!ms) return "\u2014";
-    const m = this._tlFmtDuration ? this._tlFmtDuration(Math.round(ms / 6e4)) : Math.round(ms / 6e4) + " min";
-    return m;
+    const m2 = this._tlFmtDuration ? this._tlFmtDuration(Math.round(ms / 6e4)) : Math.round(ms / 6e4) + " min";
+    return m2;
   }
   _traFilterHistory(raw, period, search) {
     let data = raw || [];
@@ -24427,18 +24561,18 @@ var _LibraryMethods = class {
   }
   // ─── Tile data ────────────────────────────────────────────────────────────
   _libMoviesData() {
-    return (this._radarr || []).filter((m) => m.hasFile).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 4).map((m) => ({ url: this._getRadarrPoster(m), title: m.title, _libType: "movie" }));
+    return (this._radarr || []).filter((m2) => m2.hasFile).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 4).map((m2) => ({ url: this._getRadarrPoster(m2), title: m2.title, _libType: "movie" }));
   }
   _libTvData() {
     return (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount || 0) > 0).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 4).map((s) => ({ url: this._getSonarrPoster(s), title: s.title, _libType: "tv" }));
   }
   _libTopRatedData() {
     return [
-      ...(this._radarr || []).filter((m) => m.hasFile).map((m) => ({
-        url: this._getRadarrPoster(m),
-        title: m.title,
+      ...(this._radarr || []).filter((m2) => m2.hasFile).map((m2) => ({
+        url: this._getRadarrPoster(m2),
+        title: m2.title,
         _libType: "movie",
-        _score: m.ratings?.imdb?.value || m.ratings?.value || 0
+        _score: m2.ratings?.imdb?.value || m2.ratings?.value || 0
       })),
       ...(this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount || 0) > 0).map((s) => ({
         url: this._getSonarrPoster(s),
@@ -24455,11 +24589,11 @@ var _LibraryMethods = class {
       return i === -1 ? 99 : i;
     };
     return [
-      ...(this._radarr || []).filter((m) => m.hasFile).map((m) => ({
-        url: this._getRadarrPoster(m),
-        title: m.title,
+      ...(this._radarr || []).filter((m2) => m2.hasFile).map((m2) => ({
+        url: this._getRadarrPoster(m2),
+        title: m2.title,
         _libType: "movie",
-        _rank: rank(m.movieFile?.quality?.quality?.name || "")
+        _rank: rank(m2.movieFile?.quality?.quality?.name || "")
       })),
       ...(this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount || 0) > 0).map((s) => ({
         url: this._getSonarrPoster(s),
@@ -24539,7 +24673,7 @@ var _LibraryMethods = class {
   }
   // ─── Modal HTML ───────────────────────────────────────────────────────────
   _libModalHtml() {
-    const m = this._libModal;
+    const m2 = this._libModal;
     const isMob = this._isMob;
     const isTab = !isMob && window.matchMedia("(max-width:860px)").matches;
     const _tabLg = isTab ? " is-tab-lg" : "";
@@ -24554,8 +24688,8 @@ var _LibraryMethods = class {
       return on ? `height:24px;box-sizing:border-box;padding:${pad};background:${accent};color:#fff;border-color:${accent};font-weight:700;display:inline-flex;align-items:center` : `height:24px;box-sizing:border-box;padding:${pad};color:var(--is-text,#fff);display:inline-flex;align-items:center`;
     };
     const g1Btns = ["all", "movies", "tv"].map((k) => {
-      const on = k === m.typeKey;
-      const disabled = m.qualityKey === "topquality" && k !== "movies";
+      const on = k === m2.typeKey;
+      const disabled = m2.qualityKey === "topquality" && k !== "movies";
       const lbl = isMob ? G1_LABELS[k] : G1_LABELS_DSK[k];
       const isIcon = isMob && k !== "all";
       const disStyle = disabled ? ";opacity:0.3;pointer-events:none;cursor:default" : "";
@@ -24563,14 +24697,14 @@ var _LibraryMethods = class {
     }).join("");
     const sep = `<span style="display:inline-block;width:1px;height:14px;background:rgba(255,255,255,0.2);margin:0 4px;flex-shrink:0;align-self:center"></span>`;
     const g2Btns = G2.map(([k], i) => {
-      const on = k === m.qualityKey;
+      const on = k === m2.qualityKey;
       const lbl = isMob ? G2_MOB[i][1] : G2[i][1];
-      const arrow = on && isMob ? m.sortDir === "desc" ? " \u2193" : " \u2191" : "";
+      const arrow = on && isMob ? m2.sortDir === "desc" ? " \u2193" : " \u2191" : "";
       return `<button class="is-f-btn${on ? " active" : ""}" data-lib-tab-quality="${k}" style="${_tabSt(on, "rgba(255,160,0,0.35)", false)}">${lbl}${arrow}</button>`;
     }).join("");
     const hasMultiInst = !!(this._radarr2Configured || this._sonarr2Configured);
     const g3Btns = hasMultiInst ? [["all", "Both Instances"], ["1", "1"], ["2", "2"]].map(([k, l]) => {
-      const on = (m.instFilter || "all") === k;
+      const on = (m2.instFilter || "all") === k;
       return `<button class="is-f-btn${on ? " active" : ""}" data-lib-tab-inst="${k}" style="${_tabSt(on, "rgba(88,86,214,0.35)", false)}">${l}</button>`;
     }).join("") : "";
     const tabBtnsMain = g1Btns + sep + g2Btns;
@@ -24604,7 +24738,7 @@ var _LibraryMethods = class {
   }
   // ─── Modal body (re-rendered on filter/sort/search/page change) ───────────
   _libBodyHtml() {
-    const m = this._libModal;
+    const m2 = this._libModal;
     const isMob = this._isMob;
     const isTab = !isMob && window.matchMedia("(max-width:860px)").matches;
     const allItems = this._libFilteredItems();
@@ -24613,13 +24747,13 @@ var _LibraryMethods = class {
     const bPad = isMob ? 18 : 24;
     const tlbH = isMob ? 80 : 48;
     const pagH = 48;
-    const availH = m._bodyH ? m._bodyH - bPad - tlbH - pagH : vH * 0.88 - 60 - bPad - tlbH - pagH;
+    const availH = m2._bodyH ? m2._bodyH - bPad - tlbH - pagH : vH * 0.88 - 60 - bPad - tlbH - pagH;
     let perPage;
-    if (m.view === "posters") {
+    if (m2.view === "posters") {
       const gap = 14;
       const glassW = Math.min(1100, vW * 0.96);
       const bodyPX = isMob ? 20 : 40;
-      let bestCols = m._libCols || 0;
+      let bestCols = m2._libCols || 0;
       if (!bestCols) {
         const minW = isMob ? 70 : 90;
         const maxC = Math.floor((glassW - bodyPX + gap) / (minW + gap));
@@ -24635,7 +24769,7 @@ var _LibraryMethods = class {
             bestCols = c;
           }
         }
-        m._libCols = bestCols;
+        m2._libCols = bestCols;
       }
       const posterW = (glassW - bodyPX - gap * (bestCols - 1)) / bestCols;
       const posterH = posterW * 1.5;
@@ -24643,30 +24777,30 @@ var _LibraryMethods = class {
       const extraClip = (rowsBase + 1) * posterH + rowsBase * gap - availH;
       const rows = extraClip < posterH * 0.15 ? rowsBase + 1 : rowsBase;
       perPage = bestCols * rows;
-    } else if (m.view === "overview") {
+    } else if (m2.view === "overview") {
       const rowH = 79 + 6;
       perPage = Math.max(5, Math.floor((availH + 6) / rowH));
     } else {
       perPage = Math.max(5, Math.floor((availH - 30) / 38));
     }
     const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
-    const page = Math.min(m.page, totalPages - 1);
-    m._totalPages = totalPages;
+    const page = Math.min(m2.page, totalPages - 1);
+    m2._totalPages = totalPages;
     const pageItems = allItems.slice(page * perPage, (page + 1) * perPage);
     const _SRCH = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--is-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
     const _BST = `position:relative;height:28px;box-sizing:border-box;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;display:inline-flex;align-items:center;justify-content:space-between;gap:4px;padding:0 8px;cursor:pointer`;
     const _CHEV = `<svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.5;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>`;
     const _sel = (id, label, opts) => `<div style="${_BST}"><span style="font-size:11px;font-weight:600;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span>${_CHEV}<select id="${id}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px">${opts}</select></div>`;
     const VIEW_OPTS = [["posters", "Posters"], ["overview", "Overview"], ["table", "Table"]];
-    const viewLabel = VIEW_OPTS.find(([v]) => v === m.view)?.[1] || "View";
-    const viewOpts = VIEW_OPTS.map(([v, l]) => `<option value="${v}"${m.view === v ? " selected" : ""}>${l}</option>`).join("");
+    const viewLabel = VIEW_OPTS.find(([v]) => v === m2.view)?.[1] || "View";
+    const viewOpts = VIEW_OPTS.map(([v, l]) => `<option value="${v}"${m2.view === v ? " selected" : ""}>${l}</option>`).join("");
     const sortDefs = this._libSortOptions();
-    const sortLabel = sortDefs.find((s) => s.v === m.sort)?.label || "Sort";
-    const dirArrow = m.sortDir === "desc" ? " \u2193" : " \u2191";
-    const sortOpen = !!m._sortOpen;
+    const sortLabel = sortDefs.find((s) => s.v === m2.sort)?.label || "Sort";
+    const dirArrow = m2.sortDir === "desc" ? " \u2193" : " \u2191";
+    const sortOpen = !!m2._sortOpen;
     const sortDropList = sortOpen ? `<div id="lib-sort-list" style="position:absolute;top:32px;left:0;z-index:200;background:var(--is-menu-bg,#1c1c1e);border:1px solid var(--is-divider,rgba(255,255,255,0.15));border-radius:8px;min-width:190px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.4)">
       ${sortDefs.map((s) => {
-      const act = s.v === m.sort;
+      const act = s.v === m2.sort;
       return `<div data-lib-sort-opt="${s.v}" style="padding:8px 12px;font-size:12px;cursor:pointer;color:var(--is-text);display:flex;align-items:center;justify-content:space-between;gap:8px;${act ? "font-weight:700;background:var(--is-row-hover,rgba(255,255,255,0.06))" : ""}">
           <span style="pointer-events:none">${s.label}</span>
           ${act ? `<span style="opacity:0.6;font-size:11px;pointer-events:none">${dirArrow.trim()}</span>` : ""}
@@ -24681,11 +24815,11 @@ var _LibraryMethods = class {
       ${sortDropList}
     </div>`;
     const FILTER_OPTS = [["all", "All"], ["monitored", "Monitored Only"], ["unmonitored", "Unmonitored"], ["missing", "Missing"], ["wanted", "Wanted"], ["cutoff", "Cutoff Unmet"]];
-    const filterLabel = FILTER_OPTS.find(([v]) => v === m.filter)?.[1] || "Filter";
-    const filtOpts = FILTER_OPTS.map(([v, l]) => `<option value="${v}"${m.filter === v ? " selected" : ""}>${l}</option>`).join("");
+    const filterLabel = FILTER_OPTS.find(([v]) => v === m2.filter)?.[1] || "Filter";
+    const filtOpts = FILTER_OPTS.map(([v, l]) => `<option value="${v}"${m2.filter === v ? " selected" : ""}>${l}</option>`).join("");
     const searchBar = `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--is-row-hover,rgba(255,255,255,0.06));border:1px solid var(--is-divider,rgba(255,255,255,0.1));border-radius:6px;padding:0 7px;height:28px;box-sizing:border-box;flex:1;min-width:100px">
         ${_SRCH}
-        <input id="lib-search" type="search" value="${this._escHtml(m.search)}" placeholder="Search\u2026" autocomplete="off" style="background:none;border:none;outline:none;color:var(--is-text,#fff);font-size:12px;line-height:1.4;flex:1;min-width:0;padding:0;margin:0;box-sizing:border-box">
+        <input id="lib-search" type="search" value="${this._escHtml(m2.search)}" placeholder="Search\u2026" autocomplete="off" style="background:none;border:none;outline:none;color:var(--is-text,#fff);font-size:12px;line-height:1.4;flex:1;min-width:0;padding:0;margin:0;box-sizing:border-box">
       </div>`;
     const _btnStyle = `display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 9px;height:28px;border-radius:6px;border:1px solid var(--is-divider,rgba(255,255,255,0.12));background:var(--is-row-hover,rgba(255,255,255,0.06));color:var(--is-text,#fff);font-size:11px;cursor:pointer;white-space:nowrap;box-sizing:border-box`;
     const _btnIconStyle = `display:inline-flex;align-items:center;justify-content:center;padding:0 7px;height:28px;border-radius:6px;border:1px solid var(--is-divider,rgba(255,255,255,0.12));background:var(--is-row-hover,rgba(255,255,255,0.06));color:var(--is-text,#fff);cursor:pointer;box-sizing:border-box`;
@@ -24699,13 +24833,13 @@ var _LibraryMethods = class {
         <button data-lib-action="update-all" style="${_btnIconStyle}">${_ICO_REFRESH}</button>
         <button data-lib-action="rss-sync"   style="${_btnIconStyle}">${_ICO_RSS}</button>
       </div>`;
-    const allSelected = m._editMode && m._selected?.size > 0 && allItems.length > 0 && m._selected.size >= allItems.length;
-    const hasSel = m._editMode && (m._selected?.size || 0) > 0;
+    const allSelected = m2._editMode && m2._selected?.size > 0 && allItems.length > 0 && m2._selected.size >= allItems.length;
+    const hasSel = m2._editMode && (m2._selected?.size || 0) > 0;
     const _dimBtn = (action, label, extraStyle = "") => {
       const red = action === "bulk-delete" && hasSel;
       return `<button data-lib-action="${action}" style="${_btnStyle}${hasSel ? "" : ";opacity:0.35;cursor:default"}${red ? ";background:rgba(229,57,53,0.25);border-color:rgba(229,57,53,0.5);color:#ff6b6b" : ""}${extraStyle}"${hasSel ? "" : " disabled"}>${label}</button>`;
     };
-    const editBtns = m._editMode ? isMob ? `<div style="display:flex;align-items:center;gap:4px;width:100%">
+    const editBtns = m2._editMode ? isMob ? `<div style="display:flex;align-items:center;gap:4px;width:100%">
             ${_dimBtn("bulk-edit", "Edit", ";flex:1;justify-content:center")}
             ${_dimBtn("bulk-tags", "Set Tags", ";flex:1;justify-content:center")}
             ${_dimBtn("bulk-delete", "Delete", ";flex:1;justify-content:center")}
@@ -24741,24 +24875,24 @@ var _LibraryMethods = class {
     const _ICO_EDIT = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const startEditBtn = `<button data-lib-action="start-edit" style="${_btnStyle}">${_ICO_EDIT}Edit</button>`;
     const toolbar = isMob ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:6px">${m._editMode ? editBtns : `${searchBar}${actionBtnsIcon}<button data-lib-action="start-edit" style="${_btnStyle};padding:0 8px">${_ICO_EDIT}</button>`}</div>
+          <div style="display:flex;align-items:center;gap:6px">${m2._editMode ? editBtns : `${searchBar}${actionBtnsIcon}<button data-lib-action="start-edit" style="${_btnStyle};padding:0 8px">${_ICO_EDIT}</button>`}</div>
           ${ctrlRow}
         </div>` : `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-          ${m._editMode ? editBtns : `${searchBar}${ctrlRow}${isTab ? actionBtnsIcon : actionBtnsText}${startEditBtn}`}
+          ${m2._editMode ? editBtns : `${searchBar}${ctrlRow}${isTab ? actionBtnsIcon : actionBtnsText}${startEditBtn}`}
         </div>`;
     let contentHtml;
-    if (m.view === "posters") {
-      const cols = m._libCols || (isMob ? 4 : 7);
+    if (m2.view === "posters") {
+      const cols = m2._libCols || (isMob ? 4 : 7);
       contentHtml = `<div id="lib-poster-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>`;
-    } else if (m.view === "overview") {
+    } else if (m2.view === "overview") {
       contentHtml = `<div style="display:flex;flex-direction:column;gap:6px;overflow:hidden">${pageItems.map((i) => this._libOverviewCard(i)).join("")}</div>`;
     } else {
       contentHtml = `<div style="overflow:hidden;flex:1;min-height:0">${this._libTableHtml(pageItems)}</div>`;
     }
     const pagHtml = this._tlMobPag("lib-page", page, totalPages, true);
     const LIB_COLS_MIN = 3, LIB_COLS_MAX = 12, LIB_TRACK_W = 120, LIB_INSET = 7;
-    const dragHandle = !isMob && m.view === "posters" ? (() => {
-      const cur = m._libCols || 7;
+    const dragHandle = !isMob && m2.view === "posters" ? (() => {
+      const cur = m2._libCols || 7;
       const thumbPx = Math.round((cur - LIB_COLS_MIN) / (LIB_COLS_MAX - LIB_COLS_MIN) * (LIB_TRACK_W - LIB_INSET * 2)) + LIB_INSET;
       return `<div id="lib-drag-handle" style="position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;padding:6px 0 6px 8px;touch-action:none;user-select:none;cursor:ew-resize">
         <svg width="8" height="14" viewBox="0 0 8 14" fill="var(--is-text,#fff)" opacity="0.4"><circle cx="2" cy="2" r="1.5"/><circle cx="2" cy="7" r="1.5"/><circle cx="2" cy="12" r="1.5"/><circle cx="6" cy="2" r="1.5"/><circle cx="6" cy="7" r="1.5"/><circle cx="6" cy="12" r="1.5"/></svg>
@@ -24769,12 +24903,12 @@ var _LibraryMethods = class {
       </div>`;
     })() : "";
     const pagWrap = pagHtml || dragHandle ? `<div style="flex-shrink:0;position:relative;${dragHandle && !pagHtml ? "height:36px" : ""}">${pagHtml}${dragHandle}</div>` : "";
-    const dialogHtml = m._bulkDialog ? `<div style="position:absolute;inset:0;z-index:20;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;border-radius:8px">${this._libBulkDialogHtml()}</div>` : "";
+    const dialogHtml = m2._bulkDialog ? `<div style="position:absolute;inset:0;z-index:20;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;border-radius:8px">${this._libBulkDialogHtml()}</div>` : "";
     return `<div style="flex-shrink:0">${toolbar}</div><div style="flex:1;min-height:0;overflow:hidden;position:relative">${contentHtml}${dialogHtml}</div>` + pagWrap;
   }
   _libBulkDialogHtml() {
-    const m = this._libModal;
-    const sel = [...m._selected || []];
+    const m2 = this._libModal;
+    const sel = [...m2._selected || []];
     const allItems = this._libAllItems();
     const selItems = allItems.filter((i) => sel.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
     const hasMovies = selItems.some((i) => i._libType === "movie");
@@ -24786,7 +24920,7 @@ var _LibraryMethods = class {
     const _selStyle = `flex:1;background:var(--is-row-hover,rgba(255,255,255,0.07));border:1px solid var(--is-divider,rgba(255,255,255,0.15));border-radius:6px;color:var(--is-text,#fff);font-size:12px;padding:5px 8px;height:30px`;
     const _footStyle = `display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--is-divider,rgba(255,255,255,0.1))`;
     const _cancelBtn = `<button data-lib-action="bulk-cancel" style="padding:0 14px;height:30px;border-radius:6px;border:1px solid var(--is-divider,rgba(255,255,255,0.2));background:transparent;color:var(--is-text,#fff);font-size:12px;cursor:pointer">Cancel</button>`;
-    if (m._bulkDialog === "delete") {
+    if (m2._bulkDialog === "delete") {
       const n = selItems.length;
       const label = hasMovies && hasShows ? "items" : hasMovies ? `movie${n > 1 ? "s" : ""}` : `series`;
       const titles = selItems.slice(0, 8).map((i) => `<li>${this._escHtml(i.title || "")}</li>`).join("");
@@ -24794,26 +24928,26 @@ var _LibraryMethods = class {
       return `<div style="${_dStyle}">
         <p style="${_hStyle}">Delete Selected ${hasMovies && hasShows ? "Items" : hasMovies ? "Movie" : "Series"}</p>
         <div style="${_rowStyle}"><label style="${_labelStyle}">Add List Exclusion</label>
-          <input type="checkbox" id="bd-excl"${m._bulkDelete.addImportExclusion ? " checked" : ""} style="width:15px;height:15px;cursor:pointer">
+          <input type="checkbox" id="bd-excl"${m2._bulkDelete.addImportExclusion ? " checked" : ""} style="width:15px;height:15px;cursor:pointer">
           <span style="font-size:11px;opacity:0.6">Prevent from being re-added by lists</span></div>
         <div style="${_rowStyle}"><label style="${_labelStyle}">Delete Files</label>
-          <input type="checkbox" id="bd-files"${m._bulkDelete.deleteFiles ? " checked" : ""} style="width:15px;height:15px;cursor:pointer">
+          <input type="checkbox" id="bd-files"${m2._bulkDelete.deleteFiles ? " checked" : ""} style="width:15px;height:15px;cursor:pointer">
           <span style="font-size:11px;opacity:0.6">Delete folder and its contents</span></div>
         <p style="font-size:12px;color:var(--is-text,#fff);opacity:0.8;margin:12px 0 4px">Are you sure you want to delete ${n} selected ${label}?</p>
         <ul style="font-size:12px;opacity:0.7;margin:0;padding-left:18px;line-height:1.8">${titles}${more}</ul>
         <div style="${_footStyle}">${_cancelBtn}<button data-lib-action="bulk-delete-confirm" style="padding:0 14px;height:30px;border-radius:6px;border:none;background:#e53935;color:#fff;font-size:12px;cursor:pointer;font-weight:600">Delete</button></div>
       </div>`;
     }
-    if (m._bulkDialog === "tags") {
+    if (m2._bulkDialog === "tags") {
       return `<div style="${_dStyle}">
         <p style="${_hStyle}">Tags</p>
         <div style="${_rowStyle}"><label style="${_labelStyle}">Tags</label>
-          <input id="bt-tags" type="text" value="${this._escHtml(m._bulkTags.tags)}" placeholder="tag1, tag2\u2026" style="flex:1;${_selStyle.replace("height:30px", "height:30px;box-sizing:border-box")}"></div>
+          <input id="bt-tags" type="text" value="${this._escHtml(m2._bulkTags.tags)}" placeholder="tag1, tag2\u2026" style="flex:1;${_selStyle.replace("height:30px", "height:30px;box-sizing:border-box")}"></div>
         <div style="${_rowStyle}"><label style="${_labelStyle}">Apply Tags</label>
           <select id="bt-mode" style="${_selStyle}">
-            <option value="add"${m._bulkTags.applyTags === "add" ? " selected" : ""}>Add</option>
-            <option value="remove"${m._bulkTags.applyTags === "remove" ? " selected" : ""}>Remove</option>
-            <option value="replace"${m._bulkTags.applyTags === "replace" ? " selected" : ""}>Replace</option>
+            <option value="add"${m2._bulkTags.applyTags === "add" ? " selected" : ""}>Add</option>
+            <option value="remove"${m2._bulkTags.applyTags === "remove" ? " selected" : ""}>Remove</option>
+            <option value="replace"${m2._bulkTags.applyTags === "replace" ? " selected" : ""}>Replace</option>
           </select></div>
         <div style="${_footStyle}">${_cancelBtn}<button data-lib-action="bulk-tags-confirm" style="padding:0 14px;height:30px;border-radius:6px;border:none;background:rgba(0,122,255,0.85);color:#fff;font-size:12px;cursor:pointer;font-weight:600">Apply</button></div>
       </div>`;
@@ -24824,12 +24958,12 @@ var _LibraryMethods = class {
     const hasShw2 = selItems.some((i) => i._libType === "tv" && i._libInst === "2");
     const profiles = [].concat(hasMov1 ? this._radarrProfiles || [] : []).concat(hasMov2 ? this._radarr2Profiles || [] : []).concat(hasShw1 ? this._sonarrProfiles || [] : []).concat(hasShw2 ? this._sonarr2Profiles || [] : []);
     const uniqueProfiles = [...new Map(profiles.map((p) => [p.name, p])).values()];
-    const profileOpts = `<option value="">No Change</option>` + uniqueProfiles.map((p) => `<option value="${this._escHtml(p.name)}"${m._bulkEdit.qualityProfileId === p.name ? " selected" : ""}>${this._escHtml(p.name)}</option>`).join("");
-    const monOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m._bulkEdit.monitored === v ? " selected" : ""}>${["No Change", "Monitored", "Unmonitored"][i]}</option>`).join("");
-    const availOpts = ["", "announced", "inCinemas", "released", "tba"].map((v, i) => `<option value="${v}"${m._bulkEdit.minimumAvailability === v ? " selected" : ""}>${["No Change", "Announced", "In Cinemas", "Released", "TBA"][i]}</option>`).join("");
-    const monNewOpts = ["", "all", "none", "latest"].map((v, i) => `<option value="${v}"${m._bulkEdit.monitorNewItems === v ? " selected" : ""}>${["No Change", "All", "None", "Latest"][i]}</option>`).join("");
-    const serTypeOpts = ["", "standard", "daily", "anime"].map((v, i) => `<option value="${v}"${m._bulkEdit.seriesType === v ? " selected" : ""}>${["No Change", "Standard", "Daily", "Anime"][i]}</option>`).join("");
-    const sfOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m._bulkEdit.seasonFolder === v ? " selected" : ""}>${["No Change", "Yes", "No"][i]}</option>`).join("");
+    const profileOpts = `<option value="">No Change</option>` + uniqueProfiles.map((p) => `<option value="${this._escHtml(p.name)}"${m2._bulkEdit.qualityProfileId === p.name ? " selected" : ""}>${this._escHtml(p.name)}</option>`).join("");
+    const monOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m2._bulkEdit.monitored === v ? " selected" : ""}>${["No Change", "Monitored", "Unmonitored"][i]}</option>`).join("");
+    const availOpts = ["", "announced", "inCinemas", "released", "tba"].map((v, i) => `<option value="${v}"${m2._bulkEdit.minimumAvailability === v ? " selected" : ""}>${["No Change", "Announced", "In Cinemas", "Released", "TBA"][i]}</option>`).join("");
+    const monNewOpts = ["", "all", "none", "latest"].map((v, i) => `<option value="${v}"${m2._bulkEdit.monitorNewItems === v ? " selected" : ""}>${["No Change", "All", "None", "Latest"][i]}</option>`).join("");
+    const serTypeOpts = ["", "standard", "daily", "anime"].map((v, i) => `<option value="${v}"${m2._bulkEdit.seriesType === v ? " selected" : ""}>${["No Change", "Standard", "Daily", "Anime"][i]}</option>`).join("");
+    const sfOpts = ["", "true", "false"].map((v, i) => `<option value="${v}"${m2._bulkEdit.seasonFolder === v ? " selected" : ""}>${["No Change", "Yes", "No"][i]}</option>`).join("");
     const mixed = hasMovies && hasShows;
     const title = mixed ? "Items" : hasMovies ? "Movies" : "Series";
     const _appCol = (txt) => mixed ? `<span style="font-size:10px;opacity:0.45;white-space:nowrap;min-width:90px">${txt}</span>` : "";
@@ -24850,7 +24984,7 @@ var _LibraryMethods = class {
   }
   // ─── Modal poster card ────────────────────────────────────────────────────
   _libPosterCard(item) {
-    const m = this._libModal;
+    const m2 = this._libModal;
     const isMovie = item._libType === "movie";
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
     const title = this._escHtml(item.title || "");
@@ -24859,18 +24993,17 @@ var _LibraryMethods = class {
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
     const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
     const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
-    const rating = item.ratings?.imdb?.value || item.ratings?.tmdb?.value || item.ratings?.tvdb?.value || item.ratings?.value;
-    const ratingHtml = rating ? `<div style="margin-bottom:2px"><span class="imdb">\u2B50 ${rating.toFixed(1)}</span></div>` : "";
+    const ratingHtml = this._ratingBadge(item);
     const statusBar = `<div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:${this._libStatusColor(item)};z-index:3"></div>`;
     const typeTag = `<span class="media-type-tag" style="position:absolute;top:5px;left:5px;z-index:4">${isMovie ? "Movie" : "Show"}</span>`;
     const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
-    const checked = m._editMode && m._selected?.has(selKey);
-    const checkHtml = m._editMode ? `<div data-lib-sel="${selKey}" style="position:absolute;top:5px;right:5px;z-index:5;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.85);background:${checked ? "rgba(0,122,255,0.9)" : "rgba(0,0,0,0.45)"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
-    const popupAttr = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
-    const small = (m._libCols || 0) >= 8;
+    const checked = m2._editMode && m2._selected?.has(selKey);
+    const checkHtml = m2._editMode ? `<div data-lib-sel="${selKey}" style="position:absolute;top:5px;right:5px;z-index:5;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.85);background:${checked ? "rgba(0,122,255,0.9)" : "rgba(0,0,0,0.45)"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
+    const popupAttr = m2._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+    const small = (m2._libCols || 0) >= 8;
     const _b = (cls, icon, text) => small ? `<span class="badge ${cls}">${icon}</span>` : this._badge(cls, icon, text);
     let statusBadge = "";
-    if (!m._editMode) {
+    if (!m2._editMode) {
       let badgeHtml = "";
       if (isMovie) {
         const dlFailed = this._radarrQueueFailed?.has(item.id);
@@ -24890,7 +25023,7 @@ var _LibraryMethods = class {
       statusBadge = badgeHtml ? this._statusBadge(badgeHtml) : "";
     }
     let subBadge = "";
-    if (!small && !m._editMode && isMovie && item.hasFile) {
+    if (!small && !m2._editMode && isMovie && item.hasFile) {
       const bz = this._bazarrConfigured ? this._bazarr[item.id] : null;
       if (bz) {
         if (bz.missing.length > 0) {
@@ -24916,29 +25049,30 @@ var _LibraryMethods = class {
   // ─── Modal table ──────────────────────────────────────────────────────────
   _libTableHtml(items) {
     const isMob = this._isMob;
+    const m2 = this._libModal;
     const _icoMov = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
     const _icoTv = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
     if (isMob) {
       const rows2 = items.map((item) => {
-        const m = this._libModal;
         const isMovie = item._libType === "movie";
         const title = this._escHtml(item.title || "");
         const year = item.year || "";
-        const rating = item.ratings?.imdb?.value || item.ratings?.value;
         const quality = item.movieFile?.quality?.quality?.name || (item.qualityProfileName ? item.qualityProfileName : "");
         const popupType = isMovie ? "radarr" : "sonarr";
         const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
         const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
         const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
         const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
-        const checked = m._editMode && m._selected?.has(selKey);
-        const checkEl = m._editMode ? `<div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
-        const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
-        const meta = [year, rating ? `\u2B50 ${rating.toFixed(1)}` : "", quality].filter(Boolean).join(" \xB7 ");
+        const checked = m2._editMode && m2._selected?.has(selKey);
+        const checkEl = m2._editMode ? `<div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
+        const popupAttrs = m2._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+        const ratingHtmlCompact = this._ratingBadge(item);
+        const meta = [year, quality].filter(Boolean).join(" \xB7 ");
         return `<div class="lib-table-row"${popupAttrs} style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07))">
           ${checkEl}
           <span style="display:inline-flex;flex-shrink:0">${isMovie ? _icoMov : _icoTv}</span>
           <div style="flex:1;min-width:0">
+            ${ratingHtmlCompact}
             <div style="font-size:12px;font-weight:600;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
             ${meta ? `<div style="font-size:10px;opacity:0.5;color:var(--is-text,#fff);margin-top:1px">${meta}</div>` : ""}
           </div>
@@ -24947,12 +25081,10 @@ var _LibraryMethods = class {
       return `<div style="overflow-y:auto">${rows2}</div>`;
     }
     const rows = items.map((item) => {
-      const m = this._libModal;
       const isMovie = item._libType === "movie";
       const title = this._escHtml(item.title || "");
       const year = item.year || "\u2014";
-      const rating = item.ratings?.imdb?.value || item.ratings?.value;
-      const ratingTxt = rating ? `\u2B50 ${rating.toFixed(1)}` : "\u2014";
+      const ratingTxt = this._ratingBadge(item, true) || "\u2014";
       const quality = item.movieFile?.quality?.quality?.name || (item.qualityProfileName ? item.qualityProfileName : "\u2014");
       const popupType = isMovie ? "radarr" : "sonarr";
       const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
@@ -24960,19 +25092,28 @@ var _LibraryMethods = class {
       const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
       const typeTag = `<span style="display:inline-flex;align-items:center;flex-shrink:0;margin-right:6px">${isMovie ? _icoMov : _icoTv}</span>`;
       const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
-      const checked = m._editMode && m._selected?.has(selKey);
-      const checkCell = m._editMode ? `<td style="width:28px;padding:0 6px"><div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div></td>` : "";
-      const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+      const checked = m2._editMode && m2._selected?.has(selKey);
+      const checkCell = m2._editMode ? `<td style="width:28px;padding:0 6px"><div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div></td>` : "";
+      const popupAttrs = m2._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
       return `<tr class="lib-table-row"${popupAttrs}>
-        ${checkCell}<td style="display:flex;align-items:center;gap:0">${typeTag}${title}</td>
+        ${checkCell}<td><div style="display:flex;align-items:center;gap:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${typeTag}${title}</div></td>
         <td>${year}</td>
         <td>${ratingTxt}</td>
         <td>${quality}</td>
       </tr>`;
     }).join("");
-    return `<table class="tl-users-table lib-table" style="width:100%">
+    const _thStyle = "cursor:pointer;user-select:none;white-space:nowrap";
+    const _sortArrow = (key) => {
+      const active = m2.sort === key;
+      const char = active ? m2.sortDir === "asc" ? "\u2191" : "\u2193" : "\u2195";
+      return `<span style="margin-left:3px;font-size:9px;opacity:${active ? "0.85" : "0.2"}">${char}</span>`;
+    };
+    return `<table class="tl-users-table lib-table" style="width:100%;table-layout:fixed">
       <thead><tr>
-        <th>Title</th><th>Year</th><th>Rating</th><th>Quality</th>
+        <th data-lib-th-sort="title"   style="${_thStyle};width:auto">Title${_sortArrow("title")}</th>
+        <th data-lib-th-sort="year"    style="${_thStyle};width:70px">Year${_sortArrow("year")}</th>
+        <th data-lib-th-sort="imdb"    style="${_thStyle};width:110px">Rating${_sortArrow("imdb")}</th>
+        <th data-lib-th-sort="quality" style="${_thStyle};width:130px">Quality${_sortArrow("quality")}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -24983,7 +25124,6 @@ var _LibraryMethods = class {
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
     const title = this._escHtml(item.title || "");
     const year = item.year || "";
-    const rating = item.ratings?.imdb?.value || item.ratings?.value;
     const quality = item.movieFile?.quality?.quality?.name || "";
     const size = item.movieFile?.size || item.statistics?.sizeOnDisk || 0;
     const sizeTxt = size ? size > 1e9 ? (size / 1e9).toFixed(1) + " GB" : (size / 1e6).toFixed(0) + " MB" : "";
@@ -24993,11 +25133,11 @@ var _LibraryMethods = class {
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
     const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
     const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
-    const m = this._libModal;
+    const m2 = this._libModal;
     const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
-    const checked = m._editMode && m._selected?.has(selKey);
-    const checkHtml = m._editMode ? `<div data-lib-sel="${selKey}" style="width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;align-self:center;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
-    const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+    const checked = m2._editMode && m2._selected?.has(selKey);
+    const checkHtml = m2._editMode ? `<div data-lib-sel="${selKey}" style="width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;align-self:center;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
+    const popupAttrs = m2._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
     const monDot = `<span style="width:6px;height:6px;border-radius:50%;background:${item.monitored ? "#34C759" : "rgba(255,255,255,0.25)"};display:inline-block;flex-shrink:0"></span>`;
     const meta = [year && `<span>${year}</span>`, quality && `<span>${quality}</span>`, sizeTxt && `<span>${sizeTxt}</span>`, studio && `<span>${studio}</span>`].filter(Boolean).join('<span style="opacity:0.3;margin:0 3px">\xB7</span>');
     const imgHtml = poster ? `<img src="${poster}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
@@ -25012,25 +25152,25 @@ var _LibraryMethods = class {
         <div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px;display:flex;flex-wrap:wrap;align-items:center">${meta}</div>
         ${overview ? `<div style="font-size:10px;color:var(--is-text-muted);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${overview}</div>` : ""}
       </div>
-      ${rating ? `<span class="imdb" style="flex-shrink:0;align-self:center">\u2B50 ${rating.toFixed(1)}</span>` : ""}
+      <span style="flex-shrink:0;align-self:center">${this._ratingBadge(item, true)}</span>
     </div>`;
   }
   // ─── Data helpers ─────────────────────────────────────────────────────────
   _libFilteredItems() {
-    const m = this._libModal;
+    const m2 = this._libModal;
     let items = this._libAllItems();
-    if (m.filter === "monitored") items = items.filter((i) => i.monitored);
-    if (m.filter === "unmonitored") items = items.filter((i) => !i.monitored);
-    if (m.filter === "missing") items = items.filter((i) => i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0);
-    if (m.filter === "wanted") items = items.filter((i) => i.monitored && (i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0));
-    if (m.filter === "cutoff") items = items.filter((i) => i._libType === "movie" ? !!i.movieFile?.qualityCutoffNotMet : false);
-    if (m.search) {
-      const q = m.search.toLowerCase();
+    if (m2.filter === "monitored") items = items.filter((i) => i.monitored);
+    if (m2.filter === "unmonitored") items = items.filter((i) => !i.monitored);
+    if (m2.filter === "missing") items = items.filter((i) => i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0);
+    if (m2.filter === "wanted") items = items.filter((i) => i.monitored && (i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0));
+    if (m2.filter === "cutoff") items = items.filter((i) => i._libType === "movie" ? !!i.movieFile?.qualityCutoffNotMet : false);
+    if (m2.search) {
+      const q = m2.search.toLowerCase();
       items = items.filter((i) => (i.title || "").toLowerCase().includes(q) || (i.originalTitle || "").toLowerCase().includes(q));
     }
-    const dir = m.sortDir === "desc" ? -1 : 1;
+    const dir = m2.sortDir === "desc" ? -1 : 1;
     return [...items].sort((a, b) => {
-      switch (m.sort) {
+      switch (m2.sort) {
         case "status":
           return dir * ((a.monitored ? 1 : 0) - (b.monitored ? 1 : 0)) || dir * ((a.hasFile || a.statistics?.episodeFileCount ? 1 : 0) - (b.hasFile || b.statistics?.episodeFileCount ? 1 : 0));
         case "title":
@@ -25080,26 +25220,26 @@ var _LibraryMethods = class {
     });
   }
   _libAllItems() {
-    const m = this._libModal;
+    const m2 = this._libModal;
     const r1 = this._radarr || [];
     const r2 = this._radarr2Configured ? this._radarr2 || [] : [];
     const s1 = this._sonarr || [];
     const s2 = this._sonarr2Configured ? this._sonarr2 || [] : [];
-    const inst = m.instFilter || "all";
+    const inst = m2.instFilter || "all";
     const movieSrc = inst === "1" ? r1.map((i) => ({ ...i, _libInst: "1" })) : inst === "2" ? r2.map((i) => ({ ...i, _libInst: "2" })) : [...r1.map((i) => ({ ...i, _libInst: "1" })), ...r2.map((i) => ({ ...i, _libInst: "2" }))];
     const tvSrc = inst === "1" ? s1.map((i) => ({ ...i, _libInst: "1" })) : inst === "2" ? s2.map((i) => ({ ...i, _libInst: "2" })) : [...s1.map((i) => ({ ...i, _libInst: "1" })), ...s2.map((i) => ({ ...i, _libInst: "2" }))];
     const movies = movieSrc.map((i) => ({ ...i, _libType: "movie" }));
     const tv = tvSrc.map((i) => ({ ...i, _libType: "tv" }));
     let base;
-    if (m.typeKey === "movies") base = movies;
-    else if (m.typeKey === "tv") base = tv;
+    if (m2.typeKey === "movies") base = movies;
+    else if (m2.typeKey === "tv") base = tv;
     else base = [...movies, ...tv];
-    if (m.qualityKey === "toprated") base = base.filter((i) => (i.ratings?.imdb?.value || i.ratings?.tmdb?.value || i.ratings?.tvdb?.value || i.ratings?.tvMaze?.value || i.ratings?.trakt?.value || i.ratings?.value || 0) > 0);
-    if (m.qualityKey === "topquality") base = base.filter((i) => i._libType === "movie" && !!i.hasFile);
+    if (m2.qualityKey === "toprated") base = base.filter((i) => (i.ratings?.imdb?.value || i.ratings?.tmdb?.value || i.ratings?.tvdb?.value || i.ratings?.tvMaze?.value || i.ratings?.trakt?.value || i.ratings?.value || 0) > 0);
+    if (m2.qualityKey === "topquality") base = base.filter((i) => i._libType === "movie" && !!i.hasFile);
     return base;
   }
   _libSortOptions() {
-    const m = this._libModal;
+    const m2 = this._libModal;
     const all = [
       { v: "status", label: "Monitored/Status" },
       { v: "title", label: "Title" },
@@ -25119,7 +25259,7 @@ var _LibraryMethods = class {
       { v: "origtitle", label: "Original Title" },
       { v: "origlang", label: "Original Language" }
     ];
-    if (m.typeKey === "tv" && !m.qualityKey) return all.filter((o) => !["studio", "cinema", "digital", "physical", "cert", "quality"].includes(o.v));
+    if (m2.typeKey === "tv" && !m2.qualityKey) return all.filter((o) => !["studio", "cinema", "digital", "physical", "cert", "quality"].includes(o.v));
     return all;
   }
   _libStatusColor(item) {
@@ -25163,42 +25303,42 @@ var _LibraryWireMethods = class {
       const selEl = e.target.closest("[data-lib-sel]");
       if (selEl) {
         const key = selEl.dataset.libSel;
-        const m = this._libModal;
-        if (!m?._editMode) return;
-        if (m._selected.has(key)) m._selected.delete(key);
-        else m._selected.add(key);
+        const m2 = this._libModal;
+        if (!m2?._editMode) return;
+        if (m2._selected.has(key)) m2._selected.delete(key);
+        else m2._selected.add(key);
         this._libRerenderBody(el);
         return;
       }
       const actionBtn = e.target.closest("[data-lib-action]");
       if (actionBtn) {
         const action = actionBtn.dataset.libAction;
-        const m = this._libModal;
+        const m2 = this._libModal;
         if (action === "start-edit") {
-          m._editMode = true;
-          m._selected = /* @__PURE__ */ new Set();
+          m2._editMode = true;
+          m2._selected = /* @__PURE__ */ new Set();
           this._libRerenderBody(el);
           return;
         }
         if (action === "stop-edit") {
-          m._editMode = false;
-          m._selected = /* @__PURE__ */ new Set();
+          m2._editMode = false;
+          m2._selected = /* @__PURE__ */ new Set();
           this._libRerenderBody(el);
           return;
         }
         if (action === "select-toggle") {
           const allItems = this._libFilteredItems();
-          const allSelected = m._selected.size >= allItems.length;
+          const allSelected = m2._selected.size >= allItems.length;
           if (allSelected) {
-            m._selected = /* @__PURE__ */ new Set();
+            m2._selected = /* @__PURE__ */ new Set();
           } else {
-            allItems.forEach((i) => m._selected.add(`${i._libType}-${i._libInst || "1"}-${i.id}`));
+            allItems.forEach((i) => m2._selected.add(`${i._libType}-${i._libInst || "1"}-${i.id}`));
           }
           this._libRerenderBody(el);
           return;
         }
         if (action === "bulk-edit") {
-          m._bulkDialog = "edit";
+          m2._bulkDialog = "edit";
           this._libRerenderBody(el);
           const fetches = [];
           if (!this._radarrProfiles?.length) fetches.push(this._fetchRadarrProfiles?.());
@@ -25211,17 +25351,17 @@ var _LibraryWireMethods = class {
           return;
         }
         if (action === "bulk-tags") {
-          m._bulkDialog = "tags";
+          m2._bulkDialog = "tags";
           this._libRerenderBody(el);
           return;
         }
         if (action === "bulk-delete") {
-          m._bulkDialog = "delete";
+          m2._bulkDialog = "delete";
           this._libRerenderBody(el);
           return;
         }
         if (action === "bulk-cancel") {
-          m._bulkDialog = null;
+          m2._bulkDialog = null;
           this._libRerenderBody(el);
           return;
         }
@@ -25229,16 +25369,16 @@ var _LibraryWireMethods = class {
           const dlg = el.querySelector("#lib-body");
           const exclEl = dlg?.querySelector("#bd-excl");
           const filesEl = dlg?.querySelector("#bd-files");
-          if (exclEl) m._bulkDelete.addImportExclusion = exclEl.checked;
-          if (filesEl) m._bulkDelete.deleteFiles = filesEl.checked;
-          const selArr = [...m._selected];
+          if (exclEl) m2._bulkDelete.addImportExclusion = exclEl.checked;
+          if (filesEl) m2._bulkDelete.deleteFiles = filesEl.checked;
+          const selArr = [...m2._selected];
           const allItems = this._libAllItems();
           const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
           const movies1 = selItems.filter((i) => i._libType === "movie" && (i._libInst || "1") === "1").map((i) => i.id);
           const movies2 = selItems.filter((i) => i._libType === "movie" && i._libInst === "2").map((i) => i.id);
           const series1 = selItems.filter((i) => i._libType === "tv" && (i._libInst || "1") === "1").map((i) => i.id);
           const series2 = selItems.filter((i) => i._libType === "tv" && i._libInst === "2").map((i) => i.id);
-          const body = { addImportExclusion: m._bulkDelete.addImportExclusion, deleteFiles: m._bulkDelete.deleteFiles };
+          const body = { addImportExclusion: m2._bulkDelete.addImportExclusion, deleteFiles: m2._bulkDelete.deleteFiles };
           const calls = [];
           if (movies1.length) calls.push(this._callApi("DELETE", "arr_stack/radarr/movie-editor", { ...body, movieIds: movies1 }));
           if (movies2.length) calls.push(this._callApi("DELETE", "arr_stack/radarr2/movie-editor", { ...body, movieIds: movies2 }));
@@ -25250,9 +25390,9 @@ var _LibraryWireMethods = class {
             if (m2s.size) this._radarr2 = (this._radarr2 || []).filter((x) => !m2s.has(x.id));
             if (s1s.size) this._sonarr = (this._sonarr || []).filter((x) => !s1s.has(x.id));
             if (s2s.size) this._sonarr2 = (this._sonarr2 || []).filter((x) => !s2s.has(x.id));
-            m._bulkDialog = null;
-            m._editMode = false;
-            m._selected = /* @__PURE__ */ new Set();
+            m2._bulkDialog = null;
+            m2._editMode = false;
+            m2._selected = /* @__PURE__ */ new Set();
             this._libRerenderBody(el);
             this._fetchAll();
           }).catch((e2) => console.warn("[lib] bulk delete failed", e2));
@@ -25262,23 +25402,23 @@ var _LibraryWireMethods = class {
           const dlg = el.querySelector("#lib-body");
           const tagsEl = dlg?.querySelector("#bt-tags");
           const modeEl = dlg?.querySelector("#bt-mode");
-          m._bulkTags.tags = tagsEl?.value || "";
-          m._bulkTags.applyTags = modeEl?.value || "add";
-          const selArr = [...m._selected];
+          m2._bulkTags.tags = tagsEl?.value || "";
+          m2._bulkTags.applyTags = modeEl?.value || "add";
+          const selArr = [...m2._selected];
           const allItems = this._libAllItems();
           const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
           const movies1 = selItems.filter((i) => i._libType === "movie" && (i._libInst || "1") === "1").map((i) => i.id);
           const movies2 = selItems.filter((i) => i._libType === "movie" && i._libInst === "2").map((i) => i.id);
           const series1 = selItems.filter((i) => i._libType === "tv" && (i._libInst || "1") === "1").map((i) => i.id);
           const series2 = selItems.filter((i) => i._libType === "tv" && i._libInst === "2").map((i) => i.id);
-          const tagNames = m._bulkTags.tags.split(",").map((t) => t.trim()).filter(Boolean);
+          const tagNames = m2._bulkTags.tags.split(",").map((t) => t.trim()).filter(Boolean);
           const calls = [];
-          if (movies1.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", { movieIds: movies1, tags: tagNames, applyTags: m._bulkTags.applyTags }));
-          if (movies2.length) calls.push(this._callApi("PUT", "arr_stack/radarr2/movie-editor", { movieIds: movies2, tags: tagNames, applyTags: m._bulkTags.applyTags }));
-          if (series1.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", { seriesIds: series1, tags: tagNames, applyTags: m._bulkTags.applyTags }));
-          if (series2.length) calls.push(this._callApi("PUT", "arr_stack/sonarr2/series-editor", { seriesIds: series2, tags: tagNames, applyTags: m._bulkTags.applyTags }));
+          if (movies1.length) calls.push(this._callApi("PUT", "arr_stack/radarr/movie-editor", { movieIds: movies1, tags: tagNames, applyTags: m2._bulkTags.applyTags }));
+          if (movies2.length) calls.push(this._callApi("PUT", "arr_stack/radarr2/movie-editor", { movieIds: movies2, tags: tagNames, applyTags: m2._bulkTags.applyTags }));
+          if (series1.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", { seriesIds: series1, tags: tagNames, applyTags: m2._bulkTags.applyTags }));
+          if (series2.length) calls.push(this._callApi("PUT", "arr_stack/sonarr2/series-editor", { seriesIds: series2, tags: tagNames, applyTags: m2._bulkTags.applyTags }));
           Promise.all(calls).then(() => {
-            m._bulkDialog = null;
+            m2._bulkDialog = null;
             this._libRerenderBody(el);
           }).catch((e2) => console.warn("[lib] bulk tags failed", e2));
           return;
@@ -25286,37 +25426,37 @@ var _LibraryWireMethods = class {
         if (action === "bulk-edit-confirm") {
           const dlg = el.querySelector("#lib-body");
           const dlgEl = el.querySelector("#lib-body");
-          m._bulkEdit.monitored = dlgEl?.querySelector("#be-mon")?.value || "";
-          m._bulkEdit.qualityProfileId = dlgEl?.querySelector("#be-qual")?.value || "";
-          m._bulkEdit.minimumAvailability = dlgEl?.querySelector("#be-avail")?.value || "";
-          m._bulkEdit.monitorNewItems = dlgEl?.querySelector("#be-monnew")?.value || "";
-          m._bulkEdit.seriesType = dlgEl?.querySelector("#be-sertype")?.value || "";
-          m._bulkEdit.seasonFolder = dlgEl?.querySelector("#be-sf")?.value || "";
-          const selArr = [...m._selected];
+          m2._bulkEdit.monitored = dlgEl?.querySelector("#be-mon")?.value || "";
+          m2._bulkEdit.qualityProfileId = dlgEl?.querySelector("#be-qual")?.value || "";
+          m2._bulkEdit.minimumAvailability = dlgEl?.querySelector("#be-avail")?.value || "";
+          m2._bulkEdit.monitorNewItems = dlgEl?.querySelector("#be-monnew")?.value || "";
+          m2._bulkEdit.seriesType = dlgEl?.querySelector("#be-sertype")?.value || "";
+          m2._bulkEdit.seasonFolder = dlgEl?.querySelector("#be-sf")?.value || "";
+          const selArr = [...m2._selected];
           const allItems = this._libAllItems();
           const selItems = allItems.filter((i) => selArr.includes(`${i._libType}-${i._libInst || "1"}-${i.id}`));
           const movies1 = selItems.filter((i) => i._libType === "movie" && (i._libInst || "1") === "1").map((i) => i.id);
           const movies2 = selItems.filter((i) => i._libType === "movie" && i._libInst === "2").map((i) => i.id);
           const series1 = selItems.filter((i) => i._libType === "tv" && (i._libInst || "1") === "1").map((i) => i.id);
           const series2 = selItems.filter((i) => i._libType === "tv" && i._libInst === "2").map((i) => i.id);
-          const _selProfName = m._bulkEdit.qualityProfileId || null;
+          const _selProfName = m2._bulkEdit.qualityProfileId || null;
           const _resolvePid = (profs) => _selProfName ? profs.find((p) => p.name === _selProfName)?.id ?? null : null;
           const mkMovieBody = (ids, profs) => {
             const b = { movieIds: ids };
-            if (m._bulkEdit.monitored) b.monitored = m._bulkEdit.monitored === "true";
+            if (m2._bulkEdit.monitored) b.monitored = m2._bulkEdit.monitored === "true";
             const pid = _resolvePid(profs);
             if (pid) b.qualityProfileId = pid;
-            if (m._bulkEdit.minimumAvailability) b.minimumAvailability = m._bulkEdit.minimumAvailability;
+            if (m2._bulkEdit.minimumAvailability) b.minimumAvailability = m2._bulkEdit.minimumAvailability;
             return b;
           };
           const mkSeriesBody = (ids, profs) => {
             const b = { seriesIds: ids };
-            if (m._bulkEdit.monitored) b.monitored = m._bulkEdit.monitored === "true";
+            if (m2._bulkEdit.monitored) b.monitored = m2._bulkEdit.monitored === "true";
             const pid = _resolvePid(profs);
             if (pid) b.qualityProfileId = pid;
-            if (m._bulkEdit.monitorNewItems) b.monitorNewItems = m._bulkEdit.monitorNewItems;
-            if (m._bulkEdit.seriesType) b.seriesType = m._bulkEdit.seriesType;
-            if (m._bulkEdit.seasonFolder) b.seasonFolder = m._bulkEdit.seasonFolder === "true";
+            if (m2._bulkEdit.monitorNewItems) b.monitorNewItems = m2._bulkEdit.monitorNewItems;
+            if (m2._bulkEdit.seriesType) b.seriesType = m2._bulkEdit.seriesType;
+            if (m2._bulkEdit.seasonFolder) b.seasonFolder = m2._bulkEdit.seasonFolder === "true";
             return b;
           };
           const calls = [];
@@ -25325,15 +25465,15 @@ var _LibraryWireMethods = class {
           if (series1.length) calls.push(this._callApi("PUT", "arr_stack/sonarr/series-editor", mkSeriesBody(series1, this._sonarrProfiles || [])));
           if (series2.length) calls.push(this._callApi("PUT", "arr_stack/sonarr2/series-editor", mkSeriesBody(series2, this._sonarr2Profiles || [])));
           Promise.all(calls).then(() => {
-            m._bulkDialog = null;
+            m2._bulkDialog = null;
             this._libRerenderBody(el);
             this._fetchAll();
           }).catch((e2) => console.warn("[lib] bulk edit failed", e2));
           return;
         }
-        const inst = m?.instFilter || "all";
-        const useR = m?.typeKey !== "tv";
-        const useS = m?.typeKey !== "movies";
+        const inst = m2?.instFilter || "all";
+        const useR = m2?.typeKey !== "tv";
+        const useS = m2?.typeKey !== "movies";
         if (action === "update-all" && (useR && useS || inst === "all")) {
           const label = action === "rss-sync" ? "RSS Sync" : "Update All";
           const allTypes = useR && useS;
@@ -25462,6 +25602,19 @@ var _LibraryWireMethods = class {
           this._libModal.sortDir = "desc";
         }
         this._libModal._sortOpen = false;
+        this._libModal.page = 0;
+        this._libRerenderBody(el);
+        return;
+      }
+      const thSort = e.target.closest("[data-lib-th-sort]");
+      if (thSort) {
+        const v = thSort.dataset.libThSort;
+        if (v === this._libModal.sort) {
+          this._libModal.sortDir = this._libModal.sortDir === "desc" ? "asc" : "desc";
+        } else {
+          this._libModal.sort = v;
+          this._libModal.sortDir = "desc";
+        }
         this._libModal.page = 0;
         this._libRerenderBody(el);
         return;
@@ -25883,14 +26036,14 @@ var _ActivityRenderMethods = class {
         };
       })
     ];
-    const m = this._activityModal || {};
-    const fSvc = m.queueFilterSvc || "all";
-    const fSts = m.queueFilterSts || "all";
-    const fQual = m.queueFilterQuality || "all";
-    const fProto = m.queueFilterProtocol || "all";
-    const fIdx = m.queueFilterIndexer || "all";
-    const fCli = m.queueFilterClient || "all";
-    const qSearch = (m.queueSearch || "").toLowerCase().trim();
+    const m2 = this._activityModal || {};
+    const fSvc = m2.queueFilterSvc || "all";
+    const fSts = m2.queueFilterSts || "all";
+    const fQual = m2.queueFilterQuality || "all";
+    const fProto = m2.queueFilterProtocol || "all";
+    const fIdx = m2.queueFilterIndexer || "all";
+    const fCli = m2.queueFilterClient || "all";
+    const qSearch = (m2.queueSearch || "").toLowerCase().trim();
     const filtered = all.filter((item) => {
       if (qSearch && !item._title.toLowerCase().includes(qSearch)) return false;
       if (fSvc !== "all" && item._svc !== fSvc) return false;
@@ -25946,7 +26099,7 @@ var _ActivityRenderMethods = class {
     const qCliSel = C.has("client") ? mkSel("act-queue-client", fCli, uniq(all, (r) => r.downloadClient), this._t("actAllClients")) : "";
     const allQSels = [qSvcSel, qStsSel, qQualSel, qProtoSel, qIdxSel, qCliSel].filter(Boolean).join("");
     const qFilters = allQSels ? `<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${allQSels}</div>` : "";
-    const qSearchEl = this._tlSearchInput("act-queue-search", m.queueSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const qSearchEl = this._tlSearchInput("act-queue-search", m2.queueSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const rows = paged.map((item) => {
       const isBad = item.trackedDownloadStatus === "warning" || item.trackedDownloadStatus === "error" || item.trackedDownloadState === "importFailed" || item.status === "failed";
       const pct = item.size > 0 ? Math.round((item.size - (item.sizeleft || 0)) / item.size * 100) : 0;
@@ -26490,7 +26643,7 @@ var _ActivityRenderMethods = class {
     const isDay = this._isDay;
     const SEL_STYle = (missing) => `color-scheme:${isDay ? "light" : "dark"};appearance:none;-webkit-appearance:none;padding:5px 24px 5px 8px;border-radius:6px;width:100%;box-sizing:border-box;font-size:11px;font-weight:600;cursor:pointer;outline:none;border:${missing ? "1px dashed rgba(248,113,113,0.8)" : "1px solid var(--is-divider)"};background-color:${missing ? "rgba(248,113,113,0.1)" : "var(--is-btn-bg)"};background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(128,128,128,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;color:${missing ? "rgba(248,113,113,0.95)" : "var(--is-text)"};`;
     const lib = svc === "radarr" ? this._radarr || [] : svc === "radarr2" ? this._radarr2 || [] : svc === "sonarr" ? this._sonarr || [] : svc === "sonarr2" ? this._sonarr2 || [] : [];
-    const buildLibOpts = (curId) => lib.slice().sort((a, b) => (a.title || "").localeCompare(b.title || "")).map((m) => `<option value="${m.id}"${m.id == curId ? " selected" : ""}>${this._escHtml(m.title || "\u2014")}${m.year ? ` (${m.year})` : ""}</option>`).join("");
+    const buildLibOpts = (curId) => lib.slice().sort((a, b) => (a.title || "").localeCompare(b.title || "")).map((m2) => `<option value="${m2.id}"${m2.id == curId ? " selected" : ""}>${this._escHtml(m2.title || "\u2014")}${m2.year ? ` (${m2.year})` : ""}</option>`).join("");
     const buildQualOpts = (curId) => (qDefs || []).slice().sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).map((d) => {
       const id = d.quality?.id ?? d.id;
       return `<option value="${id}"${id == curId ? " selected" : ""}>${this._escHtml(d.quality?.name || d.title || "\u2014")}</option>`;
@@ -26641,8 +26794,8 @@ var _ActivityRenderMethods = class {
   // ── Missing tab ───────────────────────────────────────────────────────────
   _actMissingTabHtml(radarrMovies, sonarrSeries, page, perPage, cols) {
     const isMobile2 = this._isMob;
-    const m = this._activityModal || {};
-    const expanded = m.missingExpanded || /* @__PURE__ */ new Set();
+    const m2 = this._activityModal || {};
+    const expanded = m2.missingExpanded || /* @__PURE__ */ new Set();
     const rRows = (radarrMovies || []).map((r) => ({
       _svc: r._inst || "radarr",
       _displaySvc: "radarr",
@@ -26678,12 +26831,12 @@ var _ActivityRenderMethods = class {
       };
     });
     const all = [...rRows, ...snRows];
-    const fSvc = m.missingFilterSvc || "all";
-    const fProf = m.missingFilterProfile || "all";
-    const fMon = m.missingFilterMonitored || "all";
-    const mSearch = (m.missingSearch || "").toLowerCase().trim();
-    const mSort = m.missingSort || "title";
-    const mSortDir = m.missingSortDir || "asc";
+    const fSvc = m2.missingFilterSvc || "all";
+    const fProf = m2.missingFilterProfile || "all";
+    const fMon = m2.missingFilterMonitored || "all";
+    const mSearch = (m2.missingSearch || "").toLowerCase().trim();
+    const mSort = m2.missingSort || "title";
+    const mSortDir = m2.missingSortDir || "asc";
     const filtered = all.filter((r) => {
       if (fSvc !== "all" && r._svc !== fSvc) return false;
       if (fProf !== "all" && r._profile !== fProf) return false;
@@ -26750,7 +26903,7 @@ var _ActivityRenderMethods = class {
         return d;
       }
     };
-    const searchEl = this._tlSearchInput("act-missing-search", m.missingSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const searchEl = this._tlSearchInput("act-missing-search", m2.missingSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const thSt = `padding:4px 8px 8px;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;white-space:nowrap`;
     const _mth = (id, label, pad0 = false) => {
       const active = mSort === id;
@@ -27098,8 +27251,8 @@ var _WireActivityMethods = class {
     });
   }
   async _actLoadTab(tab, el) {
-    const m = this._activityModal;
-    if (!m) return;
+    const m2 = this._activityModal;
+    if (!m2) return;
     const body = el.querySelector("#act-body");
     if (!body) return;
     body.innerHTML = '<div class="is-loading"><span>Loading\u2026</span></div>';
@@ -27115,8 +27268,8 @@ var _WireActivityMethods = class {
       const [rq, sq, rq2, sq2] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
       const _toArr = (v) => Array.isArray(v) ? v : Array.isArray(v?.records) ? v.records : [];
-      const rMovieMap = new Map((this._radarr || []).map((m2) => [m2.id, m2.title]));
-      const rMovieMap2 = new Map((this._radarr2 || []).map((m2) => [m2.id, m2.title]));
+      const rMovieMap = new Map((this._radarr || []).map((m3) => [m3.id, m3.title]));
+      const rMovieMap2 = new Map((this._radarr2 || []).map((m3) => [m3.id, m3.title]));
       const rRaw = rq.status === "fulfilled" && rq.value ? _toArr(rq.value) : [];
       const rRaw2 = rq2.status === "fulfilled" && rq2.value ? _toArr(rq2.value) : [];
       const rRecords = [
@@ -27146,10 +27299,10 @@ var _WireActivityMethods = class {
           }
         });
       }
-      m.queueData = { radarr: rRecords, sonarr: sRecords };
+      m2.queueData = { radarr: rRecords, sonarr: sRecords };
       this._actRenderQueue(body, el);
     } else if (tab === "history") {
-      const et = m.histFilter === "all" ? "" : "&eventType=" + encodeURIComponent(m.histFilter);
+      const et = m2.histFilter === "all" ? "" : "&eventType=" + encodeURIComponent(m2.histFilter);
       const calls = [
         this._callApi("GET", "arr_stack/radarr/activity/history?page=1&pageSize=500&sortKey=date&sortDir=desc" + et),
         this._callApi("GET", "arr_stack/sonarr/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et),
@@ -27163,11 +27316,11 @@ var _WireActivityMethods = class {
         const recs = [...a?.records || [], ...b?.records || []];
         return { records: recs, totalRecords: recs.length };
       };
-      m.histData = {
+      m2.histData = {
         radarr: _mergeHist(rh.status === "fulfilled" ? rh.value : null, rh2.status === "fulfilled" ? rh2.value : null),
         sonarr: _mergeHist(sh.status === "fulfilled" ? sh.value : null, sh2.status === "fulfilled" ? sh2.value : null)
       };
-      this._actSetBodyHtml(body, this._actHistoryTabHtml(m.histData.radarr, m.histData.sonarr, m.histFilter, m.histPage, m.histPerPage));
+      this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData.radarr, m2.histData.sonarr, m2.histFilter, m2.histPage, m2.histPerPage));
       this._wireActBody(body, el, "history");
     } else if (tab === "blocklist") {
       const calls = [
@@ -27183,11 +27336,11 @@ var _WireActivityMethods = class {
         const recs = [...a?.records || [], ...b?.records || []];
         return { records: recs, totalRecords: recs.length };
       };
-      m.blData = {
+      m2.blData = {
         radarr: _mergeBl(rb.status === "fulfilled" ? rb.value : null, rb2.status === "fulfilled" ? rb2.value : null),
         sonarr: _mergeBl(sb.status === "fulfilled" ? sb.value : null, sb2.status === "fulfilled" ? sb2.value : null)
       };
-      this._actSetBodyHtml(body, this._actBlocklistTabHtml(m.blData.radarr, m.blData.sonarr, m.blPage, m.blPerPage));
+      this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData.radarr, m2.blData.sonarr, m2.blPage, m2.blPerPage));
       this._wireActBody(body, el, "blocklist");
     } else if (tab === "missing") {
       if (!this._activityModal) return;
@@ -27201,40 +27354,40 @@ var _WireActivityMethods = class {
     }
   }
   _actRenderQueue(body, el, pageOverride) {
-    const m = this._activityModal;
-    if (!m) return;
-    if (pageOverride !== void 0) m.queuePage = pageOverride;
-    body.innerHTML = this._actQueueTabHtml(m.queueData?.radarr || [], m.queueData?.sonarr || [], m.queuePage, m.queuePerPage, m.queueCols);
+    const m2 = this._activityModal;
+    if (!m2) return;
+    if (pageOverride !== void 0) m2.queuePage = pageOverride;
+    body.innerHTML = this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], m2.queuePage, m2.queuePerPage, m2.queueCols);
     requestAnimationFrame(() => {
       if (!this._activityModal) return;
       const clip = body.querySelector("[data-act-clip]");
       if (clip) {
-        const m2 = this._activityModal;
+        const m22 = this._activityModal;
         const isMob = !clip.querySelector("table");
         const pagH = isMob ? 44 : 40;
         const effectiveClipB = clip.getBoundingClientRect().bottom - pagH;
         const items = isMob ? [...clip.children] : [...clip.querySelectorAll("tbody tr")];
         const fitting = items.filter((el2) => el2.getBoundingClientRect().bottom <= effectiveClipB + 2).length;
         if (fitting < items.length && fitting >= 1) {
-          m2.queuePerPage = fitting;
-          body.innerHTML = this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], m2.queuePage, m2.queuePerPage, m2.queueCols);
+          m22.queuePerPage = fitting;
+          body.innerHTML = this._actQueueTabHtml(m22.queueData?.radarr || [], m22.queueData?.sonarr || [], m22.queuePage, m22.queuePerPage, m22.queueCols);
         }
       }
       this._wireActBody(body, el, "queue");
     });
   }
   _actRenderMissing(body, el, pageOverride, skipBaseReset) {
-    const m = this._activityModal;
-    if (!m) return;
-    if (pageOverride !== void 0) m.missingPage = pageOverride;
-    if (!skipBaseReset && m.missingPerPageBase) m.missingPerPage = m.missingPerPageBase;
+    const m2 = this._activityModal;
+    if (!m2) return;
+    if (pageOverride !== void 0) m2.missingPage = pageOverride;
+    if (!skipBaseReset && m2.missingPerPageBase) m2.missingPerPage = m2.missingPerPageBase;
     const c = this._actMissingCache;
-    body.innerHTML = this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], m.missingPage, m.missingPerPage, m.missingCols);
+    body.innerHTML = this._actMissingTabHtml(c?.rRecs || [], c?.sRecs || [], m2.missingPage, m2.missingPerPage, m2.missingCols);
     requestAnimationFrame(() => {
       if (!this._activityModal) return;
       const clip = body.querySelector("[data-act-clip]");
       if (clip) {
-        const m2 = this._activityModal;
+        const m22 = this._activityModal;
         const clipB = clip.getBoundingClientRect().bottom;
         const isMobileClip = !clip.querySelector("table");
         const items = isMobileClip ? [...clip.children] : [...clip.querySelectorAll("tbody tr:not([data-act-season])")];
@@ -27244,9 +27397,9 @@ var _WireActivityMethods = class {
           const overflowing = items.filter((el2) => el2.getBoundingClientRect().bottom > clipB + 2).length;
           if (overflowing > 0) {
             this._activityModal.missingPerPage = Math.max(4, this._activityModal.missingPerPage - overflowing);
-            const m22 = this._activityModal;
+            const m23 = this._activityModal;
             const c2 = this._actMissingCache;
-            body.innerHTML = this._actMissingTabHtml(c2?.rRecs || [], c2?.sRecs || [], m22.missingPage, m22.missingPerPage, m22.missingCols);
+            body.innerHTML = this._actMissingTabHtml(c2?.rRecs || [], c2?.sRecs || [], m23.missingPage, m23.missingPerPage, m23.missingCols);
           }
         }
         const expandedOverflow = isMobileClip ? hasExpandedRow && items.some((el2) => isExpandedRow(el2) && el2.getBoundingClientRect().bottom > clipB + 2) : hasExpandedRow && [...clip.querySelectorAll("[data-act-season]")].some((el2) => el2.getBoundingClientRect().bottom > clipB + 2);
@@ -27273,8 +27426,8 @@ var _WireActivityMethods = class {
     const rProfMap = _buildProfMap(this._radarrProfiles, this._radarr2Profiles);
     const sProfMap = _buildProfMap(this._sonarrProfiles, this._sonarr2Profiles);
     const rRecs = [
-      ...(this._radarr || []).filter((m) => !m.hasFile).map((m) => ({ ...m, _inst: "radarr", _profileName: rProfMap.get(m.qualityProfileId) || "" })),
-      ...(this._radarr2 || []).filter((m) => !m.hasFile).map((m) => ({ ...m, _inst: "radarr2", _profileName: rProfMap.get(m.qualityProfileId) || "" }))
+      ...(this._radarr || []).filter((m2) => !m2.hasFile).map((m2) => ({ ...m2, _inst: "radarr", _profileName: rProfMap.get(m2.qualityProfileId) || "" })),
+      ...(this._radarr2 || []).filter((m2) => !m2.hasFile).map((m2) => ({ ...m2, _inst: "radarr2", _profileName: rProfMap.get(m2.qualityProfileId) || "" }))
     ];
     const sRecs = [
       ...(this._sonarr || []).map((s) => {
@@ -27295,8 +27448,8 @@ var _WireActivityMethods = class {
     this._actMissingCache = { movieCount: rRecs.length, seriesCount: sRecs.length, rRecs, sRecs };
   }
   _wireActBody(body, modalEl, tab) {
-    const m = this._activityModal;
-    if (!m) return;
+    const m2 = this._activityModal;
+    if (!m2) return;
     if (body._wireAbort) body._wireAbort.abort();
     body._wireAbort = new AbortController();
     const signal = body._wireAbort.signal;
@@ -27321,8 +27474,8 @@ var _WireActivityMethods = class {
         const sel = e.target.selectionStart;
         this._activityModal.queueSearch = val;
         this._activityModal.queuePage = 0;
-        const m2 = this._activityModal;
-        this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], 0, m2.queuePerPage, m2.queueCols));
+        const m22 = this._activityModal;
+        this._actSetBodyHtml(body, this._actQueueTabHtml(m22.queueData?.radarr || [], m22.queueData?.sonarr || [], 0, m22.queuePerPage, m22.queueCols));
         this._wireActBody(body, modalEl, "queue");
         const inp = body.querySelector("#act-queue-search");
         if (inp) {
@@ -27338,10 +27491,10 @@ var _WireActivityMethods = class {
         this._openQueueColPicker(e.currentTarget, modalEl);
       });
       const _qRerender = () => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.queuePage = 0;
-        this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], 0, m2.queuePerPage, m2.queueCols));
+        const m22 = this._activityModal;
+        if (!m22) return;
+        m22.queuePage = 0;
+        this._actSetBodyHtml(body, this._actQueueTabHtml(m22.queueData?.radarr || [], m22.queueData?.sonarr || [], 0, m22.queuePerPage, m22.queueCols));
         this._wireActBody(body, modalEl, "queue");
       };
       [
@@ -27353,9 +27506,9 @@ var _WireActivityMethods = class {
         ["#act-queue-client", "queueFilterClient"]
       ].forEach(([sel, key]) => {
         body.querySelector(sel)?.addEventListener("change", (e) => {
-          const m2 = this._activityModal;
-          if (!m2) return;
-          m2[key] = e.target.value;
+          const m22 = this._activityModal;
+          if (!m22) return;
+          m22[key] = e.target.value;
           _qRerender();
         });
       });
@@ -27373,15 +27526,15 @@ var _WireActivityMethods = class {
         }
         const pBtn = e.target.closest("[data-act-queue-page]");
         if (pBtn) {
-          const m2 = this._activityModal;
-          const all = [...m2.queueData?.radarr || [], ...m2.queueData?.sonarr || []];
-          const tot = Math.max(1, Math.ceil(all.length / m2.queuePerPage));
+          const m22 = this._activityModal;
+          const all = [...m22.queueData?.radarr || [], ...m22.queueData?.sonarr || []];
+          const tot = Math.max(1, Math.ceil(all.length / m22.queuePerPage));
           const p = pBtn.dataset.actQueuePage;
-          const cur = m2.queuePage;
+          const cur = m22.queuePage;
           const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
           if (np !== cur) {
-            m2.queuePage = np;
-            this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData?.radarr || [], m2.queueData?.sonarr || [], np, m2.queuePerPage, m2.queueCols));
+            m22.queuePage = np;
+            this._actSetBodyHtml(body, this._actQueueTabHtml(m22.queueData?.radarr || [], m22.queueData?.sonarr || [], np, m22.queuePerPage, m22.queueCols));
             this._wireActBody(body, modalEl, "queue");
           }
         }
@@ -27394,8 +27547,8 @@ var _WireActivityMethods = class {
         const sel = e.target.selectionStart;
         this._activityModal.histSearch = val;
         this._activityModal.histPage = 0;
-        const m2 = this._activityModal;
-        this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+        const m22 = this._activityModal;
+        this._actSetBodyHtml(body, this._actHistoryTabHtml(m22.histData?.radarr, m22.histData?.sonarr, m22.histFilter, 0, m22.histPerPage));
         this._wireActBody(body, modalEl, "history");
         const inp = body.querySelector("#act-hist-search");
         if (inp) {
@@ -27411,26 +27564,26 @@ var _WireActivityMethods = class {
         this._openHistoryColPicker(e.currentTarget, modalEl);
       });
       body.querySelector("#act-hist-svc")?.addEventListener("change", (e) => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.histFilterSvc = e.target.value;
-        m2.histPage = 0;
-        this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+        const m22 = this._activityModal;
+        if (!m22) return;
+        m22.histFilterSvc = e.target.value;
+        m22.histPage = 0;
+        this._actSetBodyHtml(body, this._actHistoryTabHtml(m22.histData?.radarr, m22.histData?.sonarr, m22.histFilter, 0, m22.histPerPage));
         this._wireActBody(body, modalEl, "history");
       });
       body.querySelector("#act-hist-filter")?.addEventListener("change", async (e) => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.histFilter = e.target.value;
-        m2.histPage = 0;
-        m2.histData = null;
+        const m22 = this._activityModal;
+        if (!m22) return;
+        m22.histFilter = e.target.value;
+        m22.histPage = 0;
+        m22.histData = null;
         await this._actLoadTab("history", modalEl);
       });
       const _hRerender = () => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.histPage = 0;
-        this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+        const m22 = this._activityModal;
+        if (!m22) return;
+        m22.histPage = 0;
+        this._actSetBodyHtml(body, this._actHistoryTabHtml(m22.histData?.radarr, m22.histData?.sonarr, m22.histFilter, 0, m22.histPerPage));
         this._wireActBody(body, modalEl, "history");
       };
       [
@@ -27442,9 +27595,9 @@ var _WireActivityMethods = class {
         ["#act-hist-relgroup", "histFilterRelgroup"]
       ].forEach(([sel, key]) => {
         body.querySelector(sel)?.addEventListener("change", (e) => {
-          const m2 = this._activityModal;
-          if (!m2) return;
-          m2[key] = e.target.value;
+          const m22 = this._activityModal;
+          if (!m22) return;
+          m22[key] = e.target.value;
           _hRerender();
         });
       });
@@ -27453,29 +27606,29 @@ var _WireActivityMethods = class {
         const sortBtn = e.target.closest("[data-act-hist-sort]");
         if (sortBtn) {
           const col = sortBtn.dataset.actHistSort;
-          const m2 = this._activityModal;
-          if (m2.histSort === col) {
-            m2.histSortDir = m2.histSortDir === "asc" ? "desc" : "asc";
+          const m22 = this._activityModal;
+          if (m22.histSort === col) {
+            m22.histSortDir = m22.histSortDir === "asc" ? "desc" : "asc";
           } else {
-            m2.histSort = col;
-            m2.histSortDir = col === "date" ? "desc" : "asc";
+            m22.histSort = col;
+            m22.histSortDir = col === "date" ? "desc" : "asc";
           }
-          m2.histPage = 0;
-          this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, 0, m2.histPerPage));
+          m22.histPage = 0;
+          this._actSetBodyHtml(body, this._actHistoryTabHtml(m22.histData?.radarr, m22.histData?.sonarr, m22.histFilter, 0, m22.histPerPage));
           this._wireActBody(body, modalEl, "history");
           return;
         }
         const pBtn = e.target.closest("[data-act-hist-page]");
         if (pBtn) {
-          const m2 = this._activityModal;
-          const all = [...m2.histData?.radarr?.records || [], ...m2.histData?.sonarr?.records || []];
-          const tot = Math.max(1, Math.ceil(all.length / m2.histPerPage));
+          const m22 = this._activityModal;
+          const all = [...m22.histData?.radarr?.records || [], ...m22.histData?.sonarr?.records || []];
+          const tot = Math.max(1, Math.ceil(all.length / m22.histPerPage));
           const p = pBtn.dataset.actHistPage;
-          const cur = m2.histPage;
+          const cur = m22.histPage;
           const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
           if (np !== cur) {
-            m2.histPage = np;
-            this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData?.radarr, m2.histData?.sonarr, m2.histFilter, np, m2.histPerPage));
+            m22.histPage = np;
+            this._actSetBodyHtml(body, this._actHistoryTabHtml(m22.histData?.radarr, m22.histData?.sonarr, m22.histFilter, np, m22.histPerPage));
             this._wireActBody(body, modalEl, "history");
           }
         }
@@ -27488,7 +27641,7 @@ var _WireActivityMethods = class {
         const sel = e.target.selectionStart;
         this._activityModal.missingSearch = val;
         this._activityModal.missingPage = 0;
-        const m2 = this._activityModal;
+        const m22 = this._activityModal;
         const c = this._actMissingCache;
         this._actRenderMissing(body, modalEl, 0);
         const inp = body.querySelector("#act-missing-search");
@@ -27514,9 +27667,9 @@ var _WireActivityMethods = class {
         ["#act-missing-monitored", "missingFilterMonitored"]
       ].forEach(([sel, key]) => {
         body.querySelector(sel)?.addEventListener("change", (e) => {
-          const m2 = this._activityModal;
-          if (!m2) return;
-          m2[key] = e.target.value;
+          const m22 = this._activityModal;
+          if (!m22) return;
+          m22[key] = e.target.value;
           _mRerender();
         });
       });
@@ -27533,10 +27686,10 @@ var _WireActivityMethods = class {
           try {
             if (kind === "movie") {
               const arr = svc === "radarr2" ? this._radarr2 : this._radarr;
-              const movie = (arr || []).find((m2) => m2.id === id) || { id };
+              const movie = (arr || []).find((m3) => m3.id === id) || { id };
               const fresh = await this._callApi("PUT", `arr_stack/${svc}/movie/${id}`, { ...movie, monitored: !cur });
               if (fresh && arr) {
-                const idx = arr.findIndex((m2) => m2.id === id);
+                const idx = arr.findIndex((m3) => m3.id === id);
                 if (idx !== -1) arr[idx] = { ...arr[idx], ...fresh };
               }
             } else {
@@ -27575,12 +27728,12 @@ var _WireActivityMethods = class {
         const sortBtn = e.target.closest("[data-act-missing-sort]");
         if (sortBtn) {
           const col = sortBtn.dataset.actMissingSort;
-          const m2 = this._activityModal;
-          if (m2.missingSort === col) {
-            m2.missingSortDir = m2.missingSortDir === "asc" ? "desc" : "asc";
+          const m22 = this._activityModal;
+          if (m22.missingSort === col) {
+            m22.missingSortDir = m22.missingSortDir === "asc" ? "desc" : "asc";
           } else {
-            m2.missingSort = col;
-            m2.missingSortDir = col === "added" ? "desc" : "asc";
+            m22.missingSort = col;
+            m22.missingSortDir = col === "added" ? "desc" : "asc";
           }
           this._actRenderMissing(body, modalEl, 0);
           return;
@@ -27588,11 +27741,11 @@ var _WireActivityMethods = class {
         const expandBtn = e.target.closest(".act-missing-expand-btn");
         if (expandBtn) {
           const key = expandBtn.dataset.key;
-          const m2 = this._activityModal;
-          if (!m2) return;
-          const isCollapse = m2.missingExpanded.has(key);
-          m2.missingExpanded.clear();
-          if (!isCollapse) m2.missingExpanded.add(key);
+          const m22 = this._activityModal;
+          if (!m22) return;
+          const isCollapse = m22.missingExpanded.has(key);
+          m22.missingExpanded.clear();
+          if (!isCollapse) m22.missingExpanded.add(key);
           this._actRenderMissing(body, modalEl, void 0, !isCollapse);
           return;
         }
@@ -27638,7 +27791,7 @@ var _WireActivityMethods = class {
           } else {
             try {
               const radarrLib = svc === "radarr2" ? this._radarr2 || [] : this._radarr || [];
-              const movie = radarrLib.find((m2) => m2.id === id);
+              const movie = radarrLib.find((m3) => m3.id === id);
               const radarrId = movie?.id ?? id;
               const tmdbId = movie?.tmdbId ? String(movie.tmdbId) : tmdb;
               const inst = svc === "radarr2" ? "radarr2" : "radarr";
@@ -27680,12 +27833,12 @@ var _WireActivityMethods = class {
         }
         const pBtn = e.target.closest("[data-act-missing-page]");
         if (pBtn) {
-          const m2 = this._activityModal;
+          const m22 = this._activityModal;
           const c = this._actMissingCache;
-          const fSvc = m2.missingFilterSvc || "all";
-          const fProf = m2.missingFilterProfile || "all";
-          const fMon = m2.missingFilterMonitored || "all";
-          const mSrch = (m2.missingSearch || "").toLowerCase().trim();
+          const fSvc = m22.missingFilterSvc || "all";
+          const fProf = m22.missingFilterProfile || "all";
+          const fMon = m22.missingFilterMonitored || "all";
+          const mSrch = (m22.missingSearch || "").toLowerCase().trim();
           const allRows = [
             ...(c?.rRecs || []).map((r) => ({ _svc: r._inst || "radarr", _profile: r._profileName || "", _monitored: r.monitored ?? true, _title: r.title || "" })),
             ...(c?.sRecs || []).map((s) => ({ _svc: s._inst || "sonarr", _profile: s._profileName || "", _monitored: s.monitored ?? true, _title: s.title || "" }))
@@ -27697,9 +27850,9 @@ var _WireActivityMethods = class {
             if (mSrch && !r._title.toLowerCase().includes(mSrch)) return false;
             return true;
           }).length;
-          const tot = Math.max(1, Math.ceil(filteredLen / m2.missingPerPage));
+          const tot = Math.max(1, Math.ceil(filteredLen / m22.missingPerPage));
           const p = pBtn.dataset.actMissingPage;
-          const cur = m2.missingPage;
+          const cur = m22.missingPage;
           const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
           if (np !== cur) {
             this._actRenderMissing(body, modalEl, np, true);
@@ -27714,8 +27867,8 @@ var _WireActivityMethods = class {
         const sel = e.target.selectionStart;
         this._activityModal.blSearch = val;
         this._activityModal.blPage = 0;
-        const m2 = this._activityModal;
-        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, 0, m2.blPerPage));
+        const m22 = this._activityModal;
+        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m22.blData?.radarr, m22.blData?.sonarr, 0, m22.blPerPage));
         this._wireActBody(body, modalEl, "blocklist");
         const inp = body.querySelector("#act-bl-search");
         if (inp) {
@@ -27731,10 +27884,10 @@ var _WireActivityMethods = class {
         this._openBlColPicker(e.currentTarget, modalEl);
       });
       const _blRerender = () => {
-        const m2 = this._activityModal;
-        if (!m2) return;
-        m2.blPage = 0;
-        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, 0, m2.blPerPage));
+        const m22 = this._activityModal;
+        if (!m22) return;
+        m22.blPage = 0;
+        this._actSetBodyHtml(body, this._actBlocklistTabHtml(m22.blData?.radarr, m22.blData?.sonarr, 0, m22.blPerPage));
         this._wireActBody(body, modalEl, "blocklist");
       };
       [
@@ -27746,9 +27899,9 @@ var _WireActivityMethods = class {
         ["#act-bl-indexer", "blFilterIndexer"]
       ].forEach(([sel, key]) => {
         body.querySelector(sel)?.addEventListener("change", (e) => {
-          const m2 = this._activityModal;
-          if (!m2) return;
-          m2[key] = e.target.value;
+          const m22 = this._activityModal;
+          if (!m22) return;
+          m22[key] = e.target.value;
           _blRerender();
         });
       });
@@ -27757,15 +27910,15 @@ var _WireActivityMethods = class {
         const sortBtn = e.target.closest("[data-act-bl-sort]");
         if (sortBtn) {
           const col = sortBtn.dataset.actBlSort;
-          const m2 = this._activityModal;
-          if (m2.blSort === col) {
-            m2.blSortDir = m2.blSortDir === "asc" ? "desc" : "asc";
+          const m22 = this._activityModal;
+          if (m22.blSort === col) {
+            m22.blSortDir = m22.blSortDir === "asc" ? "desc" : "asc";
           } else {
-            m2.blSort = col;
-            m2.blSortDir = col === "date" ? "desc" : "asc";
+            m22.blSort = col;
+            m22.blSortDir = col === "date" ? "desc" : "asc";
           }
-          m2.blPage = 0;
-          this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, 0, m2.blPerPage));
+          m22.blPage = 0;
+          this._actSetBodyHtml(body, this._actBlocklistTabHtml(m22.blData?.radarr, m22.blData?.sonarr, 0, m22.blPerPage));
           this._wireActBody(body, modalEl, "blocklist");
           return;
         }
@@ -27776,15 +27929,15 @@ var _WireActivityMethods = class {
         }
         const pBtn = e.target.closest("[data-act-bl-page]");
         if (pBtn) {
-          const m2 = this._activityModal;
-          const all = [...m2.blData?.radarr?.records || [], ...m2.blData?.sonarr?.records || []];
-          const tot = Math.max(1, Math.ceil(all.length / m2.blPerPage));
+          const m22 = this._activityModal;
+          const all = [...m22.blData?.radarr?.records || [], ...m22.blData?.sonarr?.records || []];
+          const tot = Math.max(1, Math.ceil(all.length / m22.blPerPage));
           const p = pBtn.dataset.actBlPage;
-          const cur = m2.blPage;
+          const cur = m22.blPage;
           const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
           if (np !== cur) {
-            m2.blPage = np;
-            this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData?.radarr, m2.blData?.sonarr, np, m2.blPerPage));
+            m22.blPage = np;
+            this._actSetBodyHtml(body, this._actBlocklistTabHtml(m22.blData?.radarr, m22.blData?.sonarr, np, m22.blPerPage));
             this._wireActBody(body, modalEl, "blocklist");
           }
         }
@@ -27876,14 +28029,14 @@ var _WireActivityMethods = class {
       gearBtn.classList.remove("active");
       return;
     }
-    const m = this._activityModal;
-    if (!m) return;
+    const m2 = this._activityModal;
+    if (!m2) return;
     const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
-    const cols = m.histCols;
+    const cols = m2.histCols;
     const ALL_COLS = [
       { id: "event", label: this._t("actColEvent") },
       { id: "quality", label: this._t("actColQuality") },
@@ -27917,8 +28070,8 @@ var _WireActivityMethods = class {
         }
         const actModal = this.shadowRoot.querySelector("[data-act-modal]");
         const body = actModal?.querySelector("#act-body");
-        if (body && m.histData) {
-          this._actSetBodyHtml(body, this._actHistoryTabHtml(m.histData.radarr, m.histData.sonarr, m.histFilter, m.histPage, m.histPerPage));
+        if (body && m2.histData) {
+          this._actSetBodyHtml(body, this._actHistoryTabHtml(m2.histData.radarr, m2.histData.sonarr, m2.histFilter, m2.histPage, m2.histPerPage));
           this._wireActBody(body, actModal, "history");
         }
       });
@@ -27939,14 +28092,14 @@ var _WireActivityMethods = class {
       gearBtn.classList.remove("active");
       return;
     }
-    const m = this._activityModal;
-    if (!m) return;
+    const m2 = this._activityModal;
+    if (!m2) return;
     const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
-    const cols = m.blCols;
+    const cols = m2.blCols;
     const ALL_COLS = [
       { id: "source", label: this._t("actColSource") },
       { id: "srctitle", label: this._t("actColSrcTitle") },
@@ -27978,8 +28131,8 @@ var _WireActivityMethods = class {
         }
         const actModal = this.shadowRoot.querySelector("[data-act-modal]");
         const body = actModal?.querySelector("#act-body");
-        if (body && m.blData) {
-          this._actSetBodyHtml(body, this._actBlocklistTabHtml(m.blData.radarr, m.blData.sonarr, m.blPage, m.blPerPage));
+        if (body && m2.blData) {
+          this._actSetBodyHtml(body, this._actBlocklistTabHtml(m2.blData.radarr, m2.blData.sonarr, m2.blPage, m2.blPerPage));
           this._wireActBody(body, actModal, "blocklist");
         }
       });
@@ -28022,8 +28175,8 @@ var _WireActivityMethods = class {
     });
   }
   async _actRemoveBlocklistItem(id, svc, modalEl) {
-    const m = this._activityModal;
-    if (!m) return;
+    const m2 = this._activityModal;
+    if (!m2) return;
     try {
       await this._callApi("DELETE", "arr_stack/" + svc + "/activity/blocklist/" + id);
     } catch (e) {
@@ -28078,12 +28231,12 @@ var _WireActivityMethods = class {
       const valStr = sel.value;
       const valNum = parseInt(valStr);
       if (field === "movie") {
-        const m = lib.find((x) => x.id === valNum);
-        candidates[idx].movie = m || { id: valNum };
+        const m2 = lib.find((x) => x.id === valNum);
+        candidates[idx].movie = m2 || { id: valNum };
         candidates[idx].movieId = valNum;
       } else if (field === "series") {
-        const m = lib.find((x) => x.id === valNum);
-        candidates[idx].series = m || { id: valNum };
+        const m2 = lib.find((x) => x.id === valNum);
+        candidates[idx].series = m2 || { id: valNum };
         candidates[idx].seriesId = valNum;
       } else if (field === "quality") {
         const def = (qDefs || []).find((d) => (d.quality?.id ?? d.id) === valNum);
@@ -28113,14 +28266,14 @@ var _WireActivityMethods = class {
       gearBtn.classList.remove("active");
       return;
     }
-    const m = this._activityModal;
-    if (!m) return;
+    const m2 = this._activityModal;
+    if (!m2) return;
     const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
-    const cols = m.queueCols;
+    const cols = m2.queueCols;
     const ALL_COLS = [
       { id: "source", label: this._t("actColSource") },
       { id: "quality", label: this._t("actColQuality") },
@@ -28157,8 +28310,8 @@ var _WireActivityMethods = class {
         }
         const actModal = this.shadowRoot.querySelector("[data-act-modal]");
         const body = actModal?.querySelector("#act-body");
-        if (body && m.queueData) {
-          this._actSetBodyHtml(body, this._actQueueTabHtml(m.queueData.radarr, m.queueData.sonarr, m.queuePage, m.queuePerPage, cols));
+        if (body && m2.queueData) {
+          this._actSetBodyHtml(body, this._actQueueTabHtml(m2.queueData.radarr, m2.queueData.sonarr, m2.queuePage, m2.queuePerPage, cols));
           this._wireActBody(body, actModal, "queue");
         }
       });
@@ -28179,14 +28332,14 @@ var _WireActivityMethods = class {
       gearBtn.classList.remove("active");
       return;
     }
-    const m = this._activityModal;
-    if (!m) return;
+    const m2 = this._activityModal;
+    if (!m2) return;
     const isDay = this._isDay;
     const pkBg = isDay ? "rgba(245,246,255,0.99)" : "rgba(18,18,28,0.97)";
     const pkBdr = isDay ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.14)";
     const pkHdr = isDay ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.35)";
     const pkLbl = isDay ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.82)";
-    const cols = m.missingCols;
+    const cols = m2.missingCols;
     const ALL_COLS = [
       { id: "monitored", label: this._t("actColMonitored") },
       { id: "source", label: this._t("actColSource") },
@@ -28727,19 +28880,19 @@ var _WireProwlarrMethods = class {
   }
   // ── Indexers tab ─────────────────────────────────────────────────────────
   async _pwLoadIndexers(body, el) {
-    const m = this._prowlarrModal;
-    if (!m) return;
+    const m2 = this._prowlarrModal;
+    if (!m2) return;
     const indexers = this._prowlarr?.indexers || [];
-    body.innerHTML = this._pwIndexersTabHtml(indexers, m);
+    body.innerHTML = this._pwIndexersTabHtml(indexers, m2);
     this._pwWireIndexers(body, el);
   }
-  _pwIndexersTabHtml(indexers, m) {
+  _pwIndexersTabHtml(indexers, m2) {
     const isMob = isMobile();
-    const search = (m?.idxSearch || "").toLowerCase();
-    const filterPr = m?.idxFilterProtocol || "all";
-    const filterSt = m?.idxFilterStatus || "all";
-    const sortCol = m?.idxSort || "name";
-    const sortDir = m?.idxSortDir || "asc";
+    const search = (m2?.idxSearch || "").toLowerCase();
+    const filterPr = m2?.idxFilterProtocol || "all";
+    const filterSt = m2?.idxFilterStatus || "all";
+    const sortCol = m2?.idxSort || "name";
+    const sortDir = m2?.idxSortDir || "asc";
     let rows = [...indexers];
     if (search) rows = rows.filter((i) => (i.name || "").toLowerCase().includes(search));
     if (filterPr !== "all") rows = rows.filter((i) => (i.protocol || "").toLowerCase() === filterPr);
@@ -28776,13 +28929,13 @@ var _WireProwlarrMethods = class {
     });
     const protoSel = `<select id="pw-idx-proto" style="${filterPr !== "all" ? SEL_STY_A : SEL_STY}"><option value="all"${filterPr === "all" ? " selected" : ""}>All protocols</option><option value="torrent"${filterPr === "torrent" ? " selected" : ""}>Torrent</option><option value="usenet"${filterPr === "usenet" ? " selected" : ""}>Usenet</option></select>`;
     const statusSel = `<select id="pw-idx-status" style="${filterSt !== "all" ? SEL_STY_A : SEL_STY}"><option value="all"${filterSt === "all" ? " selected" : ""}>All status</option><option value="ok"${filterSt === "ok" ? " selected" : ""}>OK</option><option value="error"${filterSt === "error" ? " selected" : ""}>Error</option><option value="disabled"${filterSt === "disabled" ? " selected" : ""}>Disabled</option></select>`;
-    const searchEl = this._tlSearchInput("pw-idx-search", m?.idxSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const searchEl = this._tlSearchInput("pw-idx-search", m2?.idxSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const addBtn = `<button id="pw-add-btn" class="tl-page-btn u-inline-row">${isMob ? "" : ' <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}Add</button>`;
     const testAllBtn = `<button id="pw-testall-btn" class="tl-page-btn u-inline-row">${isMob ? "" : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'}Test All</button>`;
     const colsSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>`;
     const colsBtn = `<button id="pw-cols-btn" class="tl-page-btn u-inline-row">${isMob ? "" : colsSvg}Columns</button>`;
     const DEFAULT_HIDDEN = /* @__PURE__ */ new Set(["queries", "vipExpiration", "minSeeders", "seedRatio", "seedTime", "packSeedTime", "preferMagnet", "tags"]);
-    const hiddenCols = m?.idxHiddenCols ?? DEFAULT_HIDDEN;
+    const hiddenCols = m2?.idxHiddenCols ?? DEFAULT_HIDDEN;
     const showCat = !hiddenCols.has("categories");
     const showProt = !hiddenCols.has("protocol");
     const showQ = !hiddenCols.has("queries");
@@ -29192,8 +29345,8 @@ var _WireProwlarrMethods = class {
   }
   // ── Apps tab ─────────────────────────────────────────────────────────────
   async _pwLoadApps(body, el) {
-    const m = this._prowlarrModal;
-    if (!m) return;
+    const m2 = this._prowlarrModal;
+    if (!m2) return;
     try {
       const [apps, appProfiles, cats] = await Promise.all([
         this._callApi("GET", "arr_stack/prowlarr/applications").catch(() => []),
@@ -29202,26 +29355,26 @@ var _WireProwlarrMethods = class {
       ]);
       if (!this._prowlarrModal) return;
       if (this._prowlarr) this._prowlarr.apps = apps || [];
-      m.appsData = apps || [];
-      m.appsProfiles = appProfiles || [];
-      m.appsCategories = cats || [];
-      if (this._prowlarr?.appTestResults) m.appTestResults = this._prowlarr.appTestResults;
+      m2.appsData = apps || [];
+      m2.appsProfiles = appProfiles || [];
+      m2.appsCategories = cats || [];
+      if (this._prowlarr?.appTestResults) m2.appTestResults = this._prowlarr.appTestResults;
     } catch (_) {
       if (!this._prowlarrModal) return;
-      m.appsData = [];
-      m.appsProfiles = [];
-      m.appsCategories = [];
+      m2.appsData = [];
+      m2.appsProfiles = [];
+      m2.appsCategories = [];
     }
-    body.innerHTML = this._pwAppsTabHtml(m);
+    body.innerHTML = this._pwAppsTabHtml(m2);
     this._pwWireApps(body, el);
     this._pwAutoTestApps(body, el);
   }
   async _pwAutoTestApps(body, el) {
-    const m = this._prowlarrModal;
-    const apps = m?.appsData || [];
+    const m2 = this._prowlarrModal;
+    const apps = m2?.appsData || [];
     if (!apps.length || !this._prowlarr) return;
     if (!this._prowlarr.appTestResults) this._prowlarr.appTestResults = {};
-    m.appTestResults = this._prowlarr.appTestResults;
+    m2.appTestResults = this._prowlarr.appTestResults;
     await Promise.all(apps.map(async (app) => {
       try {
         const r = await this._callApi("POST", "arr_stack/prowlarr/apptest", app);
@@ -29241,10 +29394,10 @@ var _WireProwlarrMethods = class {
       if (newEl) posterEl.replaceWith(newEl);
     }
   }
-  _pwAppsTabHtml(m) {
-    const apps = m?.appsData || [];
-    const appProfiles = m?.appsProfiles || [];
-    const testResults = m?.appTestResults || this._prowlarr?.appTestResults || {};
+  _pwAppsTabHtml(m2) {
+    const apps = m2?.appsData || [];
+    const appProfiles = m2?.appsProfiles || [];
+    const testResults = m2?.appTestResults || this._prowlarr?.appTestResults || {};
     const isMob = isMobile();
     const getField = (app, name) => {
       const f = (app.fields || []).find((f2) => f2.name === name);
@@ -29442,18 +29595,18 @@ var _WireProwlarrMethods = class {
     });
   }
   async _pwOpenAddApp(parentEl) {
-    const m = this._prowlarrModal;
-    if (!m) return;
-    let schemas = m.appsSchemas;
+    const m2 = this._prowlarrModal;
+    if (!m2) return;
+    let schemas = m2.appsSchemas;
     if (!schemas) {
       try {
-        schemas = m.appsSchemas = await this._callApi("GET", "arr_stack/prowlarr/applications/schema") || [];
+        schemas = m2.appsSchemas = await this._callApi("GET", "arr_stack/prowlarr/applications/schema") || [];
       } catch (_) {
         schemas = [];
       }
     }
-    const appProfiles = m.appsProfiles || [];
-    const categories = m.appsCategories || [];
+    const appProfiles = m2.appsProfiles || [];
+    const categories = m2.appsCategories || [];
     const IMPL_COLORS = { radarr: "#34d399", sonarr: "#638cff", lidarr: "#fbbf24", readarr: "#a855f7", whisparr: "#f87171", mylar3: "#60a5fa", lazylibrarian: "#fb923c" };
     const items = schemas.map((s) => {
       const c = IMPL_COLORS[(s.implementationName || "").toLowerCase()] || "#9ca3af";
@@ -29769,29 +29922,29 @@ var _WireProwlarrMethods = class {
   }
   // ── Stats tab ────────────────────────────────────────────────────────────
   async _pwLoadStats(body, el) {
-    const m = this._prowlarrModal;
-    if (!m) return;
+    const m2 = this._prowlarrModal;
+    if (!m2) return;
     body.style.display = "flex";
     body.style.flexDirection = "column";
-    const days = m.statsRange || 30;
+    const days = m2.statsRange || 30;
     const endDate = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
     const startDt = new Date(Date.now() - (days - 1) * 864e5).toISOString().slice(0, 10);
     try {
       const stats = await this._callApi("GET", `arr_stack/prowlarr/indexerstats?startDate=${startDt}&endDate=${endDate}`);
       if (!this._prowlarrModal) return;
-      m.statsData = stats;
+      m2.statsData = stats;
     } catch (_) {
       if (!this._prowlarrModal) return;
-      m.statsData = null;
+      m2.statsData = null;
     }
-    body.innerHTML = this._pwStatsTabHtml(m);
+    body.innerHTML = this._pwStatsTabHtml(m2);
     this._pwWireStats(body, el);
   }
-  _pwStatsTabHtml(m) {
+  _pwStatsTabHtml(m2) {
     const isMob = isMobile();
-    const data = m?.statsData;
-    const days = m?.statsRange || 30;
-    const page = m?.statsPage || 0;
+    const data = m2?.statsData;
+    const days = m2?.statsRange || 30;
+    const page = m2?.statsPage || 0;
     const pageBtns = `<div style="display:flex;gap:6px;flex:1">
       <button class="tl-page-btn${page === 0 ? " active" : ""}" data-pw-stats-page="0">Indexer performance</button>
       <button class="tl-page-btn${page === 1 ? " active" : ""}" data-pw-stats-page="1">App breakdown</button>
@@ -30021,33 +30174,33 @@ var _WireProwlarrMethods = class {
   }
   // ── History tab ──────────────────────────────────────────────────────────
   async _pwLoadHistory(body, el) {
-    const m = this._prowlarrModal;
-    if (!m) return;
+    const m2 = this._prowlarrModal;
+    if (!m2) return;
     try {
       const data = await this._callApi("GET", `arr_stack/prowlarr/history?pageSize=200`);
       if (!this._prowlarrModal) return;
-      m.histData = data?.records || [];
-      m.histTotal = data?.totalRecords || m.histData.length;
+      m2.histData = data?.records || [];
+      m2.histTotal = data?.totalRecords || m2.histData.length;
     } catch (_) {
       if (!this._prowlarrModal) return;
-      m.histData = [];
-      m.histTotal = 0;
+      m2.histData = [];
+      m2.histTotal = 0;
     }
-    m.histPage = 0;
-    m.histPerPage = 20;
-    m.histSortDir = "desc";
-    body.innerHTML = this._pwHistoryTabHtml(m);
+    m2.histPage = 0;
+    m2.histPerPage = 20;
+    m2.histSortDir = "desc";
+    body.innerHTML = this._pwHistoryTabHtml(m2);
     this._pwWireHistory(body, el);
   }
-  _pwHistoryTabHtml(m) {
+  _pwHistoryTabHtml(m2) {
     const isMob = isMobile();
-    const all = m?.histData || [];
-    const search = (m?.histSearch || "").toLowerCase();
-    const fIdx = m?.histFilterIndexer || "all";
-    const fEvt = m?.histFilterEvent || "all";
-    const page = m?.histPage || 0;
-    const perPage = m?.histPerPage || 20;
-    const sortDir = m?.histSortDir || "desc";
+    const all = m2?.histData || [];
+    const search = (m2?.histSearch || "").toLowerCase();
+    const fIdx = m2?.histFilterIndexer || "all";
+    const fEvt = m2?.histFilterEvent || "all";
+    const page = m2?.histPage || 0;
+    const perPage = m2?.histPerPage || 20;
+    const sortDir = m2?.histSortDir || "desc";
     let rows = [...all];
     if (search) rows = rows.filter((r) => {
       const q = (r.data?.query || r.query || r.title || "").toLowerCase();
@@ -30066,7 +30219,7 @@ var _WireProwlarrMethods = class {
     const idxOpts = indexers.map((i) => `<option value="${i.id}"${String(i.id) === fIdx ? " selected" : ""}>${this._escHtml(i.name || "\u2014")}</option>`).join("");
     const idxSel = `<select id="pw-hist-idx" style="${fIdx !== "all" ? SEL_STY_A : SEL_STY}"><option value="all">All indexers</option>${idxOpts}</select>`;
     const evtSel = `<select id="pw-hist-evt" style="${fEvt !== "all" ? SEL_STY_A : SEL_STY}"><option value="all">All events</option><option value="indexerQuery"${fEvt === "indexerQuery" ? " selected" : ""}>Search</option><option value="releaseGrabbed"${fEvt === "releaseGrabbed" ? " selected" : ""}>Grab</option><option value="indexerRss"${fEvt === "indexerRss" ? " selected" : ""}>RSS</option></select>`;
-    const searchEl = this._tlSearchInput("pw-hist-search", m?.histSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
+    const searchEl = this._tlSearchInput("pw-hist-search", m2?.histSearch || "").replace("display:inline-flex", "display:flex;flex:1").replace("width:110px", "flex:1").replace("min-width:60px", "min-width:0");
     const searchElFull = searchEl.replace("display:flex;flex:1", "display:flex;width:100%");
     const toolbar = isMob ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;flex-shrink:0">${searchElFull}<div style="display:flex;gap:6px;align-items:stretch">${idxSel}${evtSel}</div></div>` : `<div style="display:flex;gap:6px;align-items:stretch;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap">${searchEl}${idxSel}${evtSel}</div>`;
     const catColor = (id) => {
@@ -30220,10 +30373,10 @@ var _WireProwlarrMethods = class {
       if (!this._prowlarrModal) return;
       const pBtn = e.target.closest("[data-pw-hist-page]");
       if (pBtn) {
-        const m = this._prowlarrModal;
-        const all = m.histData || [];
-        const search = (m.histSearch || "").toLowerCase();
-        const fIdx = m.histFilterIndexer || "all", fEvt = m.histFilterEvent || "all";
+        const m2 = this._prowlarrModal;
+        const all = m2.histData || [];
+        const search = (m2.histSearch || "").toLowerCase();
+        const fIdx = m2.histFilterIndexer || "all", fEvt = m2.histFilterEvent || "all";
         let filtered = [...all];
         if (search) filtered = filtered.filter((r) => {
           const q = (r.data?.query || r.query || r.title || "").toLowerCase();
@@ -30231,11 +30384,11 @@ var _WireProwlarrMethods = class {
         });
         if (fIdx !== "all") filtered = filtered.filter((r) => String(r.indexerId) === fIdx);
         if (fEvt !== "all") filtered = filtered.filter((r) => r.eventType === fEvt);
-        const tot = Math.max(1, Math.ceil(filtered.length / (m.histPerPage || 20)));
-        const p = pBtn.dataset.pwHistPage, cur = m.histPage || 0;
+        const tot = Math.max(1, Math.ceil(filtered.length / (m2.histPerPage || 20)));
+        const p = pBtn.dataset.pwHistPage, cur = m2.histPage || 0;
         const np = p === "first" ? 0 : p === "prev" ? Math.max(0, cur - 1) : p === "next" ? Math.min(tot - 1, cur + 1) : p === "last" ? tot - 1 : parseInt(p) || 0;
         if (np !== cur) {
-          m.histPage = np;
+          m2.histPage = np;
           rerender();
         }
         return;
@@ -30882,6 +31035,7 @@ var ArrStackCard = class extends HTMLElement {
     this._radarrQueueItems = [];
     this._radarr2QueueItems = [];
     this._bazarr = {};
+    this._posterRatingsCache = /* @__PURE__ */ new Map();
     this._radarrQueueFailed = /* @__PURE__ */ new Set();
     this._radarrQueueActive = /* @__PURE__ */ new Set();
     this._radarr2QueueFailed = /* @__PURE__ */ new Set();
@@ -31189,9 +31343,9 @@ var ArrStackCard = class extends HTMLElement {
         gradPos: [25, 75, 0.6],
         apiEndpoint: null,
         hasTvPending: true,
-        renderCard: (m, i) => this._renderTraktCard(m, i),
-        getPosterUrl: (m) => m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w92${m.posterPath}` : null,
-        emoji: (m) => m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
+        renderCard: (m2, i) => this._renderTraktCard(m2, i),
+        getPosterUrl: (m2) => m2.posterPath ? m2.posterPath.startsWith("http") ? m2.posterPath : `https://image.tmdb.org/t/p/w92${m2.posterPath}` : null,
+        emoji: (m2) => m2.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
       },
       trending: {
         dataKey: "_trending",
@@ -31200,9 +31354,9 @@ var ArrStackCard = class extends HTMLElement {
         appKey: this._discoverIconKey(),
         apiEndpoint: `${this._discoverSvc}/trending`,
         hasTvPending: true,
-        renderCard: (m, i) => this._renderTrendingCard(m, i),
-        getPosterUrl: (m) => tmdbUrl(m.posterPath || m.poster_path),
-        emoji: (m) => m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
+        renderCard: (m2, i) => this._renderTrendingCard(m2, i),
+        getPosterUrl: (m2) => tmdbUrl(m2.posterPath || m2.poster_path),
+        emoji: (m2) => m2.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
       },
       popular: {
         dataKey: "_popular",
@@ -31211,8 +31365,8 @@ var ArrStackCard = class extends HTMLElement {
         appKey: this._discoverIconKey(),
         apiEndpoint: `${this._discoverSvc}/popular`,
         hasTvPending: false,
-        renderCard: (m, i) => this._renderUpcomingCard(m, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex: i }),
-        getPosterUrl: (m) => tmdbUrl(m.posterPath),
+        renderCard: (m2, i) => this._renderUpcomingCard(m2, { showDate: false, typeTag: this._t("typeMovie"), overlayIndex: i }),
+        getPosterUrl: (m2) => tmdbUrl(m2.posterPath),
         emoji: () => "\u{1F3AC}"
       },
       upcoming: {
@@ -31222,8 +31376,8 @@ var ArrStackCard = class extends HTMLElement {
         appKey: this._discoverIconKey(),
         apiEndpoint: null,
         hasTvPending: false,
-        renderCard: (m, i) => this._renderUpcomingCard(m, { overlayIndex: i }),
-        getPosterUrl: (m) => tmdbUrl(m.posterPath || m.poster_path),
+        renderCard: (m2, i) => this._renderUpcomingCard(m2, { overlayIndex: i }),
+        getPosterUrl: (m2) => tmdbUrl(m2.posterPath || m2.poster_path),
         emoji: () => "\u{1F3AC}"
       },
       tvUpcoming: {
@@ -31233,8 +31387,8 @@ var ArrStackCard = class extends HTMLElement {
         appKey: this._discoverIconKey(),
         apiEndpoint: `${this._discoverSvc}/tv_upcoming`,
         hasTvPending: true,
-        renderCard: (m, i) => this._renderTvUpcomingCard(m, { showRating: true, overlayIndex: i }),
-        getPosterUrl: (m) => tmdbUrl(m.posterPath),
+        renderCard: (m2, i) => this._renderTvUpcomingCard(m2, { showRating: true, overlayIndex: i }),
+        getPosterUrl: (m2) => tmdbUrl(m2.posterPath),
         emoji: () => "\u{1F4FA}"
       },
       radarr: {
@@ -31244,8 +31398,8 @@ var ArrStackCard = class extends HTMLElement {
         appKey: "radarr",
         apiEndpoint: null,
         hasTvPending: false,
-        renderCard: (m) => this._renderRadarrCard(m),
-        getPosterUrl: (m) => this._getRadarrPoster(m),
+        renderCard: (m2) => this._renderRadarrCard(m2),
+        getPosterUrl: (m2) => this._getRadarrPoster(m2),
         emoji: () => "\u{1F3AC}"
       },
       sonarr: {
@@ -31255,8 +31409,8 @@ var ArrStackCard = class extends HTMLElement {
         appKey: "sonarr",
         apiEndpoint: null,
         hasTvPending: false,
-        renderCard: (m) => this._renderSonarrCard(m),
-        getPosterUrl: (m) => this._getSonarrPoster(m),
+        renderCard: (m2) => this._renderSonarrCard(m2),
+        getPosterUrl: (m2) => this._getSonarrPoster(m2),
         emoji: () => "\u{1F4FA}"
       },
       recentlyAdded: {
@@ -31266,9 +31420,9 @@ var ArrStackCard = class extends HTMLElement {
         appKey: this._discoverIconKey(),
         apiEndpoint: null,
         hasTvPending: false,
-        renderCard: (m) => this._renderRecentlyAddedCard(m),
-        getPosterUrl: (m) => m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
-        emoji: (m) => m._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
+        renderCard: (m2) => this._renderRecentlyAddedCard(m2),
+        getPosterUrl: (m2) => m2._mediaType === "movie" ? this._getRadarrPoster(m2) : this._getSonarrPoster(m2),
+        emoji: (m2) => m2._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
       },
       recentlyRequested: {
         dataKey: "recentlyRequested",
@@ -31277,9 +31431,9 @@ var ArrStackCard = class extends HTMLElement {
         appKey: this._discoverIconKey(),
         apiEndpoint: null,
         hasTvPending: false,
-        renderCard: (m) => this._renderRecentlyRequestedCard(m),
-        getPosterUrl: (m) => m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
-        emoji: (m) => m._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
+        renderCard: (m2) => this._renderRecentlyRequestedCard(m2),
+        getPosterUrl: (m2) => m2._mediaType === "movie" ? this._getRadarrPoster(m2) : this._getSonarrPoster(m2),
+        emoji: (m2) => m2._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
       }
     };
     return cfgs[section] || null;
@@ -31302,7 +31456,7 @@ var ArrStackCard = class extends HTMLElement {
     const itemsBefore = showMorePage * cols - 1;
     if (items.length > itemsBefore) {
       const withSmp = [...items.slice(0, itemsBefore), { _isSeeMore: true }];
-      return this._pagedGrid(withSmp, section, (m) => m._isSeeMore ? this._renderSeeMoreCardFor(section) : renderFn(m), cols);
+      return this._pagedGrid(withSmp, section, (m2) => m2._isSeeMore ? this._renderSeeMoreCardFor(section) : renderFn(m2), cols);
     }
     return this._pagedGrid(items, section, renderFn, cols);
   }
@@ -31350,9 +31504,9 @@ var ArrStackCard = class extends HTMLElement {
   fmtEta(seconds) {
     if (!seconds || seconds <= 0 || seconds >= 864e4) return "\u221E";
     const h = Math.floor(seconds / 3600);
-    const m = Math.floor(seconds % 3600 / 60);
-    if (h > 0) return `${h}h ${m}min`;
-    return `${m} min`;
+    const m2 = Math.floor(seconds % 3600 / 60);
+    if (h > 0) return `${h}h ${m2}min`;
+    return `${m2} min`;
   }
   get _locale() {
     return this._hass?.locale?.language || "en";
@@ -31617,14 +31771,14 @@ var ArrStackCard = class extends HTMLElement {
     return this["_" + section] || [];
   }
   get recentlyAdded() {
-    const movies = (this._radarr || []).filter((m) => m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.movieFile?.dateAdded || m.added || "" }));
-    const movies2 = (this._radarr2 || []).filter((m) => m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _isRadarr2: true, _sortDate: m.movieFile?.dateAdded || m.added || "" }));
+    const movies = (this._radarr || []).filter((m2) => m2.hasFile).map((m2) => ({ ...m2, _mediaType: "movie", _sortDate: m2.movieFile?.dateAdded || m2.added || "" }));
+    const movies2 = (this._radarr2 || []).filter((m2) => m2.hasFile).map((m2) => ({ ...m2, _mediaType: "movie", _isRadarr2: true, _sortDate: m2.movieFile?.dateAdded || m2.added || "" }));
     const shows = (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0).map((s) => ({ ...s, _mediaType: "tv", _sortDate: this._sonarrImportDates?.[s.id] || s.added || "" }));
     const shows2 = (this._sonarr2 || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0).map((s) => ({ ...s, _mediaType: "tv", _isSonarr2: true, _sortDate: this._sonarr2ImportDates?.[s.id] || s.added || "" }));
     const movieMap = /* @__PURE__ */ new Map();
-    for (const m of [...movies, ...movies2]) {
-      const key = m.tmdbId ? String(m.tmdbId) : `_uid_m_${m._isRadarr2 ? "r2" : "r1"}_${m.id}`;
-      if (!movieMap.has(key)) movieMap.set(key, m);
+    for (const m2 of [...movies, ...movies2]) {
+      const key = m2.tmdbId ? String(m2.tmdbId) : `_uid_m_${m2._isRadarr2 ? "r2" : "r1"}_${m2.id}`;
+      if (!movieMap.has(key)) movieMap.set(key, m2);
     }
     const showMap = /* @__PURE__ */ new Map();
     for (const s of [...shows, ...shows2]) {
@@ -31641,17 +31795,17 @@ var ArrStackCard = class extends HTMLElement {
     const _pM = this._pendingRequestedMovies || /* @__PURE__ */ new Set();
     const _pS = this._pendingRequestedShows || /* @__PURE__ */ new Set();
     const _now = (/* @__PURE__ */ new Date()).toISOString();
-    const movies = (this._radarr || []).filter((m) => (m.monitored || _rqA.has(m.id) || _pM.has(String(m.tmdbId))) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _sortDate: m.added || "" }));
-    const movies2 = (this._radarr2 || []).filter((m) => (m.monitored || _rq2A.has(m.id) || _pM.has(String(m.tmdbId))) && !m.hasFile).map((m) => ({ ...m, _mediaType: "movie", _isRadarr2: true, _sortDate: m.added || "" }));
+    const movies = (this._radarr || []).filter((m2) => (m2.monitored || _rqA.has(m2.id) || _pM.has(String(m2.tmdbId))) && !m2.hasFile).map((m2) => ({ ...m2, _mediaType: "movie", _sortDate: m2.added || "" }));
+    const movies2 = (this._radarr2 || []).filter((m2) => (m2.monitored || _rq2A.has(m2.id) || _pM.has(String(m2.tmdbId))) && !m2.hasFile).map((m2) => ({ ...m2, _mediaType: "movie", _isRadarr2: true, _sortDate: m2.added || "" }));
     const shows = (this._sonarr || []).filter((s) => (s.monitored || _snQ.has(s.id) || _pS.has(String(s.tvdbId))) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _sortDate: _snQ.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
     const shows2 = (this._sonarr2 || []).filter((s) => (s.monitored || _snQ2.has(s.id) || _pS.has(String(s.tvdbId))) && ((s.statistics?.episodeFileCount ?? 0) === 0 || _snQ2.has(s.id))).map((s) => ({ ...s, _mediaType: "tv", _isSonarr2: true, _sortDate: _snQ2.has(s.id) && (s.statistics?.episodeFileCount ?? 0) > 0 ? _now : s.added || "" }));
-    const _isDlMovie = (m) => m._isRadarr2 ? _rq2A.has(m.id) : _rqA.has(m.id);
+    const _isDlMovie = (m2) => m2._isRadarr2 ? _rq2A.has(m2.id) : _rqA.has(m2.id);
     const _isDlShow = (s) => s._isSonarr2 ? _snQ2.has(s.id) : _snQ.has(s.id);
     const movieMap = /* @__PURE__ */ new Map();
-    for (const m of [...movies, ...movies2]) {
-      const key = m.tmdbId ? String(m.tmdbId) : `_uid_m_${m._isRadarr2 ? "r2" : "r1"}_${m.id}`;
+    for (const m2 of [...movies, ...movies2]) {
+      const key = m2.tmdbId ? String(m2.tmdbId) : `_uid_m_${m2._isRadarr2 ? "r2" : "r1"}_${m2.id}`;
       const ex = movieMap.get(key);
-      if (!ex || !_isDlMovie(ex) && _isDlMovie(m)) movieMap.set(key, m);
+      if (!ex || !_isDlMovie(ex) && _isDlMovie(m2)) movieMap.set(key, m2);
     }
     const showMap = /* @__PURE__ */ new Map();
     for (const s of [...shows, ...shows2]) {
@@ -31660,15 +31814,15 @@ var ArrStackCard = class extends HTMLElement {
       if (!ex || !_isDlShow(ex) && _isDlShow(s)) showMap.set(key, s);
     }
     const _movieHasFile = /* @__PURE__ */ new Set([
-      ...(this._radarr || []).filter((m) => m.hasFile && m.tmdbId).map((m) => String(m.tmdbId)),
-      ...(this._radarr2 || []).filter((m) => m.hasFile && m.tmdbId).map((m) => String(m.tmdbId))
+      ...(this._radarr || []).filter((m2) => m2.hasFile && m2.tmdbId).map((m2) => String(m2.tmdbId)),
+      ...(this._radarr2 || []).filter((m2) => m2.hasFile && m2.tmdbId).map((m2) => String(m2.tmdbId))
     ]);
     const _showHasEps = /* @__PURE__ */ new Set([
       ...(this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0 && s.tvdbId).map((s) => String(s.tvdbId)),
       ...(this._sonarr2 || []).filter((s) => (s.statistics?.episodeFileCount ?? 0) > 0 && s.tvdbId).map((s) => String(s.tvdbId))
     ]);
-    const finalMovies = [...movieMap.values()].filter((m) => {
-      const key = m.tmdbId ? String(m.tmdbId) : null;
+    const finalMovies = [...movieMap.values()].filter((m2) => {
+      const key = m2.tmdbId ? String(m2.tmdbId) : null;
       return !key || !_movieHasFile.has(key);
     });
     const finalShows = [...showMap.values()].filter((s) => {
@@ -32225,8 +32379,39 @@ var ArrStackCard = class extends HTMLElement {
   get _isDay() {
     return !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
   }
+  get _ratingProvider() {
+    const v = this._cfgGet("discover", "ratingProvider", "imdb");
+    return ["imdb", "tmdb"].includes(v) ? v : "imdb";
+  }
+  _fetchPosterRating(tmdbId, isMovie = true) {
+    if (!this._overseerrConfigured || !tmdbId) return;
+    const key = String(tmdbId);
+    if (this._posterRatingsCache.has(key)) return;
+    this._posterRatingsCache.set(key, null);
+    const path = isMovie ? `overseerr/movie/${tmdbId}/ratings` : `overseerr/tv/${tmdbId}/ratings`;
+    this._callApi("GET", `arr_stack/${path}`).then((data) => {
+      this._posterRatingsCache.set(key, {
+        rt: data?.criticsScore ?? data?.rottenTomatoes?.criticsScore ?? null,
+        metacritic: data?.metacritic ?? null
+      });
+      this._render();
+    }).catch(() => {
+      this._posterRatingsCache.set(key, false);
+    });
+  }
+  _markActivated() {
+    try {
+      localStorage.setItem("arr-act", "1");
+    } catch (_) {
+    }
+  }
   _sendPing() {
     try {
+      const act = localStorage.getItem("arr-act") === "1" ? 1 : 0;
+      try {
+        localStorage.removeItem("arr-act");
+      } catch (_) {
+      }
       const sid = btoa(location.hostname).replace(/=/g, "").slice(0, 16);
       const svcs = [
         this._radarr2Configured !== false && "radarr2",
@@ -32246,7 +32431,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.29", sid, svcs, mob: this._isMob ? 1 : 0 })
+        body: JSON.stringify({ v: "1.6.30", sid, svcs, mob: this._isMob ? 1 : 0, act })
       }).catch(() => {
       });
     } catch (_) {
