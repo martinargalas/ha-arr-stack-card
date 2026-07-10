@@ -121,7 +121,7 @@ A full-screen panel for browsing and managing your entire movie and TV show coll
 
 - **Poster and table view** — switch between a resizable poster grid and a compact list with ratings, quality, file size, and status at a glance. In poster view, drag the grip handle to adjust column count on the fly — preference is saved per session.
 - **Status badges** — each poster shows whether a title is available, downloading, missing, or waiting for a quality upgrade. Subtitle availability shown where configured.
-- **Filter and sort** — filter by Movies, TV Shows, or both; sort by Recently Added, Title, Rating, or Quality; search by title.
+- **Filter and sort** — filter by Movies, TV Shows, or both; sort by Recently Added, Title, Rating, or Quality; search by title. In table view, click any column header to sort by that column — click again to reverse the order.
 - **Top Quality** — filter to see only movies that have a file but haven't reached your preferred quality yet.
 - **Multiple instances** — if you run two separate movie or TV servers, switch between them or browse everything together in the **Both Instances** tab.
 - **Bulk actions** — select individual titles or use Select All, then change quality profile, add or remove tags, or delete titles. Changes apply immediately to the right server.
@@ -210,6 +210,7 @@ Indexer overview and search statistics from Prowlarr.
 - **See More overlay** — full-screen grid for any section
 - Visual card editor in HA (no YAML required for basic setup)
 - Performance mode — disables backdrop blur
+- **Poster rating badge** — choose which rating is shown on poster cards: **IMDb** (default) or **TMDB**. Select your preference under Discover → Poster rating in the visual editor.
 - Category colour overlays — colour-tinted poster overlays per section, toggle via `styles.categoryOverlays`
 - Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos. Switch to MDI icons via `styles.applicationIcons: mdi`
 - UI scale — proportionally scales all card content via `styles.uiScale`. Useful on large monitors or TVs where the default size is too small
@@ -296,6 +297,7 @@ discover:
   oneClickDefaultShowProfile: ""      # quality profile name for one-click TV requests
   oneClickDefaultShowTag: ""          # Sonarr tag for one-click TV requests  (optional)
   oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
+  ratingProvider: imdb         # imdb | tmdb — rating badge shown on poster cards  (default: imdb)
 
 # Category order & visibility
 categories:
