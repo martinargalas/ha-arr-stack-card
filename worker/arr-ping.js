@@ -10,9 +10,10 @@ export default {
     if (request.method === 'OPTIONS') return cors();
 
     // ensure schema is up to date on every request
-    await env.DB.prepare('CREATE TABLE IF NOT EXISTS pings (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, version TEXT, sid TEXT, svcs TEXT, mob INTEGER)').run().catch(() => {});
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS pings (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, version TEXT, sid TEXT, svcs TEXT, mob INTEGER, act INTEGER)').run().catch(() => {});
     await env.DB.prepare('ALTER TABLE pings ADD COLUMN svcs TEXT').run().catch(() => {});
     await env.DB.prepare('ALTER TABLE pings ADD COLUMN mob INTEGER').run().catch(() => {});
+    await env.DB.prepare('ALTER TABLE pings ADD COLUMN act INTEGER').run().catch(() => {});
 
     if (request.method === 'GET' && url.pathname === '/stats') {
       if (url.searchParams.get('token') !== STATS_TOKEN) {
@@ -20,7 +21,7 @@ export default {
       }
       try {
         const since30d = Date.now() - 2592000000;
-        const [active24h, active7d, active30d, byVersion, daily, hourly, mobRow, recentMeta, newRow] = await Promise.all([
+        const [active24h, active7d, active30d, byVersion, daily, hourly, mobRow, recentMeta, newRow, activatedRow, dailyAct, monthly] = await Promise.all([
           env.DB.prepare('SELECT COUNT(DISTINCT sid) as n FROM pings WHERE ts > ?').bind(Date.now() - 86400000).first(),
           env.DB.prepare('SELECT COUNT(DISTINCT sid) as n FROM pings WHERE ts > ?').bind(Date.now() - 604800000).first(),
           env.DB.prepare('SELECT COUNT(DISTINCT sid) as n FROM pings WHERE ts > ?').bind(since30d).first(),
@@ -32,6 +33,12 @@ export default {
           env.DB.prepare("SELECT svcs FROM (SELECT sid, MAX(ts) as latest, svcs FROM pings WHERE ts > ? AND svcs IS NOT NULL GROUP BY sid)").bind(since30d).all(),
           // new installs: sids whose very first ping was within last 30 days
           env.DB.prepare("SELECT COUNT(*) as n FROM (SELECT sid FROM pings GROUP BY sid HAVING MIN(ts) > ?)").bind(since30d).first(),
+          // activated: unique sids with act=1 in last 30 days
+          env.DB.prepare("SELECT COUNT(DISTINCT sid) as n FROM pings WHERE act=1 AND ts > ?").bind(since30d).first(),
+          // daily activated
+          env.DB.prepare("SELECT strftime('%Y-%m-%d', datetime(ts/1000,'unixepoch')) as day, COUNT(DISTINCT sid) as act FROM pings WHERE act=1 AND ts > ? GROUP BY day ORDER BY day DESC LIMIT 30").bind(since30d).all(),
+          // monthly all-time
+          env.DB.prepare("SELECT strftime('%Y-%m', datetime(ts/1000,'unixepoch')) as month, COUNT(DISTINCT sid) as uniq, COUNT(DISTINCT CASE WHEN act=1 THEN sid END) as act FROM pings GROUP BY month ORDER BY month").all(),
         ]);
 
         // service adoption: count how many unique sids have each service
@@ -49,7 +56,10 @@ export default {
         return corsJson({
           active24h: active24h.n, active7d: active7d.n, active30d: active30d.n,
           newInstalls30d: newRow?.n ?? 0,
+          activated30d: activatedRow?.n ?? 0,
+          dailyAct: dailyAct.results || [],
           byVersion: byVersion.results, daily: daily.results, hourly: hourly.results,
+          monthly: monthly.results || [],
           byService,
           mob: mobRow?.total ? Math.round(mobRow.mob / mobRow.total * 100) : null,
         });
@@ -68,7 +78,8 @@ export default {
         const body = await request.json().catch(() => ({}));
         const svcs = Array.isArray(body.svcs) ? JSON.stringify(body.svcs) : null;
         const mob  = typeof body.mob === 'number' ? body.mob : null;
-        await env.DB.prepare('INSERT INTO pings (ts, version, sid, svcs, mob) VALUES (?, ?, ?, ?, ?)').bind(Date.now(), body.v || 'unknown', body.sid || 'unknown', svcs, mob).run();
+        const act  = body.act === 1 ? 1 : 0;
+        await env.DB.prepare('INSERT INTO pings (ts, version, sid, svcs, mob, act) VALUES (?, ?, ?, ?, ?, ?)').bind(Date.now(), body.v || 'unknown', body.sid || 'unknown', svcs, mob, act).run();
         return corsJson({ ok: true });
       } catch (e) {
         return corsJson({ ok: false, error: e.message }, 500);
