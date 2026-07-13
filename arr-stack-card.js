@@ -15684,7 +15684,7 @@ var _PopupMethods = class {
         }
       });
     }
-    if (this._snIsOpen) {
+    if (this._snIsOpen && !(this._snExpandedSeasons?.size > 0)) {
       const _snGen = this._snSeasonsMeasureGen = (this._snSeasonsMeasureGen || 0) + 1;
       requestAnimationFrame(() => {
         if (this._snSeasonsMeasureGen !== _snGen) return;
