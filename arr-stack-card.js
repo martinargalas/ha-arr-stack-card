@@ -5865,6 +5865,7 @@ var _DownloadsMethods = class {
     }
   }
   async _nzbgetAction(mode, id = null) {
+    this._markActivated();
     this._nzbgetBusy = true;
     this._reRenderLeft();
     try {
@@ -5892,6 +5893,7 @@ var _DownloadsMethods = class {
     }
   }
   async _nzbgetItemDelete(nzbId) {
+    this._markActivated();
     this._nzbgetItemBusy = nzbId;
     this._reRenderLeft();
     try {
@@ -11455,6 +11457,7 @@ var _WireMethods = class {
     if (scope === this.shadowRoot) this._wireStickyNav();
     scope.querySelectorAll('[data-action="open-cal-modal"]').forEach((btn) => {
       btn.addEventListener("click", async () => {
+        this._markActivated();
         this._calendarModalOpen = true;
         this._calendarWeekOffset = 0;
         this._calendarModalData = [];
@@ -11590,6 +11593,7 @@ var _WireMethods = class {
         const type = btn.dataset.traktType;
         const tmdbId = parseInt(btn.dataset.traktTmdb, 10);
         const key = slug || String(tmdbId);
+        this._markActivated();
         btn.disabled = true;
         btn.innerHTML = '<span class="action-spinner" style="width:8px;height:8px;border-width:1.5px"></span>';
         const card = btn.closest(".mc");
@@ -11732,6 +11736,7 @@ var _WireMethods = class {
         btn.querySelectorAll("[data-trakt-star],[data-trakt-heart]").forEach((starEl) => {
           starEl.addEventListener("click", (ev) => {
             ev.stopPropagation();
+            this._markActivated();
             this.shadowRoot.removeEventListener("click", _closeRating, true);
             const stars = starEl.dataset.traktStar ? parseInt(starEl.dataset.traktStar) : null;
             const rating = stars !== null ? stars * 2 : 10;
@@ -11826,6 +11831,7 @@ var _WireTautulliMethods = class {
           b.style.fontWeight = on ? "700" : "";
         });
         this._tautulliModal.tab = t;
+        this._markActivated();
         const titleEl = el.querySelector("#tl-hdr-title");
         if (titleEl) titleEl.textContent = this._tlTabTitle(t);
         const subEl = el.querySelector("#tl-hdr-sub");
@@ -13154,6 +13160,7 @@ var _WireJellystatMethods = class {
           b.style.fontWeight = on ? "700" : "";
         });
         this._jellystatModal.tab = t;
+        this._markActivated();
         const titleEl = el.querySelector("#js-hdr-title");
         if (titleEl) titleEl.textContent = this._jsTabTitle(t);
         this._jsLoadTab(t, el);
@@ -26104,6 +26111,7 @@ var _LibraryWireMethods = class {
       }
       const typeTab = e.target.closest("[data-lib-tab-type]");
       if (typeTab) {
+        this._markActivated();
         const key = typeTab.dataset.libTabType;
         if (key !== this._libModal.typeKey) {
           this._libModal.typeKey = key;
@@ -26128,6 +26136,7 @@ var _LibraryWireMethods = class {
       }
       const qualTab = e.target.closest("[data-lib-tab-quality]");
       if (qualTab) {
+        this._markActivated();
         const key = qualTab.dataset.libTabQuality;
         if (key === this._libModal.qualityKey) {
           this._libModal.qualityKey = null;
@@ -28482,6 +28491,7 @@ var _WireActivityMethods = class {
   }
   async _actRemoveQueueItem(id, svc, removeFromClient, blocklist, skipRedownload, modalEl) {
     if (!this._activityModal) return;
+    this._markActivated();
     try {
       const qs = `removeFromClient=${removeFromClient ? "true" : "false"}&blocklist=${blocklist ? "true" : "false"}&skipRedownload=${skipRedownload ? "true" : "false"}`;
       await this._callApi("DELETE", `arr_stack/${svc}/queue/${id}?${qs}`);
@@ -29071,6 +29081,7 @@ var _WireActivityMethods = class {
     panel.innerHTML = rows;
   }
   async _submitManualImport(candidates, indices, svc, overlayEl, modalEl) {
+    this._markActivated();
     const isRadarr = svc === "radarr" || svc === "radarr2";
     const isSonarr = svc === "sonarr" || svc === "sonarr2";
     const toImport = indices.map((i) => candidates[i]).filter((c) => {
