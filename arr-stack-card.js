@@ -11304,7 +11304,7 @@ var _WireMethods = class {
         return;
       }
       this._searchActive = true;
-      this._searchTimer = setTimeout(() => this._fetchSearch(q), 600);
+      this._searchTimer = setTimeout(() => this._fetchSearch(q), 1500);
     }, { signal: sig });
     root.addEventListener("click", (e) => {
       if (e.target.closest(".search-bar-clear")) {
@@ -11326,6 +11326,7 @@ var _WireMethods = class {
     } else {
       const right = this.shadowRoot.getElementById("col-right");
       if (!right) return;
+      if (this._searchActive) return;
       const isMobile2 = window.matchMedia("(max-width: 900px)").matches;
       const navWasVisible = right.querySelector(".rp-nav")?.classList.contains("rp-nav-visible") ?? false;
       const sc = isMobile2 ? this._findScrollContainer() : null;
@@ -32564,7 +32565,7 @@ var ArrStackCard = class extends HTMLElement {
   _reRenderRight(force = false) {
     const right = this.shadowRoot.getElementById("col-right");
     if (!right) return;
-    if (!force && this._requestPending) return;
+    if (!force && (this._requestPending || this._searchActive)) return;
     const enteringSearchLayout = this._searchActive && !this._searchOnlyLayout;
     this._searchOnlyLayout = this._searchActive;
     if (!this._searchActive) this._blurActive();
@@ -32590,15 +32591,6 @@ var ArrStackCard = class extends HTMLElement {
       if (srWrap) this._wireSearchResultCards(srWrap);
     }
     this._trimActivityCards();
-    if (this._searchActive) {
-      requestAnimationFrame(() => {
-        const inp = this.shadowRoot.querySelector(".search-bar-input");
-        if (inp) {
-          inp.focus();
-          inp.setSelectionRange(inp.value.length, inp.value.length);
-        }
-      });
-    }
     requestAnimationFrame(() => {
       if (!this._searchActive) {
         const isMobile2 = window.matchMedia("(max-width: 900px)").matches;
@@ -32885,7 +32877,7 @@ var ArrStackCard = class extends HTMLElement {
       const body = this.shadowRoot.querySelector(".card-body");
       if (body) body.classList.toggle("no-downloads", !leftContent);
     }
-    if (this._requestPending) return;
+    if (this._requestPending || this._searchActive) return;
     if (layout !== "left") right.innerHTML = this._mobMinWrap("right", this._renderRight());
     this._wireSort();
     this._wireActionButtons();
