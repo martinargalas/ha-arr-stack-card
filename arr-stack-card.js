@@ -33075,7 +33075,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.34", sid, svcs, mob: this._isMob ? 1 : 0, act })
+        body: JSON.stringify({ v: "1.6.35", sid, svcs, mob: this._isMob ? 1 : 0, act })
       }).catch(() => {
       });
     } catch (_) {
