@@ -201,6 +201,20 @@ Indexer overview and search statistics from Prowlarr.
 - Per-indexer search success rate and response time
 - User-agent breakdown — which apps hit your indexers and how often
 
+### Poster display settings
+
+Control what appears on poster cards across all categories. All options are available in the visual editor under **Posters**.
+
+- **Title** — show or hide the title overlay at the bottom of each poster
+- **Audio language** — show audio track badges (e.g. EN, CZ) on posters where available
+- **Subtitles** — show subtitle availability badges (requires Bazarr)
+- **Rating** — show a rating badge on each poster. Choose between **IMDb** (default) or **TMDB** as the source
+- **Media type tag** — a small Movie or TV label in the top-left corner of each poster
+- **Status display** — choose how download and availability status is shown:
+  - **Tags** — coloured status badges on the poster (default)
+  - **Stripes** — a thin coloured bar at the bottom of the poster. When a title is actively downloading, the bar shows a progress indicator
+  - **Both** — tags and stripes together
+
 ### Appearance & UX
 
 - Day / night theming based on `sun.sun`
@@ -210,7 +224,6 @@ Indexer overview and search statistics from Prowlarr.
 - **See More overlay** — full-screen grid for any section
 - Visual card editor in HA (no YAML required for basic setup)
 - Performance mode — disables backdrop blur
-- **Poster rating badge** — choose which rating is shown on poster cards: **IMDb** (default) or **TMDB**. Select your preference under Discover → Poster rating in the visual editor.
 - Category colour overlays — colour-tinted poster overlays per section, toggle via `styles.categoryOverlays`
 - Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos. Switch to MDI icons via `styles.applicationIcons: mdi`
 - UI scale — proportionally scales all card content via `styles.uiScale`. Useful on large monitors or TVs where the default size is too small
@@ -298,6 +311,16 @@ discover:
   oneClickDefaultShowTag: ""          # Sonarr tag for one-click TV requests  (optional)
   oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
   ratingProvider: imdb         # imdb | tmdb — rating badge shown on poster cards  (default: imdb)
+
+# Poster display
+posters:
+  showTitle: true              # show title on poster cards  (default: true)
+  showAudio: true              # show audio language badges  (default: true)
+  showSubtitles: true          # show subtitle badges  (default: true)
+  showRating: true             # show rating badge  (default: true)
+  showMediaType: true          # show Movie/TV tag  (default: true)
+  ratingProvider: imdb         # imdb | tmdb  (default: imdb)
+  statusDisplay: tags          # tags | stripes | both  (default: tags)
 
 # Category order & visibility
 categories:
@@ -409,16 +432,17 @@ styles:
 
 ## Analytics
 
-Arr Stack Card sends one anonymous ping per 24 hours. The following data is collected:
+Arr Stack Card sends one anonymous ping per browser session. The following data is collected:
 
 | Field | What it contains |
 |-------|-----------------|
-| **Card version** | e.g. `1.6.28` |
+| **Card version** | e.g. `1.6.36` |
 | **Anonymous site ID** | Short hash of your Home Assistant hostname — cannot be reversed to identify you or your server |
 | **Enabled integrations** | Which services are configured (e.g. Plex, Bazarr, qBittorrent) — no credentials, URLs, or settings |
 | **Mobile flag** | Whether the card is shown on a screen narrower than 600 px |
+| **Activation flag** | Whether you interacted with the card during this session (clicked anything) |
 
-No IP addresses, hostnames, usernames, media titles, or any personally identifiable information are sent or stored. Rate-limited to one ping per IP per 24 hours.
+No IP addresses, hostnames, usernames, media titles, or any personally identifiable information are sent or stored. Rate-limited to one ping per IP per minute on the server side. Data is retained for 6 months.
 
 Live usage stats (public): [argalas.org/arr-stats](https://argalas.org/arr-stats)
 
