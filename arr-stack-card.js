@@ -360,17 +360,18 @@ var ArrStackCardEditor = class extends HTMLElement {
             <label class="toggle"><input type="checkbox" data-group="posters" data-key="showRating" ${this._cfg("posters", "showRating", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
           </div>
           <div class="row">
+            <span class="row-label">Show media type tag</span>
+            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showMediaType" ${this._cfg("posters", "showMediaType", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="hint">Show a Movie or TV label in the top-left corner of each poster.</div>
+          <div class="row">
             <span class="row-label">Rating provider</span>
             <select data-group="posters" data-key="ratingProvider" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
               <option value="imdb" ${this._cfg("posters", "ratingProvider", this._cfg("discover", "ratingProvider", "imdb")) === "imdb" ? "selected" : ""}>IMDb</option>
               <option value="tmdb" ${this._cfg("posters", "ratingProvider", this._cfg("discover", "ratingProvider", "imdb")) === "tmdb" ? "selected" : ""}>TMDB</option>
             </select>
           </div>
-          <div class="hint">Rating provider shown on poster cards. Falls back to TMDB \u2192 TheTVDB if IMDb score is unavailable.</div>
-          <div class="row">
-            <span class="row-label">Show media type tag</span>
-            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showMediaType" ${this._cfg("posters", "showMediaType", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
-          </div>
+          <div class="hint">Falls back to TMDB \u2192 TheTVDB if IMDb score is unavailable.</div>
           <div class="row">
             <span class="row-label">Status display</span>
             <select data-group="posters" data-key="statusDisplay">
@@ -379,7 +380,7 @@ var ArrStackCardEditor = class extends HTMLElement {
               <option value="both" ${this._cfg("posters", "statusDisplay", "tags") === "both" ? "selected" : ""}>Both</option>
             </select>
           </div>
-          <div class="hint">Tags show status badges on posters. Stripes show a coloured bar at the bottom (download tag is always visible). Both combines them.</div>
+          <div class="hint">Tags show status badges on posters. Stripes show a coloured bar at the bottom with download progress. Both combines them.</div>
         </div>
 
         <!-- Categories -->
@@ -2339,7 +2340,7 @@ var STYLES = `
       .b-dl      { background:rgba(10,132,255,0.30); border:1px solid rgba(10,132,255,0.62); }
       .b-ep      { background:rgba(10,132,255,0.28); border:1px solid rgba(10,132,255,0.58); }
       .b-audio   { background:rgba(10,132,255,0.26); border:1px solid rgba(10,132,255,0.55); }
-      .b-partial { background:rgba(255,149,0,0.30);  border:1px solid rgba(255,149,0,0.62); }
+      .b-partial { background:rgba(255,69,58,0.30);   border:1px solid rgba(255,69,58,0.62); }
       .b-sno     { background:rgba(255,149,0,0.26);  border:1px solid rgba(255,149,0,0.55); }
       .b-sub-miss{ background:rgba(255,149,0,0.28);  border:1px solid rgba(255,149,0,0.58); }
       .b-missing { background:rgba(255,69,58,0.30);  border:1px solid rgba(255,69,58,0.62); }
@@ -2379,9 +2380,10 @@ var STYLES = `
       .btn-add:hover { background: rgba(var(--accent-rgb),0.45); }
 
       /* \u2500\u2500 Status badges v mc-act (stejn\xFD styl jako .badge v knihovn\u011B) \u2500\u2500 */
-      .b-st-avail { background: rgba(48,209,88,0.30);  border: 1px solid rgba(48,209,88,0.62); }
-      .b-st-pend  { background: rgba(255,149,0,0.30);  border: 1px solid rgba(255,149,0,0.62); }
-      .b-st-proc  { background: rgba(10,132,255,0.30); border: 1px solid rgba(10,132,255,0.62); }
+      .b-st-avail   { background: rgba(48,209,88,0.30);  border: 1px solid rgba(48,209,88,0.62); }
+      .b-continuing { background: rgba(10,132,255,0.30); border: 1px solid rgba(10,132,255,0.62); }
+      .b-st-pend    { background: rgba(255,149,0,0.30);  border: 1px solid rgba(255,149,0,0.62); }
+      .b-st-proc    { background: rgba(10,132,255,0.30); border: 1px solid rgba(10,132,255,0.62); }
       .mc-act .badge { margin-left: auto; flex-shrink: 0; }
       /* Tla\u010D\xEDtko sta\u017Een\xED vlastn\xED \u017E\xE1dosti (neadmin) */
       .req-withdraw {
@@ -8894,7 +8896,7 @@ var _RenderRight = class {
   _ratingBadge(m, inline = false) {
     const prov = this._ratingProvider;
     const ratings = m.ratings || {};
-    const tmdbId = String(m.tmdbId || m.id || "");
+    const tmdbId = m.tmdbId ? String(m.tmdbId) : m.tmdbId === void 0 ? String(m.id || "") : "";
     const isMovie = m._mediaType !== "tv" && m.mediaType !== "tv";
     const cached = tmdbId ? this._posterRatingsCache.get(tmdbId) : void 0;
     let raw, display, icon, bdrClr, bgClr;
@@ -10051,7 +10053,7 @@ var _MediaCardMethods = class {
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const stats = s.statistics || {};
     const fileCount = stats.episodeFileCount || 0;
-    const totalCount = stats.totalEpisodeCount || 0;
+    const totalCount = stats.episodeCount || stats.totalEpisodeCount || 0;
     let badgeCls = "";
     let badgeHtml = "";
     if (fileCount === 0 && totalCount > 0) {
@@ -10060,6 +10062,9 @@ var _MediaCardMethods = class {
     } else if (fileCount < totalCount) {
       badgeCls = "b-partial";
       badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
+    } else if (totalCount > 0 && s.status === "continuing") {
+      badgeCls = "b-continuing";
+      badgeHtml = this._badge("b-continuing", "\u25B6", this._t("badgeAvailable"));
     } else if (totalCount > 0) {
       badgeCls = "b-st-avail";
       badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
@@ -10116,7 +10121,7 @@ var _MediaCardMethods = class {
           badgeHtml = match ? this._badge("b-st-avail", "\u2713", `S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}`) : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
         } else {
           const fileCount = item.statistics?.episodeFileCount ?? 0;
-          const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
+          const totalCount = item.statistics?.episodeCount ?? item.statistics?.totalEpisodeCount ?? 0;
           if (fileCount < totalCount) {
             badgeCls = "b-partial";
             badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
@@ -10437,15 +10442,17 @@ var _MediaCardMethods = class {
   }
   _renderCalendarModalCard(ep) {
     const pc = this._posterCfg();
-    const series = ep.series || {};
+    const seriesRaw = ep.series || {};
     const isMovie = ep._mediaType === "movie";
+    const _sid = seriesRaw.id || ep.seriesId;
+    const series = isMovie ? (this._radarr || []).find((m) => seriesRaw.tmdbId ? m.tmdbId === seriesRaw.tmdbId : m.id === _sid) || (this._radarr2 || []).find((m) => seriesRaw.tmdbId ? m.tmdbId === seriesRaw.tmdbId : m.id === _sid) || seriesRaw : (this._sonarrAll || this._sonarr || []).find((s) => seriesRaw.tvdbId ? s.tvdbId === seriesRaw.tvdbId : s.id === _sid) || (this._sonarr2All || this._sonarr2 || []).find((s) => seriesRaw.tvdbId ? s.tvdbId === seriesRaw.tvdbId : s.id === _sid) || seriesRaw;
     const title = this._escHtml(series.title || ep.seriesTitle || ep.title || "Unknown");
     const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
     const poster = isMovie ? this._getRadarrPoster(series) : this._getSonarrPoster(series);
     const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", ep.series?.id || ep.seriesId || ep.id);
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", series.id || ep.seriesId || ep.id);
     const epBadge = !isMovie ? `<span class="badge b-ep">S${String(ep.seasonNumber || 0).padStart(2, "0")}E${String(ep.episodeNumber || 0).padStart(2, "0")}</span>` : "";
     let badgeCls = "";
     let badgeHtml = "";
@@ -10467,13 +10474,16 @@ var _MediaCardMethods = class {
       }
     } else {
       const fc = series.statistics?.episodeFileCount || 0;
-      const tc2 = series.statistics?.totalEpisodeCount || 0;
+      const tc2 = series.statistics?.episodeCount || series.statistics?.totalEpisodeCount || 0;
       if (fc === 0 && tc2 > 0) {
         badgeCls = "b-missing";
         badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
       } else if (fc < tc2) {
         badgeCls = "b-partial";
         badgeHtml = `<span class="badge b-partial">${fc}/<span class="b-txt">${tc2}</span></span>`;
+      } else if (fc > 0 && series.status === "continuing") {
+        badgeCls = "b-continuing";
+        badgeHtml = this._badge("b-continuing", "\u25B6", this._t("badgeAvailable"));
       } else if (fc > 0) {
         badgeCls = "b-st-avail";
         badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
@@ -10484,7 +10494,7 @@ var _MediaCardMethods = class {
     const statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
     const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", this._dlPct(series.id, isMovie ? "movie" : "tv")) : "";
     return `
-    <div class="mc" data-popup="${popup}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ""}" data-title="${title}">
+    <div class="mc" data-popup="${popup}" data-tvdbid="${series.tvdbId || ""}" data-tmdbid="${series.tmdbId || ""}" data-title="${title}">
       ${img}
       <div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;flex-direction:column;gap:3px;align-items:flex-start">
         ${pc.mediaType ? `<span class="media-type-tag" style="position:static">${typeTag}</span>` : ""}
@@ -10540,13 +10550,16 @@ var _MediaCardMethods = class {
       }
     } else {
       const fc = series.statistics?.episodeFileCount || 0;
-      const tc2 = series.statistics?.totalEpisodeCount || 0;
+      const tc2 = series.statistics?.episodeCount || series.statistics?.totalEpisodeCount || 0;
       if (fc === 0 && tc2 > 0) {
         badgeCls = "b-missing";
         badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
       } else if (fc < tc2) {
         badgeCls = "b-partial";
         badgeHtml = `<span class="badge b-partial">${fc}/<span class="b-txt">${tc2}</span></span>`;
+      } else if (fc > 0 && series.status === "continuing") {
+        badgeCls = "b-continuing";
+        badgeHtml = this._badge("b-continuing", "\u25B6", this._t("badgeAvailable"));
       } else if (fc > 0) {
         badgeCls = "b-st-avail";
         badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
@@ -10559,7 +10572,7 @@ var _MediaCardMethods = class {
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     return `
-    <div class="mc" data-popup="${popup}" data-tvdbid="${ep.series?.tvdbId || ""}" data-tmdbid="${ep.series?.tmdbId || ep.tmdbId || ""}" data-title="${title}">
+    <div class="mc" data-popup="${popup}" data-tvdbid="${series.tvdbId || ep.series?.tvdbId || ""}" data-tmdbid="${series.tmdbId || ep.series?.tmdbId || ep.tmdbId || ""}" data-title="${title}">
       ${img}
       <div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;flex-direction:column;gap:3px;align-items:flex-start">
         ${pc.mediaType ? `<span class="media-type-tag" style="position:static">${typeTag}</span>` : ""}
@@ -15583,6 +15596,10 @@ var _PopupMethods = class {
     }
     try {
       let apiPath = "";
+      if (!tmdbId && (type === POPUP_TYPE.SONARR || type === POPUP_TYPE.TV)) {
+        const fallbackTmdb = _sonarrSeries?.tmdbId || _sonarr2Series?.tmdbId;
+        if (fallbackTmdb) tmdbId = String(fallbackTmdb);
+      }
       if (type === POPUP_TYPE.TV && tmdbId) {
         apiPath = `arr_stack/overseerr/tv/${tmdbId}`;
       } else if (type === POPUP_TYPE.SONARR && tmdbId) {
@@ -15590,7 +15607,12 @@ var _PopupMethods = class {
       } else if ((type === POPUP_TYPE.RADARR || type === POPUP_TYPE.MOVIE) && tmdbId) {
         apiPath = `arr_stack/overseerr/movie/${tmdbId}`;
       } else {
-        throw new Error("no_id");
+        const local = this._localFallbackData(type, tmdbId, tvdbId, title);
+        const _popId = tmdbId ? parseInt(tmdbId) : void 0;
+        const _popTvdb = tvdbId ? parseInt(tvdbId) : void 0;
+        this._popup = local ? { ...local, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, id: _popId, _tvdbId: _popTvdb } : { title, _type: type, _radarrId, _radarr2Id, _sonarrSeries, _sonarr2Series, id: _popId, _tvdbId: _popTvdb };
+        this._renderPopupEl();
+        return;
       }
       const data = await this._hass.callApi("GET", apiPath);
       if ((type === POPUP_TYPE.TV || type === POPUP_TYPE.SONARR) && !_sonarrSeries && data.externalIds?.tvdbId) {
@@ -25463,7 +25485,7 @@ var _LibraryMethods = class {
       qualityKey,
       instFilter: _saved.instFilter || "all",
       search: "",
-      sort: sortDef,
+      sort: qualityKey ? sortDef : _saved.sort || sortDef,
       sortDir: _saved.sortDir || "desc",
       view: _saved.view || "posters",
       page: 0,
@@ -25823,7 +25845,13 @@ var _LibraryMethods = class {
     const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
     const ratingHtml = pc.rating ? this._ratingBadge({ ...item, _mediaType: isMovie ? "movie" : "tv" }) : "";
     const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
-    const typeTag = pc.mediaType ? `<span class="media-type-tag" style="position:absolute;top:5px;left:5px;z-index:4">${isMovie ? "Movie" : "Show"}</span>` : "";
+    const sizeBytes = isMovie ? item.movieFile?.size || 0 : item.statistics?.sizeOnDisk || 0;
+    const sizeStr = sizeBytes ? this.fmtSize(sizeBytes) : "";
+    const profileStr = item.qualityProfileName || "";
+    const _mediaTag = pc.mediaType ? `<span class="media-type-tag" style="position:static">${isMovie ? "Movie" : "Show"}</span>` : "";
+    const _sizeTag = sizeStr ? `<span class="media-type-tag" style="position:static">${sizeStr}</span>` : "";
+    const _profTag = profileStr ? `<span class="media-type-tag" style="position:static">${this._escHtml(profileStr)}</span>` : "";
+    const typeTag = _mediaTag || _sizeTag || _profTag ? `<div style="position:absolute;top:5px;left:5px;z-index:4;display:flex;flex-direction:column;align-items:flex-start;gap:3px">${_mediaTag}${_sizeTag}${_profTag}</div>` : "";
     const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
     const checked = m._editMode && m._selected?.has(selKey);
     const checkHtml = m._editMode ? `<div data-lib-sel="${selKey}" style="position:absolute;top:5px;right:5px;z-index:5;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.85);background:${checked ? "rgba(0,122,255,0.9)" : "rgba(0,0,0,0.45)"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
@@ -25855,13 +25883,16 @@ var _LibraryMethods = class {
         }
       } else {
         const fc = item.statistics?.episodeFileCount || 0;
-        const tc2 = item.statistics?.totalEpisodeCount || 0;
+        const tc2 = item.statistics?.episodeCount || item.statistics?.totalEpisodeCount || 0;
         if (fc === 0 && tc2 > 0) {
           badgeCls = "b-missing";
           badgeHtml = _b("b-missing", "\u2717", this._t("badgeMissing"));
         } else if (fc < tc2) {
           badgeCls = "b-partial";
           badgeHtml = small ? `<span class="badge b-partial">${fc}</span>` : `<span class="badge b-partial">${fc}/<span class="b-txt">${tc2}</span></span>`;
+        } else if (fc > 0 && item.status === "continuing") {
+          badgeCls = "b-continuing";
+          badgeHtml = _b("b-continuing", "\u25B6", this._t("badgeAvailable"));
         } else if (fc > 0) {
           badgeCls = "b-st-avail";
           badgeHtml = _b("b-st-avail", "\u2713", this._t("badgeAvailable"));
@@ -25870,7 +25901,7 @@ var _LibraryMethods = class {
       const showTag = pc.statusDisplay === "tags" || pc.statusDisplay === "both";
       statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
     }
-    const statusBar = showStripe ? this._statusStripe(this._libStatusColor(item), badgeCls === "b-dl", this._dlPct(item.id, isMovie ? "movie" : "tv")) : "";
+    const statusBar = showStripe ? this._statusStripe(badgeCls ? this._statusStripeColor(badgeCls) : this._libStatusColor(item), badgeCls === "b-dl", this._dlPct(item.id, isMovie ? "movie" : "tv")) : "";
     let subBadge = "";
     let audioBadge = "";
     if (!small && !m._editMode) {
@@ -25919,74 +25950,133 @@ var _LibraryMethods = class {
         ${statusBar}
       </div>`;
   }
+  // ─── Table: status badge for a single item ────────────────────────────────
+  _libTableStatus(item) {
+    const isMovie = item._libType === "movie";
+    if (isMovie) {
+      const dlFailed = this._radarrQueueFailed?.has(item.id);
+      const dlActive = this._radarrQueueActive?.has(item.id);
+      const qName = item.movieFile?.quality?.quality?.name || "";
+      if (item.hasFile && item.movieFile?.qualityCutoffNotMet) return { cls: "b-cutoff", label: qName || "Upgrade" };
+      if (item.hasFile) return { cls: "b-st-avail", label: qName || "Available" };
+      if (dlFailed) return { cls: "b-missing", label: "Failed" };
+      if (dlActive) return { cls: "b-dl", label: "Downloading" };
+      return { cls: "b-missing", label: "Missing" };
+    }
+    const fc = item.statistics?.episodeFileCount || 0;
+    const tc = item.statistics?.episodeCount || item.statistics?.totalEpisodeCount || 0;
+    if (fc === 0 && tc > 0) return { cls: "b-missing", label: "Missing" };
+    if (fc < tc) return { cls: "b-partial", label: `${fc} / ${tc}` };
+    if (fc > 0 && item.status === "continuing") return { cls: "b-continuing", label: `${fc} / ${tc}` };
+    if (fc > 0) return { cls: "b-st-avail", label: `${fc} / ${tc}` };
+    return { cls: "", label: "" };
+  }
   // ─── Modal table ──────────────────────────────────────────────────────────
   _libTableHtml(items) {
     const isMob = this._isMob;
+    const isTab = this._isTablet;
     const m = this._libModal;
     const _icoMov = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
     const _icoTv = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
-    if (isMob) {
-      const rows2 = items.map((item) => {
-        const isMovie = item._libType === "movie";
-        const title = this._escHtml(item.title || "");
-        const year = item.year || "";
-        const quality = item.movieFile?.quality?.quality?.name || (item.qualityProfileName ? item.qualityProfileName : "");
-        const popupType = isMovie ? "radarr" : "sonarr";
-        const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
-        const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
-        const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
-        const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
-        const checked = m._editMode && m._selected?.has(selKey);
-        const checkEl = m._editMode ? `<div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
-        const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
-        const ratingHtmlCompact = this._ratingBadge({ ...item, _mediaType: isMovie ? "movie" : "tv" });
-        const meta = [year, quality].filter(Boolean).join(" \xB7 ");
-        return `<div class="lib-table-row"${popupAttrs} style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07))">
-          ${checkEl}
-          <span style="display:inline-flex;flex-shrink:0">${isMovie ? _icoMov : _icoTv}</span>
-          <div style="flex:1;min-width:0">
-            ${ratingHtmlCompact}
-            <div style="font-size:12px;font-weight:600;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-            ${meta ? `<div style="font-size:10px;opacity:0.5;color:var(--is-text,#fff);margin-top:1px">${meta}</div>` : ""}
-          </div>
-        </div>`;
-      }).join("");
-      return `<div style="overflow-y:auto">${rows2}</div>`;
-    }
-    const rows = items.map((item) => {
+    const _statusBadge = (st) => {
+      if (!st.cls) return "";
+      return `<span class="badge ${st.cls}">${st.label}</span>`;
+    };
+    const _popupAttrs = (item) => {
       const isMovie = item._libType === "movie";
       const title = this._escHtml(item.title || "");
-      const year = item.year || "\u2014";
-      const ratingTxt = this._ratingBadge({ ...item, _mediaType: isMovie ? "movie" : "tv" }, true) || "\u2014";
-      const quality = item.movieFile?.quality?.quality?.name || (item.qualityProfileName ? item.qualityProfileName : "\u2014");
       const popupType = isMovie ? "radarr" : "sonarr";
       const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
       const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
       const radarrAttr = isMovie && item.id ? ` data-radarrid="${item.id}"` : "";
-      const typeTag = `<span style="display:inline-flex;align-items:center;flex-shrink:0;margin-right:6px">${isMovie ? _icoMov : _icoTv}</span>`;
+      return m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
+    };
+    const _checkEl = (item, tag = "div") => {
+      if (!m._editMode) return "";
       const selKey = `${item._libType}-${item._libInst || "1"}-${item.id}`;
-      const checked = m._editMode && m._selected?.has(selKey);
-      const checkCell = m._editMode ? `<td style="width:28px;padding:0 6px"><div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box">${checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div></td>` : "";
-      const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
-      return `<tr class="lib-table-row"${popupAttrs}>
-        ${checkCell}<td><div style="display:flex;align-items:center;gap:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${typeTag}${title}</div></td>
-        <td>${year}</td>
-        <td>${ratingTxt}</td>
-        <td>${quality}</td>
-      </tr>`;
-    }).join("");
+      const checked = m._selected?.has(selKey);
+      const inner = checked ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : "";
+      const el = `<div data-lib-sel="${selKey}" style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-sizing:border-box">${inner}</div>`;
+      return tag === "td" ? `<td style="width:28px;padding:0 6px">${el}</td>` : el;
+    };
+    const _monIcon = (item) => item.monitored ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:0.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.3"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    if (isMob) {
+      const rows2 = items.map((item) => {
+        const isMovie = item._libType === "movie";
+        const title = this._escHtml(item.title || "");
+        const st = this._libTableStatus(item);
+        const sizeBytes = isMovie ? item.movieFile?.size || 0 : item.statistics?.sizeOnDisk || 0;
+        const sizeStr = sizeBytes ? this.fmtSize(sizeBytes) : "";
+        const profile = item.qualityProfileName || "";
+        const _mtMob = (txt) => txt ? `<span class="media-type-tag" style="position:static;font-size:9px;padding:1px 5px">${txt}</span>` : "";
+        const metaTags = [_mtMob(profile), _mtMob(sizeStr)].filter(Boolean).join("");
+        return `<div class="lib-table-row"${_popupAttrs(item)} style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07))">
+          ${_checkEl(item)}
+          ${_monIcon(item)}
+          <span style="display:inline-flex;flex-shrink:0">${isMovie ? _icoMov : _icoTv}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
+            ${metaTags ? `<div style="display:flex;gap:4px;margin-top:2px">${metaTags}</div>` : ""}
+          </div>
+          ${_statusBadge(st)}
+        </div>`;
+      }).join("");
+      return `<div style="overflow-y:auto">${rows2}</div>`;
+    }
     const _thStyle = "cursor:pointer;user-select:none;white-space:nowrap";
     const _sortArrow = (key) => {
       const active = m.sort === key;
       const char = active ? m.sortDir === "asc" ? "\u2191" : "\u2193" : "\u2195";
       return `<span style="margin-left:3px;font-size:9px;opacity:${active ? "0.85" : "0.2"}">${char}</span>`;
     };
+    const hasTv = items.some((i) => i._libType !== "movie");
+    const rows = items.map((item) => {
+      const isMovie = item._libType === "movie";
+      const title = this._escHtml(item.title || "");
+      const _mtTag = (txt) => txt ? `<span class="media-type-tag" style="position:static">${txt}</span>` : "\u2014";
+      const profileRaw = this._escHtml(item.qualityProfileName || "");
+      const profile = _mtTag(profileRaw);
+      const sizeBytes = isMovie ? item.movieFile?.size || 0 : item.statistics?.sizeOnDisk || 0;
+      const sizeStr = _mtTag(sizeBytes ? this.fmtSize(sizeBytes) : "");
+      const st = this._libTableStatus(item);
+      const typeTag = `<span style="display:inline-flex;align-items:center;flex-shrink:0;margin-right:6px">${isMovie ? _icoMov : _icoTv}</span>`;
+      let extraCells = "";
+      if (!isTab) {
+        const ratingTxt = this._ratingBadge({ ...item, _mediaType: isMovie ? "movie" : "tv" }, true) || "\u2014";
+        extraCells += `<td>${ratingTxt}</td>`;
+        if (hasTv) {
+          const seasons = isMovie ? "" : String(item.statistics?.seasonCount || item.seasonCount || "\u2014");
+          const fc = isMovie ? "" : String(item.statistics?.episodeFileCount || 0);
+          const tc = isMovie ? "" : String(item.statistics?.episodeCount || item.statistics?.totalEpisodeCount || 0);
+          const epStr = isMovie ? "" : `${fc} / ${tc}`;
+          extraCells += `<td style="text-align:center">${seasons}</td>`;
+          extraCells += `<td style="text-align:center">${epStr}</td>`;
+        }
+      }
+      return `<tr class="lib-table-row"${_popupAttrs(item)}>
+        ${_checkEl(item, "td")}
+        <td><div style="display:flex;align-items:center;gap:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_monIcon(item)}<span style="margin:0 6px 0 4px">${typeTag}</span>${title}</div></td>
+        <td>${profile}</td>
+        <td>${sizeStr}</td>
+        ${extraCells}
+        <td style="text-align:right">${_statusBadge(st)}</td>
+      </tr>`;
+    }).join("");
+    let extraHeaders = "";
+    if (!isTab) {
+      extraHeaders += `<th data-lib-th-sort="imdb" style="${_thStyle};width:110px">Rating${_sortArrow("imdb")}</th>`;
+      if (hasTv) {
+        extraHeaders += `<th style="${_thStyle};width:70px;text-align:center">Seasons</th>`;
+        extraHeaders += `<th style="${_thStyle};width:80px;text-align:center">Episodes</th>`;
+      }
+    }
     return `<table class="tl-users-table lib-table" style="width:100%;table-layout:fixed">
       <thead><tr>
-        <th data-lib-th-sort="title"   style="${_thStyle};width:auto">Title${_sortArrow("title")}</th>
-        <th data-lib-th-sort="year"    style="${_thStyle};width:70px">Year${_sortArrow("year")}</th>
-        <th data-lib-th-sort="imdb"    style="${_thStyle};width:110px">Rating${_sortArrow("imdb")}</th>
-        <th data-lib-th-sort="quality" style="${_thStyle};width:130px">Quality${_sortArrow("quality")}</th>
+        <th data-lib-th-sort="title"    style="${_thStyle};width:auto">Title${_sortArrow("title")}</th>
+        <th data-lib-th-sort="qualprof" style="${_thStyle};width:130px">Quality Profile${_sortArrow("qualprof")}</th>
+        <th data-lib-th-sort="size"     style="${_thStyle};width:90px">Size${_sortArrow("size")}</th>
+        ${extraHeaders}
+        <th data-lib-th-sort="status"   style="${_thStyle};width:110px;text-align:right">Status${_sortArrow("status")}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -25997,10 +26087,6 @@ var _LibraryMethods = class {
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
     const title = this._escHtml(item.title || "");
     const year = item.year || "";
-    const quality = item.movieFile?.quality?.quality?.name || "";
-    const size = item.movieFile?.size || item.statistics?.sizeOnDisk || 0;
-    const sizeTxt = size ? size > 1e9 ? (size / 1e9).toFixed(1) + " GB" : (size / 1e6).toFixed(0) + " MB" : "";
-    const studio = item.studio || "";
     const overview = this._escHtml((item.overview || "").slice(0, 160));
     const popupType = isMovie ? "radarr" : "sonarr";
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
@@ -26011,21 +26097,34 @@ var _LibraryMethods = class {
     const checked = m._editMode && m._selected?.has(selKey);
     const checkHtml = m._editMode ? `<div data-lib-sel="${selKey}" style="width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:${checked ? "rgba(0,122,255,0.9)" : "transparent"};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;align-self:center;box-sizing:border-box">${checked ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg>` : ""}</div>` : "";
     const popupAttrs = m._editMode ? "" : ` data-lib-popup="${popupType}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}"`;
-    const monDot = `<span style="width:6px;height:6px;border-radius:50%;background:${item.monitored ? "#34C759" : "rgba(255,255,255,0.25)"};display:inline-block;flex-shrink:0"></span>`;
-    const meta = [year && `<span>${year}</span>`, quality && `<span>${quality}</span>`, sizeTxt && `<span>${sizeTxt}</span>`, studio && `<span>${studio}</span>`].filter(Boolean).join('<span style="opacity:0.3;margin:0 3px">\xB7</span>');
     const imgHtml = poster ? `<img src="${poster}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px">${isMovie ? "\u{1F3AC}" : "\u{1F4FA}"}</div>`;
+    const st = this._libTableStatus(item);
+    const stBadge = st.cls ? `<span class="badge ${st.cls}">${st.label}</span>` : "";
+    const sizeBytes = isMovie ? item.movieFile?.size || 0 : item.statistics?.sizeOnDisk || 0;
+    const sizeTxt = sizeBytes ? this.fmtSize(sizeBytes) : "";
+    const profile = item.qualityProfileName || "";
+    const seasons = !isMovie ? item.statistics?.seasonCount || item.seasonCount || "" : "";
+    const _mtStyle = "background:rgba(0,0,0,0.62);backdrop-filter:blur(4px);color:rgba(255,255,255,0.92);font-size:10px;font-weight:800;line-height:1;padding:2px 6px;border-radius:4px;white-space:nowrap;letter-spacing:0.05em;display:inline-flex;align-items:center";
+    const rightTags = [
+      sizeTxt && `<span style="${_mtStyle}">${sizeTxt}</span>`,
+      profile && `<span style="${_mtStyle}">${this._escHtml(profile)}</span>`,
+      seasons && `<span style="${_mtStyle}">${seasons} season${seasons != 1 ? "s" : ""}</span>`
+    ].filter(Boolean).join("");
     return `<div class="lib-table-row"${popupAttrs} style="display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:8px;background:var(--is-row-hover,rgba(255,255,255,0.04))">
       ${checkHtml}
       <div style="width:42px;height:63px;flex-shrink:0;border-radius:5px;overflow:hidden;background:rgba(255,255,255,0.08)">${imgHtml}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
-          ${monDot}
           <span style="font-size:12px;font-weight:700;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span>
         </div>
-        <div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px;display:flex;flex-wrap:wrap;align-items:center">${meta}</div>
+        ${year ? `<div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px">${year}</div>` : ""}
         ${overview ? `<div style="font-size:10px;color:var(--is-text-muted);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${overview}</div>` : ""}
       </div>
-      <span style="flex-shrink:0;align-self:center">${this._ratingBadge({ ...item, _mediaType: isMovie ? "movie" : "tv" }, true)}</span>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;align-self:center">
+        ${this._ratingBadge({ ...item, _mediaType: isMovie ? "movie" : "tv" }, true)}
+        ${stBadge}
+        ${rightTags ? `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end">${rightTags}</div>` : ""}
+      </div>
     </div>`;
   }
   // ─── Data helpers ─────────────────────────────────────────────────────────
@@ -26094,6 +26193,10 @@ var _LibraryMethods = class {
   }
   _libAllItems() {
     const m = this._libModal;
+    const rp1 = new Map((this._radarrProfiles || []).map((p) => [p.id, p.name]));
+    const rp2 = new Map((this._radarr2Profiles || []).map((p) => [p.id, p.name]));
+    const sp1 = new Map((this._sonarrProfiles || []).map((p) => [p.id, p.name]));
+    const sp2 = new Map((this._sonarr2Profiles || []).map((p) => [p.id, p.name]));
     const r1 = this._radarr || [];
     const r2 = this._radarr2Configured ? this._radarr2 || [] : [];
     const s1 = this._sonarr || [];
@@ -26101,8 +26204,8 @@ var _LibraryMethods = class {
     const inst = m.instFilter || "all";
     const movieSrc = inst === "1" ? r1.map((i) => ({ ...i, _libInst: "1" })) : inst === "2" ? r2.map((i) => ({ ...i, _libInst: "2" })) : [...r1.map((i) => ({ ...i, _libInst: "1" })), ...r2.map((i) => ({ ...i, _libInst: "2" }))];
     const tvSrc = inst === "1" ? s1.map((i) => ({ ...i, _libInst: "1" })) : inst === "2" ? s2.map((i) => ({ ...i, _libInst: "2" })) : [...s1.map((i) => ({ ...i, _libInst: "1" })), ...s2.map((i) => ({ ...i, _libInst: "2" }))];
-    const movies = movieSrc.map((i) => ({ ...i, _libType: "movie" }));
-    const tv = tvSrc.map((i) => ({ ...i, _libType: "tv" }));
+    const movies = movieSrc.map((i) => ({ ...i, _libType: "movie", qualityProfileName: (i._libInst === "2" ? rp2 : rp1).get(i.qualityProfileId) || "" }));
+    const tv = tvSrc.map((i) => ({ ...i, _libType: "tv", qualityProfileName: (i._libInst === "2" ? sp2 : sp1).get(i.qualityProfileId) || "" }));
     let base;
     if (m.typeKey === "movies") base = movies;
     else if (m.typeKey === "tv") base = tv;
@@ -32415,7 +32518,7 @@ var ArrStackCard = class extends HTMLElement {
     return this._radarrQueuePct?.get(id) ?? this._radarr2QueuePct?.get(id) ?? -1;
   }
   _statusStripeColor(cls) {
-    const map = { "b-st-avail": "#27ae60", "b-dl": "#2980b9", "b-st-proc": "#2980b980", "b-st-pend": "#e67e22", "b-missing": "#c0392b", "b-cutoff": "#e67e22", "b-partial": "#e67e22" };
+    const map = { "b-st-avail": "#27ae60", "b-continuing": "#2980b9", "b-dl": "#2980b9", "b-st-proc": "#2980b980", "b-st-pend": "#e67e22", "b-missing": "#c0392b", "b-cutoff": "#e67e22", "b-partial": "#c0392b" };
     return map[cls] || "#555";
   }
   _statusStripe(color, animated = false, pct = -1) {
@@ -33319,6 +33422,9 @@ var ArrStackCard = class extends HTMLElement {
   get _isMob() {
     return window.matchMedia("(max-width:600px)").matches;
   }
+  get _isTablet() {
+    return window.matchMedia("(max-width:900px)").matches;
+  }
   get _isDay() {
     return !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
   }
@@ -33409,7 +33515,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.36", sid, svcs, mob: this._isMob ? 1 : 0, act })
+        body: JSON.stringify({ v: "1.6.37", sid, svcs, mob: this._isMob ? 1 : 0, act })
       }).catch(() => {
       });
     } catch (_) {
