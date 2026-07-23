@@ -21,6 +21,14 @@ var ArrStackCardEditor = class extends HTMLElement {
         this._config = { ...this._config, layout: "right" };
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
       }
+      if (this._caps.overseerr) {
+        try {
+          const accts = await this._hass.callApi("GET", "arr_stack/overseerr/seerr_accounts");
+          this._seerrAccounts = accts || [];
+        } catch (_) {
+          this._seerrAccounts = [];
+        }
+      }
       this._render();
     } catch (_) {
       this._caps = {};
@@ -174,6 +182,7 @@ var ArrStackCardEditor = class extends HTMLElement {
         <button class="tab${tab === "general" ? " active" : ""}" data-tab="general">General</button>
         <button class="tab${tab === "left" ? " active" : ""}" data-tab="left">Left Panel</button>
         <button class="tab${tab === "right" ? " active" : ""}" data-tab="right">Right Panel</button>
+        ${this._seerrAccounts?.length > 1 ? `<button class="tab${tab === "users" ? " active" : ""}" data-tab="users">Users</button>` : ""}
         <button class="tab${tab === "appearance" ? " active" : ""}" data-tab="appearance">Appearance</button>
       </div>
 
@@ -320,14 +329,32 @@ var ArrStackCardEditor = class extends HTMLElement {
             <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg("discover", "showMoreOnPage", 3)}" min="1" max="50"/>
           </div>
           <div class="hint">Insert a "See More" card as the last slot on this page. Opens full-section overlay. Default: 3.</div>
+          <div class="section-title" style="margin-top:16px">One-click Request</div>
           <div class="row">
-            <span class="row-label">One-click request</span>
+            <span class="row-label">Enabled</span>
             <label class="toggle">
               <input type="checkbox" data-group="discover" data-key="oneClickRequest" ${this._cfg("discover", "oneClickRequest", false) || this._cfg("discover", "oneClickMovieRequest", false) ? "checked" : ""}>
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <div class="hint">Skip profile dialog for movies and TV shows. TV automatically requests Season 1.</div>
+          <div class="hint">Skip profile dialog for movies and TV shows.</div>
+          <div class="row">
+            <span class="row-label">Non-admin only</span>
+            <label class="toggle">
+              <input type="checkbox" data-group="discover" data-key="oneClickNonAdminOnly" ${this._cfg("discover", "oneClickNonAdminOnly", false) ? "checked" : ""}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="hint">Admin keeps the profile selection dialog, non-admin users get one-click.</div>
+          <div class="row">
+            <span class="row-label">Season mode</span>
+            <select data-group="discover" data-key="oneClickTvSeasonMode" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+              <option value="first" ${this._cfg("discover", "oneClickTvSeasonMode", "first") === "first" ? "selected" : ""}>First season</option>
+              <option value="latest" ${this._cfg("discover", "oneClickTvSeasonMode", "first") === "latest" ? "selected" : ""}>Latest season</option>
+              <option value="all" ${this._cfg("discover", "oneClickTvSeasonMode", "first") === "all" ? "selected" : ""}>All seasons</option>
+            </select>
+          </div>
+          <div class="hint">Which seasons to request when using one-click for shows.</div>
           <div class="row">
             <span class="row-label">Default movie profile</span>
             <input type="text" data-group="discover" data-key="oneClickDefaultMovieProfile" value="${this._cfg("discover", "oneClickDefaultMovieProfile", "")}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
@@ -407,6 +434,19 @@ var ArrStackCardEditor = class extends HTMLElement {
         </div>
       </div>
 
+      <!-- \u2550\u2550\u2550 TAB: Users \u2550\u2550\u2550 -->
+      ${this._caps?.overseerr ? `
+      <div class="tab-content${tab === "users" ? " active" : ""}" data-tab-content="users">
+        <div class="section">
+          <div class="section-title">Seerr User Mapping</div>
+          <div class="hint" style="margin-top:0;margin-bottom:12px">Map HA users to Seerr accounts. Non-admin HA users without a specific mapping use the default.</div>
+          <div class="user-map-rows">
+            ${this._renderUserMapRows()}
+          </div>
+          <button class="user-map-add" style="margin-top:8px;padding:6px 14px;border-radius:6px;border:1px solid var(--divider-color,#e0e0e0);background:var(--secondary-background-color,#f5f5f5);color:var(--primary-text-color);font-size:12px;cursor:pointer">+ Add mapping</button>
+        </div>
+      </div>` : ""}
+
       <!-- \u2550\u2550\u2550 TAB: Appearance \u2550\u2550\u2550 -->
       <div class="tab-content${tab === "appearance" ? " active" : ""}" data-tab-content="appearance">
         <div class="section">
@@ -458,6 +498,8 @@ var ArrStackCardEditor = class extends HTMLElement {
       </div>
     `;
     this._wireEvents();
+    this._wireUserMap();
+    if (this._activeTab === "users" && !this._haUsers) this._loadUserMapData();
   }
   _defaultCats() {
     return [
@@ -563,6 +605,7 @@ var ArrStackCardEditor = class extends HTMLElement {
         this._activeTab = btn.dataset.tab;
         this.shadowRoot.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === this._activeTab));
         this.shadowRoot.querySelectorAll(".tab-content").forEach((c) => c.classList.toggle("active", c.dataset.tabContent === this._activeTab));
+        if (this._activeTab === "users") this._loadUserMapData();
       });
     });
     this.shadowRoot.querySelectorAll("select[data-key]").forEach((el) => {
@@ -716,6 +759,86 @@ var ArrStackCardEditor = class extends HTMLElement {
       });
     });
   }
+  _renderUserMapRows() {
+    const map = this._config.seerr_user_map || [{ ha: "all_non_admin", seerr: "family" }];
+    const haUsers = this._haUsers || [];
+    const seerrAccounts = this._seerrAccounts || [];
+    const usedHaIds = new Set(map.filter((m) => m.ha !== "all_non_admin").map((m) => m.ha));
+    return map.map((m, i) => {
+      const isDefault = m.ha === "all_non_admin";
+      const haOptions = isDefault ? '<option value="all_non_admin" selected>All non-admin users</option>' : haUsers.filter((u) => !u.is_admin && (u.id === m.ha || !usedHaIds.has(u.id) || m.ha === u.id)).map((u) => `<option value="${u.id}" ${u.id === m.ha ? "selected" : ""}>${u.name || u.id}</option>`).join("");
+      const seerrOptions = seerrAccounts.map((a) => `<option value="${a.id}" ${a.id === m.seerr ? "selected" : ""}>${a.id === "family" ? "Family" : "Guest"} (${a.email})</option>`).join("");
+      return `
+        <div class="row" data-map-idx="${i}">
+          <select data-map-ha="${i}" style="flex:1;min-width:0;padding:6px 8px;border-radius:6px;font-size:12px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color)"${isDefault ? " disabled" : ""}>
+            ${haOptions}
+          </select>
+          <span style="font-size:11px;color:var(--secondary-text-color,#9e9e9e);flex-shrink:0">\u2192</span>
+          <select data-map-seerr="${i}" style="flex:1;min-width:0;padding:6px 8px;border-radius:6px;font-size:12px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color)">
+            ${seerrOptions}
+          </select>
+          ${!isDefault ? `<button data-map-del="${i}" style="border:none;background:none;cursor:pointer;font-size:16px;color:var(--error-color,#e53935);padding:2px 6px" title="Remove">\xD7</button>` : '<span style="width:30px"></span>'}
+        </div>`;
+    }).join("");
+  }
+  async _loadUserMapData() {
+    if (this._haUsers) return;
+    try {
+      const [haUsers, seerrAccounts] = await Promise.all([
+        this._hass.callApi("GET", "arr_stack/overseerr/ha_users"),
+        this._hass.callApi("GET", "arr_stack/overseerr/seerr_accounts")
+      ]);
+      this._haUsers = haUsers || [];
+      this._seerrAccounts = seerrAccounts || [];
+      if (this._activeTab === "users") this._render();
+    } catch (_) {
+      this._haUsers = [];
+      this._seerrAccounts = [];
+    }
+  }
+  _wireUserMap() {
+    const root = this.shadowRoot;
+    root.querySelectorAll("[data-map-seerr]").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const idx = parseInt(sel.dataset.mapSeerr);
+        const map = [...this._config.seerr_user_map || [{ ha: "all_non_admin", seerr: "family" }]];
+        if (map[idx]) map[idx] = { ...map[idx], seerr: sel.value };
+        this._update({ seerr_user_map: map });
+      });
+    });
+    root.querySelectorAll("[data-map-ha]").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const idx = parseInt(sel.dataset.mapHa);
+        const map = [...this._config.seerr_user_map || [{ ha: "all_non_admin", seerr: "family" }]];
+        if (map[idx]) map[idx] = { ...map[idx], ha: sel.value };
+        this._update({ seerr_user_map: map });
+        this._render();
+      });
+    });
+    root.querySelectorAll("[data-map-del]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.mapDel);
+        const map = [...this._config.seerr_user_map || [{ ha: "all_non_admin", seerr: "family" }]];
+        map.splice(idx, 1);
+        this._update({ seerr_user_map: map });
+        this._render();
+      });
+    });
+    const addBtn = root.querySelector(".user-map-add");
+    if (addBtn) {
+      addBtn.addEventListener("click", () => {
+        const map = [...this._config.seerr_user_map || [{ ha: "all_non_admin", seerr: "family" }]];
+        const haUsers = this._haUsers || [];
+        const usedIds = new Set(map.map((m) => m.ha));
+        const available = haUsers.find((u) => !u.is_admin && !usedIds.has(u.id));
+        if (!available) return;
+        const defaultSeerr = (this._seerrAccounts || [])[0]?.id || "family";
+        map.push({ ha: available.id, seerr: defaultSeerr });
+        this._update({ seerr_user_map: map });
+        this._render();
+      });
+    }
+  }
   _update(patch) {
     this._config = { ...this._config, ...patch };
     this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -822,6 +945,9 @@ var ARR_I18N = {
     // Typy médií (pending karta)
     movieLabel: "\u{1F3AC} Film",
     showLabel: "\u{1F4FA} Seri\xE1l",
+    // Seerr účty
+    seerrFamily: "Rodina",
+    seerrGuest: "Host",
     // Počty
     movies: "film\u016F",
     shows: "s\xE9ri\xED",
@@ -854,6 +980,8 @@ var ARR_I18N = {
     asSearchSeries: "Hledat seri\xE1l",
     asMovieConfirm: "Film bude p\u0159id\xE1n do Radarru a spust\xED se automatick\xE9 vyhled\xE1v\xE1n\xED.",
     asSeriesConfirm: "Seri\xE1l bude p\u0159id\xE1n do Sonarru. Vyberte sez\xF3nu pro vyhled\xE1v\xE1n\xED.",
+    delEpConfirm: "Smazat z disku?",
+    delSeasonConfirm: "Smazat v\u0161e z disku?",
     asNotFound: "Nenalezeno",
     asAdding: "P\u0159id\xE1v\xE1m\u2026",
     asSearching: "Spou\u0161t\xEDm vyhled\xE1v\xE1n\xED\u2026",
@@ -1237,6 +1365,8 @@ var ARR_I18N = {
     stalled: "Stalled",
     movieLabel: "\u{1F3AC} Movie",
     showLabel: "\u{1F4FA} Show",
+    seerrFamily: "Family",
+    seerrGuest: "Guest",
     movies: "movies",
     shows: "shows",
     seasons: "seasons",
@@ -1268,6 +1398,8 @@ var ARR_I18N = {
     asSearchSeries: "Search Series",
     asMovieConfirm: "Movie will be added to Radarr and automatic search will start.",
     asSeriesConfirm: "Series will be added to Sonarr. Select a season to search.",
+    delEpConfirm: "Delete from disk?",
+    delSeasonConfirm: "Delete all from disk?",
     asNotFound: "Not found",
     asAdding: "Adding\u2026",
     asSearching: "Starting search\u2026",
@@ -2385,15 +2517,18 @@ var STYLES = `
       .b-st-pend    { background: rgba(255,149,0,0.30);  border: 1px solid rgba(255,149,0,0.62); }
       .b-st-proc    { background: rgba(10,132,255,0.30); border: 1px solid rgba(10,132,255,0.62); }
       .mc-act .badge { margin-left: auto; flex-shrink: 0; }
-      /* Tla\u010D\xEDtko sta\u017Een\xED vlastn\xED \u017E\xE1dosti (neadmin) */
       .req-withdraw {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0;
-        background: rgba(255,69,58,0.22); border: 1px solid rgba(255,69,58,0.40);
-        color: #ff453a; font-size: 9px; font-weight: 900; cursor: pointer;
-        margin-left: 2px;
+        -webkit-appearance: none; appearance: none;
+        background: rgba(255,69,58,0.28); color: rgba(var(--arr-tp-rgb, 255, 255, 255), 1);
+        width: 28px; height: 28px; padding: 0; margin: 0;
+        border-radius: 50%; border: 1px solid rgba(255,69,58,0.50);
+        cursor: pointer; flex-shrink: 0; margin-left: auto;
+        display: grid; place-items: center;
+        line-height: 0; box-sizing: border-box; text-indent: 0;
+        backdrop-filter: blur(8px);
       }
-      .req-withdraw:hover { background: rgba(255,69,58,0.42); }
+      .req-withdraw svg { width: 14px; height: 14px; }
+      .req-withdraw:hover { background: rgba(255,69,58,0.45); }
       .mc-act-right { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
 
       /* \u2500\u2500 Adaptivn\xED layout chip\u016F \u2014 container queries \u2500\u2500
@@ -2592,13 +2727,15 @@ var STYLES = `
       }
       /* \u0158\xE1dek tla\u010D\xEDtek \u2014 v\u017Edy cel\xE1 \u0161\xED\u0159ka, ka\u017Ed\xE9 tla\u010D\xEDtko bere 50% */
       .pr-btn-row {
-        display: flex; gap: 4px; margin-top: 1px;
+        display: flex; gap: 10px; margin-top: 1px; justify-content: center;
       }
       .pr-approve, .pr-decline {
-        flex: 1; display: inline-flex; align-items: center; justify-content: center;
-        gap: 3px;
-        border-radius: 4px; font-size: 10px; font-weight: 800; line-height: 1;
-        padding: 3px 4px; cursor: pointer; white-space: nowrap; color: #fff;
+        -webkit-appearance: none; appearance: none;
+        width: 28px; height: 28px; padding: 0; margin: 0;
+        border-radius: 50%; cursor: pointer; color: #fff;
+        display: grid; place-items: center;
+        line-height: 0; box-sizing: border-box;
+        backdrop-filter: blur(8px); flex-shrink: 0;
       }
       .pr-approve {
         background: rgba(48,209,88,0.28); border: 1px solid rgba(48,209,88,0.50);
@@ -2609,11 +2746,18 @@ var STYLES = `
       }
       .pr-decline:hover { background: rgba(255,69,58,0.45); }
       .pr-approve:disabled, .pr-decline:disabled { opacity: 0.5; cursor: default; }
-      /* P\u0159i \xFAzk\xE9m kontejneru schovat texty \u2014 z\u016Fstanou jen ikony */
-      @container mc (max-width: 110px) {
-        .st-txt { display: none; }
-        .pr-approve, .pr-decline { padding: 3px 6px; }
+      .pr-user-tag { background: rgba(147,51,234,0.30); border: 1px solid rgba(147,51,234,0.62); }
+      .pr-tags-col {
+        position: absolute; top: 6px; left: 6px; z-index: 2;
+        display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+        pointer-events: none; max-height: calc(100% - 80px); overflow: hidden;
       }
+      .pr-tags-col .pr-user-tag:nth-child(n+7) { display: none; }
+      @container mc (min-width: 160px) {
+        .pr-tags-col .pr-user-tag:nth-child(n+7) { display: inline-flex; }
+        .pr-tags-col .pr-user-tag:nth-child(n+17) { display: none; }
+      }
+      .pr-approve svg, .pr-decline svg { width: 14px; height: 14px; }
 
       /* \u2500\u2500 TV Request Overlay \u2500\u2500 */
       .tv-req-overlay { align-items: stretch; padding: 0; }
@@ -3898,6 +4042,36 @@ var STYLES = `
       .btn-person-sm {
         padding: 3px 5px;
       }
+      .btn-ep-trash {
+        background: none;
+        border: 1px solid rgba(255,69,58,0.5);
+        border-radius: 5px;
+        cursor: pointer;
+        padding: 4px 6px;
+        color: rgba(255,69,58,0.7);
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        transition: background .15s, color .15s, border-color .15s;
+      }
+      .btn-ep-trash:hover {
+        background: rgba(255,69,58,0.15);
+        color: #ff453a;
+        border-color: rgba(255,69,58,0.5);
+      }
+      .ep-del-confirm {
+        display: inline-flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .ep-del-msg {
+        font-size: 10px;
+        color: rgba(255,69,58,0.85);
+        font-weight: 600;
+        white-space: nowrap;
+        flex: 1;
+        text-align: right;
+      }
 
       /* Episodes panel */
       .sn-episodes {
@@ -3959,7 +4133,6 @@ var STYLES = `
         overflow-x: hidden;
         overflow-y: auto;
       }
-      .sn-is-panel .is-rel-title { max-width: 130px; }
       .sn-is-panel .is-indexer   { max-width: 70px; }
 
       /* Mobile drill-down */
@@ -4438,7 +4611,8 @@ var _InteractiveSearch = class {
       const mId = inst === "radarr2" ? this._popup?._radarr2Id : this._popup?._radarrId;
       const qPct = inst === "radarr2" ? this._radarr2QueuePct || /* @__PURE__ */ new Map() : this._radarrQueuePct || /* @__PURE__ */ new Map();
       const inQueue = !!(mId && qPct.has(mId));
-      const showProg = this._isGrabbed.has(guid) || histState === "grabbed" && inQueue;
+      const grabbed = this._isGrabbed.has(guid);
+      const showProg = grabbed && (inQueue || !histState);
       if (showProg) {
         const p = inQueue ? qPct.get(mId) : 0;
         return `<button class="is-grab-btn" disabled style="min-width:56px;gap:3px;padding:0 6px" title="${this._t("isGrabbed")}">
@@ -4775,6 +4949,26 @@ var _SonarrIS = class {
     const chevron = `<svg class="sn-season-chevron${exp ? " open" : ""}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="6 9 12 15 18 9"/>
     </svg>`;
+    const trashSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const isAdmin = !!this._hass?.user?.is_admin;
+    const isDeletingSeason = this._seasonFileDeleting === n;
+    const isConfirmSeason = this._seasonFileConfirm === n;
+    let trashBtn = "";
+    if (have > 0 && isAdmin) {
+      if (isDeletingSeason) {
+        trashBtn = `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`;
+      } else if (isConfirmSeason) {
+        const _chk = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        const _cross = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        trashBtn = `<span class="ep-del-confirm"><button class="btn-ep-trash btn-ep-del-yes" data-action="season-del-yes" data-season="${n}">${_chk}</button><button class="btn-person" data-action="season-del-no">${_cross}</button></span>`;
+      } else {
+        trashBtn = `<button class="btn-ep-trash" data-action="season-del-confirm" data-season="${n}" title="Delete season files">${trashSvg}</button>`;
+      }
+    }
+    const queueBarHtml = isQueued ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:64px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(qPct, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${qPct}%</span></div>` : "";
+    const statHtml = isConfirmSeason ? `<span class="ep-del-msg">${this._t("delSeasonConfirm") || "Delete all from disk?"}</span>` : `<span class="sn-season-stat">${have}/${tot}</span>
+        <div class="sn-season-bar"><div class="sn-season-bar-fill" style="${pctStyle}"></div></div>
+        ${queueBarHtml}`;
     const episodesHtml = exp ? this._renderSnEpisodesPanel(n) : "";
     const seasonIsHtml = !isMobile2 && isActiveIs ? this._renderSnIsPanel() : "";
     return `<div class="sn-season-row" data-season="${n}">
@@ -4783,9 +4977,8 @@ var _SonarrIS = class {
           ${chevron}
         </button>
         <span class="sn-season-title">${this._t("snSeasonTitle")} ${n}</span>
-        <span class="sn-season-stat">${have}/${tot}</span>
-        <div class="sn-season-bar"><div class="sn-season-bar-fill" style="${pctStyle}"></div></div>
-        ${isQueued ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:64px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(qPct, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${qPct}%</span></div>` : ""}
+        ${statHtml}
+        ${trashBtn}
         ${monBtn}
         <button class="btn-person${isActiveIs ? " active" : ""}" data-action="sn-season-is" data-season="${n}" title="Interactive Search \u2014 season pack">
           ${personIcon}
@@ -4829,11 +5022,31 @@ var _SonarrIS = class {
     const epQPct = epInQueue ? qEpPctMap.get(ep.id) ?? 0 : null;
     const epQueueHtml = epInQueue ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:56px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(epQPct, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${epQPct}%</span></div>` : "";
     const epIsHtml = !isMobile2 && isActive ? this._renderSnIsPanel() : "";
+    const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const isAdmin = !!this._hass?.user?.is_admin;
+    const isDeleting = this._epFileDeleting === ep.episodeFileId;
+    const isConfirm = this._epFileConfirm === ep.id;
+    let trashBtn = "";
+    let dateHtml = epInQueue ? epQueueHtml : airDate ? `<span class="sn-ep-date">${airDate}</span>` : "";
+    if (hasFile && isAdmin) {
+      if (isDeleting) {
+        trashBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;
+      } else if (isConfirm) {
+        const _chk = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        const _cross = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        dateHtml = `<span class="ep-del-msg">${this._t("delEpConfirm") || "Delete from disk?"}</span>`;
+        trashBtn = `<span class="ep-del-confirm"><button class="btn-ep-trash btn-ep-del-yes" data-action="ep-del-yes" data-efid="${ep.episodeFileId}" data-epid="${ep.id}" data-season="${ep.seasonNumber}">${_chk}</button><button class="btn-person btn-person-sm" data-action="ep-del-no">${_cross}</button></span>`;
+      } else {
+        trashBtn = `<button class="btn-ep-trash" data-action="ep-del-confirm" data-epid="${ep.id}" title="Delete file">${trashSvg}</button>`;
+      }
+    }
+    const trashSlot = trashBtn || (isAdmin ? '<span style="width:24px;flex-shrink:0"></span>' : "");
     return `<div class="sn-ep-item">
       <div class="sn-ep-row${hasFile ? " has-file" : ""}">
         <span class="sn-ep-num">${epNum}</span>
         <span class="sn-ep-title">${epTitle}</span>
-        ${epInQueue ? epQueueHtml : airDate ? `<span class="sn-ep-date">${airDate}</span>` : ""}
+        ${dateHtml}
+        ${trashSlot}
         <button class="btn-person btn-person-sm${isActive ? " active" : ""}" data-action="sn-ep-is" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Interactive Search \u2014 ${this._t("snEpisode").toLowerCase()}">
           ${personIcon}
         </button>
@@ -4984,14 +5197,23 @@ var _SonarrIS = class {
     }
     {
       const inst = this._snIsInstance || "sonarr";
+      const isEpIs = this._snActiveIs?.type === "episode";
       const series = inst === "sonarr2" ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
       const seriesId = series?.id;
-      const qSeasonPct = inst === "sonarr2" ? this._sonarr2QueueSeasonPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeasonPct || /* @__PURE__ */ new Map();
-      const qSeriesPct = inst === "sonarr2" ? this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
-      const sk = `${seriesId}:${r.seasonNumber ?? r.season}`;
-      const rawPct = qSeasonPct.has(sk) ? qSeasonPct.get(sk) : seriesId && qSeriesPct.has(seriesId) ? qSeriesPct.get(seriesId) : null;
+      let rawPct = null;
+      if (isEpIs) {
+        const qEpPct = inst === "sonarr2" ? this._sonarr2QueueEpPct || /* @__PURE__ */ new Map() : this._sonarrQueueEpPct || /* @__PURE__ */ new Map();
+        const epId = this._snActiveIs.key;
+        rawPct = qEpPct.has(epId) ? qEpPct.get(epId) : null;
+      } else {
+        const qSeasonPct = inst === "sonarr2" ? this._sonarr2QueueSeasonPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeasonPct || /* @__PURE__ */ new Map();
+        const qSeriesPct = inst === "sonarr2" ? this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
+        const sk = `${seriesId}:${r.seasonNumber ?? r.season}`;
+        rawPct = qSeasonPct.has(sk) ? qSeasonPct.get(sk) : seriesId && qSeriesPct.has(seriesId) ? qSeriesPct.get(seriesId) : null;
+      }
       const inQueue = rawPct !== null;
-      const showProg = this._snIsGrabbed.has(guid) || histState === "grabbed" && inQueue;
+      const grabbed = this._snIsGrabbed.has(guid);
+      const showProg = grabbed && (inQueue || !histState);
       if (showProg) {
         const p = rawPct ?? 0;
         return `<button class="is-grab-btn" disabled style="min-width:56px;gap:3px;padding:0 6px" title="${this._t("isGrabbed")}">
@@ -5112,24 +5334,44 @@ var _AutoSearchMethods = class {
     const isDownloading = this._asDownloadingItems.has(key) || _seasonKey && _qSeasons.has(_seasonKey);
     const dlPct = isDownloading && _seasonKey ? _qSeasonPct.get(_seasonKey) ?? null : null;
     const searchSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+    const trashSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const chevron = `<svg class="sn-season-chevron${exp ? " open" : ""}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const isAdmin = !!this._hass?.user?.is_admin;
     let searchBtn;
     if (isSearching) {
       searchBtn = `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`;
-    } else if (isDownloading) {
-      searchBtn = `<span class="as-done-icon as-done-icon--dl"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg></span>`;
     } else if (isSearched) {
       searchBtn = `<span class="as-done-icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
     } else {
       searchBtn = `<button class="btn-person" data-action="as-season-search" data-season="${n}" title="Search season ${n}">${searchSvg}</button>`;
     }
+    const isDeletingSeason = this._seasonFileDeleting === n;
+    const isConfirmSeason = this._seasonFileConfirm === n;
+    let trashBtn = "";
+    if (have > 0 && isAdmin) {
+      if (isDeletingSeason) {
+        trashBtn = `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`;
+      } else if (isConfirmSeason) {
+        const _chk = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        const _cross = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        trashBtn = `<span class="ep-del-confirm"><button class="btn-ep-trash btn-ep-del-yes" data-action="season-del-yes" data-season="${n}">${_chk}</button><button class="btn-person" data-action="season-del-no">${_cross}</button></span>`;
+      } else {
+        trashBtn = `<button class="btn-ep-trash" data-action="season-del-confirm" data-season="${n}" title="Delete season files">${trashSvg}</button>`;
+      }
+    }
+    const barPct = isDownloading ? Math.max(dlPct ?? 0, 4) : pct;
+    const barStyle = isDownloading ? `width:${barPct}%;background:#3b82f6` : `width:${barPct}%`;
+    const dlBarHtml = isDownloading ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:64px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(dlPct ?? 0, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${dlPct ?? 0}%</span></div>` : "";
+    const statHtml = isConfirmSeason ? `<span class="ep-del-msg">${this._t("delSeasonConfirm") || "Delete all from disk?"}</span>` : `<span class="sn-season-stat">${have}/${tot}</span>
+        <div class="sn-season-bar"><div class="sn-season-bar-fill" style="${barStyle}"></div></div>
+        ${dlBarHtml}`;
     const episodesHtml = exp ? this._renderAsEpisodesPanel(n) : "";
     return `<div class="sn-season-row" data-season="${n}">
       <div class="sn-season-header">
         <button class="sn-expand" data-action="sn-season-toggle" data-season="${n}" title="${this._t("snExpandEpisodes")}">${chevron}</button>
         <span class="sn-season-title">${this._t("snSeasonTitle")} ${n}</span>
-        <span class="sn-season-stat">${have}/${tot}</span>
-        <div class="sn-season-bar"><div class="sn-season-bar-fill" style="width:${pct}%"></div></div>
+        ${statHtml}
+        ${trashBtn}
         ${this._snMonitorBtn(season)}
         ${searchBtn}
       </div>
@@ -5159,22 +5401,44 @@ var _AutoSearchMethods = class {
     const hasFile = !!ep.hasFile;
     const epNum = `S${String(ep.seasonNumber).padStart(2, "0")}E${String(ep.episodeNumber).padStart(2, "0")}`;
     const searchSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
-    let searchBtn;
-    if (isSearching) {
+    const trashSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const isAdmin = !!this._hass?.user?.is_admin;
+    const isDeleting = this._epFileDeleting === ep.episodeFileId;
+    const isConfirm = this._epFileConfirm === ep.id;
+    const epQueueHtml = isDownloading ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:56px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(dlPct ?? 0, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${dlPct ?? 0}%</span></div>` : "";
+    const airDate = ep.airDate ? ep.airDate.slice(0, 10) : "";
+    let searchBtn = "";
+    if (hasFile) {
+      searchBtn = "";
+    } else if (isSearching) {
       searchBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;
-    } else if (isDownloading) {
-      const bar = dlPct !== null ? `<div class="as-dl-bar" style="max-width:40px"><div class="as-dl-bar-fill" style="width:${dlPct}%"></div></div>` : "";
-      searchBtn = `<span class="as-done-icon as-done-icon--dl" style="display:inline-flex;align-items:center;gap:3px">${bar}<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg></span>`;
     } else if (isSearched) {
       searchBtn = `<span class="as-done-icon"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
     } else {
-      searchBtn = `<button class="btn-person btn-person-sm" data-action="as-ep-search" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Search episode">${searchSvg}</button>`;
+      const dimStyle = isDownloading ? ' style="opacity:0.3;pointer-events:none"' : "";
+      searchBtn = `<button class="btn-person btn-person-sm" data-action="as-ep-search" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Search episode"${dimStyle}>${searchSvg}</button>`;
     }
+    let trashBtn = "";
+    let dateHtml = isDownloading ? epQueueHtml : airDate ? `<span class="sn-ep-date">${airDate}</span>` : "";
+    if (hasFile && isAdmin) {
+      if (isDeleting) {
+        trashBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;
+      } else if (isConfirm) {
+        const _chk = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        const _cross = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        dateHtml = `<span class="ep-del-msg">${this._t("delEpConfirm") || "Delete from disk?"}</span>`;
+        trashBtn = `<span class="ep-del-confirm"><button class="btn-ep-trash btn-ep-del-yes" data-action="ep-del-yes" data-efid="${ep.episodeFileId}" data-epid="${ep.id}" data-season="${ep.seasonNumber}">${_chk}</button><button class="btn-person btn-person-sm" data-action="ep-del-no">${_cross}</button></span>`;
+      } else {
+        trashBtn = `<button class="btn-ep-trash" data-action="ep-del-confirm" data-epid="${ep.id}" title="Delete file">${trashSvg}</button>`;
+      }
+    }
+    const trashSlot = trashBtn || (isAdmin ? '<span style="width:24px;flex-shrink:0"></span>' : "");
     return `<div class="sn-ep-item">
       <div class="sn-ep-row${hasFile ? " has-file" : ""}">
         <span class="sn-ep-num">${epNum}</span>
         <span class="sn-ep-title">${this._escHtml(ep.title || "")}</span>
-        ${ep.airDate ? `<span class="sn-ep-date">${ep.airDate.slice(0, 10)}</span>` : ""}
+        ${dateHtml}
+        ${trashSlot}
         ${searchBtn}
       </div>
     </div>`;
@@ -5221,6 +5485,7 @@ var _FetchMethods = class {
       if (!caps.trakt) this._traktConfigured = false;
       if (!caps.prowlarr) this._prowlarrConfigured = false;
       if (!caps.gluetun) this._gluetunConfigured = false;
+      if (caps.jellyfin) this._jellyfinConfigured = true;
       this._seerrType = caps.seerrType || "overseerr";
     } catch (_) {
     }
@@ -6125,11 +6390,12 @@ var _ArrMethods = class {
       const dateMap = {};
       const epMap = {};
       for (const r of records) {
-        if (!(r.seriesId in dateMap)) {
-          dateMap[r.seriesId] = r.date;
-          const sn = r.episode?.seasonNumber;
-          const en = r.episode?.episodeNumber;
-          if (sn != null && en != null) epMap[r.seriesId] = { s: sn, e: en };
+        if (!(r.seriesId in dateMap)) dateMap[r.seriesId] = r.date;
+        const sn = r.episode?.seasonNumber;
+        const en = r.episode?.episodeNumber;
+        if (sn != null && en != null) {
+          if (!epMap[r.seriesId]) epMap[r.seriesId] = [];
+          epMap[r.seriesId].push({ s: sn, e: en });
         }
       }
       this._sonarr2ImportDates = dateMap;
@@ -6146,11 +6412,12 @@ var _ArrMethods = class {
       const dateMap = {};
       const epMap = {};
       for (const r of records) {
-        if (!(r.seriesId in dateMap)) {
-          dateMap[r.seriesId] = r.date;
-          const sn = r.episode?.seasonNumber;
-          const en = r.episode?.episodeNumber;
-          if (sn != null && en != null) epMap[r.seriesId] = { s: sn, e: en };
+        if (!(r.seriesId in dateMap)) dateMap[r.seriesId] = r.date;
+        const sn = r.episode?.seasonNumber;
+        const en = r.episode?.episodeNumber;
+        if (sn != null && en != null) {
+          if (!epMap[r.seriesId]) epMap[r.seriesId] = [];
+          epMap[r.seriesId].push({ s: sn, e: en });
         }
       }
       this._sonarrImportDates = dateMap;
@@ -6445,18 +6712,32 @@ var _ArrMethods = class {
         if (tagMatch) tagId = tagMatch.id;
       }
       const cfgRootFolder = this._cfgGet("discover", "oneClickDefaultShowRootFolder", "") || null;
+      const tvSeasonMode = this._cfgGet("discover", "oneClickTvSeasonMode", "first");
       let seasons = [];
       if (this._overseerrConfigured !== false) {
         const detail = await this._callApi("GET", `arr_stack/overseerr/tv/${show.id}`);
-        const season1 = (detail.seasons || []).find((s) => s.seasonNumber === 1);
-        seasons = season1 ? [1] : [(detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0]?.seasonNumber].filter(Boolean);
+        const allS = (detail.seasons || []).filter((s) => s.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
+        if (tvSeasonMode === "all") {
+          seasons = allS.map((s) => s.seasonNumber);
+        } else if (tvSeasonMode === "latest") {
+          seasons = allS.length ? [allS[allS.length - 1].seasonNumber] : [];
+        } else {
+          const s1 = allS.find((s) => s.seasonNumber === 1);
+          seasons = s1 ? [1] : allS.length ? [allS[0].seasonNumber] : [];
+        }
       } else {
         const tvdbId = show.externalIds?.tvdbId || show.tvdbId;
         if (tvdbId) {
           const lookup = await this._callApi("GET", `arr_stack/sonarr/lookup?tvdbId=${tvdbId}`);
           const s = Array.isArray(lookup) ? lookup[0] : lookup;
-          const allSeasons = (s?.seasons || []).filter((x) => x.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
-          seasons = allSeasons.length ? [allSeasons[0].seasonNumber] : [];
+          const allS = (s?.seasons || []).filter((x) => x.seasonNumber > 0).sort((a, b) => a.seasonNumber - b.seasonNumber);
+          if (tvSeasonMode === "all") {
+            seasons = allS.map((x) => x.seasonNumber);
+          } else if (tvSeasonMode === "latest") {
+            seasons = allS.length ? [allS[allS.length - 1].seasonNumber] : [];
+          } else {
+            seasons = allS.length ? [allS[0].seasonNumber] : [];
+          }
         }
       }
       if (seasons.length === 0) return;
@@ -6473,7 +6754,10 @@ var _ArrMethods = class {
         body.profileId = profileId;
         body.rootFolder = cfgRootFolder || this._seerrSonarr.rootFolder;
       }
-      if (!this._hass.user.is_admin) body.userMode = "family";
+      {
+        const _acct = this._seerrAccountForUser();
+        if (_acct !== "admin") body.userMode = _acct;
+      }
       if (tagId !== null) body.tags = [parseInt(tagId)];
       const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
@@ -6566,7 +6850,10 @@ var _ArrMethods = class {
         body.rootFolder = rootFolder || activeCfg.rootFolder;
       }
       if (tagId !== null) body.tags = [parseInt(tagId)];
-      if (!this._hass.user.is_admin) body.userMode = "family";
+      {
+        const _acct = this._seerrAccountForUser();
+        if (_acct !== "admin") body.userMode = _acct;
+      }
       const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
       if (reqId && !this._hass.user.is_admin) {
@@ -7002,7 +7289,6 @@ var _ArrMethods = class {
     this._snIsResults = [];
     this._snIsError = null;
     this._snIsGrabbing = null;
-    this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
     this._renderPopupEl();
     try {
@@ -7033,7 +7319,6 @@ var _ArrMethods = class {
     this._snIsResults = [];
     this._snIsError = null;
     this._snIsGrabbing = null;
-    this._snIsGrabbed = /* @__PURE__ */ new Set();
     this._snIsHistory = {};
     this._renderPopupEl();
     try {
@@ -7185,7 +7470,10 @@ var _ArrMethods = class {
         body.rootFolder = rootFolder || seerr.rootFolder;
       }
       if (tagId !== null) body.tags = [parseInt(tagId)];
-      if (!this._hass.user.is_admin) body.userMode = "family";
+      {
+        const _acct = this._seerrAccountForUser();
+        if (_acct !== "admin") body.userMode = _acct;
+      }
       const resp = await this._callApi("POST", "arr_stack/overseerr/request", body);
       const reqId = Array.isArray(resp) ? resp[0]?.id : resp?.id;
       if (reqId && !this._hass.user.is_admin) {
@@ -7569,8 +7857,10 @@ var _ArrMethods = class {
         if (found) {
           this._asPolling.delete(key);
           this._asDownloadingItems.add(key);
-          this._asOpen = false;
-          this._asState = null;
+          if (isRadarr) {
+            this._asOpen = false;
+            this._asState = null;
+          }
           this._renderPopupEl();
           return;
         }
@@ -7583,8 +7873,10 @@ var _ArrMethods = class {
       this._renderPopupEl();
       setTimeout(() => {
         this._asNotFound.delete(key);
-        this._asOpen = false;
-        this._asState = null;
+        if (isRadarr) {
+          this._asOpen = false;
+          this._asState = null;
+        }
         this._renderPopupEl();
       }, 5e3);
     }
@@ -7737,6 +8029,54 @@ var _ArrMethods = class {
     } catch (_) {
       this._tracearrConfigured = false;
     }
+  }
+  async _deleteEpisodeFile(episodeFileId, seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    this._epFileDeleting = episodeFileId;
+    this._renderPopupEl();
+    try {
+      await this._callApi("DELETE", `arr_stack/${svc}/episodefile/${episodeFileId}`);
+      this._snEpisodes.delete(seasonNumber);
+      const series = instance === "sonarr2" ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
+      if (series) {
+        const s = (series.seasons || []).find((s2) => s2.seasonNumber === seasonNumber);
+        if (s?.statistics) s.statistics.episodeFileCount = Math.max(0, (s.statistics.episodeFileCount || 0) - 1);
+      }
+      const sid = series?.id;
+      if (sid) this._fetchSonarrEpisodes(sid, seasonNumber, instance);
+    } catch (e) {
+      console.error("[arr-card] Episode file delete error:", e);
+    }
+    this._epFileDeleting = null;
+    this._renderPopupEl();
+  }
+  async _deleteSeasonFiles(seasonNumber, instance = "sonarr") {
+    const svc = instance === "sonarr2" ? "sonarr2" : "sonarr";
+    const series = instance === "sonarr2" ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
+    const sid = series?.id;
+    if (!sid) return;
+    this._seasonFileDeleting = seasonNumber;
+    this._renderPopupEl();
+    try {
+      const data = await this._callApi("GET", `arr_stack/${svc}/episodefiles?seriesId=${sid}`);
+      const files = (Array.isArray(data) ? data : []).filter((f) => {
+        const eps = this._snEpisodes.get(seasonNumber);
+        if (eps) return eps.some((ep) => ep.episodeFileId === f.id);
+        return f.seasonNumber === seasonNumber;
+      });
+      if (files.length > 0) {
+        const ids = files.map((f) => f.id);
+        await this._callApi("DELETE", `arr_stack/${svc}/episodefile-bulk`, { episodeFileIds: ids });
+      }
+      this._snEpisodes.delete(seasonNumber);
+      const s = (series.seasons || []).find((s2) => s2.seasonNumber === seasonNumber);
+      if (s?.statistics) s.statistics.episodeFileCount = 0;
+      this._fetchSonarrEpisodes(sid, seasonNumber, instance);
+    } catch (e) {
+      console.error("[arr-card] Season files delete error:", e);
+    }
+    this._seasonFileDeleting = null;
+    this._renderPopupEl();
   }
 };
 var arrMixin = _ArrMethods.prototype;
@@ -8542,7 +8882,14 @@ var _RenderLeft = class {
   _renderPendingRequests() {
     const reqs = this._pendingRequests;
     if (!reqs || reqs.length === 0) return "";
-    const grid = this._pagedGrid(reqs, "pending", (req) => this._renderPendingCard(req));
+    const groupMap = /* @__PURE__ */ new Map();
+    for (const r of reqs) {
+      const key = `${r.type}_${(r.media ?? {}).tmdbId ?? r.id}`;
+      if (!groupMap.has(key)) groupMap.set(key, { ...r, _requests: [r] });
+      else groupMap.get(key)._requests.push(r);
+    }
+    const grouped = [...groupMap.values()];
+    const grid = this._pagedGrid(grouped, "pending", (g) => this._renderPendingCard(g));
     return `
     <div class="sec-card">
       <div class="col-hdr" style="margin-bottom:5px">
@@ -8555,24 +8902,38 @@ var _RenderLeft = class {
     </div>`;
   }
   _renderPendingCard(req) {
+    const allReqs = req._requests || [req];
     const media = req.media ?? {};
     const isMovie = req.type === "movie";
     const title = this._escHtml(media.title || media.originalTitle || media.name || "\u2014");
     const poster = media.posterPath;
-    const reqBy = this._escHtml(req.requestedBy?.displayName ?? req.requestedBy?.username ?? "?");
     const typeLabel = isMovie ? this._t("typeMovie") : this._t("typeTv");
     const icon = isMovie ? "\u{1F3AC}" : "\u{1F4FA}";
     const tmdbId = media.tmdbId ?? 0;
+    const reqIds = allReqs.map((r) => r.id).join(",");
+    const userTags = allReqs.map((r) => {
+      const name = this._escHtml(r.requestedBy?.displayName ?? r.requestedBy?.username ?? "?");
+      const seasons = r.seasons?.length;
+      const sNums = !isMovie && r.seasons?.length ? r.seasons.map((s) => s.seasonNumber).sort((a, b) => a - b) : [];
+      const seasonInfo = sNums.length ? ` S${String(sNums[0]).padStart(2, "0")}${sNums.length > 1 ? "-S" + String(sNums[sNums.length - 1]).padStart(2, "0") : ""}` : "";
+      return `<span class="media-type-tag pr-user-tag" style="position:static">${name}${seasonInfo}</span>`;
+    });
     const imgHtml = poster ? `<img src="${poster.startsWith("http") ? poster : `https://image.tmdb.org/t/p/w342${poster}`}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${this._grad(req.id)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${icon}</div>`;
+    const pc = this._config;
+    const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
+    const stripe = showStripe ? this._statusStripe(this._statusStripeColor("b-st-pend"), false, -1) : "";
     return `
     <div class="mc" data-popup="${isMovie ? "movie" : "tv"}" data-tmdbid="${tmdbId}" data-title="${title}">
       ${imgHtml}
-      <span class="media-type-tag">${typeLabel}</span>
+      ${stripe}
+      <div class="pr-tags-col">
+        <span class="media-type-tag" style="position:static">${typeLabel}</span>
+        ${userTags.join("\n        ")}
+      </div>
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.93) 0%,transparent 80%);padding:36px 6px 5px;z-index:1">
-        <div style="font-size:8px;color:rgba(255,255,255,0.55);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\u{1F464} ${reqBy}</div>
         <div class="pr-btn-row" style="margin-bottom:4px">
-          <button class="pr-approve" data-reqid="${req.id}">\u2713<span class="st-txt"> ${this._t("approve")}</span></button>
-          <button class="pr-decline" data-reqid="${req.id}">\u2715<span class="st-txt"> ${this._t("decline")}</span></button>
+          <button class="pr-approve" data-reqid="${reqIds}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button>
+          <button class="pr-decline" data-reqid="${reqIds}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${title}">${title}</div>
       </div>
@@ -8808,7 +9169,7 @@ var _RenderRight = class {
           autocomplete="off"
           style="${inputStyle}"
         >
-        <button class="search-bar-clear" data-action="search-clear" style="${iconStyle}${this._searchActive ? "" : "display:none;"}">\u2715</button>
+        <button class="search-bar-clear" data-action="search-clear" style="${iconStyle}${this._searchActive ? "" : "display:none;"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       </div>
       <div class="search-results-wrap">${this._renderSearchResultsInner()}</div>
     </div>`;
@@ -8861,7 +9222,7 @@ var _RenderRight = class {
         if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
           actionBtn = "";
         } else {
-          const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${tmdbId}">\u2715</button>` : "";
+          const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${tmdbId}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>` : "";
           actionBtn = withdrawBtn;
         }
       } else if (isMovie) {
@@ -10053,7 +10414,7 @@ var _MediaCardMethods = class {
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
     const stats = s.statistics || {};
     const fileCount = stats.episodeFileCount || 0;
-    const totalCount = stats.episodeCount || stats.totalEpisodeCount || 0;
+    const totalCount = stats.totalEpisodeCount || stats.episodeCount || 0;
     let badgeCls = "";
     let badgeHtml = "";
     if (fileCount === 0 && totalCount > 0) {
@@ -10107,22 +10468,33 @@ var _MediaCardMethods = class {
         badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
       }
     } else {
+      const fileCount = item.statistics?.episodeFileCount ?? 0;
+      const totalCount = item.statistics?.totalEpisodeCount ?? item.statistics?.episodeCount ?? 0;
+      const isPartial = totalCount > 0 && fileCount < totalCount;
       const importEps = item._isSonarr2 ? this._sonarr2ImportEps || {} : this._sonarrImportEps || {};
       const imp = importEps[item.id];
-      if (imp) {
-        const epLabel = imp.e > 0 ? `S${String(imp.s).padStart(2, "0")}E${String(imp.e).padStart(2, "0")}` : `S${String(imp.s).padStart(2, "0")}`;
-        badgeCls = "b-st-avail";
-        badgeHtml = this._badge("b-st-avail", "\u2713", epLabel);
+      if (imp && imp.length > 0) {
+        if (isPartial) {
+          badgeCls = "b-partial";
+          badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
+        } else {
+          const epLabel = this._importEpLabel(imp);
+          badgeCls = "b-st-avail";
+          badgeHtml = this._badge("b-st-avail", "\u2713", epLabel || this._t("badgeAvailable"));
+        }
       } else {
         const epFile = this._sonarrEpFiles?.[item.id];
         if (epFile) {
-          const match = (epFile.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
-          badgeCls = "b-st-avail";
-          badgeHtml = match ? this._badge("b-st-avail", "\u2713", `S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}`) : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+          if (isPartial) {
+            badgeCls = "b-partial";
+            badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
+          } else {
+            const match = (epFile.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
+            badgeCls = "b-st-avail";
+            badgeHtml = match ? this._badge("b-st-avail", "\u2713", `S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}`) : this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+          }
         } else {
-          const fileCount = item.statistics?.episodeFileCount ?? 0;
-          const totalCount = item.statistics?.episodeCount ?? item.statistics?.totalEpisodeCount ?? 0;
-          if (fileCount < totalCount) {
+          if (isPartial) {
             badgeCls = "b-partial";
             badgeHtml = `<span class="badge b-partial">${fileCount}/<span class="b-txt">${totalCount}</span></span>`;
           } else {
@@ -10197,10 +10569,28 @@ var _MediaCardMethods = class {
         }
       }
     }
+    let epBadge = "";
+    if (!isMovie) {
+      const importEps = item._isSonarr2 ? this._sonarr2ImportEps || {} : this._sonarrImportEps || {};
+      const imp = importEps[item.id];
+      if (imp) {
+        const epLabel = this._importEpLabel(imp);
+        if (epLabel) epBadge = `<span class="badge b-ep">${epLabel}</span>`;
+      } else {
+        const epFile = this._sonarrEpFiles?.[item.id];
+        if (epFile) {
+          const match = (epFile.relativePath || "").match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
+          if (match) epBadge = `<span class="badge b-ep">S${String(match[1]).padStart(2, "0")}E${String(match[2]).padStart(2, "0")}</span>`;
+        }
+      }
+    }
     return `
     <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
       ${img}
-      ${pc.mediaType ? `<span class="media-type-tag">${typeTag}</span>` : ""}
+      <div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;flex-direction:column;gap:3px;align-items:flex-start">
+        ${pc.mediaType ? `<span class="media-type-tag" style="position:static">${typeTag}</span>` : ""}
+        ${epBadge}
+      </div>
       ${statusBadge}
       ${this._mcGrad(grad, `${pc.rating ? this._ratingBadge(item) : ""}
         ${audioBadge || subBadge ? `<div style="display:flex;justify-content:flex-start;gap:3px;flex-wrap:wrap;margin-bottom:3px">${audioBadge}${subBadge}</div>` : ""}
@@ -10270,6 +10660,9 @@ var _MediaCardMethods = class {
     const sonarrEntry = Array.isArray(this._sonarr) && this._sonarr.find((s) => s.tmdbId === m.id);
     const inSonarr = !!sonarrEntry;
     const inSonarrAvail = !!(sonarrEntry && sonarrEntry.statistics?.episodeFileCount > 0);
+    const _sonarrFc = sonarrEntry?.statistics?.episodeFileCount || 0;
+    const _sonarrTc = sonarrEntry?.statistics?.totalEpisodeCount || sonarrEntry?.statistics?.episodeCount || 0;
+    const _sonarrPartial = inSonarrAvail && _sonarrTc > 0 && _sonarrFc < _sonarrTc;
     const _inOptimistic = this._optimisticRequested.has(m.id);
     const _withdrawn = this._withdrawnIds.has(m.id);
     const _hasPending = this._familyPendingIds.has(m.id);
@@ -10286,7 +10679,7 @@ var _MediaCardMethods = class {
       if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         actionBtn = "";
       } else {
-        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
+        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>` : "";
         actionBtn = withdrawBtn;
       }
     } else {
@@ -10296,8 +10689,13 @@ var _MediaCardMethods = class {
     let badgeCls = "";
     let badgeHtml = "";
     if (_isAvail) {
-      badgeCls = "b-st-avail";
-      badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+      if (_sonarrPartial) {
+        badgeCls = "b-partial";
+        badgeHtml = `<span class="badge b-partial">${_sonarrFc}/<span class="b-txt">${_sonarrTc}</span></span>`;
+      } else {
+        badgeCls = "b-st-avail";
+        badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+      }
     } else if (_isReq) {
       if (_isAdmin || _noSeerr || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         badgeCls = "b-st-proc";
@@ -10391,7 +10789,7 @@ var _MediaCardMethods = class {
       } else if (_isAdmin || _noSeerr2 || mediaStatus >= 3 && !_inOptimistic && !_hasPending) {
         actionBtn = "";
       } else {
-        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}">\u2715</button>` : "";
+        const withdrawBtn = _reqId ? `<button class="req-withdraw" data-reqid="${_reqId}" data-mediaid="${m.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>` : "";
         actionBtn = withdrawBtn;
       }
     } else {
@@ -10474,7 +10872,7 @@ var _MediaCardMethods = class {
       }
     } else {
       const fc = series.statistics?.episodeFileCount || 0;
-      const tc2 = series.statistics?.episodeCount || series.statistics?.totalEpisodeCount || 0;
+      const tc2 = series.statistics?.totalEpisodeCount || series.statistics?.episodeCount || 0;
       if (fc === 0 && tc2 > 0) {
         badgeCls = "b-missing";
         badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
@@ -10550,7 +10948,7 @@ var _MediaCardMethods = class {
       }
     } else {
       const fc = series.statistics?.episodeFileCount || 0;
-      const tc2 = series.statistics?.episodeCount || series.statistics?.totalEpisodeCount || 0;
+      const tc2 = series.statistics?.totalEpisodeCount || series.statistics?.episodeCount || 0;
       if (fc === 0 && tc2 > 0) {
         badgeCls = "b-missing";
         badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
@@ -10745,6 +11143,7 @@ var _WireMethods = class {
   // Deluge action API
   // ─────────────────────────────────────────────
   async _delugeAction(hash, action, deleteFiles = false) {
+    this._markActivated();
     const isGlobal = action === "pauseAll" || action === "resumeAll";
     if (isGlobal) {
       this._delugeBusy = true;
@@ -10766,6 +11165,7 @@ var _WireMethods = class {
     }
   }
   async _rtorrentAction(hash, action, deleteFiles = false) {
+    this._markActivated();
     const isGlobal = action === "pauseAll" || action === "resumeAll";
     if (isGlobal) {
       this._rtorrentBusy = true;
@@ -10811,6 +11211,7 @@ var _WireMethods = class {
     const left = this.shadowRoot.getElementById("col-left");
     if (!left) return;
     this._blurActive();
+    this._lastLeftHtml = null;
     left.innerHTML = this._mobMinWrap("left", this._renderLeft());
     this._wireSort();
     this._wireActionButtons();
@@ -11029,7 +11430,7 @@ var _WireMethods = class {
         if (!movieId) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
-        const oneClick = this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false);
+        const oneClick = (this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false)) && !(this._cfgGet("discover", "oneClickNonAdminOnly", false) && this._hass.user.is_admin);
         if (oneClick) {
           const profileName = this._cfgGet("discover", "oneClickDefaultMovieProfile", "");
           let profileId = null;
@@ -11112,7 +11513,7 @@ var _WireMethods = class {
         if (!show) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
-        const oneClick = this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false);
+        const oneClick = (this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false)) && !(this._cfgGet("discover", "oneClickNonAdminOnly", false) && this._hass.user.is_admin);
         if (oneClick) {
           await this._oneClickTvRequest(show);
           btn.disabled = false;
@@ -11174,21 +11575,21 @@ var _WireMethods = class {
     this.shadowRoot.querySelectorAll(".pr-approve").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const reqId = parseInt(btn.dataset.reqid, 10);
+        const ids = btn.dataset.reqid.split(",").map(Number);
         btn.disabled = true;
-        btn.textContent = "\u2026";
+        btn.innerHTML = "\u2026";
         this._markActivated();
-        this._approvePendingRequest(reqId);
+        ids.forEach((id) => this._approvePendingRequest(id));
       });
     });
     this.shadowRoot.querySelectorAll(".pr-decline").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const reqId = parseInt(btn.dataset.reqid, 10);
+        const ids = btn.dataset.reqid.split(",").map(Number);
         btn.disabled = true;
-        btn.textContent = "\u2026";
+        btn.innerHTML = "\u2026";
         this._markActivated();
-        this._declinePendingRequest(reqId);
+        ids.forEach((id) => this._declinePendingRequest(id));
       });
     });
     this._wireTvOverlay();
@@ -11471,7 +11872,10 @@ var _WireMethods = class {
           body.rootFolder = rootFolder || this._seerrSonarr.rootFolder;
         }
         if (tagId) body.tags = [parseInt(tagId)];
-        if (!this._hass.user.is_admin) body.userMode = "family";
+        {
+          const _acct = this._seerrAccountForUser();
+          if (_acct !== "admin") body.userMode = _acct;
+        }
         await this._hass.callApi("POST", "arr_stack/overseerr/request", body);
       } catch (err) {
         console.error("[arr-card] overlay TV request error:", err);
@@ -11504,7 +11908,7 @@ var _WireMethods = class {
         if (!movieId) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
-        const oneClick = this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false);
+        const oneClick = (this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false)) && !(this._cfgGet("discover", "oneClickNonAdminOnly", false) && this._hass.user.is_admin);
         if (oneClick) {
           const profileName = this._cfgGet("discover", "oneClickDefaultMovieProfile", "");
           let profileId = null;
@@ -11543,7 +11947,7 @@ var _WireMethods = class {
         if (!show) return;
         btn.disabled = true;
         btn.textContent = "\u2026";
-        const oneClick = this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false);
+        const oneClick = (this._cfgGet("discover", "oneClickRequest", false) || this._cfgGet("discover", "oneClickMovieRequest", false)) && !(this._cfgGet("discover", "oneClickNonAdminOnly", false) && this._hass.user.is_admin);
         if (oneClick) {
           await this._oneClickTvRequest(show);
           btn.disabled = false;
@@ -11630,6 +12034,13 @@ var _WireMethods = class {
       const left = isMobile2 ? this.shadowRoot.getElementById("col-left") : null;
       const navWasMet = isMobile2 && left ? left.getBoundingClientRect().bottom < navOffset : false;
       right.innerHTML = this._mobMinWrap("right", this._renderRight());
+      if (isMobile2) {
+        if (this._overlay?.section) {
+          right.style.minHeight = "";
+        } else if (this._rightMaxH) {
+          right.style.minHeight = this._rightMaxH + "px";
+        }
+      }
       if (navWasVisible) {
         const newNav = right.querySelector(".rp-nav");
         if (newNav) {
@@ -11658,6 +12069,47 @@ var _WireMethods = class {
         }
       });
     }
+  }
+  _swapRightKeepNav(right, scrollState) {
+    const isMobile2 = window.matchMedia("(max-width: 900px)").matches;
+    const lockH = this._searchActive ? this._searchLockHeight() : this._rightMaxH;
+    if (lockH) right.style.minHeight = lockH + "px";
+    const oldNav = isMobile2 ? right.querySelector(".rp-nav") : null;
+    const navVisible = oldNav?.classList.contains("rp-nav-visible") ?? false;
+    if (oldNav) oldNav.remove();
+    const newHtml = this._renderRight();
+    const wrap = this._mobMinWrap("right", newHtml);
+    if (oldNav && navVisible) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = wrap;
+      const renderedNav = tmp.querySelector(".rp-nav");
+      if (renderedNav) {
+        oldNav.innerHTML = renderedNav.innerHTML;
+        renderedNav.remove();
+      }
+      right.innerHTML = tmp.innerHTML;
+      right.appendChild(oldNav);
+    } else {
+      right.innerHTML = wrap;
+      if (navVisible) {
+        const newNav = right.querySelector(".rp-nav");
+        if (newNav) {
+          newNav.style.transition = "none";
+          newNav.classList.add("rp-nav-visible");
+          requestAnimationFrame(() => {
+            newNav.style.transition = "";
+          });
+        }
+      }
+    }
+    this._wirePageButtons();
+    this._wirePopup();
+    this._wireOverseerrButtons();
+    this._wireSearch();
+    this._wireMinimize();
+    this._afterRightPageSwitch(scrollState);
+    this._resetFetchInterval();
+    this._fetchVisibleCats();
   }
   _wirePageButtons(scope = this.shadowRoot) {
     if (this._pageBtnAbort) this._pageBtnAbort.abort();
@@ -11688,28 +12140,7 @@ var _WireMethods = class {
         }
         const right = this.shadowRoot.getElementById("col-right");
         if (right) {
-          const lockH = this._searchActive ? this._searchLockHeight() : this._rightMaxH;
-          if (lockH) right.style.minHeight = lockH + "px";
-          const navWasVisible = right.querySelector(".rp-nav")?.classList.contains("rp-nav-visible") ?? false;
-          right.innerHTML = this._mobMinWrap("right", this._renderRight());
-          if (navWasVisible) {
-            const newNav = right.querySelector(".rp-nav");
-            if (newNav) {
-              newNav.style.transition = "none";
-              newNav.classList.add("rp-nav-visible");
-              requestAnimationFrame(() => {
-                newNav.style.transition = "";
-              });
-            }
-          }
-          this._wirePageButtons();
-          this._wirePopup();
-          this._wireOverseerrButtons();
-          this._wireSearch();
-          this._wireMinimize();
-          this._afterRightPageSwitch(scrollState);
-          this._resetFetchInterval();
-          this._fetchVisibleCats();
+          this._swapRightKeepNav(right, scrollState);
         }
       }, { signal: sig });
     });
@@ -11723,28 +12154,7 @@ var _WireMethods = class {
           else this._rightPage = targetPage;
           const right = this.shadowRoot.getElementById("col-right");
           if (right) {
-            const lockH = this._searchActive ? this._searchLockHeight() : this._rightMaxH;
-            if (lockH) right.style.minHeight = lockH + "px";
-            const navWasVisible = right.querySelector(".rp-nav")?.classList.contains("rp-nav-visible") ?? false;
-            right.innerHTML = this._mobMinWrap("right", this._renderRight());
-            if (navWasVisible) {
-              const newNav = right.querySelector(".rp-nav");
-              if (newNav) {
-                newNav.style.transition = "none";
-                newNav.classList.add("rp-nav-visible");
-                requestAnimationFrame(() => {
-                  newNav.style.transition = "";
-                });
-              }
-            }
-            this._wirePageButtons();
-            this._wirePopup();
-            this._wireOverseerrButtons();
-            this._wireSearch();
-            this._wireMinimize();
-            this._afterRightPageSwitch(scrollState);
-            this._resetFetchInterval();
-            this._fetchVisibleCats();
+            this._swapRightKeepNav(right, scrollState);
           }
         }
       }, { signal: sig });
@@ -15928,8 +16338,10 @@ var _PopupMethods = class {
     }
     const prevIsWrap = root.querySelector(".is-results-wrap");
     const prevBody = root.querySelector(".popup-body");
+    const prevSnPanel = root.querySelector(".sn-is-panel");
     const savedIsScroll = prevIsWrap ? prevIsWrap.scrollTop : 0;
     const savedBodyScroll = prevBody ? prevBody.scrollTop : 0;
+    const savedSnIsScroll = prevSnPanel ? prevSnPanel.scrollTop : 0;
     const d = this._popup;
     if (d && !d._loading && !d._streamEntity) {
       const _tmdb = d.tmdbId || d.id;
@@ -15960,6 +16372,10 @@ var _PopupMethods = class {
       const newIsWrap = root.querySelector(".is-results-wrap");
       if (newIsWrap) newIsWrap.scrollTop = savedIsScroll;
     }
+    if (savedSnIsScroll > 0) {
+      const newSnPanel = root.querySelector(".sn-is-panel");
+      if (newSnPanel) newSnPanel.scrollTop = savedSnIsScroll;
+    }
     if (savedBodyScroll > 0) {
       const newBody = root.querySelector(".popup-body");
       if (newBody) newBody.scrollTop = savedBodyScroll;
@@ -15989,7 +16405,7 @@ var _PopupMethods = class {
         }
       });
     }
-    if (this._snIsOpen && !(this._snExpandedSeasons?.size > 0)) {
+    if (this._snIsOpen && !(this._snExpandedSeasons?.size > 0) && !this._snActiveIs) {
       const _snGen = this._snSeasonsMeasureGen = (this._snSeasonsMeasureGen || 0) + 1;
       requestAnimationFrame(() => {
         if (this._snSeasonsMeasureGen !== _snGen) return;
@@ -16280,6 +16696,43 @@ var _PopupMethods = class {
         const epId = parseInt(t.dataset.epid);
         const seasonN = parseInt(t.dataset.season);
         this._triggerSonarrEpisodeSearch(epId, seasonN, this._asInstance);
+        return;
+      }
+      if (t.dataset.action === "ep-del-confirm") {
+        this._epFileConfirm = parseInt(t.dataset.epid);
+        this._seasonFileConfirm = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "ep-del-no") {
+        this._epFileConfirm = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "ep-del-yes") {
+        const efId = parseInt(t.dataset.efid);
+        const seasonN = parseInt(t.dataset.season);
+        const inst = this._asOpen ? this._asInstance : this._snIsInstance || "sonarr";
+        this._epFileConfirm = null;
+        this._deleteEpisodeFile(efId, seasonN, inst);
+        return;
+      }
+      if (t.dataset.action === "season-del-confirm") {
+        this._seasonFileConfirm = parseInt(t.dataset.season);
+        this._epFileConfirm = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "season-del-no") {
+        this._seasonFileConfirm = null;
+        this._renderPopupEl();
+        return;
+      }
+      if (t.dataset.action === "season-del-yes") {
+        const seasonN = parseInt(t.dataset.season);
+        const inst = this._asOpen ? this._asInstance : this._snIsInstance || "sonarr";
+        this._seasonFileConfirm = null;
+        this._deleteSeasonFiles(seasonN, inst);
         return;
       }
       if (t.dataset.action === "is-confirm-yes") {
@@ -17488,7 +17941,7 @@ var _PopupMethods = class {
         <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <div class="popup-cast-corner">${this._renderPlexCastBtn(d, rInLib1 || rInLib2, snInLib1 || snInLib2)}</div>
         ${backdropEl}
-        <div class="popup-body${searchActive ? " popup-body--search" : ""}${snIsActive && !isActive && !asActive ? " popup-body--sn-is" : ""}">
+        <div class="popup-body${searchActive ? " popup-body--search" : ""}${snIsActive && !isActive && !asActive || asSonarrActive ? " popup-body--sn-is" : ""}">
           <div class="popup-content"${searchActive ? ' style="padding-top:52px"' : ""}>
             ${posterHtmlFinal}
             <div class="popup-meta">
@@ -25883,7 +26336,7 @@ var _LibraryMethods = class {
         }
       } else {
         const fc = item.statistics?.episodeFileCount || 0;
-        const tc2 = item.statistics?.episodeCount || item.statistics?.totalEpisodeCount || 0;
+        const tc2 = item.statistics?.totalEpisodeCount || item.statistics?.episodeCount || 0;
         if (fc === 0 && tc2 > 0) {
           badgeCls = "b-missing";
           badgeHtml = _b("b-missing", "\u2717", this._t("badgeMissing"));
@@ -25964,7 +26417,7 @@ var _LibraryMethods = class {
       return { cls: "b-missing", label: "Missing" };
     }
     const fc = item.statistics?.episodeFileCount || 0;
-    const tc = item.statistics?.episodeCount || item.statistics?.totalEpisodeCount || 0;
+    const tc = item.statistics?.totalEpisodeCount || item.statistics?.episodeCount || 0;
     if (fc === 0 && tc > 0) return { cls: "b-missing", label: "Missing" };
     if (fc < tc) return { cls: "b-partial", label: `${fc} / ${tc}` };
     if (fc > 0 && item.status === "continuing") return { cls: "b-continuing", label: `${fc} / ${tc}` };
@@ -26047,7 +26500,7 @@ var _LibraryMethods = class {
         if (hasTv) {
           const seasons = isMovie ? "" : String(item.statistics?.seasonCount || item.seasonCount || "\u2014");
           const fc = isMovie ? "" : String(item.statistics?.episodeFileCount || 0);
-          const tc = isMovie ? "" : String(item.statistics?.episodeCount || item.statistics?.totalEpisodeCount || 0);
+          const tc = isMovie ? "" : String(item.statistics?.totalEpisodeCount || item.statistics?.episodeCount || 0);
           const epStr = isMovie ? "" : `${fc} / ${tc}`;
           extraCells += `<td style="text-align:center">${seasons}</td>`;
           extraCells += `<td style="text-align:center">${epStr}</td>`;
@@ -26247,7 +26700,7 @@ var _LibraryMethods = class {
     } else {
       const count = item.statistics?.episodeFileCount || 0;
       if (count === 0) return item.monitored ? "#2980b9" : "#555";
-      const total = item.statistics?.episodeCount || 0;
+      const total = item.statistics?.totalEpisodeCount || item.statistics?.episodeCount || 0;
       if (total > 0 && count < total) return item.monitored ? "#27ae60" : "#5a9e71";
       return item.monitored ? "#27ae60" : "#5a9e71";
     }
@@ -27096,7 +27549,7 @@ var _ActivityRenderMethods = class {
       const pb = `<div style="width:100%;height:3px;background:var(--is-divider);border-radius:2px;overflow:hidden;margin-top:3px"><div style="width:${isBad ? 100 : pct}%;height:100%;background:rgba(99,140,255,0.65);border-radius:2px"></div></div>`;
       const removeBtn = true ? `<button class="act-remove-btn" data-id="${item.id}" data-svc="${item._svc}" data-title="${this._escHtml(item._title)}" title="Remove from queue" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(220,50,50,0.15);border-radius:5px;cursor:pointer;color:rgba(220,80,80,0.9)">${trashSvg}</button>` : "";
       const canImport = isBad && item.downloadId;
-      const importBtn = canImport ? `<button class="act-mi-btn" data-id="${item.id}" data-svc="${item._svc}" data-download-id="${item.downloadId}" data-movie-id="${item.movieId || ""}" data-series-id="${item.seriesId || ""}" data-title="${this._escHtml(item._title)}" title="Manual Import" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9);margin-right:4px">${importSvg}</button>` : "";
+      const importBtn = canImport ? `<button class="act-mi-btn" data-id="${item.id}" data-svc="${item._svc}" data-download-id="${item.downloadId}" data-movie-id="${item.movieId || ""}" data-series-id="${item.seriesId || ""}" data-episode-id="${item.episodeId || item.episode?.id || ""}" data-output-path="${this._escHtml(item.outputPath || "")}" data-title="${this._escHtml(item._title)}" title="Manual Import" style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(99,140,255,0.15);border-radius:5px;cursor:pointer;color:rgba(99,140,255,0.9);margin-right:4px">${importSvg}</button>` : "";
       const isFullyDl = item.size > 0 && (item.sizeleft === 0 || item.sizeleft === null);
       const dlIcon = isFullyDl ? `<span style="color:rgba(250,160,40,0.85);display:flex;align-items:center;flex-shrink:0">${dlDoneSvg}</span>` : "";
       const addedLbl = item.added ? (() => {
@@ -27155,7 +27608,7 @@ var _ActivityRenderMethods = class {
         if (col.id === "client") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${this._escHtml(cliLbl)}</td>`;
         if (col.id === "status") {
           const stHtml = isBad && _smLines.length > 1 ? _smLines.map((l) => `<div style="font-size:10px;color:${stCol};line-height:1.4">${this._escHtml(l)}</div>`).join("") : `<span style="font-size:10px;font-weight:${isBad ? "400" : "600"};color:${stCol}">${this._escHtml(stLbl)}</span>`;
-          return `<td style="padding:8px;white-space:normal;min-width:80px;max-width:180px">${stHtml}</td>`;
+          return `<td style="padding:8px;white-space:normal;min-width:80px;max-width:180px"><div style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden">${stHtml}</div></td>`;
         }
         return "";
       }).join("");
@@ -27648,7 +28101,7 @@ var _ActivityRenderMethods = class {
       if (!c.languages?.length || !langName || langName === "Unknown") return false;
       return true;
     });
-    const importBtn = `<button id="mi-import-all" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;background:${allCanImport ? "rgba(60,200,120,0.18)" : "var(--is-btn-bg)"};color:${allCanImport ? "rgba(80,220,140,0.95)" : "var(--is-text-muted)"};font-size:13px;font-weight:700;cursor:${allCanImport ? "pointer" : "not-allowed"}" ${allCanImport ? "" : "disabled"}>${this._t("actImport")}</button>`;
+    const importBtn = `<button id="mi-import-all" data-ready="${allCanImport ? "1" : ""}" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;background:${allCanImport ? "rgba(60,200,120,0.18)" : "var(--is-btn-bg)"};color:${allCanImport ? "rgba(80,220,140,0.95)" : "var(--is-text-muted)"};font-size:13px;font-weight:700;cursor:${allCanImport ? "pointer" : "not-allowed"};opacity:${allCanImport ? "1" : "0.5"}">${this._t("actImport")}</button>`;
     const mediaLabel = isRadarr ? this._t("typeMovie") : this._t("typeTv");
     const mediaField = isRadarr ? "movie" : "series";
     if (isMobile2) {
@@ -27699,8 +28152,12 @@ var _ActivityRenderMethods = class {
       const qualSel = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${SEL_STYle(qualMiss)}"><option value="" disabled hidden${curQualId === "" || qualMiss ? " selected" : ""}>${this._t("actSelectQuality")}</option>${buildQualOpts(curQualId)}</select>`;
       const langSel = `<select class="mi-field-sel" data-field="language" data-idx="${i}" style="${SEL_STYle(langMiss)}"><option value="" disabled hidden${curLangId === "" || langMiss ? " selected" : ""}>${this._t("actSelectLanguage")}</option>${buildLangOpts(curLangId)}</select>`;
       const rejHtml = rej.length ? `<span style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</span>` : `<span style="color:var(--is-text-muted);font-size:10px">\u2014</span>`;
+      const epInfo = isSonarr && c.episodes?.length ? `${c.seasonNumber ?? "?"}x${String(c.episodes[0].episodeNumber ?? "?").padStart(2, "0")}` : "";
+      const epTitle = isSonarr && c.episodes?.length ? c.episodes[0].title || "" : "";
       return `<tr class="u-divider-b">
         <td style="padding:7px 4px">${movieSel}</td>
+        ${isSonarr ? `<td style="padding:7px 8px;font-size:11px;color:var(--is-text-sec);white-space:nowrap">${epInfo}</td>` : ""}
+        ${isSonarr ? `<td style="padding:7px 8px;font-size:11px;color:var(--is-text-sec);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${this._escHtml(epTitle)}</td>` : ""}
         <td style="padding:7px 8px;font-size:11px;color:var(--is-text-sec);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${this._escHtml(rg)}</td>
         <td style="padding:7px 4px">${qualSel}</td>
         <td style="padding:7px 4px">${langSel}</td>
@@ -27708,24 +28165,24 @@ var _ActivityRenderMethods = class {
         <td style="padding:7px 8px;overflow:hidden">${rejHtml}</td>
       </tr>`;
     }).join("");
+    const cols = isSonarr ? `<col style="width:22%"><col style="width:7%"><col style="width:14%"><col style="width:9%"><col style="width:16%"><col style="width:13%"><col style="width:7%"><col style="width:12%">` : `<col style="width:32%"><col style="width:12%"><col style="width:18%"><col style="width:16%"><col style="width:8%"><col style="width:14%">`;
+    const heads = isSonarr ? `<th style="${thStyle}">${mediaLabel}</th>
+         <th style="${thStyle};padding-left:8px">Episode</th>
+         <th style="${thStyle};padding-left:8px">Episode Title</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actReleaseGroup")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actQuality")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actLanguages")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actSize")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actError")}</th>` : `<th style="${thStyle}">${mediaLabel}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actReleaseGroup")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actQuality")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actLanguages")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actSize")}</th>
+         <th style="${thStyle};padding-left:8px">${this._t("actError")}</th>`;
     return `<div class="u-col">
       <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-        <colgroup>
-          <col style="width:32%">
-          <col style="width:12%">
-          <col style="width:18%">
-          <col style="width:16%">
-          <col style="width:8%">
-          <col style="width:14%">
-        </colgroup>
-        <thead><tr class="u-divider-b">
-          <th style="${thStyle}">${mediaLabel}</th>
-          <th style="${thStyle};padding-left:8px">${this._t("actReleaseGroup")}</th>
-          <th style="${thStyle};padding-left:8px">${this._t("actQuality")}</th>
-          <th style="${thStyle};padding-left:8px">${this._t("actLanguages")}</th>
-          <th style="${thStyle};padding-left:8px">${this._t("actSize")}</th>
-          <th style="${thStyle};padding-left:8px">${this._t("actError")}</th>
-        </tr></thead>
+        <colgroup>${cols}</colgroup>
+        <thead><tr class="u-divider-b">${heads}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
       ${importBtn}
@@ -29151,6 +29608,8 @@ var _WireActivityMethods = class {
     const downloadId = btn.dataset.downloadId;
     const movieId = btn.dataset.movieId;
     const seriesId = btn.dataset.seriesId;
+    const episodeId = btn.dataset.episodeId || "";
+    const outputPath = btn.dataset.outputPath || "";
     const title = btn.dataset.title || "\u2014";
     this.shadowRoot.querySelector("[data-mi-modal]")?.remove();
     const wrap = document.createElement("div");
@@ -29166,11 +29625,18 @@ var _WireActivityMethods = class {
       let qs = `downloadId=${encodeURIComponent(downloadId)}`;
       if (movieId) qs += `&movieId=${encodeURIComponent(movieId)}`;
       if (seriesId) qs += `&seriesId=${encodeURIComponent(seriesId)}`;
-      const [candidates, qDefs, langs] = await Promise.all([
+      if (outputPath) qs += `&folder=${encodeURIComponent(outputPath)}`;
+      const [allCandidates, qDefs, langs] = await Promise.all([
         this._callApi("GET", `arr_stack/${svc}/manualimport?${qs}`),
         this._callApi("GET", `arr_stack/${svc}/qualitydefs`).catch(() => []),
         this._callApi("GET", `arr_stack/${svc}/languages`).catch(() => [])
       ]);
+      let candidates = allCandidates || [];
+      if (episodeId) {
+        candidates = candidates.filter(
+          (c) => c.episodes?.some((ep) => String(ep.id) === episodeId)
+        );
+      }
       this._miRenderAndWire(candidates, svc, qDefs, langs, miBody, overlay, modalEl);
     } catch (err) {
       console.error("[arr-card] Manual import fetch error:", err);
@@ -29210,14 +29676,21 @@ var _WireActivityMethods = class {
       }
       this._miRenderAndWire(candidates, svc, qDefs, langs, miBody, overlay, modalEl);
     });
-    miBody.onclick = async (e) => {
+    miBody.addEventListener("click", async (e) => {
+      console.log("[MI] click on", e.target.tagName, e.target.id, "ready:", e.target.closest("#mi-import-all")?.dataset?.ready);
       const btn = e.target.closest("#mi-import-all");
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = this._t("actImporting");
+      if (!btn || !btn.dataset.ready) return;
+      btn.dataset.ready = "";
+      btn.style.opacity = "0.5";
+      btn.style.cursor = "not-allowed";
+      btn.textContent = this._t("actImporting");
+      try {
         await this._submitManualImport(candidates, candidates.map((_, i) => i), svc, overlay, modalEl);
+        console.log("[MI] submit done");
+      } catch (err) {
+        console.error("[MI] submit error:", err);
       }
-    };
+    });
   }
   _openQueueColPicker(gearBtn, modalEl) {
     const existing = this.shadowRoot.querySelector("[data-col-picker]");
@@ -29496,6 +29969,10 @@ var _WireActivityMethods = class {
   }
   async _submitManualImport(candidates, indices, svc, overlayEl, modalEl) {
     this._markActivated();
+    console.log("[MI] candidates[0] keys:", candidates[0] ? Object.keys(candidates[0]) : "none");
+    console.log("[MI] candidates[0] episodes:", JSON.stringify(candidates[0]?.episodes));
+    console.log("[MI] candidates[0] episodeIds:", JSON.stringify(candidates[0]?.episodeIds));
+    console.log("[MI] candidates[0] seasonNumber:", candidates[0]?.seasonNumber);
     const isRadarr = svc === "radarr" || svc === "radarr2";
     const isSonarr = svc === "sonarr" || svc === "sonarr2";
     const toImport = indices.map((i) => candidates[i]).filter((c) => {
@@ -29510,7 +29987,8 @@ var _WireActivityMethods = class {
       path: c.path,
       movieId: isRadarr ? c.movie?.id || c.movieId : void 0,
       seriesId: isSonarr ? c.series?.id || c.seriesId : void 0,
-      episodeIds: c.episodeIds,
+      episodeIds: c.episodeIds || (c.episodes ? c.episodes.map((ep) => ep.id) : []),
+      seasonNumber: c.seasonNumber,
       quality: c.quality,
       languages: c.languages,
       releaseGroup: c.releaseGroup || "",
@@ -29529,6 +30007,7 @@ var _WireActivityMethods = class {
           movieId: c.movieId,
           seriesId: c.seriesId,
           episodeIds: c.episodeIds,
+          seasonNumber: c.seasonNumber,
           quality: c.quality,
           languages: c.languages,
           releaseGroup: c.releaseGroup || "",
@@ -32083,6 +32562,10 @@ var ArrStackCard = class extends HTMLElement {
     this._radarrQueuePct = /* @__PURE__ */ new Map();
     this._radarr2QueuePct = /* @__PURE__ */ new Map();
     this._dlTriggeredBy = null;
+    this._epFileConfirm = null;
+    this._epFileDeleting = null;
+    this._seasonFileConfirm = null;
+    this._seasonFileDeleting = null;
     this._sonarrQueueSeasons = /* @__PURE__ */ new Set();
     this._sonarrQueueEpisodes = /* @__PURE__ */ new Set();
     this._sonarrQueueEpPct = /* @__PURE__ */ new Map();
@@ -33079,7 +33562,9 @@ var ArrStackCard = class extends HTMLElement {
     const right = this.shadowRoot.getElementById("col-right");
     if (!right) return;
     if (this._overlay?.section && this._rightMaxH) {
-      right.style.minHeight = this._rightMaxH + "px";
+      if (!window.matchMedia("(max-width: 900px)").matches) {
+        right.style.minHeight = this._rightMaxH + "px";
+      }
       this._wirePageButtons();
       this._wirePopup();
       this._wireOverseerrButtons();
@@ -33162,11 +33647,22 @@ var ArrStackCard = class extends HTMLElement {
     } catch (e) {
     }
   }
+  _seerrAccountForUser() {
+    if (this._hass.user.is_admin) return "admin";
+    const map = this._config.seerr_user_map || [];
+    const userId = this._hass.user.id;
+    const specific = map.find((m) => m.ha === userId);
+    if (specific) return specific.seerr;
+    const def = map.find((m) => m.ha === "all_non_admin");
+    if (def) return def.seerr;
+    return "family";
+  }
   async _fetchMyPendingRequests() {
     if (this._hass.user.is_admin) return;
     if (this._overseerrConfigured === false) return;
     try {
-      const data = await this._hass.callApi("GET", "arr_stack/overseerr/my_pending");
+      const acct = this._seerrAccountForUser();
+      const data = await this._hass.callApi("GET", `arr_stack/overseerr/my_pending?userMode=${acct}`);
       const results = data?.results || [];
       const serverReqMap = new Map(results.map((r) => [r.id, r.status]));
       let changed = false;
@@ -33242,6 +33738,7 @@ var ArrStackCard = class extends HTMLElement {
     }
   }
   async _withdrawOverseerrRequest(requestId, mediaId) {
+    this._markActivated();
     this._optimisticRequested.delete(mediaId);
     this._familyPendingIds.delete(mediaId);
     this._savePendingToStorage();
@@ -33314,7 +33811,11 @@ var ArrStackCard = class extends HTMLElement {
     const layout = this._cfg?.layout || "both";
     if (layout !== "right") {
       const leftContent = this._renderLeft();
-      left.innerHTML = this._mobMinWrap("left", leftContent);
+      const leftHtml = this._mobMinWrap("left", leftContent);
+      if (leftHtml !== this._lastLeftHtml) {
+        this._lastLeftHtml = leftHtml;
+        left.innerHTML = leftHtml;
+      }
       const body = this.shadowRoot.querySelector(".card-body");
       if (body) body.classList.toggle("no-downloads", !leftContent);
     }
@@ -33425,6 +33926,26 @@ var ArrStackCard = class extends HTMLElement {
   get _isTablet() {
     return window.matchMedia("(max-width:900px)").matches;
   }
+  _importEpLabel(eps) {
+    if (!eps || eps.length === 0) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    const bySeason = {};
+    for (const ep of eps) {
+      if (!bySeason[ep.s]) bySeason[ep.s] = [];
+      bySeason[ep.s].push(ep.e);
+    }
+    const seasons = Object.keys(bySeason).map(Number).sort((a, b) => a - b);
+    const parts = [];
+    for (const s of seasons) {
+      const nums = [...new Set(bySeason[s])].sort((a, b) => a - b);
+      if (nums.length === 1) {
+        parts.push(`S${pad(s)}E${pad(nums[0])}`);
+      } else {
+        parts.push(`S${pad(s)}E${pad(nums[0])}-E${pad(nums[nums.length - 1])}`);
+      }
+    }
+    return parts.join(" ");
+  }
   get _isDay() {
     return !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
   }
@@ -33510,12 +34031,17 @@ var ArrStackCard = class extends HTMLElement {
         this._nzbgetConfigured !== false && "nzbget",
         this._delugeConfigured !== false && "deluge",
         this._traktConfigured !== false && "trakt",
-        this._gluetunConfigured !== false && "gluetun"
+        this._gluetunConfigured !== false && "gluetun",
+        this._prowlarrConfigured !== false && "prowlarr",
+        this._rtorrentConfigured !== false && "rtorrent",
+        this._tracearrConfigured !== false && "tracearr",
+        this._jellyfinConfigured === true && "jellyfin",
+        this._config.seerr_user_map?.length > 0 && "seerr_users"
       ].filter(Boolean);
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.6.37", sid, svcs, mob: this._isMob ? 1 : 0, act })
+        body: JSON.stringify({ v: "1.6.38", sid, svcs, mob: this._isMob ? 1 : 0, act })
       }).catch(() => {
       });
     } catch (_) {
@@ -33541,7 +34067,7 @@ var ArrStackCard = class extends HTMLElement {
       localisation: "en",
       layout: "both",
       downloads: { torrentItems: 3, usenetItems: 3 },
-      discover: { categoriesCount: 3, oneClickRequest: false, oneClickDefaultMovieProfile: "", oneClickDefaultShowProfile: "" },
+      discover: { categoriesCount: 3, oneClickRequest: false, oneClickDefaultMovieProfile: "", oneClickDefaultShowProfile: "", oneClickTvSeasonMode: "first", oneClickNonAdminOnly: false },
       styles: { performanceMode: false, applicationIcons: "real", categoryOverlays: true }
     };
   }

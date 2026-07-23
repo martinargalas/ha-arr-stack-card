@@ -141,7 +141,7 @@ Upcoming movies and TV episodes from Radarr and Sonarr. Click the calendar icon 
 
   For recommendations to reflect what you've actually watched, you need a scrobbler that syncs your plays to Trakt automatically. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) handles this — run it as a Docker container in `watch` mode and it will mark titles as watched on Trakt in real time.
 - One-click or profile-based requests directly to Radarr/Sonarr, or via Overseerr/Jellyseerr
-- **With Overseerr / Jellyseerr:** approve and decline pending requests, family account support with per-user request management
+- **With Overseerr / Jellyseerr:** approve and decline pending requests, family and guest account support with per-user request management
 
 #### Now Playing
 
@@ -304,6 +304,8 @@ discover:
   itemsPerCategory: 4        # columns per category grid  (default: 4)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
   oneClickRequest: false     # skip request overlay — uses defaults below  (default: false)
+  oneClickNonAdminOnly: false         # one-click only for non-admin users  (default: false)
+  oneClickTvSeasonMode: first         # first | latest | all — which seasons to request  (default: first)
   oneClickDefaultMovieProfile: ""     # quality profile name for one-click movie requests
   oneClickDefaultMovieTag: ""         # Radarr tag for one-click movie requests  (optional)
   oneClickDefaultMovieRootFolder: ""  # Radarr root folder for one-click movie requests  (optional)
@@ -426,7 +428,20 @@ styles:
 
 1. In Overseerr/Jellyseerr — create a non-admin user (Settings → Users → Add User).
 2. In Home Assistant — create a non-admin HA user for each family member (Settings → People → Add Person → uncheck Administrator).
-3. In the Arr Stack integration settings — enter the non-admin Overseerr user's email and password.
+3. In the Arr Stack integration settings — enter the non-admin Overseerr user's email and password as the **Family account**.
+
+### Guest account (optional)
+
+If you have visitors or temporary users who should use a separate Overseerr account, create a second non-admin user in Overseerr and enter their credentials as the **Guest account** in the integration settings. Once both Family and Guest accounts are configured, a **Users** tab appears in the card editor where you can assign specific HA users to either account. Users not explicitly mapped default to the Family account.
+
+### One-click requests
+
+By default, requesting a movie or show opens a profile selection overlay. Enable **One-click Request** in the card editor to skip the overlay and use your configured defaults instead — one tap to request.
+
+Available settings (card editor → One-click Request):
+
+- **Season mode** — which seasons to request for shows: first season only, latest season, or all seasons
+- **Non-admin only** — restrict one-click to non-admin users while admins keep the full profile picker
 
 ---
 
