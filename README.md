@@ -10,11 +10,28 @@
 
 <a href="https://discord.gg/WVCyejJfKd" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTorrent, SABnzbd, NZBGet, Overseerr/Jellyseerr, Bazarr, Plex, Jellyfin, Emby, Kodi, Tautulli, Jellystat, Tracearr, Prowlarr, and Trakt — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTorrent, SABnzbd, NZBGet, Seerr (Overseerr/Jellyseerr), Bazarr, Plex, Jellyfin, Emby, Kodi, Tautulli, Jellystat, Tracearr, Prowlarr, Maintainerr, SuggestArr, and Trakt — directly from Home Assistant with a single unified dashboard card.
 
 ### Supported services
 
-<p><img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" height="36" title="Radarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" height="36" title="Sonarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" height="36" title="Bazarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" height="36" title="qBittorrent"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" height="36" title="Deluge"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" height="36" title="rTorrent"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" height="36" title="SABnzbd"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" height="36" title="NZBGet"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" height="36" title="Overseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" height="36" title="Jellyseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" height="36" title="TMDB"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" height="36" title="Prowlarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" height="36" title="Plex"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" height="36" title="Jellyfin"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/emby.png" height="36" title="Emby"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/kodi.png" height="36" title="Kodi"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" height="36" title="Tautulli"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" height="36" title="Jellystat"/> <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tracearr.svg" height="36" title="Tracearr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" height="36" title="Trakt"/></p>
+<p><img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" height="36" title="Radarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" height="36" title="Sonarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" height="36" title="Bazarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" height="36" title="qBittorrent"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" height="36" title="Deluge"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" height="36" title="rTorrent"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" height="36" title="SABnzbd"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" height="36" title="NZBGet"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" height="36" title="Overseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" height="36" title="Jellyseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" height="36" title="TMDB"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" height="36" title="Prowlarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/maintainerr.png" height="36" title="Maintainerr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" height="36" title="Plex"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" height="36" title="Jellyfin"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/emby.png" height="36" title="Emby"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/kodi.png" height="36" title="Kodi"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" height="36" title="Tautulli"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" height="36" title="Jellystat"/> <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tracearr.svg" height="36" title="Tracearr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" height="36" title="Trakt"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/suggest-arr.png" height="36" title="SuggestArr"/></p>
+
+---
+
+> [!IMPORTANT]
+> ### Your own TMDB API key — needed by 1 September 2026
+>
+> **If you use Seerr (Overseerr / Jellyseerr), this does not affect you.** Posters, search and title details all come through Seerr, and nothing changes for you.
+>
+> Everyone else needs a free TMDB API key by **1 September 2026**. Until then the card keeps working as it always has. The reason is simple: the card is going through the official HACS review, and the rules there do not allow a shared key to be built into the code, so it has to go.
+>
+> Getting one takes a minute at [themoviedb.org](https://www.themoviedb.org) → Settings → API — it is free and no payment details are asked for. Then paste it into **Settings → Devices & Services → Arr Stack → Reconfigure → Discovery**.
+>
+> Without a key after that date the posters, ratings, cast, trailers and the Trending and Popular rows stop loading. Everything tied to your own libraries — Radarr, Sonarr, downloads, the calendar — carries on regardless.
+>
+> Sorry for the errand. The card never asked you for anything before, and the notice disappears on its own once a key is filled in or Seerr is set up.
+
+---
 
 ![Arr Stack Card preview](screenshot.png)
 
@@ -58,7 +75,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | rTorrent / ruTorrent | Torrent download management | Optional |
 | SABnzbd | Usenet download management | Optional |
 | NZBGet | Usenet download management | Optional |
-| Overseerr / Jellyseerr | Media requests, discovery, approvals | Optional |
+| Seerr (Overseerr / Jellyseerr) | Media requests, discovery, approvals | Optional |
 | Bazarr | Subtitle status per movie/show | Optional |
 | Plex | Active stream monitoring and playback control | Optional |
 | Jellyfin | Active stream monitoring and playback control | Optional |
@@ -68,7 +85,9 @@ The card automatically shows only the services you have configured. No YAML requ
 | Jellystat | Watch history, statistics, and usage graphs | Optional |
 | Tracearr *(beta)* | Watch history, statistics, and usage graphs | Optional |
 | Prowlarr | Indexer management and search statistics | Optional |
-| Trakt | Personalised movie & show recommendations | Optional |
+| Trakt | Personalised recommendations — needs a paid VIP account | Optional |
+| SuggestArr | Free recommendations from what you have watched | Optional |
+| Maintainerr | Automatic library cleanup — adds "Gone in" countdowns everywhere | Optional |
 | Gluetun | VPN status indicator in the downloads panel | Optional |
 
 Services not configured in the integration are hidden automatically — no manual configuration needed.
@@ -130,17 +149,24 @@ A full-screen panel for browsing and managing your entire movie and TV show coll
 
 #### Calendar
 
-Upcoming movies and TV episodes from Radarr and Sonarr. Click the calendar icon to open a weekly view with tabs for All, Shows, and Movies.
+Upcoming movies and TV episodes from Radarr and Sonarr. Click the calendar icon to open a full view with tabs for All, Shows, and Movies.
+
+Switch between a **week** and a **month** view — the month view is available on tablets and desktops, where there is room to show a whole month at once. Your choice is remembered. Click any day to see everything airing or releasing that day; click a title to open its detail popup.
 
 #### Discovery & Recommendations
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
-- **Trakt recommendations** — personalised movie and show suggestions based on your Trakt watch history. Movies and shows are mixed together for variety. Each poster has two interactive buttons on its edges:
+- **Trakt recommendations** — personalised movie and show suggestions based on your Trakt watch history. Trakt now requires a paid **VIP** account for this; the category stays for those who have one. Movies and shows are mixed together for variety. Each poster has two interactive buttons on its edges:
   - **Seen** (left edge) — marks the title as watched on Trakt. This improves future recommendations by feeding your actual watch history back into the algorithm. The card immediately replaces the dismissed poster with the next recommendation.
   - **Skip** (right edge) — hides the title from your recommendations without marking it as watched. Use this for titles you're simply not interested in, without affecting your Trakt history or stats.
 
   For recommendations to reflect what you've actually watched, you need a scrobbler that syncs your plays to Trakt automatically. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) handles this — run it as a Docker container in `watch` mode and it will mark titles as watched on Trakt in real time.
-- One-click or profile-based requests directly to Radarr/Sonarr, or via Overseerr/Jellyseerr
+- **SuggestArr recommendations** — a free, self-hosted alternative to Trakt, with its own category in the card. Trakt has moved personalised recommendations behind its paid VIP plan, so SuggestArr fills that gap for everyone else. It looks at what you have actually watched on Plex, Jellyfin or Emby and suggests titles you do not own yet. Movies and shows alternate in the row so you always get both. Request straight from the poster, or use **Seen** and **Skip** to steer what comes next.
+
+  > **Set SuggestArr to ask, not to act.** In SuggestArr's own settings, turn off automatic requests to Seerr. Otherwise its background job sends requests on its own schedule and you only find out afterwards — with it off, suggestions wait in the card until you approve them.
+
+  SuggestArr refreshes its pool on a schedule of its own, so a fresh batch of tips can take a while to appear after you work through the current one. See [SuggestArr](https://github.com/giuseppe99barchetta/SuggestArr) for setup.
+- One-click or profile-based requests directly to Radarr/Sonarr, or via Seerr
 - **With Overseerr / Jellyseerr:** approve and decline pending requests, family and guest account support with per-user request management
 
 #### Now Playing
@@ -193,6 +219,20 @@ Playback statistics from Tautulli, Jellystat, or Tracearr (configure any combina
 - **Account sharing detection** — flags when the same account streams from multiple IPs simultaneously (Tautulli)
 - **Tracearr** *(beta)* — watch patterns, completion rates, device and bandwidth analytics, binge highlights. Works with Plex, Jellyfin, and Emby.
 
+#### Maintainerr
+
+<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/maintainerr.png" height="28" align="left" hspace="8"/>
+
+[Maintainerr](https://github.com/jorenn92/Maintainerr) decides what leaves your library — rules like "delete a movie 30 days after everyone has watched it". The card gives it a category of its own, and, more importantly, brings its verdict everywhere else.
+
+- **Gone in tags** — any title queued for deletion carries a countdown badge on its poster, in every category and in its detail popup. This is the main reason to connect Maintainerr: you see what is about to disappear while browsing, not only when you go looking for it. Clicking the badge opens the collection the title is queued in.
+- **Rules** — browse, run, edit, and create rules without leaving Home Assistant, including the full condition builder and importing a rule from YAML.
+- **Collections** — see what is queued, when each title goes, and how much space it will free. Add or remove titles by hand, and manage exclusions for anything that should never be touched.
+- **Calendar** — the deletion schedule laid out by day, so nothing surprises you.
+- **Storage** — disk usage and how much the cleanup has reclaimed so far.
+
+Maintainerr needs no password, so only its address goes into the integration.
+
 #### Indexers (Prowlarr)
 
 Indexer overview and search statistics from Prowlarr.
@@ -200,6 +240,43 @@ Indexer overview and search statistics from Prowlarr.
 - Indexer health and status at a glance
 - Per-indexer search success rate and response time
 - User-agent breakdown — which apps hit your indexers and how often
+
+### Title detail popup
+
+Clicking any poster — anywhere in the card — opens the same detail popup: backdrop, overview, ratings, cast and trailer, plus everything the card knows about your own copy. Files on disk are described in their own row: the quality of the file you actually have (for example `1080p · BluRay`), which audio tracks it carries and which subtitles are available.
+
+The buttons at the top of the popup are grouped into three menus, one open at a time:
+
+- **Search** — Automatic or Interactive search, per instance if you run two. Automatic hands the job to Radarr or Sonarr; Interactive lists the releases and lets you pick one yourself, with episode-level control for shows.
+- **Remove** — remove from the library, or from the library and disk. Always asks for confirmation first.
+- **Actions** — everything else, described below.
+
+### Actions menu
+
+Actions collects the things you would otherwise go looking for in other parts of the card, or in another application entirely. Every entry appears only when it can actually do something, so the menu is short and never offers a dead end.
+
+| Action | Appears when | What it does |
+|--------|--------------|--------------|
+| Show in library | The title is in Radarr or Sonarr | Opens the Library panel filtered to it — and takes you back when you close it |
+| Jump to download | It is downloading right now | Opens the Activity queue on that item |
+| Stop playback | Someone is watching it | Stops the stream, with a message to the player |
+| Play on | The file exists and Plex is configured | Casts to any Plex device that is on |
+| Schedule for removal | Maintainerr is configured | Queues the title, or individual seasons, for deletion |
+| Cancel scheduled removal | It is queued for deletion | Takes it back out |
+| Exclude from removal | Maintainerr is configured | Marks it as never to be touched by the rules |
+| Withdraw request | You have a pending request for it | Cancels the request in Seerr |
+| Upcoming episodes | It is a running show | The next air dates, without opening the calendar |
+| Watch statistics | A statistics service is configured | Who watched it, how long, and when |
+
+The button itself reports how it went — it turns blue while working, then green or red — so nothing is left to guess.
+
+**Where watch statistics come from.** If you run **Tracearr**, it answers, because it already watches Plex, Jellyfin and Emby together and reports one honest total per title rather than a separate number per server. Without it the card falls back to **Jellystat** for Jellyfin and **Tautulli** for Plex, whichever can find the title. The icon on the menu row tells you which one was asked.
+
+### Downloads identified by title
+
+Rows in the qBittorrent, Deluge, rTorrent, SABnzbd and NZBGet lists are matched back to the movie or episode they belong to, so clicking one opens that title's detail popup with its poster and description — no need to read a release name to work out what is downloading.
+
+Anything added by hand, outside Radarr and Sonarr, has nothing to open. Clicking those says so plainly instead of opening the wrong title.
 
 ### Poster display settings
 
@@ -210,6 +287,12 @@ Control what appears on poster cards across all categories. All options are avai
 - **Subtitles** — show subtitle availability badges (requires Bazarr)
 - **Rating** — show a rating badge on each poster. Choose between **IMDb** (default) or **TMDB** as the source
 - **Media type tag** — a small Movie or TV label in the top-left corner of each poster
+- **Language display** — how audio and subtitle languages appear on a poster:
+  - **Combined — flags** (default) — small country flags tucked around the rating badge, subtitles on the left and audio on the right. Compact enough to leave the artwork visible, and readable at a glance without reading anything
+  - **Separate tags** — labelled badges with language codes (`EN`, `CZ`) instead of flags. Use this if you prefer words to symbols, or if the flags are too small on your screen
+
+  Both follow the Audio and Subtitles switches above — turning one off drops that side. The same setting drives the language chips in the title detail popup.
+- **"Gone in" countdown** — where the Maintainerr deletion countdown appears: in **all categories**, only inside the **Maintainerr** panel, or **never**. Requires Maintainerr.
 - **Status display** — choose how download and availability status is shown:
   - **Tags** — coloured status badges on the poster (default)
   - **Stripes** — a thin coloured bar at the bottom of the poster. When a title is actively downloading, the bar shows a progress indicator
@@ -217,6 +300,7 @@ Control what appears on poster cards across all categories. All options are avai
 
 ### Appearance & UX
 
+- One visual language across every category and panel — the same capsules, tables, filters and pagination everywhere, so a panel you have never opened still works the way you expect
 - Day / night theming based on `sun.sun`
 - Responsive layout — mobile, tablet, desktop
 - Sticky navigation bar on mobile
@@ -323,6 +407,8 @@ posters:
   showMediaType: true          # show Movie/TV tag  (default: true)
   ratingProvider: imdb         # imdb | tmdb  (default: imdb)
   statusDisplay: tags          # tags | stripes | both  (default: tags)
+  langDisplay: flags           # flags | tags  (default: flags)
+  goneTag: all                 # all | maintainerr | off  (default: all)
 
 # Category order & visibility
 categories:
@@ -403,8 +489,9 @@ styles:
 | `tvUpcoming` | New Shows |
 | `trending` | Trending |
 | `popular` | Popular Movies |
-| `trakt` | Trakt Recommendations |
-| `calendar` | Calendar — upcoming movies & episodes (Radarr + Sonarr), with weekly modal view |
+| `trakt` | Trakt Recommendations (VIP account required) |
+| `suggestarr` | SuggestArr Recommendations |
+| `calendar` | Calendar — upcoming movies & episodes (Radarr + Sonarr), week and month views |
 | `streams` | Now Playing (Plex / Jellyfin / Emby / Kodi) — auto-hidden when nothing plays |
 | `tautulli` | Statistics (Tautulli) |
 | `jellystat` | Statistics (Jellystat) |
@@ -412,6 +499,7 @@ styles:
 | `library` | Library browser (Radarr / Sonarr — bulk edit, sort, filter) |
 | `activity` | Activity Queue (admin only) |
 | `prowlarr` | Indexers (Prowlarr) |
+| `maintainerr` | Maintainerr — rules, collections, deletion calendar, storage |
 
 ---
 
@@ -451,7 +539,7 @@ Arr Stack Card sends one anonymous ping per browser session. The following data 
 
 | Field | What it contains |
 |-------|-----------------|
-| **Card version** | e.g. `1.6.36` |
+| **Card version** | e.g. `1.8.0` |
 | **Anonymous site ID** | Short hash of your Home Assistant hostname — cannot be reversed to identify you or your server |
 | **Enabled integrations** | Which services are configured (e.g. Plex, Bazarr, qBittorrent) — no credentials, URLs, or settings |
 | **Mobile flag** | Whether the card is shown on a screen narrower than 600 px |
@@ -460,6 +548,10 @@ Arr Stack Card sends one anonymous ping per browser session. The following data 
 No IP addresses, hostnames, usernames, media titles, or any personally identifiable information are sent or stored. Rate-limited to one ping per IP per minute on the server side. Data is retained for 6 months.
 
 Live usage stats (public): [argalas.org/arr-stats](https://argalas.org/arr-stats)
+
+### Opting out
+
+If you would rather not take part, you can switch it off: **Settings → Devices & Services → Arr Stack → Reconfigure**, tick **Metrics collection** in the service list, then turn on the opt-out switch on the last step. This installation stops sending anything from that moment on.
 
 ---
 
