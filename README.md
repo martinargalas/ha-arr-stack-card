@@ -12,7 +12,7 @@
 
 Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTorrent, SABnzbd, NZBGet, Seerr (Overseerr/Jellyseerr), Bazarr, Plex, Jellyfin, Emby, Kodi, Tautulli, Jellystat, Tracearr, Prowlarr, Maintainerr, SuggestArr, and Trakt — directly from Home Assistant with a single unified dashboard card.
 
-### Supported services
+### At a glance
 
 <p><img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" height="36" title="Radarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" height="36" title="Sonarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" height="36" title="Bazarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" height="36" title="qBittorrent"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" height="36" title="Deluge"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" height="36" title="rTorrent"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" height="36" title="SABnzbd"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" height="36" title="NZBGet"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" height="36" title="Overseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" height="36" title="Jellyseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" height="36" title="TMDB"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" height="36" title="Prowlarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/maintainerr.png" height="36" title="Maintainerr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" height="36" title="Plex"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" height="36" title="Jellyfin"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/emby.png" height="36" title="Emby"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/kodi.png" height="36" title="Kodi"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" height="36" title="Tautulli"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" height="36" title="Jellystat"/> <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tracearr.svg" height="36" title="Tracearr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" height="36" title="Trakt"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/suggest-arr.png" height="36" title="SuggestArr"/></p>
 
@@ -240,7 +240,9 @@ Indexer overview and search statistics from Prowlarr.
 - Per-indexer search success rate and response time
 - User-agent breakdown — which apps hit your indexers and how often
 
-### Title detail popup
+### Across the card
+
+#### Title detail popup
 
 Clicking any poster — anywhere in the card — opens the same detail popup: backdrop, overview, ratings, cast and trailer, plus everything the card knows about your own copy. Files on disk are described in their own row: the quality of the file you actually have (for example `1080p · BluRay`), which audio tracks it carries and which subtitles are available.
 
@@ -250,7 +252,7 @@ The buttons at the top of the popup are grouped into three menus, one open at a 
 - **Remove** — remove from the library, or from the library and disk. Always asks for confirmation first.
 - **Actions** — everything else, described below.
 
-### Actions menu
+#### Actions menu
 
 Actions collects the things you would otherwise go looking for in other parts of the card, or in another application entirely. Every entry appears only when it can actually do something, so the menu is short and never offers a dead end.
 
@@ -269,7 +271,7 @@ Actions collects the things you would otherwise go looking for in other parts of
 
 **Where watch statistics come from.** If you run **Tracearr**, it answers, because it already watches Plex, Jellyfin and Emby together and reports one honest total per title rather than a separate number per server. Without it the card falls back to **Jellystat** for Jellyfin and **Tautulli** for Plex, whichever can find the title. The icon on the menu row tells you which one was asked.
 
-### Downloads identified by title
+#### Downloads identified by title
 
 Rows in the qBittorrent, Deluge, rTorrent, SABnzbd and NZBGet lists are matched back to the movie or episode they belong to, so clicking one opens that title's detail popup with its poster and description — no need to read a release name to work out what is downloading.
 
@@ -347,156 +349,14 @@ If any of your services uses a self-signed or untrusted certificate, enable **Sk
 
 ---
 
-## Full Configuration
+## Configuration
 
-> **Visual editor** — most settings are available via the HA dashboard editor (click the pencil icon). Only `styles.*` and `security.*` keys require manual YAML editing.
+The card works with no YAML at all — it shows whatever the integration has configured.
+When you do want to change something, the visual editor covers nearly everything:
+open the dashboard editor and click the pencil on the card.
 
-```yaml
-type: custom:arr-stack-card
-
-# General
-localisation: en             # en | cs  (default: en)
-layout: both                 # both | left | right  (default: both)
-swap_sides: false            # swap left and right panels  (default: false)
-                             # Note: on mobile, right panel moves above left. Set sticky_nav_offset ~2000 for nav to appear immediately.
-sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (default: 100)
-
-# Download managers (left panel)
-downloads:
-  torrentItems: 3            # qBittorrent / Deluge / rTorrent items per page  (default: 3)
-  usenetItems: 3             # SABnzbd / NZBGet items per page  (default: 3)
-
-# Download client order & visibility (left panel)
-downloadClients:
-  - id: qbit
-    enabled: true
-  - id: deluge
-    enabled: true
-  - id: rtorrent
-    enabled: true
-  - id: sab
-    enabled: true
-  - id: nzbget
-    enabled: true
-
-# Discovery (right panel)
-discover:
-  categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
-  itemsPerCategory: 4        # columns per category grid  (default: 4)
-  showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
-  oneClickRequest: false     # skip request overlay — uses defaults below  (default: false)
-  oneClickNonAdminOnly: false         # one-click only for non-admin users  (default: false)
-  oneClickTvSeasonMode: first         # first | latest | all — which seasons to request  (default: first)
-  oneClickDefaultMovieProfile: ""     # quality profile name for one-click movie requests
-  oneClickDefaultMovieTag: ""         # Radarr tag for one-click movie requests  (optional)
-  oneClickDefaultMovieRootFolder: ""  # Radarr root folder for one-click movie requests  (optional)
-  oneClickDefaultShowProfile: ""      # quality profile name for one-click TV requests
-  oneClickDefaultShowTag: ""          # Sonarr tag for one-click TV requests  (optional)
-  oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
-  ratingProvider: imdb         # imdb | tmdb — rating badge shown on poster cards  (default: imdb)
-
-# Poster display
-posters:
-  showTitle: true              # show title on poster cards  (default: true)
-  showAudio: true              # show audio language badges  (default: true)
-  showSubtitles: true          # show subtitle badges  (default: true)
-  showRating: true             # show rating badge  (default: true)
-  showMediaType: true          # show Movie/TV tag  (default: true)
-  ratingProvider: imdb         # imdb | tmdb  (default: imdb)
-  statusDisplay: tags          # tags | stripes | both  (default: tags)
-  langDisplay: flags           # flags | tags  (default: flags)
-  goneTag: all                 # all | maintainerr | off  (default: all)
-
-# Category order & visibility
-categories:
-  - id: recentlyAdded
-    enabled: true
-  - id: recentlyRequested
-    enabled: true
-  - id: upcoming
-    enabled: true
-  - id: tvUpcoming
-    enabled: true
-  - id: trending
-    enabled: true
-  - id: popular
-    enabled: true
-  - id: trakt
-    enabled: false
-  - id: calendar
-    enabled: true
-  - id: streams
-    enabled: false
-  - id: tautulli
-    enabled: false
-  - id: jellystat
-    enabled: false
-  - id: activity
-    enabled: false
-  - id: library
-    enabled: true
-  - id: prowlarr
-    enabled: false
-
-# Security
-security:
-  ip_sharing_threshold: 2    # unique IPs per user before sharing warning appears  (default: 2)
-  ip_history_depth: 200      # history records scanned for IP detection  (default: 200)
-
-# Appearance
-styles:
-  performanceMode: false          # disable backdrop blur
-  cardBackground: "#121216"       # card background colour (performance mode only)
-  cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only)
-  dayNightMode: true              # auto switch popup colours based on sun.sun
-  categoryOverlays: true          # colour-tinted overlays on category poster grids  (default: true)
-  applicationIcons: real          # real | mdi — use real app logos or MDI icons  (default: real)
-  uiScale: 1                      # scale all card content — use >1 on large screens/TVs  (default: 1)
-  leftPanelWidth: 40              # downloads panel width as % of card width  (default: 40)
-  searchBarIconColor: ""
-  headingTextColor: "#ffffff"
-  headingColor: "#ffffff"
-  primaryTextColor: "#ffffff"
-  secondaryTextColor: "#aaaaaa"
-  pagingButtonTextColor: "#ffffff"
-  pagingButtonBackgroundColor: "#1e1e2e"
-  pagingDotColor: "#555555"
-  pagingDotActiveColor: "#ffffff"
-  downloadButtonTextColor: "#ffffff"
-  tagPillTextColor: "#ffffff"
-  modalHeadingTextColor: "#ffffff"
-  modalPrimaryTextColor: "#ffffff"
-  modalSecondaryTextColor: "#aaaaaa"
-  modalBackgroundColor: "#121216"      # set dayNightMode: false when using a custom colour
-  modalOverlayColor: "#000000"
-  modalCloseButtonIconColor: "#ffffff"
-  modalCloseButtonBackgroundColor: "#333344"
-  modalButtonTextColor: "#ffffff"
-  modalButtonBackgroundColor: "#1e1e2e"
-  modalRemoveButtonBackgroundColor: "#ff6030"
-```
-
-### Category IDs
-
-| id | Section |
-|----|---------|
-| `recentlyAdded` | Recently Added |
-| `recentlyRequested` | Recently Requested |
-| `upcoming` | Upcoming Movies |
-| `tvUpcoming` | New Shows |
-| `trending` | Trending |
-| `popular` | Popular Movies |
-| `trakt` | Trakt Recommendations (VIP account required) |
-| `suggestarr` | SuggestArr Recommendations |
-| `calendar` | Calendar — upcoming movies & episodes (Radarr + Sonarr), week and month views |
-| `streams` | Now Playing (Plex / Jellyfin / Emby / Kodi) — auto-hidden when nothing plays |
-| `tautulli` | Statistics (Tautulli) |
-| `jellystat` | Statistics (Jellystat) |
-| `tracearr` | Statistics (Tracearr) *(beta)* |
-| `library` | Library browser (Radarr / Sonarr — bulk edit, sort, filter) |
-| `activity` | Activity Queue (admin only) |
-| `prowlarr` | Indexers (Prowlarr) |
-| `maintainerr` | Maintainerr — rules, collections, deletion calendar, storage |
+Every key, its default and the list of category ids live in
+**[CONFIGURATION.md](CONFIGURATION.md)**.
 
 ---
 
