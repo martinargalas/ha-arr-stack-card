@@ -76,6 +76,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | SABnzbd | Usenet download management | Optional |
 | NZBGet | Usenet download management | Optional |
 | Seerr (Overseerr / Jellyseerr) | Media requests, discovery, approvals | Optional |
+| TMDB | Posters, ratings, cast, trailers, Trending and Popular rows | Optional with Seerr — **own key required from 1 Sep 2026 without it** |
 | Bazarr | Subtitle status per movie/show | Optional |
 | Plex | Active stream monitoring and playback control | Optional |
 | Jellyfin | Active stream monitoring and playback control | Optional |
@@ -138,7 +139,7 @@ The right panel is modular. You choose which sections appear and in what order v
 
 A full-screen panel for browsing and managing your entire movie and TV show collection. Open it via the **Library** button in the right panel. Enabled by default for new installs.
 
-- **Poster and table view** — switch between a resizable poster grid and a compact list with ratings, quality, file size, and status at a glance. In poster view, drag the grip handle to adjust column count on the fly — preference is saved per session.
+- **Poster and table view** — switch between a resizable poster grid and a compact list with ratings, quality, file size, and status at a glance. In poster view, drag the grip handle to adjust column count on the fly — your choice is remembered.
 - **Status badges** — each poster shows whether a title is available, downloading, missing, or waiting for a quality upgrade. Subtitle availability shown where configured.
 - **Filter and sort** — filter by Movies, TV Shows, or both; sort by Recently Added, Title, Rating, or Quality; search by title. In table view, click any column header to sort by that column — click again to reverse the order.
 - **Top Quality** — filter to see only movies that have a file but haven't reached your preferred quality yet.
@@ -167,7 +168,7 @@ Switch between a **week** and a **month** view — the month view is available o
 
   SuggestArr refreshes its pool on a schedule of its own, so a fresh batch of tips can take a while to appear after you work through the current one. See [SuggestArr](https://github.com/giuseppe99barchetta/SuggestArr) for setup.
 - One-click or profile-based requests directly to Radarr/Sonarr, or via Seerr
-- **With Overseerr / Jellyseerr:** approve and decline pending requests, family and guest account support with per-user request management
+- **With Seerr:** approve and decline pending requests, family and guest account support with per-user request management
 
 #### Now Playing
 
@@ -499,9 +500,9 @@ styles:
 
 ---
 
-## Multi-user setup (Overseerr / Jellyseerr — optional)
+## Multi-user setup (Seerr — optional)
 
-> Without Overseerr/Jellyseerr, all HA users can add media directly to Radarr/Sonarr.
+> Without Seerr, all HA users can add media directly to Radarr/Sonarr.
 
 | HA account | What they can do |
 |------------|-----------------|
@@ -510,13 +511,13 @@ styles:
 
 **Setup:**
 
-1. In Overseerr/Jellyseerr — create a non-admin user (Settings → Users → Add User).
+1. In Seerr — create a non-admin user (Settings → Users → Add User).
 2. In Home Assistant — create a non-admin HA user for each family member (Settings → People → Add Person → uncheck Administrator).
-3. In the Arr Stack integration settings — enter the non-admin Overseerr user's email and password as the **Family account**.
+3. In the Arr Stack integration settings — enter that user's email and password as the **Family account**.
 
 ### Guest account (optional)
 
-If you have visitors or temporary users who should use a separate Overseerr account, create a second non-admin user in Overseerr and enter their credentials as the **Guest account** in the integration settings. Once both Family and Guest accounts are configured, a **Users** tab appears in the card editor where you can assign specific HA users to either account. Users not explicitly mapped default to the Family account.
+If you have visitors or temporary users who should use a separate Seerr account, create a second non-admin user in Seerr and enter their credentials as the **Guest account** in the integration settings. Once both Family and Guest accounts are configured, a **Users** tab appears in the card editor where you can assign specific HA users to either account. Users not explicitly mapped default to the Family account.
 
 ### One-click requests
 
