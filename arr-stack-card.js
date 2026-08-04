@@ -22478,6 +22478,9 @@ var _PopupMethods = class {
         this._renderPopupEl();
         return;
       }
+      if (e.target.closest('[data-qa-do],[data-qa-lib],[data-qa-run],[data-qa-apply],[data-qa-season-pick],[data-action="plex-cast-play"],[data-action="stream-terminate-show"]')) {
+        this._markActivated();
+      }
       const qaSub = e.target.closest("[data-qa-sub]");
       if (qaSub) {
         const key = qaSub.dataset.qaSub;
