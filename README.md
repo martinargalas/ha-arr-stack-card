@@ -266,8 +266,6 @@ Actions collects the things you would otherwise go looking for in other parts of
 | Upcoming episodes | It is a running show | The next air dates, without opening the calendar |
 | Watch statistics | A statistics service is configured | Who watched it, how long, and when |
 
-The button itself reports how it went — it turns blue while working, then green or red — so nothing is left to guess.
-
 **Where watch statistics come from.** If you run **Tracearr**, it answers, because it already watches Plex, Jellyfin and Emby together and reports one honest total per title rather than a separate number per server. Without it the card falls back to **Jellystat** for Jellyfin and **Tautulli** for Plex, whichever can find the title. The icon on the menu row tells you which one was asked.
 
 ### Downloads identified by title
