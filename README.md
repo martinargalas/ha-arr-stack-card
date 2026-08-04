@@ -221,8 +221,6 @@ Playback statistics from Tautulli, Jellystat, or Tracearr (configure any combina
 
 #### Maintainerr
 
-<img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/maintainerr.png" height="28" align="left" hspace="8"/>
-
 [Maintainerr](https://github.com/jorenn92/Maintainerr) decides what leaves your library — rules like "delete a movie 30 days after everyone has watched it". The card gives it a category of its own, and, more importantly, brings its verdict everywhere else.
 
 - **Gone in tags** — any title queued for deletion carries a countdown badge on its poster, in every category and in its detail popup. This is the main reason to connect Maintainerr: you see what is about to disappear while browsing, not only when you go looking for it. Clicking the badge opens the collection the title is queued in.
