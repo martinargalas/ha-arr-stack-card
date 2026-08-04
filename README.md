@@ -35,7 +35,11 @@ Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTo
 
 ![Arr Stack Card preview](screenshot.png)
 
-![Trakt Seen & Skip](trakt.gif)
+![Actions menu](actions.gif)
+
+![Maintainerr](maintainerr.gif)
+
+![SuggestArr](suggestarr.gif)
 
 ![Mobile](mobile.gif)
 
