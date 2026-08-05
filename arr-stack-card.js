@@ -42489,6 +42489,10 @@ var ArrStackCard = class extends HTMLElement {
         this._rtorrentConfigured !== false && "rtorrent",
         this._tracearrConfigured !== false && "tracearr",
         this._maintainerrConfigured !== false && "maintainerr",
+        // Whether this install already has its own TMDB key. With the shared key
+        // going away on 2026-09-01, this is what says how many installs without
+        // Seerr still have to act.
+        this._tmdbOwnKey === true && "tmdb_key",
         this._jellyfinConfigured === true && "jellyfin",
         this._config.seerr_user_map?.length > 0 && "seerr_users"
       ].filter(Boolean);
