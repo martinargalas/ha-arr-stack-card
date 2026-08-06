@@ -12572,8 +12572,12 @@ var _MediaCardMethods = class {
     return `<div style="position:absolute;top:6px;right:6px;z-index:2;display:flex;align-items:flex-start">${html}</div>`;
   }
   // Country whose flag stands in for a spoken language. English is the awkward
-  // one — GB is the recognisable flag even though the language is not British.
+  // one: the track is just "English", with no region, so the flag is a stand-in
+  // either way. Installs that set their country to the US get the US flag, since
+  // that is the one their users read as English; everyone else keeps GB.
   _flagCountry(lang) {
+    const code = (lang || "").toUpperCase();
+    if (code === "EN" && this._hass?.config?.country === "US") return "US";
     const MAP = {
       CS: "CZ",
       EN: "GB",
@@ -12616,7 +12620,7 @@ var _MediaCardMethods = class {
       CA: "ES",
       IS: "IS"
     };
-    return MAP[(lang || "").toUpperCase()] || null;
+    return MAP[code] || null;
   }
   // Regional-indicator pair — no image assets, no network, and Chrome renders
   // these natively.
@@ -12739,6 +12743,7 @@ var _MediaCardMethods = class {
       // ── the rest ──
       CZ: { raw: `<rect width="30" height="10" fill="#ffffff"/><rect y="10" width="30" height="10" fill="#d7141a"/><path d="M0 0 L15 10 L0 20 Z" fill="#11457e"/>` },
       SK: { raw: `<rect width="30" height="6.67" fill="#ffffff"/><rect y="6.67" width="30" height="6.67" fill="#0b4ea2"/><rect y="13.34" width="30" height="6.66" fill="#ee1c25"/><path d="M6 5.5h6v6.2c0 2-3 3.3-3 3.3s-3-1.3-3-3.3z" fill="#ee1c25" stroke="#ffffff" stroke-width="0.8"/>` },
+      US: { raw: `<rect width="30" height="20" fill="#ffffff"/><rect y="0.0" width="30" height="1.54" fill="#b22234"/><rect y="3.08" width="30" height="1.54" fill="#b22234"/><rect y="6.15" width="30" height="1.54" fill="#b22234"/><rect y="9.23" width="30" height="1.54" fill="#b22234"/><rect y="12.31" width="30" height="1.54" fill="#b22234"/><rect y="15.38" width="30" height="1.54" fill="#b22234"/><rect y="18.46" width="30" height="1.54" fill="#b22234"/><rect width="12" height="10.77" fill="#3c3b6e"/><circle cx="1.3" cy="1.2" r="0.5" fill="#ffffff"/><circle cx="3.65" cy="1.2" r="0.5" fill="#ffffff"/><circle cx="6.0" cy="1.2" r="0.5" fill="#ffffff"/><circle cx="8.35" cy="1.2" r="0.5" fill="#ffffff"/><circle cx="10.7" cy="1.2" r="0.5" fill="#ffffff"/><circle cx="1.3" cy="3.8" r="0.5" fill="#ffffff"/><circle cx="3.65" cy="3.8" r="0.5" fill="#ffffff"/><circle cx="6.0" cy="3.8" r="0.5" fill="#ffffff"/><circle cx="8.35" cy="3.8" r="0.5" fill="#ffffff"/><circle cx="10.7" cy="3.8" r="0.5" fill="#ffffff"/><circle cx="1.3" cy="6.4" r="0.5" fill="#ffffff"/><circle cx="3.65" cy="6.4" r="0.5" fill="#ffffff"/><circle cx="6.0" cy="6.4" r="0.5" fill="#ffffff"/><circle cx="8.35" cy="6.4" r="0.5" fill="#ffffff"/><circle cx="10.7" cy="6.4" r="0.5" fill="#ffffff"/><circle cx="1.3" cy="9.0" r="0.5" fill="#ffffff"/><circle cx="3.65" cy="9.0" r="0.5" fill="#ffffff"/><circle cx="6.0" cy="9.0" r="0.5" fill="#ffffff"/><circle cx="8.35" cy="9.0" r="0.5" fill="#ffffff"/><circle cx="10.7" cy="9.0" r="0.5" fill="#ffffff"/>` },
       GB: { raw: `<rect width="30" height="20" fill="#012169"/><path d="M0 0L30 20M30 0L0 20" stroke="#ffffff" stroke-width="4"/><path d="M0 0L30 20M30 0L0 20" stroke="#c8102e" stroke-width="2"/><path d="M15 0v20M0 10h30" stroke="#ffffff" stroke-width="6.5"/><path d="M15 0v20M0 10h30" stroke="#c8102e" stroke-width="4"/>` },
       ES: { raw: `<rect width="30" height="20" fill="#aa151b"/><rect y="5" width="30" height="10" fill="#f1bf00"/>` },
       PT: { raw: `<rect width="30" height="20" fill="#ff0000"/><rect width="12" height="20" fill="#006600"/><circle cx="12" cy="10" r="4" fill="#ffff00" stroke="#ff0000" stroke-width="0.8"/>` },
@@ -17500,7 +17505,7 @@ var _MaintainerrRenderMethods = class {
     </div>`;
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
       <div style="flex-shrink:0">${toolbar}</div>
-      <div id="mt-rules-wrap" style="flex:1;min-height:0;overflow:hidden">${body || empty}</div>
+      <div id="mt-rules-wrap" style="flex:1;min-height:0;overflow-y:auto">${body || empty}</div>
       ${footer}
     </div>`;
   }
@@ -18253,7 +18258,7 @@ var _MaintainerrRenderMethods = class {
     </div>`;
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
       <div style="flex-shrink:0">${toolbar}</div>
-      <div id="mt-rules-wrap" style="flex:1;min-height:0;overflow:hidden">${body || empty}</div>
+      <div id="mt-rules-wrap" style="flex:1;min-height:0;overflow-y:auto">${body || empty}</div>
       ${footer}
     </div>`;
   }
@@ -38807,8 +38812,10 @@ var _WireMaintainerrMethods = class {
         }
       }
     }
-    const posterView = tab === "overview" || tab === "calendar" || tab === "rules" || tab === "collections";
-    body.style.overflowY = posterView ? "hidden" : "auto";
+    const editing = tab === "rules" && !!m.editor;
+    const posterView = !editing && (tab === "overview" || tab === "calendar" || tab === "rules" || tab === "collections");
+    body.style.display = editing ? "block" : "";
+    body.style.setProperty("overflow-y", posterView ? "hidden" : "auto", "important");
     body.style.paddingBottom = posterView ? "8px" : isMobile() ? "16px" : "20px";
     body.style.paddingTop = posterView ? "8px" : isMobile() ? "12px" : "14px";
     if (posterView) {
@@ -40296,9 +40303,11 @@ var _WireMaintainerrMethods = class {
     const root = modal || this.shadowRoot.querySelector("[data-mt-modal]");
     const body = root?.querySelector("#mt-body");
     if (body) {
+      body.style.display = "block";
       body.style.overflowY = "auto";
       body.style.paddingBottom = isMobile() ? "16px" : "20px";
       body.innerHTML = this._mtRuleEditorHtml();
+      body.style.setProperty("overflow-y", "auto", "important");
     }
     this._mtRefreshTabBtns(root);
   }
