@@ -1375,6 +1375,7 @@ var ARR_I18N = {
     mtScheduled: "napl\xE1nov\xE1no",
     mtNoActions: "Nic napl\xE1nov\xE1no",
     mtToday: "Dnes",
+    mtOverdue: "Po term\xEDnu",
     mtTomorrow: "Z\xEDtra",
     mtThisWeek: "Tento t\xFDden",
     mtThisMonth: "Tento m\u011Bs\xEDc",
@@ -1990,6 +1991,7 @@ var ARR_I18N = {
     mtScheduled: "scheduled",
     mtNoActions: "No scheduled actions",
     mtToday: "Today",
+    mtOverdue: "Overdue",
     mtTomorrow: "Tomorrow",
     mtThisWeek: "This week",
     mtThisMonth: "This month",
@@ -18543,7 +18545,9 @@ var _MaintainerrRenderMethods = class {
     const todayStr = localDateStr(/* @__PURE__ */ new Date());
     const byDay = {};
     for (const it of this._mtDelItems) {
-      const key = localDateStr(new Date(it.due));
+      const d = new Date(it.due);
+      const key = localDateStr(d.getTime() < Date.now() ? /* @__PURE__ */ new Date() : d);
+      it._overdue = key === todayStr && localDateStr(d) !== todayStr;
       (byDay[key] || (byDay[key] = [])).push(it);
     }
     const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -18598,7 +18602,9 @@ var _MaintainerrRenderMethods = class {
           dueMs: null,
           type: it.mediaType,
           fallbackPoster: it.raw?.image_path || "",
-          topBadge: it.seasonIndex != null ? `<span class="badge b-ep">S${String(it.seasonIndex).padStart(2, "0")}</span>` : ""
+          // Overdue titles sit on today's column; say so, or they read as due
+          // today and the delay goes unnoticed.
+          topBadge: (it._overdue ? `<span class="badge b-missing">${this._escHtml(this._t("mtOverdue"))}</span>` : "") + (it.seasonIndex != null ? `<span class="badge b-ep">S${String(it.seasonIndex).padStart(2, "0")}</span>` : "")
         })).join("");
         const more = items.length > MT_CAL_MAX ? `<div style="display:flex;justify-content:center;padding-top:2px">${_dotsBtn(dateStr, items.length)}</div>` : "";
         return `<div class="cal-day-col${isToday ? " cal-day-today" : ""}${items.length === 0 ? " cal-day-empty" : ""}">
