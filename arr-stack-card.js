@@ -4263,6 +4263,15 @@ var STYLES = `
       @media (max-width: 1400px) {
         .popup-glass { height: 85vh; }
       }
+      /* Above that the modal sizes to its content, which is right until a sheet
+         opens: the sources panel is positioned absolutely and so contributes no
+         height, leaving the whole modal collapsed to a strip. With one open it
+         gets the same fixed height the narrower screens use. */
+      @media (min-width: 1401px) {
+        .popup-glass:has(.popup-body--search),
+        .popup-glass:has(.popup-body--sn-is),
+        .popup-glass:has(.popup-body--panel) { height: 85vh; }
+      }
       /* Tablet: the sheet is a fixed height, so its three bands \u2014 backdrop,
          details, trailer \u2014 split it evenly instead of the trailer soaking up
          whatever the other two leave behind. */
@@ -6781,7 +6790,7 @@ var _InteractiveSearch = class {
       release.movieId = this._isInstance === "radarr2" ? this._popup._radarr2Id : this._popup._radarrId;
       await this._hass.callApi("POST", `arr_stack/${svc}/release`, release);
       this._isGrabbed.add(guid);
-      this._ppGrabWait = { inst: svc, until: Date.now() + 18e4 };
+      this._ppGrabWait = { inst: svc, id: release.movieId, until: Date.now() + 18e4 };
       this._ppGrabPollStart();
       this._dlTriggeredBy = "is";
       const radarrId = release.movieId;
@@ -8724,8 +8733,9 @@ var _ArrMethods = class {
         const mediaTitle = it.title || "";
         const isTv = (it.media_type || it.mediaType || "movie") === "tv";
         const date = it.release_date || it.releaseDate || "";
+        const tmdbId = Number(it.tmdb_id ?? it.tmdbId ?? it.id);
         return {
-          id: it.tmdb_id ?? it.tmdbId ?? it.id,
+          id: tmdbId,
           _saId: it.id,
           mediaType: isTv ? "tv" : "movie",
           title: mediaTitle,
@@ -8737,7 +8747,7 @@ var _ArrMethods = class {
           firstAirDate: isTv ? it.first_air_date || it.firstAirDate || date : "",
           voteAverage: it.vote_average ?? it.voteAverage ?? it.rating ?? 0
         };
-      }).filter((m) => m.id);
+      }).filter((m) => Number.isFinite(m.id) && m.id > 0);
       this._suggestarr = this._traktInterleave(items);
       if (items.length > this._suggestarrBaseline) this._suggestarrBaseline = items.length;
       if (this._suggestarrRefreshing) {
@@ -9498,7 +9508,8 @@ var _ArrMethods = class {
       const snSvc = this._snIsInstance === "sonarr2" ? "sonarr2" : "sonarr";
       await this._callApi("POST", `arr_stack/${snSvc}/release`, release);
       this._snIsGrabbed.add(guid);
-      this._ppGrabWait = { inst: snSvc, until: Date.now() + 18e4 };
+      const snGrabId = snSvc === "sonarr2" ? this._popup?._sonarr2Series?.id : this._popup?._sonarrSeries?.id;
+      this._ppGrabWait = { inst: snSvc, id: snGrabId, until: Date.now() + 18e4 };
       this._ppGrabPollStart();
       this._dlTriggeredBy = "is";
       const seriesId = release.seriesId;
@@ -12015,11 +12026,9 @@ var _RenderRight = class {
       <div class="tv-req-inner">
         <div class="tv-req-col-poster">
           ${poster}
-          <div class="tv-req-title tv-req-mob-title">${this._escHtml(p.show.name || p.show.originalName || "")}</div>
         </div>
         <div class="tv-req-row2">
           <div class="tv-req-controls">
-            <div class="tv-req-title tv-req-desk-title">${this._escHtml(p.show.name || p.show.originalName || "")}</div>
             ${tabBar}
             ${panel1}${panel2}
             <div class="tv-req-seasons">
@@ -14409,7 +14418,7 @@ var _WireMethods = class {
         const showId = parseInt(btn.dataset.showid, 10);
         if (!showId) return;
         const tvSource = btn.dataset.source || "tvUpcoming";
-        const show = tvSource === "trending" ? this._trending.find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "search" ? (this._searchResults || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "trakt" ? (this._trakt || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "popular" ? (this._popular || []).find((m) => m.id === showId && m.mediaType === "tv") : (this._tvUpcoming || []).find((m) => m.id === showId);
+        const show = tvSource === "trending" ? this._trending.find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "search" ? (this._searchResults || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "trakt" ? (this._trakt || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "popular" ? (this._popular || []).find((m) => m.id === showId && m.mediaType === "tv") : tvSource === "suggestarr" ? (this._suggestarr || []).find((m) => m.id === showId && m.mediaType === "tv") : (this._tvUpcoming || []).find((m) => m.id === showId);
         const fromTrending = tvSource === "trending";
         const fromSearch = tvSource === "search";
         if (!show) return;
@@ -14496,6 +14505,22 @@ var _WireMethods = class {
     });
     this._wireTvOverlay();
     this._wireSectionOverlay();
+    this._alignReqOverlay();
+  }
+  // The overlay's anchor wraps the paging chevrons as well as the posters, so
+  // inset:0 spilled it over the arrows on both sides. Measured rather than
+  // hardcoded — the chevrons have no fixed width and the grid's own columns
+  // follow the card's settings.
+  _alignReqOverlay() {
+    this.shadowRoot?.querySelectorAll(".tv-req-anchor > .req-overlay").forEach((ov) => {
+      const anchor = ov.parentElement;
+      const grid = anchor?.querySelector(".mgrid");
+      if (!grid || !grid.offsetWidth || !anchor.offsetWidth) return;
+      let left = 0;
+      for (let el = grid; el && el !== anchor; el = el.offsetParent) left += el.offsetLeft;
+      ov.style.left = `${Math.max(0, Math.round(left))}px`;
+      ov.style.right = `${Math.max(0, Math.round(anchor.offsetWidth - left - grid.offsetWidth))}px`;
+    });
   }
   _wireTvOverlay() {
     const scroll = this.shadowRoot.getElementById("sv-scroll");
@@ -21178,7 +21203,7 @@ var _PopupMethods = class {
       } catch (_) {
       }
       const pct = w.inst === "radarr" ? this._radarrQueuePct : w.inst === "radarr2" ? this._radarr2QueuePct : w.inst === "sonarr" ? this._sonarrQueueSeriesPct : this._sonarr2QueueSeriesPct;
-      const id = w.inst.startsWith("radarr") ? w.inst === "radarr2" ? this._popup?._radarr2Id : this._popup?._radarrId : w.inst === "sonarr2" ? this._popup?._sonarr2Series?.id : this._popup?._sonarrSeries?.id;
+      const id = w.id ?? (w.inst.startsWith("radarr") ? w.inst === "radarr2" ? this._popup?._radarr2Id : this._popup?._radarrId : w.inst === "sonarr2" ? this._popup?._sonarr2Series?.id : this._popup?._sonarrSeries?.id);
       if (id != null && pct?.has(id)) {
         this._ppGrabWait = null;
         clearInterval(this._ppGrabTimer);
@@ -24016,7 +24041,8 @@ var _PopupMethods = class {
         this._ppGrabWait = null;
         return false;
       }
-      return true;
+      const openId = inst === "radarr" ? this._popup?._radarrId : inst === "radarr2" ? this._popup?._radarr2Id : inst === "sonarr" ? this._popup?._sonarrSeries?.id : this._popup?._sonarr2Series?.id;
+      return w.id == null || String(w.id) === String(openId);
     };
     const _instChip = (label, status, pct = null, inst = null) => {
       if (inst && status !== "downloading" && _grabWaiting(inst)) {
