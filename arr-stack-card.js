@@ -117,6 +117,7 @@ var ArrStackCardEditor = class extends HTMLElement {
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .section { margin-bottom: 20px; }
+        .sub-group { padding-left: 14px; }
         .section-title {
           font-size: 11px; font-weight: 700; text-transform: uppercase;
           letter-spacing: 0.08em; color: var(--secondary-text-color, #757575);
@@ -236,6 +237,13 @@ var ArrStackCardEditor = class extends HTMLElement {
             <input type="number" data-group="downloads" data-key="usenetItems" value="${this._cfg("downloads", "usenetItems", 3)}" min="1" max="20"/>
           </div>
           <div class="row">
+            <span class="row-label">Allow download controls</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="allowControls" ${this._cfg("downloads", "allowControls", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="hint">When disabled, play/pause and delete buttons are hidden. Category filters remain accessible.</div>
+          <div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 6px">Cards</div>
+          <div class="sub-group">
+          <div class="row">
             <span class="row-label">Show storage card</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showStorage" ${this._cfg("downloads", "showStorage", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
           </div>
@@ -246,12 +254,34 @@ var ArrStackCardEditor = class extends HTMLElement {
           <div class="row">
             <span class="row-label">Show VPN card</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showVpnCard" ${this._cfg("downloads", "showVpnCard", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+          </div></div>
+<div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 6px">Download row</div>
+          <div class="sub-group">
+          <div class="row">
+            <span class="row-label">Upload speed</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowUpload" ${this._cfg("downloads", "rowUpload", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
           </div>
           <div class="row">
-            <span class="row-label">Allow download controls</span>
-            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="allowControls" ${this._cfg("downloads", "allowControls", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+            <span class="row-label">Time left</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowEta" ${this._cfg("downloads", "rowEta", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">When disabled, play/pause and delete buttons are hidden. Category filters remain accessible.</div>
+          <div class="row">
+            <span class="row-label">Size</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowSize" ${this._cfg("downloads", "rowSize", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="row">
+            <span class="row-label">Peers</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowPeers" ${this._cfg("downloads", "rowPeers", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="row">
+            <span class="row-label">Percentage</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowPercent" ${this._cfg("downloads", "rowPercent", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="row">
+            <span class="row-label">Progress bar</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowProgress" ${this._cfg("downloads", "rowProgress", true) !== false ? "checked" : ""}><span class="toggle-slider"></span></label>
+          </div></div>
+          <div class="hint">What each download row shows. The first pill always stays \u2014 it carries the state, so Stalled, Paused, Complete and errors remain visible. Upload speed and Peers apply to torrent clients only.</div>
         </div>
 
         <!-- Download Clients -->
@@ -329,6 +359,17 @@ var ArrStackCardEditor = class extends HTMLElement {
             <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg("discover", "showMoreOnPage", 3)}" min="1" max="50"/>
           </div>
           <div class="hint">Insert a "See More" card as the last slot on this page. Opens full-section overlay. Default: 3.</div>
+          ${this._caps?.overseerr ? `
+          <div class="section-title" style="margin-top:16px">Recently Requested</div>
+          <div class="row">
+            <span class="row-label">Source</span>
+            <select data-group="discover" data-key="requestedSource" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+              <option value="both" ${this._cfg("discover", "requestedSource", "both") === "both" ? "selected" : ""}>Seerr + card</option>
+              <option value="seerr" ${this._cfg("discover", "requestedSource", "both") === "seerr" ? "selected" : ""}>Seerr only</option>
+              <option value="library" ${this._cfg("discover", "requestedSource", "both") === "library" ? "selected" : ""}>Library</option>
+            </select>
+          </div>
+          <div class="hint">Seerr + card adds what you requested through the card and anything downloading right now. Seerr only mirrors your Seerr request list exactly. Library is the old behaviour: every monitored title without a file, whatever put it there.</div>` : ""}
           <div class="section-title" style="margin-top:16px">One-click Request</div>
           <div class="row">
             <span class="row-label">Enabled</span>
@@ -886,16 +927,15 @@ var ARR_I18N = {
     saRecommended: "Suggestarr doporu\u010Den\xED",
     saRefreshing: "Hled\xE1m dal\u0161\xED tipy\u2026",
     saEmpty: "Zat\xEDm \u017E\xE1dn\xE9 tipy",
-    tmdbNoticeShort: "Do 1. 9. 2026 je pot\u0159eba vlastn\xED TMDB API kl\xED\u010D",
+    tmdbNoticeShort: "Postery a detaily pot\u0159ebuj\xED vlastn\xED TMDB kl\xED\u010D",
     tmdbNoticeMore: "V\xEDce informac\xED",
     tmdbNoticeDismiss: "Skr\xFDt na t\u0159i dny",
     tmdbInfoTitle: "Vlastn\xED TMDB API kl\xED\u010D",
-    tmdbInfo1: "Karta a\u017E dosud fungovala d\xEDky sd\xEDlen\xE9mu TMDB API kl\xED\u010Di, kter\xFD byl napevno zabudovan\xFD v integraci. Nemuseli jste tedy za\u0159izovat v\u016Fbec nic.",
-    tmdbInfo2: "Chyst\xE1m se kartu za\u0159adit mezi ofici\xE1ln\xED dopl\u0148ky HACS. Jedna z podm\xEDnek p\u0159ijet\xED zabudovan\xE9 sd\xEDlen\xE9 kl\xED\u010De zakazuje, tak\u017Ee mus\xED pry\u010D.",
-    tmdbInfo3: "Pokud pou\u017E\xEDv\xE1te Seerr (d\u0159\xEDve Overseerr nebo Jellyseerr), net\xFDk\xE1 se v\xE1s to. Metadata, vyhled\xE1v\xE1n\xED i detaily titul\u016F jdou p\u0159es n\u011Bj a \u017E\xE1dn\xFD TMDB kl\xED\u010D nepot\u0159ebujete.",
-    tmdbInfo4: "Bez Seerru si pros\xEDm do 1. 9. 2026 vytvo\u0159te vlastn\xED kl\xED\u010D. \xDA\u010Det na themoviedb.org je zdarma a kl\xED\u010D najdete v Settings \u2192 API. Pokud u\u017E \xFA\u010Det m\xE1te, sta\u010D\xED pou\u017E\xEDt ten. Kl\xED\u010D pak vypl\u0148te v Nastaven\xED \u2192 Za\u0159\xEDzen\xED a slu\u017Eby \u2192 Arr Stack \u2192 Konfigurovat znovu \u2192 Discovery.",
-    tmdbInfo5: "Bez kl\xED\u010De po tomto datu p\u0159estanou fungovat postery, hodnocen\xED, obsazen\xED, trailery a \u0159\xE1dky Trending a Popular.",
-    tmdbInfo6: "Omlouv\xE1m se za pr\xE1ci nav\xEDc \u2014 karta po v\xE1s dosud nic necht\u011Bla a nerad o to \u017E\xE1d\xE1m zp\u011Btn\u011B. Jakmile kl\xED\u010D vypln\xEDte nebo nastav\xEDte Seerr, tato hl\xE1\u0161ka sama zmiz\xED.",
+    tmdbInfo1: "Pokud se ti u titul\u016F nena\u010D\xEDtaj\xED postery, hodnocen\xED ani dal\u0161\xED informace, je to t\xEDm, \u017Ee se braly ze sd\xEDlen\xE9ho TMDB kl\xED\u010De zabudovan\xE9ho v integraci.",
+    tmdbInfo2: "Ten kl\xED\u010D musel pry\u010D. Karta je za\u0159azen\xE1 mezi dopl\u0148ky HACS a jednou z podm\xEDnek p\u0159ijet\xED je, \u017Ee integrace nesm\xED obsahovat sd\xEDlen\xFD API kl\xED\u010D.",
+    tmdbInfo3: "Nastav si vlastn\xED kl\xED\u010D a v\u0161echno se za\u010Dne na\u010D\xEDtat zp\xE1tky. \xDA\u010Det na themoviedb.org je zdarma, kl\xED\u010D najde\u0161 v Settings \u2192 API. Pak ho vypl\u0148 v Nastaven\xED \u2192 Za\u0159\xEDzen\xED a slu\u017Eby \u2192 Arr Stack \u2192 Konfigurovat znovu \u2192 Discovery.",
+    tmdbInfo4: "Druh\xE1 mo\u017Enost je nastavit Seerr (d\u0159\xEDve Overseerr nebo Jellyseerr). Kdy\u017E ho pou\u017E\xEDv\xE1\u0161, metadata jdou p\u0159es n\u011Bj a TMDB kl\xED\u010D nepot\u0159ebuje\u0161 v\u016Fbec.",
+    tmdbInfo5: "P\u0159ed odstran\u011Bn\xEDm sd\xEDlen\xE9ho kl\xED\u010De tu m\u011Bs\xEDc viselo upozorn\u011Bn\xED. Omlouv\xE1m se v\u0161em, kter\xFDm to uteklo.",
     tmdbInfoLink: "Vytvo\u0159it TMDB API kl\xED\u010D",
     dlInfoTitle: "Bez vazby na film nebo seri\xE1l",
     dlInfo1: "Toto stahov\xE1n\xED nen\xED propojen\xE9 s \u017E\xE1dn\xFDm filmem ani seri\xE1lem v Radarru nebo Sonarru.",
@@ -983,6 +1023,9 @@ var ARR_I18N = {
     badgeFailed: "Selhalo",
     badgeMissing: "Chyb\xED",
     badgeAvailable: "Dostupn\xE9",
+    badgePartial: "\u010C\xE1ste\u010Dn\u011B dostupn\xE9",
+    badgeRequested: "Po\u017E\xE1d\xE1no",
+    badgeDeclined: "Zam\xEDtnuto",
     badgeAdded: "P\u0159id\xE1no",
     badgePending: "Schv\xE1len\xED",
     missingSubs: "Chyb\xED titulky",
@@ -1517,16 +1560,15 @@ var ARR_I18N = {
     saRecommended: "Suggestarr Recommended",
     saRefreshing: "Looking for more\u2026",
     saEmpty: "No suggestions right now",
-    tmdbNoticeShort: "Your own TMDB API key is needed by 1 September 2026",
+    tmdbNoticeShort: "Posters and details need your own TMDB key",
     tmdbNoticeMore: "More info",
     tmdbNoticeDismiss: "Hide for three days",
     tmdbInfoTitle: "Your own TMDB API key",
-    tmdbInfo1: "Until now the card has worked thanks to a shared TMDB API key built into the integration, so you never had to set anything up.",
-    tmdbInfo2: "I am submitting the card as an official HACS add-on. One of the requirements forbids shipping a shared key, so it has to go.",
-    tmdbInfo3: "If you use Seerr (previously Overseerr or Jellyseerr), none of this affects you. Metadata, search and title details all come from it and no TMDB key is needed.",
-    tmdbInfo4: "Without Seerr, please create your own key before 1 September 2026. A themoviedb.org account is free and the key lives under Settings \u2192 API. If you already have an account, just use that one. Then fill the key in under Settings \u2192 Devices & Services \u2192 Arr Stack \u2192 Reconfigure \u2192 Discovery.",
-    tmdbInfo5: "Without a key, the posters, ratings, cast, trailers and the Trending and Popular rows will stop working after that date.",
-    tmdbInfo6: "Apologies for the extra step \u2014 the card has never asked anything of you until now, and I would rather not have had to. Once the key is filled in, or Seerr is configured, this notice disappears on its own.",
+    tmdbInfo1: "If posters, ratings and other details are no longer loading for your titles, it is because they came from a shared TMDB key built into the integration.",
+    tmdbInfo2: "That key had to go. The card is listed as a HACS add-on, and one of the requirements is that an integration must not ship a shared API key.",
+    tmdbInfo3: "Set up your own key and everything loads again. A themoviedb.org account is free and the key lives under Settings \u2192 API. Then fill it in under Settings \u2192 Devices & Services \u2192 Arr Stack \u2192 Reconfigure \u2192 Discovery.",
+    tmdbInfo4: "The other option is to set up Seerr (previously Overseerr or Jellyseerr). If you use it, metadata comes from there and no TMDB key is needed at all.",
+    tmdbInfo5: "A notice ran here for a month before the shared key was removed. Apologies to anyone who missed it.",
     tmdbInfoLink: "Create a TMDB API key",
     dlInfoTitle: "No linked movie or show",
     dlInfo1: "This download is not linked to any movie or show in Radarr or Sonarr.",
@@ -1607,6 +1649,9 @@ var ARR_I18N = {
     badgeFailed: "Failed",
     badgeMissing: "Missing",
     badgeAvailable: "Available",
+    badgePartial: "Partially available",
+    badgeRequested: "Requested",
+    badgeDeclined: "Declined",
     badgeAdded: "Added",
     badgePending: "Approval",
     missingSubs: "Missing subs",
@@ -7471,6 +7516,7 @@ var _FetchMethods = class {
       see("tracearr") ? this._fetchTracearr() : Promise.resolve(),
       see("prowlarr") ? this._fetchProwlarr() : Promise.resolve(),
       see("maintainerr") ? this._fetchMaintainerr() : Promise.resolve(),
+      see("recentlyRequested") ? this._fetchSeerrRequests() : Promise.resolve(),
       // episodefiles + bazarr episodes — only needed for recentlyAdded sonarr cards
       see("recentlyAdded") ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
       // Activity history/blocklist: always fetch if modal open, otherwise only if category visible
@@ -7603,6 +7649,7 @@ var _FetchMethods = class {
       see("tracearr") ? this._fetchTracearr() : Promise.resolve(),
       see("prowlarr") ? this._fetchProwlarr() : Promise.resolve(),
       see("maintainerr") ? this._fetchMaintainerr() : Promise.resolve(),
+      see("recentlyRequested") ? this._fetchSeerrRequests() : Promise.resolve(),
       see("recentlyAdded") ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
       see("activity") ? this._fetchActivityHistory() : Promise.resolve(),
       see("activity") ? this._fetchActivityBlocklist() : Promise.resolve()
@@ -7720,6 +7767,7 @@ var _SessionsMethods = class {
       this._plexConfigured = true;
       const sessions = raw?.MediaContainer?.Metadata || [];
       this._plexSessions = sessions.filter((s) => s.Player?.machineIdentifier && (s.Player.state === "playing" || s.Player.state === "paused")).map((s) => this._normalizePlexSession(s));
+      await this._resolvePlexSessionIds();
     } catch (_) {
       this._plexConfigured = false;
       this._plexSessions = [];
@@ -7814,8 +7862,55 @@ var _SessionsMethods = class {
       _plexUser: s.User?.title || "",
       _plexUserThumb: s.User?.thumb || "",
       _plexSessionId: s.Session?.id || s.sessionKey || "",
-      _plexSessionKey: s.sessionKey || ""
+      _plexSessionKey: s.sessionKey || "",
+      // Plex states the title in the viewer's language, so opening the popup from
+      // a stream used to search the library by that name and miss ("Garfield ve
+      // filmu" against "Garfield"). The session carries provider ids — those match
+      // whatever the library calls it.
+      _plexRatingKey: s.ratingKey || "",
+      _plexParentKey: s.grandparentRatingKey || s.parentRatingKey || "",
+      _plexGuids: [s.guid, ...(s.Guid || []).map((g) => g?.id)].filter(Boolean),
+      _plexShowGuids: s.grandparentGuid ? [s.grandparentGuid] : []
     };
+  }
+  // Plex names an item in the viewer's language and its artwork is whatever the
+  // server happens to hold, so neither the title nor the Plex thumb identifies the
+  // library entry. The provider ids do — they are on the item's own metadata when
+  // the session payload leaves them out, so fetch and cache them per rating key.
+  _plexIdsFromGuids(guids) {
+    const out = { tmdbId: null, tvdbId: null };
+    for (const g of guids || []) {
+      if (typeof g !== "string") continue;
+      if (g.startsWith("tmdb://")) out.tmdbId = g.replace("tmdb://", "").split("?")[0];
+      if (g.startsWith("tvdb://")) out.tvdbId = g.replace("tvdb://", "").split("?")[0];
+    }
+    return out;
+  }
+  async _plexIdsForKey(key) {
+    if (!key) return { tmdbId: null, tvdbId: null };
+    this._plexIdCache = this._plexIdCache || {};
+    if (this._plexIdCache[key]) return this._plexIdCache[key];
+    let ids = { tmdbId: null, tvdbId: null };
+    try {
+      const meta = await this._callApi("GET", `arr_stack/plex/metadata?ratingKey=${encodeURIComponent(key)}`);
+      const md = meta?.MediaContainer?.Metadata?.[0];
+      ids = this._plexIdsFromGuids([md?.guid, ...(md?.Guid || []).map((g) => g?.id)].filter(Boolean));
+    } catch (_) {
+    }
+    this._plexIdCache[key] = ids;
+    return ids;
+  }
+  async _resolvePlexSessionIds() {
+    for (const s of this._plexSessions || []) {
+      const isTV = s.attr.media_content_type === "episode";
+      const own = this._plexIdsFromGuids(isTV ? s._plexShowGuids : s._plexGuids);
+      let ids = own;
+      if (!ids.tmdbId && !ids.tvdbId) {
+        ids = await this._plexIdsForKey(isTV ? s._plexParentKey : s._plexRatingKey);
+      }
+      s._tmdbId = ids.tmdbId;
+      s._tvdbId = ids.tvdbId;
+    }
   }
   async _fetchJellyfinSessions() {
     const now = Date.now();
@@ -8266,7 +8361,8 @@ var _ArrMethods = class {
         this._radarr2Configured = false;
         return;
       }
-      const filtered = data.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
+      const tagged = (Array.isArray(data) ? data : []).map((m) => ({ ...m, _isRadarr2: true }));
+      const filtered = tagged.filter((m) => m.added && m.added !== "0001-01-01T00:00:00Z");
       this._radarr2 = filtered.sort((a, b) => new Date(b.added) - new Date(a.added));
       this._radarr2Total = filtered.length;
       this._radarr2Configured = true;
@@ -8406,12 +8502,12 @@ var _ArrMethods = class {
         tvEps.push(first);
       }
       const movieSeen = /* @__PURE__ */ new Map();
+      const cutoff = Date.now() - 864e5;
       for (const m of [...radarrRaw || [], ...radarr2Raw || []]) {
         const key = m.tmdbId || m.id;
-        if (movieSeen.has(key)) continue;
         if (!m.digitalRelease) continue;
-        const cutoff = Date.now() - 864e5;
         if (new Date(m.digitalRelease).getTime() < cutoff) continue;
+        if (movieSeen.has(key)) continue;
         movieSeen.set(key, { ...m, _mediaType: "movie", airDate: m.digitalRelease.split("T")[0], series: m });
       }
       this._calendar = [...tvEps, ...Array.from(movieSeen.values())].sort((a, b) => new Date(a.airDate) - new Date(b.airDate)).slice(0, 32);
@@ -10165,6 +10261,27 @@ var _ArrMethods = class {
       this._mtLibTotalsLoading = false;
     }
   }
+  // Recently Requested reads Seerr's own request list when Seerr is configured —
+  // the section is named after requests, and the Radarr/Sonarr wanted list it used
+  // to be built from answers a different question. `null` means "no Seerr data",
+  // which is what makes the getter fall back to the library.
+  async _fetchSeerrRequests() {
+    if (this._overseerrConfigured === false) {
+      this._seerrRequests = null;
+      return;
+    }
+    try {
+      this._seerrRequestsErr = false;
+      const acct = this._seerrAccountForUser();
+      const url = acct === "admin" ? "arr_stack/overseerr/requests?take=30" : `arr_stack/overseerr/my_pending?userMode=${acct}&enrich=1&take=30`;
+      const data = await this._callApi("GET", url);
+      this._seerrRequests = Array.isArray(data?.results) ? data.results : null;
+    } catch (e) {
+      console.error("[arr-card] Seerr requests fetch error:", e);
+      this._seerrRequests = null;
+      this._seerrRequestsErr = true;
+    }
+  }
 };
 var arrMixin = _ArrMethods.prototype;
 
@@ -10545,6 +10662,12 @@ var _RenderLeft = class {
       ${items}
     </div>`;
   }
+  // Which parts of a download row the user wants to see. The state pill is not in
+  // here on purpose — it doubles as the Stalled / Paused / Complete / error label,
+  // so hiding it would leave a stuck download looking identical to a healthy one.
+  _dlRow(key) {
+    return this._cfgGet("downloads", key, true) !== false;
+  }
   _renderTorrentItem(t) {
     const pct = Math.round((t.progress || 0) * 100);
     const dlSpeed = this.fmtSpeed(t.dlspeed || 0);
@@ -10605,17 +10728,17 @@ var _RenderLeft = class {
     <div class="dl"${this._dlOpenAttr(hash)}>
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
-        <span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>
+        ${this._dlRow("rowPercent") ? `<span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>` : ""}
         <div class="tb-group">${actionBtns}</div>
       </div>
       <div class="dl-r2">
         ${speedCol}
-        ${!isCompleted && !isError && !isStalledDL ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
-        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" class="icon-11-st"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
-        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${leechs}</b></span></span>
+        ${this._dlRow("rowUpload") && !isCompleted && !isError && !isStalledDL ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
+        ${!this._dlRow("rowEta") ? "" : isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" class="icon-11-st"></ha-icon><b class="dm-val">R: ${ratio}</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        ${this._dlRow("rowSize") ? `<span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>` : ""}
+        ${this._dlRow("rowPeers") ? `<span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${leechs}</b></span></span>` : ""}
       </div>
-      <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
+      ${this._dlRow("rowProgress") ? `<div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>` : ""}
     </div>`;
   }
   _renderDeluge() {
@@ -10715,17 +10838,17 @@ var _RenderLeft = class {
     <div class="dl"${this._dlOpenAttr(hash)}>
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
-        <span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>
+        ${this._dlRow("rowPercent") ? `<span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>` : ""}
         <div class="tb-group">${actionBtns}</div>
       </div>
       <div class="dl-r2">
         ${speedCol}
-        ${!isCompleted && !isError && !isPaused ? this._pill("pill-teal", "mdi:upload", upSpd) : ""}
-        ${isSeeding ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
-        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${done} / ${total}</b></span>
-        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>
+        ${this._dlRow("rowUpload") && !isCompleted && !isError && !isPaused ? this._pill("pill-teal", "mdi:upload", upSpd) : ""}
+        ${isSeeding || !this._dlRow("rowEta") ? "" : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        ${this._dlRow("rowSize") ? `<span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${done} / ${total}</b></span>` : ""}
+        ${this._dlRow("rowPeers") ? `<span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>` : ""}
       </div>
-      <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
+      ${this._dlRow("rowProgress") ? `<div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>` : ""}
     </div>`;
   }
   _renderSab() {
@@ -10841,15 +10964,15 @@ var _RenderLeft = class {
     <div class="dl"${this._dlOpenAttr(nzoId)}>
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
-        <span class="dl-pct">${pct}%</span>
+        ${this._dlRow("rowPercent") ? `<span class="dl-pct">${pct}%</span>` : ""}
         <div class="tb-group">${actionBtns}</div>
       </div>
       <div class="dl-r2">
         ${speedCol}
-        ${isDownloading ? `<span class="dm"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>` : ""}
-        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>
+        ${isDownloading && this._dlRow("rowEta") ? `<span class="dm"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>` : ""}
+        ${this._dlRow("rowSize") ? `<span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${doneSizeStr} / ${totalSizeStr}</b></span>` : ""}
       </div>
-      <div class="pbar"><div class="pbar-fill ${status === "Failed" ? "pf-red" : status === "Completed" ? "pf-green" : ["Checking", "Verifying", "Extracting", "Repairing"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange"}" style="width:${pct}%"></div></div>
+      ${this._dlRow("rowProgress") ? `<div class="pbar"><div class="pbar-fill ${status === "Failed" ? "pf-red" : status === "Completed" ? "pf-green" : ["Checking", "Verifying", "Extracting", "Repairing"].includes(status) ? "pf-teal" : isDownloading ? "pf-blue" : "pf-orange"}" style="width:${pct}%"></div></div>` : ""}
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -10958,14 +11081,14 @@ var _RenderLeft = class {
     <div class="dl"${this._dlOpenAttr(nzbId)}>
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
-        <span class="dl-pct">${pct}%</span>
+        ${this._dlRow("rowPercent") ? `<span class="dl-pct">${pct}%</span>` : ""}
         <div class="tb-group">${actionBtns}</div>
       </div>
       <div class="dl-r2">
         ${speedCol}
-        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${doneStr} / ${totalStr}</b></span>
+        ${this._dlRow("rowSize") ? `<span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${doneStr} / ${totalStr}</b></span>` : ""}
       </div>
-      <div class="pbar"><div class="pbar-fill ${barCls}" style="width:${pct}%"></div></div>
+      ${this._dlRow("rowProgress") ? `<div class="pbar"><div class="pbar-fill ${barCls}" style="width:${pct}%"></div></div>` : ""}
     </div>`;
   }
   // ─────────────────────────────────────────────
@@ -11124,17 +11247,17 @@ var _RenderLeft = class {
     <div class="dl"${this._dlOpenAttr(hash)}>
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
-        <span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>
+        ${this._dlRow("rowPercent") ? `<span class="dl-pct${isError ? " dl-pct-err" : ""}">${pct}%</span>` : ""}
         <div class="tb-group">${actionBtns}</div>
       </div>
       <div class="dl-r2">
         ${speedCol}
-        ${!isCompleted && !isError && !isPaused && !isChecking ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
-        ${isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
-        <span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>
-        <span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>
+        ${this._dlRow("rowUpload") && !isCompleted && !isError && !isPaused && !isChecking ? this._pill("pill-teal", "mdi:upload", upSpeed) : ""}
+        ${!this._dlRow("rowEta") ? "" : isSeeding ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>` : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        ${this._dlRow("rowSize") ? `<span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>` : ""}
+        ${this._dlRow("rowPeers") ? `<span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>` : ""}
       </div>
-      <div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>
+      ${this._dlRow("rowProgress") ? `<div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>` : ""}
     </div>`;
   }
   _renderVpnBar() {
@@ -11285,7 +11408,6 @@ var _RenderRight = class {
     }
   }
   _tmdbNoticeHtml() {
-    if (Date.now() > Date.parse("2026-09-01T00:00:00Z")) return "";
     if (!this._hass?.user?.is_admin) return "";
     if (this._overseerrConfigured !== false || this._tmdbOwnKey !== false) return "";
     if (this._tmdbNoticeSnoozed()) return "";
@@ -11346,7 +11468,7 @@ var _RenderRight = class {
           <button class="popup-close" data-tmdb-info-close style="position:relative;top:0;right:0;flex-shrink:0;align-self:center;margin-left:4px">${ICONS.close}</button>
         </div>
         <div class="info-modal-body">
-          ${[1, 2, 3, 4, 5, 6].map(p).join("")}
+          ${[1, 2, 3, 4, 5].map(p).join("")}
           <a class="info-modal-link" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">${this._t("tmdbInfoLink")}</a>
         </div>
       </div>
@@ -12350,6 +12472,45 @@ var _RenderRight = class {
       if (anyRestarted) this._reRenderSection("streams");
     }, 1e3);
   }
+  // Plex streams reach the card twice: as HA media_player entities and as proxy
+  // sessions keyed `plex:<machineIdentifier>`. Only the proxy side carries the
+  // user and the provider ids, so pair the two up.
+  _streamPlexSession(id, attr) {
+    const sessions = this._plexSessions || [];
+    if (id.startsWith("plex:")) return sessions.find((s) => s.id === id) || null;
+    if (!id.startsWith("media_player.plex_")) return null;
+    return sessions.find((s) => {
+      const sTitle = s.attr.media_title || "";
+      const hTitle = attr.media_title || "";
+      const titleMatch = hTitle === sTitle || hTitle.startsWith(sTitle + " (") || sTitle.startsWith(hTitle + " (");
+      const seriesMatch = (s.attr.media_series_title || "") === (attr.media_series_title || "");
+      return titleMatch && seriesMatch;
+    }) || null;
+  }
+  _streamLibPoster(id, attr, isTV, plexMatch) {
+    let tmdbId = null;
+    let tvdbId = null;
+    if (id.startsWith("jellyfin:")) {
+      tmdbId = attr._jfTmdbId;
+      tvdbId = attr._jfTvdbId;
+    } else if (id.startsWith("emby:")) {
+      tmdbId = attr._embyTmdbId;
+      tvdbId = attr._embyTvdbId;
+    } else if (plexMatch) {
+      tmdbId = plexMatch._tmdbId;
+      tvdbId = plexMatch._tvdbId;
+    }
+    if (!tmdbId && !tvdbId) return null;
+    const eq = (a, b) => a != null && b != null && String(a) === String(b);
+    if (isTV) {
+      const shows = [...this._sonarr || [], ...this._sonarr2 || []];
+      const hit2 = shows.find((s) => eq(s.tvdbId, tvdbId)) || shows.find((s) => eq(s.tmdbId, tmdbId));
+      return hit2 ? this._getSonarrPoster(hit2) : null;
+    }
+    const movies = [...this._radarr || [], ...this._radarr2 || []];
+    const hit = movies.find((m) => eq(m.tmdbId, tmdbId));
+    return hit ? this._getRadarrPoster(hit) : null;
+  }
   _renderStreamCard({ id, state, attr }) {
     const isPlex = id.startsWith("media_player.plex_") || id.startsWith("plex:");
     const isJellyfin = id.startsWith("jellyfin:");
@@ -12392,7 +12553,8 @@ var _RenderRight = class {
       deviceIcon = "mdi:cellphone";
       deviceName = "Phone";
     }
-    const poster = attr.entity_picture || null;
+    const plexMatch = this._streamPlexSession(id, attr);
+    const poster = this._streamLibPoster(id, attr, isTV, plexMatch) || attr.entity_picture || null;
     let img;
     if (!poster && isLiveTV) {
       const ch = channel || (attr.media_title || "").slice(0, 6).toUpperCase();
@@ -12419,16 +12581,9 @@ var _RenderRight = class {
     let userName = "";
     let userThumb = "";
     if (isPlex) {
-      const match = (this._plexSessions || []).find((s) => {
-        const sTitle = s.attr.media_title || "";
-        const hTitle = attr.media_title || "";
-        const titleMatch = hTitle === sTitle || hTitle.startsWith(sTitle + " (") || sTitle.startsWith(hTitle + " (");
-        const seriesMatch = (s.attr.media_series_title || "") === (attr.media_series_title || "");
-        return titleMatch && seriesMatch;
-      });
-      if (match?._plexUser) {
-        userName = match._plexUser;
-        userThumb = match._plexUserThumb || "";
+      if (plexMatch?._plexUser) {
+        userName = plexMatch._plexUser;
+        userThumb = plexMatch._plexUserThumb || "";
       }
     } else if (isJellyfin) {
       userName = attr._jfUser || "";
@@ -13260,48 +13415,54 @@ var _MediaCardMethods = class {
   _renderRecentlyRequestedCard(item) {
     const pc = this._posterCfg();
     const isMovie = item._mediaType === "movie";
-    const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const seerrOnly = !!item._seerrOnly;
+    const arrPoster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
+    const poster = arrPoster || (item._seerrPoster ? item._seerrPoster.startsWith("http") ? item._seerrPoster : `https://image.tmdb.org/t/p/w342${item._seerrPoster}` : null);
     const title = this._escHtml(item.title || "Unknown");
     const typeTag = isMovie ? this._t("typeMovie") : this._t("typeTv");
-    const popup = isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
+    const popup = seerrOnly ? isMovie ? POPUP_TYPE.MOVIE : POPUP_TYPE.TV : isMovie ? POPUP_TYPE.RADARR : POPUP_TYPE.SONARR;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
-    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id);
+    const img = this._mcImg(poster, isMovie ? "\u{1F3AC}" : "\u{1F4FA}", item.id || item.tmdbId);
     const tvdbAttr = !isMovie && item.tvdbId ? ` data-tvdbid="${item.tvdbId}"` : "";
     const tmdbAttr = item.tmdbId ? ` data-tmdbid="${item.tmdbId}"` : "";
-    const radarrAttr = isMovie ? item._isRadarr2 ? ` data-radarr2id="${item.id}"` : ` data-radarrid="${item.id}"` : "";
+    const radarrAttr = isMovie && item.id ? item._isRadarr2 ? ` data-radarr2id="${item.id}"` : ` data-radarrid="${item.id}"` : "";
     let badgeCls = "";
     let badgeHtml = "";
-    if (isMovie) {
-      const qActive = item._isRadarr2 ? this._radarr2QueueActive : this._radarrQueueActive;
-      const qFailed = item._isRadarr2 ? this._radarr2QueueFailed : this._radarrQueueFailed;
-      const dlActive = qActive?.has(item.id);
-      const dlFailed = qFailed?.has(item.id);
-      if (dlFailed) {
+    const dlActive = item.id != null && (isMovie ? (item._isRadarr2 ? this._radarr2QueueActive : this._radarrQueueActive)?.has(item.id) : (item._isSonarr2 ? this._sonarr2QueueSeriesPct : this._sonarrQueueSeriesPct)?.has(item.id));
+    const dlFailed = isMovie && item.id != null && (item._isRadarr2 ? this._radarr2QueueFailed : this._radarrQueueFailed)?.has(item.id);
+    if (dlFailed) {
+      badgeCls = "b-missing";
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeFailed"));
+    } else if (dlActive) {
+      badgeCls = "b-dl";
+      badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
+    } else if (item._seerr) {
+      if (item._seerrStatus === 3) {
         badgeCls = "b-missing";
-        badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeFailed"));
-      } else if (dlActive) {
-        badgeCls = "b-dl";
-        badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
+        badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeDeclined"));
+      } else if (item._seerrMedia === 5) {
+        badgeCls = "b-st-avail";
+        badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+      } else if (item._seerrMedia === 4) {
+        badgeCls = "b-partial";
+        badgeHtml = this._badge("b-partial", "\u25D0", this._t("badgePartial"));
+      } else if (item._seerrStatus === 1) {
+        badgeCls = "b-st-pend";
+        badgeHtml = this._badge("b-st-pend", "\u23F3", this._t("badgeRequested"));
       } else {
         badgeCls = "b-missing";
         badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
       }
     } else {
-      const snQ = item._isSonarr2 ? this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map() : this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
-      if (snQ.has(item.id)) {
-        badgeCls = "b-dl";
-        badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
-      } else {
-        badgeCls = "b-missing";
-        badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
-      }
+      badgeCls = "b-missing";
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
     }
     const showTag = pc.statusDisplay === "tags" || pc.statusDisplay === "both";
     const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
     const statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
-    const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", this._dlPct(item.id, isMovie ? "movie" : "tv")) : "";
-    const _rqLangs = this._arrLangCodes(item, isMovie);
+    const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", item.id != null ? this._dlPct(item.id, isMovie ? "movie" : "tv") : -1) : "";
+    const _rqLangs = seerrOnly ? [] : this._arrLangCodes(item, isMovie);
     return `
     <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
       ${this._goneBadge(item.tmdbId, item.tvdbId, !!isMovie)}
@@ -20640,6 +20801,64 @@ var _PopupMethods = class {
   // "Tajný život mazlíčků 2" are the same film under different names. The session
   // history is the only place with an id: thumbPath embeds the media-server item,
   // so one marker per server is what ties a session back to this title.
+  // Tracearr 2.x answers per title through its public API; 1.x has no such
+  // endpoint and has to be matched session by session. One probe decides, cached
+  // for the session — the answer cannot change without the server restarting.
+  async _traIsV2() {
+    if (this._traV2 !== void 0) return this._traV2;
+    this._traV2 = await this._callApi("GET", "arr_stack/tracearr/v2/public/libraries").then(() => true).catch(() => false);
+    return this._traV2;
+  }
+  // `movie:tmdb:585` / `show:tvdb:81189` — the ids the popup already carries, so
+  // none of 1.x's matching through Plex rating keys and Jellyfin item ids applies.
+  _traMediaRef(d, isTv) {
+    const tmdb = d.tmdbId || d.id || null;
+    const _sn = (this._sonarr || []).find((x) => x.id === d._sonarrSeries?.id) || (this._sonarr2 || []).find((x) => x.id === d._sonarr2Series?.id);
+    const tvdb = d.tvdbId || _sn?.tvdbId || null;
+    if (isTv) return tvdb ? `show:tvdb:${tvdb}` : tmdb ? `show:tmdb:${tmdb}` : null;
+    return tmdb ? `movie:tmdb:${tmdb}` : null;
+  }
+  // Tracearr 2.x: totals and viewers in two calls, already de-duplicated across
+  // servers — the same person on Plex and Jellyfin counts once, and only plays
+  // past two minutes count at all.
+  async _qaTracearrV2Stats(d, isTv) {
+    const ref = this._traMediaRef(d, isTv);
+    if (!ref) return null;
+    const enc = encodeURIComponent(ref);
+    const [st, wt] = await Promise.all([
+      this._callApi("GET", `arr_stack/tracearr/v2/public/media/${enc}/stats`).catch(() => null),
+      this._callApi("GET", `arr_stack/tracearr/v2/public/media/${enc}/watchers`).catch(() => null)
+    ]);
+    const all = st?.windows?.all_time?.combined;
+    if (!all) return null;
+    if (!all.plays && !all.watch_time_ms) return { any: false };
+    const watchers = (wt?.watchers || []).filter((w) => w?.user);
+    const name = (w) => w.user.username || w.user.display_name || w.user.name || "";
+    const ranked = [...watchers].sort((a, b) => (b.watch_time_ms || 0) - (a.watch_time_ms || 0));
+    const rest = ranked.slice(1).map(name).filter(Boolean);
+    const mins = Math.round((all.watch_time_ms || 0) / 6e4);
+    const fmt = new Intl.DateTimeFormat(
+      this._cfg?.localisation === "cs" ? "cs-CZ" : "en-GB",
+      { day: "numeric", month: "short", year: "numeric" }
+    );
+    const lastDay = ranked.map((w) => w.last_watched_day).filter(Boolean).sort().pop();
+    const out = {
+      any: true,
+      watched: mins ? mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min` : "",
+      top: name(ranked[0] || {}) || "",
+      others: rest.slice(0, 3).join(", ") + (rest.length > 3 ? ` +${rest.length - 3}` : ""),
+      last: lastDay ? fmt.format(new Date(lastDay)) : ""
+    };
+    if (isTv) {
+      const eps = Math.max(0, ...ranked.map((w) => w.distinct_episodes_watched || 0));
+      const lib = (this._sonarr || []).find((x) => x.id === d._sonarrSeries?.id) || (this._sonarr2 || []).find((x) => x.id === d._sonarr2Series?.id);
+      const total = lib?.statistics?.episodeFileCount || 0;
+      if (eps) out.eps = total ? `${eps} / ${total}` : String(eps);
+    } else {
+      out.plays = all.plays || 0;
+    }
+    return out;
+  }
   async _qaTracearrStats(d, markers, isTv) {
     const marks = (markers || []).filter(Boolean);
     if (!marks.length) return null;
@@ -20717,6 +20936,14 @@ var _PopupMethods = class {
     };
     if (this._tracearrConfigured !== false && (!STATS_FORCE || STATS_FORCE === "tracearr")) {
       try {
+        if (await this._traIsV2()) {
+          const v2 = await this._qaTracearrV2Stats(d, isTv);
+          if (v2) {
+            this._ppStats = v2;
+            done();
+            return;
+          }
+        }
         const [plex2, jfId] = await Promise.all([
           this._qaPlexRatingKey(d).catch(() => null),
           this._jellyfinConfigured ? this._qaJellyfinItemId(d, isTv).catch(() => null) : null
@@ -21305,6 +21532,11 @@ var _PopupMethods = class {
       const embySession = (this._embySessions || []).find((s) => s.id === entityId);
       if (embySession?.attr?._embyTmdbId) sessionTmdbId = String(embySession.attr._embyTmdbId);
     }
+    if (!sessionTmdbId && entityId.startsWith("plex:")) {
+      const ps = (this._plexSessions || []).find((x) => x.id === entityId);
+      const guid = [...ps?._plexGuids || [], ...ps?._plexShowGuids || []].find((g) => typeof g === "string" && g.startsWith("tmdb://"));
+      if (guid) sessionTmdbId = guid.replace("tmdb://", "").split("?")[0];
+    }
     if (!sessionTmdbId && (entityId.startsWith("media_player.plex_") || entityId.startsWith("media_player.plex "))) {
       try {
         const raw = await this._hass.callApi("GET", "arr_stack/plex/sessions");
@@ -21312,6 +21544,16 @@ var _PopupMethods = class {
         const match = this._plexSessionForEntity(sessions, entityId) || this._plexSessionFallback(sessions, entityId);
         if (match?.Guid) {
           for (const g of Array.isArray(match.Guid) ? match.Guid : []) {
+            if (g.id?.startsWith("tmdb://")) sessionTmdbId = g.id.replace("tmdb://", "");
+          }
+        }
+        if (!sessionTmdbId && match?.ratingKey) {
+          const meta = await this._callApi(
+            "GET",
+            `arr_stack/plex/metadata?ratingKey=${encodeURIComponent(match.ratingKey)}`
+          ).catch(() => null);
+          const md = meta?.MediaContainer?.Metadata?.[0];
+          for (const g of Array.isArray(md?.Guid) ? md.Guid : []) {
             if (g.id?.startsWith("tmdb://")) sessionTmdbId = g.id.replace("tmdb://", "");
           }
         }
@@ -24054,7 +24296,7 @@ var _PopupMethods = class {
     const heroSearchHtml = searchBtnHtml;
     const heroRemoveHtml = removeBtn;
     const optionsBtn = this._qaBtnHtml(d);
-    const heroBar = this._isNarrow && (searchBtnHtml || removeBtn || optionsBtn) ? `<div class="pp-hero-bar">
+    const heroBar = searchBtnHtml || removeBtn || optionsBtn ? `<div class="pp-hero-bar">
          <div class="pp-hero-pill">${heroSearchHtml}${heroRemoveHtml}${optionsBtn}</div>
        </div>` : "";
     const overviewHtml = overview ? `<p class="popup-overview">${overview}</p>` : `<p class="popup-overview" style="color:rgba(255,255,255,0.35);font-style:italic">${this._t("noDescription")}</p>`;
@@ -33816,6 +34058,7 @@ var _ActivityRenderMethods = class {
     const isMobile2 = this._isMob;
     const _backIco = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
     const hdrInner = `<div id="act-nav-area" style="min-width:0;flex-shrink:1;overflow:hidden">${this._actModalNavHtml(tab)}</div>
+         ${isMobile2 ? "" : `<div id="act-status-slot" style="flex-shrink:0;display:flex;align-items:center"></div>`}
          <div style="flex:1;min-width:8px"></div>
          <button class="popup-close" id="act-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:center;margin-left:4px">${this._actPopupReturn ? _backIco : ICONS.close}</button>`;
     const hdrStyle = isMobile2 ? "padding:12px 12px 10px;gap:8px;align-items:center" : "padding:14px 22px 10px;gap:12px;align-items:center";
@@ -33935,7 +34178,8 @@ var _ActivityRenderMethods = class {
         { size: 24, tone: "red" }
       );
       const canImport = isBad && item.downloadId;
-      const importBtn = canImport ? `<span style="margin-right:4px;display:inline-flex">${this._mtRoundBtn(
+      const importing = item.downloadId && this._actImporting?.has(item.downloadId);
+      const importBtn = importing ? `<span title="${this._escHtml(this._t("actImporting"))}" style="margin-right:4px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><span class="is-spin"></span></span>` : canImport ? `<span style="margin-right:4px;display:inline-flex">${this._mtRoundBtn(
         `class="act-mi-btn" data-id="${item.id}" data-svc="${item._svc}" data-download-id="${item.downloadId}" data-movie-id="${item.movieId || ""}" data-series-id="${item.seriesId || ""}" data-episode-id="${item.episodeId || item.episode?.id || ""}" data-output-path="${this._escHtml(item.outputPath || "")}" data-title="${this._escHtml(item._title)}"`,
         importSvg,
         "Manual Import",
@@ -35086,9 +35330,9 @@ var _WireActivityMethods = class {
     if (tab === "queue") {
       const calls = [
         this._callApi("GET", "arr_stack/radarr/queue?includeUnknownMovieItems=true"),
-        this._callApi("GET", "arr_stack/sonarr/queue"),
+        this._callApi("GET", "arr_stack/sonarr/queue?includeUnknownSeriesItems=true"),
         hasR2 ? this._callApi("GET", "arr_stack/radarr2/queue?includeUnknownMovieItems=true") : Promise.resolve(null),
-        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/queue") : Promise.resolve(null)
+        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/queue?includeUnknownSeriesItems=true") : Promise.resolve(null)
       ];
       const [rq, sq, rq2, sq2] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
@@ -35749,6 +35993,7 @@ var _WireActivityMethods = class {
       console.error("[arr-card] Queue remove error:", e);
     }
     await this._actLoadTab("queue", modalEl);
+    await this._refreshQueueCounters();
   }
   _openQueueRemoveModal(dataset, parentModalEl) {
     const id = dataset.id;
@@ -36360,9 +36605,10 @@ var _WireActivityMethods = class {
     }).join("");
     panel.innerHTML = rows;
   }
-  // The Activity modal has no status area of its own, so the pill floats over
-  // it — the import closes the dialog and then works in the background, and
-  // without this nothing said whether it had started or finished.
+  // The import closes its dialog and then works in the background, so without
+  // this nothing said whether it had started or finished. On desktop the pill
+  // sits in the modal header next to the tabs; a phone header has no room for
+  // it, so there it floats over the bottom of the screen instead.
   _actShowStatus(msg, opts = {}, duration = 4e3) {
     const host = this.shadowRoot;
     if (!host) return;
@@ -36370,15 +36616,29 @@ var _WireActivityMethods = class {
     clearTimeout(this._actStatusTimer);
     if (!msg) return;
     const rgb = opts.err ? "248,113,113" : opts.spin ? "96,165,250" : "52,211,153";
+    const slot = this._isMob ? null : host.querySelector("#act-status-slot");
+    const pos = slot ? "" : `position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:1300;box-shadow:0 4px 18px rgba(0,0,0,0.5);`;
     const el = document.createElement("div");
-    el.innerHTML = `<div data-act-status style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:1300;display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:rgba(${rgb},0.95);background:${this._isDay ? "#fafafc" : "#14141a"};border:1px solid rgba(${rgb},0.45);border-radius:999px;padding:6px 16px;box-shadow:0 4px 18px rgba(0,0,0,0.5);white-space:nowrap">
+    el.innerHTML = `<div data-act-status style="${pos}display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:rgba(${rgb},0.95);background:${this._isDay ? "#fafafc" : "#14141a"};border:1px solid rgba(${rgb},0.45);border-radius:999px;padding:6px 16px;white-space:nowrap">
       ${opts.spin ? '<span class="is-spin"></span>' : ""}${this._escHtml(msg)}
     </div>`;
-    host.appendChild(el.firstElementChild);
+    (slot || host).appendChild(el.firstElementChild);
     if (!duration) return;
     this._actStatusTimer = setTimeout(() => {
       this.shadowRoot?.querySelector("[data-act-status]")?.remove();
     }, duration);
+  }
+  // Pulls the queue state the Activity card renders from and repaints it, so an
+  // action taken in the modal shows on the dashboard without waiting for a poll.
+  async _refreshQueueCounters() {
+    await Promise.all([
+      this._fetchRadarrQueue(),
+      this._fetchRadarr2Queue(),
+      this._fetchSonarrQueue("sonarr"),
+      this._fetchSonarrQueue("sonarr2")
+    ]).catch(() => {
+    });
+    this._reRenderSection("activity");
   }
   async _submitManualImport(candidates, indices, svc, overlayEl, modalEl) {
     this._markActivated();
@@ -36426,6 +36686,7 @@ var _WireActivityMethods = class {
         }))
       });
       const importedIds = new Set(toImport.map((c) => c.downloadId).filter(Boolean));
+      importedIds.forEach((id) => this._actImporting.add(id));
       overlayEl.remove();
       this._actShowStatus(this._t("actImporting"), { spin: true }, 0);
       let gone = false;
@@ -36441,9 +36702,13 @@ var _WireActivityMethods = class {
           break;
         }
       }
+      importedIds.forEach((id) => this._actImporting.delete(id));
+      if (this._activityModal) await this._actLoadTab("queue", modalEl);
+      await this._refreshQueueCounters();
       this._actShowStatus(gone ? this._t("actImported") : this._t("actImportQueued"));
     } catch (err) {
       console.error("[arr-card] Manual import submit error:", err);
+      this._actImporting.clear();
       this._actShowStatus(this._t("actImportFailed"), { err: true }, 6e3);
       const miBody = overlayEl.querySelector("#mi-body");
       if (miBody) {
@@ -40587,6 +40852,8 @@ var ArrStackCard = class extends HTMLElement {
     this._ppSeasonPick = null;
     this._ppStats = null;
     this._ppJfId = null;
+    this._traV2 = void 0;
+    this._actImporting = /* @__PURE__ */ new Set();
     this._ppGrabWait = null;
     this._ppGrabTimer = null;
     this._plexClientsTs = 0;
@@ -40781,6 +41048,7 @@ var ArrStackCard = class extends HTMLElement {
     this._sonarr2ImportEps = {};
     this._pendingRequestedShows = /* @__PURE__ */ new Set();
     this._pendingRequestedMovies = /* @__PURE__ */ new Set();
+    this._seerrRequests = null;
     this._searchQuery = "";
     this._searchResults = [];
     this._searchPage = 0;
@@ -41523,7 +41791,92 @@ var ArrStackCard = class extends HTMLElement {
     }
     return [...movieMap.values(), ...showMap.values()].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
   }
+  // Seerr knows what was requested; Radarr and Sonarr only know what is missing.
+  // Those two lists overlap heavily on an install fed purely by Seerr, which is
+  // why the difference went unnoticed — but anything reaching the *arrs by
+  // another route (import lists, another user, a manual add) belongs in neither
+  // this section nor a user's mental model of "my requests".
+  _seerrRequestItems() {
+    if (this._cfgGet("discover", "requestedSource", "both") === "library") return null;
+    const reqs = this._seerrRequests;
+    if (!Array.isArray(reqs)) {
+      return this._overseerrConfigured !== false && !this._seerrRequestsErr ? [] : null;
+    }
+    const movieByTmdb = /* @__PURE__ */ new Map();
+    for (const m of [...this._radarr || [], ...this._radarr2 || []]) {
+      if (m.tmdbId && !movieByTmdb.has(String(m.tmdbId))) movieByTmdb.set(String(m.tmdbId), m);
+    }
+    const showByTvdb = /* @__PURE__ */ new Map();
+    const showByTmdb = /* @__PURE__ */ new Map();
+    for (const sh of [...this._sonarr || [], ...this._sonarr2 || []]) {
+      if (sh.tvdbId && !showByTvdb.has(String(sh.tvdbId))) showByTvdb.set(String(sh.tvdbId), sh);
+      if (sh.tmdbId && !showByTmdb.has(String(sh.tmdbId))) showByTmdb.set(String(sh.tmdbId), sh);
+    }
+    const items = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const r of reqs) {
+      const media = r?.media || {};
+      const isMovie = (r?.type || "") === "movie";
+      const tmdbId = media.tmdbId != null ? String(media.tmdbId) : null;
+      const tvdbId = media.tvdbId != null ? String(media.tvdbId) : null;
+      const dedupKey = `${isMovie ? "m" : "t"}:${tvdbId || tmdbId || r?.id}`;
+      if (seen.has(dedupKey)) continue;
+      seen.add(dedupKey);
+      const entry = isMovie ? tmdbId ? movieByTmdb.get(tmdbId) : null : tvdbId && showByTvdb.get(tvdbId) || tmdbId && showByTmdb.get(tmdbId) || null;
+      const base = entry ? { ...entry } : {
+        id: null,
+        title: media.title || r?.title || "Unknown",
+        tmdbId: tmdbId ? Number(tmdbId) : null,
+        tvdbId: tvdbId ? Number(tvdbId) : null,
+        images: []
+      };
+      items.push({
+        ...base,
+        _mediaType: isMovie ? "movie" : "tv",
+        _sortDate: r?.createdAt || r?.updatedAt || base.added || "",
+        _seerr: true,
+        _seerrOnly: !entry,
+        _seerrPoster: media.posterPath || null,
+        _seerrStatus: Number(r?.status ?? 0),
+        // 1 pending, 2 approved, 3 declined
+        _seerrMedia: Number(media.status ?? 0),
+        // 3 processing, 4 partial, 5 available
+        _seerrUser: r?.requestedBy?.displayName || r?.requestedBy?.plexUsername || ""
+      });
+    }
+    const have = new Set(items.map((i) => `${i._mediaType === "movie" ? "m" : "t"}:${i.tvdbId || i.tmdbId}`));
+    const _rqA = this._radarrQueueActive || /* @__PURE__ */ new Set();
+    const _rq2A = this._radarr2QueueActive || /* @__PURE__ */ new Set();
+    const _snQ = this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
+    const _snQ2 = this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map();
+    const _now = (/* @__PURE__ */ new Date()).toISOString();
+    const extras = [];
+    if (this._cfgGet("discover", "requestedSource", "both") === "seerr") {
+      return items.sort((a, b) => String(b._sortDate).localeCompare(String(a._sortDate)));
+    }
+    for (const [pool, queue] of [[this._radarr || [], _rqA], [this._radarr2 || [], _rq2A]]) {
+      for (const m of pool) {
+        const dl = queue.has(m.id);
+        if (!dl && !this._pendingRequestedMovies.has(String(m.tmdbId))) continue;
+        if (have.has(`m:${m.tmdbId}`)) continue;
+        have.add(`m:${m.tmdbId}`);
+        extras.push({ ...m, _mediaType: "movie", _sortDate: dl ? _now : m.added || "", _seerr: false });
+      }
+    }
+    for (const [pool, queue] of [[this._sonarr || [], _snQ], [this._sonarr2 || [], _snQ2]]) {
+      for (const sh of pool) {
+        const dl = queue.has(sh.id);
+        if (!dl && !this._pendingRequestedShows.has(String(sh.tvdbId))) continue;
+        if (have.has(`t:${sh.tvdbId}`)) continue;
+        have.add(`t:${sh.tvdbId}`);
+        extras.push({ ...sh, _mediaType: "tv", _sortDate: dl ? _now : sh.added || "", _seerr: false });
+      }
+    }
+    return [...extras, ...items].sort((a, b) => String(b._sortDate).localeCompare(String(a._sortDate)));
+  }
   get recentlyRequested() {
+    const fromSeerr = this._seerrRequestItems();
+    if (fromSeerr) return fromSeerr;
     const _rqA = this._radarrQueueActive || /* @__PURE__ */ new Set();
     const _rq2A = this._radarr2QueueActive || /* @__PURE__ */ new Set();
     const _snQ = this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
@@ -42514,7 +42867,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.8.0", sid, svcs, mob: this._isMob ? 1 : 0, act })
+        body: JSON.stringify({ v: "1.9.0", sid, svcs, mob: this._isMob ? 1 : 0, act })
       }).catch(() => {
       });
     } catch (_) {

@@ -19,17 +19,17 @@ Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTo
 ---
 
 > [!IMPORTANT]
-> ### Your own TMDB API key — needed by 1 September 2026
+> ### Your own TMDB API key
 >
 > **If you use Seerr (Overseerr / Jellyseerr), this does not affect you.** Posters, search and title details all come through Seerr, and nothing changes for you.
 >
-> Everyone else needs a free TMDB API key by **1 September 2026**. Until then the card keeps working as it always has. The reason is simple: the card is going through the official HACS review, and the rules there do not allow a shared key to be built into the code, so it has to go.
+> Everyone else needs a free TMDB API key. The card used to ship with a shared one built in, but the official HACS rules do not allow that, so it has been removed.
 >
 > Getting one takes a minute at [themoviedb.org](https://www.themoviedb.org) → Settings → API — it is free and no payment details are asked for. Then paste it into **Settings → Devices & Services → Arr Stack → Reconfigure → Discovery**.
 >
-> Without a key after that date the posters, ratings, cast, trailers and the Trending and Popular rows stop loading. Everything tied to your own libraries — Radarr, Sonarr, downloads, the calendar — carries on regardless.
+> Without a key the posters, ratings, cast, trailers and the Trending and Popular rows stop loading. Everything tied to your own libraries — Radarr, Sonarr, downloads, the calendar — carries on regardless.
 >
-> Sorry for the errand. The card never asked you for anything before, and the notice disappears on its own once a key is filled in or Seerr is set up.
+> Sorry for the errand. The card never asked you for anything before, and the notice in the card disappears on its own once a key is filled in or Seerr is set up.
 
 ---
 
