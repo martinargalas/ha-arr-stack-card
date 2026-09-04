@@ -359,6 +359,25 @@ var ArrStackCardEditor = class extends HTMLElement {
             <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg("discover", "showMoreOnPage", 3)}" min="1" max="50"/>
           </div>
           <div class="hint">Insert a "See More" card as the last slot on this page. Opens full-section overlay. Default: 3.</div>
+          ${this._caps?.trakt || this._caps?.suggestarr ? `
+          <div class="section-title" style="margin-top:16px">Recommendations</div>
+          ${this._caps?.trakt ? `
+          <div class="row">
+            <span class="row-label">Trakt</span>
+            <label class="toggle">
+              <input type="checkbox" data-group="discover" data-key="recTrakt" ${this._cfg("discover", "recTrakt", true) !== false ? "checked" : ""}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>` : ""}
+          ${this._caps?.suggestarr ? `
+          <div class="row">
+            <span class="row-label">SuggestArr</span>
+            <label class="toggle">
+              <input type="checkbox" data-group="discover" data-key="recSuggestarr" ${this._cfg("discover", "recSuggestarr", true) !== false ? "checked" : ""}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>` : ""}
+          <div class="hint">What the Recommendations row draws on. With both on, the two are dealt out one after the other so neither fills the row. Music from Last.fm joins it whenever Lidarr is set up \u2014 the row's own filter is where it gets switched off.</div>` : ""}
           ${this._caps?.overseerr ? `
           <div class="section-title" style="margin-top:16px">Recently Requested</div>
           <div class="row">
@@ -569,8 +588,7 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "tvUpcoming", enabled: true },
       { id: "trending", enabled: true },
       { id: "popular", enabled: true },
-      { id: "trakt", enabled: false },
-      { id: "suggestarr", enabled: false },
+      { id: "recommendations", enabled: false },
       { id: "calendar", enabled: true },
       { id: "streams", enabled: false },
       { id: "tautulli", enabled: false },
@@ -582,9 +600,22 @@ var ArrStackCardEditor = class extends HTMLElement {
       { id: "library", enabled: true }
     ];
   }
+  // Old configs name up to three recommendation rows. They collapse into one,
+  // keeping the position of the first of them — Trakt if it is there — and
+  // staying on if any of them was on.
+  _mergeRecCats(cats) {
+    const REC = ["trakt", "suggestarr", "lastfm"];
+    if (!cats.some((c) => REC.includes(c.id))) return cats;
+    if (cats.some((c) => c.id === "recommendations")) return cats.filter((c) => !REC.includes(c.id));
+    const slot = cats.findIndex((c) => c.id === "trakt") >= 0 ? cats.findIndex((c) => c.id === "trakt") : cats.findIndex((c) => REC.includes(c.id));
+    const enabled = cats.some((c) => REC.includes(c.id) && c.enabled !== false);
+    const out = cats.filter((c) => !REC.includes(c.id));
+    out.splice(Math.min(slot, out.length), 0, { id: "recommendations", enabled });
+    return out;
+  }
   _getCats() {
     if (!this._config?.categories) return this._defaultCats();
-    const saved = this._config.categories;
+    const saved = this._mergeRecCats(this._config.categories.filter((c) => c.id !== "music"));
     const savedIds = new Set(saved.map((c) => c.id));
     const missing = this._defaultCats().filter((c) => !savedIds.has(c.id));
     return [...saved, ...missing];
@@ -595,12 +626,12 @@ var ArrStackCardEditor = class extends HTMLElement {
       sonarr: "Recently Requested",
       recentlyAdded: "Recently Added",
       recentlyRequested: "Recently Requested",
+      music: "Recently Added Music (Lidarr)",
       upcoming: "Upcoming Movies",
       tvUpcoming: "New Shows",
       trending: "Trending",
       popular: "Popular Movies",
-      trakt: "Trakt Recommended",
-      suggestarr: "Suggestarr Recommended",
+      recommendations: "Recommendations (Trakt / SuggestArr / Last.fm)",
       calendar: "Calendar",
       streams: "Now Playing (Plex / Jellyfin / Kodi / Emby) \u2014 auto-hidden when nothing plays",
       tautulli: "Statistics (Plex)",
@@ -921,10 +952,43 @@ var ARR_I18N = {
     recentShows: "Naposledy p\u0159idan\xE9 seri\xE1ly",
     recentlyAdded: "Naposledy p\u0159idan\xE9",
     recentlyRequested: "Ned\xE1vno \u017E\xE1dan\xE9",
+    recentlyAddedMusic: "Ned\xE1vno p\u0159idan\xE1 hudba",
+    musicEmpty: "Zat\xEDm \u017E\xE1dn\xE1 hudba",
+    musicNewAlbums: "nov\xFDch alb",
+    musicComplete: "kompletn\xEDch",
+    musicMonitored: "Sledov\xE1no",
+    musicUnmonitored: "Nesledov\xE1no",
+    musicNoAlbums: "\u017D\xE1dn\xE1 alba",
+    musicAlbums: "alb",
+    musSearch: "Hledat",
+    musRemove: "Odebrat",
+    musActions: "Akce",
+    musSearchMissing: "Naj\xEDt chyb\u011Bj\xEDc\xED",
+    musSearchMissingSub: "cel\xE1 diskografie",
+    musRemoveLib: "Z knihovny",
+    musRemoveDisc: "Z knihovny i z disku",
+    musMonitor: "Sledovat",
+    musUnmonitor: "P\u0159estat sledovat",
+    musRefresh: "Obnovit metadata",
+    musListenStats: "Statistiky poslechu",
+    musStatsTracks: "Skladeb",
+    musStatsTop: "Nejv\xEDc poslouch\xE1",
+    musStatsTime: "Odposlech\xE1no",
+    musAutoSearch: "Automatick\xE9 hled\xE1n\xED",
+    musInteractive: "Interaktivn\xED hled\xE1n\xED",
+    musPerAlbum: "po albech",
+    musPickAlbum: "vyber album",
+    musTracks: "Skladby",
+    musNoTracks: "\u017D\xE1dn\xE9 skladby",
+    musDeleteFiles: "Smazat soubory alba",
+    isNoResults: "\u017D\xE1dn\xE9 v\xFDsledky",
     upcomingMovies: "Nadch\xE1zej\xEDc\xED filmy",
     newShows: "Nov\xE9 seri\xE1ly",
     traktRecommended: "Trakt doporu\u010Den\xED",
     saRecommended: "Suggestarr doporu\u010Den\xED",
+    lastfmRecommended: "Last.fm doporu\u010Den\xED",
+    catRecommendations: "Doporu\u010Den\xED",
+    lastfmEmpty: "Zat\xEDm nen\xED z \u010Deho doporu\u010Dovat",
     saRefreshing: "Hled\xE1m dal\u0161\xED tipy\u2026",
     saEmpty: "Zat\xEDm \u017E\xE1dn\xE9 tipy",
     tmdbNoticeShort: "Postery a detaily pot\u0159ebuj\xED vlastn\xED TMDB kl\xED\u010D",
@@ -976,9 +1040,23 @@ var ARR_I18N = {
     trendingMovies: "Trendy",
     typeMovie: "Film",
     typeTv: "Seri\xE1l",
+    typeArtist: "Interpret",
+    typeAlbum: "Album",
     tabAll: "V\u0161e",
     tabMovies: "Filmy",
     tabTvShows: "Seri\xE1ly",
+    tabMusic: "Hudba",
+    searchResults: "V\xFDsledky hled\xE1n\xED",
+    musMonitorWhat: "Sledovat",
+    musMonFuture: "Jen budouc\xED alba",
+    musMonLatest: "Posledn\xED album",
+    musMonAll: "V\u0161echna alba",
+    musMonNone: "Nic",
+    musMetadata: "Metadata profil",
+    musRootFolder: "Ko\u0159enov\xE1 slo\u017Eka",
+    musAdded: "P\u0159id\xE1no do Lidarru",
+    musConfirmMsg: "Interpret bude nejd\u0159\xEDve p\u0159id\xE1n do Lidarru bez monitorov\xE1n\xED.",
+    musAdding: "P\u0159id\xE1v\xE1m do Lidarru\u2026",
     seeMore: "Dal\u0161\xED",
     popularMovies: "Popul\xE1rn\xED filmy",
     newEpisodes: "Nov\xE9 epizody",
@@ -1035,6 +1113,7 @@ var ARR_I18N = {
     watched: "Vid\u011Bno",
     notInterested: "Nezaj\xEDm\xE1 m\u011B",
     skip: "P\u0159esko\u010Dit",
+    musLike: "L\xEDb\xED",
     traktRefreshing: "Na\u010D\xEDt\xE1n\xED\u2026",
     cancel: "Zru\u0161it",
     confirm: "Potvrdit",
@@ -1412,6 +1491,7 @@ var ARR_I18N = {
     mtOverview: "P\u0159ehled",
     calMovieForms: ["film", "filmy", "film\u016F"],
     calSeriesForms: ["seri\xE1l", "seri\xE1ly", "seri\xE1l\u016F"],
+    calAlbumForms: ["album", "alba", "alb"],
     mtSize: "Velikost",
     mtRunRule: "Spustit pravidlo",
     mtItems: "polo\u017Eek",
@@ -1554,10 +1634,43 @@ var ARR_I18N = {
     recentShows: "Recently Added Shows",
     recentlyAdded: "Recently Added",
     recentlyRequested: "Recently Requested",
+    recentlyAddedMusic: "Recently Added Music",
+    musicEmpty: "No music yet",
+    musicNewAlbums: "new albums",
+    musicComplete: "complete",
+    musicMonitored: "Monitored",
+    musicUnmonitored: "Not monitored",
+    musicNoAlbums: "No albums",
+    musicAlbums: "albums",
+    musSearch: "Search",
+    musRemove: "Remove",
+    musActions: "Actions",
+    musSearchMissing: "Search missing",
+    musSearchMissingSub: "whole discography",
+    musRemoveLib: "From library",
+    musRemoveDisc: "From library and disc",
+    musMonitor: "Monitor",
+    musUnmonitor: "Stop monitoring",
+    musRefresh: "Refresh metadata",
+    musListenStats: "Listen statistics",
+    musStatsTracks: "Tracks",
+    musStatsTop: "Listens most",
+    musStatsTime: "Time played",
+    musAutoSearch: "Auto Search",
+    musInteractive: "Interactive Search",
+    musPerAlbum: "per album",
+    musPickAlbum: "pick an album",
+    musTracks: "Tracks",
+    musNoTracks: "No tracks",
+    musDeleteFiles: "Delete album files",
+    isNoResults: "No results",
     upcomingMovies: "Upcoming Movies",
     newShows: "New Shows",
     traktRecommended: "Trakt Recommended",
     saRecommended: "Suggestarr Recommended",
+    lastfmRecommended: "Last.fm Recommended",
+    catRecommendations: "Recommendations",
+    lastfmEmpty: "Nothing to suggest from yet",
     saRefreshing: "Looking for more\u2026",
     saEmpty: "No suggestions right now",
     tmdbNoticeShort: "Posters and details need your own TMDB key",
@@ -1609,9 +1722,23 @@ var ARR_I18N = {
     trendingMovies: "Trending",
     typeMovie: "Movie",
     typeTv: "Show",
+    typeArtist: "Artist",
+    typeAlbum: "Album",
     tabAll: "All",
     tabMovies: "Movies",
     tabTvShows: "Shows",
+    tabMusic: "Music",
+    searchResults: "Search results",
+    musMonitorWhat: "Monitor",
+    musMonFuture: "Future albums only",
+    musMonLatest: "Latest album",
+    musMonAll: "All albums",
+    musMonNone: "None",
+    musMetadata: "Metadata profile",
+    musRootFolder: "Root folder",
+    musAdded: "Added to Lidarr",
+    musConfirmMsg: "Artist will be added to Lidarr unmonitored first.",
+    musAdding: "Adding to Lidarr\u2026",
     seeMore: "More",
     popularMovies: "Popular Movies",
     newEpisodes: "New Episodes",
@@ -1660,6 +1787,7 @@ var ARR_I18N = {
     watched: "Seen",
     notInterested: "Not interested",
     skip: "Skip",
+    musLike: "Like",
     traktRefreshing: "Refreshing\u2026",
     cancel: "Cancel",
     confirm: "Confirm",
@@ -2030,6 +2158,7 @@ var ARR_I18N = {
     mtOverview: "Overview",
     calMovieForms: ["movie", "movies", "movies"],
     calSeriesForms: ["TV show", "TV shows", "TV shows"],
+    calAlbumForms: ["album", "albums", "albums"],
     mtSize: "Size",
     mtRunRule: "Run rule",
     mtItems: "items",
@@ -2603,11 +2732,25 @@ var STYLES = `
          rather than inset and visibly shorter. */
       .is-filter .mt-seg { height: 34px; }
 
+      /* Halves carry their own width here, so letting flex shrink them would
+         leave the measured indicator wider than the segment under it. */
+      .mt-seg--var .mt-seg-half { flex-shrink: 0; }
+      .mt-seg--var .mt-seg-ind { transition: transform 0.34s cubic-bezier(.65,-0.25,.3,1.28), width 0.34s cubic-bezier(.65,-0.25,.3,1.28); }
+      .mt-seg--var.mt-seg--presync .mt-seg-ind { transition: none; }
+      /* Doubled class on purpose: the fixed-grid rules below match with the same
+         specificity and stand later in the sheet, so a single class loses and the
+         indicator falls back to --seg-w with a translateX(100%) step. */
+      .mt-seg--var.mt-seg[data-seg="0"] .mt-seg-ind { width: var(--w0); transform: translateX(var(--x0)); }
+      .mt-seg--var.mt-seg[data-seg="1"] .mt-seg-ind { width: var(--w1); transform: translateX(var(--x1)); }
+      .mt-seg--var.mt-seg[data-seg="2"] .mt-seg-ind { width: var(--w2); transform: translateX(var(--x2)); }
+      .mt-seg--var.mt-seg[data-seg="3"] .mt-seg-ind { width: var(--w3); transform: translateX(var(--x3)); }
       .mt-seg[data-seg="1"] .mt-seg-ind { transform: translateX(100%); }
       .mt-seg[data-seg="2"] .mt-seg-ind { transform: translateX(200%); }
+      .mt-seg[data-seg="3"] .mt-seg-ind { transform: translateX(300%); }
       .mt-seg[data-seg="0"] .mt-seg-half:nth-child(2),
       .mt-seg[data-seg="1"] .mt-seg-half:nth-child(3),
-      .mt-seg[data-seg="2"] .mt-seg-half:nth-child(4) { color: #fff; }
+      .mt-seg[data-seg="2"] .mt-seg-half:nth-child(4),
+      .mt-seg[data-seg="3"] .mt-seg-half:nth-child(5) { color: #fff; }
       .mt-seg-half.is-disabled { opacity: 0.3; pointer-events: none; }
 
       /* Cards in Maintainerr share the toolbar's hairline rather than the
@@ -3174,7 +3317,7 @@ var STYLES = `
          SEARCH BAR
       \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
       .sec-search { padding-bottom: 0; }
-      .sec-search .mgrid { padding: 0 30px; }
+      .sec-search .mgrid { padding: 0; }
       .search-bar-wrap {
         display: flex;
         align-items: center;
@@ -3201,6 +3344,16 @@ var STYLES = `
         width: 100%;
       }
       .search-bar-input::placeholder { color: rgba(255,255,255,0.25); }
+      /* The library's type peanut, a size down so it rides inside the bar. */
+      .search-type-seg { flex-shrink: 0; margin-right: 8px; }
+      .search-type-seg { -webkit-tap-highlight-color: transparent; }
+      .search-type-seg, .search-type-seg * { user-select: none; -webkit-user-select: none; }
+      .search-type-seg ::selection { background: transparent; }
+      .search-type-seg .mt-seg { height: 24px; }
+      .search-type-seg .mt-seg-half { font-size: 10px; }
+      .search-type-seg .mt-seg-half svg { width: 13px; height: 13px; }
+      @media (max-width: 600px) { .search-type-seg .mt-seg { --seg-w: 30px; } }
+
       .search-bar-clear {
         display: flex;
         align-items: center;
@@ -3399,6 +3552,165 @@ var STYLES = `
          height instead of their 2:3 ratio \u2014 the poster crops, the page keeps
          its four items. */
       .lib-grid-fit .mc { aspect-ratio: auto; height: 100%; min-height: 0; }
+
+      /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+         MUSIC \u2014 square art in a 2:3 card
+      \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+      /* The cover keeps its own shape, the card keeps the grid's. The artist's
+         fanart fills the rest of the frame so the row lines up with every other
+         row instead of standing a third shorter \u2014 and the title sits in the
+         same gradient every other poster uses. */
+      .mc-music {
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid rgba(255,255,255,0.13);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+      }
+      /* Half-lit rather than dimmed to a third: the backdrop is meant to read as
+         frosted glass with the cover's own colours in it, not as a dark panel. */
+      .mus-back {
+        position: absolute; inset: -12%; width: 124%; height: 124%;
+        object-fit: cover; filter: blur(18px) saturate(1.05) brightness(0.95);
+        opacity: 0.5;
+      }
+      /* A veil of light, not of ink \u2014 the title keeps its own gradient below. */
+      .mus-scrim {
+        position: absolute; inset: 0;
+        background: linear-gradient(rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+      }
+      .mc-music.mus-flat { background: rgba(255,255,255,0.055); }
+      @keyframes lib-flash {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: 0.25; }
+      }
+      .lib-flash { animation: lib-flash 1.12s ease-in-out 2; }
+
+      .mus-cover {
+        position: relative; width: 86%; aspect-ratio: 1; object-fit: cover;
+        border-radius: 4px; box-shadow: 0 8px 22px rgba(0,0,0,0.55);
+        margin-bottom: 8%;
+      }
+      .mus-cover-ph {
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.10); font-size: 30px; font-weight: 700;
+        color: rgba(255,255,255,0.55);
+      }
+
+      /* \u2500\u2500 Artist modal \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+      /* .popup-body pins overflow hidden for the film popup's dragged sheet, so
+         this one has to say otherwise or the discography is simply cut off. */
+      /* The body must not clip: the portrait hangs up over the backdrop, and a
+         scroll container would slice its top off. So the scrolling moves to the
+         discography, which is the part that actually needs it. */
+      .popup-body.mus-modal-body {
+        display: flex; flex-direction: column; gap: 12px;
+        padding: 0 18px 18px; overflow: visible !important; min-height: 0;
+      }
+      /* The header is the film popup's: poster left, title, a quiet facts line
+         with the score beside it, description under. Same classes, so it picks
+         up the same type and spacing rather than approximating them. */
+      .popup-content.mus-content {
+        padding-top: 0; overflow: visible !important; flex: 0 0 auto;
+      }
+      .popup-poster.mus-poster {
+        align-self: flex-start; width: 135px; height: 135px;
+        margin-top: -62px;   /* rides up over the wide backdrop */
+      }
+      .popup-poster.mus-poster.mus-cover-ph {
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 10px; font-size: 34px;
+      }
+      /* Two lines is what leaves both rows of covers on screen; the grabber
+         below the header opens it up when someone wants to read it. */
+      .mus-overview {
+        max-height: 34px; overflow: hidden; margin-bottom: 0;
+      }
+      .mus-desc-grab { margin: 2px 0 0; }
+      .mus-mon { flex-shrink: 0; cursor: default; }
+      /* A definite height, at every width. Without one the flex column has
+         nothing to divide, so the sources panel sized itself to its content and
+         ran past the bottom of the glass \u2014 the rule that pins 85vh above 1400px
+         keys off the film popup's own body classes, which this modal does not
+         carry. */
+      .popup-glass:has(.mus-modal-body) { height: 85vh; }
+      /* Rises from the bottom edge, the same entrance the film popup's sources
+         sheet makes, and is dragged by the same grabber. */
+      .popup-body > .sn-is-section.mus-search {
+        position: absolute; left: 0; right: 0; bottom: 0; top: auto; z-index: 5;
+        display: flex; flex-direction: column; min-height: 0; max-height: none;
+        padding: 0 18px 0;
+        background: var(--is-glass-bg); backdrop-filter: var(--is-glass-blur);
+        -webkit-backdrop-filter: var(--is-glass-blur);
+        border-top: 1px solid var(--is-divider);
+        overflow: hidden;
+      }
+      .mus-search.mus-rise { animation: pp-panel-rise 0.22s cubic-bezier(.25,.46,.45,.94); }
+      .mus-search .sn-seasons-rows { flex: 1; min-height: 0; overflow-y: auto; }
+      .mus-albums { flex: 1; min-height: 0; overflow: hidden; }
+      /* One album's tracks fill what the header leaves, and scroll on their own. */
+      .alb-tracks { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 4px; }
+      .alb-tracks .sn-episodes { margin: 0; }
+      @media (min-width: 601px) {
+        .popup-body > .mus-albums {
+          position: absolute; left: 0; right: 0; bottom: 0; top: auto; z-index: 4;
+          flex: 0 0 auto; display: flex; flex-direction: column; min-height: 0;
+          padding: 0 18px 18px; height: 46%;
+          background: var(--is-glass-bg); backdrop-filter: var(--is-glass-blur);
+          -webkit-backdrop-filter: var(--is-glass-blur);
+          border-top: 1px solid var(--is-divider);
+        }
+        .mus-alb-grab { margin: 2px 0 6px; flex: 0 0 auto; }
+        .popup-body > .mus-albums .mus-alb-wrap { flex: 1; min-height: 0; }
+      }
+      @media (max-width: 600px) { .mus-alb-grab { display: none; } }
+      /* The chevron slots reach into the body's own padding, so the first cover
+         sits at the same x as the portrait above it. */
+      .mus-alb-wrap {
+        display: flex; align-items: center; gap: 0;
+        min-width: 0;
+      }
+      .mus-pg { flex: 0 0 16px; width: 16px; padding: 0; font-size: 20px; }
+      /* A thumb needs more than sixteen pixels; the covers give the width back
+         by dropping to two per row on a phone anyway. */
+      @media (max-width: 600px) {
+        .mus-pg { flex: 0 0 26px; width: 26px; font-size: 26px; }
+        .mus-albums { margin: 0 -18px; overflow: visible; }
+        .mus-alb-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      }
+      .mus-alb-grid {
+        flex: 1; min-width: 0;
+        display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      }
+      .mus-alb { min-width: 0; cursor: pointer; }
+      .mus-alb-art {
+        position: relative; width: 100%; aspect-ratio: 1; border-radius: 7px;
+        overflow: hidden; background: rgba(255,255,255,0.07);
+      }
+      .mus-alb-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      /* Sits under the cover, so the image itself hides it the moment it paints
+         \u2014 the class is only there for the tiles whose image never arrives. */
+      .mus-alb-spin {
+        position: absolute; top: 50%; left: 50%; margin: -9px 0 0 -9px;
+        width: 18px; height: 18px; border-width: 2px;
+      }
+      .mus-alb-art.art-done .mus-alb-spin { display: none; }
+      .mus-alb-badge { position: absolute; top: 4px; right: 4px; }
+      /* The caption sits on the cover, as a poster's does, rather than below it \u2014
+         the year above the title so the eye lands on the name last. */
+      .mus-alb-cap {
+        position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+        padding: 28px 6px 6px; pointer-events: none;
+        background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 80%);
+      }
+      .mus-alb-rating { display: inline-flex; margin-bottom: 4px; }
+      .mus-alb-year {
+        font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
+        color: rgba(255,255,255,0.62);
+      }
+      .mus-alb-title {
+        font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.96);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
       @container mc (max-width: 105px) {
         .media-type-tag .b-txt { display: none; }
         .badge .b-txt { display: none; }
@@ -3946,12 +4258,57 @@ var STYLES = `
       /* The overlay belongs to the poster row, not the whole section \u2014 anchor it
          to a wrapper around the grid so it never covers the section header. */
       .tv-req-anchor { position: relative; }
-      .tv-req-anchor > .req-overlay { border-radius: 10px; }
-      /* Constrained to the poster row, the panel can run out of room \u2014 let it
-         scroll inside instead of spilling over the section. */
-      .tv-req-anchor > .req-overlay.tv-req-overlay { overflow: auto; }
+      .search-results-wrap .tv-req-anchor > .req-overlay {
+        bottom: auto; right: auto; height: calc(50% - 5px); max-width: 100%;
+      }
 
-      /* \u2500\u2500 TV Request Overlay \u2500\u2500 */
+      /* In See More the overlay is a grid item on its card's row, so it takes
+         the row's own box instead of being placed over it. */
+      .mus-add-row { position: relative; z-index: 10; min-width: 0; }
+      .mus-add-row > .req-overlay { position: absolute; inset: 0; }
+
+      /* Which feed put this tile in the row. Bottom-left is the one corner the
+         status badge, the rating and the add button all leave alone. */
+      /* The transport under the artist line: same controls as the stream popup,
+         one size down so the header keeps its proportions. */
+      /* Sits in the subtitle line before the rating, so the two read as one
+         strip rather than a chip parked on its own row. */
+      .mus-origin-chip { align-self: center; }
+
+      .mus-stream-bar { margin: 6px 0 2px; max-width: 320px; }
+      .mus-stream-bar .popup-ctrl-btn { width: 32px; height: 32px; }
+      .mus-stream-bar .popup-ctrl-btn-main { width: 38px; height: 38px; }
+
+      .rec-src-badge {
+        position: absolute; top: 6px; right: 6px; z-index: 4;
+        display: flex; align-items: center; justify-content: center;
+        pointer-events: none;
+        /* A shadow rather than a plate: the mark stays readable on a light
+           poster without adding another chip to the corner. */
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.65));
+      }
+      .rec-src-badge img, .rec-src-badge svg { width: 16px; height: 16px; display: block; }
+
+      .mus-add-done {
+        align-self: center; margin-right: 8px;
+        font-size: 11px; font-weight: 700; color: #4ade80; white-space: nowrap;
+      }
+      .req-confirm.mus-add-confirm.is-done {
+        background: rgba(74,222,128,0.22); color: #4ade80;
+      }
+      .mus-add-panel {
+        display: flex; flex-direction: column; gap: 8px;
+        min-height: 0; min-width: 0; overflow: hidden;
+      }
+      .mus-add-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+      .mus-add-field .mt-fsel { max-width: 100%; }
+      .req-overlay.mus-add-overlay { overflow: hidden; }
+      .mus-add-overlay .tv-req-inner {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr);
+        grid-template-rows: 1fr;
+      }
+      .mus-add-overlay .tv-req-col-poster { grid-column: 1; grid-row: 1; }
+      .mus-add-overlay .tv-req-controls { grid-column: 2; grid-row: 1; min-width: 0; }
       .tv-req-overlay { align-items: stretch; padding: 0; }
       .tv-req-inner {
         display: grid;
@@ -5095,12 +5452,37 @@ var STYLES = `
       }
       .ic-icon { font-size: 11px; font-weight: 900; line-height: 1; display: inline-flex; align-items: center; }
       .ic--available   { color: #4ade80; border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.08); }
+      .is-grab-btn.is-grab-dl {
+        background: rgba(96,165,250,0.18); border-color: rgba(96,165,250,0.45); color: #60a5fa;
+      }
+      .inst-chip .ic-bar {
+        display: inline-block; width: 34px; height: 4px; border-radius: 2px;
+        background: rgba(96,165,250,0.25); overflow: hidden; vertical-align: middle;
+      }
+      .is-grab-btn .ic-bar {
+        display: inline-block; height: 4px; border-radius: 2px;
+        background: rgba(96,165,250,0.28); overflow: hidden;
+      }
+      .is-grab-btn .ic-bar > span {
+        display: block; height: 100%; background: #60a5fa; border-radius: 2px;
+        transition: width 0.4s ease;
+      }
+      .inst-chip .ic-bar > span {
+        display: block; height: 100%; background: #60a5fa; border-radius: 2px;
+        transition: width 0.4s ease;
+      }
       .ic--downloading { color: #60a5fa; border-color: rgba(96,165,250,0.35); background: rgba(96,165,250,0.08); }
       .ic--failed      { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
       .ic--missing     { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
       .ic--added       { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
       .ic--partial     { color: #ff9f0a; border-color: rgba(255,159,10,0.35); background: rgba(255,159,10,0.08); }
       .ic--none        { color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.08); background: transparent; }
+      /* The music chips, reading the way Lidarr's own bars do: blue for an
+         artist complete within what it monitors, red once part of it is here,
+         neutral while none of it is. */
+      .ic--monitored   { color: #60a5fa; border-color: rgba(96,165,250,0.35); background: rgba(96,165,250,0.08); }
+      .ic--behind      { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
+      .ic--idle        { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); }
 
       .is-open-btn {
         position: relative;
@@ -5146,6 +5528,7 @@ var STYLES = `
       }
       .popup-day .ic--none  { color: rgba(0,0,0,0.35); border-color: rgba(0,0,0,0.15); background: rgba(0,0,0,0.04); }
       .popup-day .ic--added { color: rgba(0,0,0,0.50); border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.04); }
+      .popup-day .ic--idle  { color: rgba(0,0,0,0.50); border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.05); }
       .popup-day .action-spinner { border-color: rgba(0,0,0,0.15); border-top-color: rgba(0,0,0,0.65); }
       .popup-day .popup-ctrl-btn { color: rgba(0,0,0,0.75); background: rgba(0,0,0,0.07); }
       .popup-day .popup-ctrl-btn:hover { background: rgba(0,0,0,0.13); }
@@ -5937,6 +6320,23 @@ var STYLES = `
       @media (max-width: 600px) {
         .sn-ep-row { padding: 1px 2px; gap: 5px; }
         .sn-season-header { padding: 4px 6px; }
+        /* An album row carries a title, a count, a progress bar and three
+           buttons; on a phone that is one line too many, so the title takes its
+           own and the rest sits under it. */
+        .mus-alb-header { flex-wrap: wrap; row-gap: 4px; }
+        .mus-alb-header .sn-season-title {
+          flex: 1 1 100%; min-width: 0; order: 1;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .mus-alb-header .sn-expand { order: 0; }
+        .mus-alb-header .sn-season-stat,
+        .mus-alb-header .sn-season-bar,
+        .mus-alb-header .btn-person,
+        .mus-alb-header .btn-ep-trash,
+        .mus-alb-header .action-spinner,
+        .mus-alb-header .ep-del-confirm,
+        .mus-alb-header .ep-del-msg { order: 2; }
+        .mus-alb-header .sn-season-bar { flex: 1 1 auto; min-width: 40px; }
       }
       /* Tinted fills instead of outlines, like every other round button */
       .sn-season-header .btn-person,
@@ -6523,7 +6923,7 @@ var _InteractiveSearch = class {
     return `<span class="is-score ${cls}">${score > 0 ? "+" : ""}${score}</span>`;
   }
   _isSrcPill(r) {
-    return r.protocol === "torrent" ? `<span class="is-src-pill is-src-tor">TOR</span>` : `<span class="is-src-pill is-src-nzb">NZB</span>`;
+    return /torrent/i.test(String(r.protocol || "")) ? `<span class="is-src-pill is-src-tor">TOR</span>` : `<span class="is-src-pill is-src-nzb">NZB</span>`;
   }
   _isLang(r) {
     const lang = (r.languages || [])[0]?.name || "";
@@ -7440,6 +7840,9 @@ var _FetchMethods = class {
       if (!caps.sonarr2) this._sonarr2Configured = false;
       if (!caps.bazarr) this._bazarrConfigured = false;
       if (!caps.overseerr) this._overseerrConfigured = false;
+      if (!caps.lidarr) this._lidarrConfigured = false;
+      if (caps.lastfm) this._lastfmConfigured = true;
+      if (caps.lastfmUser) this._lastfmUserConfigured = true;
       this._tmdbOwnKey = caps.tmdbOwnKey !== false;
       if (!caps.plex) this._plexConfigured = false;
       if (!caps.tautulli) this._tautulliConfigured = false;
@@ -7518,14 +7921,16 @@ var _FetchMethods = class {
       see("tvUpcoming") ? this._fetchTvUpcoming() : Promise.resolve(),
       see("trending") ? this._fetchTrending() : Promise.resolve(),
       see("popular") ? this._fetchPopular() : Promise.resolve(),
-      see("trakt") ? this._fetchTrakt() : Promise.resolve(),
-      see("suggestarr") ? this._fetchSuggestArr() : Promise.resolve(),
+      see("recommendations") && this._recSources.trakt ? this._fetchTrakt() : Promise.resolve(),
+      see("recommendations") && this._recSources.suggestarr ? this._fetchSuggestArr() : Promise.resolve(),
       see("tautulli") ? this._fetchTautulli() : Promise.resolve(),
       see("jellystat") ? this._fetchJellystat() : Promise.resolve(),
       see("tracearr") ? this._fetchTracearr() : Promise.resolve(),
       see("prowlarr") ? this._fetchProwlarr() : Promise.resolve(),
       see("maintainerr") ? this._fetchMaintainerr() : Promise.resolve(),
       see("recentlyRequested") ? this._fetchSeerrRequests() : Promise.resolve(),
+      see("music") ? this._fetchLidarr() : Promise.resolve(),
+      see("recommendations") && this._recSources.lastfm ? this._fetchLastfm() : Promise.resolve(),
       // episodefiles + bazarr episodes — only needed for recentlyAdded sonarr cards
       see("recentlyAdded") ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
       // Activity history/blocklist: always fetch if modal open, otherwise only if category visible
@@ -7620,8 +8025,10 @@ var _FetchMethods = class {
       tvUpcoming: true,
       trending: true,
       popular: true,
-      trakt: this._traktConfigured !== false,
-      suggestarr: this._suggestarrConfigured !== false,
+      recommendations: (() => {
+        const r = this._recSources;
+        return r.trakt || r.suggestarr || r.lastfm;
+      })(),
       calendar: hasCalendar,
       streams: hasStreams,
       tautulli: isAdmin && this._tautulliConfigured !== false,
@@ -7631,8 +8038,8 @@ var _FetchMethods = class {
       prowlarr: isAdmin && this._prowlarrConfigured !== false,
       maintainerr: isAdmin && this._maintainerrConfigured !== false
     };
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "suggestarr", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr", "maintainerr"];
-    const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "recommendations", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr", "maintainerr"];
+    const catConfig = this._config?.categories ? this._catConfigMigrated(this._config.categories) : DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const allIds = [
       ...hasPending ? ["recentlyRequested"] : [],
       ...catConfig.filter((c) => c.enabled !== false && CAT_OK[c.id]).map((c) => c.id)
@@ -7651,14 +8058,16 @@ var _FetchMethods = class {
       see("tvUpcoming") ? this._fetchTvUpcoming() : Promise.resolve(),
       see("trending") ? this._fetchTrending() : Promise.resolve(),
       see("popular") ? this._fetchPopular() : Promise.resolve(),
-      see("trakt") ? this._fetchTrakt() : Promise.resolve(),
-      see("suggestarr") ? this._fetchSuggestArr() : Promise.resolve(),
+      see("recommendations") && this._recSources.trakt ? this._fetchTrakt() : Promise.resolve(),
+      see("recommendations") && this._recSources.suggestarr ? this._fetchSuggestArr() : Promise.resolve(),
       see("tautulli") ? this._fetchTautulli() : Promise.resolve(),
       see("jellystat") ? this._fetchJellystat() : Promise.resolve(),
       see("tracearr") ? this._fetchTracearr() : Promise.resolve(),
       see("prowlarr") ? this._fetchProwlarr() : Promise.resolve(),
       see("maintainerr") ? this._fetchMaintainerr() : Promise.resolve(),
       see("recentlyRequested") ? this._fetchSeerrRequests() : Promise.resolve(),
+      see("music") ? this._fetchLidarr() : Promise.resolve(),
+      see("recommendations") && this._recSources.lastfm ? this._fetchLastfm() : Promise.resolve(),
       see("recentlyAdded") ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
       see("activity") ? this._fetchActivityHistory() : Promise.resolve(),
       see("activity") ? this._fetchActivityBlocklist() : Promise.resolve()
@@ -7666,6 +8075,16 @@ var _FetchMethods = class {
     this._reRenderRight?.();
   }
   async _fetchDownloadsAndRender() {
+    if (this._musicModal) {
+      await this._fetchLidarrQueue();
+      const sig = this._musQueueSig();
+      if (sig !== this._musQueueSigLast) {
+        this._musQueueSigLast = sig;
+        this._renderMusicModalEl();
+      }
+      this._reRenderSection?.("recentlyRequested");
+      return;
+    }
     if (this._popup) return;
     const prevQbit = new Set((this._qbit || []).map((t) => t.hash));
     const prevSab = new Set((this._sab?.slots || []).map((s) => s.nzo_id));
@@ -7685,7 +8104,8 @@ var _FetchMethods = class {
       hasActiveStreams ? this._fetchPlexSessions() : Promise.resolve(),
       hasActiveStreams ? this._fetchJellyfinSessions() : Promise.resolve(),
       hasActiveStreams ? this._fetchEmbySessions() : Promise.resolve(),
-      hasActiveStreams ? this._fetchKodiSessions() : Promise.resolve()
+      hasActiveStreams ? this._fetchKodiSessions() : Promise.resolve(),
+      this._lidarrConfigured !== false ? this._fetchLidarrQueue() : Promise.resolve()
     ]);
     if (hadItems) {
       const currQbit = new Set((this._qbit || []).map((t) => t.hash));
@@ -8484,11 +8904,12 @@ var _ArrMethods = class {
     try {
       const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const end = new Date(Date.now() + 60 * 864e5).toISOString().split("T")[0];
-      const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw] = await Promise.all([
+      const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw, lidarrRaw] = await Promise.all([
         this._callApi("GET", `arr_stack/sonarr/calendar?start=${today}&end=${end}`).catch(() => []),
         this._callApi("GET", `arr_stack/radarr/calendar?start=${today}&end=${end}`).catch(() => []),
         this._sonarr2Configured !== false ? this._callApi("GET", `arr_stack/sonarr2/calendar?start=${today}&end=${end}`).catch(() => []) : Promise.resolve([]),
-        this._radarr2Configured !== false ? this._callApi("GET", `arr_stack/radarr2/calendar?start=${today}&end=${end}`).catch(() => []) : Promise.resolve([])
+        this._radarr2Configured !== false ? this._callApi("GET", `arr_stack/radarr2/calendar?start=${today}&end=${end}`).catch(() => []) : Promise.resolve([]),
+        this._lidarrConfigured !== false ? this._callApi("GET", `arr_stack/lidarr/calendar?start=${today}&end=${end}`).catch(() => []) : Promise.resolve([])
       ]);
       const tvDedup = /* @__PURE__ */ new Set();
       const tvGrouped = /* @__PURE__ */ new Map();
@@ -8519,10 +8940,23 @@ var _ArrMethods = class {
         if (movieSeen.has(key)) continue;
         movieSeen.set(key, { ...m, _mediaType: "movie", airDate: m.digitalRelease.split("T")[0], series: m });
       }
-      this._calendar = [...tvEps, ...Array.from(movieSeen.values())].sort((a, b) => new Date(a.airDate) - new Date(b.airDate)).slice(0, 32);
+      this._calendar = [...tvEps, ...Array.from(movieSeen.values()), ...this._calMusicItems(lidarrRaw)].sort((a, b) => new Date(a.airDate) - new Date(b.airDate)).slice(0, 32);
     } catch (e) {
       console.error("[arr-card] Calendar fetch error:", e);
     }
+  }
+  _calMusicItems(raw) {
+    const seen = /* @__PURE__ */ new Set();
+    return (Array.isArray(raw) ? raw : []).filter((a) => {
+      if (!a?.releaseDate || seen.has(a.id)) return false;
+      seen.add(a.id);
+      return true;
+    }).map((a) => ({
+      ...a,
+      _mediaType: "music",
+      airDate: String(a.releaseDate).split("T")[0],
+      series: a.artist || {}
+    }));
   }
   _calWeekRange(offset) {
     const now = /* @__PURE__ */ new Date();
@@ -8567,11 +9001,12 @@ var _ArrMethods = class {
     const startStr = start.toISOString().split("T")[0];
     const endStr = end.toISOString().split("T")[0];
     try {
-      const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw] = await Promise.all([
+      const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw, lidarrRaw] = await Promise.all([
         this._callApi("GET", `arr_stack/sonarr/calendar?start=${startStr}&end=${endStr}`).catch(() => []),
         this._callApi("GET", `arr_stack/radarr/calendar?start=${startStr}&end=${endStr}`).catch(() => []),
         this._sonarr2Configured !== false ? this._callApi("GET", `arr_stack/sonarr2/calendar?start=${startStr}&end=${endStr}`).catch(() => []) : Promise.resolve([]),
-        this._radarr2Configured !== false ? this._callApi("GET", `arr_stack/radarr2/calendar?start=${startStr}&end=${endStr}`).catch(() => []) : Promise.resolve([])
+        this._radarr2Configured !== false ? this._callApi("GET", `arr_stack/radarr2/calendar?start=${startStr}&end=${endStr}`).catch(() => []) : Promise.resolve([]),
+        this._lidarrConfigured !== false ? this._callApi("GET", `arr_stack/lidarr/calendar?start=${startStr}&end=${endStr}`).catch(() => []) : Promise.resolve([])
       ]);
       const seen = /* @__PURE__ */ new Set();
       const tvDeduped = [...sonarrRaw || [], ...sonarr2Raw || []].filter((ep) => {
@@ -8615,7 +9050,7 @@ var _ArrMethods = class {
           series: m
         };
       }).filter((m) => m.airDate);
-      this._calendarModalData = [...tvItems, ...movieItems];
+      this._calendarModalData = [...tvItems, ...movieItems, ...this._calMusicItems(lidarrRaw)];
     } catch (e) {
       console.error("[arr-card] Calendar week fetch error:", e);
       this._calendarModalData = [];
@@ -9543,8 +9978,136 @@ var _ArrMethods = class {
       this._renderPopupEl();
     }
   }
+  get _searchType() {
+    let v = "all";
+    try {
+      v = localStorage.getItem("arr-search-type") || "all";
+    } catch (_) {
+    }
+    if (v === "music" && this._lidarrConfigured === false) return "all";
+    return ["all", "movie", "tv", "music"].includes(v) ? v : "all";
+  }
+  get _searchMusic() {
+    const t = this._searchType;
+    return this._lidarrConfigured !== false && (t === "all" || t === "music");
+  }
+  async _fetchLidarrAddOptions() {
+    if (this._lidarrAddOpts) return this._lidarrAddOpts;
+    try {
+      const o = await this._callApi("GET", "arr_stack/lidarr/addoptions");
+      this._lidarrAddOpts = {
+        quality: o?.quality || [],
+        metadata: o?.metadata || [],
+        rootFolders: o?.rootFolders || []
+      };
+    } catch (e) {
+      console.warn("[arr-card] Lidarr add options failed:", e);
+      this._lidarrAddOpts = { quality: [], metadata: [], rootFolders: [] };
+    }
+    return this._lidarrAddOpts;
+  }
+  // Lidarr wants the whole looked-up record back with the choices folded in —
+  // the same shape its own Add screen posts.
+  async _addLidarrArtist(artist, { profileId, metadataId, rootFolder, monitor }) {
+    const body = {
+      ...artist,
+      id: 0,
+      qualityProfileId: Number(profileId),
+      metadataProfileId: Number(metadataId),
+      rootFolderPath: rootFolder,
+      monitored: monitor !== "none",
+      monitorNewItems: monitor === "all" ? "all" : "new",
+      addOptions: {
+        monitor: ["all", "future", "latest", "none"].includes(monitor) ? monitor : "future",
+        // Whatever was chosen to monitor is searched for: monitoring an album and
+        // then not looking for it leaves a library that never fills. Future-only
+        // has nothing to find today, so this costs nothing there.
+        searchForMissingAlbums: monitor === "all" || monitor === "latest",
+        searchForMissingTracks: monitor === "all" || monitor === "latest"
+      }
+    };
+    const res = await this._callApi("POST", "arr_stack/lidarr/artist", body);
+    this._lidarrArtistsAt = 0;
+    await this._fetchLidarrArtists();
+    if (res?.id) this._lidarrApplyMonitor(res.id, monitor).catch(() => {
+    });
+    await this._fetchLidarrQueue();
+    return res;
+  }
+  // The album side of the Monitor choice in the add overlay. Albums only exist
+  // once Lidarr's refresh has run, so this waits for them before deciding.
+  async _lidarrApplyMonitor(artistId, monitor) {
+    if (monitor === "future" || monitor === "none") return;
+    let albums = [];
+    for (let i = 0; i < 10; i++) {
+      albums = await this._fetchLidarrDiscography(artistId);
+      if (albums.length) break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    if (!albums.length) return;
+    const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    const released = albums.filter((a) => (a.releaseDate || "") && a.releaseDate.slice(0, 10) <= today);
+    const newest = (released.length ? released : albums).slice().sort((a, b) => String(b.releaseDate || "").localeCompare(String(a.releaseDate || "")))[0];
+    const want = monitor === "all" ? albums.map((a) => a.id) : newest ? [newest.id] : [];
+    const wantSet = new Set(want);
+    const off = albums.filter((a) => a.monitored && !wantSet.has(a.id)).map((a) => a.id);
+    const on = albums.filter((a) => !a.monitored && wantSet.has(a.id)).map((a) => a.id);
+    if (off.length) await this._callApi("PUT", "arr_stack/lidarr/albums/monitor", { albumIds: off, monitored: false });
+    if (on.length) await this._callApi("PUT", "arr_stack/lidarr/albums/monitor", { albumIds: on, monitored: true });
+    const search = albums.filter((a) => wantSet.has(a.id) && !(a.statistics?.trackFileCount > 0)).map((a) => a.id);
+    if (search.length) {
+      await this._callApi("POST", "arr_stack/lidarr/command", { name: "AlbumSearch", albumIds: search });
+    }
+    await this._fetchLidarrQueue();
+    this._reRenderSection?.("recentlyAdded");
+  }
+  async _fetchLastfm({ refresh = false } = {}) {
+    if (!this._lastfmConfigured) {
+      this._lastfm = [];
+      return;
+    }
+    try {
+      const list = await this._callApi("GET", `arr_stack/lastfm/suggested?limit=24${refresh ? "&refresh=1" : ""}`);
+      const fresh = (Array.isArray(list) ? list : []).filter((r) => !this._musSkipped?.has(String(r.artist?.foreignArtistId || "").toLowerCase()));
+      const held = [...this._musAddedEntries?.values() || []].filter((h) => !fresh.some((r) => String(r.artist?.foreignArtistId || "").toLowerCase() === String(h.artist?.foreignArtistId || "").toLowerCase()));
+      this._lastfm = [...held, ...fresh];
+      if (!refresh && fresh.length < 8 && !this._lastfmToppedUp) {
+        this._lastfmToppedUp = true;
+        this._musScheduleLastfmRefresh?.(400);
+      }
+    } catch (e) {
+      console.warn("[arr-card] Last.fm suggestions failed:", e);
+      this._lastfm = [];
+    }
+  }
+  async _fetchSearchMusic(query) {
+    if (!this._searchMusic) return [];
+    const [byArtist, byAlbum] = await Promise.all([
+      this._callApi("GET", `arr_stack/lidarr/lookup?term=${encodeURIComponent(query)}`).catch(() => []),
+      this._callApi("GET", `arr_stack/lidarr/albumlookup?term=${encodeURIComponent(query)}`).catch(() => [])
+    ]);
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    const push = (a, album) => {
+      const key = a?.foreignArtistId || (a?.id ? `id:${a.id}` : null);
+      if (!a?.artistName || !key || seen.has(key)) return;
+      seen.add(key);
+      const full = a.id ? this._lidarrArtists?.get(a.id) || a : a;
+      out.push({ id: a.id || null, mediaType: "music", title: a.artistName, artist: full, viaAlbum: album || null });
+    };
+    for (const a of Array.isArray(byArtist) ? byArtist : []) push(a);
+    for (const al of Array.isArray(byAlbum) ? byAlbum : []) push(al.artist, al.title);
+    return out.slice(0, 8);
+  }
   async _fetchSearch(query) {
     this._searchLoading = true;
+    const musicP = this._fetchSearchMusic(query);
+    if (this._searchType === "music") {
+      this._searchResults = await musicP.catch(() => []);
+      this._searchLoading = false;
+      this._reRenderSearchResults();
+      return;
+    }
     try {
       if (this._overseerrConfigured === false) {
         const [movieRaw, tvRaw] = await Promise.allSettled([
@@ -9591,8 +10154,13 @@ var _ArrMethods = class {
         const data = await this._callApi("POST", `arr_stack/${this._discoverSvc}/search`, { query });
         this._searchResults = (data?.results || []).filter((r) => r.mediaType === "movie" || r.mediaType === "tv");
       }
+      const type = this._searchType;
+      if (type === "movie" || type === "tv") {
+        this._searchResults = this._searchResults.filter((r) => r.mediaType === type);
+      }
+      this._searchResults = [...this._searchResults, ...await musicP];
     } catch (e) {
-      this._searchResults = [];
+      this._searchResults = await musicP.catch(() => []);
       console.error("[arr-card] Search fetch error:", e);
     }
     this._searchLoading = false;
@@ -10292,6 +10860,460 @@ var _ArrMethods = class {
       this._seerrRequests = null;
       this._seerrRequestsErr = true;
     }
+  }
+  // ── Lidarr ────────────────────────────────────────────────────────────────
+  // An album has no "added" date and the full album list runs to tens of
+  // megabytes, so recently added music is assembled the other way round: read the
+  // import history, which is ordered and small, then fetch only the albums it
+  // names.
+  async _fetchLidarr() {
+    if (this._lidarrConfigured === false) return;
+    try {
+      const hist = await this._callApi("GET", "arr_stack/lidarr/history?pageSize=200&eventType=3");
+      if (hist && hist._notConfigured) {
+        this._lidarrConfigured = false;
+        return;
+      }
+      this._lidarrConfigured = true;
+      const albumSeen = /* @__PURE__ */ new Map();
+      const artistOrder = [];
+      const artistAlbums = /* @__PURE__ */ new Map();
+      for (const r of hist?.records || []) {
+        const albumId = r.albumId;
+        const artistId = r.artistId;
+        if (!albumId || !artistId) continue;
+        if (!albumSeen.has(albumId)) albumSeen.set(albumId, r.date || "");
+        if (!artistAlbums.has(artistId)) {
+          artistAlbums.set(artistId, []);
+          artistOrder.push(artistId);
+        }
+        const list = artistAlbums.get(artistId);
+        if (!list.includes(albumId)) list.push(albumId);
+        if (artistOrder.length >= 40 && albumSeen.size >= 60) break;
+      }
+      if (artistOrder.length === 0) {
+        this._lidarrArtistFeed = [];
+        return;
+      }
+      await this._fetchLidarrArtists();
+      const wanted = artistOrder.map((id) => artistAlbums.get(id)[0]);
+      const albums = await this._callApi("GET", `arr_stack/lidarr/albums?ids=${wanted.join(",")}`);
+      const byId = new Map((Array.isArray(albums) ? albums : []).map((a) => [a.id, a]));
+      this._lidarrArtistFeed = artistOrder.map((artistId) => {
+        const newestId = artistAlbums.get(artistId)[0];
+        const album = byId.get(newestId) || null;
+        const artist = this._lidarrArtists?.get(artistId) || album?.artist || null;
+        if (!artist) return null;
+        return {
+          id: artistId,
+          artist,
+          newestAlbum: album,
+          newAlbumCount: artistAlbums.get(artistId).length,
+          _importedAt: albumSeen.get(newestId) || ""
+        };
+      }).filter(Boolean);
+      await this._fetchLidarrQueue();
+    } catch (e) {
+      if (this._lidarrConfigured === null) this._lidarrConfigured = false;
+      console.error("[arr-card] Lidarr fetch error:", e);
+    }
+  }
+  // One artist's discography, read when their card is opened. Small enough to
+  // take whole — the full album list across the library is not.
+  async _fetchLidarrArtist(artistId) {
+    try {
+      const a = await this._callApi("GET", `arr_stack/lidarr/artist?id=${artistId}`);
+      if (a?.id) this._lidarrArtists?.set(a.id, a);
+      return a?.id ? a : null;
+    } catch (e) {
+      if (e?.status_code === 404) {
+        if (this._musicModal?.artistId === artistId) this._closeMusicModal?.();
+        this._musForgetArtist?.(artistId);
+        return null;
+      }
+      console.error("[arr-card] Lidarr artist error:", e);
+      return null;
+    }
+  }
+  async _fetchLidarrDiscography(artistId) {
+    try {
+      const albums = await this._callApi("GET", `arr_stack/lidarr/albums?artistId=${artistId}`);
+      return Array.isArray(albums) ? albums : [];
+    } catch (e) {
+      console.error("[arr-card] Lidarr discography error:", e);
+      return [];
+    }
+  }
+  // Hundreds of artists rather than thousands of albums, so this one can be read
+  // whole — and it carries the fanart the album cards sit on. Refreshed at most
+  // hourly; new artists are rare and the payload is the largest of the three.
+  async _fetchLidarrArtists() {
+    const now = Date.now();
+    if (this._lidarrArtists?.size && now - (this._lidarrArtistsAt || 0) < 36e5) return;
+    try {
+      const list = await this._callApi("GET", "arr_stack/lidarr/artists");
+      if (!Array.isArray(list)) return;
+      this._lidarrArtists = new Map(list.map((a) => [a.id, a]));
+      this._lidarrArtistsAt = now;
+    } catch (_) {
+    }
+  }
+  async _fetchLidarrQueue() {
+    try {
+      const q = await this._callApi("GET", "arr_stack/lidarr/queue?pageSize=100");
+      const recs = Array.isArray(q) ? q : q?.records || [];
+      this._lidarrQueue = new Set(recs.map((r) => r.albumId).filter(Boolean));
+      const pct = /* @__PURE__ */ new Map();
+      const artists = /* @__PURE__ */ new Map();
+      for (const r of recs) {
+        const size = Number(r.size) || 0;
+        const left = Number(r.sizeleft) || 0;
+        const done = size > 0 ? Math.max(0, Math.min(100, Math.round((1 - left / size) * 100))) : -1;
+        if (r.albumId) pct.set(r.albumId, done);
+        const aid = r.artistId ?? r.artist?.id;
+        if (aid) {
+          const cur = artists.get(aid);
+          if (cur === void 0 || done > cur) artists.set(aid, done);
+        }
+      }
+      this._lidarrQueuePct = pct;
+      this._lidarrQueueArtists = artists;
+    } catch (_) {
+      this._lidarrQueue = /* @__PURE__ */ new Set();
+      this._lidarrQueuePct = /* @__PURE__ */ new Map();
+      this._lidarrQueueArtists = /* @__PURE__ */ new Map();
+    }
+  }
+  // Cover, and the backdrop it sits on. Album art is square and the card's grid
+  // is 2:3, so the frame is filled with the artist's fanart where there is one —
+  // covers are on 99% of albums, fanart on 82% of artists, so the blurred cover
+  // stands in for the rest rather than leaving a flat panel.
+  _lidarrCover(album) {
+    if (album?._mbCover) return album._mbCover;
+    this._wireLidarrDeadImgs();
+    const img = (album?.images || []).find((i) => i.coverType === "cover");
+    if (img && album?.id) {
+      const viaApi = this._lidarrImg("album", album.id, `cover${img.extension || ".jpg"}`, 400);
+      if (viaApi !== null) return viaApi;
+    }
+    return this._lidarrCoverOf(album?.images, "cover");
+  }
+  // Cover Art Archive publishes a 250 and a 500 alongside every 1200 it stores,
+  // and the address Lidarr hands out is always the 1200 — a third of a megabyte
+  // for a cover drawn at a couple of hundred pixels. The 500 is a fifth of that
+  // and still sharp on a retina grid.
+  _lidarrThumbUrl(u) {
+    return typeof u === "string" ? u.replace(/-1200(\.(?:jpg|jpeg|png))(\?.*)?$/i, "-500$1$2") : u;
+  }
+  _lidarrBackdrop(album) {
+    const artist = this._lidarrArtists?.get(album?.artistId);
+    return this._lidarrArtistImage(artist, "fanart");
+  }
+  // Artist artwork comes in four shapes and none of them is 2:3 — measured on a
+  // real library, `poster` is a 1000x1000 square, fanart 16:9, banner and logo
+  // wider still. So the square is what a card shows, over the fanart.
+  // Lidarr rewrites artwork URLs to container paths once it has cached the files,
+  // so most artists end up with nothing the browser can load. Its mediacover API
+  // serves the same files to an API key, and Home Assistant will sign a path so an
+  // <img> can fetch it without the key ever reaching the page. Signatures are
+  // asked for once per image and cached; anything still unsigned renders from
+  // whatever absolute URL the payload happens to have.
+  // `width` asks the proxy for a downscaled copy: Lidarr keeps no small version
+  // of an album cover, so a tile a couple of hundred pixels wide otherwise pulls
+  // the full 59 kB original apiece.
+  _lidarrImg(kind, id, file, width = 0) {
+    if (!id || !file) return null;
+    this._wireLidarrDeadImgs();
+    const path = `/api/arr_stack/lidarr/image?kind=${kind}&id=${id}&file=${encodeURIComponent(file)}${width ? `&w=${width}` : ""}`;
+    this._lidarrSigned = this._lidarrSigned || /* @__PURE__ */ new Map();
+    if (this._lidarrDead?.has(path)) return null;
+    if (this._lidarrSigned.has(path)) return this._lidarrSigned.get(path);
+    this._lidarrSignQueue = this._lidarrSignQueue || /* @__PURE__ */ new Set();
+    if (!this._lidarrSignQueue.has(path)) {
+      this._lidarrSignQueue.add(path);
+      this._lidarrSignSoon();
+    }
+    return void 0;
+  }
+  // Batched: a row of cards asks for a dozen signatures in the same tick, and one
+  // re-render at the end beats one per image.
+  _lidarrSignSoon() {
+    if (this._lidarrSignTimer) return;
+    this._lidarrSignTimer = setTimeout(async () => {
+      this._lidarrSignTimer = null;
+      const paths = [...this._lidarrSignQueue || []];
+      this._lidarrSignQueue = /* @__PURE__ */ new Set();
+      if (!paths.length) return;
+      let changed = false;
+      await Promise.all(paths.map(async (path) => {
+        try {
+          const res = await this._hass.callWS({ type: "auth/sign_path", path, expires: 60 * 60 * 12 });
+          if (res?.path) {
+            this._lidarrSigned.set(path, res.path);
+            changed = true;
+          }
+        } catch (_) {
+          this._lidarrSigned.set(path, null);
+        }
+      }));
+      if (!changed) return;
+      this._lidarrRepaint();
+    }, 60);
+  }
+  // Everything Lidarr artwork is drawn on: the row in the right column, the
+  // artist modal, and the library — which hangs off the shadow root and so is
+  // reached by neither of the others.
+  _lidarrRepaint() {
+    if (this._musicModal) this._renderMusicModalEl();
+    const lib = this.shadowRoot?.querySelector("[data-lib-modal]");
+    if (lib && this._libModal) this._libRerenderBody(lib);
+    this._reRenderSection?.("recentlyAdded");
+  }
+  // Lidarr's mediacover API answers for most artwork it lists and 404s for the
+  // rest — a file it never wrote, or wrote under a name it no longer reports.
+  // One listener over the whole card notes those paths so the next paint reaches
+  // for the remote address instead, and no page of the library asks twice.
+  _wireLidarrDeadImgs() {
+    if (this._lidarrDeadWired || !this.shadowRoot) return;
+    this._lidarrDeadWired = true;
+    this.shadowRoot.addEventListener("load", (ev) => {
+      const img = ev.target;
+      if (!(img instanceof HTMLImageElement)) return;
+      const src = img.getAttribute("src");
+      if (!src || !img.closest(".mus-alb-art")) return;
+      this._musArtSeen = this._musArtSeen || /* @__PURE__ */ new Set();
+      this._musArtSeen.add(src);
+    }, true);
+    this.shadowRoot.addEventListener("error", (ev) => {
+      const img = ev.target;
+      if (!(img instanceof HTMLImageElement)) return;
+      const src = img.getAttribute("src") || "";
+      if (!src.includes("/api/arr_stack/lidarr/image?")) return;
+      const path = src.replace(/^https?:\/\/[^/]+/, "").replace(/&authSig=[^&]*/, "");
+      this._lidarrDead = this._lidarrDead || /* @__PURE__ */ new Set();
+      if (this._lidarrDead.has(path)) return;
+      this._lidarrDead.add(path);
+      clearTimeout(this._lidarrDeadTimer);
+      this._lidarrDeadTimer = setTimeout(() => this._lidarrRepaint(), 120);
+    }, true);
+  }
+  _lidarrArtistImage(artist, type, { full = false } = {}) {
+    const img = (artist?.images || []).find((i) => i.coverType === type);
+    if (!img) return null;
+    const size = full ? 0 : { poster: 500, fanart: 360, banner: 70 }[type];
+    const ext = img.extension || ".jpg";
+    const viaApi = this._lidarrImg("artist", artist.id, size ? `${type}-${size}${ext}` : `${type}${ext}`);
+    if (viaApi) return viaApi;
+    if (viaApi === void 0) return null;
+    const abs = [img.remoteUrl, img.url].find((u) => typeof u === "string" && u.startsWith("http"));
+    return abs || null;
+  }
+  // Which backend can answer for music at all. Tracearr 2.x keys its lookups on
+  // tmdb and tvdb ids, which no artist has, so the order the popup uses drops to
+  // the two that key on the media server's own item: Jellystat through Jellyfin,
+  // Tautulli through Plex.
+  _musStatsSource() {
+    if (this._tracearrConfigured !== false) return "tracearr";
+    if (this._jellystatConfigured !== false && this._jellyfinConfigured) return "jellystat";
+    if (this._tautulliConfigured !== false && this._plexConfigured !== false) return "tautulli";
+    return null;
+  }
+  // Tracearr has no server-side filter worth using — mediaType and artistName are
+  // ignored, and search matches the track title only — so the history is walked
+  // the way the film popup walks it, and the artist is matched in the card.
+  async _musTracearrStats(name, fmt, asTime) {
+    const want = String(name).toLowerCase();
+    const seen = /* @__PURE__ */ new Map();
+    let cursor = null;
+    let anyTrack = false;
+    for (let i = 0; i < 20; i++) {
+      const q = `pageSize=100&order=desc${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const r = await this._callApi("GET", `arr_stack/tracearr/v1/sessions/history?${q}`);
+      const data = r?.data || [];
+      let fresh = 0;
+      for (const x of data) {
+        if (seen.has(x.id)) continue;
+        fresh++;
+        if (x.mediaType !== "track") {
+          seen.set(x.id, null);
+          continue;
+        }
+        anyTrack = true;
+        seen.set(x.id, String(x.artistName || "").toLowerCase() === want ? x : null);
+      }
+      cursor = r?.nextCursor || null;
+      if (!r?.hasMore || !cursor || !data.length || !fresh) break;
+    }
+    const rows = [...seen.values()].filter(Boolean);
+    if (!rows.length) return anyTrack ? { any: false } : null;
+    const perUser = /* @__PURE__ */ new Map();
+    for (const r of rows) {
+      const uid = r.serverUserId || r.user?.id || "";
+      const who = r.user?.username || r.user?.identityName || "";
+      const u = perUser.get(uid) || { name: who, ms: 0 };
+      u.ms += Number(r.durationMs) || 0;
+      if (who) u.name = who;
+      perUser.set(uid, u);
+    }
+    const ranked = [...perUser.values()].sort((a, b) => b.ms - a.ms);
+    const rest = ranked.slice(1).map((u) => u.name).filter(Boolean);
+    const newest = rows.map((r) => r.stoppedAt || r.startedAt).filter(Boolean).sort().pop();
+    return {
+      any: true,
+      tracks: new Set(rows.map((r) => r.mediaTitle).filter(Boolean)).size,
+      plays: rows.length,
+      watched: asTime(ranked.reduce((n, u) => n + u.ms, 0) / 1e3),
+      last: newest ? fmt.format(new Date(newest)) : "",
+      top: ranked[0]?.name || "",
+      others: rest.slice(0, 3).join(", ") + (rest.length > 3 ? ` +${rest.length - 3}` : "")
+    };
+  }
+  // Whether either backend could answer, which is what decides if the entry is
+  // offered at all — the one that runs first may still come up empty.
+  _musStatsPossible() {
+    return this._musStatsSource() !== null;
+  }
+  async _musLoadStats() {
+    const m = this._musicModal;
+    const name = m?.artist?.artistName;
+    if (!name) return;
+    this._musStats = null;
+    const id = m.artistId;
+    const done = (st) => {
+      if (this._musicModal?.artistId !== id) return;
+      this._musStats = st;
+      this._musPatchDrawer("stats");
+    };
+    const fmt = new Intl.DateTimeFormat(
+      this._cfg?.localisation === "cs" ? "cs-CZ" : "en-GB",
+      { day: "numeric", month: "short", year: "numeric" }
+    );
+    const asTime = (secs) => {
+      const mins = Math.round(secs / 60);
+      if (!mins) return "";
+      return mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+    };
+    const src = this._musStatsSource();
+    try {
+      if (src === "tracearr") {
+        const tra = await this._musTracearrStats(name, fmt, asTime).catch(() => null);
+        if (tra) {
+          done(tra);
+          return;
+        }
+      }
+      if (this._jellystatConfigured !== false && this._jellyfinConfigured) {
+        const mbid2 = m.artist?.foreignArtistId || "";
+        const q = `name=${encodeURIComponent(name)}${mbid2 ? `&mbid=${encodeURIComponent(mbid2)}` : ""}`;
+        const hit2 = await this._callApi("GET", `arr_stack/jellyfin/artist?${q}`).catch(() => null);
+        if (hit2?.id) {
+          const det = await this._callApi("POST", "arr_stack/jellystat/getItemDetails", { Id: hit2.id }).catch(() => null);
+          const row = Array.isArray(det) ? det[0] : det?.[0] || det;
+          const plays = Number(row?.times_played) || 0;
+          const secs2 = Number(row?.total_play_time) || 0;
+          if (plays || secs2) {
+            const hist = await this._callApi("POST", "arr_stack/jellystat/getItemHistory?size=200&page=1", { itemid: hit2.id }).catch(() => null);
+            const rows2 = hist?.results || hist?.rows || (Array.isArray(hist) ? hist : []);
+            const perUser2 = /* @__PURE__ */ new Map();
+            for (const r of rows2) {
+              const who = r.UserName || r.userName || r.User || "";
+              if (who) perUser2.set(who, (perUser2.get(who) || 0) + (Number(r.PlaybackDuration) || 0));
+            }
+            const ranked2 = [...perUser2.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]);
+            const dates = rows2.map((r) => r.ActivityDateInserted).filter(Boolean).sort();
+            done({
+              any: true,
+              plays,
+              watched: asTime(secs2),
+              last: dates.length ? fmt.format(new Date(dates[dates.length - 1])) : "",
+              top: ranked2[0] || "",
+              others: ranked2.slice(1, 4).join(", ") + (ranked2.length > 4 ? ` +${ranked2.length - 4}` : "")
+            });
+            return;
+          }
+        }
+      }
+      if (this._tautulliConfigured === false || this._plexConfigured === false) {
+        done({ any: false });
+        return;
+      }
+      const hit = await this._callApi("GET", `arr_stack/plex/artist?name=${encodeURIComponent(name)}`).catch(() => null);
+      if (!hit?.plex_key) {
+        done({ any: false });
+        return;
+      }
+      const raw = await this._callApi("GET", `arr_stack/tautulli/get_history?grandparent_rating_key=${encodeURIComponent(hit.plex_key)}&length=500`);
+      const rows = raw?.response?.data?.data || [];
+      if (!rows.length) {
+        done({ any: false });
+        return;
+      }
+      const perUser = /* @__PURE__ */ new Map();
+      for (const r of rows) {
+        const who = r.friendly_name || r.user;
+        if (who) perUser.set(who, (perUser.get(who) || 0) + (Number(r.duration) || 0));
+      }
+      const ranked = [...perUser.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]);
+      const secs = rows.reduce((n, r) => n + (Number(r.duration) || 0), 0);
+      const newest = rows.reduce((acc, r) => Math.max(acc, Number(r.date) || 0), 0);
+      done({
+        any: true,
+        // Distinct tracks says more about an artist than the raw count of plays,
+        // which a single album on repeat runs away with.
+        tracks: new Set(rows.map((r) => r.title).filter(Boolean)).size,
+        plays: rows.length,
+        watched: asTime(secs),
+        last: newest ? fmt.format(new Date(newest * 1e3)) : "",
+        top: ranked[0] || "",
+        others: ranked.slice(1, 4).join(", ") + (ranked.length > 4 ? ` +${ranked.length - 4}` : "")
+      });
+    } catch (e) {
+      console.warn("[arr-card] listen stats failed:", e);
+      done({ any: false });
+    }
+  }
+  _musOrigin(artist) {
+    const mbid2 = artist?.foreignArtistId;
+    if (!mbid2) return [];
+    this._musOriginMap = this._musOriginMap || /* @__PURE__ */ new Map();
+    if (this._musOriginMap.has(mbid2)) {
+      const cc = this._musOriginMap.get(mbid2);
+      return cc ? [cc] : [];
+    }
+    this._musOriginQueue = this._musOriginQueue || /* @__PURE__ */ new Set();
+    this._musOriginQueue.delete(mbid2);
+    this._musOriginQueue.add(mbid2);
+    this._musOriginSoon();
+    return [];
+  }
+  _musOriginSoon() {
+    if (this._musOriginBusy) return;
+    this._musOriginBusy = true;
+    setTimeout(async () => {
+      while (this._musOriginQueue?.size) {
+        const batch = [...this._musOriginQueue].slice(-20);
+        batch.forEach((id) => this._musOriginQueue.delete(id));
+        try {
+          const r = await this._callApi("GET", `arr_stack/lidarr/origins?mbids=${batch.join(",")}`);
+          let changed = false;
+          for (const id of batch) {
+            const cc = r?.[id] ?? null;
+            this._musOriginMap.set(id, cc);
+            if (cc) changed = true;
+          }
+          if (changed) this._lidarrRepaint();
+        } catch (_) {
+          batch.forEach((id) => this._musOriginMap.set(id, null));
+        }
+      }
+      this._musOriginBusy = false;
+    }, 80);
+  }
+  _lidarrCoverOf(images, type) {
+    const img = (images || []).find((i) => i.coverType === type);
+    if (!img) return null;
+    const abs = [img.remoteUrl, img.url].find((u) => typeof u === "string" && u.startsWith("http"));
+    return abs ? this._lidarrThumbUrl(abs) : null;
   }
 };
 var arrMixin = _ArrMethods.prototype;
@@ -11335,8 +12357,8 @@ var _RenderRight = class {
     const regularPerPage = perPage - 1;
     const hasCalendar = this._calendar && this._calendar.length > 0;
     const hasPending = this._hass.user.is_admin && this._pendingRequests.length > 0;
-    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "trakt", "suggestarr", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr", "maintainerr", "library"];
-    const catConfig = this._config?.categories || DEFAULT_CATS.map((id) => ({ id, enabled: true }));
+    const DEFAULT_CATS = ["recentlyAdded", "recentlyRequested", "upcoming", "tvUpcoming", "trending", "popular", "recommendations", "calendar", "tautulli", "jellystat", "tracearr", "activity", "prowlarr", "maintainerr", "library"];
+    const catConfig = this._config?.categories ? this._catConfigMigrated(this._config.categories) : DEFAULT_CATS.map((id) => ({ id, enabled: true }));
     const states = this._hass?.states || {};
     const hasActiveStreams = (this._jellyfinSessions || []).length > 0 || (this._embySessions || []).length > 0 || (this._kodiSessions || []).length > 0 || Object.keys(states).some((id) => {
       if (!id.startsWith("media_player.plex_")) return false;
@@ -11352,8 +12374,10 @@ var _RenderRight = class {
       tvUpcoming: () => this._renderTvUpcoming(),
       trending: () => this._renderTrending(),
       popular: () => this._renderPopular(),
-      trakt: this._traktConfigured !== false ? () => this._renderTrakt() : null,
-      suggestarr: this._suggestarrConfigured !== false ? () => this._renderSuggestArr() : null,
+      recommendations: (() => {
+        const src = this._recSources;
+        return src.trakt || src.suggestarr || src.lastfm ? () => this._renderRecommendations() : null;
+      })(),
       calendar: hasCalendar ? () => this._renderCalendar() : null,
       streams: hasActiveStreams ? () => this._renderStreams() : null,
       tautulli: this._hass?.user?.is_admin && this._tautulliConfigured !== false ? () => this._renderTautulli() : null,
@@ -11504,21 +12528,55 @@ var _RenderRight = class {
           autocomplete="off"
           style="${inputStyle}"
         >
+        ${this._searchTypeSeg()}
         <button class="search-bar-clear" data-action="search-clear" style="${iconStyle}${this._searchActive ? "" : "display:none;"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         ${this._tmdbNoticeHtml()}
       </div>
+      ${this._searchActive ? `<div class="col-hdr" style="margin:13px 0 5px">
+        ${this._searchHdrIcon()}
+        <span class="col-hdr-title">${this._t("searchResults")}</span>
+        <div class="col-hdr-line"></div>
+      </div>` : ""}
       <div class="search-results-wrap">${this._renderSearchResultsInner()}</div>
     </div>`;
+  }
+  _searchHdrIcon() {
+    const t = this._searchType;
+    if (t === "movie") return this._appIcon("radarr", 24);
+    if (t === "tv") return this._appIcon("sonarr", 24);
+    if (t === "music") return this._appIcon("lidarr", 24);
+    return this._appIconRow(["radarr", "sonarr", "lidarr"]);
+  }
+  // All, films, series, music — the library's type filter at the size the search
+  // bar can carry, and only while there is a search to narrow. Music appears
+  // where there is a Lidarr to answer for it; All is where it starts.
+  _searchTypeSeg() {
+    if (!this._searchActive && !(this._searchQuery || "").trim()) return "";
+    const _si = this._mtSegIcons;
+    const opts = [
+      { v: "all", label: this._t("tabAll"), attr: 'data-search-type="all"' },
+      { v: "movie", label: this._t("tabMovies"), icon: _si.movie, attr: 'data-search-type="movie"' },
+      { v: "tv", label: this._t("tabTvShows"), icon: _si.tv, attr: 'data-search-type="tv"' },
+      ...this._lidarrConfigured !== false ? [{ v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-search-type="music"' }] : []
+    ];
+    return `<div class="search-type-seg">${this._mtSegmented("data-search-seg", opts, this._searchType, {
+      width: 38,
+      accent: "0,122,255",
+      animatePrev: !!this._searchSegAnim,
+      prev: this._searchSegPrev
+    })}</div>`;
   }
   // Only the results grid + inline TV overlay — kept in a stable wrapper so re-rendering
   // it during typing never touches .search-bar-wrap (recreating the input closes the iOS keyboard).
   _renderSearchResultsInner() {
     const inner = this._searchActive ? this._renderSearchResultsGrid() : "";
-    const tvSearchOverlay = this._tvRequestPending?.source === "search" ? this._renderTvRequestOverlay() : "";
-    return tvSearchOverlay ? `<div class="tv-req-anchor">${inner}${tvSearchOverlay}</div>` : inner;
+    const overlay = this._musAddPending ? this._renderMusicAddOverlay() : this._tvRequestPending?.source === "search" ? this._renderTvRequestOverlay() : "";
+    if (!overlay) return inner;
+    const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
+    return `<div class="tv-req-anchor" style="--sr-cols:${cols}">${inner}${overlay}</div>`;
   }
   _renderSearchResultsGrid() {
-    if (this._searchLoading) {
+    if (this._searchLoading && !this._searchResults.length) {
       return `<div class="placeholder">${this._t("loading")}</div>`;
     }
     if (!this._searchResults.length) {
@@ -11531,6 +12589,7 @@ var _RenderRight = class {
     const sp = this._searchPage || 0;
     const pc = this._posterCfg();
     const cards = this._searchResults.slice(sp * sPage, (sp + 1) * sPage).map((m) => {
+      if (m.mediaType === "music") return this._renderSearchMusicCard(m);
       const isMovie = m.mediaType === "movie";
       const title = this._escHtml(m.title || m.name || "");
       const tmdbId = m.id;
@@ -11610,7 +12669,11 @@ var _RenderRight = class {
         ${reqOverlay}
       </div>`;
     }).join("");
-    return `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr);row-gap:10px">${cards}</div>`;
+    return `<div class="pg-wrap">
+    <button class="pg-btn pg-btn-ph" disabled>\u2039</button>
+    <div class="mgrid" style="grid-template-columns:repeat(${cols},1fr);row-gap:10px">${cards}</div>
+    <button class="pg-btn pg-btn-ph" disabled>\u203A</button>
+  </div>`;
   }
   _ratingBadge(m, inline = false, solid = false) {
     const prov = this._ratingProvider;
@@ -11898,17 +12961,30 @@ var _RenderRight = class {
     </div>`;
   }
   _renderRecentlyAdded() {
-    const items = this.recentlyAdded;
+    const hasMusic = this._lidarrConfigured !== false;
+    const items = this._raItems();
     const smpCount = this._smpPageCount(items, "recentlyAdded");
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyAdded", (m) => this._renderRecentlyAddedCard(m));
     const noSeerr = this._overseerrConfigured === false;
-    const headerIcon = noSeerr ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon("radarr", 24)}${this._appIcon("sonarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
+    const headerIcon = noSeerr ? this._appIconRow(hasMusic ? ["radarr", "sonarr", "lidarr"] : ["radarr", "sonarr"]) : hasMusic ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon("lidarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
+    const _si = this._mtSegIcons;
+    const raSeg = hasMusic ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-ra-seg", [
+      { v: "all", label: this._t("tabAll"), attr: 'data-ra-type="all"', w: 38 },
+      {
+        v: "video",
+        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
+        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
+        attr: 'data-ra-type="video"'
+      },
+      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-ra-type="music"' }
+    ], this._raTypeSaved, { accent: "0,122,255", animatePrev: !!this._raSegAnim, prev: this._raSegPrev })}</div>` : "";
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${noSeerr ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
         ${headerIcon}
         <span class="col-hdr-title">${this._t("recentlyAdded")}</span>
+        ${raSeg}
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("recentlyAdded", smpCount)}
         ${this._seeMoreBtn("recentlyAdded")}
@@ -11917,23 +12993,73 @@ var _RenderRight = class {
     </div>`;
   }
   _renderRecentlyRequested() {
-    const items = this.recentlyRequested;
+    const hasMusic = this._lidarrConfigured !== false;
+    const rqType = hasMusic ? this._rqTypeSaved : "all";
+    const all = this.recentlyRequested;
+    const items = rqType === "all" ? all : rqType === "music" ? all.filter((m) => m._mediaType === "music") : all.filter((m) => m._mediaType !== "music");
     const smpCount = this._smpPageCount(items, "recentlyRequested");
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyRequested", (m) => this._renderRecentlyRequestedCard(m));
     const noSeerrRq = this._overseerrConfigured === false;
-    const headerIconRq = noSeerrRq ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon("radarr", 24)}${this._appIcon("sonarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
+    const headerIconRq = noSeerrRq ? this._appIconRow(["radarr", "sonarr", "lidarr"]) : hasMusic ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon("lidarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
+    const _si = this._mtSegIcons;
+    const rqSeg = hasMusic ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rq-seg", [
+      { v: "all", label: this._t("tabAll"), attr: 'data-rq-type="all"', w: 38 },
+      {
+        v: "video",
+        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
+        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
+        attr: 'data-rq-type="video"'
+      },
+      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rq-type="music"' }
+    ], rqType, { accent: "0,122,255", animatePrev: !!this._rqSegAnim, prev: this._rqSegPrev })}</div>` : "";
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${noSeerrRq ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
       <div class="col-hdr" style="margin-bottom:5px">
         ${headerIconRq}
         <span class="col-hdr-title">${this._t("recentlyRequested")}</span>
+        ${rqSeg}
         <div class="col-hdr-line"></div>
         ${this._pageIndicator("recentlyRequested", smpCount)}
         ${this._seeMoreBtn("recentlyRequested")}
       </div>
       ${grid}
     </div>`;
+  }
+  // Anything that has since made it into Lidarr is no longer a suggestion — the
+  // list is held for hours on the server and the library moves under it.
+  _lastfmRowItems() {
+    return (this._lastfm || []).filter((e) => {
+      const mb = String(e?.artist?.foreignArtistId || "").toLowerCase();
+      const nm = String(e?.artist?.artistName || "").trim().toLowerCase();
+      if (mb && this._musAdded?.has(mb)) return true;
+      for (const a of this._lidarrArtists?.values() || []) {
+        if (mb && String(a.foreignArtistId || "").toLowerCase() === mb) return false;
+        if (nm && String(a.artistName || "").trim().toLowerCase() === nm) return false;
+      }
+      return true;
+    });
+  }
+  // One suggestion. Nothing here is owned, so there is no status to show and the
+  // corner carries the plus instead — the same one a search result has.
+  _renderLastfmCard(entry) {
+    const artist = entry?.artist || {};
+    const mbid2 = String(artist.foreignArtistId || "");
+    const added = this._musAdded?.has(mbid2.toLowerCase());
+    const card = this._renderMusicCard(
+      { id: null, artist, newestAlbum: null, newAlbumCount: 0 },
+      { noSub: true, noStatus: true }
+    );
+    const pc = this._posterCfg();
+    const corner = added ? pc.statusDisplay === "tags" || pc.statusDisplay === "both" ? `${this._statusBadge(this._badge("b-st-proc", "\u2193", this._t("badgeAdded")))}` : "" : `<div style="position:absolute;bottom:8px;right:10px;z-index:3">
+        <button class="btn-add mus-add-open" data-mus-add="${this._escHtml(mbid2)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>`;
+    const libHit = added ? [...this._lidarrArtists?.values() || []].find((a) => String(a.foreignArtistId || "").toLowerCase() === mbid2.toLowerCase()) : null;
+    const dlPct = libHit ? this._lidarrQueueArtists?.get(libHit.id) : void 0;
+    const stripe = dlPct !== void 0 && (pc.statusDisplay === "stripes" || pc.statusDisplay === "both") ? this._statusStripe(this._statusStripeColor("b-dl"), true, dlPct) : "";
+    const _chars = (t) => t.toUpperCase().split("").join("<br>");
+    const overlays = `<div class="trakt-seen-ol mus-like-ol" data-mus-mbid="${this._escHtml(mbid2)}"><span>${_chars(this._t("musLike"))}</span></div><div class="trakt-ni-ol mus-skip-ol" data-mus-mbid="${this._escHtml(mbid2)}"><span>${_chars(this._t("skip"))}</span></div>`;
+    return card.replace(/data-artist-id="[^"]*"/, libHit ? `data-artist-id="${libHit.id}"` : `data-artist-unowned="${this._escHtml(mbid2)}"`).replace(/<\/div>\s*$/, `${overlays}${corner}${stripe}</div>`);
   }
   _renderUpcoming() {
     const items = this._upcoming || [];
@@ -12069,43 +13195,52 @@ var _RenderRight = class {
       <div class="tv-req-anchor">${grid}${p ? this._renderTvRequestOverlay() : ""}</div>
     </div>`;
   }
-  _renderTrakt() {
-    const items = this._trakt || [];
-    const smpCount = this._smpPageCount(items, "trakt");
-    const p = this._tvRequestPending?.source === "trakt" ? this._tvRequestPending : null;
-    const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "trakt", (m) => this._renderTraktCard(m));
+  _renderRecommendations() {
+    const src = this._recSources;
+    const items = this._recItems();
+    const smpCount = this._smpPageCount(items, "recommendations");
+    const p = ["trakt", "suggestarr"].includes(this._tvRequestPending?.source) ? this._tvRequestPending : null;
+    const emptyMsg = this._suggestarrRefreshing ? this._t("saRefreshing") : src.trakt && this._trakt === null || src.suggestarr && this._suggestarr === null || src.lastfm && this._lastfm === null ? this._t("loading") : this._t("saEmpty");
+    const gridInner = items.length === 0 ? `<div class="placeholder">${emptyMsg}</div>` : this._pagedGridWithSmp(items, "recommendations", (m, i) => this._renderRecCard(m, i));
+    const grid = this._musAddPending?.source === "lastfm" ? `<div class="tv-req-anchor">${gridInner}${this._renderMusicAddOverlay()}</div>` : `<div class="tv-req-anchor">${gridInner}${p ? this._renderTvRequestOverlay() : ""}</div>`;
+    const icons = [src.trakt && "trakt", src.suggestarr && "suggestarr", src.lastfm && "lastfm"].filter(Boolean);
+    const _si = this._mtSegIcons;
+    const hasMusic = src.lastfm && (src.trakt || src.suggestarr);
+    const recSeg = hasMusic ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rec-seg", [
+      { v: "all", label: this._t("tabAll"), attr: 'data-rec-type="all"', w: 38 },
+      {
+        v: "video",
+        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
+        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
+        attr: 'data-rec-type="video"'
+      },
+      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rec-type="music"' }
+    ], this._recTypeSaved, { accent: "0,122,255", animatePrev: !!this._recSegAnim, prev: this._recSegPrev })}</div>` : "";
     return `
     <div class="sec-card has-gradient" data-trakt-sec style="${this._sectionStyle()}">
-      ${this._sectionOverlayHtml("trakt", 25, 75, 0.4)}
+      ${this._sectionOverlayHtml(icons[0] || "trakt", 25, 75, 0.4)}
       <div class="col-hdr" style="margin-bottom:5px">
-        ${this._appIcon("trakt", 24)}
-        <span class="col-hdr-title">${this._t("traktRecommended")}</span>
-        <div class="col-hdr-line"></div>
-        ${this._pageIndicator("trakt", smpCount)}
-        ${this._seeMoreBtn("trakt")}
-      </div>
-      <div class="tv-req-anchor">${grid}${p ? this._renderTvRequestOverlay() : ""}</div>
-    </div>`;
-  }
-  _renderSuggestArr() {
-    const items = this._suggestarr || [];
-    const smpCount = this._smpPageCount(items, "suggestarr");
-    const p = this._tvRequestPending?.source === "suggestarr" ? this._tvRequestPending : null;
-    const emptyMsg = this._suggestarrRefreshing ? this._t("saRefreshing") : this._suggestarr === null ? this._t("loading") : this._t("saEmpty");
-    const grid = items.length === 0 ? `<div class="placeholder">${emptyMsg}</div>` : this._pagedGridWithSmp(items, "suggestarr", (m) => this._renderSuggestArrCard(m));
-    return `
-    <div class="sec-card has-gradient" data-suggestarr-sec style="${this._sectionStyle()}">
-      ${this._sectionOverlayHtml("suggestarr", 25, 75, 0.4)}
-      <div class="col-hdr" style="margin-bottom:5px">
-        ${this._appIcon("suggestarr", 24)}
-        <span class="col-hdr-title">${this._t("saRecommended")}</span>
+        ${icons.length > 1 ? this._appIconRow(icons) : this._appIcon(icons[0] || "trakt", 24)}
+        <span class="col-hdr-title">${this._t("catRecommendations")}</span>
+        ${recSeg}
         <div class="col-hdr-line"></div>
         ${this._suggestarrRefreshing ? `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>` : ""}
-        ${this._pageIndicator("suggestarr", smpCount)}
-        ${this._seeMoreBtn("suggestarr")}
+        ${this._pageIndicator("recommendations", smpCount)}
+        ${this._seeMoreBtn("recommendations")}
       </div>
-      <div class="tv-req-anchor">${grid}${p ? this._renderTvRequestOverlay() : ""}</div>
+      ${grid}
     </div>`;
+  }
+  // One tile, drawn by whichever feed put it there, with that feed's own icon in
+  // the corner — three sets of controls in one row otherwise say little about
+  // where a suggestion came from.
+  _renderRecCard(m, i = null) {
+    const card = m._recSrc === "lastfm" ? this._renderLastfmCard(m) : m._recSrc === "suggestarr" ? this._renderSuggestArrCard(m, i) : this._renderTraktCard(m, i);
+    const icon = this._appIcon(m._recSrc || "trakt", 16);
+    return card.replace(
+      /<\/div>\s*$/,
+      `<div class="rec-src-badge" title="${m._recSrc || "trakt"}">${icon}</div></div>`
+    );
   }
   // Returns a right-arrow button for the section header that opens the overlay at page 0
   _seeMoreBtn(section) {
@@ -12176,6 +13311,13 @@ var _RenderRight = class {
     const pageItems = items.slice(page * perPage, (page + 1) * perPage);
     const gridHtml = pageItems.map((m, i) => cfg.renderCard(m, i)).join("");
     const pageInd = totalPages > 1 ? `<span class="sec-page-ind">${page + 1}<span class="sec-page-sep">/</span>${totalPages}</span>` : "";
+    let musAddOv = "";
+    if (this._musAddPending && section === "recommendations") {
+      const mb = String(this._musAddPending.artist?.foreignArtistId || "").toLowerCase();
+      const idx = pageItems.findIndex((x) => String(x?.artist?.foreignArtistId || x?.foreignArtistId || "").toLowerCase() === mb);
+      const rowNo = Math.floor(Math.max(0, idx) / cols) + 1;
+      musAddOv = `<div class="mus-add-row" style="grid-column:1/-1;grid-row:${rowNo}">${this._renderMusicAddOverlay()}</div>`;
+    }
     const [gposL = 15, gposR = 85, go = 0.35] = cfg.gradPos || [];
     return `
     <div class="trending-overlay">
@@ -12194,7 +13336,7 @@ var _RenderRight = class {
       </div>
       <div class="pg-wrap" style="flex:1;align-items:stretch;position:relative;z-index:1">
         <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">\u2039</button>
-        <div class="to-grid" style="grid-template-columns:repeat(${cols},1fr)">${gridHtml}</div>
+        <div class="to-grid" style="grid-template-columns:repeat(${cols},1fr)">${gridHtml}${musAddOv}</div>
         <button class="pg-btn pg-btn-ph" aria-hidden="true" tabindex="-1">\u203A</button>
       </div>
     </div>`;
@@ -12313,13 +13455,13 @@ var _RenderRight = class {
     const calSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     const calSvgLg = `<svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     let grid = "";
-    if (!this._calendar || this._calendar.length === 0) {
+    if (!this._calCatItems().length) {
       grid = `<div class="placeholder">${this._t("noEpisodes")}</div>`;
     } else {
       const cols = Math.max(2, Math.min(10, parseInt(this._cfgGet("discover", "itemsPerCategory", 4)) || 4));
       const showMorePage = Math.max(1, parseInt(this._cfgGet("discover", "showMoreOnPage", 3)) || 3);
       const itemsBefore = showMorePage * cols - 1;
-      let items = this._calendar;
+      let items = this._calCatItems();
       if (items.length > itemsBefore) {
         const teasers = items.slice(-4);
         const cells = Array.from({ length: 4 }, (_, i) => {
@@ -12348,19 +13490,29 @@ var _RenderRight = class {
         return this._renderCalendarCard(ep);
       }, cols);
     }
+    const hasLidarr = this._lidarrConfigured !== false;
+    const _si = this._mtSegIcons;
+    const calSeg = hasLidarr ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-calcat-seg", [
+      { v: "all", label: this._t("tabAll"), attr: 'data-calcat-type="all"', w: 38 },
+      {
+        v: "video",
+        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
+        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
+        attr: 'data-calcat-type="video"'
+      },
+      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-calcat-type="music"' }
+    ], this._calCatTypeSaved, { accent: "0,122,255", animatePrev: !!this._calCatSegAnim, prev: this._calCatSegPrev })}</div>` : "";
     const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black 80%,transparent 100%)`;
     const dualOverlay = this._categoryOverlaysEnabled ? `<div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 15%,${this._brandColor("radarr", 0.23)} 0%,transparent 48%),radial-gradient(circle at 75% 15%,${this._brandColor("sonarr", 0.23)} 0%,transparent 48%);mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>` : "";
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${dualOverlay}
       <div class="col-hdr" style="margin-bottom:5px">
-        <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
-          ${this._appIcon("radarr", 24)}
-          ${this._appIcon("sonarr", 24)}
-        </div>
+        ${this._appIconRow(hasLidarr ? ["radarr", "sonarr", "lidarr"] : ["radarr", "sonarr"])}
         <span class="col-hdr-title">${this._t("catCalendar")}</span>
+        ${calSeg}
         <div class="col-hdr-line"></div>
-        ${this._pageIndicator("calendar", this._smpPageCount(this._calendar || [], "calendar"))}
+        ${this._pageIndicator("calendar", this._smpPageCount(this._calCatItems(), "calendar"))}
         <button class="smp-hdr-btn" data-action="open-cal-modal" title="Weekly calendar" style="width:28px;height:28px;margin:-2px 0;flex-shrink:0">${calSvg}</button>
       </div>
       ${grid}
@@ -12565,6 +13717,7 @@ var _RenderRight = class {
     const plexMatch = this._streamPlexSession(id, attr);
     const poster = this._streamLibPoster(id, attr, isTV, plexMatch) || attr.entity_picture || null;
     let img;
+    let musicFlat = false;
     if (!poster && isLiveTV) {
       const ch = channel || (attr.media_title || "").slice(0, 6).toUpperCase();
       img = `<div style="position:absolute;inset:0;background:linear-gradient(135deg,#0d1b2a 0%,#1b2838 60%,#0a1628 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px">
@@ -12572,6 +13725,12 @@ var _RenderRight = class {
       ${ch ? `<span style="font-size:8px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.45);max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(ch)}</span>` : ""}
       <span style="font-size:7px;font-weight:800;letter-spacing:3px;color:rgba(220,60,60,0.7)">LIVE</span>
     </div>`;
+    } else if (isMusic) {
+      const perf = this._cfgGet("styles", "performanceMode", false);
+      const back = !perf && poster ? `<img src="${poster}" class="mus-back" loading="lazy" aria-hidden="true" onerror="this.style.display='none'">` : "";
+      const front = poster ? `<img src="${poster}" class="mus-cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="mus-cover mus-cover-ph">\u266A</div>`;
+      img = `${back}<div class="mus-scrim"></div>${front}`;
+      musicFlat = !back;
     } else {
       img = this._mcImg(poster, isMusic ? "\u{1F3B5}" : isTV ? "\u{1F4FA}" : "\u{1F3AC}", id);
     }
@@ -12613,17 +13772,22 @@ var _RenderRight = class {
         ${avatarEl}
         <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${this._escHtml(userName)}</span>
       </div>` : "";
+    const _musArtist = isMusic && this._lidarrConfigured !== false ? [...this._lidarrArtists?.values() || []].find((a) => String(a.artistName || "").trim().toLowerCase() === String(attr.media_artist || attr.media_album_artist || "").trim().toLowerCase()) : null;
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb,255,255,255),1)";
-    const sub = subtitle ? `<div style="font-size:10px;color:rgba(var(--arr-pt-rgb,255,255,255),0.6);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(subtitle)}</div>` : "";
+    const sub = subtitle ? `<div style="font-size:${isMusic ? 9 : 10}px;color:rgba(var(--arr-pt-rgb,255,255,255),${isMusic ? "0.66" : "0.6"});margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(subtitle)}</div>` : "";
     return `
-    <div class="mc${!isPlaying ? " stream-paused" : ""}" data-stream-entity="${this._escHtml(id)}" data-stream-type="${this._escHtml(contentType)}" data-stream-title="${this._escHtml(attr.media_title || title)}" data-stream-series="${this._escHtml(attr.media_series_title || "")}" style="cursor:pointer">
+    <div class="mc${isMusic ? " mc-music" : ""}${musicFlat ? " mus-flat" : ""}${!isPlaying ? " stream-paused" : ""}"${_musArtist ? ` data-artist-id="${_musArtist.id}"` : ""} data-stream-entity="${this._escHtml(id)}" data-stream-type="${this._escHtml(contentType)}" data-stream-title="${this._escHtml(attr.media_title || title)}" data-stream-series="${this._escHtml(attr.media_series_title || "")}" style="cursor:pointer">
       ${img}
       ${deviceTag}
       ${svcBadge}
       ${pausedOverlay}
       ${userBadge}
-      ${this._mcGrad(grad, `
+      ${this._mcGrad(grad, isMusic ? `
+        ${this._musStreamRating(attr)}
+        <div style="font-size:10px;font-weight:700;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(title)}</div>
+        ${sub}
+      ` : `
         ${epLabel ? `<div style="margin-bottom:3px"><span class="imdb">${epLabel}</span></div>` : ""}
         ${isLiveTV && channel ? `<div style="margin-bottom:3px"><span class="imdb">${this._escHtml(channel)}</span></div>` : ""}
         <div style="font-size:10px;font-weight:700;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(title)}</div>
@@ -12631,6 +13795,80 @@ var _RenderRight = class {
       `)}
       ${progBar}
     </div>`;
+  }
+  _renderSearchMusicCard(res) {
+    const artist = res.artist || {};
+    const mbid2 = String(artist.foreignArtistId || "").toLowerCase();
+    const hit = res.id ? null : mbid2 ? [...this._lidarrArtists?.values() || []].find((a) => String(a.foreignArtistId || "").toLowerCase() === mbid2) : null;
+    if (hit) res = { ...res, id: hit.id };
+    const inLib = !!res.id;
+    const card = this._renderMusicCard(
+      { id: res.id, artist: inLib ? this._lidarrArtists?.get(res.id) || artist : artist, newestAlbum: null, newAlbumCount: 0 },
+      { noSub: true, noStatus: !inLib }
+    );
+    if (inLib) return card;
+    const plus = `<div style="position:absolute;bottom:8px;right:10px;z-index:3">
+    <button class="btn-add mus-add-open" data-mus-add="${this._escHtml(artist.foreignArtistId || "")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>
+  </div>`;
+    return card.replace(/data-artist-id="[^"]*"/, `data-artist-unowned="${this._escHtml(artist.foreignArtistId || "")}"`).replace(/<\/div>\s*$/, `${plus}</div>`);
+  }
+  // The overlay a series gets when it is requested: it takes the poster row, asks
+  // the two things Lidarr cannot guess, and adds. No album picker — Lidarr has no
+  // discography for an artist it does not hold yet, and MusicBrainz's own list is
+  // every bootleg and live tape a band ever had its name on.
+  _renderMusicAddOverlay() {
+    const p = this._musAddPending;
+    if (!p) return "";
+    if (p.loading || !p.opts) {
+      return `<div class="req-overlay tv-req-overlay mus-add-overlay"><span class="action-spinner" style="width:22px;height:22px;border-width:2.5px"></span></div>`;
+    }
+    const o = p.opts;
+    const qualityItems = (o.quality || []).map((q) => [q.id, q.name]);
+    const metaItems = (o.metadata || []).map((m) => [m.id, m.name]);
+    const rootItems = (o.rootFolders || []).map((f) => [f.path, f.path]);
+    const monitorItems = [
+      ["future", this._t("musMonFuture")],
+      ["latest", this._t("musMonLatest")],
+      ["all", this._t("musMonAll")],
+      ["none", this._t("musMonNone")]
+    ];
+    const art = this._lidarrArtistImage(p.artist, "poster");
+    const poster = art ? `<img src="${art}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">${this._escHtml(this._musInitials(p.artist?.artistName))}</span>`;
+    const rootHtml = rootItems.length > 1 ? `<div class="mus-add-field"><span class="req-label">${this._t("musRootFolder")}</span>${this._mtFieldSelect("mus-add-root", rootItems, p.rootFolder, "width:100%")}</div>` : "";
+    const metaHtml = metaItems.length > 1 ? `<div class="mus-add-field"><span class="req-label">${this._t("musMetadata")}</span>${this._mtFieldSelect("mus-add-meta", metaItems, p.metadataId, "width:100%")}</div>` : "";
+    return `
+    <div class="req-overlay tv-req-overlay mus-add-overlay">
+      <div class="tv-req-inner">
+        <div class="tv-req-col-poster">${poster}</div>
+        <div class="tv-req-row2">
+          <div class="tv-req-controls">
+            <div class="req-panel mus-add-panel">
+              <div class="mus-add-field"><span class="req-label">${this._t("downloadQuality")}</span>${this._mtFieldSelect("mus-add-profile", qualityItems, p.profileId, "width:100%")}</div>
+              <div class="mus-add-field"><span class="req-label">${this._t("musMonitorWhat")}</span>${this._mtFieldSelect("mus-add-monitor", monitorItems, p.monitor, "width:100%")}</div>
+              ${metaHtml}
+              ${rootHtml}
+            </div>
+            <div class="tv-req-actions-col">
+              ${p.done ? `<span class="mus-add-done">${this._t("badgeAdded")}</span>` : ""}
+              <div class="req-actions">
+                <button class="req-cancel mus-add-cancel" title="${this._t("cancel")}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button class="req-confirm mus-add-confirm${p.done ? " is-done" : ""}" title="${this._t("confirm")}">${p.busy ? `<span class="action-spinner" style="width:13px;height:13px;border-width:2px"></span>` : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="20 6 9 17 4 12"/></svg>`}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+  // The playing artist's own score, where Lidarr holds them — the same badge the
+  // artist card wears, so a track and its artist read alike.
+  _musStreamRating(attr) {
+    const name = String(attr?.media_artist || "").toLowerCase();
+    if (!name || !this._lidarrArtists?.size) return "";
+    const hit = [...this._lidarrArtists.values()].find((a) => String(a.artistName || "").toLowerCase() === name);
+    if (!hit) return "";
+    const rating = this._posterCfg().rating ? this._musRatingBadge(hit, true, true) : "";
+    return this._flagStrip([], this._musOrigin(hit), rating, { endIcon: false });
   }
   // ─────────────────────────────────────────────
   // Shared pagination helper
@@ -12786,7 +14024,8 @@ var _MediaCardMethods = class {
       CA: "ES",
       IS: "IS"
     };
-    return MAP[code] || null;
+    if (MAP[code]) return MAP[code];
+    return FLAG_SVGS[code] || this._flagSpecs[code] ? code : null;
   }
   // Regional-indicator pair — no image assets, no network, and Chrome renders
   // these natively.
@@ -12956,7 +14195,7 @@ var _MediaCardMethods = class {
       audio: _ico('<path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM16.5 12c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.73 2.5-2.25 2.5-4.02zM3 9v6h4l5 5V4L7 9H3z"/>')
     };
   }
-  _flagStrip(subCodes, audioCodes, ratingHtml) {
+  _flagStrip(subCodes, audioCodes, ratingHtml, { endIcon = true } = {}) {
     const subs = this._topLangs((subCodes || []).filter(Boolean));
     const auds = this._topLangs((audioCodes || []).filter(Boolean));
     if (!ratingHtml && !subs.length && !auds.length) return "";
@@ -12970,7 +14209,7 @@ var _MediaCardMethods = class {
     };
     const left = subs.map((c, i) => flag(c, "left", i + 1, i > 0, "", i > 0)).join("");
     const right = auds.map((c, i) => flag(c, "right", 90 - i, true, "", i < auds.length - 1)).join("");
-    const endIco = auds.length ? `<span class="fl-ico-end">${this._flStripIcons.audio}</span>` : "";
+    const endIco = endIcon && auds.length ? `<span class="fl-ico-end">${this._flStripIcons.audio}</span>` : "";
     return `<div class="fl-strip">
     ${left}
     ${ratingHtml ? `<span class="fl-badge${subs.length ? " fl-tuck fl-sh-l" : ""}${auds.length ? " fl-sh-r" : ""}">${ratingHtml}</span>` : ""}
@@ -13144,7 +14383,7 @@ var _MediaCardMethods = class {
     const showTag = pc.statusDisplay === "tags" || pc.statusDisplay === "both";
     const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
     const statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
-    const stripe = showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", this._dlPct(m.id)) : "";
+    const stripe = showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", this._dlPct(m.id, "movie", m._isRadarr2 ? "radarr2" : "radarr")) : "";
     const qualBadge4k = this._qualityBadge2(m);
     let audioBadge = "";
     let subBadge = "";
@@ -13218,7 +14457,7 @@ var _MediaCardMethods = class {
     const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
     const statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
     const partialPct = badgeCls === "b-partial" && totalCount > 0 ? Math.round(fileCount / totalCount * 100) : -1;
-    const stripePct = badgeCls === "b-dl" ? this._dlPct(s.id, "tv") : partialPct;
+    const stripePct = badgeCls === "b-dl" ? this._dlPct(s.id, "tv", s._isSonarr2 ? "sonarr2" : "sonarr") : partialPct;
     const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", stripePct) : "";
     const img = this._mcImg(poster, "\u{1F4FA}", s.id);
     let audioCodes = [];
@@ -13245,6 +14484,7 @@ var _MediaCardMethods = class {
     </div>`;
   }
   _renderRecentlyAddedCard(item) {
+    if (item._mediaType === "music") return this._renderMusicCard(item);
     const pc = this._posterCfg();
     const isMovie = item._mediaType === "movie";
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
@@ -13308,7 +14548,11 @@ var _MediaCardMethods = class {
     const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
     const statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
     const _partialPct = !isMovie && badgeCls === "b-partial" && (item.statistics?.episodeCount || 0) > 0 ? Math.round((item.statistics?.episodeFileCount || 0) / (item.statistics?.episodeCount || 1) * 100) : -1;
-    const _stripePct = badgeCls === "b-dl" ? this._dlPct(item.id, isMovie ? "movie" : "tv") : _partialPct;
+    const _stripePct = badgeCls === "b-dl" ? this._dlPct(
+      item.id,
+      isMovie ? "movie" : "tv",
+      isMovie ? item._isRadarr2 ? "radarr2" : "radarr" : item._isSonarr2 ? "sonarr2" : "sonarr"
+    ) : _partialPct;
     const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", _stripePct) : "";
     let audioBadge = "";
     let subBadge = "";
@@ -13422,6 +14666,7 @@ var _MediaCardMethods = class {
     </div>`;
   }
   _renderRecentlyRequestedCard(item) {
+    if (item._mediaType === "music") return this._renderMusicCard(item, { requested: true });
     const pc = this._posterCfg();
     const isMovie = item._mediaType === "movie";
     const seerrOnly = !!item._seerrOnly;
@@ -13470,7 +14715,11 @@ var _MediaCardMethods = class {
     const showTag = pc.statusDisplay === "tags" || pc.statusDisplay === "both";
     const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
     const statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
-    const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", item.id != null ? this._dlPct(item.id, isMovie ? "movie" : "tv") : -1) : "";
+    const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", item.id != null ? this._dlPct(
+      item.id,
+      isMovie ? "movie" : "tv",
+      isMovie ? item._isRadarr2 ? "radarr2" : "radarr" : item._isSonarr2 ? "sonarr2" : "sonarr"
+    ) : -1) : "";
     const _rqLangs = seerrOnly ? [] : this._arrLangCodes(item, isMovie);
     return `
     <div class="mc" data-popup="${popup}"${tmdbAttr}${tvdbAttr}${radarrAttr} data-title="${title}">
@@ -13480,6 +14729,96 @@ var _MediaCardMethods = class {
       ${statusBadge}
       ${this._mcGrad(grad, `${this._ratingLangBlock(item, _rqLangs)}
         ${pc.title ? `<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>` : ""}`)}
+      ${stripe}
+    </div>`;
+  }
+  // A missing portrait falls back to initials — two of them when the name has
+  // more than one word, which is what tells "Alan Walker" from "ABBA".
+  _musInitials(name) {
+    const words = String(name || "?").trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return "?";
+    const take = words.length > 1 ? words.slice(0, 2) : words.slice(0, 1);
+    return take.map((w) => [...w][0].toUpperCase()).join("");
+  }
+  _musRatingBadge(artist, inline = false, solid = false) {
+    if (!inline && !this._posterCfg().rating) return "";
+    const v = artist?.ratings?.value;
+    if (!v) return "";
+    const display = (Math.round(v * 10) / 10).toFixed(1);
+    const votes = artist?.ratings?.votes;
+    const tip = votes ? ` title="MusicBrainz \xB7 ${votes} ${votes === 1 ? "vote" : "votes"}"` : ' title="MusicBrainz"';
+    if (solid) {
+      const sty2 = "border-color:transparent;background:rgba(186,71,143,0.85);color:#fff;text-shadow:none";
+      const num = "line-height:1;display:block;margin-top:-1px;font-variant-numeric:tabular-nums";
+      return `<span class="imdb"${tip} style="${sty2};padding:2px 5px;gap:3px"><span style="${num}">${display}</span></span>`;
+    }
+    const icon = `<svg width="22" height="11" viewBox="0 0 64 28" style="flex-shrink:0"><rect width="64" height="28" rx="4" fill="#BA478F"/><text x="32" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="900" fill="#fff">MB</text></svg>`;
+    const sty = "border-color:rgba(186,71,143,0.45);background:rgba(186,71,143,0.22)";
+    const badge = `<span class="imdb"${tip} style="${sty};padding:2px 3px;gap:3px">${icon}<span style="line-height:1;display:block;margin-top:-1px">${display}</span></span>`;
+    return inline ? badge : `<div style="margin-bottom:3px">${badge}</div>`;
+  }
+  // The row lists artists, the way Lidarr's own library does — and the way this
+  // card already treats series. Artist artwork is square (measured: 1000x1000),
+  // the grid is 2:3, so the portrait sits over the artist's own fanart rather
+  // than being cropped or leaving the row a third shorter than every other one.
+  _renderMusicCard(entry, { noSub = false, noStatus = false, requested = false } = {}) {
+    const pc = this._posterCfg();
+    const artist = entry.artist || {};
+    const album = entry.newestAlbum || null;
+    const front = this._lidarrArtistImage(artist, "poster") || (album ? this._lidarrCover(album) : null);
+    const back = this._lidarrArtistImage(artist, "fanart") || (album ? this._lidarrCover(album) : null);
+    const name = this._escHtml(artist.artistName || "Unknown");
+    const sub = noSub ? "" : entry.newAlbumCount > 1 ? `${entry.newAlbumCount} ${this._t("musicNewAlbums")}` : this._escHtml(album?.title || "");
+    const ast = artist.statistics || {};
+    const st = ast.totalTrackCount !== void 0 ? ast : album?.statistics || {};
+    const have = st.trackFileCount ?? 0;
+    const total = st.trackCount ?? 0;
+    const allTr = st.totalTrackCount ?? total;
+    const dlAlbum = album && this._lidarrQueue?.has(album.id);
+    const dlArtist = this._lidarrQueueArtists?.get(artist.id);
+    const dl = dlAlbum || dlArtist !== void 0;
+    let badgeCls = "";
+    let badgeHtml = "";
+    if (dl) {
+      badgeCls = "b-dl";
+      badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
+    } else if (total > 0 && have >= total) {
+      badgeCls = allTr > total ? "b-continuing" : "b-st-avail";
+      badgeHtml = this._badge(badgeCls, "\u2713", this._t("badgeAvailable"));
+    } else if (have > 0) {
+      badgeCls = "b-partial";
+      badgeHtml = `<span class="badge b-partial">${have}/<span class="b-txt">${total}</span></span>`;
+    } else {
+      badgeCls = "b-missing";
+      badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
+    }
+    const showTag = !noStatus && (pc.statusDisplay === "tags" || pc.statusDisplay === "both");
+    const showStripe = !noStatus && (pc.statusDisplay === "stripes" || pc.statusDisplay === "both");
+    const statusBadge = badgeHtml && showTag ? this._statusBadge(badgeHtml) : "";
+    const dlPct = dlAlbum ? this._lidarrQueuePct?.get(album.id) ?? -1 : dlArtist ?? -1;
+    const pct = badgeCls === "b-dl" ? dlPct : requested ? -1 : total > 0 && have < total && have > 0 ? Math.round(have / total * 100) : -1;
+    const stripeCls = requested && badgeCls !== "b-dl" ? "b-missing" : badgeCls;
+    const stripeColor = stripeCls === "b-missing" && !requested ? "#555" : this._statusStripeColor(stripeCls);
+    const stripe = badgeCls && showStripe ? this._statusStripe(stripeColor, badgeCls === "b-dl", pct) : "";
+    const perf = this._cfgGet("styles", "performanceMode", false);
+    const backLayer = !perf && back ? `<img src="${back}" class="mus-back" loading="lazy" aria-hidden="true" onerror="this.style.display='none'">` : "";
+    const frontEl = front ? `<img src="${front}" class="mus-cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="mus-cover mus-cover-ph">${this._escHtml(this._musInitials(artist.artistName))}</div>`;
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    return `
+    <div class="mc mc-music${backLayer ? "" : " mus-flat"}${this._libFlashArtist && this._libFlashArtist === artist.id ? " lib-flash" : ""}"${this._isDay ? ` style="${backLayer ? "" : "background:rgba(0,0,0,0.05);"}border-color:rgba(0,0,0,0.14);box-shadow:inset 0 1px 0 rgba(255,255,255,0.35)"` : ""} data-artist-id="${artist.id}" data-title="${name}">
+      ${backLayer}
+      <div class="mus-scrim"></div>
+      ${frontEl}
+      ${pc.mediaType ? `<span class="media-type-tag">${this._t("typeArtist")}</span>` : ""}
+      ${statusBadge}
+      ${this._mcGrad(grad, `${this._flagStrip(
+      [],
+      this._musOrigin(artist),
+      pc.rating ? this._musRatingBadge(artist, true, true) : "",
+      { endIcon: false }
+    )}${pc.title ? `<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` : ""}
+        ${sub ? `<div style="font-size:9px;color:rgba(var(--arr-pt-rgb,255,255,255),0.66);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>` : ""}`)}
       ${stripe}
     </div>`;
   }
@@ -13662,7 +15001,9 @@ var _MediaCardMethods = class {
     const showTag = pc.statusDisplay === "tags" || pc.statusDisplay === "both";
     const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
     const statusHtml = statusBadge && showTag ? this._statusBadge(statusBadge) : "";
-    const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", this._dlPct(radarrEntry?.id)) : "";
+    const _dlInst = inRadarr2Downloading && !inRadarrDownloading ? "radarr2" : "radarr";
+    const _dlId = _dlInst === "radarr2" ? radarr2Entry?.id : radarrEntry?.id ?? radarr2Entry?.id;
+    const stripe = badgeCls && showStripe ? this._statusStripe(this._statusStripeColor(badgeCls), badgeCls === "b-dl", this._dlPct(_dlId, "movie", _dlInst)) : "";
     const overlay = this._requestPending?.reqKey === reqKey ? this._renderRequestOverlay(m.id, m.id) : "";
     const grad = "rgba(0,0,0,0.88)";
     const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
@@ -13689,16 +15030,22 @@ var _MediaCardMethods = class {
   // Resolves a calendar entry to its *arr record, so poster lookups and the card
   // renderer agree on which series/movie an episode belongs to.
   _calItemSeries(ep) {
+    if (ep._mediaType === "music") {
+      const a = ep.artist || ep.series || {};
+      return this._lidarrArtists?.get(a.id) || a;
+    }
     const seriesRaw = ep.series || {};
     const isMovie = ep._mediaType === "movie";
     const _sid = seriesRaw.id || ep.seriesId;
     return isMovie ? (this._radarr || []).find((m) => seriesRaw.tmdbId ? m.tmdbId === seriesRaw.tmdbId : m.id === _sid) || (this._radarr2 || []).find((m) => seriesRaw.tmdbId ? m.tmdbId === seriesRaw.tmdbId : m.id === _sid) || seriesRaw : (this._sonarrAll || this._sonarr || []).find((s) => seriesRaw.tvdbId ? s.tvdbId === seriesRaw.tvdbId : s.id === _sid) || (this._sonarr2All || this._sonarr2 || []).find((s) => seriesRaw.tvdbId ? s.tvdbId === seriesRaw.tvdbId : s.id === _sid) || seriesRaw;
   }
   _calItemPoster(ep) {
+    if (ep._mediaType === "music") return this._lidarrCover(ep) || this._lidarrArtistImage(ep.artist, "poster");
     const series = this._calItemSeries(ep);
     return ep._mediaType === "movie" ? this._getRadarrPoster(series) : this._getSonarrPoster(series);
   }
   _renderCalendarModalCard(ep) {
+    if (ep._mediaType === "music") return this._renderCalendarMusicCard(ep, { modal: true });
     const pc = this._posterCfg();
     const seriesRaw = ep.series || {};
     const isMovie = ep._mediaType === "movie";
@@ -13780,7 +15127,62 @@ var _MediaCardMethods = class {
       ${stripe}
     </div>`;
   }
+  _renderCalendarMusicCard(ep, { modal = false } = {}) {
+    const pc = this._posterCfg();
+    const artist = this._calItemSeries(ep);
+    const name = this._escHtml(artist.artistName || ep.artist?.artistName || "Unknown");
+    const album = this._escHtml(ep.title || "");
+    const dateStr = this.fmtDate(ep.airDate);
+    const cover = this._lidarrCover(ep);
+    const back = this._lidarrArtistImage(artist, "fanart") || cover;
+    const st = ep.statistics || {};
+    const have = st.trackFileCount ?? 0;
+    const total = st.trackCount ?? 0;
+    const dl = this._lidarrQueue?.has(ep.id);
+    let cls = "b-missing", badgeHtml = this._badge("b-missing", "\u2717", this._t("badgeMissing"));
+    if (dl) {
+      cls = "b-dl";
+      badgeHtml = this._badge("b-dl", "\u2193", this._t("badgeDownloading"));
+    } else if (total > 0 && have >= total) {
+      cls = "b-st-avail";
+      badgeHtml = this._badge("b-st-avail", "\u2713", this._t("badgeAvailable"));
+    } else if (have > 0) {
+      cls = "b-partial";
+      badgeHtml = `<span class="badge b-partial">${have}/<span class="b-txt">${total}</span></span>`;
+    }
+    const showTag = pc.statusDisplay === "tags" || pc.statusDisplay === "both";
+    const showStripe = pc.statusDisplay === "stripes" || pc.statusDisplay === "both";
+    const pct = total > 0 && have < total && have > 0 ? Math.round(have / total * 100) : -1;
+    const stripe = showStripe ? this._statusStripe(this._statusStripeColor(cls), cls === "b-dl", pct) : "";
+    const perf = this._cfgGet("styles", "performanceMode", false);
+    const backLayer = !perf && back ? `<img src="${back}" class="mus-back" loading="lazy" aria-hidden="true" onerror="this.style.display='none'">` : "";
+    const frontEl = cover ? `<img src="${cover}" class="mus-cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="mus-cover mus-cover-ph">${this._escHtml(this._musInitials(artist.artistName))}</div>`;
+    const grad = "rgba(0,0,0,0.88)";
+    const tc = "rgba(var(--arr-pt-rgb, 255, 255, 255), 1)";
+    return `
+    <div class="mc mc-music${backLayer ? "" : " mus-flat"}" data-album-cal="${ep.id}" data-title="${name}">
+      ${backLayer}
+      <div class="mus-scrim"></div>
+      ${frontEl}
+      <div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;flex-direction:column;gap:3px;align-items:flex-start">
+        ${pc.mediaType ? `<span class="media-type-tag" style="position:static">${this._t("typeAlbum")}</span>` : ""}
+      </div>
+      <div style="position:absolute;top:6px;right:6px;z-index:2;display:flex;flex-direction:column;gap:3px;align-items:flex-end">
+        ${dateStr ? `<span class="media-type-tag" style="position:static">${dateStr}</span>` : ""}
+        ${showTag ? this._statusBadge(badgeHtml) : ""}
+      </div>
+      ${this._mcGrad(grad, `${this._flagStrip(
+      [],
+      this._musOrigin(artist),
+      pc.rating ? this._musRatingBadge(artist, true, true) : "",
+      { endIcon: false }
+    )}${pc.title ? `<div style="font-size:10px;font-weight:600;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` : ""}
+        ${album ? `<div style="font-size:9px;color:rgba(var(--arr-pt-rgb,255,255,255),0.66);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${album}</div>` : ""}`)}
+      ${stripe}
+    </div>`;
+  }
   _renderCalendarCard(ep) {
+    if (ep._mediaType === "music") return this._renderCalendarMusicCard(ep);
     const isMovie = ep._mediaType === "movie";
     const seriesRaw = ep.series || {};
     const _sid = seriesRaw.id || ep.seriesId;
@@ -14359,7 +15761,7 @@ var _WireMethods = class {
         }
       });
     });
-    this.shadowRoot.querySelectorAll(".req-cancel:not(.tv-req-cancel)").forEach((btn) => {
+    this.shadowRoot.querySelectorAll(".req-cancel:not(.tv-req-cancel):not(.mus-add-cancel)").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         this._requestPending = null;
@@ -14387,7 +15789,7 @@ var _WireMethods = class {
         overlay.querySelectorAll(".req-panel").forEach((p) => p.classList.toggle("req-panel--hidden", p.dataset.panel !== targetPanel));
       });
     });
-    this.shadowRoot.querySelectorAll(".req-confirm:not(.tv-req-confirm)").forEach((btn) => {
+    this.shadowRoot.querySelectorAll(".req-confirm:not(.tv-req-confirm):not(.mus-add-confirm)").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const movieId = parseInt(btn.dataset.movieid, 10);
@@ -14506,6 +15908,8 @@ var _WireMethods = class {
     this._wireTvOverlay();
     this._wireSectionOverlay();
     this._alignReqOverlay();
+    const _rightCol = this.shadowRoot?.getElementById("col-right");
+    if (_rightCol) this._wireMusicCards(_rightCol);
   }
   // The overlay's anchor wraps the paging chevrons as well as the posters, so
   // inset:0 spilled it over the arrows on both sides. Measured rather than
@@ -14820,7 +16224,28 @@ var _WireMethods = class {
   }
   // Scoped wiring for cards inside .search-results-wrap only — used by _reRenderSearchResults()
   // so we don't re-wire (and double-bind) cards elsewhere in the right panel that weren't touched.
+  _sizeSearchOverlay(root) {
+    const anchor = root?.querySelector(".tv-req-anchor") || this.shadowRoot?.querySelector("#col-right .tv-req-anchor");
+    const ov = anchor?.querySelector(":scope > .req-overlay");
+    const grid = anchor?.querySelector(".mgrid, .to-grid");
+    if (!ov || !grid) return;
+    const cards = [...grid.children];
+    if (!cards.length) return;
+    const mb = String(this._musAddPending?.artist?.foreignArtistId || "").toLowerCase();
+    const target = mb && cards.find((c) => String(c.querySelector("[data-mus-add]")?.dataset.musAdd || "").toLowerCase() === mb || String(c.dataset.artistUnowned || "").toLowerCase() === mb) || cards[0];
+    const row = cards.filter((c) => c.offsetTop === target.offsetTop);
+    const first = row[0];
+    const last = row[row.length - 1];
+    ov.style.left = `${first.offsetLeft}px`;
+    ov.style.right = "auto";
+    ov.style.width = `${last.offsetLeft + last.offsetWidth - first.offsetLeft}px`;
+    ov.style.top = `${first.offsetTop}px`;
+    ov.style.bottom = "auto";
+    ov.style.height = `${first.offsetHeight}px`;
+  }
   _wireSearchResultCards(root) {
+    requestAnimationFrame(() => this._sizeSearchOverlay(root));
+    this._wireMusAddSelects(root);
     root.querySelectorAll(".mc[data-popup]").forEach((card) => {
       card.style.cursor = "pointer";
       card.addEventListener("click", (e) => {
@@ -14903,6 +16328,24 @@ var _WireMethods = class {
   }
   _wireSearch() {
     const root = this.shadowRoot;
+    const _srWrap = root.querySelector(".search-results-wrap");
+    const _right = this.shadowRoot?.getElementById("col-right");
+    if (_srWrap || _right) {
+      requestAnimationFrame(() => this._sizeSearchOverlay(_srWrap || _right));
+      this._wireMusAddSelects(_right || _srWrap);
+    }
+    this._syncSegVars(root);
+    root.querySelectorAll(".search-type-seg .mt-seg[data-seg-to]").forEach((seg) => {
+      if (seg.dataset.seg === seg.dataset.segTo) return;
+      requestAnimationFrame(() => {
+        seg.dataset.seg = seg.dataset.segTo;
+      });
+    });
+    this._searchSegAnim = false;
+    this._rqSegAnim = false;
+    this._raSegAnim = false;
+    this._calCatSegAnim = false;
+    this._recSegAnim = false;
     const input = root.querySelector(".search-bar-input");
     if (!input) return;
     if (this._searchAbort) this._searchAbort.abort();
@@ -14939,7 +16382,103 @@ var _WireMethods = class {
       this._searchActive = true;
       this._searchTimer = setTimeout(() => this._fetchSearch(q), 1500);
     }, { signal: sig });
+    root.addEventListener("mousedown", (e) => {
+      if (e.target.closest(".search-type-seg")) e.preventDefault();
+    }, { signal: sig });
     root.addEventListener("click", (e) => {
+      const recSeg = e.target.closest("[data-rec-type]");
+      if (recSeg) {
+        const next = recSeg.dataset.recType;
+        if (next !== (this._recType || "all")) {
+          this._recSegPrev = this._recType || "all";
+          this._recSegAnim = true;
+          this._recType = next;
+          try {
+            localStorage.setItem("arr-rec-type", next);
+          } catch (_) {
+          }
+          this._pages.recommendations = 0;
+          this._reRenderSection("recommendations");
+        }
+        return;
+      }
+      const calSeg = e.target.closest("[data-calcat-type]");
+      if (calSeg) {
+        const next = calSeg.dataset.calcatType;
+        if (next !== (this._calCatType || "all")) {
+          this._calCatSegPrev = this._calCatType || "all";
+          this._calCatSegAnim = true;
+          this._calCatType = next;
+          try {
+            localStorage.setItem("arr-cal-type", next);
+          } catch (_) {
+          }
+          this._pages.calendar = 0;
+          this._reRenderSection("calendar");
+        }
+        return;
+      }
+      const raSeg = e.target.closest("[data-ra-type]");
+      if (raSeg) {
+        const next = raSeg.dataset.raType;
+        if (next !== (this._raType || "all")) {
+          this._raSegPrev = this._raType || "all";
+          this._raSegAnim = true;
+          this._raType = next;
+          try {
+            localStorage.setItem("arr-ra-type", next);
+          } catch (_) {
+          }
+          this._pages.recentlyAdded = 0;
+          this._reRenderSection("recentlyAdded");
+        }
+        return;
+      }
+      const rqSeg = e.target.closest("[data-rq-type]");
+      if (rqSeg) {
+        const next = rqSeg.dataset.rqType;
+        if (next !== (this._rqType || "all")) {
+          this._rqSegPrev = this._rqType || "all";
+          this._rqSegAnim = true;
+          this._rqType = next;
+          try {
+            localStorage.setItem("arr-rq-type", next);
+          } catch (_) {
+          }
+          this._pages.recentlyRequested = 0;
+          this._reRenderSection("recentlyRequested");
+        }
+        return;
+      }
+      const seg = e.target.closest("[data-search-type]");
+      if (seg) {
+        const next = seg.dataset.searchType;
+        if (next !== this._searchType) {
+          this._searchSegPrev = this._searchType;
+          this._searchSegAnim = true;
+          try {
+            localStorage.setItem("arr-search-type", next);
+          } catch (_) {
+          }
+          this._searchPage = 0;
+          const segEl = seg.closest(".mt-seg");
+          if (segEl) {
+            const idx = [...segEl.querySelectorAll(".mt-seg-half")].indexOf(seg);
+            if (idx >= 0) {
+              segEl.dataset.segTo = String(idx);
+              requestAnimationFrame(() => {
+                segEl.dataset.seg = String(idx);
+              });
+            }
+          }
+          this._searchSegAnim = false;
+          const q = (this._searchQuery || "").trim();
+          clearTimeout(this._searchTimer);
+          if (q) this._fetchSearch(q);
+          else this._reRenderSearchResults();
+        }
+        return;
+      }
       if (e.target.closest(".search-bar-clear")) {
         clearTimeout(this._searchTimer);
         this._searchQuery = "";
@@ -15319,7 +16858,7 @@ var _WireMethods = class {
       h += "</div>";
       return h;
     };
-    this.shadowRoot.querySelectorAll(".trakt-seen-ol:not(.sa-seen-ol)").forEach((btn) => {
+    this.shadowRoot.querySelectorAll(".trakt-seen-ol:not(.sa-seen-ol):not(.mus-like-ol)").forEach((btn) => {
       if (btn._traktWired) return;
       btn._traktWired = true;
       btn.addEventListener("click", (e) => {
@@ -15435,7 +16974,7 @@ var _WireMethods = class {
         });
       });
     });
-    this.shadowRoot.querySelectorAll(".trakt-ni-ol:not(.sa-skip-ol)").forEach(
+    this.shadowRoot.querySelectorAll(".trakt-ni-ol:not(.sa-skip-ol):not(.mus-skip-ol)").forEach(
       (btn) => _traktDismiss(btn, (type, slug) => {
         const mediaType = type === "tv" ? "shows" : "movies";
         return this._callApi("DELETE", `arr_stack/trakt/recommendations/${mediaType}/${encodeURIComponent(slug)}`);
@@ -17833,6 +19372,26 @@ var _MaintainerrRenderMethods = class {
   // choice so the wire layer can flip it next frame and let the fill slide —
   // a freshly inserted element would jump straight to its end state.
   _mtSegmented(attr, opts, current, { icons = false, animatePrev = false, width = null, accent = null, prev = null, accentAlpha = null } = {}) {
+    const varW = opts.some((o) => o.w);
+    if (varW) {
+      const ws = opts.map((o) => o.w || width || 44);
+      const xs = ws.map((_, i) => ws.slice(0, i).reduce((a, b) => a + b, 0));
+      const to2 = Math.max(0, opts.findIndex((o) => o.v === current));
+      const fromIdx2 = prev != null ? opts.findIndex((o) => o.v === prev) : -1;
+      const from2 = animatePrev ? fromIdx2 >= 0 ? fromIdx2 : to2 === 0 ? 1 : 0 : to2;
+      const halves2 = opts.map(
+        (o, i) => `<span class="mt-seg-half${o.disabled ? " is-disabled" : ""}" ${o.attr || ""} style="${o.w ? `width:${o.w}px` : "width:auto;padding:0 9px"}" title="${this._escHtml(o.label)}">${o.icon || this._escHtml(o.label)}</span>`
+      ).join("");
+      const vars2 = [
+        ...ws.map((w, i) => `--w${i}:${w}px`),
+        ...xs.map((x, i) => `--x${i}:${x}px`),
+        accent ? `--seg-accent:rgba(${accent},${accentAlpha ?? (this._isDay ? 0.85 : 0.5)});--seg-accent-bdr:rgba(${accent},${this._isDay ? 0.95 : 0.8})` : ""
+      ].filter(Boolean).join(";");
+      return `<div class="mt-seg mt-seg--var mt-seg--presync${icons ? " mt-seg--icon" : ""}" ${attr} data-seg="${from2}" data-seg-to="${to2}" style="${vars2}">
+        <span class="mt-seg-ind"></span>
+        ${halves2}
+      </div>`;
+    }
     const to = Math.max(0, opts.findIndex((o) => o.v === current));
     const fromIdx = prev != null ? opts.findIndex((o) => o.v === prev) : -1;
     const from = animatePrev ? fromIdx >= 0 ? fromIdx : to === 0 ? 1 : 0 : to;
@@ -17852,6 +19411,25 @@ var _MaintainerrRenderMethods = class {
       ${halves}
     </div>`;
   }
+  // The indicator of a variable-width peanut is a single absolutely positioned
+  // pill, so it can only follow the halves if it is told their real geometry.
+  // Measuring beats the widths the caller guessed: an icon pair renders wider
+  // or narrower than any number written by hand, and then the fill sits off.
+  _syncSegVars(scope) {
+    (scope || this.shadowRoot)?.querySelectorAll(".mt-seg--var").forEach((seg) => {
+      const halves = [...seg.querySelectorAll(".mt-seg-half")];
+      if (!halves.length) return;
+      const base = halves[0].offsetLeft;
+      halves.forEach((h, i) => {
+        seg.style.setProperty(`--w${i}`, `${h.offsetWidth}px`);
+        seg.style.setProperty(`--x${i}`, `${h.offsetLeft - base}px`);
+      });
+      if (seg.classList.contains("mt-seg--presync")) {
+        void seg.offsetWidth;
+        seg.classList.remove("mt-seg--presync");
+      }
+    });
+  }
   // Icons used by the view switches
   get _mtSegIcons() {
     const F = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="display:block"';
@@ -17865,7 +19443,8 @@ var _MaintainerrRenderMethods = class {
       // Same glyphs the Library type filter uses, so a film strip means movies
       // and a set means TV wherever the switch appears
       movie: `<svg ${F}><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`,
-      tv: `<svg ${F}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`
+      tv: `<svg ${F}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+      music: `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" style="display:block"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>`
     };
   }
   // ── Toolbar ───────────────────────────────────────────────────────────────
@@ -21428,7 +23007,9 @@ var _PopupMethods = class {
       const saved = this._libReturnState;
       this._libReturnState = null;
       this._renderPopupEl();
-      this._openLibModal(saved.typeKey === "movies" ? "movies" : saved.typeKey === "tv" ? "tv" : saved.qualityKey || "all");
+      this._openLibModal(
+        ["movies", "tv", "music"].includes(saved.typeKey) ? saved.typeKey : saved.qualityKey || "all"
+      );
       const m = this._libModal;
       if (m) {
         m.typeKey = saved.typeKey;
@@ -21466,7 +23047,7 @@ var _PopupMethods = class {
         this._openPopup(type, tmdbId, tvdbId, title, radarrId, radarr2Id);
       });
     });
-    this.shadowRoot.querySelectorAll(".mc[data-stream-entity]").forEach((card) => {
+    this.shadowRoot.querySelectorAll(".mc[data-stream-entity]:not([data-artist-id])").forEach((card) => {
       card.addEventListener("click", () => {
         this._openStreamPopup(
           card.dataset.streamEntity,
@@ -22199,7 +23780,7 @@ var _PopupMethods = class {
     const todayStr = localDateStr(/* @__PURE__ */ new Date());
     const activeTab = this._calendarTab || "tv";
     const filteredData = activeTab === "all" ? this._calendarModalData || [] : (this._calendarModalData || []).filter(
-      (ep) => activeTab === "movie" ? ep._mediaType === "movie" : ep._mediaType !== "movie"
+      (ep) => activeTab === "movie" ? ep._mediaType === "movie" : activeTab === "music" ? ep._mediaType === "music" : ep._mediaType !== "movie" && ep._mediaType !== "music"
     );
     const byDay = {};
     for (const ep of filteredData) {
@@ -22225,11 +23806,13 @@ var _PopupMethods = class {
         const mosaic = posters.length ? `<div style="position:absolute;inset:0;z-index:0;display:flex">${posters.map((u) => `<div style="flex:1;min-width:0;background:url('${u}') center/cover no-repeat"></div>`).join("")}</div>
            <div style="position:absolute;inset:0;z-index:1;background:${scrim}"></div>` : "";
         const nMovie = items.filter((ep) => ep._mediaType === "movie").length;
-        const nTv = new Set(items.filter((ep) => ep._mediaType !== "movie").map((ep) => this._calItemSeries(ep)?.id ?? ep.seriesId)).size;
+        const nTv = new Set(items.filter((ep) => ep._mediaType !== "movie" && ep._mediaType !== "music").map((ep) => this._calItemSeries(ep)?.id ?? ep.seriesId)).size;
+        const nMusic = items.filter((ep) => ep._mediaType === "music").length;
         const _line = (n, forms) => `<span class="media-type-tag" style="position:static;font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap">${this._calPlural(n, forms)}</span>`;
         const counts = [
           nMovie ? _line(nMovie, "calMovieForms") : "",
-          nTv ? _line(nTv, "calSeriesForms") : ""
+          nTv ? _line(nTv, "calSeriesForms") : "",
+          nMusic ? _line(nMusic, "calAlbumForms") : ""
         ].join("");
         const open = items.length ? ` data-cal-day="${dateStr}"` : "";
         return `<div class="cal-day-col${dateStr === todayStr ? " cal-day-today" : ""}" style="${outside ? "opacity:0.35;" : ""}min-height:0;overflow:hidden">
@@ -22294,7 +23877,8 @@ var _PopupMethods = class {
     const typeSeg = this._mtSegmented("data-cal-type-seg", [
       { v: "all", label: this._t("tabAll"), attr: 'data-cal-action="tab-all"' },
       { v: "movie", label: this._t("tabMovies"), icon: _si.movie, attr: 'data-cal-action="tab-movie"' },
-      { v: "tv", label: this._t("tabTvShows"), icon: _si.tv, attr: 'data-cal-action="tab-tv"' }
+      { v: "tv", label: this._t("tabTvShows"), icon: _si.tv, attr: 'data-cal-action="tab-tv"' },
+      ...this._lidarrConfigured !== false ? [{ v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-cal-action="tab-music"' }] : []
     ], activeTab, { width: 52, accent: "0,122,255", animatePrev: !!this._calAnimType, prev: this._calPrevTab });
     const viewSeg = calMob ? "" : this._mtSegmented("data-cal-view-seg", [
       { v: "week", label: this._t("mtWeek"), icon: _si.week },
@@ -22347,6 +23931,11 @@ var _PopupMethods = class {
     glass.addEventListener("click", async (e) => {
       e.stopPropagation();
       const action = e.target.closest("[data-cal-action]")?.dataset.calAction;
+      const albumTile = e.target.closest("[data-album-cal]");
+      if (albumTile) {
+        this._openCalAlbumArtist(Number(albumTile.dataset.albumCal));
+        return;
+      }
       if (!action && !e.target.closest("[data-cal-day],[data-cal-view-seg]")) return;
       if (action === "close") {
         this._calendarModalOpen = false;
@@ -22377,8 +23966,8 @@ var _PopupMethods = class {
         await this._fetchCalendarWindow();
         return;
       }
-      if (action === "tab-all" || action === "tab-tv" || action === "tab-movie") {
-        const next = action === "tab-movie" ? "movie" : action === "tab-tv" ? "tv" : "all";
+      if (action === "tab-all" || action === "tab-tv" || action === "tab-movie" || action === "tab-music") {
+        const next = action === "tab-movie" ? "movie" : action === "tab-tv" ? "tv" : action === "tab-music" ? "music" : "all";
         if (next === (this._calendarTab || "tv")) return;
         this._calPrevTab = this._calendarTab || "tv";
         this._calAnimType = true;
@@ -32226,22 +33815,25 @@ var tracearrMixin = _TraceaRrMethods.prototype;
 var _LibraryMethods = class {
   // ─── Section tile view ───────────────────────────────────────────────────
   _renderLibrary() {
-    const tiles = [
+    const hasMusic = this._lidarrConfigured !== false && (this._lidarrArtists?.size || 0) > 0;
+    const tiles = (hasMusic ? [
+      this._libBuildTile("movies", "Movies", this._libMoviesData()),
+      this._libBuildTile("tv", "TV Shows", this._libTvData()),
+      this._libBuildTile("music", "Music", this._libMusicData()),
+      this._libBuildTile("toprated", "Top Rated", this._libTopRatedData())
+    ] : [
       this._libBuildTile("movies", "Movies", this._libMoviesData()),
       this._libBuildTile("tv", "TV Shows", this._libTvData()),
       this._libBuildTile("toprated", "Top Rated", this._libTopRatedData()),
       this._libBuildTile("topquality", "Top Quality", this._libTopQualityData())
-    ].join("");
+    ]).join("");
     const cols = 4;
     const grid = `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>`;
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
         ${this._sectionOverlayHtml("radarr", 25, 75, 0.18)}
         <div class="col-hdr" style="margin-bottom:5px">
-          <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
-            ${this._appIcon("radarr", 24)}
-            ${this._appIcon("sonarr", 24)}
-          </div>
+          ${this._appIconRow(["radarr", "sonarr", "lidarr"])}
           <span class="col-hdr-title">Library</span>
           <div class="col-hdr-line"></div>
         </div>
@@ -32258,6 +33850,17 @@ var _LibraryMethods = class {
   }
   _libTvData() {
     return (this._sonarr || []).filter((s) => (s.statistics?.episodeFileCount || 0) > 0).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 4).map((s) => ({ url: this._getSonarrPoster(s), title: s.title, _libType: "tv" }));
+  }
+  _libMusicData() {
+    const arts = [...this._lidarrArtists?.values() || []].filter((a) => (a.statistics?.trackFileCount || 0) > 0).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 24);
+    const out = [];
+    for (const a of arts) {
+      const url = this._lidarrArtistImage(a, "poster") || this._lidarrArtistImage(a, "fanart");
+      if (!url) continue;
+      out.push({ url, title: a.artistName || "", _libType: "music" });
+      if (out.length === 4) break;
+    }
+    return out;
   }
   _libTopRatedData() {
     return [
@@ -32316,25 +33919,26 @@ var _LibraryMethods = class {
   _openLibModal(key) {
     this._markActivated();
     this.shadowRoot.querySelector("[data-lib-modal]")?.remove();
-    const typeKey = key === "movies" || key === "topquality" ? "movies" : key === "tv" ? "tv" : "all";
-    const qualityKey = key === "toprated" || key === "topquality" ? key : null;
-    const sortDef = qualityKey === "toprated" ? "imdb" : qualityKey === "topquality" ? "quality" : "added";
     let _saved = {};
     try {
       _saved = JSON.parse(localStorage.getItem("arr-lib-tabs") || "{}");
     } catch (_) {
     }
+    const typeKey = key === "movies" || key === "topquality" ? "movies" : key === "tv" ? "tv" : key === "music" ? "music" : key === "all" && ["movies", "tv", "music"].includes(_saved.typeKey) && !(_saved.typeKey === "music" && this._lidarrConfigured === false) ? _saved.typeKey : "all";
+    const qualityKey = key === "toprated" || key === "topquality" ? key : null;
+    const sortDef = qualityKey === "toprated" ? typeKey === "music" ? "rating" : "imdb" : qualityKey === "topquality" ? "quality" : "added";
+    const _byType = (_saved.byType || {})[typeKey] || {};
     const isTabNow = !this._isMob && window.matchMedia("(max-width:860px)").matches;
     this._libModal = {
       typeKey,
       qualityKey,
       instFilter: _saved.instFilter || "all",
       search: "",
-      sort: qualityKey ? sortDef : _saved.sort || sortDef,
-      sortDir: _saved.sortDir || "desc",
-      view: _saved.view || "posters",
+      sort: qualityKey ? sortDef : _byType.sort || _saved.sort || sortDef,
+      sortDir: _byType.sortDir || _saved.sortDir || "desc",
+      view: _byType.view || _saved.view || "posters",
       page: 0,
-      filter: _saved.filter || "all",
+      filter: qualityKey ? "all" : _byType.filter || "all",
       _libCols: !this._isMob ? _saved.tabCols || 0 : 0,
       _editMode: false,
       _selected: /* @__PURE__ */ new Set(),
@@ -32351,11 +33955,39 @@ var _LibraryMethods = class {
     if (bodyEl?.clientHeight > 0) {
       this._libModal._bodyH = bodyEl.clientHeight;
       bodyEl.innerHTML = this._libBodyHtml();
+      const gw = bodyEl.querySelector("#lib-poster-grid")?.clientWidth || 0;
+      if (gw > 0 && gw !== this._libModal._gridW) {
+        this._libModal._gridW = gw;
+        if (this._libModal._colsAuto) this._libModal._libCols = 0;
+        bodyEl.innerHTML = this._libBodyHtml();
+      }
     }
     this._wireLibModal(el);
   }
+  // What this type was last left showing. Written on every switch as well as
+  // on close, so a switch that is never followed by a clean close still sticks.
+  _libSaveTypePrefs() {
+    const m = this._libModal;
+    if (!m) return;
+    try {
+      const prev = JSON.parse(localStorage.getItem("arr-lib-tabs") || "{}");
+      prev.byType = prev.byType || {};
+      prev.byType[m.typeKey] = { sort: m.sort, sortDir: m.sortDir, filter: m.filter, view: m.view };
+      prev.typeKey = m.typeKey;
+      localStorage.setItem("arr-lib-tabs", JSON.stringify(prev));
+    } catch (_) {
+    }
+  }
+  _libTypePrefs(typeKey) {
+    try {
+      return (JSON.parse(localStorage.getItem("arr-lib-tabs") || "{}").byType || {})[typeKey] || null;
+    } catch (_) {
+      return null;
+    }
+  }
   _closeLibModal() {
     if (this._libModal) {
+      this._libSaveTypePrefs();
       try {
         const { typeKey, instFilter, qualityKey, sort, sortDir, view, filter } = this._libModal;
         const prev = JSON.parse(localStorage.getItem("arr-lib-tabs") || "{}");
@@ -32375,15 +34007,18 @@ var _LibraryMethods = class {
     const isTab = !isMob && window.matchMedia("(max-width:860px)").matches;
     const _ICO_MOVIE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
     const _ICO_TV = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
-    const G1_LABELS = { all: "All", movies: _ICO_MOVIE, tv: _ICO_TV };
-    const G1_LABELS_DSK = { all: "All", movies: "Movies", tv: "TV Shows" };
-    const g1Seg = this._mtSegmented("data-lib-seg-type", ["all", "movies", "tv"].map((k) => ({
+    const _ICO_MUSIC = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="pointer-events:none"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>`;
+    const G1_LABELS = { all: "All", movies: _ICO_MOVIE, tv: _ICO_TV, music: _ICO_MUSIC };
+    const G1_LABELS_DSK = { all: "All", movies: "Movies", tv: "TV Shows", music: "Music" };
+    const _types = this._lidarrConfigured === false ? ["all", "movies", "tv"] : ["all", "movies", "tv", "music"];
+    const g1Seg = this._mtSegmented("data-lib-seg-type", _types.map((k) => ({
       v: k,
       label: G1_LABELS_DSK[k],
       // "All" has no obvious glyph, so it keeps its word; the other two are icons
       icon: k === "all" ? null : G1_LABELS[k],
       attr: `data-lib-tab-type="${k}"`,
       disabled: m.qualityKey === "topquality" && k !== "movies"
+      // set below for music
     })), m.typeKey, {
       width: isMob ? 40 : 52,
       accent: "0,122,255",
@@ -32400,9 +34035,10 @@ var _LibraryMethods = class {
     const g2Btns = G2.map(([k, lbl, ico]) => {
       const on = k === m.qualityKey;
       const acc = "--tgl-on:rgba(255,160,0,0.9)";
-      return `<button class="mt-tgl${on ? " is-on" : ""}" data-lib-tab-quality="${k}" title="${this._escHtml(lbl)}" style="${acc}">${isMob ? ico : lbl}</button>`;
+      const off = m.typeKey === "music" && k === "topquality";
+      return `<button class="mt-tgl${on ? " is-on" : ""}" data-lib-tab-quality="${k}" title="${this._escHtml(lbl)}"${off ? ' disabled style="opacity:0.35;pointer-events:none;' + acc + '"' : ` style="${acc}"`}>${isMob ? ico : lbl}</button>`;
     }).join("");
-    const hasMultiInst = !!(this._radarr2Configured || this._sonarr2Configured);
+    const hasMultiInst = !!(this._radarr2Configured || this._sonarr2Configured) && m.typeKey !== "music";
     const g3Btns = hasMultiInst ? this._mtSegmented("data-lib-seg-inst", [
       // Short labels on the pills, full wording in the tooltip
       { v: "all", label: "Both instances", icon: "1&nbsp;|&nbsp;2", attr: 'data-lib-tab-inst="all"' },
@@ -32458,19 +34094,20 @@ var _LibraryMethods = class {
     const availH = m._bodyH ? m._bodyH - bPad - tlbH - pagH : vH * 0.88 - 60 - bPad - tlbH - pagH;
     let perPage;
     if (m.view === "posters") {
-      const gap = 14;
+      const gap = 8;
       const glassW = Math.min(1100, vW * 0.96);
       const bodyPX = isMob ? 20 : 40;
+      const gridW = m._gridW || glassW - bodyPX;
       let bestCols = m._libCols || 0;
       if (!bestCols) {
         const minW = isMob ? 70 : 90;
-        const maxC = Math.floor((glassW - bodyPX + gap) / (minW + gap));
+        const maxC = Math.floor((gridW + gap) / (minW + gap));
         const minC = isMob ? 2 : 3;
         let bestPP = 0;
         for (let c = minC; c <= maxC; c++) {
-          const pW = (glassW - bodyPX - gap * (c - 1)) / c;
+          const pW = (gridW - gap * (c - 1)) / c;
           const pH = pW * 1.5;
-          const r = Math.max(1, Math.floor((availH + gap) / (pH + gap)));
+          const r = Math.max(1, Math.round((availH + gap) / (pH + gap)));
           const pp = c * r;
           if (pp > bestPP) {
             bestPP = pp;
@@ -32478,16 +34115,22 @@ var _LibraryMethods = class {
           }
         }
         m._libCols = bestCols;
+        m._colsAuto = true;
       }
       if (isMob) {
         perPage = 4;
       }
       const cols = isMob ? 2 : bestCols;
-      const posterW = (glassW - bodyPX - gap * (cols - 1)) / cols;
+      const posterW = (gridW - gap * (cols - 1)) / cols;
       const posterH = posterW * 1.5;
-      const rowsBase = Math.max(1, Math.floor((availH + gap) / (posterH + gap)));
-      const extraClip = (rowsBase + 1) * posterH + rowsBase * gap - availH;
-      const rows = extraClip < posterH * 0.15 ? rowsBase + 1 : rowsBase;
+      const rows = Math.max(1, Math.round((availH + gap) / (posterH + gap)));
+      let cardH = (availH - gap * (rows - 1)) / rows;
+      let cardW = cardH / 1.5;
+      if (cardW > posterW) {
+        cardW = posterW;
+        cardH = posterH;
+      }
+      m._libCard = { w: Math.floor(cardW), h: Math.floor(cardH) };
       if (!isMob) perPage = cols * rows;
     } else if (m.view === "overview") {
       const rowH = 79 + 6;
@@ -32557,7 +34200,8 @@ var _LibraryMethods = class {
       prev: m._prevView
     });
     const TB_STY = "flex:1;min-width:0;height:34px;padding:0 3px 0 12px";
-    const barActions = `<span class="mt-tb-sep"></span>${isMob || isTab ? actionBtnsIcon : actionBtnsText}${_tbBtn("start-edit", isMob ? _ICO_EDIT : `${_ICO_EDIT}Edit`)}`;
+    const editEntry = m.typeKey === "music" ? "" : _tbBtn("start-edit", isMob ? _ICO_EDIT : `${_ICO_EDIT}Edit`);
+    const barActions = `<span class="mt-tb-sep"></span>${isMob || isTab ? actionBtnsIcon : actionBtnsText}${editEntry}`;
     const searchTb = m._editMode ? `<div class="mt-tb" style="${TB_STY};padding:0 3px;gap:2px"><div style="flex:1"></div>${editBtns}</div>` : this._mtToolbar("lib-search", m.search, [
       { html: sortSel },
       { html: filterSel },
@@ -32571,7 +34215,10 @@ var _LibraryMethods = class {
     let contentHtml;
     if (m.view === "posters") {
       const cols = isMob ? 2 : m._libCols || 7;
-      contentHtml = isMob ? `<div id="lib-poster-grid" class="lib-grid-fit" style="display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,minmax(0,1fr));gap:10px;height:100%;min-height:0;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>` : `<div id="lib-poster-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>`;
+      const card = m._libCard || null;
+      const cellCols = card ? `repeat(${cols},${card.w}px)` : `repeat(${cols},1fr)`;
+      const cellRows = card ? `grid-auto-rows:${card.h}px;justify-content:space-between;` : "";
+      contentHtml = isMob ? `<div id="lib-poster-grid" class="lib-grid-fit" style="display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,minmax(0,1fr));gap:10px;height:100%;min-height:0;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>` : `<div id="lib-poster-grid" class="lib-grid-fit" style="display:grid;grid-template-columns:${cellCols};${cellRows}gap:8px;overflow:hidden">${pageItems.map((i) => this._libPosterCard(i)).join("")}</div>`;
     } else if (m.view === "overview") {
       contentHtml = `<div style="display:flex;flex-direction:column;gap:6px;overflow:hidden">${pageItems.map((i) => this._libOverviewCard(i)).join("")}</div>`;
     } else {
@@ -32692,6 +34339,9 @@ var _LibraryMethods = class {
   _libPosterCard(item) {
     const pc = this._posterCfg();
     const m = this._libModal;
+    if (item._libType === "music") {
+      return this._renderMusicCard({ id: item.id, artist: item, newestAlbum: null, newAlbumCount: 0 }, { noSub: true });
+    }
     const isMovie = item._libType === "movie";
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
     const title = this._escHtml(item.title || "");
@@ -32848,6 +34498,14 @@ var _LibraryMethods = class {
       if (dlActive) return { cls: "b-dl", label: "Downloading" };
       return { cls: "b-missing", label: "Missing" };
     }
+    if (item._libType === "music") {
+      const have = item.statistics?.trackFileCount ?? 0;
+      const total = item.statistics?.trackCount ?? 0;
+      if (total === 0) return { cls: "", label: "" };
+      if (have === 0) return { cls: "b-missing", label: "Missing" };
+      if (have < total) return { cls: "b-partial", label: `${have} / ${total}` };
+      return { cls: "b-st-avail", label: `${have} / ${total}` };
+    }
     const fc = item.statistics?.episodeFileCount || 0;
     const tc = item.statistics?.episodeCount || 0;
     if (fc === 0 && tc > 0) return { cls: "b-missing", label: "Missing" };
@@ -32861,6 +34519,7 @@ var _LibraryMethods = class {
     const isMob = this._isMob;
     const isTab = this._isTablet;
     const m = this._libModal;
+    if (m.typeKey === "music") return this._libMusicTableHtml(items);
     const _icoMov = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
     const _icoTv = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;opacity:0.7"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
     const _statusBadge = (st) => {
@@ -32966,8 +34625,74 @@ var _LibraryMethods = class {
       <tbody>${rows}</tbody>
     </table>`;
   }
+  _libMusicTableHtml(items) {
+    const isMob = this._isMob;
+    const isTab = this._isTablet;
+    const m = this._libModal;
+    const _ico = `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="pointer-events:none;opacity:0.7"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>`;
+    const _mon = (a) => a.monitored ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:0.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.3"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    const _tag = (txt) => txt ? this._uiBadge(txt, "neutral") : "\u2014";
+    const _row = (a) => {
+      const st = this._libTableStatus(a);
+      return {
+        name: this._escHtml(a.artistName || a.title || ""),
+        albums: a.statistics?.albumCount ?? 0,
+        have: a.statistics?.trackFileCount ?? 0,
+        total: a.statistics?.trackCount ?? 0,
+        size: a.statistics?.sizeOnDisk ? this.fmtSize(a.statistics.sizeOnDisk) : "",
+        rating: this._musRatingBadge(a, true),
+        badge: st.cls ? this._uiBadge(st.label, this._libBadgeTone(st.cls)) : ""
+      };
+    };
+    const _attrs = (a) => m._editMode ? "" : ` data-artist-id="${a.id}"`;
+    if (isMob) {
+      const rows2 = items.map((a) => {
+        const r = _row(a);
+        const tags = [r.albums ? `${r.albums} albums` : "", r.size].filter(Boolean).map((t) => `<span class="media-type-tag" style="position:static;font-size:9px;padding:1px 5px">${t}</span>`).join("");
+        return `<div class="lib-table-row${this._libFlashArtist && this._libFlashArtist === a.id ? " lib-flash" : ""}"${_attrs(a)} style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07))">
+          ${_mon(a)}
+          <span style="display:inline-flex;flex-shrink:0">${_ico}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+            ${tags ? `<div style="display:flex;gap:4px;margin-top:2px">${tags}</div>` : ""}
+          </div>
+          ${r.badge}
+        </div>`;
+      }).join("");
+      return `<div style="overflow-y:auto">${rows2}</div>`;
+    }
+    const _thStyle = "cursor:pointer;user-select:none;white-space:nowrap";
+    const _sortArrow = (key) => {
+      const active = m.sort === key;
+      const char = active ? m.sortDir === "asc" ? "\u2191" : "\u2193" : "\u2195";
+      return `<span style="margin-left:3px;font-size:9px;opacity:${active ? "0.85" : "0.2"}">${char}</span>`;
+    };
+    const rows = items.map((a) => {
+      const r = _row(a);
+      return `<tr class="lib-table-row${this._libFlashArtist && this._libFlashArtist === a.id ? " lib-flash" : ""}"${_attrs(a)}>
+        <td><div style="display:flex;align-items:center;gap:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_mon(a)}<span style="margin:0 6px 0 4px;display:inline-flex">${_ico}</span>${r.name}</div></td>
+        <td style="text-align:center">${r.albums || "\u2014"}</td>
+        <td style="text-align:center">${r.total ? `${r.have} / ${r.total}` : "\u2014"}</td>
+        <td>${_tag(r.size)}</td>
+        ${isTab ? "" : `<td>${r.rating || "\u2014"}</td>`}
+        <td style="text-align:right">${r.badge}</td>
+      </tr>`;
+    }).join("");
+    return `<table class="tl-users-table lib-table" style="width:100%;table-layout:fixed">
+      <thead><tr>
+        <th data-lib-th-sort="title"  style="${_thStyle};width:auto">Artist${_sortArrow("title")}</th>
+        <th data-lib-th-sort="albums" style="${_thStyle};width:80px;text-align:center">Albums${_sortArrow("albums")}</th>
+        <th data-lib-th-sort="tracks" style="${_thStyle};width:100px;text-align:center">Tracks${_sortArrow("tracks")}</th>
+        <th data-lib-th-sort="size"   style="${_thStyle};width:90px">Size${_sortArrow("size")}</th>
+        ${isTab ? "" : `<th data-lib-th-sort="rating" style="${_thStyle};width:90px">Rating${_sortArrow("rating")}</th>`}
+        <th data-lib-th-sort="status" style="${_thStyle};width:110px;text-align:right">Status${_sortArrow("status")}</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
   // ─── Overview card ────────────────────────────────────────────────────────
   _libOverviewCard(item) {
+    if (item._libType === "music") return this._libMusicOverviewCard(item);
     const isMovie = item._libType === "movie";
     const poster = isMovie ? this._getRadarrPoster(item) : this._getSonarrPoster(item);
     const title = this._escHtml(item.title || "");
@@ -33011,14 +34736,44 @@ var _LibraryMethods = class {
       </div>
     </div>`;
   }
+  // The same row as a film's, reading what an artist actually has: albums and
+  // tracks in place of a year and a quality profile, and square artwork.
+  _libMusicOverviewCard(artist) {
+    const m = this._libModal;
+    const name = this._escHtml(artist.artistName || artist.title || "");
+    const overview = this._escHtml((artist.overview || "").slice(0, 160));
+    const art = this._lidarrArtistImage(artist, "poster");
+    const st = this._libTableStatus(artist);
+    const stBadge = st.cls ? this._uiBadge(st.label, this._libBadgeTone(st.cls)) : "";
+    const albums = artist.statistics?.albumCount ?? 0;
+    const size = artist.statistics?.sizeOnDisk ? this.fmtSize(artist.statistics.sizeOnDisk) : "";
+    const tags = [
+      size && this._uiBadge(size, "neutral"),
+      albums && this._uiBadge(`${albums} album${albums != 1 ? "s" : ""}`, "neutral")
+    ].filter(Boolean).join("");
+    const imgHtml = art ? `<img src="${art}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px">${this._escHtml(this._musInitials(artist.artistName || artist.title))}</div>`;
+    return `<div class="lib-table-row${this._libFlashArtist && this._libFlashArtist === artist.id ? " lib-flash" : ""}"${m._editMode ? "" : ` data-artist-id="${artist.id}"`} style="display:flex;gap:10px;align-items:center;height:79px;box-sizing:border-box;padding:8px;border-radius:8px;background:var(--is-row-hover,rgba(255,255,255,0.04))">
+      <div style="width:63px;height:63px;flex-shrink:0;border-radius:5px;overflow:hidden;background:rgba(255,255,255,0.08)">${imgHtml}</div>
+      <div style="flex:1;min-width:0;align-self:center">
+        <div style="font-size:12px;font-weight:700;color:var(--is-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${name}</div>
+        ${overview ? `<div style="font-size:10px;color:var(--is-text-muted);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${overview}</div>` : ""}
+      </div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;min-height:0;overflow:hidden">
+        ${this._musRatingBadge(artist, true)}
+        ${stBadge}
+        ${tags ? `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end">${tags}</div>` : ""}
+      </div>
+    </div>`;
+  }
   // ─── Data helpers ─────────────────────────────────────────────────────────
   _libFilteredItems() {
     const m = this._libModal;
     let items = this._libAllItems();
     if (m.filter === "monitored") items = items.filter((i) => i.monitored);
     if (m.filter === "unmonitored") items = items.filter((i) => !i.monitored);
-    if (m.filter === "missing") items = items.filter((i) => i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0);
-    if (m.filter === "wanted") items = items.filter((i) => i.monitored && (i._libType === "movie" ? !i.hasFile : (i.statistics?.episodeFileCount || 0) === 0));
+    const _onDisk = (i) => i._libType === "movie" ? !!i.hasFile : i._libType === "music" ? (i.statistics?.trackFileCount || 0) > 0 : (i.statistics?.episodeFileCount || 0) > 0;
+    if (m.filter === "missing") items = items.filter((i) => !_onDisk(i));
+    if (m.filter === "wanted") items = items.filter((i) => i.monitored && !_onDisk(i));
     if (m.filter === "cutoff") items = items.filter((i) => i._libType === "movie" ? !!i.movieFile?.qualityCutoffNotMet : false);
     if (m.search) {
       const q = m.search.toLowerCase();
@@ -33054,6 +34809,12 @@ var _LibraryMethods = class {
         }
         case "popularity":
           return dir * ((a.popularity || 0) - (b.popularity || 0));
+        case "albums":
+          return dir * ((a.statistics?.albumCount || 0) - (b.statistics?.albumCount || 0));
+        case "tracks":
+          return dir * ((a.statistics?.trackFileCount || 0) - (b.statistics?.trackFileCount || 0));
+        case "rating":
+          return dir * ((a.ratings?.value || 0) - (b.ratings?.value || 0));
         case "size":
           return dir * ((a.movieFile?.size || a.statistics?.sizeOnDisk || 0) - (b.movieFile?.size || b.statistics?.sizeOnDisk || 0));
         case "cert":
@@ -33090,10 +34851,13 @@ var _LibraryMethods = class {
     const tvSrc = inst === "1" ? s1.map((i) => ({ ...i, _libInst: "1" })) : inst === "2" ? s2.map((i) => ({ ...i, _libInst: "2" })) : [...s1.map((i) => ({ ...i, _libInst: "1" })), ...s2.map((i) => ({ ...i, _libInst: "2" }))];
     const movies = movieSrc.map((i) => ({ ...i, _libType: "movie", qualityProfileName: (i._libInst === "2" ? rp2 : rp1).get(i.qualityProfileId) || "" }));
     const tv = tvSrc.map((i) => ({ ...i, _libType: "tv", qualityProfileName: (i._libInst === "2" ? sp2 : sp1).get(i.qualityProfileId) || "" }));
+    const music = (this._lidarrConfigured === false ? [] : [...this._lidarrArtists?.values() || []]).map((a) => ({ ...a, _libType: "music", title: a.artistName || "", _libInst: "1" }));
     let base;
     if (m.typeKey === "movies") base = movies;
     else if (m.typeKey === "tv") base = tv;
+    else if (m.typeKey === "music") base = music;
     else base = [...movies, ...tv];
+    if (m.qualityKey === "topquality") base = base.filter((i) => i._libType !== "music");
     if (m.qualityKey === "toprated") base = base.filter((i) => (i.ratings?.imdb?.value || i.ratings?.tmdb?.value || i.ratings?.tvdb?.value || i.ratings?.tvMaze?.value || i.ratings?.trakt?.value || i.ratings?.value || 0) > 0);
     if (m.qualityKey === "topquality") base = base.filter((i) => i._libType === "movie" && !!i.hasFile);
     return base;
@@ -33118,6 +34882,15 @@ var _LibraryMethods = class {
       { v: "cert", label: "Certification" },
       { v: "origtitle", label: "Original Title" },
       { v: "origlang", label: "Original Language" }
+    ];
+    if (m.typeKey === "music") return [
+      { v: "status", label: "Monitored/Status" },
+      { v: "title", label: "Artist" },
+      { v: "added", label: "Added" },
+      { v: "albums", label: "Albums" },
+      { v: "tracks", label: "Tracks on disk" },
+      { v: "rating", label: "Rating" },
+      { v: "size", label: "Size on Disk" }
     ];
     if (m.typeKey === "tv" && !m.qualityKey) return all.filter((o) => !["studio", "cinema", "digital", "physical", "cert", "quality"].includes(o.v));
     return all;
@@ -33174,6 +34947,10 @@ var _LibraryWireMethods = class {
     }, { passive: true });
   }
   _wireLibModal(el) {
+    if (this._lidarrConfigured !== false && !this._lidarrArtists?.size) {
+      this._fetchLidarrArtists?.().then(() => this._libRerenderBody?.(el)).catch(() => {
+      });
+    }
     const glass = el.querySelector(".popup-glass");
     if (!glass) return;
     this._libWireSwipe(glass);
@@ -33361,8 +35138,9 @@ var _LibraryWireMethods = class {
           return;
         }
         const inst = m?.instFilter || "all";
-        const useR = m?.typeKey !== "tv";
-        const useS = m?.typeKey !== "movies";
+        const isMusic = m?.typeKey === "music";
+        const useR = !isMusic && m?.typeKey !== "tv";
+        const useS = !isMusic && m?.typeKey !== "movies";
         if (action === "update-all" && (useR && useS || inst === "all")) {
           const label = action === "rss-sync" ? "RSS Sync" : "Update All";
           const allTypes = useR && useS;
@@ -33381,6 +35159,7 @@ var _LibraryWireMethods = class {
           actionBtn._confirmed = false;
         }
         const svcs = [];
+        if (isMusic) svcs.push("lidarr");
         if (useR) {
           if (inst !== "2") svcs.push("radarr");
           if (inst !== "1" && this._radarr2Configured) svcs.push("radarr2");
@@ -33391,6 +35170,7 @@ var _LibraryWireMethods = class {
         }
         const cmdName = (svc, a) => {
           if (a === "rss-sync") return "RssSync";
+          if (svc === "lidarr") return "RefreshArtist";
           return svc.startsWith("sonarr") ? "RefreshSeries" : "RefreshMovie";
         };
         const _setStatus = (txt) => {
@@ -33432,6 +35212,13 @@ var _LibraryWireMethods = class {
         });
         return;
       }
+      const artistCard = e.target.closest("[data-artist-id]");
+      if (artistCard) {
+        this._libReturnState = { ...this._libModal };
+        this._closeLibModal();
+        this._openMusicModal(Number(artistCard.dataset.artistId));
+        return;
+      }
       const card = e.target.closest("[data-lib-popup]");
       if (card) {
         const type = card.dataset.libPopup;
@@ -33460,12 +35247,15 @@ var _LibraryWireMethods = class {
         this._markActivated();
         const key = typeTab.dataset.libTabType;
         if (key !== this._libModal.typeKey) {
+          this._libSaveTypePrefs();
+          const prefs = this._libTypePrefs(key) || {};
           this._libModal._prevTypeKey = this._libModal.typeKey;
           this._libModal._animSegType = true;
           this._libModal.typeKey = key;
-          this._libModal.sort = "added";
-          this._libModal.sortDir = "desc";
-          this._libModal.filter = "all";
+          this._libModal.sort = this._libModal.qualityKey === "toprated" ? key === "music" ? "rating" : "imdb" : prefs.sort || "added";
+          this._libModal.sortDir = prefs.sortDir || "desc";
+          this._libModal.filter = prefs.filter || "all";
+          this._libModal.view = prefs.view || this._libModal.view;
           this._libModal.search = "";
           this._libModal.page = 0;
           this._libRerenderModal(el);
@@ -33567,6 +35357,11 @@ var _LibraryWireMethods = class {
         if (bodyEl?.clientHeight > 0) {
           this._libModal._bodyH = bodyEl.clientHeight;
         }
+        const gw = el.querySelector("#lib-poster-grid")?.clientWidth || 0;
+        if (gw > 0) {
+          this._libModal._gridW = gw;
+          if (this._libModal._colsAuto) this._libModal._libCols = 0;
+        }
         this._libRerenderBody(el);
       }, 150);
     };
@@ -33615,6 +35410,7 @@ var _LibraryWireMethods = class {
       if (!handle.hasPointerCapture(e.pointerId)) return;
       const newCols = _colsFromDx(e.clientX - startX);
       this._libModal._libCols = newCols;
+      this._libModal._colsAuto = false;
       try {
         const s = JSON.parse(localStorage.getItem("arr-lib-tabs") || "{}");
         s.tabCols = newCols;
@@ -33634,6 +35430,7 @@ var _LibraryWireMethods = class {
     this._libModal._animSegType = false;
     this._libModal._animSegView = false;
     this._libModal._animSegInst = false;
+    this._syncSegVars(newEl);
     newEl.querySelectorAll(".mt-seg[data-seg-to]").forEach((seg) => {
       if (seg.dataset.seg === seg.dataset.segTo) return;
       requestAnimationFrame(() => {
@@ -33863,16 +35660,14 @@ var _ActivityRenderMethods = class {
     const r2Items = this._radarr2QueueItems || [];
     const snPct = this._sonarrQueueSeriesPct || /* @__PURE__ */ new Map();
     const sn2Pct = this._sonarr2QueueSeriesPct || /* @__PURE__ */ new Map();
+    const liPct = this._lidarrQueueArtists || /* @__PURE__ */ new Map();
     const totalFailed = rItems.filter((x) => x.failed).length + r2Items.filter((x) => x.failed).length;
-    const totalActive = rItems.filter((x) => !x.failed).length + r2Items.filter((x) => !x.failed).length + snPct.size + sn2Pct.size;
+    const totalActive = rItems.filter((x) => !x.failed).length + r2Items.filter((x) => !x.failed).length + snPct.size + sn2Pct.size + liPct.size;
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">
         ${this._sectionOverlayHtml("radarr", 25, 75, 0.23)}
         <div class="col-hdr" style="margin-bottom:5px">
-          <div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">
-            ${this._appIcon("radarr", 24)}
-            ${this._appIcon("sonarr", 24)}
-          </div>
+          ${this._appIconRow(["radarr", "sonarr", "lidarr"])}
           <span class="col-hdr-title">${this._t("actActivityQueue")}</span>
           <div class="col-hdr-line"></div>
         </div>
@@ -33918,11 +35713,23 @@ var _ActivityRenderMethods = class {
       const sub = ep ? `S${String(ep.season).padStart(2, "0")}E${String(ep.episode).padStart(2, "0")}${ep.count > 1 ? ` +${ep.count - 1}` : ""}` : "Show";
       if (s) rows.push({ title: s.title || "\u2014", type: "show", failed: false, pct, sub });
     }
+    for (const [aid, pct] of this._lidarrQueueArtists || /* @__PURE__ */ new Map()) {
+      if (rows.length >= CAP) break;
+      const a = this._lidarrArtists?.get(aid);
+      if (!a) continue;
+      rows.push({
+        title: a.artistName || "\u2014",
+        type: "music",
+        failed: false,
+        pct: pct >= 0 ? pct : 0,
+        sub: this._t("typeArtist")
+      });
+    }
     const badge = totalFailed > 0 ? this._uiBadge(`${totalFailed} ${this._t("actFailed")}`, "amber", { extra: "flex-shrink:0", white: true }) : totalActive > 0 ? this._uiBadge(`${totalActive} ${this._t("tlActive")}`, "green", { extra: "flex-shrink:0", white: true }) : "";
     const rowsHtml = rows.length > 0 ? rows.map((r, i) => {
       const sep = i > 0 ? "border-top:1px solid rgba(255,255,255,0.06);" : "";
       const color = r.failed ? "rgba(248,113,113,0.85)" : "rgba(52,211,153,0.85)";
-      const sub = r.sub ?? (r.type === "movie" ? this._t("typeMovie") : this._t("typeTv"));
+      const sub = r.sub ?? (r.type === "movie" ? this._t("typeMovie") : r.type === "music" ? this._t("typeArtist") : this._t("typeTv"));
       const pctBar = r.failed ? "" : `<div style="margin-top:3px;width:100%;height:2px;background:rgba(255,255,255,0.08);border-radius:1px"><div style="width:${r.pct}%;height:100%;background:${color};border-radius:1px"></div></div>`;
       const pctTxt = r.failed ? ` ${this._uiBadge(this._t("actFailed"), "amber")}` : ` \xB7 ${r.pct}%`;
       const hidden = i >= maxRows ? "display:none;" : "";
@@ -34173,7 +35980,7 @@ var _ActivityRenderMethods = class {
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
     const mkItems = (ph, opts) => [["all", ph], ...opts.map((o) => [o, o])];
     const qSels = [
-      C.has("source") && { id: "act-queue-svc", kind: "source", value: fSvc, items: [["all", this._t("actAllSources")], ["radarr", this._instLabel("radarr")], ["sonarr", this._instLabel("sonarr")]] },
+      C.has("source") && { id: "act-queue-svc", kind: "source", value: fSvc, items: [["all", this._t("actAllSources")], ["radarr", this._instLabel("radarr")], ["sonarr", this._instLabel("sonarr")], ...this._lidarrConfigured !== false ? [["lidarr", "Lidarr"]] : []] },
       C.has("status") && { id: "act-queue-sts", kind: "status", value: fSts, items: [["all", this._t("actAllStatus")], ["downloading", this._t("actDownloading")], ["failed", this._t("actEvtFailed")]] },
       C.has("quality") && { id: "act-queue-quality", kind: "quality", value: fQual, items: mkItems(this._t("actAllQualities"), uniq(all, (r) => r.quality?.quality?.name)) },
       C.has("protocol") && { id: "act-queue-proto", kind: "protocol", value: fProto, items: mkItems(this._t("actAllProtocols"), ["torrent", "usenet"]) },
@@ -34188,7 +35995,7 @@ var _ActivityRenderMethods = class {
       const _sm = item.statusMessages;
       const _smLines = isBad && item._miRejection ? [item._miRejection] : _sm?.length ? _sm.flatMap((s) => s.messages?.length ? s.messages : s.title ? [s.title] : []).filter(Boolean) : [];
       const stLbl = isBad ? _smLines[0] || item.trackedDownloadState || item.trackedDownloadStatus || "Error" : `${pct}%`;
-      const svcCol = item._svc === "radarr" || item._svc === "radarr2" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+      const svcCol = this._actSrcColor(item._svc);
       const svcLbl = this._instLabel(item._svc);
       const sizLbl = item.size ? this._actFmtSize(item.size) : "\u2014";
       const qualLbl = item.quality?.quality?.name || "\u2014";
@@ -34239,7 +36046,7 @@ var _ActivityRenderMethods = class {
               <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item._title}</div>
               <div style="font-size:10px;color:${subLineClr};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;visibility:${subLine ? "visible" : "hidden"}">${subLine || "&nbsp;"}</div>
               <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-                <span style="color:var(--is-text-muted);display:flex;align-items:center">${item._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
+                <span style="color:var(--is-text-muted);display:flex;align-items:center">${this._actSrcIcon(item._svc)}</span>
                 <span class="u-xxs-muted">${qualLbl}</span>
                 <span class="u-xxs-muted">${sizLbl}</span>
                 ${qExtraTags}
@@ -34256,7 +36063,7 @@ var _ActivityRenderMethods = class {
       }
       const colTds = visCols.map((col) => {
         const tdBase = `style="padding:8px;white-space:nowrap;font-size:10px;"`;
-        if (col.id === "source") return `<td ${tdBase} style="padding:8px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:7px"><span style="color:var(--is-text-sec);display:flex;align-items:center">${item._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span><span style="font-weight:600;color:var(--is-text-sec)">${svcLbl}</span></div></td>`;
+        if (col.id === "source") return `<td ${tdBase} style="padding:8px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:7px"><span style="color:var(--is-text-sec);display:flex;align-items:center">${this._actSrcIcon(item._svc)}</span><span style="font-weight:600;color:var(--is-text-sec)">${svcLbl}</span></div></td>`;
         if (col.id === "quality") return `<td ${tdBase} style="padding:8px">${qualLbl ? this._uiBadge(qualLbl, "neutral") : '<span class="u-xs-muted">\u2014</span>'}</td>`;
         if (col.id === "size") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${sizLbl}</td>`;
         if (col.id === "timeleft") return `<td ${tdBase} style="padding:8px;font-size:10px;color:var(--is-text-sec)">${timeLbl}</td>`;
@@ -34343,8 +36150,8 @@ var _ActivityRenderMethods = class {
     const HC = mh.histCols instanceof Set ? mh.histCols : /* @__PURE__ */ new Set(["event", "quality", "date"]);
     const visHistCols = ALL_HIST_COLS.filter((c) => HC.has(c.id));
     const allRaw = [
-      ...rRecords.map((r) => ({ ...r, _svc: "radarr", _title: r.movie?.title || r.sourceTitle || "" })),
-      ...sRecords.map((r) => ({ ...r, _svc: "sonarr", _title: r.series?.title || r.sourceTitle || "" }))
+      ...rRecords.map((r) => ({ ...r, _svc: r._svc || "radarr", _title: r._enrichedTitle || r.movie?.title || r.sourceTitle || "" })),
+      ...sRecords.map((r) => ({ ...r, _svc: r._svc || "sonarr", _title: r._enrichedTitle || r.series?.title || r.sourceTitle || "" }))
     ];
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
     const mkItems = (ph, opts) => [["all", ph], ...opts.map((o) => [o, o])];
@@ -34356,7 +36163,7 @@ var _ActivityRenderMethods = class {
     const fRG = mh.histFilterRelgroup || "all";
     const hSels = [
       HC.has("event") && { id: "act-hist-filter", kind: "event", value: filter || "all", items: [["all", this._t("actAllEvents")], ["grabbed", this._t("actEvtGrabbed")], ["downloadFolderImported", this._t("actEvtImported")], ["downloadFailed", this._t("actEvtFailed")]] },
-      { id: "act-hist-svc", kind: "source", value: hSvc, items: [["all", this._t("actAllSources")], ["radarr", this._instLabel("radarr")], ["sonarr", this._instLabel("sonarr")]] },
+      { id: "act-hist-svc", kind: "source", value: hSvc, items: [["all", this._t("actAllSources")], ["radarr", this._instLabel("radarr")], ["sonarr", this._instLabel("sonarr")], ...this._lidarrConfigured !== false ? [["lidarr", "Lidarr"]] : []] },
       HC.has("quality") && { id: "act-hist-quality", kind: "quality", value: fQual, items: mkItems(this._t("actAllQualities"), uniq(allRaw, (r) => r.quality?.quality?.name)) },
       HC.has("langs") && { id: "act-hist-lang", kind: "langs", value: fLang, items: mkItems(this._t("actAllLanguages"), [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort()) },
       HC.has("formats") && { id: "act-hist-format", kind: "formats", value: fFmt, items: mkItems(this._t("actAllFormats"), [...new Set(allRaw.flatMap((r) => (r.customFormats || []).map((cf) => cf.name)).filter(Boolean))].sort()) },
@@ -34441,7 +36248,7 @@ var _ActivityRenderMethods = class {
     };
     if (isMobile2) {
       const rowsHtml = paged.map((r) => {
-        const svcCol = r._svc === "radarr" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+        const svcCol = this._actSrcColor(r._svc);
         const qualLblM = r.quality?.quality?.name || "";
         const hExtraTags = visHistCols.filter((c) => !["source", "quality", "event", "date"].includes(c.id)).map((col) => {
           let v = "";
@@ -34459,7 +36266,7 @@ var _ActivityRenderMethods = class {
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div>
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-                <span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
+                <span style="color:var(--is-text-muted);display:flex;align-items:center">${this._actSrcIcon(r._svc)}</span>
                 ${qualLblM ? `<span class="u-xxs-muted">${qualLblM}</span>` : ""}
                 ${hExtraTags}
               </div>
@@ -34480,7 +36287,7 @@ var _ActivityRenderMethods = class {
       </div>`;
     }
     const rows = paged.map((r) => {
-      const srcCell = `<td style="padding:7px 8px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:7px"><span style="color:var(--is-text-sec);display:flex;align-items:center">${r._svc === "radarr" || r._svc === "radarr2" ? srcFilmSvg : srcTvSvg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span></div></td>`;
+      const srcCell = `<td style="padding:7px 8px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:7px"><span style="color:var(--is-text-sec);display:flex;align-items:center">${this._actSrcIcon(r._svc)}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span></div></td>`;
       const colTds = visHistCols.map((col) => {
         if (col.id === "event") return `<td style="padding:7px 8px;white-space:nowrap"><span style="font-size:10px;font-weight:600;color:var(--is-text-body)">${evLabel(r.eventType)}</span></td>`;
         if (col.id === "quality") {
@@ -34546,8 +36353,8 @@ var _ActivityRenderMethods = class {
     const BC = mb.blCols instanceof Set ? mb.blCols : /* @__PURE__ */ new Set(["quality", "date", "source"]);
     const visBLCols = ALL_BL_COLS.filter((c) => BC.has(c.id));
     const allRaw = [
-      ...rRecords.map((r) => ({ ...r, _svc: "radarr", _title: r.movie?.title || r.sourceTitle || "\u2014" })),
-      ...sRecords.map((r) => ({ ...r, _svc: "sonarr", _title: r.series?.title || r.sourceTitle || "\u2014" }))
+      ...rRecords.map((r) => ({ ...r, _svc: r._svc || "radarr", _title: r._enrichedTitle || r.movie?.title || r.sourceTitle || "\u2014" })),
+      ...sRecords.map((r) => ({ ...r, _svc: r._svc || "sonarr", _title: r._enrichedTitle || r.series?.title || r.sourceTitle || "\u2014" }))
     ];
     const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].sort();
     const mkItems = (ph, opts) => [["all", ph], ...opts.map((o) => [o, o])];
@@ -34556,7 +36363,7 @@ var _ActivityRenderMethods = class {
     const fFmt = mb.blFilterFormat || "all";
     const fIdx = mb.blFilterIndexer || "all";
     const blSels = [
-      { id: "act-bl-svc", kind: "source", value: blSvc, items: [["all", this._t("actAllSources")], ["radarr", this._instLabel("radarr")], ["sonarr", this._instLabel("sonarr")]] },
+      { id: "act-bl-svc", kind: "source", value: blSvc, items: [["all", this._t("actAllSources")], ["radarr", this._instLabel("radarr")], ["sonarr", this._instLabel("sonarr")], ...this._lidarrConfigured !== false ? [["lidarr", "Lidarr"]] : []] },
       { id: "act-bl-proto", kind: "protocol", value: blProto, items: [["all", this._t("actAllProtocols")], ["torrent", "Torrent"], ["usenet", "Usenet"]] },
       BC.has("quality") && { id: "act-bl-quality", kind: "quality", value: fQual, items: mkItems(this._t("actAllQualities"), uniq(allRaw, (r) => r.quality?.quality?.name)) },
       BC.has("langs") && { id: "act-bl-lang", kind: "langs", value: fLang, items: mkItems(this._t("actAllLanguages"), [...new Set(allRaw.flatMap((r) => (r.languages || []).map((l) => l.name)).filter(Boolean))].sort()) },
@@ -34623,7 +36430,7 @@ var _ActivityRenderMethods = class {
     };
     if (isMobile2) {
       const rowsHtml = paged.map((r) => {
-        const svcCol = r._svc === "radarr" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+        const svcCol = this._actSrcColor(r._svc);
         const rmBtn = this._mtRoundBtn(`class="act-bl-remove-btn" data-id="${r.id}" data-svc="${r._svc}"`, trashSvg, "Remove", { size: 24, tone: "red" });
         const dateShortBl = (() => {
           try {
@@ -34647,7 +36454,7 @@ var _ActivityRenderMethods = class {
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r._title}</div>
               <div style="display:flex;gap:6px;margin-top:3px">
-                <span style="color:var(--is-text-muted);display:flex;align-items:center">${r._svc === "radarr" ? srcFilmSvg : srcTvSvg}</span>
+                <span style="color:var(--is-text-muted);display:flex;align-items:center">${this._actSrcIcon(r._svc)}</span>
                 <span class="u-xxs-muted">${r.quality?.quality?.name || "\u2014"}</span>
                 ${blExtraTags}
               </div>
@@ -34670,7 +36477,7 @@ var _ActivityRenderMethods = class {
     const rows = paged.map((r) => {
       const rmBtn = this._mtRoundBtn(`class="act-bl-remove-btn" data-id="${r.id}" data-svc="${r._svc}"`, trashSvg, "Remove", { size: 24, tone: "red" });
       const colTds = visBLCols.map((col) => {
-        if (col.id === "source") return `<td style="padding:7px 8px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:7px"><span style="color:var(--is-text-sec);display:flex;align-items:center">${r._svc === "radarr" || r._svc === "radarr2" ? srcFilmSvg : srcTvSvg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span></div></td>`;
+        if (col.id === "source") return `<td style="padding:7px 8px;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:7px"><span style="color:var(--is-text-sec);display:flex;align-items:center">${this._actSrcIcon(r._svc)}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec)">${this._instLabel(r._svc)}</span></div></td>`;
         if (col.id === "srctitle") return `<td style="padding:7px 8px;font-size:10px;color:var(--is-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.sourceTitle || "\u2014")}</td>`;
         if (col.id === "langs") return `<td class="u-cell-pad">${(r.languages || []).map((l) => l.name).join(", ") || "\u2014"}</td>`;
         if (col.id === "quality") {
@@ -35152,8 +36959,24 @@ var _ActivityRenderMethods = class {
   }
   // ── Instance label helper ─────────────────────────────────────────────────
   // Returns seerr server name if configured, else "Radarr" / "Radarr 2" / …
+  // Which app a row came from, as a glyph: a film strip, a set, or a note.
+  _actSrcIcon(svc) {
+    const F = 'width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"';
+    if (svc === "lidarr") {
+      return `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>`;
+    }
+    if (svc === "radarr" || svc === "radarr2") {
+      return `<svg ${F}><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
+    }
+    return `<svg ${F}><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
+  }
+  // Lidarr's own green, beside Radarr's blue and Sonarr's amber.
+  _actSrcColor(svc) {
+    if (svc === "lidarr") return "rgba(21,158,90,0.9)";
+    return svc === "radarr" || svc === "radarr2" ? "rgba(99,140,255,0.85)" : "rgba(250,160,40,0.85)";
+  }
   _instLabel(svc) {
-    const defaults = { radarr: "Radarr", radarr2: "Radarr 2", sonarr: "Sonarr", sonarr2: "Sonarr 2" };
+    const defaults = { radarr: "Radarr", radarr2: "Radarr 2", sonarr: "Sonarr", sonarr2: "Sonarr 2", lidarr: "Lidarr" };
     if (this._overseerrConfigured !== false) {
       const map = { radarr: this._seerrRadarr, radarr2: this._seerrRadarr2, sonarr: this._seerrSonarr, sonarr2: this._seerrSonarr2 };
       const name = map[svc]?.name;
@@ -35353,14 +37176,16 @@ var _WireActivityMethods = class {
     body.innerHTML = '<div class="is-loading"><span>Loading\u2026</span></div>';
     const hasR2 = this._radarr2Configured === true;
     const hasS2 = this._sonarr2Configured === true;
+    const hasLi = this._lidarrConfigured !== false;
     if (tab === "queue") {
       const calls = [
         this._callApi("GET", "arr_stack/radarr/queue?includeUnknownMovieItems=true"),
         this._callApi("GET", "arr_stack/sonarr/queue?includeUnknownSeriesItems=true"),
         hasR2 ? this._callApi("GET", "arr_stack/radarr2/queue?includeUnknownMovieItems=true") : Promise.resolve(null),
-        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/queue?includeUnknownSeriesItems=true") : Promise.resolve(null)
+        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/queue?includeUnknownSeriesItems=true") : Promise.resolve(null),
+        hasLi ? this._callApi("GET", "arr_stack/lidarr/queue?pageSize=100") : Promise.resolve(null)
       ];
-      const [rq, sq, rq2, sq2] = await Promise.allSettled(calls);
+      const [rq, sq, rq2, sq2, lq] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
       const _toArr = (v) => Array.isArray(v) ? v : Array.isArray(v?.records) ? v.records : [];
       const rMovieMap = new Map((this._radarr || []).map((m2) => [m2.id, m2.title]));
@@ -35394,7 +37219,14 @@ var _WireActivityMethods = class {
           }
         });
       }
-      m.queueData = { radarr: rRecords, sonarr: sRecords };
+      const lRaw = lq?.status === "fulfilled" && lq.value ? _toArr(lq.value) : [];
+      const lArtists = this._lidarrArtists || /* @__PURE__ */ new Map();
+      const lRecords = lRaw.map((r) => {
+        const who = r.artist?.artistName || lArtists.get(r.artistId)?.artistName || "";
+        const alb = r.album?.title || r.title || "";
+        return { ...r, _svc: "lidarr", _enrichedTitle: [who, alb].filter(Boolean).join(" \u2014 ") || r.title || null };
+      });
+      m.queueData = { radarr: rRecords, sonarr: [...sRecords, ...lRecords] };
       this._actRenderQueue(body, el);
     } else if (tab === "history") {
       const et = m.histFilter === "all" ? "" : "&eventType=" + encodeURIComponent(m.histFilter);
@@ -35402,18 +37234,31 @@ var _WireActivityMethods = class {
         this._callApi("GET", "arr_stack/radarr/activity/history?page=1&pageSize=500&sortKey=date&sortDir=desc" + et),
         this._callApi("GET", "arr_stack/sonarr/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et),
         hasR2 ? this._callApi("GET", "arr_stack/radarr2/activity/history?page=1&pageSize=200&sortKey=date&sortDir=desc" + et) : Promise.resolve(null),
-        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et) : Promise.resolve(null)
+        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et) : Promise.resolve(null),
+        hasLi ? this._callApi("GET", "arr_stack/lidarr/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc" + et) : Promise.resolve(null)
       ];
-      const [rh, sh, rh2, sh2] = await Promise.allSettled(calls);
+      const [rh, sh, rh2, sh2, lh] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
       const _mergeHist = (a, b) => {
         if (!a && !b) return null;
         const recs = [...a?.records || [], ...b?.records || []];
         return { records: recs, totalRecords: recs.length };
       };
+      const _lidarrHist = (raw) => {
+        if (!raw?.records) return null;
+        const artists = this._lidarrArtists || /* @__PURE__ */ new Map();
+        return { records: raw.records.map((r) => {
+          const who = r.artist?.artistName || artists.get(r.artistId)?.artistName || "";
+          const alb = r.album?.title || "";
+          return { ...r, _svc: "lidarr", _enrichedTitle: [who, alb].filter(Boolean).join(" \u2014 ") || r.sourceTitle };
+        }) };
+      };
       m.histData = {
         radarr: _mergeHist(rh.status === "fulfilled" ? rh.value : null, rh2.status === "fulfilled" ? rh2.value : null),
-        sonarr: _mergeHist(sh.status === "fulfilled" ? sh.value : null, sh2.status === "fulfilled" ? sh2.value : null)
+        sonarr: _mergeHist(
+          _mergeHist(sh.status === "fulfilled" ? sh.value : null, sh2.status === "fulfilled" ? sh2.value : null),
+          _lidarrHist(lh.status === "fulfilled" ? lh.value : null)
+        )
       };
       this._actSetBodyHtml(body, this._actHistoryTabHtml(m.histData.radarr, m.histData.sonarr, m.histFilter, m.histPage, m.histPerPage));
       this._wireActBody(body, el, "history");
@@ -35422,18 +37267,31 @@ var _WireActivityMethods = class {
         this._callApi("GET", "arr_stack/radarr/activity/blocklist?page=1&pageSize=100"),
         this._callApi("GET", "arr_stack/sonarr/activity/blocklist?page=1&pageSize=100"),
         hasR2 ? this._callApi("GET", "arr_stack/radarr2/activity/blocklist?page=1&pageSize=100") : Promise.resolve(null),
-        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/activity/blocklist?page=1&pageSize=100") : Promise.resolve(null)
+        hasS2 ? this._callApi("GET", "arr_stack/sonarr2/activity/blocklist?page=1&pageSize=100") : Promise.resolve(null),
+        hasLi ? this._callApi("GET", "arr_stack/lidarr/activity/blocklist?page=1&pageSize=100") : Promise.resolve(null)
       ];
-      const [rb, sb, rb2, sb2] = await Promise.allSettled(calls);
+      const [rb, sb, rb2, sb2, lb] = await Promise.allSettled(calls);
       if (!this._activityModal) return;
       const _mergeBl = (a, b) => {
         if (!a && !b) return null;
         const recs = [...a?.records || [], ...b?.records || []];
         return { records: recs, totalRecords: recs.length };
       };
+      const _lidarrBl = (raw) => {
+        if (!raw?.records) return null;
+        const artists = this._lidarrArtists || /* @__PURE__ */ new Map();
+        return { records: raw.records.map((r) => ({
+          ...r,
+          _svc: "lidarr",
+          _enrichedTitle: artists.get(r.artistId)?.artistName || r.artist?.artistName || r.sourceTitle
+        })) };
+      };
       m.blData = {
         radarr: _mergeBl(rb.status === "fulfilled" ? rb.value : null, rb2.status === "fulfilled" ? rb2.value : null),
-        sonarr: _mergeBl(sb.status === "fulfilled" ? sb.value : null, sb2.status === "fulfilled" ? sb2.value : null)
+        sonarr: _mergeBl(
+          _mergeBl(sb.status === "fulfilled" ? sb.value : null, sb2.status === "fulfilled" ? sb2.value : null),
+          _lidarrBl(lb.status === "fulfilled" ? lb.value : null)
+        )
       };
       this._actSetBodyHtml(body, this._actBlocklistTabHtml(m.blData.radarr, m.blData.sonarr, m.blPage, m.blPerPage));
       this._wireActBody(body, el, "blocklist");
@@ -40815,6 +42673,1703 @@ var _WireMaintainerrMethods = class {
 };
 var wireMaintainerrMixin = _WireMaintainerrMethods.prototype;
 
+// src/render/music.js
+var _MusicRenderMethods = class {
+  _musicModalHtml() {
+    const m = this._musicModal;
+    if (!m) return "";
+    const artist = m.artist || {};
+    const name = this._escHtml(artist.artistName || "");
+    const fan = this._lidarrArtistImage(artist, "fanart");
+    const shot = this._lidarrArtistImage(artist, "poster");
+    const perf = this._cfgGet("styles", "performanceMode", false);
+    const st = artist.statistics || {};
+    const subLine = [
+      (artist.genres || []).slice(0, 3).join(" \xB7 "),
+      st.albumCount ? `${st.albumCount} ${this._t("musicAlbums")}` : ""
+    ].filter(Boolean).join(" \xB7 ");
+    const rv = artist.ratings?.value;
+    const mbIcon = `<svg width="22" height="11" viewBox="0 0 64 28" style="flex-shrink:0"><rect width="64" height="28" rx="4" fill="#BA478F"/><text x="32" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="900" fill="#fff">MB</text></svg>`;
+    const votes = artist.ratings?.votes;
+    const ratingsRow = rv ? `<div class="popup-ratings" title="MusicBrainz${votes ? ` \xB7 ${votes} ${votes === 1 ? "vote" : "votes"}` : ""}"><span style="display:inline-flex;align-items:center;gap:4px">${mbIcon}<b style="font-size:12px;color:var(--is-text);line-height:1;display:block;margin-top:-1px">${(Math.round(rv * 10) / 10).toFixed(1)}</b></span></div>` : "";
+    const originFlag = this._musOriginFlag(artist);
+    const backdropStyle = fan && !perf ? `background-image:url('${fan}')` : `background:linear-gradient(135deg,rgba(21,158,90,0.35),rgba(10,10,14,0.9))`;
+    return `
+      <div class="popup-overlay${dayClass(this)}" data-music-modal>
+        <div class="popup-glass is-wide">
+          <button class="popup-close" data-music-close>${this._libReturnState ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>` : ICONS.close}</button>
+          <div class="popup-backdrop mus-backdrop" style="${backdropStyle}">
+            <div class="popup-backdrop-fade"></div>
+            ${this._musHeroBar()}
+          </div>
+          ${this._musicModal?.menu ? this._musMenuHtml(this._musicModal.menu) : ""}
+          <div class="popup-body mus-modal-body">
+            <div class="popup-content mus-content">
+              ${shot ? `<img class="popup-poster mus-poster" src="${shot}" loading="lazy" onerror="this.style.display='none'">` : `<div class="popup-poster mus-poster mus-cover-ph">${this._escHtml(this._musInitials(artist.artistName))}</div>`}
+              <div class="popup-meta">
+                <div style="display:flex;align-items:flex-start;gap:8px;margin:0 0 5px">
+                  <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${name}${this._musMonMark(artist)}</h2>
+                </div>
+                ${subLine || ratingsRow || originFlag ? `<div class="popup-subrow">${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}${originFlag}${ratingsRow}</div>` : ""}
+                ${this._musInstChip(artist)}
+                ${this._musStreamBar()}
+                ${artist.overview ? `<p class="popup-overview mus-overview"${this._musDescH ? ` style="max-height:${this._musDescH}px"` : ""}>${this._escHtml(artist.overview)}</p>` : ""}
+              </div>
+            </div>
+            ${this._musSearchPanel()}
+            ${m.search ? "" : `<div class="mus-albums" data-music-albums${this._musAlbH ? ` style="height:${this._musAlbH}px"` : ""}>
+              <div class="pp-grab mus-alb-grab" data-mus-alb-handle><span></span></div>
+              ${m.loading ? `<div class="is-loading"><span>${this._t("loading")}</span></div>` : this._musicAlbumsHtml()}
+            </div>`}
+          </div>
+        </div>
+      </div>`;
+  }
+  // Country of origin, from MusicBrainz. Quality has no place beside it: that
+  // is per album, and the album rows below say it each for themselves.
+  _musOriginFlag(artist) {
+    const origin = (this._musOrigin(artist) || [])[0] || "";
+    const flag = origin ? this._flagSvg(origin) || this._flagEmoji(origin) : "";
+    if (!flag) return "";
+    return `<span class="pp-fi-chip mus-origin-chip"><span class="pp-fi-flags"><span class="pp-fi-flag" title="${this._escHtml(origin)}">${flag}</span></span></span>`;
+  }
+  // The transport for a track opened from Now Playing: the same seek bar and
+  // buttons the stream popup carries, sitting under the artist's own line.
+  // data-state on the fill is what the streams timer looks for, so the bar
+  // keeps moving between renders without a second timer of its own.
+  _musStreamBar() {
+    const eid = this._musicModal?.stream;
+    if (!eid) return "";
+    const st = this._hass?.states?.[eid];
+    if (!st) return "";
+    const attr = st.attributes || {};
+    const playing = st.state === "playing";
+    const dur = attr.media_duration || 0;
+    const pos = attr.media_position || 0;
+    const updatedAt = attr.media_position_updated_at ? new Date(attr.media_position_updated_at).getTime() : Date.now();
+    const cur = Math.min(pos + (playing ? (Date.now() - updatedAt) / 1e3 : 0), dur);
+    const pct = dur > 0 ? (cur / dur * 100).toFixed(2) : 0;
+    const fmt = (v) => `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(Math.floor(v % 60)).padStart(2, "0")}`;
+    const feats = attr.supported_features || 0;
+    const canSeek = !!(feats & 2);
+    const canControl = !!(feats & 1) || !!(feats & 16384);
+    const _e = this._escHtml(eid);
+    const bar = dur > 0 ? `
+      <div ${canSeek ? `class="stream-seek-wrap mus-seek" data-action="stream-seek" data-entity="${_e}" data-dur="${dur}" style="cursor:pointer;padding:5px 0"` : 'style="padding:5px 0"'}>
+        <div class="stream-prog-track" style="height:4px;position:relative;bottom:auto;left:auto;right:auto;border-radius:2px">
+          <div class="stream-prog-fill" data-entity="${_e}" data-pos="${pos}" data-dur="${dur}" data-updated="${updatedAt}" data-state="${st.state}" style="width:${pct}%;transition:none;border-radius:2px"></div>
+        </div>
+      </div>
+      <div class="stream-popup-time" style="font-size:10px;color:var(--is-dim,rgba(255,255,255,0.4))">${fmt(cur)} / ${fmt(dur)}</div>` : "";
+    const controls = canControl ? `
+      <div style="display:flex;align-items:center;gap:14px;margin-top:6px">
+        <button class="popup-ctrl-btn" data-action="stream-prev" data-entity="${_e}"><ha-icon icon="mdi:skip-previous" style="--mdc-icon-size:22px"></ha-icon></button>
+        <button class="popup-ctrl-btn popup-ctrl-btn-main" data-action="stream-playpause" data-entity="${_e}"><ha-icon icon="mdi:${playing ? "pause" : "play"}" style="--mdc-icon-size:26px"></ha-icon></button>
+        <button class="popup-ctrl-btn" data-action="stream-next" data-entity="${_e}"><ha-icon icon="mdi:skip-next" style="--mdc-icon-size:22px"></ha-icon></button>
+      </div>` : "";
+    return `<div class="mus-stream-bar">${bar}${controls}</div>`;
+  }
+  // The instance chip a series gets — label plus how much of it is on disk —
+  // reading tracks instead of episodes.
+  _musInstChip(artist) {
+    const st = artist?.statistics;
+    if (!st) return "";
+    if (!artist.monitored) {
+      const nm = this._cfg?.localisation === "cs" ? "nemonitorov\xE1no" : "not monitored";
+      return `<div class="instance-status-row"><span class="inst-chip ic--added">${nm}</span></div>`;
+    }
+    const have = st.trackFileCount ?? 0;
+    const total = st.trackCount ?? 0;
+    const allTr = st.totalTrackCount ?? total;
+    const done = total > 0 && have >= total;
+    const dlPct = this._lidarrQueueArtists?.get(artist.id);
+    const sp = this._musicModal?.search;
+    const waiting = !!(sp?.grabbing || sp?.grabbed?.size && dlPct === void 0);
+    const dl = dlPct !== void 0 ? `<span class="inst-chip ic--downloading">${dlPct >= 0 ? `<span class="ic-bar"><span style="width:${dlPct}%"></span></span> ${dlPct}%` : `\u2193 ${this._t("badgeDownloading")}`}</span>` : waiting ? `<span class="inst-chip ic--downloading"><span class="is-spin" style="width:10px;height:10px;border-width:1.5px"></span></span>` : "";
+    const cls = done ? allTr > total ? "ic--monitored" : "ic--available" : have > 0 ? "ic--behind" : "ic--idle";
+    const icon = done ? ' <span class="ic-icon">\u2713</span>' : "";
+    return `<div class="instance-status-row">${dl}<span class="inst-chip ${cls}">${have}/${total}${icon}</span></div>`;
+  }
+  // Same bookmark the film and series popup puts beside a title, so monitoring
+  // reads the same way whichever library a detail came from.
+  _musMonMark(artist) {
+    const on = !!artist?.monitored;
+    const svg = on ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    const tip = on ? this._t("musicMonitored") : this._t("musicUnmonitored");
+    return `<span class="popup-mon-btn mus-mon" title="${tip}" style="vertical-align:middle;margin-left:7px">${svg}</span>`;
+  }
+  // The film popup's capsule, with the three things an artist can be asked for.
+  // Admin only: everything behind these buttons writes, and the proxy refuses
+  // writes from anyone else anyway.
+  _musHeroBar() {
+    if (!this._hass?.user?.is_admin) return "";
+    const m = this._musicModal;
+    const busy = m?.busy;
+    if (m?.preview) return this._musPreviewBar();
+    const chev = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const searchSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>`;
+    const trashSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+    const dotsSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
+    const spin = `<span class="is-spin" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    const open = m?.menu;
+    return `
+      <div class="pp-hero-bar">
+        <div class="pp-hero-pill">
+          <button class="is-open-btn${open === "search" || m?.search ? " active" : ""}" data-mus-menu="search">${busy === "search" ? spin : searchSvg}<span class="pp-lbl">${this._t("musSearch")} ${chev}</span></button>
+          <button class="is-open-btn${open === "remove" ? " active" : ""}" data-mus-menu="remove">${busy === "remove" ? spin : trashSvg}<span class="pp-lbl">${this._t("musRemove")} ${chev}</span></button>
+          <button class="is-open-btn${open === "actions" ? " active" : ""}" data-mus-menu="actions">${dotsSvg}<span class="pp-lbl">${this._t("musActions")} ${chev}</span></button>
+        </div>
+      </div>`;
+  }
+  _musPreviewBar() {
+    const m = this._musicModal;
+    const chev = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const searchSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>`;
+    const spin = `<span class="is-spin" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    return `
+      <div class="pp-hero-bar">
+        <div class="pp-hero-pill">
+          <button class="is-open-btn${m?.menu === "search" ? " active" : ""}" data-mus-menu="search">${m?.adding ? spin : searchSvg}<span class="pp-lbl">${this._t("musSearch")} ${chev}</span></button>
+        </div>
+      </div>`;
+  }
+  _musMenuHtml(kind) {
+    const m = this._musicModal;
+    const artist = m?.artist || {};
+    const row = (act, label, sub = "") => `<button class="qa-item" data-mus-act="${act}"><span>${label}</span>${sub ? `<span class="mus-sub">${sub}</span>` : ""}</button>`;
+    let rows = "";
+    if (kind === "search") {
+      const magnifier = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+      const person = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+      const iconRow = (act, icon, label) => `<button class="qa-item" data-mus-act="${act}"><span class="qa-ico">${icon}</span><span>${label}</span></button>`;
+      rows = iconRow("as", magnifier, "Automatic") + iconRow("is", person, "Interactive");
+    } else if (kind === "remove") {
+      rows = row("remove-lib", this._t("musRemoveLib")) + row("remove-disc", this._t("musRemoveDisc"));
+    } else {
+      const sub = m?.menuSub;
+      const drawer = (key, html) => sub === key ? `<div class="qa-drawer is-open">${html}</div>` : "";
+      const chev = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><polyline points="9 6 15 12 9 18"/></svg>`;
+      const parent = (key, label) => `<button class="qa-item${sub === key ? " qa-open" : ""}" data-mus-act="${key}"><span>${label}</span>${chev}</button>`;
+      rows = row("show-in-lib", this._t("qaShowInLib"));
+      if (this._plexConfigured !== false && (artist.statistics?.trackFileCount || 0) > 0) {
+        rows += parent("cast", this._t("qaCast")) + drawer("cast", this._musCastRowsHtml());
+      }
+      if (this._musStatsSource() && (artist.statistics?.trackFileCount || 0) > 0) {
+        rows += parent("stats", this._t("musListenStats")) + drawer("stats", this._musStatsRowsHtml());
+      }
+    }
+    return `<div class="qa-menu mus-menu"><div class="qa-list">${rows}</div></div>`;
+  }
+  _musPreviewAlbumTile(album) {
+    const pc = this._posterCfg();
+    const cover = this._lidarrCover(album);
+    const title = this._escHtml(album.title || "");
+    const year = (album.releaseDate || "").slice(0, 4);
+    return `
+      <div class="mus-alb" data-mus-prev-album="${this._escHtml(album.title || "")}" title="${title}">
+        <div class="mus-alb-art${this._musArtSeen?.has(cover) ? " art-done" : ""}">
+          ${cover ? `${this._musArtSeen?.has(cover) ? "" : '<span class="action-spinner mus-alb-spin"></span>'}
+               <img src="${cover}" loading="lazy" decoding="async"
+                    onload="this.parentElement.classList.add('art-done')"
+                    onerror="this.style.display='none';this.parentElement.classList.add('art-done')">` : `<div class="mus-cover-ph" style="width:100%;height:100%">${this._escHtml(title.slice(0, 1) || "?")}</div>`}
+          ${pc.mediaType ? `<span class="media-type-tag">${this._t("typeAlbum")}</span>` : ""}
+          <div class="mus-alb-cap">
+            ${year ? `<div class="mus-alb-year">${year}</div>` : ""}
+            <div class="mus-alb-title">${title}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+  _musCastRowsHtml() {
+    const list = this._plexClients;
+    if (!list) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t("loading")}</div>`;
+    if (!list.length) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t("qaCastNone")}</div>`;
+    const PLAY_MEDIA = 512;
+    return list.map((p) => {
+      const feats = Number(this._hass?.states?.[p.entityId]?.attributes?.supported_features) || 0;
+      const can = !feats || feats & PLAY_MEDIA;
+      return `<button class="qa-item qa-sub-item" data-mus-cast="${this._escHtml(p.entityId)}"${can ? "" : ' style="opacity:0.45"'}><span>${this._escHtml(p.name)}</span></button>`;
+    }).join("");
+  }
+  _musStatsRowsHtml() {
+    const st = this._musStats;
+    if (!st) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t("loading")}</div>`;
+    if (!st.any) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t("qaStatsNone")}</div>`;
+    const row = (label, value) => `<div class="qa-item qa-sub-item qa-static"><span>${label}</span><span class="qa-air-date">${this._escHtml(String(value))}</span></div>`;
+    return [
+      st.tracks ? row(this._t("musStatsTracks"), st.tracks) : "",
+      st.plays ? row(this._t("qaStatsPlays"), st.plays) : "",
+      st.watched ? row(this._t("musStatsTime"), st.watched) : "",
+      st.last ? row(this._t("qaStatsLast"), st.last) : "",
+      st.top ? row(this._t("musStatsTop"), st.top) : "",
+      st.others ? row(this._t("qaStatsOthers"), st.others) : ""
+    ].join("");
+  }
+  // The Sonarr panel, with albums where it has seasons: a row per album with
+  // its progress, a monitor toggle and the search button, and the releases
+  // opening underneath the row they belong to.
+  _musSearchPanel() {
+    const sp = this._musicModal?.search;
+    if (!sp) return "";
+    if (sp.confirmAdd || sp.adding) {
+      const h2 = this._musPanelH ? ` style="height:${this._musPanelH}px"` : "";
+      const rise2 = sp.entered ? "" : " mus-rise";
+      sp.entered = true;
+      const checkSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const crossSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      const body = sp.adding ? `<div class="is-loading">
+             <span class="action-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:var(--is-blue)"></span>
+             <span>${this._t("musAdding")}</span>
+           </div>` : `<div class="is-confirm-wrap">
+             <div class="is-confirm-msg">${this._t("musConfirmMsg")}</div>
+             <div class="is-confirm-actions">
+               <button class="is-confirm-btn is-confirm-yes" data-mus-act="add-yes">${checkSvg}</button>
+               <button class="is-confirm-btn is-confirm-no" data-mus-act="add-no">${crossSvg}</button>
+             </div>
+           </div>`;
+      return `<div class="sn-is-section mus-search${rise2}"${h2}>
+        <div class="pp-grab" data-mus-grab-handle><span></span></div>
+        ${body}
+      </div>`;
+    }
+    const albums = [...this._musicModal?.albums || []].sort((a, b) => String(b.releaseDate || "").localeCompare(String(a.releaseDate || "")));
+    const label = sp.mode === "as" ? this._t("musAutoSearch") : this._t("musInteractive");
+    const rows = albums.map((a) => this._musAlbumRow(a, sp)).join("");
+    const h = this._musPanelH ? ` style="height:${this._musPanelH}px"` : "";
+    const rise = sp.entered ? "" : " mus-rise";
+    sp.entered = true;
+    return `<div class="sn-is-section mus-search${rise}"${h}>
+      <div class="pp-grab" data-mus-grab-handle><span></span></div>
+      <div class="sn-seasons-label">${label}</div>
+      <div class="sn-seasons-rows" style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+    </div>`;
+  }
+  _musAlbumRow(album, sp) {
+    const st = album.statistics || {};
+    const have = st.trackFileCount ?? 0;
+    const tot = st.trackCount ?? 0;
+    const pct = tot > 0 ? Math.round(have / tot * 100) : 0;
+    const year = (album.releaseDate || "").slice(0, 4);
+    const active = sp.albumId === album.id && sp.mode === "is";
+    const busy = sp.busyAlbum === album.id;
+    const sent = sp.searched?.has(album.id);
+    const exp = sp.expanded === album.id;
+    const isAdmin = !!this._hass?.user?.is_admin;
+    const personIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>`;
+    const chevron = `<svg class="sn-season-chevron${exp ? " open" : ""}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>`;
+    const trashSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const monBtn = this._musMonBtn(album, sp);
+    let trashBtn = "";
+    if (have > 0 && isAdmin) {
+      if (sp.delBusy === album.id) {
+        trashBtn = `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`;
+      } else if (sp.delConfirm === album.id) {
+        const chk = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        const cross = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        trashBtn = `<span class="ep-del-confirm"><button class="btn-ep-trash btn-ep-del-yes" data-mus-del-yes="${album.id}">${chk}</button><button class="btn-person" data-mus-del-no>${cross}</button></span>`;
+      } else {
+        trashBtn = `<button class="btn-ep-trash" data-mus-del="${album.id}" title="${this._t("musDeleteFiles")}">${trashSvg}</button>`;
+      }
+    }
+    const searchBtn = busy ? `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>` : sp.mode === "as" ? `<button class="btn-person${sent ? " active" : ""}" data-mus-album="${album.id}" title="${this._t("musAutoSearch")}">${sent ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`}</button>` : `<button class="btn-person${active ? " active" : ""}" data-mus-album="${album.id}" title="${this._t("musInteractive")}">${personIcon}</button>`;
+    const statHtml = sp.delConfirm === album.id ? `<span class="ep-del-msg">${this._t("delSeasonConfirm") || "Delete all from disk?"}</span>` : `<span class="sn-season-stat">${have}/${tot}</span>
+         <div class="sn-season-bar"><div class="sn-season-bar-fill" style="width:${pct}%"></div></div>`;
+    return `<div class="sn-season-row" data-album-row="${album.id}">
+      <div class="sn-season-header mus-alb-header">
+        <button class="sn-expand" data-mus-expand="${album.id}" title="${this._t("musTracks")}">
+          ${chevron}
+        </button>
+        <span class="sn-season-title">${this._escHtml(album.title || "")}${year ? ` <span style="opacity:0.5;font-weight:500">${year}</span>` : ""}</span>
+        ${statHtml}
+        ${trashBtn}
+        ${monBtn}
+        ${searchBtn}
+      </div>
+      ${active ? this._musIsPanel(sp) : ""}
+      ${exp ? this._musTracksPanel(album, sp) : ""}
+    </div>`;
+  }
+  _musMonBtn(album, sp) {
+    if (sp.monBusy === album.id) {
+      return `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`;
+    }
+    const svg = album.monitored ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    return `<button class="btn-person${album.monitored ? " active" : ""}" data-mus-mon="${album.id}" title="${album.monitored ? this._t("musUnmonitor") : this._t("musMonitor")}">${svg}</button>`;
+  }
+  // Tracks are to an album what episodes are to a season.
+  _musTracksPanel(album, sp) {
+    const tracks = sp.tracks?.get(album.id);
+    if (!tracks) {
+      return `<div class="sn-episodes sn-episodes-loading">
+        <span class="action-spinner" style="width:14px;height:14px;border-width:1.5px"></span>
+      </div>`;
+    }
+    if (!tracks.length) {
+      return `<div class="sn-episodes"><span style="color:rgba(255,255,255,0.4);font-size:11px">${this._t("musNoTracks")}</span></div>`;
+    }
+    const rows = tracks.map((t) => {
+      const num = String(t.absoluteTrackNumber ?? t.trackNumber ?? "").padStart(2, "0");
+      const dur = t.duration ? `${Math.floor(t.duration / 6e4)}:${String(Math.floor(t.duration % 6e4 / 1e3)).padStart(2, "0")}` : "";
+      return `<div class="sn-ep-item">
+        <div class="sn-ep-row${t.hasFile ? " has-file" : ""}">
+          <span class="sn-ep-num">${num}</span>
+          <span class="sn-ep-title">${this._escHtml(t.title || "")}</span>
+          ${dur ? `<span class="sn-ep-date">${dur}</span>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="sn-episodes">${rows}</div>`;
+  }
+  _musIsPanel(sp) {
+    if (sp.state === "loading") {
+      return `<div class="sn-is-panel"><div class="is-loading">
+        <span class="action-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:var(--is-blue)"></span>
+        <span>${this._t("isQueryingIndexers")}</span></div></div>`;
+    }
+    if (sp.state === "error") {
+      return `<div class="sn-is-panel"><div class="is-loading" style="color:rgba(255,69,58,0.80)">\u26A0 ${this._escHtml(sp.error || "")}</div></div>`;
+    }
+    if (sp.state !== "results") return "";
+    const list = sp.results || [];
+    if (!list.length) return `<div class="sn-is-panel"><div class="is-loading">${this._t("isNoResults")}</div></div>`;
+    if (this._isMob) {
+      return `<div class="sn-is-panel">
+        <div class="is-results-wrap">${this._musIsCards(list, sp)}</div>
+      </div>`;
+    }
+    const rows = list.map((r) => {
+      const rej = !r.approved && r.rejections?.length ? `<div class="is-rej-row">\u26A0 ${this._escHtml(r.rejections.slice(0, 2).join(" \xB7 "))}</div>` : "";
+      return `<tr>
+        <td>${this._isSrcPill(r)}</td>
+        <td><span class="is-rel-title">${this._escHtml(r.title || "")}</span>
+            <span class="is-rel-age">${Math.round(r.age || 0)}d</span>${rej}</td>
+        <td><span class="is-indexer">${this._escHtml(r.indexer || "")}</span></td>
+        <td><span class="is-size">${this._isSize(r.size)}</span></td>
+        <td>${this._isPeers(r)}</td>
+        <td>${this._isQualityBadge(r)}</td>
+        <td>${this._musGrabBtn(r, sp)}</td>
+      </tr>`;
+    }).join("");
+    const wideGrab = this._lidarrQueuePct?.get(sp.albumId) !== void 0;
+    return `<div class="sn-is-panel">
+      <div class="is-results-wrap">
+        <table class="is-table">
+          <colgroup><col style="width:50px"><col><col style="width:80px"><col style="width:60px"><col style="width:70px"><col style="width:74px"><col style="width:${wideGrab ? 78 : 56}px"></colgroup>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+  _musIsCards(releases, sp) {
+    return releases.map((r) => {
+      const rejHtml = !r.approved && r.rejections?.length ? `<div class="is-ic-rej">\u26A0 ${this._escHtml(r.rejections.slice(0, 1).join(""))}</div>` : "";
+      return `<div class="is-card">
+        <div class="is-ic-r1">
+          ${this._isSrcPill(r)}
+          ${this._isQualityBadge(r)}
+          <span class="is-size">${this._isSize(r.size)}</span>
+          <div class="is-ic-spacer"></div>
+          ${this._musGrabBtn(r, sp)}
+        </div>
+        <div class="is-ic-title">${this._escHtml(r.title || "")}</div>
+        <div class="is-ic-meta">
+          <span>${this._escHtml(r.indexer || "")}</span>
+          ${/torrent/i.test(String(r.protocol || "")) ? `<span class="sep">\xB7</span><span class="is-s">\u2191${r.seeders ?? "?"}</span>/<span class="is-l">\u2193${r.leechers ?? "?"}</span>` : ""}
+          <span class="sep">\xB7</span>
+          <span>${Math.round(r.age || 0)}d ago</span>
+        </div>
+        ${rejHtml}
+      </div>`;
+    }).join("");
+  }
+  _musGrabBtn(r, sp) {
+    if (sp.grabbing === r.guid) {
+      return `<button class="is-grab-btn" disabled>
+        <span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>
+      </button>`;
+    }
+    if (sp.grabbed?.has(r.guid) || this._lidarrQueue?.has(sp.albumId)) {
+      const p = this._lidarrQueuePct?.get(sp.albumId);
+      if (p === void 0) {
+        return `<button class="is-grab-btn" disabled title="${this._t("isGrabbed")}">
+          <span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>
+        </button>`;
+      }
+      const pct = p >= 0 ? p : 0;
+      return `<button class="is-grab-btn" disabled style="width:100%;min-width:0;gap:3px;padding:0 6px;border-radius:9px" title="${this._t("isGrabbed")}">
+        <div style="display:flex;align-items:center;gap:3px;width:100%">
+          <div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden">
+            <div style="width:${Math.max(pct, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div>
+          </div>
+          <span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${pct}%</span>
+        </div>
+      </button>`;
+    }
+    const isRej = !r.approved;
+    return `<button class="is-grab-btn${isRej ? " force" : ""}" data-mus-grab="${this._escHtml(r.guid)}" title="${isRej ? "Force grab" : "Grab"}">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>`;
+  }
+  _musicAlbumsHtml() {
+    const m = this._musicModal;
+    const albums = [...m?.albums || []].sort((a, b) => String(b.releaseDate || "").localeCompare(String(a.releaseDate || "")));
+    if (!albums.length) return `<div class="placeholder">${this._t("musicNoAlbums")}</div>`;
+    const per = Math.max(2, (m.cols || 4) * (m.rows || 2));
+    const pages = Math.max(1, Math.ceil(albums.length / per));
+    const page = Math.min(m.albPage || 0, pages - 1);
+    const slice = albums.slice(page * per, page * per + per);
+    this._musPrefetchCovers(albums.slice((page + 1) * per, (page + 2) * per));
+    const chev = (dir, disabled) => `<button class="pg-btn mus-pg${disabled ? " pg-btn-ph" : ""}" data-mus-page="${dir}"${disabled ? ' disabled aria-hidden="true" tabindex="-1"' : ""}>${dir === "prev" ? "&#8249;" : "&#8250;"}</button>`;
+    return `<div class="mus-alb-wrap">
+      ${chev("prev", page === 0)}
+      <div class="mus-alb-grid">${slice.map((a) => this._musicAlbumTile(a)).join("")}</div>
+      ${chev("next", page >= pages - 1)}
+    </div>`;
+  }
+  _musicAlbumTile(album) {
+    if (album.mbId) return this._musPreviewAlbumTile(album);
+    const cover = this._lidarrCover(album);
+    const title = this._escHtml(album.title || "");
+    const year = (album.releaseDate || "").slice(0, 4);
+    const rv = album.ratings?.value;
+    const rating = rv ? (Math.round(rv * 10) / 10).toFixed(1) : "";
+    const st = album.statistics || {};
+    const have = st.trackFileCount ?? 0;
+    const total = st.trackCount ?? 0;
+    const dl = this._lidarrQueue?.has(album.id);
+    let cls = "b-missing", icon = "\u2717";
+    if (dl) {
+      cls = "b-dl";
+      icon = "\u2193";
+    } else if (total > 0 && have >= total) {
+      cls = "b-st-avail";
+      icon = "\u2713";
+    } else if (have > 0) {
+      cls = "b-partial";
+      icon = `${have}/<span class="b-txt">${total}</span>`;
+    }
+    const disp = this._posterCfg().statusDisplay;
+    const showTag = disp === "tags" || disp === "both";
+    const showStripe = disp === "stripes" || disp === "both";
+    const pctBar = cls === "b-dl" ? this._lidarrQueuePct?.get(album.id) ?? -1 : cls === "b-partial" ? Math.round(have / total * 100) : -1;
+    return `
+      <div class="mus-alb" data-album-id="${album.id}" title="${title}">
+        <div class="mus-alb-art${cover && this._musArtSeen?.has(cover) ? " art-done" : ""}">
+          ${cover ? `${this._musArtSeen?.has(cover) ? "" : '<span class="action-spinner mus-alb-spin"></span>'}
+               <img src="${cover}" loading="lazy" decoding="async"
+                    onload="this.parentElement.classList.add('art-done')"
+                    onerror="this.style.display='none';this.parentElement.classList.add('art-done')">` : `<div class="mus-cover-ph" style="width:100%;height:100%">${this._escHtml(title.slice(0, 1) || "?")}</div>`}
+          ${this._posterCfg().mediaType ? `<span class="media-type-tag">${this._t("typeAlbum")}</span>` : ""}
+          ${showTag ? `<span class="badge ${cls} mus-alb-badge">${icon}</span>` : ""}
+          <div class="mus-alb-cap">
+            ${rating ? `<span class="badge b-quality mus-alb-rating">${rating}</span>` : ""}
+            ${year ? `<div class="mus-alb-year">${year}</div>` : ""}
+            <div class="mus-alb-title">${title}</div>
+          </div>
+          ${showStripe ? this._statusStripe(this._statusStripeColor(cls), cls === "b-dl", pctBar) : ""}
+        </div>
+      </div>`;
+  }
+  _musPrefetchCovers(albums) {
+    if (!albums?.length) return;
+    const run = () => albums.forEach((a) => {
+      const u = this._lidarrCover(a);
+      if (u) {
+        const i = new Image();
+        i.decoding = "async";
+        i.src = u;
+      }
+    });
+    if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 2e3 });
+    else setTimeout(run, 300);
+  }
+  _albumModalHtml() {
+    const m = this._albumModal;
+    if (!m) return "";
+    const album = m.album || {};
+    const artist = m.artist || album.artist || {};
+    const title = this._escHtml(album.title || "");
+    const who = this._escHtml(artist.artistName || "");
+    const perf = this._cfgGet("styles", "performanceMode", false);
+    const cover = this._lidarrCover(album);
+    const fan = this._lidarrArtistImage(artist, "fanart");
+    const st = album.statistics || {};
+    const have = st.trackFileCount ?? 0;
+    const total = st.trackCount ?? 0;
+    const year = String(album.releaseDate || "").slice(0, 4);
+    const subLine = [
+      who,
+      year,
+      album.albumType || "",
+      total ? `${total} ${this._t("musStatsTracks").toLowerCase()}` : ""
+    ].filter(Boolean).join(" \xB7 ");
+    const rv = album.ratings?.value;
+    const votes = album.ratings?.votes;
+    const mbIcon = `<svg width="22" height="11" viewBox="0 0 64 28" style="flex-shrink:0"><rect width="64" height="28" rx="4" fill="#BA478F"/><text x="32" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="900" fill="#fff">MB</text></svg>`;
+    const ratingsRow = rv ? `<div class="popup-ratings" title="MusicBrainz${votes ? ` \xB7 ${votes} ${votes === 1 ? "vote" : "votes"}` : ""}"><span style="display:inline-flex;align-items:center;gap:4px">${mbIcon}<b style="font-size:12px;color:var(--is-text);line-height:1;display:block;margin-top:-1px">${(Math.round(rv * 10) / 10).toFixed(1)}</b></span></div>` : "";
+    const backdropStyle = fan && !perf ? `background-image:url('${fan}')` : `background:linear-gradient(135deg,rgba(21,158,90,0.35),rgba(10,10,14,0.9))`;
+    const chip = total ? `<div class="instance-status-row"><span class="inst-chip ${have >= total ? "ic--available" : have > 0 ? "ic--partial" : "ic--missing"}">${have}/${total}${have >= total ? ' <span class="ic-icon">\u2713</span>' : ""}</span></div>` : "";
+    return `
+      <div class="popup-overlay${dayClass(this)}" data-album-modal>
+        <div class="popup-glass is-wide">
+          <button class="popup-close" data-album-close><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div class="popup-backdrop mus-backdrop" style="${backdropStyle}">
+            <div class="popup-backdrop-fade"></div>
+          </div>
+          <div class="popup-body mus-modal-body">
+            <div class="popup-content mus-content">
+              ${cover ? `<img class="popup-poster mus-poster" src="${cover}" loading="lazy" onerror="this.style.display='none'">` : `<div class="popup-poster mus-poster mus-cover-ph">${this._escHtml(this._musInitials(album.title))}</div>`}
+              <div class="popup-meta">
+                <div style="display:flex;align-items:flex-start;gap:8px;margin:0 0 5px">
+                  <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${title}</h2>
+                </div>
+                ${subLine || ratingsRow ? `<div class="popup-subrow">${subLine ? `<div class="popup-sub">${subLine}</div>` : ""}${ratingsRow}</div>` : ""}
+                ${chip}
+              </div>
+            </div>
+            <div class="alb-tracks" data-album-tracks>
+              ${this._albumTracksHtml()}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+  _albumTracksHtml() {
+    const tracks = this._albumModal?.tracks;
+    if (!tracks) {
+      return `<div class="sn-episodes sn-episodes-loading"><span class="action-spinner" style="width:14px;height:14px;border-width:1.5px"></span></div>`;
+    }
+    if (!tracks.length) {
+      return `<div class="sn-episodes"><span style="color:rgba(255,255,255,0.4);font-size:11px">${this._t("musNoTracks")}</span></div>`;
+    }
+    const rows = tracks.map((t) => {
+      const num = String(t.absoluteTrackNumber ?? t.trackNumber ?? "").padStart(2, "0");
+      const dur = t.duration ? `${Math.floor(t.duration / 6e4)}:${String(Math.floor(t.duration % 6e4 / 1e3)).padStart(2, "0")}` : "";
+      return `<div class="sn-ep-item">
+        <div class="sn-ep-row${t.hasFile ? " has-file" : ""}">
+          <span class="sn-ep-num">${num}</span>
+          <span class="sn-ep-title">${this._escHtml(t.title || "")}</span>
+          ${dur ? `<span class="sn-ep-date">${dur}</span>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="sn-episodes">${rows}</div>`;
+  }
+};
+var musicRenderMixin = _MusicRenderMethods.prototype;
+
+// src/wire/music.js
+var _WireMusicMethods = class {
+  // Delegated on col-right, which survives every re-render of the sections
+  // inside it — a listener on the cards themselves would be lost on the next
+  // repaint, which is how this row lost its clicks the first time round.
+  _wireMusicCards(right) {
+    if (!right || right._musicWired) return;
+    right._musicWired = true;
+    right.addEventListener("click", (e) => {
+      const albumCard = e.target.closest("[data-album-cal]");
+      if (albumCard) {
+        e.stopPropagation();
+        this._openCalAlbumArtist(Number(albumCard.dataset.albumCal));
+        return;
+      }
+      const likeOl = e.target.closest(".mus-like-ol");
+      if (likeOl) {
+        e.stopPropagation();
+        this._musDropSuggestion(likeOl.dataset.musMbid, "like", likeOl.closest(".mc"));
+        return;
+      }
+      const skipOl = e.target.closest(".mus-skip-ol");
+      if (skipOl) {
+        e.stopPropagation();
+        this._musDropSuggestion(skipOl.dataset.musMbid, "skip", skipOl.closest(".mc"));
+        return;
+      }
+      const addBtn = e.target.closest("[data-mus-add]");
+      if (addBtn) {
+        e.stopPropagation();
+        const inSearch = !!addBtn.closest(".search-results-wrap");
+        this._musOpenAdd(addBtn.dataset.musAdd, inSearch ? "search" : "lastfm");
+        return;
+      }
+      if (e.target.closest(".mus-add-cancel")) {
+        e.stopPropagation();
+        const src = this._musAddPending?.source;
+        this._musAddPending = null;
+        if (src === "lastfm") this._reRenderSection("recommendations");
+        else this._reRenderSearchResults();
+        const hit = mbid ? [...this._lidarrArtists?.values() || []].find((a) => String(a.foreignArtistId || "").toLowerCase() === mbid) : null;
+        if (hit?.id && this._musicModal?.preview === mbid) this._openMusicModal(hit.id);
+        this._musScheduleLastfmRefresh();
+        return;
+      }
+      if (e.target.closest(".mus-add-confirm")) {
+        e.stopPropagation();
+        this._musConfirmAdd();
+        return;
+      }
+      const unowned = e.target.closest("[data-artist-unowned]");
+      if (unowned) {
+        e.stopPropagation();
+        this._openMusicPreview(unowned.dataset.artistUnowned);
+        return;
+      }
+      const card = e.target.closest(".mc-music[data-artist-id]");
+      if (!card) return;
+      e.stopPropagation();
+      this._openMusicModal(Number(card.dataset.artistId), { stream: card.dataset.streamEntity || null });
+    });
+  }
+  // The detail for an artist Lidarr has never heard of. Everything the record
+  // itself carries is drawn as usual; the albums come from MusicBrainz, and the
+  // covers from the Cover Art Archive, which answers on a release group's id
+  // without a key.
+  _musUnownedArtist(mbid2) {
+    const inSearch = (this._searchResults || []).find((r) => r.mediaType === "music" && r.artist?.foreignArtistId === mbid2);
+    if (inSearch?.artist) return inSearch.artist;
+    const inSug = (this._lastfm || []).find((r) => r.artist?.foreignArtistId === mbid2);
+    return inSug?.artist || null;
+  }
+  async _openMusicPreview(mbid2) {
+    const artist = this._musUnownedArtist(mbid2);
+    if (!artist) return;
+    const hit = { artist };
+    this._musPanelH = null;
+    this._musDescH = null;
+    this._musAlbH = null;
+    this._musicModal = {
+      artistId: null,
+      artist: hit.artist,
+      albums: [],
+      loading: true,
+      preview: mbid2
+    };
+    this._renderMusicModalEl();
+    let list = [];
+    try {
+      list = await this._callApi("GET", `arr_stack/lidarr/mbalbums?mbid=${encodeURIComponent(mbid2)}`);
+    } catch (e) {
+      console.warn("[arr-card] MusicBrainz discography failed:", e);
+    }
+    if (this._musicModal?.preview !== mbid2) return;
+    this._musicModal.albums = (Array.isArray(list) ? list : []).map((a) => ({
+      id: null,
+      mbId: a.id,
+      title: a.title,
+      releaseDate: a.releaseDate,
+      statistics: null,
+      _mbCover: `https://coverartarchive.org/release-group/${a.id}/front-250`
+    }));
+    this._musicModal.loading = false;
+    this._renderMusicModalEl();
+  }
+  // Adding from the preview: unmonitored, nothing searched for, so a search can
+  // run against a record that now exists. The overlay's questions are skipped —
+  // this is the quick way in, and the detail that follows is where monitoring
+  // and profiles are changed.
+  async _musAddFromPreview() {
+    const m = this._musicModal;
+    if (!m?.preview || m.adding) return null;
+    m.adding = true;
+    try {
+      const opts = await this._fetchLidarrAddOptions();
+      const res = await this._addLidarrArtist(m.artist, {
+        profileId: opts.quality?.[0]?.id ?? 1,
+        metadataId: opts.metadata?.[0]?.id ?? 1,
+        rootFolder: opts.rootFolders?.[0]?.path || "",
+        monitor: "none"
+      });
+      if (!res?.id) throw new Error("no id returned");
+      await this._openMusicModal(Number(res.id));
+      return Number(res.id);
+    } catch (e) {
+      console.error("[arr-card] add from preview failed:", e);
+      if (this._musicModal) {
+        this._musicModal.adding = false;
+        this._renderMusicModalEl();
+      }
+      return null;
+    }
+  }
+  async _musDropSuggestion(mbid2, verdict, cardEl) {
+    const id = String(mbid2 || "").toLowerCase();
+    if (!id) return;
+    const skip = verdict === "skip";
+    if (cardEl) {
+      cardEl.style.transition = "opacity 0.28s ease, transform 0.28s ease";
+      cardEl.style.opacity = "0";
+      cardEl.style.transform = "scale(0.85)";
+      await new Promise((r) => setTimeout(r, 280));
+    }
+    this._lastfm = (this._lastfm || []).filter((r) => String(r.artist?.foreignArtistId || "").toLowerCase() !== id);
+    this._musSkipped = (this._musSkipped || /* @__PURE__ */ new Set()).add(id);
+    this._musAddedEntries?.delete(id);
+    this._musAdded?.delete(id);
+    const perPage = this._perPage("recommendations");
+    const count = this._hasSeeMore("recommendations") ? this._smpPageCount(this._recItems(), "recommendations") : (this._lastfm || []).length;
+    const last = Math.max(0, Math.ceil(count / perPage) - 1);
+    if ((this._pages.recommendations || 0) > last) {
+      this._pages.recommendations = last;
+      this._pageDir.recommendations = "prev";
+    }
+    this._reRenderSection("recommendations");
+    this._pageDir.recommendations = "";
+    try {
+      await this._callApi("POST", `arr_stack/lastfm/${skip ? "skips" : "likes"}`, { mbid: id });
+    } catch (e) {
+      console.warn("[arr-card] suggestion verdict failed:", e);
+    }
+    if (!(this._lastfm || []).length) {
+      await this._fetchLastfm({ refresh: true });
+      this._reRenderSection("recommendations");
+      return;
+    }
+    this._musScheduleLastfmRefresh();
+  }
+  // Rebuilding the suggestions costs a Last.fm round per seed plus a Lidarr
+  // lookup per hit, so a run of clicks waits for the last one. It also runs in
+  // the background: the row the reader is working through stays as it is until
+  // the answer arrives.
+  _musScheduleLastfmRefresh(delay = 1500) {
+    clearTimeout(this._lastfmRefreshT);
+    this._lastfmRefreshT = setTimeout(async () => {
+      if (this._lastfmRefreshing) {
+        this._musScheduleLastfmRefresh(800);
+        return;
+      }
+      this._lastfmRefreshing = true;
+      try {
+        await this._fetchLastfm({ refresh: true });
+        if (!this._musAddPending) this._reRenderSection("recommendations");
+      } catch (e) {
+        console.warn("[arr-card] suggestion refresh failed:", e);
+      } finally {
+        this._lastfmRefreshing = false;
+      }
+    }, delay);
+  }
+  // The artist behind the plus, and what Lidarr needs to be told before it can
+  // hold one.
+  async _musOpenAdd(mbid2, source = "search") {
+    const artist = this._musUnownedArtist(mbid2);
+    if (!artist) return;
+    const hit = { artist };
+    this._musAddPending = { artist: hit.artist, loading: true, opts: null, source };
+    this._musAddRepaint();
+    const opts = await this._fetchLidarrAddOptions();
+    if (!this._musAddPending) return;
+    this._musAddPending = {
+      source,
+      artist: hit.artist,
+      loading: false,
+      opts,
+      profileId: opts.quality?.[0]?.id ?? 1,
+      metadataId: opts.metadata?.[0]?.id ?? 1,
+      rootFolder: opts.rootFolders?.[0]?.path || "",
+      // Adding an act should not pull its back catalogue by surprise; the
+      // discography in the detail is where albums are chosen.
+      monitor: "future",
+      busy: false
+    };
+    this._musAddRepaint();
+  }
+  // The overlay lives in whichever row it was opened from.
+  _musAddRepaint() {
+    if (this._musAddPending?.source === "lastfm") this._reRenderSection("recommendations");
+    else this._reRenderSearchResults();
+  }
+  _wireMusAddSelects(root) {
+    root?.querySelectorAll(".mus-add-overlay select").forEach((sel) => {
+      if (sel._musWired) return;
+      sel._musWired = true;
+      sel.addEventListener("change", () => {
+        this._tbSyncSelect(sel);
+        const p = this._musAddPending;
+        if (!p) return;
+        if (sel.id === "mus-add-profile") p.profileId = sel.value;
+        if (sel.id === "mus-add-monitor") p.monitor = sel.value;
+        if (sel.id === "mus-add-meta") p.metadataId = sel.value;
+        if (sel.id === "mus-add-root") p.rootFolder = sel.value;
+      });
+    });
+  }
+  async _musConfirmAdd() {
+    const p = this._musAddPending;
+    if (!p || p.busy || !p.artist) return;
+    const root = this.shadowRoot;
+    const _val = (id, fallback) => root.querySelector(`#${id}`)?.value ?? fallback;
+    p.profileId = _val("mus-add-profile", p.profileId);
+    p.monitor = _val("mus-add-monitor", p.monitor);
+    p.metadataId = _val("mus-add-meta", p.metadataId);
+    p.rootFolder = _val("mus-add-root", p.rootFolder);
+    p.busy = true;
+    this._musAddRepaint();
+    const src = p.source;
+    try {
+      const res = await this._addLidarrArtist(p.artist, p);
+      const mbid2 = String(p.artist?.foreignArtistId || "").toLowerCase();
+      if (mbid2) {
+        this._musAdded.add(mbid2);
+        this._musAddedEntries = this._musAddedEntries || /* @__PURE__ */ new Map();
+        const kept = (this._lastfm || []).find((r) => String(r.artist?.foreignArtistId || "").toLowerCase() === mbid2) || { artist: p.artist, score: 0, seed: "" };
+        this._musAddedEntries.set(mbid2, kept);
+      }
+      await this._fetchLidarrQueue();
+      p.busy = false;
+      p.done = true;
+      this._musAddRepaint();
+      await new Promise((r) => setTimeout(r, 900));
+      if (this._musAddPending !== p) return;
+      this._musAddPending = null;
+      if (src === "lastfm") this._reRenderSection("recommendations");
+      else this._reRenderSearchResults();
+      if (res?.id && this._musicModal?.preview === mbid2) this._openMusicModal(res.id);
+      this._musScheduleLastfmRefresh();
+    } catch (e) {
+      const already = JSON.stringify(e?.body || "").includes("ArtistExistsValidator");
+      if (already) {
+        const mbid2 = String(p.artist?.foreignArtistId || "").toLowerCase();
+        this._lidarrArtistsAt = 0;
+        await this._fetchLidarrArtists();
+        if (mbid2) {
+          this._musAdded.add(mbid2);
+          this._musAddedEntries = this._musAddedEntries || /* @__PURE__ */ new Map();
+          const kept = (this._lastfm || []).find((r) => String(r.artist?.foreignArtistId || "").toLowerCase() === mbid2) || { artist: p.artist, score: 0, seed: "" };
+          this._musAddedEntries.set(mbid2, kept);
+        }
+        await this._fetchLidarrQueue();
+        p.busy = false;
+        p.done = true;
+        this._musAddRepaint();
+        await new Promise((r) => setTimeout(r, 900));
+        if (this._musAddPending !== p) return;
+        this._musAddPending = null;
+        if (src === "lastfm") this._reRenderSection("recommendations");
+        else this._reRenderSearchResults();
+        return;
+      }
+      console.error("[arr-card] Lidarr add failed:", e);
+      if (this._musAddPending) {
+        this._musAddPending.busy = false;
+        this._musAddRepaint();
+      }
+    }
+  }
+  async _openAlbumModal(album) {
+    if (!album?.id) return;
+    if (this._calendarModalOpen) {
+      this._albumCalReturn = true;
+      this._calendarModalOpen = false;
+      this._renderCalendarModalEl();
+    }
+    const artist = this._lidarrArtists?.get(album.artistId) || album.artist || {};
+    this._albumModal = { albumId: album.id, album, artist, tracks: null };
+    this._renderAlbumModalEl();
+    try {
+      const list = await this._callApi("GET", `arr_stack/lidarr/tracks?albumId=${album.id}`);
+      if (this._albumModal?.albumId !== album.id) return;
+      this._albumModal.tracks = Array.isArray(list) ? list : [];
+    } catch (e) {
+      console.warn("[arr-card] Lidarr tracks failed:", e);
+      if (this._albumModal?.albumId === album.id) this._albumModal.tracks = [];
+    }
+    this._renderAlbumModalEl();
+  }
+  // The record the tile was drawn from, wherever it came from — the row's
+  // calendar or the modal's own window.
+  // A calendar tile is an album, but what the reader wants behind it is the
+  // artist — the discography, the monitoring, the search. The album detail is
+  // still one click further in, from its own row.
+  _openCalAlbumArtist(albumId) {
+    const album = this._calAlbumById(albumId);
+    const artistId = album?.artistId || album?.artist?.id;
+    if (artistId) this._openMusicModal(Number(artistId));
+    else if (album) this._openAlbumModal(album);
+  }
+  _calAlbumById(id) {
+    return (this._calendar || []).find((e) => e._mediaType === "music" && e.id === id) || (this._calendarModalData || []).find((e) => e._mediaType === "music" && e.id === id) || null;
+  }
+  _closeAlbumModal() {
+    this._albumModal = null;
+    this._renderAlbumModalEl();
+    if (this._albumCalReturn) {
+      this._albumCalReturn = false;
+      this._calendarModalOpen = true;
+      this._renderCalendarModalEl();
+    }
+  }
+  _renderAlbumModalEl() {
+    const root = this.shadowRoot;
+    if (!root) return;
+    root.querySelector("[data-album-modal]")?.remove();
+    if (!this._albumModal) return;
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._albumModalHtml();
+    const el = wrap.firstElementChild;
+    if (!el) return;
+    root.appendChild(el);
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("[data-album-close]") || e.target === el) {
+        this._closeAlbumModal();
+      }
+    });
+  }
+  async _openMusicModal(artistId, { stream = null } = {}) {
+    if (!artistId) return;
+    this._markActivated();
+    const artist = this._lidarrArtists?.get(artistId) || (this._lidarrArtistFeed || []).find((e) => e.id === artistId)?.artist || null;
+    if (!artist) return;
+    this._musPanelH = null;
+    this._musDescH = null;
+    this._musAlbH = null;
+    this._musQueueSigLast = null;
+    this._musicModal = { artistId, artist, albums: [], loading: true, stream };
+    this._renderMusicModalEl();
+    const [full, albums] = await Promise.all([
+      this._fetchLidarrArtist(artistId),
+      this._fetchLidarrDiscography(artistId),
+      this._fetchLidarrQueue()
+    ]);
+    if (full && this._musicModal?.artistId === artistId) this._musicModal.artist = full;
+    if (this._musicModal?.artistId !== artistId) return;
+    this._musicModal.albums = albums;
+    this._musicModal.loading = false;
+    this._renderMusicModalEl();
+  }
+  async _musOpenAlbum(albumId) {
+    const m = this._musicModal;
+    if (!m || !albumId) return;
+    if (!m.search) {
+      m.search = { mode: "is", searched: /* @__PURE__ */ new Set(), grabbed: /* @__PURE__ */ new Set() };
+      m.menu = null;
+    } else {
+      m.search.mode = "is";
+    }
+    await this._musPickAlbum(albumId);
+    requestAnimationFrame(() => {
+      const row = this.shadowRoot?.querySelector(`[data-music-modal] [data-album-row="${albumId}"]`);
+      row?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }
+  async _musPickAlbum(albumId) {
+    const m = this._musicModal;
+    const sp = m?.search;
+    if (!sp || !albumId) return;
+    const album = (m.albums || []).find((a) => a.id === albumId);
+    if (sp.mode === "as") {
+      sp.busyAlbum = albumId;
+      this._renderMusicModalEl();
+      try {
+        await this._callApi("POST", "arr_stack/lidarr/command", { name: "AlbumSearch", albumIds: [albumId] });
+        sp.searched = sp.searched || /* @__PURE__ */ new Set();
+        sp.searched.add(albumId);
+      } catch (e) {
+        console.error("[arr-card] Lidarr album search error:", e);
+      }
+      sp.busyAlbum = null;
+      this._renderMusicModalEl();
+      return;
+    }
+    if (sp.albumId === albumId) {
+      sp.albumId = null;
+      sp.state = null;
+      sp.results = [];
+      this._renderMusicModalEl();
+      return;
+    }
+    sp.state = "loading";
+    sp.albumId = albumId;
+    sp.albumTitle = album?.title || "";
+    this._renderMusicModalEl();
+    try {
+      const res = await this._callApi("GET", `arr_stack/lidarr/release?albumId=${albumId}`);
+      if (this._musicModal?.search !== sp) return;
+      sp.results = (Array.isArray(res) ? res : []).sort((a, b) => (b.customFormatScore ?? 0) - (a.customFormatScore ?? 0) || (b.seeders ?? 0) - (a.seeders ?? 0));
+      sp.state = "results";
+    } catch (e) {
+      sp.state = "error";
+      sp.error = e?.body?.message || String(e?.error || e);
+    }
+    this._renderMusicModalEl();
+  }
+  // Same gesture and threshold the poster rows use, so paging the covers feels
+  // like paging anything else in the card.
+  _wireMusSwipe(el) {
+    const wrap = el?.querySelector(".mus-alb-wrap");
+    if (!wrap) return;
+    const THRESHOLD = 40;
+    let startX = null;
+    wrap.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+    }, { passive: true });
+    wrap.addEventListener("touchend", (e) => {
+      if (startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      startX = null;
+      if (Math.abs(dx) < THRESHOLD) return;
+      const m = this._musicModal;
+      if (!m) return;
+      const per = Math.max(2, (m.cols || 4) * 2);
+      const pages = Math.max(1, Math.ceil((m.albums || []).length / per));
+      const cur = m.albPage || 0;
+      const next = dx < 0 ? cur + 1 : cur - 1;
+      if (next < 0 || next > pages - 1) return;
+      m.albPage = next;
+      this._renderMusicModalEl();
+    }, { passive: true });
+  }
+  // How many covers fit across is a layout answer, not a guess: read it from the
+  // grid the browser has just laid out, and only redraw if the page size changed.
+  _musMeasureCols(el) {
+    const grid = el?.querySelector(".mus-alb-grid");
+    const tile = el?.querySelector(".mus-alb");
+    const m = this._musicModal;
+    if (!grid || !m) return;
+    const cols = getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length;
+    const tileH = tile?.getBoundingClientRect().height || 0;
+    const wrap = el.querySelector(".mus-alb-wrap") || grid;
+    const rows = this._isMob || !tileH ? 2 : Math.max(1, Math.floor((wrap.getBoundingClientRect().height + 12) / (tileH + 12)));
+    if ((!cols || cols === m.cols) && rows === m.rows) return;
+    const per = Math.max(2, (cols || m.cols || 4) * rows);
+    const pages = Math.max(1, Math.ceil((m.albums?.length || 0) / per));
+    m.albPage = Math.min(m.albPage || 0, pages - 1);
+    if (cols) m.cols = cols;
+    m.rows = rows;
+    this._renderMusicModalEl();
+  }
+  // Opens reaching up to just under the header rather than to its own content
+  // height, so two albums fill the modal the same as twenty. Once dragged, the
+  // height the user chose wins.
+  _musSizePanel(el) {
+    const panel = el?.querySelector(".mus-search");
+    const body = el?.querySelector(".mus-modal-body");
+    const head = el?.querySelector(".mus-content");
+    if (!panel || !body) return;
+    const h = this._musPanelH || Math.round(
+      body.getBoundingClientRect().bottom - (head?.getBoundingClientRect().bottom ?? 0) - 8
+    );
+    if (h > 80) {
+      panel.style.height = `${h}px`;
+      this._musPanelH = h;
+    }
+  }
+  // The grabber trades height between the sources panel and the discography.
+  // Applied inline while dragging rather than through a re-render — repainting
+  // the release table on every pointer move is what makes that feel sticky.
+  _wireMusPanelDrag(el) {
+    const handle = el.querySelector("[data-mus-grab-handle]");
+    const panel = el.querySelector(".mus-search");
+    if (!handle || !panel) return;
+    const glass = panel.closest(".popup-glass");
+    handle.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      const startY = ev.clientY;
+      const startH = panel.getBoundingClientRect().height;
+      const max = Math.max(200, (glass?.getBoundingClientRect().height || 600) * 0.7);
+      handle.classList.add("is-dragging");
+      handle.setPointerCapture(ev.pointerId);
+      const move = (e) => {
+        const h = Math.round(Math.min(max, Math.max(120, startH - (e.clientY - startY))));
+        panel.style.height = `${h}px`;
+        this._musPanelH = h;
+      };
+      const up = (e) => {
+        handle.classList.remove("is-dragging");
+        try {
+          handle.releasePointerCapture(ev.pointerId);
+        } catch (_) {
+        }
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", up);
+      };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", up);
+    });
+  }
+  // Two rows of covers is what the sheet opens on: measured once from a real
+  // tile, since a cover's height depends on how many fit across. A drag then
+  // sets the height and that is what the modal keeps.
+  _musFitAlbums(el) {
+    if (!el?.isConnected) return;
+    if (this._musAlbH != null || this._isMob) return;
+    const albums = el?.querySelector(".mus-albums");
+    const tile = el?.querySelector(".mus-alb");
+    const grab = el?.querySelector(".mus-alb-grab");
+    if (!albums || !tile) return;
+    const rowGap = 12;
+    const chrome = (grab?.getBoundingClientRect().height || 0) + 8 + 18;
+    const rows = this._musicModal?.stream ? 1 : 2;
+    const h = Math.round(tile.getBoundingClientRect().height * rows + rowGap * (rows - 1) + chrome);
+    const max = this._musAlbMax(el);
+    this._musAlbH = Math.max(120, Math.min(max, h));
+    albums.style.height = `${this._musAlbH}px`;
+  }
+  // As far up as the backdrop, which is where the sources panel stops too.
+  _musAlbMax(el) {
+    const body = el?.querySelector(".mus-modal-body");
+    const back = el?.querySelector(".mus-backdrop");
+    if (!body) return 400;
+    const bottom = body.getBoundingClientRect().bottom;
+    const top = back?.getBoundingClientRect().bottom ?? body.getBoundingClientRect().top;
+    return Math.max(160, Math.round(bottom - top));
+  }
+  // The grabber the sources panel has, on the discography — applied inline
+  // while dragging for the same reason: repainting a page of covers on every
+  // pointer move is what makes it feel sticky.
+  _wireMusAlbDrag(el) {
+    const handle = el.querySelector("[data-mus-alb-handle]");
+    const panel = el.querySelector(".mus-albums");
+    if (!handle || !panel) return;
+    handle.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      const startY = ev.clientY;
+      const startH = panel.getBoundingClientRect().height;
+      const max = this._musAlbMax(el);
+      handle.classList.add("is-dragging");
+      handle.setPointerCapture(ev.pointerId);
+      const move = (e) => {
+        const h = Math.round(Math.min(max, Math.max(120, startH - (e.clientY - startY))));
+        panel.style.height = `${h}px`;
+        this._musAlbH = h;
+      };
+      const up = () => {
+        handle.classList.remove("is-dragging");
+        try {
+          handle.releasePointerCapture(ev.pointerId);
+        } catch (_) {
+        }
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", up);
+        const m = this._musicModal;
+        if (m) m.rows = null;
+        this._renderMusicModalEl();
+      };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", up);
+    });
+  }
+  // Monitoring, from the bookmark. Lidarr wants the whole record back rather
+  // than a patch, the same as the menu entry that used to do this.
+  async _musToggleArtist() {
+    const m = this._musicModal;
+    if (!m?.artist) return;
+    this._markActivated();
+    const next = { ...m.artist, monitored: !m.artist.monitored };
+    m.artist = next;
+    this._renderMusicModalEl();
+    try {
+      await this._callApi("PUT", `arr_stack/lidarr/artist/${m.artistId}`, next);
+    } catch (e) {
+      console.error("[arr-card] Lidarr monitor error:", e);
+      if (this._musicModal?.artistId === m.artistId) {
+        this._musicModal.artist = { ...next, monitored: !next.monitored };
+        this._renderMusicModalEl();
+      }
+      return;
+    }
+    const full = await this._fetchLidarrArtist(m.artistId);
+    if (full && this._musicModal?.artistId === m.artistId) {
+      this._musicModal.artist = full;
+      this._renderMusicModalEl();
+    }
+  }
+  // The library, on Music, on the page this artist is actually on — the same
+  // trip Show in library makes for a film.
+  _musShowInLibrary() {
+    const id = this._musicModal?.artistId;
+    this._closeMusicModal();
+    this._libReturnState = null;
+    this._openLibModal("music");
+    const m = this._libModal;
+    if (!m || !id) return;
+    m.typeKey = "music";
+    m.qualityKey = null;
+    m.search = "";
+    m.page = 0;
+    const el = this.shadowRoot.querySelector("[data-lib-modal]");
+    const body = el?.querySelector("#lib-body");
+    if (!body) return;
+    body.innerHTML = this._libBodyHtml();
+    this._wireLibModalBody(el);
+    const idx = (this._libFilteredItems() || []).findIndex((i) => i.id === id);
+    const per = m._perPage || 0;
+    if (idx >= 0 && per > 0) {
+      const page = Math.floor(idx / per);
+      if (page !== m.page) {
+        m.page = page;
+        body.innerHTML = this._libBodyHtml();
+        this._wireLibModalBody(el);
+      }
+    }
+    this._libFlashArtist = id;
+    body.innerHTML = this._libBodyHtml();
+    this._wireLibModalBody(el);
+    requestAnimationFrame(() => {
+      this.shadowRoot.querySelector(`[data-lib-modal] [data-artist-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
+    });
+    clearTimeout(this._libFlashTimer);
+    this._libFlashTimer = setTimeout(() => {
+      this._libFlashArtist = null;
+      const b = this.shadowRoot.querySelector("[data-lib-modal] #lib-body");
+      const e2 = this.shadowRoot.querySelector("[data-lib-modal]");
+      if (b && this._libModal) {
+        b.innerHTML = this._libBodyHtml();
+        this._wireLibModalBody(e2);
+      }
+    }, 2400);
+  }
+  // Patches one drawer in place: a re-render would close the menu the moment
+  // its contents arrived.
+  _musPatchDrawer(kind) {
+    if (this._musicModal?.menuSub !== kind) return;
+    const el = this.shadowRoot?.querySelector("[data-music-modal] .qa-drawer");
+    if (!el) return;
+    el.innerHTML = kind === "cast" ? this._musCastRowsHtml() : this._musStatsRowsHtml();
+  }
+  async _musCast(entityId) {
+    const m = this._musicModal;
+    const name = m?.artist?.artistName;
+    if (!entityId || !name) return;
+    this._musCastErr = null;
+    try {
+      const hit = await this._callApi("GET", `arr_stack/plex/artist?name=${encodeURIComponent(name)}`);
+      if (!hit?.plex_key) throw new Error("artist not on Plex");
+      const contentId = {};
+      if (hit.library) contentId.library_name = hit.library;
+      if (hit.title) contentId.artist_name = hit.title;
+      await this._hass.callService("media_player", "play_media", {
+        entity_id: entityId,
+        media_content_type: "plex",
+        media_content_id: JSON.stringify(contentId)
+      });
+      m.menu = null;
+      m.menuSub = null;
+      this._renderMusicModalEl();
+    } catch (err) {
+      console.warn("[arr-card] Plex cast refused:", err?.message || err);
+    }
+  }
+  async _musToggleTracks(albumId) {
+    const sp = this._musicModal?.search;
+    if (!sp) return;
+    sp.tracks = sp.tracks || /* @__PURE__ */ new Map();
+    if (sp.expanded === albumId) {
+      sp.expanded = null;
+      this._renderMusicModalEl();
+      return;
+    }
+    sp.expanded = albumId;
+    this._renderMusicModalEl();
+    if (sp.tracks.has(albumId)) return;
+    try {
+      const list = await this._callApi("GET", `arr_stack/lidarr/tracks?albumId=${albumId}`);
+      sp.tracks.set(albumId, Array.isArray(list) ? list : []);
+    } catch (e) {
+      console.error("[arr-card] Lidarr tracks error:", e);
+      sp.tracks.set(albumId, []);
+    }
+    if (this._musicModal?.search === sp) this._renderMusicModalEl();
+  }
+  async _musDeleteFiles(albumId) {
+    const m = this._musicModal;
+    const sp = m?.search;
+    if (!sp) return;
+    sp.delConfirm = null;
+    sp.delBusy = albumId;
+    this._renderMusicModalEl();
+    try {
+      const files = await this._callApi("GET", `arr_stack/lidarr/trackfiles?albumId=${albumId}`);
+      const ids = (Array.isArray(files) ? files : []).map((f) => f.id).filter(Boolean);
+      if (ids.length) {
+        await this._callApi("DELETE", `arr_stack/lidarr/trackfiles?ids=${ids.join(",")}`);
+      }
+      const fresh = await this._fetchLidarrDiscography(m.artistId);
+      if (this._musicModal?.artistId === m.artistId && fresh.length) m.albums = fresh;
+      sp.tracks?.delete(albumId);
+    } catch (e) {
+      console.error("[arr-card] Lidarr delete files error:", e);
+    }
+    sp.delBusy = null;
+    this._renderMusicModalEl();
+  }
+  async _musToggleAlbum(albumId) {
+    const m = this._musicModal;
+    const sp = m?.search;
+    const album = (m?.albums || []).find((a) => a.id === albumId);
+    if (!sp || !album) return;
+    sp.monBusy = albumId;
+    this._renderMusicModalEl();
+    try {
+      const next = { ...album, monitored: !album.monitored };
+      await this._callApi("PUT", `arr_stack/lidarr/album/${albumId}`, next);
+      m.albums = m.albums.map((a) => a.id === albumId ? next : a);
+    } catch (e) {
+      console.error("[arr-card] Lidarr album monitor error:", e);
+    }
+    sp.monBusy = null;
+    this._renderMusicModalEl();
+  }
+  async _musGrab(guid) {
+    const sp = this._musicModal?.search;
+    if (!sp) return;
+    const release = (sp.results || []).find((r) => r.guid === guid);
+    if (!release) return;
+    sp.grabbing = guid;
+    this._renderMusicModalEl();
+    try {
+      await this._callApi("POST", "arr_stack/lidarr/release", { ...release, albumId: sp.albumId });
+      sp.grabbed = sp.grabbed || /* @__PURE__ */ new Set();
+      sp.grabbed.add(guid);
+    } catch (e) {
+      console.error("[arr-card] Lidarr grab error:", e);
+    }
+    sp.grabbing = null;
+    this._renderMusicModalEl();
+    for (const ms of [0, 2e3, 5e3, 1e4, 2e4]) {
+      setTimeout(async () => {
+        if (!this._musicModal) return;
+        await this._fetchLidarrQueue();
+        if (this._musicModal) this._renderMusicModalEl();
+        this._reRenderSection?.("recentlyRequested");
+      }, ms);
+    }
+  }
+  // The dropdown belongs under the button that opened it. Anchored in script
+  // for the same reason the film popup does it: the three triggers sit in a
+  // flex capsule whose widths shift with state, so no fixed offset holds.
+  _musPositionMenu(el) {
+    const menu = el?.querySelector(".mus-menu");
+    if (!menu) return;
+    const glass = menu.closest(".popup-glass");
+    const trigger = el.querySelector(`[data-mus-menu="${this._musicModal?.menu}"]`);
+    if (!glass || !trigger) return;
+    const g = glass.getBoundingClientRect();
+    const b = trigger.getBoundingClientRect();
+    const w = menu.getBoundingClientRect().width;
+    const PAD = 12;
+    const left = Math.max(PAD, Math.min(b.left - g.left, g.width - w - PAD));
+    menu.style.left = `${Math.round(left)}px`;
+    menu.style.right = "auto";
+    menu.style.top = `${Math.round(b.bottom - g.top + 6)}px`;
+  }
+  async _musAction(act) {
+    const m = this._musicModal;
+    if (!m) return;
+    const id = m.artistId;
+    this._markActivated();
+    m.menu = null;
+    m.busy = act.startsWith("search") ? "search" : act.startsWith("remove") ? "remove" : "actions";
+    this._renderMusicModalEl();
+    try {
+      if (act === "as" || act === "is") {
+        m.busy = null;
+        if (m.preview) {
+          if (act === "is") {
+            m.search = { mode: "is", confirmAdd: true, searched: /* @__PURE__ */ new Set(), grabbed: /* @__PURE__ */ new Set() };
+            this._renderMusicModalEl();
+            return;
+          }
+          m.search = { mode: "as", adding: true, searched: /* @__PURE__ */ new Set(), grabbed: /* @__PURE__ */ new Set() };
+          this._renderMusicModalEl();
+          const id2 = await this._musAddFromPreview();
+          if (!id2) return;
+          const nm = this._musicModal;
+          if (nm) nm.search = { mode: "as", searched: /* @__PURE__ */ new Set(), grabbed: /* @__PURE__ */ new Set() };
+          this._renderMusicModalEl();
+          return;
+        }
+        m.search = { mode: act, searched: /* @__PURE__ */ new Set(), grabbed: /* @__PURE__ */ new Set() };
+        this._renderMusicModalEl();
+        return;
+      }
+      if (act === "add-yes") {
+        m.busy = null;
+        const want = m.search?.wantAlbum || null;
+        if (m.search) {
+          m.search.confirmAdd = false;
+          m.search.adding = true;
+        }
+        this._renderMusicModalEl();
+        const id2 = await this._musAddFromPreview();
+        if (!id2 || !this._musicModal) return;
+        this._musicModal.search = { mode: "is", searched: /* @__PURE__ */ new Set(), grabbed: /* @__PURE__ */ new Set() };
+        this._renderMusicModalEl();
+        if (want) {
+          const norm = (t) => String(t || "").toLowerCase().replace(/\s+/g, " ").trim();
+          const hit = (this._musicModal.albums || []).find((a) => norm(a.title) === norm(want));
+          if (hit?.id) this._musOpenAlbum(hit.id);
+        }
+        return;
+      }
+      if (act === "add-no") {
+        m.busy = null;
+        m.search = null;
+        this._renderMusicModalEl();
+        return;
+      }
+      if (act === "show-in-lib") {
+        m.busy = null;
+        this._musShowInLibrary();
+        return;
+      }
+      if (act === "cast" || act === "stats") {
+        m.busy = null;
+        m.menu = "actions";
+        m.menuSub = m.menuSub === act ? null : act;
+        this._renderMusicModalEl();
+        if (m.menuSub === "cast") this._fetchPlexClients({ silent: true, maxAge: 3e4 }).then(() => this._musPatchDrawer("cast"));
+        if (m.menuSub === "stats") this._musLoadStats();
+        return;
+      }
+      if (act === "search-missing") {
+        await this._callApi("POST", "arr_stack/lidarr/command", { name: "ArtistSearch", artistId: id });
+      } else if (act === "refresh") {
+        await this._callApi("POST", "arr_stack/lidarr/command", { name: "RefreshArtist", artistId: id });
+      } else if (act === "monitor" || act === "unmonitor") {
+        const next = { ...m.artist, monitored: act === "monitor" };
+        await this._callApi("PUT", `arr_stack/lidarr/artist/${id}`, next);
+        m.artist = next;
+      } else if (act === "remove-lib" || act === "remove-disc") {
+        const files = act === "remove-disc" ? "true" : "false";
+        await this._callApi("DELETE", `arr_stack/lidarr/artist/${id}?deleteFiles=${files}`);
+        this._closeMusicModal();
+        this._musForgetArtist(id);
+        return;
+      }
+    } catch (e) {
+      console.error("[arr-card] Lidarr action error:", act, e);
+    }
+    if (this._musicModal?.artistId !== id) return;
+    this._musicModal.busy = null;
+    const full = await this._fetchLidarrArtist(id);
+    if (full && this._musicModal?.artistId === id) this._musicModal.artist = full;
+    this._renderMusicModalEl();
+  }
+  // A deleted artist is still sitting in every list the card holds — the
+  // library grid, Recently Requested, the recently added row, the queue tally,
+  // the Last.fm card marked as added — and the next poll is minutes away. Drop
+  // it from all of them at once rather than leaving posters that 404 on click.
+  _musForgetArtist(id) {
+    this._lidarrArtists?.delete(id);
+    this._lidarrArtistFeed = (this._lidarrArtistFeed || []).filter((e) => e.id !== id);
+    this._lidarrQueueArtists?.delete(id);
+    for (const [mbid2, row] of this._musAddedEntries || /* @__PURE__ */ new Map()) {
+      if ((row?.artist?.id ?? row?.id) === id) {
+        this._musAddedEntries.delete(mbid2);
+        this._musAdded?.delete(mbid2);
+      }
+    }
+    this._reRenderSection?.("recentlyAdded");
+    const libEl = this.shadowRoot?.querySelector("[data-lib-modal]");
+    if (libEl && this._libModal) this._libRerenderBody?.(libEl);
+  }
+  // What the modal draws from the download queue: whether each of its albums is
+  // in it and how far along, plus the artist's own furthest album.
+  _musStreamAction(el, ev) {
+    const eid = el.dataset.entity;
+    const act = el.dataset.action;
+    if (!eid) return;
+    const st = this._hass?.states?.[eid];
+    const feats = st?.attributes?.supported_features || 0;
+    if (act === "stream-seek") {
+      const rect = el.getBoundingClientRect();
+      const x = ev.clientX ?? ev.changedTouches?.[0]?.clientX ?? 0;
+      const dur = parseFloat(el.dataset.dur);
+      if (dur > 0) {
+        const next = Math.max(0, Math.min(1, (x - rect.left) / rect.width)) * dur;
+        this._updateStreamFills(eid, next, dur);
+        this._doSeek(eid, next);
+      }
+      return;
+    }
+    if (act === "stream-playpause") {
+      const playing = st?.state === "playing";
+      const svc = playing ? feats & 1 ? "media_pause" : feats & 16384 ? "media_play_pause" : null : feats & 16384 ? "media_play" : feats & 1 ? "media_play_pause" : null;
+      if (svc) {
+        try {
+          this._hass.callService("media_player", svc, { entity_id: eid });
+        } catch (_) {
+        }
+      }
+      el.innerHTML = `<ha-icon icon="mdi:${playing ? "play" : "pause"}" style="--mdc-icon-size:26px"></ha-icon>`;
+      return;
+    }
+    if (act === "stream-prev" || act === "stream-next") {
+      const svc = act === "stream-prev" ? "media_previous_track" : "media_next_track";
+      try {
+        this._hass.callService("media_player", svc, { entity_id: eid });
+      } catch (_) {
+      }
+      setTimeout(() => {
+        if (this._musicModal?.stream === eid) this._renderMusicModalEl();
+      }, 1500);
+      return;
+    }
+  }
+  _musQueueSig() {
+    const m = this._musicModal;
+    if (!m) return "";
+    const albums = (m.albums || []).map((a) => `${a.id}:${this._lidarrQueue?.has(a.id) ? 1 : 0}:${this._lidarrQueuePct?.get(a.id) ?? ""}`).join(",");
+    return `${this._lidarrQueueArtists?.get(m.artistId) ?? ""}|${albums}`;
+  }
+  _closeMusicModal() {
+    this._musQueueSigLast = null;
+    this._musicModal = null;
+    this.shadowRoot?.querySelector("[data-music-modal]")?.remove();
+  }
+  _renderMusicModalEl() {
+    const root = this.shadowRoot;
+    if (!root) return;
+    const prev = root.querySelector("[data-music-modal]");
+    const keepScroll = prev?.querySelector(".sn-seasons-rows")?.scrollTop || 0;
+    prev?.remove();
+    if (!this._musicModal) return;
+    const wrap = document.createElement("div");
+    wrap.innerHTML = this._musicModalHtml();
+    const el = wrap.firstElementChild;
+    if (!el) return;
+    root.appendChild(el);
+    if (keepScroll) {
+      const rows = el.querySelector(".sn-seasons-rows");
+      if (rows) rows.scrollTop = keepScroll;
+    }
+    requestAnimationFrame(() => {
+      this._musPositionMenu(el);
+      this._musSizePanel(el);
+      this._musFitAlbums(el);
+      this._musMeasureCols(el);
+    });
+    this._wireMusPanelDrag(el);
+    this._wireMusAlbDrag(el);
+    this._wireMusSwipe(el);
+    el.addEventListener("click", (e) => {
+      const menuBtn = e.target.closest("[data-mus-menu]");
+      if (menuBtn) {
+        e.stopPropagation();
+        const kind = menuBtn.dataset.musMenu;
+        if (kind === "search" && this._musicModal.search) {
+          this._musicModal.search = null;
+          this._musicModal.menu = null;
+        } else {
+          this._musicModal.menu = this._musicModal.menu === kind ? null : kind;
+          if (!this._musicModal.menu) this._musicModal.menuSub = null;
+        }
+        this._renderMusicModalEl();
+        return;
+      }
+      const act = e.target.closest("[data-mus-act]");
+      if (act) {
+        e.stopPropagation();
+        this._musAction(act.dataset.musAct);
+        return;
+      }
+      const prevTile = e.target.closest("[data-mus-prev-album]");
+      if (prevTile) {
+        e.stopPropagation();
+        const m = this._musicModal;
+        if (!m?.preview) return;
+        m.search = {
+          mode: "is",
+          confirmAdd: true,
+          wantAlbum: prevTile.dataset.musPrevAlbum,
+          searched: /* @__PURE__ */ new Set(),
+          grabbed: /* @__PURE__ */ new Set()
+        };
+        this._renderMusicModalEl();
+        return;
+      }
+      const tile = e.target.closest(".mus-alb[data-album-id]");
+      if (tile) {
+        e.stopPropagation();
+        this._musOpenAlbum(Number(tile.dataset.albumId));
+        return;
+      }
+      const pg = e.target.closest("[data-mus-page]");
+      if (pg) {
+        e.stopPropagation();
+        const dir = pg.dataset.musPage === "next" ? 1 : -1;
+        this._musicModal.albPage = Math.max(0, (this._musicModal.albPage || 0) + dir);
+        this._renderMusicModalEl();
+        return;
+      }
+      const exp = e.target.closest("[data-mus-expand]");
+      if (exp) {
+        e.stopPropagation();
+        this._musToggleTracks(Number(exp.dataset.musExpand));
+        return;
+      }
+      const delBtn = e.target.closest("[data-mus-del]");
+      if (delBtn) {
+        e.stopPropagation();
+        this._musicModal.search.delConfirm = Number(delBtn.dataset.musDel);
+        this._renderMusicModalEl();
+        return;
+      }
+      if (e.target.closest("[data-mus-del-no]")) {
+        e.stopPropagation();
+        this._musicModal.search.delConfirm = null;
+        this._renderMusicModalEl();
+        return;
+      }
+      const delYes = e.target.closest("[data-mus-del-yes]");
+      if (delYes) {
+        e.stopPropagation();
+        this._musDeleteFiles(Number(delYes.dataset.musDelYes));
+        return;
+      }
+      const strBtn = e.target.closest('[data-action^="stream-"]');
+      if (strBtn) {
+        e.stopPropagation();
+        this._musStreamAction(strBtn, e);
+        return;
+      }
+      const artistMon = e.target.closest(".mus-mon");
+      if (artistMon) {
+        e.stopPropagation();
+        this._musToggleArtist();
+        return;
+      }
+      const castBtn = e.target.closest("[data-mus-cast]");
+      if (castBtn) {
+        e.stopPropagation();
+        this._musCast(castBtn.dataset.musCast);
+        return;
+      }
+      const mon = e.target.closest("[data-mus-mon]");
+      if (mon) {
+        e.stopPropagation();
+        this._musToggleAlbum(Number(mon.dataset.musMon));
+        return;
+      }
+      const pick = e.target.closest("[data-mus-album]");
+      if (pick) {
+        e.stopPropagation();
+        this._musPickAlbum(Number(pick.dataset.musAlbum));
+        return;
+      }
+      const grab = e.target.closest("[data-mus-grab]");
+      if (grab) {
+        e.stopPropagation();
+        this._musGrab(grab.dataset.musGrab);
+        return;
+      }
+      if (e.target.closest("[data-music-close]") || e.target === el) {
+        this._closeMusicModal();
+        this._popupReturn?.();
+      }
+    });
+  }
+};
+var wireMusicMixin = _WireMusicMethods.prototype;
+
 // src/card.js
 var ArrStackCard = class extends HTMLElement {
   constructor() {
@@ -40848,6 +44403,10 @@ var ArrStackCard = class extends HTMLElement {
     this._calendarModalData = [];
     this._calendarModalLoading = false;
     this._calReturnState = false;
+    this._albumModal = null;
+    this._musAddPending = null;
+    this._lidarrAddOpts = null;
+    this._albumCalReturn = false;
     this._calendarTab = localStorage.getItem("arr-cal-tab") || "all";
     this._calendarView = localStorage.getItem("arr-cal-view") === "month" ? "month" : "week";
     this._calendarMonthOffset = 0;
@@ -41075,6 +44634,38 @@ var ArrStackCard = class extends HTMLElement {
     this._pendingRequestedShows = /* @__PURE__ */ new Set();
     this._pendingRequestedMovies = /* @__PURE__ */ new Set();
     this._seerrRequests = null;
+    this._lidarrConfigured = null;
+    this._lastfm = null;
+    try {
+      this._rqType = localStorage.getItem("arr-rq-type") || "all";
+    } catch (_) {
+      this._rqType = "all";
+    }
+    try {
+      this._raType = localStorage.getItem("arr-ra-type") || "all";
+    } catch (_) {
+      this._raType = "all";
+    }
+    try {
+      this._calCatType = localStorage.getItem("arr-cal-type") || "all";
+    } catch (_) {
+      this._calCatType = "all";
+    }
+    try {
+      this._recType = localStorage.getItem("arr-rec-type") || "all";
+    } catch (_) {
+      this._recType = "all";
+    }
+    this._musAdded = /* @__PURE__ */ new Set();
+    this._musAddedEntries = /* @__PURE__ */ new Map();
+    this._lastfmConfigured = false;
+    this._lastfmUserConfigured = false;
+    this._lidarrArtistFeed = null;
+    this._musicModal = null;
+    this._lidarrArtists = /* @__PURE__ */ new Map();
+    this._lidarrQueue = /* @__PURE__ */ new Set();
+    this._lidarrQueuePct = /* @__PURE__ */ new Map();
+    this._lidarrQueueArtists = /* @__PURE__ */ new Map();
     this._searchQuery = "";
     this._searchResults = [];
     this._searchPage = 0;
@@ -41082,7 +44673,7 @@ var ArrStackCard = class extends HTMLElement {
     this._searchActive = false;
     this._searchTimer = null;
     this._searchAbort = null;
-    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, rtorrent: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, streams: 0 };
+    this._pages = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, rtorrent: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, music: 0, lastfm: 0, recommendations: 0, streams: 0 };
     this._pageDir = { radarr: "", sonarr: "", upcoming: "", tvUpcoming: "", calendar: "", trending: "", popular: "", qbit: "", sab: "", pending: "", streams: "" };
     this._streamsTimer = null;
     this._streamPopupTimer = null;
@@ -41270,30 +44861,6 @@ var ArrStackCard = class extends HTMLElement {
   _getSectionOverlayConfig(section) {
     const tmdbUrl = (path) => !path ? null : path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w92${path}`;
     const cfgs = {
-      trakt: {
-        dataKey: "_trakt",
-        icon: "mdi:movie-star-outline",
-        titleKey: "traktRecommended",
-        appKey: "trakt",
-        gradPos: [25, 75, 0.6],
-        apiEndpoint: null,
-        hasTvPending: true,
-        renderCard: (m, i) => this._renderTraktCard(m, i),
-        getPosterUrl: (m) => m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w92${m.posterPath}` : null,
-        emoji: (m) => m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
-      },
-      suggestarr: {
-        dataKey: "_suggestarr",
-        icon: "mdi:lightbulb-on-outline",
-        titleKey: "saRecommended",
-        appKey: "suggestarr",
-        gradPos: [25, 75, 0.6],
-        apiEndpoint: null,
-        hasTvPending: true,
-        renderCard: (m, i) => this._renderSuggestArrCard(m, i),
-        getPosterUrl: (m) => m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w92${m.posterPath}` : null,
-        emoji: (m) => m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
-      },
       trending: {
         dataKey: "_trending",
         icon: "mdi:trending-up",
@@ -41367,9 +44934,24 @@ var ArrStackCard = class extends HTMLElement {
         appKey: this._discoverIconKey(),
         apiEndpoint: null,
         hasTvPending: false,
+        // See More shows what the header peanut is showing, not the raw list.
+        getItems: () => this._raItems(),
         renderCard: (m) => this._renderRecentlyAddedCard(m),
-        getPosterUrl: (m) => m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
-        emoji: (m) => m._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
+        getPosterUrl: (m) => m._mediaType === "music" ? this._lidarrArtistImage(m.artist, "poster") || (m.newestAlbum ? this._lidarrCover(m.newestAlbum) : null) : m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
+        emoji: (m) => m._mediaType === "music" ? "\u{1F3B5}" : m._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
+      },
+      recommendations: {
+        dataKey: "_trakt",
+        icon: "mdi:star-shooting-outline",
+        titleKey: "catRecommendations",
+        appKey: "trakt",
+        gradPos: [25, 75, 0.6],
+        apiEndpoint: null,
+        hasTvPending: true,
+        getItems: () => this._recItems(),
+        renderCard: (m, i) => this._renderRecCard(m, i),
+        getPosterUrl: (m) => m._recSrc === "lastfm" ? this._lidarrArtistImage(m.artist, "poster") : m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w92${m.posterPath}` : null,
+        emoji: (m) => m._recSrc === "lastfm" ? "\u{1F3B5}" : m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
       },
       recentlyRequested: {
         dataKey: "recentlyRequested",
@@ -41504,6 +45086,84 @@ var ArrStackCard = class extends HTMLElement {
   _mcImg(poster, emoji, gradId, phClass = "") {
     return poster ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">` : `<div class="${phClass}${this._grad(gradId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${emoji}</div>`;
   }
+  // Recently Requested's type filter: all, films and shows, or music.
+  // Which of the three feeds the Recommendations row is built from. Trakt and
+  // SuggestArr are chosen in the config; music rides along whenever Lidarr and
+  // Last.fm are both set up, and is switched off with the row's own filter.
+  get _recSources() {
+    return {
+      trakt: this._traktConfigured !== false && this._cfgGet("discover", "recTrakt", true) !== false,
+      suggestarr: this._suggestarrConfigured !== false && this._cfgGet("discover", "recSuggestarr", true) !== false,
+      lastfm: !!this._lastfmConfigured
+    };
+  }
+  // A config saved before the merge still names up to three recommendation
+  // rows and one for music. They read as one Recommendations row, in the place
+  // the first of them held — Trakt's, when it is there.
+  _catConfigMigrated(cats) {
+    const REC = ["trakt", "suggestarr", "lastfm"];
+    const noMusic = cats.filter((c) => c.id !== "music");
+    if (!noMusic.some((c) => REC.includes(c.id))) return noMusic;
+    if (noMusic.some((c) => c.id === "recommendations")) return noMusic.filter((c) => !REC.includes(c.id));
+    const idx = noMusic.findIndex((c) => c.id === "trakt");
+    const slot = idx >= 0 ? idx : noMusic.findIndex((c) => REC.includes(c.id));
+    const enabled = noMusic.some((c) => REC.includes(c.id) && c.enabled !== false);
+    const out = noMusic.filter((c) => !REC.includes(c.id));
+    out.splice(Math.min(slot, out.length), 0, { id: "recommendations", enabled });
+    return out;
+  }
+  get _recTypeSaved() {
+    const v = this._recType || "all";
+    return ["all", "video", "music"].includes(v) ? v : "all";
+  }
+  // Trakt and SuggestArr are dealt out one apiece so neither takes the row on
+  // its own; music follows, in the order Last.fm gave it.
+  _recItems() {
+    const src = this._recSources;
+    const tk = src.trakt ? this._trakt || [] : [];
+    const sa = src.suggestarr ? this._suggestarr || [] : [];
+    const video = [];
+    for (let i = 0; i < Math.max(tk.length, sa.length); i++) {
+      if (tk[i]) video.push({ ...tk[i], _recSrc: "trakt" });
+      if (sa[i]) video.push({ ...sa[i], _recSrc: "suggestarr" });
+    }
+    const music = src.lastfm ? (this._lastfmRowItems() || []).map((e) => ({ ...e, _recSrc: "lastfm", _mediaType: "music" })) : [];
+    const t = music.length ? this._recTypeSaved : "all";
+    if (t === "music") return music;
+    if (t === "video") return video;
+    const lanes = [
+      video.filter((m) => m.mediaType !== "tv"),
+      video.filter((m) => m.mediaType === "tv"),
+      music
+    ].filter((l) => l.length);
+    if (lanes.length < 2) return [...video, ...music];
+    const out = [];
+    for (let i = 0; out.length < video.length + music.length; i++) {
+      for (const lane of lanes) if (lane[i]) out.push(lane[i]);
+    }
+    return out;
+  }
+  get _calCatTypeSaved() {
+    const v = this._calCatType || "all";
+    return ["all", "video", "music"].includes(v) ? v : "all";
+  }
+  // The calendar row through its header peanut, the same three choices the
+  // other rows carry.
+  _calCatItems() {
+    const all = this._calendar || [];
+    const t = this._lidarrConfigured !== false ? this._calCatTypeSaved : "all";
+    if (t === "music") return all.filter((e) => e._mediaType === "music");
+    if (t === "video") return all.filter((e) => e._mediaType !== "music");
+    return all;
+  }
+  get _raTypeSaved() {
+    const v = this._raType || "all";
+    return ["all", "video", "music"].includes(v) ? v : "all";
+  }
+  get _rqTypeSaved() {
+    const v = this._rqType || "all";
+    return ["all", "video", "music"].includes(v) ? v : "all";
+  }
   _posterCfg() {
     return {
       title: this._cfgGet("posters", "showTitle", true) !== false,
@@ -41518,9 +45178,18 @@ var ArrStackCard = class extends HTMLElement {
       langDisplay: this._cfgGet("posters", "langDisplay", "flags")
     };
   }
-  _dlPct(id, type = "movie") {
+  // `inst` says which instance the id belongs to. Without it both maps are
+  // tried in order, and two instances number their libraries from 1 apiece —
+  // so an id that exists in both answers with the wrong film's progress.
+  _dlPct(id, type = "movie", inst = null) {
     if (!id) return -1;
-    if (type === "tv") return this._sonarrQueueSeriesPct?.get(id) ?? this._sonarr2QueueSeriesPct?.get(id) ?? -1;
+    if (type === "tv") {
+      if (inst === "sonarr2") return this._sonarr2QueueSeriesPct?.get(id) ?? -1;
+      if (inst === "sonarr") return this._sonarrQueueSeriesPct?.get(id) ?? -1;
+      return this._sonarrQueueSeriesPct?.get(id) ?? this._sonarr2QueueSeriesPct?.get(id) ?? -1;
+    }
+    if (inst === "radarr2") return this._radarr2QueuePct?.get(id) ?? -1;
+    if (inst === "radarr") return this._radarrQueuePct?.get(id) ?? -1;
     return this._radarrQueuePct?.get(id) ?? this._radarr2QueuePct?.get(id) ?? -1;
   }
   _statusStripeColor(cls) {
@@ -41532,7 +45201,8 @@ var ArrStackCard = class extends HTMLElement {
     const dimColor = `color-mix(in srgb,${color} 50%,transparent)`;
     const dimBg = `linear-gradient(90deg,${dimColor} 0%,color-mix(in srgb,${dimColor} 70%,white) 50%,${dimColor} 100%)`;
     if (pct >= 0 && pct < 100) {
-      return `<div style="position:absolute;bottom:0;left:0;right:0;height:4px;z-index:3;pointer-events:none;background:${dimBg};overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${bg}${animated ? ";animation:stripe-pulse 1.8s ease-in-out infinite" : ""}"></div></div>`;
+      const w = animated ? Math.max(pct, 4) : pct;
+      return `<div style="position:absolute;bottom:0;left:0;right:0;height:4px;z-index:3;pointer-events:none;background:${dimBg};overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:${w}%;background:${bg}${animated ? ";animation:stripe-pulse 1.8s ease-in-out infinite" : ""}"></div></div>`;
     }
     return `<div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:${bg};z-index:3;pointer-events:none${animated ? ";animation:stripe-pulse 1.8s ease-in-out infinite" : ""}"></div>`;
   }
@@ -41554,6 +45224,10 @@ var ArrStackCard = class extends HTMLElement {
   }
   // App SVG icons (white, 22×22)
   // ─────────────────────────────────────────────
+  _appIconRow(apps, size = 24) {
+    const list = apps.filter((a) => a !== "lidarr" || this._lidarrConfigured !== false);
+    return `<div class="app-icon-row" style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${list.map((a) => this._appIcon(a, size)).join("")}</div>`;
+  }
   _appIcon(app, size = 26) {
     const useReal = this._cfgGet("styles", "applicationIcons", "real") !== "mdi";
     const sz = `width="${size}" height="${size}"`;
@@ -41576,6 +45250,7 @@ var ArrStackCard = class extends HTMLElement {
       jellystat: "jellystat",
       tracearr: "tracearr",
       maintainerr: "maintainerr",
+      lidarr: "lidarr",
       bazarr: "bazarr",
       suggestarr: "suggest-arr",
       jellyfin: "jellyfin",
@@ -41596,6 +45271,8 @@ var ArrStackCard = class extends HTMLElement {
       jellystat: "mdi:chart-line",
       tracearr: "mdi:shield-account-outline",
       maintainerr: "mdi:broom",
+      lidarr: "mdi:music-box-multiple-outline",
+      lastfm: "mdi:radio-tower",
       bazarr: "mdi:subtitles-outline",
       jellyfin: "mdi:jellyfish-outline",
       emby: "mdi:emby",
@@ -41606,6 +45283,7 @@ var ArrStackCard = class extends HTMLElement {
       sab: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M5 2h14v10h3L12 22 2 12h3V2z"/></svg>`,
       deluge: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3l6 5h-4v5H10v-5H6l6-5z"/></svg>`,
       rtorrent: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm-1 3v5.27l-3.5 2.02.99 1.71L12 14.15l3.51 2.02.99-1.71L13 12.27V7h-2z"/></svg>`,
+      lastfm: `<svg ${sz} viewBox="0 0 24 24" style="flex-shrink:0"><rect width="24" height="24" rx="5" fill="#D51007"/><g transform="translate(2.4 2.4) scale(0.8)"><path fill="#fff" d="M10.584 17.21l-.88-2.392s-1.43 1.594-3.573 1.594c-1.897 0-3.244-1.649-3.244-4.288 0-3.382 1.704-4.591 3.381-4.591 2.42 0 3.189 1.567 3.849 3.574l.88 2.749c.88 2.666 2.529 4.81 7.285 4.81 3.409 0 5.718-1.044 5.718-3.793 0-2.227-1.265-3.381-3.63-3.931l-1.758-.385c-1.21-.275-1.567-.77-1.567-1.595 0-.934.742-1.484 1.952-1.484 1.32 0 2.034.495 2.144 1.677l2.749-.33c-.22-2.474-1.924-3.492-4.729-3.492-2.474 0-4.893.935-4.893 3.932 0 1.87.907 3.051 3.189 3.601l1.87.44c1.402.33 1.869.907 1.869 1.704 0 1.017-.99 1.43-2.86 1.43-2.776 0-3.93-1.457-4.59-3.464l-.907-2.75c-1.155-3.573-2.997-4.893-6.653-4.893C2.144 5.333 0 7.89 0 12.233c0 4.18 2.144 6.434 5.993 6.434 3.106 0 4.591-1.457 4.591-1.457z"/></g></svg>`,
       nzbget: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><rect x="5" y="2" width="14" height="2" rx="0.5"/><rect x="5" y="5.5" width="14" height="2" rx="0.5"/><rect x="5" y="9" width="14" height="2" rx="0.5"/><path d="M5 12h14v4h3L12 22 2 16h3v-4z"/></svg>`
     };
     const pngOnly = /* @__PURE__ */ new Set(["suggest-arr"]);
@@ -41648,7 +45326,8 @@ var ArrStackCard = class extends HTMLElement {
       rtorrent: `rgba(60,120,255,${o})`,
       sab: `rgba(200,150,0,${o})`,
       nzbget: `rgba(40,140,60,${o})`,
-      maintainerr: `rgba(245,158,11,${o})`
+      maintainerr: `rgba(245,158,11,${o})`,
+      lidarr: `rgba(21,158,90,${o})`
     };
     return map[app] || `rgba(255,255,255,${o})`;
   }
@@ -41796,8 +45475,11 @@ var ArrStackCard = class extends HTMLElement {
       return [...slots, ...completed];
     }
     if (section === "pending") return this._pendingRequests || [];
-    if (section === "recentlyAdded") return this.recentlyAdded;
+    if (section === "recommendations") return this._recItems();
+    if (section === "calendar") return this._calCatItems();
+    if (section === "recentlyAdded") return this._raItems();
     if (section === "recentlyRequested") return this.recentlyRequested;
+    if (section === "music") return this._lidarrArtistFeed || [];
     return this["_" + section] || [];
   }
   get recentlyAdded() {
@@ -41815,7 +45497,17 @@ var ArrStackCard = class extends HTMLElement {
       const key = s.tvdbId ? String(s.tvdbId) : `_uid_s_${s._isSonarr2 ? "s2" : "s1"}_${s.id}`;
       if (!showMap.has(key)) showMap.set(key, s);
     }
-    return [...movieMap.values(), ...showMap.values()].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+    const music = (this._lidarrConfigured === false ? [] : this._lidarrArtistFeed || []).map((e) => ({ ...e, _mediaType: "music", _sortDate: e._importedAt || "" }));
+    return [...movieMap.values(), ...showMap.values(), ...music].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+  }
+  // Recently Added through its header peanut: everything, the two the row
+  // always held, or music alone.
+  _raItems() {
+    const all = this.recentlyAdded;
+    const t = this._lidarrConfigured !== false ? this._raTypeSaved : "all";
+    if (t === "music") return all.filter((m) => m._mediaType === "music");
+    if (t === "video") return all.filter((m) => m._mediaType !== "music");
+    return all;
   }
   // Seerr knows what was requested; Radarr and Sonarr only know what is missing.
   // Those two lists overlap heavily on an install fed purely by Seerr, which is
@@ -41945,7 +45637,33 @@ var ArrStackCard = class extends HTMLElement {
       const key = s.tvdbId ? String(s.tvdbId) : null;
       return !key || !_showHasEps.has(key);
     });
-    return [...finalMovies, ...finalShows].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+    return [...finalMovies, ...finalShows, ...this._rqMusicItems()].sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+  }
+  // Artists whose music is still on its way — monitored with tracks missing, or
+  // with something in Lidarr's queue right now. Newest request first, and the
+  // album named is the one that prompted it.
+  _rqMusicItems() {
+    if (this._lidarrConfigured === false) return [];
+    const dl = this._lidarrQueueArtists || /* @__PURE__ */ new Map();
+    const out = [];
+    for (const a of this._lidarrArtists?.values() || []) {
+      const st = a.statistics || {};
+      const have = st.trackFileCount ?? 0;
+      const total = st.trackCount ?? 0;
+      const downloading = dl.has(a.id);
+      const missing = total > 0 ? have < total : have === 0;
+      if (!downloading && !(a.monitored && missing)) continue;
+      const feed = (this._lidarrArtistFeed || []).find((e) => e.id === a.id);
+      out.push({
+        id: a.id,
+        artist: a,
+        newestAlbum: feed?.newestAlbum || null,
+        newAlbumCount: 0,
+        _mediaType: "music",
+        _sortDate: a.added || ""
+      });
+    }
+    return out;
   }
   // Paginated vertical list (for download items)
   _pagedList(items, section, renderFn, perPage = 4, innerClass = "", overlayHtml = "") {
@@ -42135,7 +45853,11 @@ var ArrStackCard = class extends HTMLElement {
       this._reRenderRight(true);
       return;
     }
-    wrap.innerHTML = this._renderSearchResultsInner();
+    const html = this._renderSearchResultsInner();
+    if (html !== this._searchResultsHtml || !wrap.firstElementChild) {
+      this._searchResultsHtml = html;
+      wrap.innerHTML = html;
+    }
     const clearBtn = this.shadowRoot.querySelector(".sec-search .search-bar-clear");
     if (clearBtn) clearBtn.style.display = this._searchActive ? "" : "none";
     this._wireSearchResultCards(wrap);
@@ -42548,6 +46270,7 @@ var ArrStackCard = class extends HTMLElement {
       this._wirePopup();
       this._calAnimType = false;
       this._calAnimView = false;
+      this._syncSegVars(root);
       root.querySelectorAll(".mt-seg[data-seg-to]").forEach((seg) => {
         if (seg.dataset.seg === seg.dataset.segTo) return;
         requestAnimationFrame(() => {
@@ -42893,7 +46616,7 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.9.0", sid, svcs, mob: this._isMob ? 1 : 0, act })
+        body: JSON.stringify({ v: "1.9.1", sid, svcs, mob: this._isMob ? 1 : 0, act })
       }).catch(() => {
       });
     } catch (_) {
@@ -42941,6 +46664,8 @@ applyMixin(ArrStackCard.prototype, fetchMixin);
 applyMixin(ArrStackCard.prototype, renderLeftMixin);
 applyMixin(ArrStackCard.prototype, renderRightMixin);
 applyMixin(ArrStackCard.prototype, mediaCardsMixin);
+applyMixin(ArrStackCard.prototype, musicRenderMixin);
+applyMixin(ArrStackCard.prototype, wireMusicMixin);
 applyMixin(ArrStackCard.prototype, themeMixin);
 applyMixin(ArrStackCard.prototype, wireMixin);
 applyMixin(ArrStackCard.prototype, wireTautulliMixin);
