@@ -3345,6 +3345,99 @@ var STYLES = `
       }
       .search-bar-input::placeholder { color: rgba(255,255,255,0.25); }
       /* The library's type peanut, a size down so it rides inside the bar. */
+      /* \u2500\u2500 Header type filter \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+         On a wide header the peanut sits in the row as it always did. On a
+         phone the three icons cost more width than the header has left once
+         paging, See More and the calendar button are in it, so a funnel stands
+         in for them and the peanut grows out of it \u2014 in its place, not beside
+         it, or the paging would be pushed out again. */
+      .hdr-filter { display: inline-flex; align-items: center; flex-shrink: 0; min-width: 0; }
+      /* The header's peanut is sized off the buttons beside it rather than off
+         the search bar's smaller one: the track stands as tall as the calendar
+         button's circle, and its icons match that button's mark. Holds at every
+         width \u2014 phone, tablet and desktop. */
+      /* Three classes deep on purpose: .search-type-seg sets 24px and 13px
+         icons further down this sheet, and at equal specificity the later rule
+         wins \u2014 which is why the header peanut kept coming out shorter than the
+         buttons it sits next to. */
+      .hdr-filter .search-type-seg .mt-seg { height: 28px; }
+      .hdr-filter .search-type-seg .mt-seg-half svg { width: 16px; height: 16px; }
+      .hdr-filter .search-type-seg .mt-seg-half { font-size: 11px; }
+      /* The header's rule would run under the open pop-out and show through the
+         glass. Hidden, not removed \u2014 the paging and the buttons past it keep
+         their places. */
+      .col-hdr:has(.hdr-filter.is-open) .col-hdr-line { visibility: hidden; }
+      .hdr-filter-btn {
+        display: none;
+        position: relative;
+        align-items: center; justify-content: center;
+        /* Same box as the peanut it stands in for \u2014 24px tall with a 2px inset,
+           so the two swap without the header changing height. */
+        /* Same box as the calendar and See More buttons it shares the row
+           with \u2014 28px around a 16px mark. */
+        width: 28px; height: 28px; padding: 2px;
+        box-sizing: border-box;
+        border-radius: 999px;
+        border: 1px solid var(--is-btn-bdr);
+        background: transparent;
+        color: var(--is-text);
+        cursor: pointer; flex-shrink: 0;
+        line-height: 0;
+        transition: color 0.2s;
+      }
+      .hdr-filter-btn ha-icon { position: relative; z-index: 1; display: block; --mdc-icon-size: 16px; }
+      /* A filter that is doing something wears exactly what a selected half in
+         the peanut wears \u2014 and that is two edges, not one: the track's own
+         hairline, and inside it the accent pill with its own border. Painting
+         the fill on the button itself gave a single blue ring, which is what
+         made the two read as different controls. */
+      .hdr-filter.is-set .hdr-filter-btn::after {
+        content: '';
+        position: absolute; inset: 1px;
+        border-radius: 999px;
+        box-sizing: border-box;
+        border: 1px solid var(--seg-accent-bdr, rgba(0,122,255,0.8));
+        background: var(--seg-accent, rgba(0,122,255,0.5));
+      }
+      .hdr-filter.is-set .hdr-filter-btn { color: #fff; }
+      @media (max-width: 600px) {
+        .hdr-filter { position: relative; }
+        /* Sized off the buttons it shares the header with \u2014 See More and the
+           calendar are 28px with a 16px mark, and a filter half that size read
+           as a different class of control. */
+        .hdr-filter-btn { display: inline-flex; margin: -2px 0; }
+        /* Out of the flow on purpose: growing in the row would push the paging,
+           See More and the calendar button along with it. It opens over them
+           instead, from the funnel's own position, and carries a fill so what
+           it covers does not read through. The funnel keeps its space while
+           hidden, so nothing moves either way. */
+        .hdr-filter > .search-type-seg {
+          position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+          margin: 0 !important;
+          max-width: 0; opacity: 0; overflow: hidden;
+          z-index: 20; pointer-events: none;
+          transition: max-width 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s ease;
+        }
+        /* The fill belongs to the wrapper: put on .mt-seg it painted a square
+           behind the capsule, since the wrapper it sits in has no radius of its
+           own. Glass rather than a black slab \u2014 the same treatment every other
+           floating surface in the card gets. */
+        .hdr-filter > .search-type-seg {
+          border-radius: 999px;
+          background: rgba(28,30,40,0.72);
+          backdrop-filter: blur(30px) saturate(180%);
+          -webkit-backdrop-filter: blur(30px) saturate(180%);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+        }
+        /* Without blur the glass would be a pale wash over the icons beneath,
+           so performance mode gets an opaque fill instead. */
+        .card-body.perf-mode .hdr-filter > .search-type-seg {
+          background: var(--card-bg-perf, rgba(18,18,22,0.94));
+        }
+        .hdr-filter.is-open > .search-type-seg { max-width: 240px; opacity: 1; pointer-events: auto; }
+        .hdr-filter.is-open > .hdr-filter-btn { visibility: hidden; }
+      }
+
       .search-type-seg { flex-shrink: 0; margin-right: 8px; }
       .search-type-seg { -webkit-tap-highlight-color: transparent; }
       .search-type-seg, .search-type-seg * { user-select: none; -webkit-user-select: none; }
@@ -3644,6 +3737,13 @@ var STYLES = `
         overflow: hidden;
       }
       .mus-search.mus-rise { animation: pp-panel-rise 0.22s cubic-bezier(.25,.46,.45,.94); }
+      /* The way back out: the sheet drops the way it rose, and the discography
+         it was covering comes back once it has gone. */
+      .mus-search.mus-fall { animation: pp-panel-fall 0.2s cubic-bezier(.55,.06,.68,.19) forwards; pointer-events: none; }
+      @keyframes pp-panel-fall {
+        from { transform: translateY(0); opacity: 1; }
+        to   { transform: translateY(60px); opacity: 0; }
+      }
       .mus-search .sn-seasons-rows { flex: 1; min-height: 0; overflow-y: auto; }
       .mus-albums { flex: 1; min-height: 0; overflow: hidden; }
       /* One album's tracks fill what the header leaves, and scroll on their own. */
@@ -12968,7 +13068,7 @@ var _RenderRight = class {
     const noSeerr = this._overseerrConfigured === false;
     const headerIcon = noSeerr ? this._appIconRow(hasMusic ? ["radarr", "sonarr", "lidarr"] : ["radarr", "sonarr"]) : hasMusic ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon("lidarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
     const _si = this._mtSegIcons;
-    const raSeg = hasMusic ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-ra-seg", [
+    const raSeg = hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-ra-seg", [
       { v: "all", label: this._t("tabAll"), attr: 'data-ra-type="all"', w: 38 },
       {
         v: "video",
@@ -12977,7 +13077,7 @@ var _RenderRight = class {
         attr: 'data-ra-type="video"'
       },
       { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-ra-type="music"' }
-    ], this._raTypeSaved, { accent: "0,122,255", animatePrev: !!this._raSegAnim, prev: this._raSegPrev })}</div>` : "";
+    ], this._raTypeSaved, { accent: "0,122,255", animatePrev: !!this._raSegAnim, prev: this._raSegPrev })}</div>`, this._raTypeSaved !== "all", "ra") : "";
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${noSeerr ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
@@ -13002,7 +13102,7 @@ var _RenderRight = class {
     const noSeerrRq = this._overseerrConfigured === false;
     const headerIconRq = noSeerrRq ? this._appIconRow(["radarr", "sonarr", "lidarr"]) : hasMusic ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon("lidarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
     const _si = this._mtSegIcons;
-    const rqSeg = hasMusic ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rq-seg", [
+    const rqSeg = hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rq-seg", [
       { v: "all", label: this._t("tabAll"), attr: 'data-rq-type="all"', w: 38 },
       {
         v: "video",
@@ -13011,7 +13111,7 @@ var _RenderRight = class {
         attr: 'data-rq-type="video"'
       },
       { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rq-type="music"' }
-    ], rqType, { accent: "0,122,255", animatePrev: !!this._rqSegAnim, prev: this._rqSegPrev })}</div>` : "";
+    ], rqType, { accent: "0,122,255", animatePrev: !!this._rqSegAnim, prev: this._rqSegPrev })}</div>`, rqType !== "all", "rq") : "";
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${noSeerrRq ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
@@ -13206,7 +13306,7 @@ var _RenderRight = class {
     const icons = [src.trakt && "trakt", src.suggestarr && "suggestarr", src.lastfm && "lastfm"].filter(Boolean);
     const _si = this._mtSegIcons;
     const hasMusic = src.lastfm && (src.trakt || src.suggestarr);
-    const recSeg = hasMusic ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rec-seg", [
+    const recSeg = hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rec-seg", [
       { v: "all", label: this._t("tabAll"), attr: 'data-rec-type="all"', w: 38 },
       {
         v: "video",
@@ -13215,7 +13315,7 @@ var _RenderRight = class {
         attr: 'data-rec-type="video"'
       },
       { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rec-type="music"' }
-    ], this._recTypeSaved, { accent: "0,122,255", animatePrev: !!this._recSegAnim, prev: this._recSegPrev })}</div>` : "";
+    ], this._recTypeSaved, { accent: "0,122,255", animatePrev: !!this._recSegAnim, prev: this._recSegPrev })}</div>`, this._recTypeSaved !== "all", "rec") : "";
     return `
     <div class="sec-card has-gradient" data-trakt-sec style="${this._sectionStyle()}">
       ${this._sectionOverlayHtml(icons[0] || "trakt", 25, 75, 0.4)}
@@ -13492,7 +13592,7 @@ var _RenderRight = class {
     }
     const hasLidarr = this._lidarrConfigured !== false;
     const _si = this._mtSegIcons;
-    const calSeg = hasLidarr ? `<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-calcat-seg", [
+    const calSeg = hasLidarr ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-calcat-seg", [
       { v: "all", label: this._t("tabAll"), attr: 'data-calcat-type="all"', w: 38 },
       {
         v: "video",
@@ -13501,7 +13601,7 @@ var _RenderRight = class {
         attr: 'data-calcat-type="video"'
       },
       { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-calcat-type="music"' }
-    ], this._calCatTypeSaved, { accent: "0,122,255", animatePrev: !!this._calCatSegAnim, prev: this._calCatSegPrev })}</div>` : "";
+    ], this._calCatTypeSaved, { accent: "0,122,255", animatePrev: !!this._calCatSegAnim, prev: this._calCatSegPrev })}</div>`, this._calCatTypeSaved !== "all", "cal") : "";
     const mask = `linear-gradient(to bottom,transparent 0.07%,black 6%,black 80%,transparent 100%)`;
     const dualOverlay = this._categoryOverlaysEnabled ? `<div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 15%,${this._brandColor("radarr", 0.23)} 0%,transparent 48%),radial-gradient(circle at 75% 15%,${this._brandColor("sonarr", 0.23)} 0%,transparent 48%);mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);pointer-events:none;z-index:0;"></div>` : "";
     return `
@@ -16326,6 +16426,46 @@ var _WireMethods = class {
       });
     });
   }
+  // A choice made in the phone's pop-out filter is shown before it is acted on:
+  // the peanut marks the chosen half, folds away, and only then does the row
+  // underneath change. Acting first would rebuild the header mid-animation, so
+  // the reader would never see which one they hit.
+  _applyTypeSeg(el, spec) {
+    const cur = this[spec.cur] || "all";
+    const wrap = el.closest(".hdr-filter");
+    const open = !!wrap?.classList.contains("is-open");
+    const commit = (animate) => {
+      this[spec.prev] = cur;
+      this[spec.anim] = animate;
+      this[spec.cur] = spec.v;
+      try {
+        localStorage.setItem(spec.ls, spec.v);
+      } catch (_) {
+      }
+      this._pages[spec.sec] = 0;
+      this._hdrFilterOpen = null;
+      this._reRenderSection(spec.sec);
+    };
+    if (spec.v === cur) {
+      if (open) {
+        wrap.classList.remove("is-open");
+        this._hdrFilterOpen = null;
+      }
+      return;
+    }
+    if (!open) {
+      commit(true);
+      return;
+    }
+    const seg = el.closest(".mt-seg");
+    const half = el.closest(".mt-seg-half");
+    const idx = seg && half ? [...seg.querySelectorAll(".mt-seg-half")].indexOf(half) : -1;
+    if (idx >= 0) seg.dataset.seg = String(idx);
+    setTimeout(() => {
+      wrap.classList.remove("is-open");
+      setTimeout(() => commit(false), 300);
+    }, 340);
+  }
   _wireSearch() {
     const root = this.shadowRoot;
     const _srWrap = root.querySelector(".search-results-wrap");
@@ -16386,68 +16526,26 @@ var _WireMethods = class {
       if (e.target.closest(".search-type-seg")) e.preventDefault();
     }, { signal: sig });
     root.addEventListener("click", (e) => {
-      const recSeg = e.target.closest("[data-rec-type]");
-      if (recSeg) {
-        const next = recSeg.dataset.recType;
-        if (next !== (this._recType || "all")) {
-          this._recSegPrev = this._recType || "all";
-          this._recSegAnim = true;
-          this._recType = next;
-          try {
-            localStorage.setItem("arr-rec-type", next);
-          } catch (_) {
-          }
-          this._pages.recommendations = 0;
-          this._reRenderSection("recommendations");
-        }
+      const funnel = e.target.closest("[data-hdr-filter-btn]");
+      if (funnel) {
+        e.stopPropagation();
+        const wrap = funnel.closest(".hdr-filter");
+        root.querySelectorAll(".hdr-filter.is-open").forEach((w) => {
+          if (w !== wrap) w.classList.remove("is-open");
+        });
+        const open = wrap?.classList.toggle("is-open");
+        this._hdrFilterOpen = open ? wrap?.dataset.hdrFilter || null : null;
         return;
       }
-      const calSeg = e.target.closest("[data-calcat-type]");
-      if (calSeg) {
-        const next = calSeg.dataset.calcatType;
-        if (next !== (this._calCatType || "all")) {
-          this._calCatSegPrev = this._calCatType || "all";
-          this._calCatSegAnim = true;
-          this._calCatType = next;
-          try {
-            localStorage.setItem("arr-cal-type", next);
-          } catch (_) {
-          }
-          this._pages.calendar = 0;
-          this._reRenderSection("calendar");
-        }
-        return;
+      const typeBtn = e.target.closest("[data-rec-type],[data-ra-type],[data-rq-type],[data-calcat-type]");
+      if (!typeBtn && !e.target.closest(".hdr-filter")) {
+        root.querySelectorAll(".hdr-filter.is-open").forEach((w) => w.classList.remove("is-open"));
+        this._hdrFilterOpen = null;
       }
-      const raSeg = e.target.closest("[data-ra-type]");
-      if (raSeg) {
-        const next = raSeg.dataset.raType;
-        if (next !== (this._raType || "all")) {
-          this._raSegPrev = this._raType || "all";
-          this._raSegAnim = true;
-          this._raType = next;
-          try {
-            localStorage.setItem("arr-ra-type", next);
-          } catch (_) {
-          }
-          this._pages.recentlyAdded = 0;
-          this._reRenderSection("recentlyAdded");
-        }
-        return;
-      }
-      const rqSeg = e.target.closest("[data-rq-type]");
-      if (rqSeg) {
-        const next = rqSeg.dataset.rqType;
-        if (next !== (this._rqType || "all")) {
-          this._rqSegPrev = this._rqType || "all";
-          this._rqSegAnim = true;
-          this._rqType = next;
-          try {
-            localStorage.setItem("arr-rq-type", next);
-          } catch (_) {
-          }
-          this._pages.recentlyRequested = 0;
-          this._reRenderSection("recentlyRequested");
-        }
+      if (typeBtn) {
+        const d = typeBtn.dataset;
+        const spec = d.recType ? { v: d.recType, cur: "_recType", prev: "_recSegPrev", anim: "_recSegAnim", ls: "arr-rec-type", sec: "recommendations" } : d.raType ? { v: d.raType, cur: "_raType", prev: "_raSegPrev", anim: "_raSegAnim", ls: "arr-ra-type", sec: "recentlyAdded" } : d.rqType ? { v: d.rqType, cur: "_rqType", prev: "_rqSegPrev", anim: "_rqSegAnim", ls: "arr-rq-type", sec: "recentlyRequested" } : { v: d.calcatType, cur: "_calCatType", prev: "_calCatSegPrev", anim: "_calCatSegAnim", ls: "arr-cal-type", sec: "calendar" };
+        this._applyTypeSeg(typeBtn, spec);
         return;
       }
       const seg = e.target.closest("[data-search-type]");
@@ -44364,8 +44462,28 @@ var _WireMusicMethods = class {
       if (e.target.closest("[data-music-close]") || e.target === el) {
         this._closeMusicModal();
         this._popupReturn?.();
+        return;
+      }
+      if (this._musicModal?.search && !e.target.closest(".mus-search") && !e.target.closest("[data-mus-grab-handle]")) {
+        this._musCloseSearch();
       }
     });
+  }
+  // The sheet drops out of sight before the state changes, so the discography
+  // appears once it is gone rather than behind it mid-animation.
+  _musCloseSearch() {
+    const panel = this.shadowRoot?.querySelector("[data-music-modal] .mus-search");
+    const done = () => {
+      if (!this._musicModal) return;
+      this._musicModal.search = null;
+      this._renderMusicModalEl();
+    };
+    if (!panel) {
+      done();
+      return;
+    }
+    panel.classList.add("mus-fall");
+    setTimeout(done, 200);
   }
 };
 var wireMusicMixin = _WireMusicMethods.prototype;
@@ -45111,6 +45229,20 @@ var ArrStackCard = class extends HTMLElement {
     const out = noMusic.filter((c) => !REC.includes(c.id));
     out.splice(Math.min(slot, out.length), 0, { id: "recommendations", enabled });
     return out;
+  }
+  // A header filter, and on a phone the funnel that stands in for it. Both are
+  // always rendered and CSS decides which is seen: a JS branch on width would
+  // need a re-render to follow a rotation, and the peanut would be measured
+  // while it was still collapsed.
+  _hdrFilter(segHtml, isSet, key = "") {
+    if (!segHtml) return "";
+    const funnel = `<ha-icon icon="mdi:filter-variant"></ha-icon>`;
+    const open = key && this._hdrFilterOpen === key ? " is-open" : "";
+    const accent = `--seg-accent:rgba(0,122,255,${this._isDay ? 0.85 : 0.5});--seg-accent-bdr:rgba(0,122,255,${this._isDay ? 0.95 : 0.8})`;
+    return `<div class="hdr-filter${isSet ? " is-set" : ""}${open}" data-hdr-filter="${key}" style="${accent}">
+      <button class="hdr-filter-btn" data-hdr-filter-btn aria-label="${this._t("tabAll")}">${funnel}</button>
+      ${segHtml}
+    </div>`;
   }
   get _recTypeSaved() {
     const v = this._recType || "all";
