@@ -10,11 +10,11 @@
 
 <a href="https://discord.gg/WVCyejJfKd" target="_blank"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" height="50"></a>
 
-Manage your full media server stack — Radarr, Sonarr, qBittorrent, Deluge, rTorrent, SABnzbd, NZBGet, Seerr (Overseerr/Jellyseerr), Bazarr, Plex, Jellyfin, Emby, Kodi, Tautulli, Jellystat, Tracearr, Prowlarr, Maintainerr, SuggestArr, and Trakt — directly from Home Assistant with a single unified dashboard card.
+Manage your full media server stack — Radarr, Sonarr, Lidarr, qBittorrent, Deluge, rTorrent, SABnzbd, NZBGet, Seerr (Overseerr/Jellyseerr), Bazarr, Plex, Jellyfin, Emby, Kodi, Tautulli, Jellystat, Tracearr, Prowlarr, Maintainerr, SuggestArr, Trakt, and Last.fm — directly from Home Assistant with a single unified dashboard card.
 
 ### At a glance
 
-<p><img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" height="36" title="Radarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" height="36" title="Sonarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" height="36" title="Bazarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" height="36" title="qBittorrent"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" height="36" title="Deluge"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" height="36" title="rTorrent"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" height="36" title="SABnzbd"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" height="36" title="NZBGet"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" height="36" title="Overseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" height="36" title="Jellyseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" height="36" title="TMDB"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" height="36" title="Prowlarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/maintainerr.png" height="36" title="Maintainerr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" height="36" title="Plex"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" height="36" title="Jellyfin"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/emby.png" height="36" title="Emby"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/kodi.png" height="36" title="Kodi"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" height="36" title="Tautulli"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" height="36" title="Jellystat"/> <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tracearr.svg" height="36" title="Tracearr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" height="36" title="Trakt"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/suggest-arr.png" height="36" title="SuggestArr"/></p>
+<p><img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png" height="36" title="Radarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png" height="36" title="Sonarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/lidarr.png" height="36" title="Lidarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png" height="36" title="Bazarr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png" height="36" title="qBittorrent"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/deluge.png" height="36" title="Deluge"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/rutorrent.png" height="36" title="rTorrent"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sabnzbd.png" height="36" title="SABnzbd"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nzbget.png" height="36" title="NZBGet"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/overseerr.png" height="36" title="Overseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png" height="36" title="Jellyseerr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tmdb.png" height="36" title="TMDB"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png" height="36" title="Prowlarr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/maintainerr.png" height="36" title="Maintainerr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/plex.png" height="36" title="Plex"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png" height="36" title="Jellyfin"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/emby.png" height="36" title="Emby"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/kodi.png" height="36" title="Kodi"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tautulli.png" height="36" title="Tautulli"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellystat.png" height="36" title="Jellystat"/> <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tracearr.svg" height="36" title="Tracearr"/> &nbsp; <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/trakt.png" height="36" title="Trakt"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/suggest-arr.png" height="36" title="SuggestArr"/> <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/lastfm.png" height="36" title="Last.fm"/></p>
 
 ![Actions menu](actions.gif)
 
@@ -53,6 +53,7 @@ The card automatically shows only the services you have configured. No YAML requ
 |---------|------|----------|
 | Radarr | Movie library, downloads, interactive search | ✅ Yes |
 | Sonarr | TV library, episode calendar, downloads | ✅ Yes |
+| Lidarr | Music library — artists, albums, downloads | Optional |
 | Radarr 2 | Second Radarr instance — HD + 4K workflow | Optional |
 | Sonarr 2 | Second Sonarr instance — HD + 4K workflow | Optional |
 | qBittorrent | Torrent download management | Optional |
@@ -71,8 +72,9 @@ The card automatically shows only the services you have configured. No YAML requ
 | Jellystat | Watch history, statistics, and usage graphs | Optional |
 | Tracearr *(beta)* | Watch history, statistics, and usage graphs | Optional |
 | Prowlarr | Indexer management and search statistics | Optional |
-| Trakt | Personalised recommendations — needs a paid VIP account | Optional |
-| SuggestArr | Free recommendations from what you have watched | Optional |
+| Trakt | Film and show recommendations — needs a paid VIP account | Optional |
+| SuggestArr | Free film and show recommendations from what you have watched | Optional |
+| Last.fm | Music recommendations — free API key, needs Lidarr | Optional |
 | Maintainerr | Automatic library cleanup — adds "Gone in" countdowns everywhere | Optional |
 | Gluetun | VPN status indicator in the downloads panel | Optional |
 
@@ -115,18 +117,18 @@ The right panel is modular. You choose which sections appear and in what order v
 
 #### Movies & TV Shows
 
-- **Recently Added** — your latest downloads, movies and shows mixed, sorted by date.
-- **Recently Requested** — titles you've requested that are still downloading or waiting.
+- **Recently Added** — your latest downloads, sorted by date. With Lidarr configured, new albums appear alongside films and shows, and a filter in the header narrows the row to one or the other.
+- **Recently Requested** — titles you've requested that are still downloading or waiting, music included.
 - **Movies** — your full movie collection with download status, ratings, audio tracks, and subtitle availability. Click any title to open a detail popup with poster, overview, ratings, and a trailer link. From there you can run an **Interactive Search** to manually pick a release, or cast directly to a Plex device.
 - **TV Shows** — your full series collection with per-season progress, ratings, and subtitle status. Includes an **upcoming episodes calendar** with air dates. Interactive Search and Plex cast available here too.
 
 #### Library
 
-A full-screen panel for browsing and managing your entire movie and TV show collection. Open it via the **Library** button in the right panel. Enabled by default for new installs.
+A full-screen panel for browsing and managing your entire collection — movies, TV shows, and music when Lidarr is configured. Open it via the **Library** button in the right panel. Enabled by default for new installs.
 
 - **Poster and table view** — switch between a resizable poster grid and a compact list with ratings, quality, file size, and status at a glance. In poster view, drag the grip handle to adjust column count on the fly — your choice is remembered.
 - **Status badges** — each poster shows whether a title is available, downloading, missing, or waiting for a quality upgrade. Subtitle availability shown where configured.
-- **Filter and sort** — filter by Movies, TV Shows, or both; sort by Recently Added, Title, Rating, or Quality; search by title. In table view, click any column header to sort by that column — click again to reverse the order.
+- **Filter and sort** — filter by Movies, TV Shows, Music, or all together; sort by Recently Added, Title, Rating, or Quality; search by title. In table view, click any column header to sort by that column — click again to reverse the order.
 - **Top Quality** — filter to see only movies that have a file but haven't reached your preferred quality yet.
 - **Multiple instances** — if you run two separate movie or TV servers, switch between them or browse everything together in the **Both Instances** tab.
 - **Bulk actions** — select individual titles or use Select All, then change quality profile, add or remove tags, or delete titles. Changes apply immediately to the right server.
@@ -135,23 +137,44 @@ A full-screen panel for browsing and managing your entire movie and TV show coll
 
 #### Calendar
 
-Upcoming movies and TV episodes from Radarr and Sonarr. Click the calendar icon to open a full view with tabs for All, Shows, and Movies.
+Upcoming movies and TV episodes from Radarr and Sonarr — and album releases when Lidarr is configured. Click the calendar icon to open a full view with tabs for All, Shows, Movies, and Music.
 
 Switch between a **week** and a **month** view — the month view is available on tablets and desktops, where there is room to show a whole month at once. Your choice is remembered. Click any day to see everything airing or releasing that day; click a title to open its detail popup.
+
+#### Music
+
+Fill in Lidarr and the card handles music the same way it handles films and shows — same rows, same detail, same searching.
+
+- **Artists** — click any artist for their full discography: which albums you have, how much of each is on disk, and what is still missing. Monitor or unmonitor an album, delete one from disk, or open its track list.
+- **Finding releases** — the same Automatic and Interactive search a film gets. Interactive lists what your indexers offer for that album, with quality, size and seeders, and you pick the one you want. Progress appears on the album while it downloads.
+- **Everywhere else** — music joins Recently Added, Recently Requested, the Calendar, the Library and the Activity queue. Each of those has a filter in its header for All, films and shows, or music alone, and remembers your choice.
+- **Search** — search by artist. Anyone not in your library yet can be previewed first, with their albums from MusicBrainz, and added straight from the result.
+- **Now Playing** — a track playing on Plex opens its artist, with play, pause and skip under the name.
 
 #### Discovery & Recommendations
 
 - **Trending, popular, upcoming** — movies and TV shows, always available
-- **Trakt recommendations** — personalised movie and show suggestions based on your Trakt watch history. Trakt now requires a paid **VIP** account for this; the category stays for those who have one. Movies and shows are mixed together for variety. Each poster has two interactive buttons on its edges:
-  - **Seen** (left edge) — marks the title as watched on Trakt. This improves future recommendations by feeding your actual watch history back into the algorithm. The card immediately replaces the dismissed poster with the next recommendation.
-  - **Skip** (right edge) — hides the title from your recommendations without marking it as watched. Use this for titles you're simply not interested in, without affecting your Trakt history or stats.
+- **Recommendations** — one row for everything suggested to you, whether that is a film, a show or an artist. Which services feed it is up to you (**Right Panel → Recommendations** in the editor):
 
-  For recommendations to reflect what you've actually watched, you need a scrobbler that syncs your plays to Trakt automatically. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) handles this — run it as a Docker container in `watch` mode and it will mark titles as watched on Trakt in real time.
-- **SuggestArr recommendations** — a free, self-hosted alternative to Trakt, with its own category in the card. Trakt has moved personalised recommendations behind its paid VIP plan, so SuggestArr fills that gap for everyone else. It looks at what you have actually watched on Plex, Jellyfin or Emby and suggests titles you do not own yet. Movies and shows alternate in the row so you always get both. Request straight from the poster, or use **Seen** and **Skip** to steer what comes next.
+  | Source | What it suggests | What it needs |
+  |--------|------------------|---------------|
+  | **Trakt** | Films and shows, from your Trakt watch history | A paid Trakt VIP account |
+  | **SuggestArr** | Films and shows, from what you actually watched on Plex, Jellyfin or Emby | Free, self-hosted |
+  | **Last.fm** | Artists you do not own yet | A free Last.fm API key, and Lidarr |
 
-  > **Set SuggestArr to ask, not to act.** In SuggestArr's own settings, turn off automatic requests to Seerr. Otherwise its background job sends requests on its own schedule and you only find out afterwards — with it off, suggestions wait in the card until you approve them.
+  With more than one source on, the row deals them out in turn — film, show, artist, film, show, artist — so the first page carries all three rather than whichever service happened to return the most. Each poster wears the mark of the service it came from, and keeps that service's own buttons on its edges:
 
-  SuggestArr refreshes its pool on a schedule of its own, so a fresh batch of tips can take a while to appear after you work through the current one. See [SuggestArr](https://github.com/giuseppe99barchetta/SuggestArr) for setup.
+  - **Seen** or **Like** (left edge) — tells the service you know this one. Trakt marks it watched, which feeds your history back into future suggestions; Last.fm takes it as "more like this".
+  - **Skip** (right edge) — retires the title without saying you watched it. For things you are simply not interested in.
+
+  Either way the poster steps aside and the next suggestion moves up. When Lidarr is configured, a filter in the header narrows the row to films and shows, or to music alone — and remembers what you chose.
+
+  **Trakt** needs a scrobbler to reflect what you have actually watched. If you use Plex, [PlexTraktSync](https://github.com/Taxel/PlexTraktSync) does that — run it in `watch` mode and it marks titles as watched in real time.
+
+  **SuggestArr** — turn off automatic requests in SuggestArr's own settings. Otherwise its background job sends requests to Seerr on its own schedule and you only find out afterwards; with it off, suggestions wait in the card until you approve them. It also refreshes its pool on a schedule of its own, so a new batch can take a while to appear after you work through the current one. See [SuggestArr](https://github.com/giuseppe99barchetta/SuggestArr) for setup.
+
+  **Last.fm** builds its list from what you actually listen to: your scrobbles when you give a username — Plexamp, Spotify, anything that scrobbles — and otherwise from what has been played on your own server. The plus button on a poster adds the artist to Lidarr, asking only for a quality profile and how much of their catalogue to monitor. A [free API key](https://www.last.fm/api/account/create) is all it needs.
+
 - One-click or profile-based requests directly to Radarr/Sonarr, or via Seerr
 - **With Seerr:** approve and decline pending requests, family and guest account support with per-user request management
 
@@ -188,7 +211,7 @@ A cast button appears in movie and show popups when the item exists in your Plex
 
 Four-tab panel covering everything happening across your Radarr and Sonarr instances. Admin-only.
 
-- **Queue** — what's downloading right now with progress, quality, and ETA. Manual Import or one-click remove with blocklist option.
+- **Queue** — what's downloading right now with progress, quality, and ETA, music included. Manual Import or one-click remove with blocklist option.
 - **History** — recent grabs and imports, filterable by event type, source, or quality.
 - **Blocklist** — manage blocked releases.
 - **Missing** — everything without a file. Filter, adjust monitoring, and trigger Interactive or Auto Search without leaving the panel.

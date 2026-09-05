@@ -53,6 +53,10 @@ discover:
   oneClickDefaultShowTag: ""          # Sonarr tag for one-click TV requests  (optional)
   oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
   ratingProvider: imdb         # imdb | tmdb — rating badge shown on poster cards  (default: imdb)
+  recTrakt: true               # use Trakt in the Recommendations row  (default: true)
+  recSuggestarr: true          # use SuggestArr in the Recommendations row  (default: true)
+                               # Last.fm joins the row whenever Lidarr and a Last.fm key are set up;
+                               # the filter in the row's header is where music is switched off.
 
 # Poster display
 posters:
@@ -80,7 +84,7 @@ categories:
     enabled: true
   - id: popular
     enabled: true
-  - id: trakt
+  - id: recommendations
     enabled: false
   - id: calendar
     enabled: true
@@ -145,14 +149,13 @@ styles:
 | `tvUpcoming` | New Shows |
 | `trending` | Trending |
 | `popular` | Popular Movies |
-| `trakt` | Trakt Recommendations (VIP account required) |
-| `suggestarr` | SuggestArr Recommendations |
-| `calendar` | Calendar — upcoming movies & episodes (Radarr + Sonarr), week and month views |
+| `recommendations` | Recommendations — Trakt, SuggestArr and Last.fm in one row |
+| `calendar` | Calendar — upcoming movies, episodes and albums (Radarr + Sonarr + Lidarr), week and month views |
 | `streams` | Now Playing (Plex / Jellyfin / Emby / Kodi) — auto-hidden when nothing plays |
 | `tautulli` | Statistics (Tautulli) |
 | `jellystat` | Statistics (Jellystat) |
 | `tracearr` | Statistics (Tracearr) *(beta)* |
-| `library` | Library browser (Radarr / Sonarr — bulk edit, sort, filter) |
+| `library` | Library browser (Radarr / Sonarr / Lidarr — bulk edit, sort, filter) |
 | `activity` | Activity Queue (admin only) |
 | `prowlarr` | Indexers (Prowlarr) |
 | `maintainerr` | Maintainerr — rules, collections, deletion calendar, storage |
