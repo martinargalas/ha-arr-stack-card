@@ -173,7 +173,7 @@ Fill in Lidarr and the card handles music the same way it handles films and show
 
   **SuggestArr** — turn off automatic requests in SuggestArr's own settings. Otherwise its background job sends requests to Seerr on its own schedule and you only find out afterwards; with it off, suggestions wait in the card until you approve them. It also refreshes its pool on a schedule of its own, so a new batch can take a while to appear after you work through the current one. See [SuggestArr](https://github.com/giuseppe99barchetta/SuggestArr) for setup.
 
-  **Last.fm** builds its list from what you actually listen to: your scrobbles when you give a username — Plexamp, Spotify, anything that scrobbles — and otherwise from what has been played on your own server. The plus button on a poster adds the artist to Lidarr, asking only for a quality profile and how much of their catalogue to monitor. A [free API key](https://www.last.fm/api/account/create) is all it needs.
+  **Last.fm** builds its list from what you actually listen to. Give it your username and it reads your scrobbles, wherever they come from: Plexamp, Spotify, Apple Music, YouTube Music, a phone, a car — anything that scrobbles to Last.fm counts, not only what you play on your own server. Leave the username out and it falls back to your server's own play history. The plus button on a poster adds the artist to Lidarr, asking only for a quality profile and how much of their catalogue to monitor. A [free API key](https://www.last.fm/api/account/create) is all it needs.
 
 - One-click or profile-based requests directly to Radarr/Sonarr, or via Seerr
 - **With Seerr:** approve and decline pending requests, family and guest account support with per-user request management
@@ -181,6 +181,8 @@ Fill in Lidarr and the card handles music the same way it handles films and show
 #### Now Playing
 
 Live view of what's playing across your media servers — title, poster, progress bar, and source badge. Auto-hidden when nothing is playing. Supports Plex, Jellyfin, Emby, and Kodi simultaneously.
+
+Films, episodes and music alike, from whichever client is playing them — a TV app, a browser tab, Plexamp on a phone. A track shows its cover and artist, and clicking it opens that artist with play, pause and skip under the name, so the row doubles as a remote for whatever is playing.
 
 **Plex** — requires the official [Plex](https://www.home-assistant.io/integrations/plex/) HA integration. Configuring Plex in the Arr Stack Integration additionally enables:
 - Active user shown on the stream card
