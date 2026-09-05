@@ -43500,6 +43500,7 @@ var _WireMusicMethods = class {
   async _musDropSuggestion(mbid2, verdict, cardEl) {
     const id = String(mbid2 || "").toLowerCase();
     if (!id) return;
+    this._markActivated();
     const skip = verdict === "skip";
     if (cardEl) {
       cardEl.style.transition = "opacity 0.28s ease, transform 0.28s ease";
@@ -43602,6 +43603,7 @@ var _WireMusicMethods = class {
   async _musConfirmAdd() {
     const p = this._musAddPending;
     if (!p || p.busy || !p.artist) return;
+    this._markActivated();
     const root = this.shadowRoot;
     const _val = (id, fallback) => root.querySelector(`#${id}`)?.value ?? fallback;
     p.profileId = _val("mus-add-profile", p.profileId);
@@ -46733,6 +46735,10 @@ var ArrStackCard = class extends HTMLElement {
         this._delugeConfigured !== false && "deluge",
         this._traktConfigured !== false && "trakt",
         this._suggestarrConfigured !== false && "suggestarr",
+        this._lidarrConfigured !== false && "lidarr",
+        // Last.fm only counts as set up when it can actually suggest, which
+        // takes a key and a library to compare against.
+        this._lastfmConfigured && this._lidarrConfigured !== false && "lastfm",
         this._gluetunConfigured !== false && "gluetun",
         this._prowlarrConfigured !== false && "prowlarr",
         this._rtorrentConfigured !== false && "rtorrent",
