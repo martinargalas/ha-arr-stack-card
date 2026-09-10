@@ -47080,11 +47080,15 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
   // ─────────────────────────────────────────────
   // Age rating (certification)
   // ─────────────────────────────────────────────
-  // Countries whose board we trust first. Czech and Slovak ratings are already
-  // written as an age, the German one is a plain number, and the two English
-  // ones are only reached when nothing closer to home exists.
-  static get CERT_COUNTRIES() {
-    return ["CZ", "SK", "DE", "AT", "GB", "US"];
+  // Whose board is asked first: the country set in Home Assistant (Settings →
+  // System → General), then the two TMDB fills in for nearly every title.
+  // Anything else that answers is still better than a blank.
+  static get CERT_FALLBACK() {
+    return ["US", "GB"];
+  }
+  _certCountries() {
+    const home = String(this._hass?.config?.country || "").toUpperCase();
+    return [...new Set([home, ..._ArrStackCard.CERT_FALLBACK].filter(Boolean))];
   }
   // Label → minimum age. Anything already numeric ("12", "12+", "R 18+") is
   // read straight off the string; the rest are the boards that spell it out
@@ -47137,7 +47141,7 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       add(r.iso_3166_1, r.rating);
     for (const r of d.certifications || [])
       add(r.country, r.rating);
-    let country = _ArrStackCard.CERT_COUNTRIES.find((c) => found.has(c));
+    let country = this._certCountries().find((c) => found.has(c));
     let label = country ? found.get(country) : null;
     if (!label) {
       const local = d._sonarrSeries?.certification || d._sonarr2Series?.certification || d.certification;
