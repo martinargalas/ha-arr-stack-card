@@ -3735,6 +3735,12 @@ var STYLES = `
          keys off the film popup's own body classes, which this modal does not
          carry. */
       .popup-glass:has(.mus-modal-body) { height: 85vh; }
+      /* Desktop: the same footprint as the film and series popup \u2014 its 800px
+         width, and the height its backdrop, details and trailer add up to.
+         Three classes, so neither .is-wide nor the 85vh rule above wins. */
+      @media (min-width: 1401px) {
+        .popup-glass.is-wide:has(.mus-modal-body) { width: min(800px, 90vw); height: min(660px, 85vh); }
+      }
       /* Rises from the bottom edge, the same entrance the film popup's sources
          sheet makes, and is dragged by the same grabber. */
       .popup-body > .sn-is-section.mus-search {
@@ -3800,6 +3806,13 @@ var STYLES = `
         flex: 1; min-width: 0;
         display: grid; gap: 12px;
         grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      }
+      /* Tablet: the film popup's width, and four covers a row whatever that
+         works out to \u2014 at 90vw of a portrait tablet auto-fill only found room
+         for three. Two classes, so the base rule above cannot win back. */
+      @media (min-width: 601px) and (max-width: 1400px) {
+        .popup-glass.is-wide:has(.mus-modal-body) { width: min(800px, 90vw); }
+        .popup-body .mus-alb-grid { grid-template-columns: repeat(var(--mus-alb-cols, 4), 1fr); }
       }
       .mus-alb { min-width: 0; cursor: pointer; }
       .mus-alb-art {
@@ -5571,6 +5584,15 @@ var STYLES = `
         font-size: 10px; font-weight: 700; color: var(--is-text-sec); z-index: 6;
       }
       .popup-sub     { font-size: 11px; color: var(--is-text-sec); margin-bottom: 8px; }
+      /* Age rating \u2014 a quiet capsule so the number reads on its own */
+      .popup-cert {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 22px; padding: 1px 5px; border-radius: 5px;
+        font-size: 10px; font-weight: 700; line-height: 1.5; letter-spacing: 0.2px;
+        color: var(--is-text); background: rgba(255,255,255,0.11);
+        vertical-align: baseline;
+      }
+      .popup-day .popup-cert { background: rgba(0,0,0,0.09); }
       .popup-overview { font-size: 11px; color: var(--is-text-body); line-height: 1.65; margin: 0 0 12px; }
 
       .instance-status-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
@@ -9361,6 +9383,7 @@ var _ArrMethods = class {
     }
   }
   async _oneClickTvRequest(show) {
+    this._markActivated();
     try {
       if (this._overseerrConfigured !== false && !this._seerrSonarr) await this._fetchOverseerrSonarrSettings();
       const profileName = this._cfgGet("discover", "oneClickDefaultShowProfile", "");
@@ -11229,12 +11252,12 @@ var _ArrMethods = class {
       this._lidarrDeadTimer = setTimeout(() => this._lidarrRepaint(), 120);
     }, true);
   }
-  _lidarrArtistImage(artist, type, { full = false } = {}) {
+  _lidarrArtistImage(artist, type, { full = false, w = 0 } = {}) {
     const img = (artist?.images || []).find((i) => i.coverType === type);
     if (!img) return null;
     const size = full ? 0 : { poster: 500, fanart: 360, banner: 70 }[type];
     const ext = img.extension || ".jpg";
-    const viaApi = this._lidarrImg("artist", artist.id, size ? `${type}-${size}${ext}` : `${type}${ext}`);
+    const viaApi = this._lidarrImg("artist", artist.id, size ? `${type}-${size}${ext}` : `${type}${ext}`, w);
     if (viaApi) return viaApi;
     if (viaApi === void 0) return null;
     const abs = [img.remoteUrl, img.url].find((u) => typeof u === "string" && u.startsWith("http"));
@@ -13095,17 +13118,7 @@ var _RenderRight = class {
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyAdded", (m) => this._renderRecentlyAddedCard(m));
     const noSeerr = this._overseerrConfigured === false;
     const headerIcon = noSeerr ? this._appIconRow(hasMusic ? ["radarr", "sonarr", "lidarr"] : ["radarr", "sonarr"]) : hasMusic ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon("lidarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
-    const _si = this._mtSegIcons;
-    const raSeg = hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-ra-seg", [
-      { v: "all", label: this._t("tabAll"), attr: 'data-ra-type="all"', w: 38 },
-      {
-        v: "video",
-        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
-        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
-        attr: 'data-ra-type="video"'
-      },
-      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-ra-type="music"' }
-    ], this._raTypeSaved, { accent: "0,122,255", animatePrev: !!this._raSegAnim, prev: this._raSegPrev })}</div>`, this._raTypeSaved !== "all", "ra") : "";
+    const raSeg = this._raFilterHtml();
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${noSeerr ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
@@ -13129,17 +13142,7 @@ var _RenderRight = class {
     const grid = items.length === 0 ? `<div class="placeholder">${this._t("loading")}</div>` : this._pagedGridWithSmp(items, "recentlyRequested", (m) => this._renderRecentlyRequestedCard(m));
     const noSeerrRq = this._overseerrConfigured === false;
     const headerIconRq = noSeerrRq ? this._appIconRow(["radarr", "sonarr", "lidarr"]) : hasMusic ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon("lidarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
-    const _si = this._mtSegIcons;
-    const rqSeg = hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rq-seg", [
-      { v: "all", label: this._t("tabAll"), attr: 'data-rq-type="all"', w: 38 },
-      {
-        v: "video",
-        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
-        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
-        attr: 'data-rq-type="video"'
-      },
-      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rq-type="music"' }
-    ], rqType, { accent: "0,122,255", animatePrev: !!this._rqSegAnim, prev: this._rqSegPrev })}</div>`, rqType !== "all", "rq") : "";
+    const rqSeg = this._rqFilterHtml();
     return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${noSeerrRq ? this._sectionOverlayHtml("radarr", 25, 75, 0.18) : this._sectionOverlayHtml(this._discoverIconKey())}
@@ -13332,18 +13335,7 @@ var _RenderRight = class {
     const gridInner = items.length === 0 ? `<div class="placeholder">${emptyMsg}</div>` : this._pagedGridWithSmp(items, "recommendations", (m, i) => this._renderRecCard(m, i));
     const grid = this._musAddPending?.source === "lastfm" ? `<div class="tv-req-anchor">${gridInner}${this._renderMusicAddOverlay()}</div>` : `<div class="tv-req-anchor">${gridInner}${p ? this._renderTvRequestOverlay() : ""}</div>`;
     const icons = [src.trakt && "trakt", src.suggestarr && "suggestarr", src.lastfm && "lastfm"].filter(Boolean);
-    const _si = this._mtSegIcons;
-    const hasMusic = src.lastfm && (src.trakt || src.suggestarr);
-    const recSeg = hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rec-seg", [
-      { v: "all", label: this._t("tabAll"), attr: 'data-rec-type="all"', w: 38 },
-      {
-        v: "video",
-        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
-        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
-        attr: 'data-rec-type="video"'
-      },
-      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rec-type="music"' }
-    ], this._recTypeSaved, { accent: "0,122,255", animatePrev: !!this._recSegAnim, prev: this._recSegPrev })}</div>`, this._recTypeSaved !== "all", "rec") : "";
+    const recSeg = this._recFilterHtml();
     return `
     <div class="sec-card has-gradient" data-trakt-sec style="${this._sectionStyle()}">
       ${this._sectionOverlayHtml(icons[0] || "trakt", 25, 75, 0.4)}
@@ -13427,6 +13419,76 @@ var _RenderRight = class {
       </div>
     </div>`;
   }
+  // The three type filters, built in one place: the row header and the See More
+  // overlay both draw the same control, and a reader who narrowed a row to music
+  // expects it to still be narrowed — and still switchable — inside See More.
+  _raFilterHtml() {
+    const hasMusic = this._lidarrConfigured !== false;
+    const _si = this._mtSegIcons;
+    return hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-ra-seg", [
+      { v: "all", label: this._t("tabAll"), attr: 'data-ra-type="all"', w: 38 },
+      {
+        v: "video",
+        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
+        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
+        attr: 'data-ra-type="video"'
+      },
+      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-ra-type="music"' }
+    ], this._raTypeSaved, { accent: "0,122,255", animatePrev: !!this._raSegAnim, prev: this._raSegPrev })}</div>`, this._raTypeSaved !== "all", "ra") : "";
+  }
+  _rqFilterHtml() {
+    const hasMusic = this._lidarrConfigured !== false;
+    const rqType = hasMusic ? this._rqTypeSaved : "all";
+    const _si = this._mtSegIcons;
+    return hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rq-seg", [
+      { v: "all", label: this._t("tabAll"), attr: 'data-rq-type="all"', w: 38 },
+      {
+        v: "video",
+        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
+        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
+        attr: 'data-rq-type="video"'
+      },
+      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rq-type="music"' }
+    ], rqType, { accent: "0,122,255", animatePrev: !!this._rqSegAnim, prev: this._rqSegPrev })}</div>`, rqType !== "all", "rq") : "";
+  }
+  _recFilterHtml() {
+    const src = this._recSources;
+    const _si = this._mtSegIcons;
+    const hasMusic = src.lastfm && (src.trakt || src.suggestarr);
+    return hasMusic ? this._hdrFilter(`<div class="search-type-seg" style="margin:0 0 0 -6px">${this._mtSegmented("data-rec-seg", [
+      { v: "all", label: this._t("tabAll"), attr: 'data-rec-type="all"', w: 38 },
+      {
+        v: "video",
+        label: `${this._t("tabMovies")} / ${this._t("tabTvShows")}`,
+        icon: `<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${_si.movie}<span style="width:1px;height:12px;background:currentColor;opacity:0.35;flex-shrink:0"></span>${_si.tv}</span>`,
+        attr: 'data-rec-type="video"'
+      },
+      { v: "music", label: this._t("tabMusic"), icon: _si.music, attr: 'data-rec-type="music"' }
+    ], this._recTypeSaved, { accent: "0,122,255", animatePrev: !!this._recSegAnim, prev: this._recSegPrev })}</div>`, this._recTypeSaved !== "all", "rec") : "";
+  }
+  // Which marks a section's header wears — the merged Recommendations row shows
+  // one per source it is drawing on, so See More says the same thing the row does.
+  _secHeaderIcons(section) {
+    if (section === "recommendations") {
+      const src = this._recSources;
+      const icons = [src.trakt && "trakt", src.suggestarr && "suggestarr", src.lastfm && "lastfm"].filter(Boolean);
+      if (icons.length > 1) return this._appIconRow(icons);
+      return this._appIcon(icons[0] || "trakt", 24);
+    }
+    if (section === "recentlyAdded" || section === "recentlyRequested") {
+      const hasMusic = this._lidarrConfigured !== false;
+      const noSeerr = this._overseerrConfigured === false;
+      if (noSeerr) return this._appIconRow(hasMusic ? ["radarr", "sonarr", "lidarr"] : ["radarr", "sonarr"]);
+      return hasMusic ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon("lidarr", 24)}</div>` : this._appIcon(this._discoverIconKey(), 24);
+    }
+    return "";
+  }
+  _secFilterHtml(section) {
+    if (section === "recentlyAdded") return this._raFilterHtml();
+    if (section === "recentlyRequested") return this._rqFilterHtml();
+    if (section === "recommendations") return this._recFilterHtml();
+    return "";
+  }
   _renderSectionOverlay(section) {
     const cfg = this._getSectionOverlayConfig(section);
     if (!cfg) return "";
@@ -13451,8 +13513,9 @@ var _RenderRight = class {
     <div class="trending-overlay">
       ${cfg.appKey ? this._sectionOverlayHtmlTop(cfg.appKey, gposL, gposR, go) : ""}
       <div class="col-hdr" style="margin-bottom:5px;position:relative;z-index:1">
-        ${cfg.appKey ? this._appIcon(cfg.appKey, 24) : `<ha-icon icon="${cfg.icon}" style="--mdc-icon-size:24px"></ha-icon>`}
+        ${this._secHeaderIcons(section) || (cfg.appKey ? this._appIcon(cfg.appKey, 24) : `<ha-icon icon="${cfg.icon}" style="--mdc-icon-size:24px"></ha-icon>`)}
         <span class="col-hdr-title">${this._t(cfg.titleKey)}</span>
+        ${this._secFilterHtml(section)}
         <div class="col-hdr-line"></div>
         ${pageInd}
         <!-- The same box and mark as the See More arrow it replaces: the button
@@ -13962,7 +14025,7 @@ var _RenderRight = class {
       ["all", this._t("musMonAll")],
       ["none", this._t("musMonNone")]
     ];
-    const art = this._lidarrArtistImage(p.artist, "poster");
+    const art = this._lidarrArtistImage(p.artist, "poster", { w: 200 });
     const poster = art ? `<img src="${art}" class="tv-req-poster">` : `<span class="tv-req-poster tv-req-poster-ph">${this._escHtml(this._musInitials(p.artist?.artistName))}</span>`;
     const rootHtml = rootItems.length > 1 ? `<div class="mus-add-field"><span class="req-label">${this._t("musRootFolder")}</span>${this._mtFieldSelect("mus-add-root", rootItems, p.rootFolder, "width:100%")}</div>` : "";
     const metaHtml = metaItems.length > 1 ? `<div class="mus-add-field"><span class="req-label">${this._t("musMetadata")}</span>${this._mtFieldSelect("mus-add-meta", metaItems, p.metadataId, "width:100%")}</div>` : "";
@@ -14895,8 +14958,8 @@ var _MediaCardMethods = class {
     const pc = this._posterCfg();
     const artist = entry.artist || {};
     const album = entry.newestAlbum || null;
-    const front = this._lidarrArtistImage(artist, "poster") || (album ? this._lidarrCover(album) : null);
-    const back = this._lidarrArtistImage(artist, "fanart") || (album ? this._lidarrCover(album) : null);
+    const front = this._lidarrArtistImage(artist, "poster", { w: 360 }) || (album ? this._lidarrCover(album) : null);
+    const back = this._lidarrArtistImage(artist, "fanart", { w: 360 }) || (album ? this._lidarrCover(album) : null);
     const name = this._escHtml(artist.artistName || "Unknown");
     const sub = noSub ? "" : entry.newAlbumCount > 1 ? `${entry.newAlbumCount} ${this._t("musicNewAlbums")}` : this._escHtml(album?.title || "");
     const ast = artist.statistics || {};
@@ -15264,7 +15327,7 @@ var _MediaCardMethods = class {
     const album = this._escHtml(ep.title || "");
     const dateStr = this.fmtDate(ep.airDate);
     const cover = this._lidarrCover(ep);
-    const back = this._lidarrArtistImage(artist, "fanart") || cover;
+    const back = this._lidarrArtistImage(artist, "fanart", { w: 360 }) || cover;
     const st = ep.statistics || {};
     const have = st.trackFileCount ?? 0;
     const total = st.trackCount ?? 0;
@@ -16320,6 +16383,7 @@ var _WireMethods = class {
       e.stopPropagation();
       const checkedSeasons = [...el.querySelectorAll(".sv-input:checked")].map((cb) => parseInt(cb.dataset.season, 10)).filter(Boolean);
       if (!checkedSeasons.length) return;
+      this._markActivated();
       const profileSel = el.querySelector("#tv-req-profile-abs");
       const tagSel = el.querySelector("#tv-req-tag-abs");
       const rfSel = el.querySelector("#tv-req-rootfolder-abs");
@@ -19781,7 +19845,7 @@ var _MaintainerrRenderMethods = class {
     const total = searching ? allItems.length : ov.totalSize || 0;
     const totalPages = Math.max(1, Math.ceil(total / perPage));
     const safePage = Math.min(ov.page || 0, totalPages - 1);
-    const pageItems = searching ? allItems.slice(safePage * perPage, (safePage + 1) * perPage) : allItems;
+    const pageItems = searching ? allItems.slice(safePage * perPage, (safePage + 1) * perPage) : allItems.slice(0, perPage);
     const ADD_ICO = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`;
     const EXCL_ICO = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:block"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`;
     const _rnd = (bdr, bg) => `width:34px;height:34px;padding:0;border-radius:50%;border:1px solid ${bdr};background:${bg};color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:0;backdrop-filter:blur(8px)`;
@@ -23221,6 +23285,7 @@ var _PopupMethods = class {
     });
     this.shadowRoot.querySelectorAll(".mc[data-stream-entity]:not([data-artist-id])").forEach((card) => {
       card.addEventListener("click", () => {
+        this._markActivated();
         this._openStreamPopup(
           card.dataset.streamEntity,
           card.dataset.streamType || "",
@@ -23553,6 +23618,7 @@ var _PopupMethods = class {
   }
   // Seek via HA media_seek, or fall back to Plex direct API when HA seek unsupported
   _doSeek(entityId, newPos) {
+    this._markActivated();
     const supported = this._hass?.states?.[entityId]?.attributes?.supported_features || 0;
     const canSeek = !!(supported & 2);
     if (canSeek) {
@@ -23730,6 +23796,7 @@ var _PopupMethods = class {
             firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
             numberOfSeasons: detail.numberOfSeasons || prev.numberOfSeasons || 0,
             credits: detail.credits?.cast?.length ? detail.credits : prev.credits || null,
+            certifications: detail.certifications?.length ? detail.certifications : prev.certifications || [],
             relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
           };
           this._renderPopupEl();
@@ -23834,6 +23901,7 @@ var _PopupMethods = class {
             firstAirDate: detail.firstAirDate || prev.firstAirDate || "",
             numberOfSeasons: detail.numberOfSeasons || prev.numberOfSeasons || 0,
             credits: detail.credits?.cast?.length ? detail.credits : prev.credits || null,
+            certifications: detail.certifications?.length ? detail.certifications : prev.certifications || [],
             relatedVideos: detail.youTubeTrailerId ? [{ site: "YouTube", type: "Trailer", key: detail.youTubeTrailerId }] : prev.relatedVideos || []
           };
           this._renderPopupEl();
@@ -23877,6 +23945,7 @@ var _PopupMethods = class {
           overview: series.overview || "",
           firstAirDate: series.firstAired || "",
           genres: (series.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          certification: series.certification || "",
           voteAverage: series.ratings?.tmdb?.value || series.ratings?.imdb?.value || 0,
           _localPosterUrl: this._getSonarrPoster(series),
           _localBackdropUrl: fanart,
@@ -23895,6 +23964,7 @@ var _PopupMethods = class {
           overview: movie.overview || "",
           releaseDate: movie.digitalRelease || movie.physicalRelease || movie.inCinemas || "",
           genres: (movie.genres || []).map((g) => typeof g === "string" ? { name: g } : g),
+          certification: movie.certification || "",
           voteAverage: movie.ratings?.tmdb?.value || movie.ratings?.imdb?.value || 0,
           _localPosterUrl: this._getRadarrPoster(movie),
           _localBackdropUrl: fanart,
@@ -25578,7 +25648,8 @@ var _PopupMethods = class {
       const _genres = (d.genres || []).map((g) => this._escHtml(g.name || "")).filter(Boolean).join(" \xB7 ");
       const _rating = d.voteAverage ? d.voteAverage.toFixed(1) : "";
       const _overview = this._escHtml(d.overview || "");
-      const _subLine = [_year, _genres, _rating ? `\u2B50 ${_rating}` : ""].filter(Boolean).join(" \xB7 ");
+      const _cert = this._certChipHtml(d);
+      const _subLine = [_year, _genres, _cert, _rating ? `\u2B50 ${_rating}` : ""].filter(Boolean).join(" \xB7 ");
       const _posterUrl = d.posterPath ? d.posterPath.startsWith("http") ? d.posterPath : `https://image.tmdb.org/t/p/w342${d.posterPath}` : d._localPosterUrl || "";
       const _backdropUrl = d.backdropPath ? `https://image.tmdb.org/t/p/w1280${d.backdropPath}` : d._localBackdropUrl || "";
       const _videos = Array.isArray(d.relatedVideos) ? d.relatedVideos : [];
@@ -25637,7 +25708,8 @@ var _PopupMethods = class {
       const snCount = d._sonarrSeries?.statistics?.seasonCount ?? d._sonarr2Series?.statistics?.seasonCount ?? d.numberOfSeasons ?? 0;
       if (snCount > 0) seasonsLine = this._tSeasons(snCount);
     }
-    const subLine = [year, seasonsLine, genres].filter(Boolean).join(" \xB7 ");
+    const certChip = this._certChipHtml(d);
+    const subLine = [year, seasonsLine, genres, certChip].filter(Boolean).join(" \xB7 ");
     const backdropPath = d.backdropPath || null;
     const posterPath = d.posterPath || null;
     const backdropUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : d._localBackdropUrl || "";
@@ -34027,7 +34099,7 @@ var _LibraryMethods = class {
     const arts = [...this._lidarrArtists?.values() || []].filter((a) => (a.statistics?.trackFileCount || 0) > 0).sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0)).slice(0, 24);
     const out = [];
     for (const a of arts) {
-      const url = this._lidarrArtistImage(a, "poster") || this._lidarrArtistImage(a, "fanart");
+      const url = this._lidarrArtistImage(a, "poster", { w: 360 }) || this._lidarrArtistImage(a, "fanart", { w: 360 });
       if (!url) continue;
       out.push({ url, title: a.artistName || "", _libType: "music" });
       if (out.length === 4) break;
@@ -34914,7 +34986,7 @@ var _LibraryMethods = class {
     const m = this._libModal;
     const name = this._escHtml(artist.artistName || artist.title || "");
     const overview = this._escHtml((artist.overview || "").slice(0, 160));
-    const art = this._lidarrArtistImage(artist, "poster");
+    const art = this._lidarrArtistImage(artist, "poster", { w: 200 });
     const st = this._libTableStatus(artist);
     const stBadge = st.cls ? this._uiBadge(st.label, this._libBadgeTone(st.cls)) : "";
     const albums = artist.statistics?.albumCount ?? 0;
@@ -35539,13 +35611,35 @@ var _LibraryWireMethods = class {
     };
     window.addEventListener("resize", _onResize);
   }
+  // Swaps in the poster grid for a new column count without repainting the
+  // body — the slider lives in the body and a repaint mid-drag would take it
+  // out from under the pointer. Poster clicks are delegated on .popup-glass,
+  // so the new grid needs no wiring. The first poster on screen stays on the
+  // page that is shown.
+  _libRelayGrid(el, cols) {
+    const m = this._libModal;
+    const grid = el.querySelector("#lib-poster-grid");
+    if (!m || !grid) return;
+    const first = (m.page || 0) * (m._perPage || 1);
+    m._libCols = cols;
+    m._colsAuto = false;
+    const probe = document.createElement("div");
+    probe.innerHTML = this._libBodyHtml();
+    const page = Math.floor(first / (m._perPage || 1));
+    if (page !== m.page) {
+      m.page = page;
+      probe.innerHTML = this._libBodyHtml();
+    }
+    const next = probe.querySelector("#lib-poster-grid");
+    if (next) grid.replaceWith(next);
+  }
   _wireLibDragHandle(el) {
     const handle = el.querySelector("#lib-drag-handle");
     const track = el.querySelector("#lib-drag-track");
     const thumb = el.querySelector("#lib-drag-thumb");
     if (!handle || !track) return;
     const MIN = 3, MAX = 12, INSET = 7;
-    let startX = 0, startCols = 0;
+    let startX = 0, startCols = 0, liveCols = null;
     const _thumbPx = (cols, tW) => Math.round((cols - MIN) / (MAX - MIN) * (tW - INSET * 2)) + INSET;
     const _updateUI = (cols) => {
       const tW = track.getBoundingClientRect().width || 120;
@@ -35558,8 +35652,10 @@ var _LibraryWireMethods = class {
         fill.style.left = "0";
         fill.style.width = px + "px";
       }
-      const grid = el.querySelector("#lib-poster-grid");
-      if (grid) grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+      if (cols !== liveCols) {
+        liveCols = cols;
+        this._libRelayGrid(el, cols);
+      }
     };
     const _colsFromDx = (dx) => {
       const tW = track.getBoundingClientRect().width || 120;
@@ -35571,6 +35667,7 @@ var _LibraryWireMethods = class {
     handle.addEventListener("pointerdown", (e) => {
       startX = e.clientX;
       startCols = this._libModal._libCols || 5;
+      liveCols = startCols;
       handle.setPointerCapture(e.pointerId);
       e.preventDefault();
     });
@@ -41855,13 +41952,67 @@ var _WireMaintainerrMethods = class {
     if (val === "last") return totalPages - 1;
     return parseInt(val) || 0;
   }
+  // One page of the overview, as Maintainerr serves it. Shared by the full
+  // load and by the slider, which fetches while it is still being dragged.
+  _mtOverviewPageData(ov, perPage) {
+    const lib = (this._maintainerrLibraries || []).find((l) => String(l.id) === String(ov.libId));
+    const [sortKey, sortOrder] = (ov.sort || "title-asc").split("-");
+    const params = new URLSearchParams({
+      page: String((ov.page || 0) + 1),
+      limit: String(perPage),
+      sort: sortKey,
+      sortOrder: sortOrder || "asc"
+    });
+    if (lib?.type) params.set("type", lib.type);
+    return this._hass.callApi("GET", `arr_stack/maintainerr/media-server/library/${ov.libId}/content?${params}`);
+  }
+  // Swaps in the poster grid for a new column count without repainting the
+  // body — the slider lives in the body, and a repaint mid-drag would take it
+  // out from under the pointer. The first poster on screen stays on the page
+  // that is shown. The overview only holds the page it fetched, so it is
+  // re-laid from that at once and then, a moment later, from the right page.
+  _mtRelayGrid(el, cd, cols) {
+    const m = this._maintainerrModal;
+    if (!m || !cd || !el.querySelector("#mt-poster-grid")) return;
+    const ov = m.tab === "overview";
+    const excl = !ov && m.colSubTab === "exclusions";
+    const key = excl ? "exclPage" : "page";
+    const reserve = excl ? 48 : 90;
+    const first = (cd[key] || 0) * this._mtGridCalc(cd, reserve).perPage;
+    cd._mtCols = cols;
+    const per = this._mtGridCalc(cd, reserve).perPage;
+    cd[key] = Math.floor(first / per);
+    const swap = () => {
+      const live = el.querySelector("#mt-poster-grid");
+      if (!live) return;
+      const probe = document.createElement("div");
+      probe.innerHTML = ov ? this._mtOverviewTabHtml() : this._mtCollectionsTabHtml();
+      const next = probe.querySelector("#mt-poster-grid");
+      if (next) live.replaceWith(next);
+    };
+    swap();
+    if (!ov || (cd.search || "").trim() || !cd.libId) return;
+    clearTimeout(cd._liveT);
+    const tok = cd._liveTok = (cd._liveTok || 0) + 1;
+    cd._liveT = setTimeout(async () => {
+      try {
+        const data = await this._mtOverviewPageData(cd, per);
+        if (tok !== cd._liveTok) return;
+        cd.items = data?.items || [];
+        cd.totalSize = data?.totalSize ?? cd.items.length;
+        cd._liveKey = `${cols}:${cd.page || 0}`;
+        swap();
+      } catch (_) {
+      }
+    }, 150);
+  }
   _mtWireDragHandle(el) {
     const handle = el.querySelector("#mt-drag-handle");
     const track = el.querySelector("#mt-drag-track");
     const thumb = el.querySelector("#mt-drag-thumb");
     if (!handle || !track) return;
     const MIN = 3, MAX = 12, INSET = 7;
-    let startX = 0, startCols = 0;
+    let startX = 0, startCols = 0, liveCols = null;
     const m = this._maintainerrModal;
     const cd = m?.tab === "overview" ? m.overview : m?.colDetail;
     if (!cd) return;
@@ -41875,8 +42026,10 @@ var _WireMaintainerrMethods = class {
         fill.style.left = "0";
         fill.style.width = px + "px";
       }
-      const grid = el.querySelector("#mt-poster-grid");
-      if (grid) grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+      if (cols !== liveCols) {
+        liveCols = cols;
+        this._mtRelayGrid(el, cd, cols);
+      }
     };
     const _colsFromDx = (dx) => {
       const tW = track.getBoundingClientRect().width || 120;
@@ -41888,6 +42041,8 @@ var _WireMaintainerrMethods = class {
     handle.addEventListener("pointerdown", (e) => {
       startX = e.clientX;
       startCols = cd._mtCols || 7;
+      liveCols = startCols;
+      cd._liveKey = null;
       handle.setPointerCapture(e.pointerId);
       e.preventDefault();
     });
@@ -41903,8 +42058,16 @@ var _WireMaintainerrMethods = class {
         localStorage.setItem("arr-mt-cols", String(newCols));
       } catch (_) {
       }
-      if (m.tab === "overview") this._mtLoadOverview(el);
-      else this._mtLoadTab(m.tab, el);
+      if (m.tab === "overview") {
+        const searching = !!(cd.search || "").trim();
+        if (searching || cd._liveKey === `${newCols}:${cd.page || 0}`) {
+          this._mtLoadTab("overview", el);
+        } else {
+          clearTimeout(cd._liveT);
+          cd._liveTok = (cd._liveTok || 0) + 1;
+          this._mtLoadOverview(el);
+        }
+      } else this._mtLoadTab(m.tab, el);
     });
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -42095,7 +42258,6 @@ var _WireMaintainerrMethods = class {
       return;
     }
     const lib = (this._maintainerrLibraries || []).find((l) => String(l.id) === String(ov.libId));
-    const [sortKey, sortOrder] = (ov.sort || "title-asc").split("-");
     const { perPage } = this._mtGridCalc(ov, 90);
     const q = (ov.search || "").trim();
     ov.loading = true;
@@ -42108,14 +42270,7 @@ var _WireMaintainerrMethods = class {
         ov.items = [];
         ov.totalSize = ov.searchItems.length;
       } else {
-        const params = new URLSearchParams({
-          page: String((ov.page || 0) + 1),
-          limit: String(perPage),
-          sort: sortKey,
-          sortOrder: sortOrder || "asc"
-        });
-        if (lib?.type) params.set("type", lib.type);
-        const data = await this._hass.callApi("GET", `arr_stack/maintainerr/media-server/library/${ov.libId}/content?${params}`);
+        const data = await this._mtOverviewPageData(ov, perPage);
         ov.items = data?.items || [];
         ov.totalSize = data?.totalSize ?? ov.items.length;
         ov.searchItems = null;
@@ -42868,7 +43023,7 @@ var _MusicRenderMethods = class {
     const backdropStyle = fan && !perf ? `background-image:url('${fan}')` : `background:linear-gradient(135deg,rgba(21,158,90,0.35),rgba(10,10,14,0.9))`;
     return `
       <div class="popup-overlay${dayClass(this)}" data-music-modal>
-        <div class="popup-glass is-wide">
+        <div class="popup-glass is-wide"${this._musGlassH ? ` style="height:${this._musGlassH}px"` : ""}>
           <button class="popup-close" data-music-close>${this._libReturnState ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>` : ICONS.close}</button>
           <div class="popup-backdrop mus-backdrop" style="${backdropStyle}">
             <div class="popup-backdrop-fade"></div>
@@ -43302,7 +43457,7 @@ var _MusicRenderMethods = class {
     const chev = (dir, disabled) => `<button class="pg-btn mus-pg${disabled ? " pg-btn-ph" : ""}" data-mus-page="${dir}"${disabled ? ' disabled aria-hidden="true" tabindex="-1"' : ""}>${dir === "prev" ? "&#8249;" : "&#8250;"}</button>`;
     return `<div class="mus-alb-wrap">
       ${chev("prev", page === 0)}
-      <div class="mus-alb-grid">${slice.map((a) => this._musicAlbumTile(a)).join("")}</div>
+      <div class="mus-alb-grid"${this._musAlbCols ? ` style="--mus-alb-cols:${this._musAlbCols}"` : ""}>${slice.map((a) => this._musicAlbumTile(a)).join("")}</div>
       ${chev("next", page >= pages - 1)}
     </div>`;
   }
@@ -43391,7 +43546,7 @@ var _MusicRenderMethods = class {
     const chip = total ? `<div class="instance-status-row"><span class="inst-chip ${have >= total ? "ic--available" : have > 0 ? "ic--partial" : "ic--missing"}">${have}/${total}${have >= total ? ' <span class="ic-icon">\u2713</span>' : ""}</span></div>` : "";
     return `
       <div class="popup-overlay${dayClass(this)}" data-album-modal>
-        <div class="popup-glass is-wide">
+        <div class="popup-glass is-wide"${this._musGlassH ? ` style="height:${this._musGlassH}px"` : ""}>
           <button class="popup-close" data-album-close><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
           <div class="popup-backdrop mus-backdrop" style="${backdropStyle}">
             <div class="popup-backdrop-fade"></div>
@@ -43517,6 +43672,8 @@ var _WireMusicMethods = class {
     this._musPanelH = null;
     this._musDescH = null;
     this._musAlbH = null;
+    this._musGlassH = null;
+    this._musAlbCols = null;
     this._musicModal = {
       artistId: null,
       artist: hit.artist,
@@ -43804,6 +43961,8 @@ var _WireMusicMethods = class {
     this._musPanelH = null;
     this._musDescH = null;
     this._musAlbH = null;
+    this._musGlassH = null;
+    this._musAlbCols = null;
     this._musQueueSigLast = null;
     this._musicModal = { artistId, artist, albums: [], loading: true, stream };
     this._renderMusicModalEl();
@@ -43984,11 +44143,40 @@ var _WireMusicMethods = class {
     const chrome = (grab?.getBoundingClientRect().height || 0) + 8 + 18;
     const rows = this._musicModal?.stream ? 1 : 2;
     const tileH = tile.getBoundingClientRect().height;
+    const glass = el.querySelector(".popup-glass");
+    const head = el.querySelector(".mus-content");
+    if (glass && head && window.innerWidth > 1400) {
+      const sheet = Math.round(tileH * rows + rowGap * (rows - 1) + chrome);
+      const headBottom = head.getBoundingClientRect().bottom - glass.getBoundingClientRect().top;
+      const total = Math.min(Math.round(window.innerHeight * 0.85), Math.round(headBottom + 15 + sheet));
+      if (total > glass.getBoundingClientRect().height) {
+        this._musGlassH = total;
+        glass.style.height = `${total}px`;
+      }
+    }
     const max = this._musAlbMax(el);
-    const fit = Math.max(1, Math.floor((max - chrome + rowGap) / (tileH + rowGap)));
+    const bodyR = el.querySelector(".mus-modal-body")?.getBoundingClientRect();
+    const headR = head?.getBoundingClientRect();
+    const cap = bodyR && headR ? Math.min(max, Math.round(bodyR.bottom - headR.bottom - 15)) : max;
+    let tH = tileH;
+    const grid = el.querySelector(".mus-alb-grid");
+    const tablet = window.innerWidth > 600 && window.innerWidth <= 1400;
+    if (grid && tablet && rows > 1 && tileH * rows + rowGap * (rows - 1) + chrome > cap) {
+      const w = tile.getBoundingClientRect().width;
+      const under = tileH - w;
+      const maxW = Math.max(96, Math.floor((cap - chrome - rowGap * (rows - 1)) / rows - under));
+      const gridW = grid.getBoundingClientRect().width;
+      const cols = Math.min(8, Math.ceil((gridW + rowGap) / (maxW + rowGap)));
+      if (maxW < w && cols > 4) {
+        this._musAlbCols = cols;
+        grid.style.setProperty("--mus-alb-cols", cols);
+        tH = tile.getBoundingClientRect().height;
+      }
+    }
+    const fit = Math.max(1, Math.floor((cap - chrome + rowGap) / (tH + rowGap)));
     const want = Math.min(rows, fit);
-    const h = Math.round(tileH * want + rowGap * (want - 1) + chrome);
-    this._musAlbH = Math.max(120, Math.min(max, h));
+    const h = Math.round(tH * want + rowGap * (want - 1) + chrome);
+    this._musAlbH = Math.max(120, Math.min(cap, h));
     albums.style.height = `${this._musAlbH}px`;
   }
   // As far up as the backdrop, which is where the sources panel stops too.
@@ -44003,6 +44191,19 @@ var _WireMusicMethods = class {
   // The grabber the sources panel has, on the discography — applied inline
   // while dragging for the same reason: repainting a page of covers on every
   // pointer move is what makes it feel sticky.
+  // Re-lays the covers for a new row count without repainting the modal — the
+  // grabber is mid-drag and a full repaint would take it out from under the
+  // pointer. The first cover on screen stays on the page that is shown.
+  _musRelayAlbums(el, rows) {
+    const m = this._musicModal;
+    const wrap = el?.querySelector(".mus-alb-wrap");
+    if (!m || !wrap) return;
+    const first = (m.albPage || 0) * Math.max(2, (m.cols || 4) * (m.rows || 2));
+    m.rows = rows;
+    m.albPage = Math.floor(first / Math.max(2, (m.cols || 4) * rows));
+    wrap.outerHTML = this._musicAlbumsHtml();
+    this._wireMusSwipe(el);
+  }
   _wireMusAlbDrag(el) {
     const handle = el.querySelector("[data-mus-alb-handle]");
     const panel = el.querySelector(".mus-albums");
@@ -44020,6 +44221,8 @@ var _WireMusicMethods = class {
         const rows = Math.max(1, Math.round((raw - chrome + gap) / (tileH + gap)));
         return Math.round(chrome + rows * tileH + gap * (rows - 1));
       };
+      const rowsOf = (h) => tileH ? Math.max(1, Math.round((h - chrome + gap) / (tileH + gap))) : null;
+      let liveRows = null;
       handle.classList.add("is-dragging");
       handle.setPointerCapture(ev.pointerId);
       const move = (e) => {
@@ -44027,6 +44230,11 @@ var _WireMusicMethods = class {
         const h = Math.round(Math.min(max, Math.max(120, snap(raw))));
         panel.style.height = `${h}px`;
         this._musAlbH = h;
+        const rows = rowsOf(h);
+        if (rows && rows !== (liveRows ?? this._musicModal?.rows)) {
+          liveRows = rows;
+          this._musRelayAlbums(el, rows);
+        }
       };
       const up = () => {
         handle.classList.remove("is-dragging");
@@ -44037,7 +44245,7 @@ var _WireMusicMethods = class {
         handle.removeEventListener("pointermove", move);
         handle.removeEventListener("pointerup", up);
         const m = this._musicModal;
-        if (m) m.rows = null;
+        if (m) m.rows = liveRows ?? null;
         this._renderMusicModalEl();
       };
       handle.addEventListener("pointermove", move);
@@ -44579,7 +44787,7 @@ var _WireMusicMethods = class {
 var wireMusicMixin = _WireMusicMethods.prototype;
 
 // src/card.js
-var ArrStackCard = class extends HTMLElement {
+var ArrStackCard = class _ArrStackCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -45145,7 +45353,7 @@ var ArrStackCard = class extends HTMLElement {
         // See More shows what the header peanut is showing, not the raw list.
         getItems: () => this._raItems(),
         renderCard: (m) => this._renderRecentlyAddedCard(m),
-        getPosterUrl: (m) => m._mediaType === "music" ? this._lidarrArtistImage(m.artist, "poster") || (m.newestAlbum ? this._lidarrCover(m.newestAlbum) : null) : m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
+        getPosterUrl: (m) => m._mediaType === "music" ? this._lidarrArtistImage(m.artist, "poster", { w: 200 }) || (m.newestAlbum ? this._lidarrCover(m.newestAlbum) : null) : m._mediaType === "movie" ? this._getRadarrPoster(m) : this._getSonarrPoster(m),
         emoji: (m) => m._mediaType === "music" ? "\u{1F3B5}" : m._mediaType === "movie" ? "\u{1F3AC}" : "\u{1F4FA}"
       },
       recommendations: {
@@ -45158,7 +45366,7 @@ var ArrStackCard = class extends HTMLElement {
         hasTvPending: true,
         getItems: () => this._recItems(),
         renderCard: (m, i) => this._renderRecCard(m, i),
-        getPosterUrl: (m) => m._recSrc === "lastfm" ? this._lidarrArtistImage(m.artist, "poster") : m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w92${m.posterPath}` : null,
+        getPosterUrl: (m) => m._recSrc === "lastfm" ? this._lidarrArtistImage(m.artist, "poster", { w: 200 }) : m.posterPath ? m.posterPath.startsWith("http") ? m.posterPath : `https://image.tmdb.org/t/p/w92${m.posterPath}` : null,
         emoji: (m) => m._recSrc === "lastfm" ? "\u{1F3B5}" : m.mediaType === "tv" ? "\u{1F4FA}" : "\u{1F3AC}"
       },
       recentlyRequested: {
@@ -46857,11 +47065,99 @@ var ArrStackCard = class extends HTMLElement {
       fetch("https://arr-ping.martinargalas.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ v: "1.9.1", sid, svcs, mob: this._isMob ? 1 : 0, act })
+        body: JSON.stringify({
+          v: "1.9.1",
+          sid,
+          mob: this._isMob ? 1 : 0,
+          act,
+          ...this._capsLoaded ? { svcs } : {}
+        })
       }).catch(() => {
       });
     } catch (_) {
     }
+  }
+  // ─────────────────────────────────────────────
+  // Age rating (certification)
+  // ─────────────────────────────────────────────
+  // Countries whose board we trust first. Czech and Slovak ratings are already
+  // written as an age, the German one is a plain number, and the two English
+  // ones are only reached when nothing closer to home exists.
+  static get CERT_COUNTRIES() {
+    return ["CZ", "SK", "DE", "AT", "GB", "US"];
+  }
+  // Label → minimum age. Anything already numeric ("12", "12+", "R 18+") is
+  // read straight off the string; the rest are the boards that spell it out
+  // with letters instead.
+  _certAge(label) {
+    const raw = String(label || "").trim();
+    if (!raw) return null;
+    const upper = raw.toUpperCase();
+    const named = {
+      G: 0,
+      TV_G: 0,
+      TV_Y: 0,
+      U: 0,
+      UC: 0,
+      E: 0,
+      AL: 0,
+      T: 0,
+      TV_Y7: 7,
+      PG: 7,
+      TV_PG: 7,
+      "PG-13": 13,
+      "TV-14": 14,
+      R: 17,
+      "TV-MA": 17,
+      "NC-17": 18,
+      R18: 18,
+      X: 18
+    };
+    const key = upper.replace(/\s+/g, "");
+    if (key in named) return named[key];
+    if (key.replace(/-/g, "_") in named) return named[key.replace(/-/g, "_")];
+    const digits = upper.match(/\d{1,2}/);
+    if (digits) return parseInt(digits[0], 10);
+    return null;
+  }
+  // Pull { country, label, age } out of whatever the detail carries: Overseerr's
+  // per-country release dates (films) or content ratings (series), the proxy's
+  // flattened TMDB list, or the plain Radarr/Sonarr certification string.
+  _certInfo(d) {
+    if (!d) return null;
+    const found = /* @__PURE__ */ new Map();
+    const add = (country2, label2) => {
+      const c = String(country2 || "").toUpperCase();
+      const l = String(label2 || "").trim();
+      if (c && l && !found.has(c)) found.set(c, l);
+    };
+    for (const r of d.releases?.results || [])
+      add(r.iso_3166_1, (r.release_dates || []).find((x) => x.certification)?.certification);
+    for (const r of d.contentRatings?.results || [])
+      add(r.iso_3166_1, r.rating);
+    for (const r of d.certifications || [])
+      add(r.country, r.rating);
+    let country = _ArrStackCard.CERT_COUNTRIES.find((c) => found.has(c));
+    let label = country ? found.get(country) : null;
+    if (!label) {
+      const local = d._sonarrSeries?.certification || d._sonarr2Series?.certification || d.certification;
+      if (local) {
+        country = null;
+        label = String(local).trim();
+      }
+    }
+    if (!label && found.size) [country, label] = found.entries().next().value;
+    if (!label) return null;
+    return { country, label, age: this._certAge(label) };
+  }
+  // The chip itself — an age when we can name one, the board's own label when
+  // we cannot make sense of it.
+  _certChipHtml(d) {
+    const info = this._certInfo(d);
+    if (!info) return "";
+    const text = info.age === null ? info.label : `${info.age}+`;
+    const title = info.country ? `${info.label} (${info.country})` : info.label;
+    return `<span class="popup-cert" title="${this._escHtml(title)}">${this._escHtml(text)}</span>`;
   }
   _escHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
