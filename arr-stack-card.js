@@ -44787,6 +44787,21 @@ var _WireMusicMethods = class {
 var wireMusicMixin = _WireMusicMethods.prototype;
 
 // src/card.js
+// STYLES is ~235KB. Parsing it per <style> element means every card instance
+// on a dashboard re-parses the whole sheet. One constructed sheet, adopted by
+// each shadow root, is parsed once for the page.
+var ARR_SHEET = null;
+function arrSharedSheet() {
+  if (ARR_SHEET) return ARR_SHEET;
+  try {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(STYLES);
+    ARR_SHEET = sheet;
+  } catch (_) {
+    ARR_SHEET = null;
+  }
+  return ARR_SHEET;
+}
 var ArrStackCard = class _ArrStackCard extends HTMLElement {
   constructor() {
     super();
@@ -46596,8 +46611,12 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
   // Shell build (CSS + skeleton)
   // ─────────────────────────────────────────────
   _buildShell() {
-    const style = document.createElement("style");
-    style.textContent = this._css();
+    const sharedSheet = arrSharedSheet();
+    let style = null;
+    if (!sharedSheet) {
+      style = document.createElement("style");
+      style.textContent = this._css();
+    }
     const userStyles = this._cfg?.styles || {};
     const perfMode = !!(userStyles.performanceMode || this._cfg?.performanceMode);
     const customVars = [];
@@ -46624,7 +46643,8 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
     </div>`;
     const popupRoot = document.createElement("div");
     popupRoot.id = "popup-root";
-    this.shadowRoot.appendChild(style);
+    if (sharedSheet) this.shadowRoot.adoptedStyleSheets = [sharedSheet];
+    else this.shadowRoot.appendChild(style);
     if (customVars.length) {
       const varStyle = document.createElement("style");
       varStyle.textContent = `:host { ${customVars.join("; ")}; }`;
