@@ -422,6 +422,20 @@ If you would rather not take part, you can switch it off: **Settings → Devices
 
 ---
 
+## Development
+
+The card's source is in [`src/`](src); `arr-stack-card.js` is built from it and is the only file Home Assistant loads.
+
+```bash
+npm install
+npm run build   # src/ → arr-stack-card.js
+npm test        # Node's own test runner against the source
+```
+
+Every file in `src/` is a mixin of one area (`fetch/` talks to the services, `render/` builds markup, `wire/` handles clicks, `popup/` is the title detail), and `check-mixins.js` fails the build if two of them define the same method. Translations live in `src/i18n.js`. Pull requests against `src/` are welcome — please leave `arr-stack-card.js` out of them; it is rebuilt on release.
+
+---
+
 ## License
 
 MIT

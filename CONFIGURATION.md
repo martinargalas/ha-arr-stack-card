@@ -42,6 +42,7 @@ downloadClients:
 discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
   itemsPerCategory: 4        # columns per category grid  (default: 4)
+  showSearch: true           # search bar at the top of the right panel; false gives its slot to one more category  (default: true)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
   oneClickRequest: false     # skip request overlay — uses defaults below  (default: false)
   oneClickNonAdminOnly: false         # one-click only for non-admin users  (default: false)

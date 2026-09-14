@@ -1,0 +1,15 @@
+{
+  "name": "arr-stack-card",
+  "version": "1.9.2",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "jsdom": "^29.1.1"
+  },
+  "private": true
+}
