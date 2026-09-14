@@ -45232,6 +45232,10 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       clearInterval(this._streamPopupTimer);
       this._streamPopupTimer = null;
     }
+    if (this._ppGrabTimer) {
+      clearInterval(this._ppGrabTimer);
+      this._ppGrabTimer = null;
+    }
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
       this._resizeObserver = null;
