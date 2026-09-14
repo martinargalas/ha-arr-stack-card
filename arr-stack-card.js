@@ -6960,6 +6960,19 @@ var STYLES = `
         .req-overlay .req-panel .mt-fsel { height: 30px; font-size: 11px; }
         .req-overlay .req-label { font-size: 10px; }
       }
+    
+      /* Respect the OS "reduce motion" setting. The card runs several
+         indefinite animations (button spinners, download stripe pulse,
+         skeleton pulses); these keep a compositor frame scheduled forever
+         and are exactly what this preference asks us to stop. */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
     `;
 
 // src/render/interactive-search.js
