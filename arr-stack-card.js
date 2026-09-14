@@ -45097,6 +45097,7 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
     this._diskPage = { radarr: 0, sonarr: 0, left: null };
     this._rightPage = 0;
     this._rightMaxH = 0;
+    this._rightMaxHCacheKey = null;
     this._gradients = ["ca", "cb", "cc", "cd", "ce", "cf", "cg", "ch", "ci", "cj", "ck", "cl", "cm", "cn", "co", "cp", "cq", "cr"];
     this._gradientMap = {};
     this._gradientIdx = 0;
@@ -46369,6 +46370,20 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
     right.style.visibility = "";
     return maxH;
   }
+  // Cache key for the measured height. The measure loop below re-renders the
+  // whole right column once per page, so it must only run when something that
+  // can actually change the rendered height changes — not on every paginate.
+  // Same memoisation the search path already uses via _searchMaxH.
+  _rightMaxHKey() {
+    const right = this.shadowRoot.getElementById("col-right");
+    return [
+      this._dataFingerprint(),
+      right ? right.clientWidth : 0,
+      this._overlay?.section || "",
+      this._cfg?.layout || "both",
+      this._rightMinimized ? 1 : 0
+    ].join("|");
+  }
   // Přeměří všechny stránky pravého sloupce a nastaví min-height na nejvyšší.
   // Každá outer stránka se měří se všemi _pages sekcí = 0 (nejvyšší možná varianta).
   // Vše proběhne synchronně v jednom JS tiku — browser nestihne malovat.
@@ -46379,6 +46394,15 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       if (!window.matchMedia("(max-width: 900px)").matches) {
         right.style.minHeight = this._rightMaxH + "px";
       }
+      this._wirePageButtons();
+      this._wirePopup();
+      this._wireOverseerrButtons();
+      this._wireSearch();
+      return;
+    }
+    const key = this._rightMaxHKey();
+    if (this._rightMaxH && this._rightMaxHCacheKey === key) {
+      right.style.minHeight = this._rightMaxH + "px";
       this._wirePageButtons();
       this._wirePopup();
       this._wireOverseerrButtons();
@@ -46405,6 +46429,7 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
     right.innerHTML = this._renderRight();
     right.style.visibility = "";
     this._rightMaxH = maxH;
+    this._rightMaxHCacheKey = key;
     right.style.minHeight = maxH + "px";
     this._wirePageButtons();
     this._wirePopup();
