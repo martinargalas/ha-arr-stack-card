@@ -46160,13 +46160,21 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       nav.classList.toggle("rp-nav-visible", leftIsGone || rightEnough);
     };
     syncNav();
-    // syncNav() reads only getBoundingClientRect() + innerHeight, which can
-    // change on scroll, resize or a re-render. _wireStickyNav() is re-run on
-    // render, so listening for scroll + resize covers every case the 150ms
-    // poll did — without forcing layout 6.6x/sec while the user sits still.
-    // Capture-phase on document so it also catches the inner HA scroller.
+    // syncNav() only reads layout geometry, which changes on scroll, resize or
+    // a re-render — and _wireStickyNav() already re-runs on render. So all this
+    // needs is a reliable "something moved" signal instead of a 150ms poll.
+    //
+    // A listener on document is NOT that signal: scroll is composed:false, so
+    // when HA scrolls a container inside a shadow root the event's propagation
+    // path stops at that shadow root and never reaches document. Two sources
+    // that do work:
+    //   1. the real scroller, found by walking shadow hosts — a listener on the
+    //      scrolling element itself is the event target, so composition is moot
+    //   2. an IntersectionObserver, which is viewport-relative and fires across
+    //      shadow boundaries no matter which element does the scrolling. It is
+    //      only used as a change trigger; syncNav() still does the exact math.
     let queued = false;
-    this._navScrollHandler = () => {
+    const trigger = () => {
       if (queued) return;
       queued = true;
       requestAnimationFrame(() => {
@@ -46174,8 +46182,16 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
         syncNav();
       });
     };
-    document.addEventListener("scroll", this._navScrollHandler, { capture: true, passive: true });
-    window.addEventListener("resize", this._navScrollHandler, { passive: true });
+    this._navScrollHandler = trigger;
+    this._navScroller = this._findScrollContainer();
+    if (this._navScroller) this._navScroller.addEventListener("scroll", trigger, { passive: true });
+    window.addEventListener("scroll", trigger, { passive: true });
+    window.addEventListener("resize", trigger, { passive: true });
+    const thresholds = [];
+    for (let i = 0; i <= 20; i++) thresholds.push(i / 20);
+    this._navObserver = new IntersectionObserver(trigger, { threshold: thresholds });
+    this._navObserver.observe(left);
+    if (right) this._navObserver.observe(right);
   }
   _clearNavWatcher() {
     if (this._navObserver) {
@@ -46191,9 +46207,11 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       this._navInterval = null;
     }
     if (this._navScrollHandler) {
-      document.removeEventListener("scroll", this._navScrollHandler, true);
+      if (this._navScroller) this._navScroller.removeEventListener("scroll", this._navScrollHandler);
+      window.removeEventListener("scroll", this._navScrollHandler);
       window.removeEventListener("resize", this._navScrollHandler);
       this._navScrollHandler = null;
+      this._navScroller = null;
     }
   }
   // Po přepnutí stránky pravého sloupce (rp-btn / rp-dot):
