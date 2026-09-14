@@ -46160,7 +46160,22 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       nav.classList.toggle("rp-nav-visible", leftIsGone || rightEnough);
     };
     syncNav();
-    this._navInterval = setInterval(syncNav, 150);
+    // syncNav() reads only getBoundingClientRect() + innerHeight, which can
+    // change on scroll, resize or a re-render. _wireStickyNav() is re-run on
+    // render, so listening for scroll + resize covers every case the 150ms
+    // poll did — without forcing layout 6.6x/sec while the user sits still.
+    // Capture-phase on document so it also catches the inner HA scroller.
+    let queued = false;
+    this._navScrollHandler = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        syncNav();
+      });
+    };
+    document.addEventListener("scroll", this._navScrollHandler, { capture: true, passive: true });
+    window.addEventListener("resize", this._navScrollHandler, { passive: true });
   }
   _clearNavWatcher() {
     if (this._navObserver) {
@@ -46177,6 +46192,7 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
     }
     if (this._navScrollHandler) {
       document.removeEventListener("scroll", this._navScrollHandler, true);
+      window.removeEventListener("resize", this._navScrollHandler);
       this._navScrollHandler = null;
     }
   }
