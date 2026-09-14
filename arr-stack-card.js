@@ -45135,12 +45135,13 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       this._buildShell();
       this._loadPendingFromStorage();
       this._fetchAll();
-      this._interval = setInterval(() => this._fetchAll(), 3e4);
-      this._fastInterval = setInterval(() => this._fetchDownloadsAndRender(), 5e3);
+      this._interval = setInterval(() => { if (!document.hidden) this._fetchAll(); }, 3e4);
+      this._fastInterval = setInterval(() => { if (!document.hidden) this._fetchDownloadsAndRender(); }, 5e3);
       this._resizeObserver = new ResizeObserver(() => {
         requestAnimationFrame(() => this._checkBadgeOverflow());
       });
       this._resizeObserver.observe(this);
+      this._wireVisibility();
       return;
     }
     if (prev) {
@@ -45204,7 +45205,7 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
   _resetFetchInterval() {
     if (this._interval) {
       clearInterval(this._interval);
-      this._interval = setInterval(() => this._fetchAll(), 3e4);
+      this._interval = setInterval(() => { if (!document.hidden) this._fetchAll(); }, 3e4);
     }
   }
   disconnectedCallback() {
@@ -45236,6 +45237,10 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       clearInterval(this._ppGrabTimer);
       this._ppGrabTimer = null;
     }
+    if (this._visibilityHandler) {
+      document.removeEventListener("visibilitychange", this._visibilityHandler);
+      this._visibilityHandler = null;
+    }
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
       this._resizeObserver = null;
@@ -45246,13 +45251,26 @@ var ArrStackCard = class _ArrStackCard extends HTMLElement {
       this._pageBtnAbort = null;
     }
   }
+  // Polling is skipped while the tab is hidden (see the interval callbacks);
+  // this catches the card up as soon as it comes back into view.
+  _wireVisibility() {
+    if (this._visibilityHandler) return;
+    this._visibilityHandler = () => {
+      if (!document.hidden && this.isConnected) {
+        this._fetchAll();
+        this._fetchDownloadsAndRender();
+      }
+    };
+    document.addEventListener("visibilitychange", this._visibilityHandler);
+  }
   connectedCallback() {
     if (!this._initialized) return;
+    this._wireVisibility();
     if (!this._interval) {
-      this._interval = setInterval(() => this._fetchAll(), 3e4);
+      this._interval = setInterval(() => { if (!document.hidden) this._fetchAll(); }, 3e4);
     }
     if (!this._fastInterval) {
-      this._fastInterval = setInterval(() => this._fetchDownloadsAndRender(), 5e3);
+      this._fastInterval = setInterval(() => { if (!document.hidden) this._fetchDownloadsAndRender(); }, 5e3);
     }
     if (!this._resizeObserver) {
       this._resizeObserver = new ResizeObserver(() => {
