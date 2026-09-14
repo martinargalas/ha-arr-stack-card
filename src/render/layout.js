@@ -10,10 +10,9 @@ class _LayoutMethods {
     if (el && typeof el.blur === 'function') el.blur();
   }
 
-  // Floating nav — IntersectionObserver na sentinel.
-  // Nav se zobrazí (fade-in) když uživatel scrolluje k pravé sekci.
-  // Observer 1 (col-left): zobraz nav když col-left vyjede z viewportu — pro standardní stránky.
-  // Observer 2 (col-right): záloha pro krátké stránky kde scroll nestačí ke spuštění obs. 1.
+  // Floating nav na stackovaném layoutu: zobrazí se (fade-in), když uživatel doscrolluje k pravé sekci.
+  // Podmínka 1: první sloupec vyjel z viewportu — pro standardní stránky.
+  // Podmínka 2: druhý sloupec je skoro celý vidět — záloha pro krátké stránky, kde 1 nenastane.
   _wireStickyNav() {
     // Pouze na stackovaném layoutu (mobil/tablet ≤ 900px)
     if (window.matchMedia('(min-width: 901px)').matches) return;
@@ -33,8 +32,6 @@ class _LayoutMethods {
     const left  = swapped ? colRight : colLeft;
     const right = swapped ? colLeft  : colRight;
 
-    // Každých 150 ms přečteme aktuální BCR — bez závislosti na scroll-událostech
-    // (HA scrolluje uvnitř shadow DOM, IntersectionObserver/scroll eventy tam nejsou spolehlivé).
     const syncNav = () => {
       const nav = this.shadowRoot.querySelector('.rp-nav');
       if (!nav) return;
@@ -57,15 +54,42 @@ class _LayoutMethods {
     };
 
     syncNav();                                        // okamžitý stav
-    this._navInterval = setInterval(syncNav, 150);   // spolehlivý polling
+
+    // The nav only changes when something moves, so it is recomputed then (PR
+    // #37, David Coulson) rather than every 150 ms. Scroll is composed:false:
+    // a listener on document never hears HA scrolling a container inside its
+    // shadow DOM, so it goes on the scroller itself, found across shadow
+    // boundaries, and on the window for a page that scrolls the document. An
+    // IntersectionObserver on both columns sees any scroller. A slow poll stays
+    // as the backstop: the observer only fires at its thresholds, and HA can
+    // swap the scroller between two renders.
+    let queued = false;
+    const trigger = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; syncNav(); });
+    };
+    this._navScrollHandler = trigger;
+    this._navScroller = this._findScrollContainer();
+    this._navScroller?.addEventListener('scroll', trigger, { passive: true });
+    window.addEventListener('scroll', trigger, { passive: true });
+    window.addEventListener('resize', trigger, { passive: true });
+    if (typeof IntersectionObserver === 'function') {
+      this._navObserver = new IntersectionObserver(trigger, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) });
+      this._navObserver.observe(left);
+      if (right) this._navObserver.observe(right);
+    }
+    this._navInterval = setInterval(syncNav, 1000);
   }
 
   _clearNavWatcher() {
     if (this._navObserver)  { this._navObserver.disconnect();  this._navObserver  = null; }
-    if (this._navObserver2) { this._navObserver2.disconnect(); this._navObserver2 = null; }
     if (this._navInterval)  { clearInterval(this._navInterval); this._navInterval = null; }
     if (this._navScrollHandler) {
-      document.removeEventListener('scroll', this._navScrollHandler, true);
+      this._navScroller?.removeEventListener('scroll', this._navScrollHandler);
+      window.removeEventListener('scroll', this._navScrollHandler);
+      window.removeEventListener('resize', this._navScrollHandler);
+      this._navScroller = null;
       this._navScrollHandler = null;
     }
   }
