@@ -132,6 +132,16 @@ test('the entry stands alone, and the windows sit flat beside it', () => {
   assert.match(build, /external: true/, 'and the entry references them without bundling them in');
 });
 
+test('a window is asked for by version, so an old 404 cannot be cached over it', () => {
+  // Home Assistant sends `Cache-Control: public, max-age=2678400` with its 404s
+  // as well. A browser that asked for a window an earlier, broken install never
+  // shipped would answer the next month from that cached 404 — and the window's
+  // name does not change when its code does not.
+  const build = readFileSync('build.js', 'utf8');
+  assert.match(build, /path: `\.\/\$\{file\}\?v=\$\{cardVersion\}`/,
+    'the entry appends ?v=<version> to every window it imports');
+});
+
 
 test("showing a title in the Library waits for the Library's own code to arrive", async () => {
   // The chunk arrives a tick later than the press, so anything reaching into the

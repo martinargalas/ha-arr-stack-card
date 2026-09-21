@@ -92,13 +92,17 @@ async function buildAll() {
     const file = Object.keys(out.metafile.outputs).find(p => p.endsWith('.js'));
     built.set(specifier, file.replace(/^.*\//, ''));
   }
-  // The entry asks for the names just built and does not bundle them in
+  // The entry asks for the names just built and does not bundle them in.
+  // The version rides along in the query: Home Assistant serves 404s with
+  // `Cache-Control: public, max-age=2678400`, so a browser that once asked for
+  // a window an older, broken install had not shipped would keep that 404 for a
+  // month — the name alone does not change when the window's code does not.
   const lazyWindows = {
     name: 'lazy-windows',
     setup(build) {
       build.onResolve({ filter: /^\.\/(chunks\/|editor\.js$)/ }, args => {
         const file = built.get(args.path);
-        return file ? { path: `./${file}`, external: true } : null;
+        return file ? { path: `./${file}?v=${cardVersion}`, external: true } : null;
       });
     },
   };
