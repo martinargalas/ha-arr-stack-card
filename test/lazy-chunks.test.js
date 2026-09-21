@@ -58,25 +58,29 @@ test('a chunk that lacks its entry throws instead of calling itself forever', as
 const OPTIONAL = /^src\/(?:(?:render|wire)\/(?:(tracearr|tautulli|jellystat|prowlarr|maintainerr)(?!-tiles)[\w-]*|(activity|library)(?!-tiles)[\w-]*|music(?!-cards|-rows)[\w-]*)|editor)\.js$/;
 
 test('nothing from an optional module is fetched when the card loads', async () => {
+  // Built the way build.js builds it: the windows are separate bundles, and the
+  // entry only points at them
+  const lazyWindows = {
+    name: 'lazy-windows',
+    setup(build) {
+      build.onResolve({ filter: /^\.\/(chunks\/|editor\.js$)/ }, args => ({ path: args.path, external: true }));
+    },
+  };
   const { metafile } = await esbuild.build({
-    entryPoints: { 'arr-stack-card': 'src/index.js' }, bundle: true, format: 'esm', splitting: true,
-    outdir: 'out', entryNames: '[name]', chunkNames: 'chunks/[name]-[hash]',
+    entryPoints: { 'arr-stack-card': 'src/index.js' }, bundle: true, format: 'esm',
+    outdir: 'out', entryNames: '[name]', plugins: [lazyWindows],
     write: false, metafile: true, logLevel: 'silent', define: { __CARD_VERSION__: '"test"' },
   });
-  const outs = metafile.outputs;
-  // What the entry needs before it runs: itself and whatever it imports statically
-  const startup = new Set();
-  const walk = path => {
-    if (startup.has(path)) return;
-    startup.add(path);
-    for (const imp of outs[path].imports) if (imp.kind === 'import-statement') walk(imp.path);
-  };
-  walk('out/arr-stack-card.js');
-  const leaked = [...startup].flatMap(p => Object.keys(outs[p].inputs)).filter(f => OPTIONAL.test(f));
+  const out = metafile.outputs['out/arr-stack-card.js'];
+
+  const leaked = Object.keys(out.inputs).filter(f => OPTIONAL.test(f));
   assert.deepEqual(leaked, [], 'a static import pulls a whole module back into every load');
 
-  const lazyLoads = outs['out/arr-stack-card.js'].imports.filter(i => i.kind === 'dynamic-import').length;
-  assert.equal(lazyLoads, 9, 'eight modals and the editor');
+  const statik = out.imports.filter(i => i.kind === 'import-statement');
+  assert.deepEqual(statik, [], 'the entry has to load on its own — HACS may install it alone');
+
+  const lazy = out.imports.filter(i => i.kind === 'dynamic-import').length;
+  assert.equal(lazy, 9, 'eight windows and the editor');
 });
 
 test('core reaches into a chunk only through a listed entry', () => {
@@ -115,17 +119,19 @@ test('core reaches into a chunk only through a listed entry', () => {
   assert.deepEqual([...bad], [], 'move the method into core, or list it as an entry in card.js');
 });
 
-test('chunks are flat files beside the entry, which is all HACS installs', () => {
-  // HACS installs a card from its release assets, which cannot hold folders, and
-  // from a repository tree it takes only the root and dist/. A chunk anywhere
-  // else is never downloaded, and the modal that needs it breaks for every user.
+test('the entry stands alone, and the windows sit flat beside it', () => {
+  // HACS installs a card from its release assets, which cannot hold folders,
+  // and falls back to downloading the entry *alone* whenever a release asset
+  // matches the name in hacs.json (repositories/plugin.py, content.single).
+  // An entry that statically imports a sibling is dead in that case — which is
+  // exactly what esbuild's code splitting produces, so it must stay off.
   const build = readFileSync('build.js', 'utf8');
-  const names = build.match(/const CHUNK_NAMES = '([^']+)'/)?.[1];
-  assert.ok(names, 'build.js names its chunks in CHUNK_NAMES');
-  assert.ok(!names.includes('/'), `no folder in the chunk names: ${names}`);
-  assert.ok(names.startsWith('arr-stack-card-'), 'prefixed, so a release upload of arr-stack-card*.js takes them all');
-  assert.match(build, /chunkNames: CHUNK_NAMES/);
+  assert.ok(!/splitting:\s*true/.test(build), 'code splitting gives the entry static siblings');
+  const names = build.match(/entryNames: `arr-stack-card-\${name}-\[hash\]`/);
+  assert.ok(names, 'each window is named arr-stack-card-<name>-<hash>, flat');
+  assert.match(build, /external: true/, 'and the entry references them without bundling them in');
 });
+
 
 test("showing a title in the Library waits for the Library's own code to arrive", async () => {
   // The chunk arrives a tick later than the press, so anything reaching into the

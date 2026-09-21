@@ -55,30 +55,71 @@ const clearChunks = dir => {
 const chunkFiles = () => readdirSync('.').filter(f => IS_CHUNK.test(f));
 if (!watch) clearChunks('.');
 
-const ctx = await esbuild.context({
-  entryPoints: { 'arr-stack-card': 'src/index.js' },
+const SHARED = {
   bundle: true,
   format: 'esm',
-  splitting: true,
-  outdir: '.',
-  entryNames: '[name]',
-  chunkNames: CHUNK_NAMES,
   // Whitespace and syntax only: identifiers keep their names, so a stack trace
   // in a user's bug report still says which method failed. Full minification
   // would save another ~7% and cost that.
   minifyWhitespace: true,
   minifySyntax: true,
   sourcemap: false,
-  logLevel: 'info',
   define: { __CARD_VERSION__: JSON.stringify(cardVersion) },
-});
+};
+
+// Every window is bundled on its own, rather than by esbuild's code splitting.
+// Splitting moves what the entry and the windows share into a third file that
+// the entry then imports *statically* — and an entry that arrives without that
+// file does not load at all. HACS installs the entry on its own whenever it
+// falls back to its single-file path (repositories/plugin.py sets
+// content.single as soon as a release asset matches the name in hacs.json), so
+// the entry has to stand alone. The price is the shared helpers duplicated into
+// each window; they are small, and they are only ever fetched on demand.
+const LAZY = [
+  ...readdirSync('src/chunks').filter(f => f.endsWith('.js'))
+    .map(f => [`./chunks/${f}`, `src/chunks/${f}`, f.replace(/\.js$/, '')]),
+  ['./editor.js', 'src/editor.js', 'editor'],
+];
+
+async function buildAll() {
+  clearChunks('.');
+  const built = new Map();
+  for (const [specifier, entry, name] of LAZY) {
+    const out = await esbuild.build({
+      ...SHARED, entryPoints: [entry], outdir: '.',
+      entryNames: `arr-stack-card-${name}-[hash]`, metafile: true, logLevel: 'silent',
+    });
+    const file = Object.keys(out.metafile.outputs).find(p => p.endsWith('.js'));
+    built.set(specifier, file.replace(/^.*\//, ''));
+  }
+  // The entry asks for the names just built and does not bundle them in
+  const lazyWindows = {
+    name: 'lazy-windows',
+    setup(build) {
+      build.onResolve({ filter: /^\.\/(chunks\/|editor\.js$)/ }, args => {
+        const file = built.get(args.path);
+        return file ? { path: `./${file}`, external: true } : null;
+      });
+    },
+  };
+  await esbuild.build({
+    ...SHARED, entryPoints: { 'arr-stack-card': 'src/index.js' }, outdir: '.',
+    entryNames: '[name]', plugins: [lazyWindows], logLevel: 'info',
+  });
+  return built;
+}
 
 if (watch) {
-  await ctx.watch();
+  await buildAll();
   console.log('👀 Watching src/ for changes...');
+  const { watch: fsWatch } = await import('fs');
+  let pending;
+  fsWatch('src', { recursive: true }, () => {
+    clearTimeout(pending);
+    pending = setTimeout(() => buildAll().then(() => console.log('✓ rebuilt')).catch(e => console.error(e)), 150);
+  });
 } else {
-  await ctx.rebuild();
-  await ctx.dispose();
+  await buildAll();
 
   // Sync strings.json → translations/en.json
   if (hasIntegration) copyFileSync(`${INT_SRC}/strings.json`, `${INT_SRC}/translations/en.json`);

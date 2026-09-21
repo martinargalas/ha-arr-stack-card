@@ -1,1 +1,0 @@
-var UNITS=["B","KB","MB","GB","TB","PB"];function fmtBytes(bytes,{dec=1,empty="\u2014"}={}){let n=Number(bytes);if(!Number.isFinite(n)||n<=0)return empty;let i=0,v=n;for(;v>=1024&&i<UNITS.length-1;)v/=1024,i++;return`${i>=3?v.toFixed(dec):Math.round(v)} ${UNITS[i]}`}export{fmtBytes};
