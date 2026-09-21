@@ -53,7 +53,7 @@ The card automatically shows only the services you have configured. No YAML requ
 |---------|------|----------|
 | Radarr | Movie library, downloads, interactive search | ✅ Yes |
 | Sonarr | TV library, episode calendar, downloads | ✅ Yes |
-| Lidarr | Music library — artists, albums, downloads | Optional |
+| Lidarr | Music library — artists, albums, downloads; needed for any music elsewhere in the card | Optional |
 | Radarr 2 | Second Radarr instance — HD + 4K workflow | Optional |
 | Sonarr 2 | Second Sonarr instance — HD + 4K workflow | Optional |
 | qBittorrent | Torrent download management | Optional |
@@ -61,8 +61,8 @@ The card automatically shows only the services you have configured. No YAML requ
 | rTorrent / ruTorrent | Torrent download management | Optional |
 | SABnzbd | Usenet download management | Optional |
 | NZBGet | Usenet download management | Optional |
-| Seerr (Overseerr / Jellyseerr) | Media requests, discovery, approvals | Optional |
-| TMDB | Posters, ratings, cast, trailers, Trending and Popular rows | Not needed with Seerr — **your own free key otherwise** |
+| Seerr (Overseerr / Jellyseerr) | Media requests, discovery, approvals, Similar titles | Optional |
+| TMDB | Posters, ratings, cast, trailers, Trending and Popular rows, Similar titles | Not needed with Seerr — **your own free key otherwise** |
 | Bazarr | Subtitle status per movie/show | Optional |
 | Plex | Active stream monitoring and playback control | Optional |
 | Jellyfin | Active stream monitoring and playback control | Optional |
@@ -281,6 +281,20 @@ Actions collects the things you would otherwise go looking for in other parts of
 
 **Where watch statistics come from.** If you run **Tracearr**, it answers, because it already watches Plex, Jellyfin and Emby together and reports one honest total per title rather than a separate number per server. Without it the card falls back to **Jellystat** for Jellyfin and **Tautulli** for Plex, whichever can find the title. The icon on the menu row tells you which one was asked.
 
+#### Similar titles
+
+Find something like the title you are looking at — by what it is **about**, not by its name. A disaster film finds disaster films, not everything with "2012" in the title.
+
+Open it from the **≈** button on any search result, or from **Actions** in a film, series or artist detail.
+
+- Films and series find each other, and a film also brings its **soundtrack**. An artist finds **similar artists**.
+- The words the match was made on are shown above the results — switch one off and the results follow.
+- **Filters:** cast, genre, year, country of origin, sort, and hide what you already have.
+- Cast, genre and country can each **include or exclude**. Pick the countries you want to see, or leave one out and keep everything else — useful for "American, but not the British co-productions".
+- Click a result to open its detail, or request it straight from the grid.
+
+Films and series need Seerr or your own TMDB key; music needs Lidarr. Year, country, sort, hide-owned and the genres you left out are remembered for next time.
+
 #### Downloads identified by title
 
 Rows in the qBittorrent, Deluge, rTorrent, SABnzbd and NZBGet lists are matched back to the movie or episode they belong to, so clicking one opens that title's detail popup with its poster and description — no need to read a release name to work out what is downloading.
@@ -349,9 +363,9 @@ If any of your services uses a self-signed or untrusted certificate, enable **Sk
 
 ### Manual
 
-1. Download `arr-stack-card.js` **and every `arr-stack-card-*.js`** from the latest release
-2. Copy them all to `/config/www/` — they have to sit side by side. When updating, replace them all.
-3. Add to Lovelace resources — `arr-stack-card.js` only; it loads the others itself when they are needed:
+1. Download **every `arr-stack-card*.js`** file from the latest release — the card is several files
+2. Copy them all into `/config/www/`, side by side. When updating, replace them all.
+3. Add one of them to Lovelace resources:
    ```yaml
    url: /local/arr-stack-card.js
    type: module
@@ -422,17 +436,9 @@ If you would rather not take part, you can switch it off: **Settings → Devices
 
 ---
 
-## Development
+## Contributing
 
-The card's source is in [`src/`](src); `arr-stack-card.js` is built from it, together with the `arr-stack-card-*.js` files beside it that Home Assistant fetches the first time a module or the editor is opened.
-
-```bash
-npm install
-npm run build   # src/ → arr-stack-card.js + arr-stack-card-*.js
-npm test        # Node's own test runner against the source
-```
-
-Every file in `src/` is a mixin of one area (`fetch/` talks to the services, `render/` builds markup, `wire/` handles clicks, `popup/` is the title detail), and `check-mixins.js` fails the build if two of them define the same method. Translations live in `src/i18n.js`. Pull requests against `src/` are welcome — please leave the built `arr-stack-card*.js` files out of them; it is rebuilt on release.
+The card's source is in [`src/`](src) and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to build it and how the source is laid out.
 
 ---
 
