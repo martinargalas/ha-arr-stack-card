@@ -158,6 +158,10 @@ _wireOverseerrButtons() {
   // ── TV seriál: otevřít overlay ──
   const tvBtns = this.shadowRoot.querySelectorAll('.tv-req-open');
   tvBtns.forEach(btn => {
+    // The rows recreate their cards, but a modal's outlive this call — without
+    // the flag each re-render would leave another listener on the same button.
+    if (btn._owTv) return;
+    btn._owTv = true;
     btn.addEventListener('click', async e => {
       e.stopPropagation();
       const showId = parseInt(btn.dataset.showid, 10);

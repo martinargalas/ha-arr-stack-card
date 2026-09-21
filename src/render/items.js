@@ -10,7 +10,10 @@ class _ItemMethods {
     return {
       trakt: this._traktConfigured !== false && this._cfgGet('discover', 'recTrakt', true) !== false,
       suggestarr: this._suggestarrConfigured !== false && this._cfgGet('discover', 'recSuggestarr', true) !== false,
-      lastfm: !!this._lastfmConfigured,
+      // Last.fm suggests artists, and an artist can only be added to Lidarr:
+      // without it there is no music here — no suggestions fetched, no Last.fm
+      // mark in the header, no All / Movies & TV / Music filter
+      lastfm: !!this._lastfmConfigured && this._lidarrConfigured !== false,
     };
   }
 
@@ -120,6 +123,11 @@ class _ItemMethods {
       [this._dlHistSonarr,   this._sonarr,  'sonarr'],
       [this._dlHistSonarr2,  this._sonarr2, 'sonarr2'],
     ];
+    // Music has one map and an artist rather than a title: its window opens on
+    // the artist, and there is no popup for an album
+    const artistId = this._dlMediaLidarr?.get(key);
+    if (artistId != null) return { type: 'music', artistId };
+
     for (const [map, lib, inst] of sources) {
       const arrId = map?.get(key);
       if (arrId == null) continue;

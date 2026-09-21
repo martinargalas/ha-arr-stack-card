@@ -1,5 +1,5 @@
 import { ICONS, dayClass, isMobile } from '../shared/ui.js';
-import { MT_BTN, _ICO_CHECK } from '../render/maintainerr.js';
+import { MT_BTN, _ICO_CHECK } from '../render/mt-kit.js';
 
 // Prowlarr, the Apps tab, and adding or editing an app. Split out of wire/prowlarr.js.
 
@@ -72,11 +72,11 @@ class _WireProwlarrAppsMethods {
     };
     const getProfileName = id => appProfiles.find(p => p.id === id)?.name || `Profile ${id}`;
     const syncBadge = level => {
-      const lv  = level || '';
+      const lv  = String(level || '');
       const lvl = lv.toLowerCase();
       const tone = lvl === 'fullsync' ? 'green' : lvl === 'addonly' ? 'amber' : 'neutral';
       const label = lvl === 'fullsync' ? this._t('pwFullSync') : lvl === 'addonly' ? this._t('pwAddOnly') : lvl === 'disabled' ? this._t('mtSortDisabled') : lv || '—';
-      return this._uiBadge(label, tone);
+      return this._uiBadge(this._escHtml(label), tone);
     };
     const IMPL_COLORS = { radarr:'#34d399', sonarr:'#638cff', lidarr:'#fbbf24', readarr:'#a855f7', whisparr:'#f87171', mylar3:'#60a5fa', lazylibrarian:'#fb923c' };
     const implBadge = app => {
@@ -107,8 +107,8 @@ class _WireProwlarrAppsMethods {
         const url    = getField(app, 'baseUrl');
         const tr     = testResults[app.id];
         const errMsg = tr && !tr.ok ? `<div style="font-size:10px;color:rgba(255,120,80,0.8);margin-top:2px">${this._escHtml((tr.errors||[]).map(e=>e.errorMessage).join(', ').substring(0,80))}</div>` : '';
-        const mobToggle = this._uiSwitch(`class="pw-app-toggle-btn" data-app-id="${app.id}" data-enabled="${app.enable}"`, app.enable, app.enable ? this._t('pwDisable') : this._t('pwEnable'));
-        return `<div data-pw-app-id="${app.id}" style="${sep}padding:10px 0;cursor:pointer">
+        const mobToggle = this._uiSwitch(`class="pw-app-toggle-btn" data-app-id="${this._escHtml(app.id)}" data-enabled="${app.enable === true}"`, app.enable, app.enable ? this._t('pwDisable') : this._t('pwEnable'));
+        return `<div data-pw-app-id="${this._escHtml(app.id)}" style="${sep}padding:10px 0;cursor:pointer">
           <div class="u-row-8">
             ${statusDot(app.id)}
             <div style="flex:1;min-width:0">
@@ -131,8 +131,8 @@ class _WireProwlarrAppsMethods {
 
     const rows = apps.map(app => {
       const url  = getField(app, 'baseUrl');
-      const toggleBtn = this._uiSwitch(`class="pw-app-toggle-btn" data-app-id="${app.id}" data-enabled="${app.enable}"`, app.enable, app.enable ? this._t('pwDisable') : this._t('pwEnable'));
-      return `<tr data-pw-app-id="${app.id}" style="border-bottom:1px solid var(--is-divider);cursor:pointer">
+      const toggleBtn = this._uiSwitch(`class="pw-app-toggle-btn" data-app-id="${this._escHtml(app.id)}" data-enabled="${app.enable === true}"`, app.enable, app.enable ? this._t('pwDisable') : this._t('pwEnable'));
+      return `<tr data-pw-app-id="${this._escHtml(app.id)}" style="border-bottom:1px solid var(--is-divider);cursor:pointer">
         <td style="padding:8px;width:18px;vertical-align:middle">${statusDot(app.id)}</td>
         <td style="padding:8px;overflow:hidden">
           <div style="font-size:12px;font-weight:600;color:var(--is-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(app.name||'—')}</div>
@@ -360,10 +360,10 @@ class _WireProwlarrAppsMethods {
       const isChecked = selectedCats.includes(cat.id);
       const color     = CAT_COLORS[cat.id] || '#9ca3af';
       const subHtml   = subs.map(sub =>
-        `<div style="padding-left:20px">${_chk(`class="pw-cat-cb" data-cat-id="${sub.id}"`, selectedCats.includes(sub.id), this._escHtml(sub.name||String(sub.id)))}</div>`).join('');
+        `<div style="padding-left:20px">${_chk(`class="pw-cat-cb" data-cat-id="${this._escHtml(sub.id)}"`, selectedCats.includes(sub.id), this._escHtml(sub.name||String(sub.id)))}</div>`).join('');
       return `<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:4px 0">
         <div style="display:flex;align-items:center;gap:8px;padding:2px 0${subs.length?';cursor:pointer':''}" class="${subs.length?'pw-cat-toggle':''}">
-          ${_chk(`class="pw-cat-cb" data-cat-id="${cat.id}" onclick="event.stopPropagation()"`, isChecked, '')}
+          ${_chk(`class="pw-cat-cb" data-cat-id="${this._escHtml(cat.id)}" onclick="event.stopPropagation()"`, isChecked, '')}
           <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
           <span style="font-size:12px;font-weight:600;color:var(--is-text);flex:1">${this._escHtml(cat.name||String(cat.id))}</span>
           ${subs.length ? `<svg class="pw-cat-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--is-text-muted)" stroke-width="2.5" style="transition:transform 0.15s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>` : ''}
@@ -384,19 +384,19 @@ class _WireProwlarrAppsMethods {
       const hint   = f.helpText ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:3px">${this._escHtml(f.helpText.substring(0,120))}</div>` : '';
       let fieldEl;
       if (f.type === 'checkbox') {
-        fieldEl = _chk(`class="pw-afield" data-fi="${fi}" data-fname="${f.name}"`, !!val, '');
+        fieldEl = _chk(`class="pw-afield" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}"`, !!val, '');
       } else if (f.type === 'password') {
-        fieldEl = `<input class="pw-afield mt-field" data-fi="${fi}" data-fname="${f.name}" type="password" value="${this._escHtml(valStr)}" style="${inputSty}">`;
+        fieldEl = `<input class="pw-afield mt-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}" type="password" value="${this._escHtml(valStr)}" style="${inputSty}">`;
       } else if (f.type === 'select' && f.selectOptions?.length) {
-        fieldEl = this._mtFieldSelectRaw(`class="pw-afield" data-fi="${fi}" data-fname="${f.name}"`,
-          f.selectOptions.map(o => `<option value="${o.value}"${String(o.value)===valStr?' selected':''}>${this._escHtml(o.name||o.label||String(o.value))}</option>`).join(''),
+        fieldEl = this._mtFieldSelectRaw(`class="pw-afield" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}"`,
+          f.selectOptions.map(o => `<option value="${this._escHtml(o.value)}"${String(o.value)===valStr?' selected':''}>${this._escHtml(o.name||o.label||String(o.value))}</option>`).join(''),
           f.selectOptions.find(o => String(o.value)===valStr)?.name || '', inputSty);
       } else if (f.type === 'number') {
-        fieldEl = `<input class="pw-afield mt-field" data-fi="${fi}" data-fname="${f.name}" type="number" value="${this._escHtml(valStr)}" style="${inputSty}">`;
+        fieldEl = `<input class="pw-afield mt-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}" type="number" value="${this._escHtml(valStr)}" style="${inputSty}">`;
       } else {
-        fieldEl = `<input class="pw-afield mt-field" data-fi="${fi}" data-fname="${f.name}" type="text" value="${this._escHtml(valStr)}" style="${inputSty}">`;
+        fieldEl = `<input class="pw-afield mt-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}" type="text" value="${this._escHtml(valStr)}" style="${inputSty}">`;
       }
-      return row(f.label || f.name || '', fieldEl + hint);
+      return row(this._escHtml(f.label || f.name || ''), fieldEl + hint);
     }).join('');
 
     const deleteBtn = !isNew

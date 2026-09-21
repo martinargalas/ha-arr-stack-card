@@ -52,7 +52,7 @@ class _TautulliLibraryRenderMethods {
     wts.forEach(s => { statMap[Number(s.query_days)] = s; });
     const statCards = [1,7,30,0].map(d => {
       const s = statMap[d] || {};
-      const plays = s.total_plays ?? 0;
+      const plays = Number(s.total_plays) || 0;
       const dur   = s.total_time ? this._tlFmtDuration(s.total_time) : '0m';
       return `<div style="background:var(--is-row-hover);border-radius:8px;padding:${isMob?'6px':'8px 6px'};text-align:center;display:flex;flex-direction:column;gap:2px">
         <div style="font-size:${isMob?'9px':'10px'};font-weight:700;color:var(--is-text);text-transform:uppercase;letter-spacing:0.3px">${periodLabel(d)}</div>
@@ -66,11 +66,11 @@ class _TautulliLibraryRenderMethods {
       ? `<div style="display:flex;flex-wrap:wrap;gap:${isMob?'8px':'10px'}">` +
         us.map(u => {
           const uname  = this._escHtml(u.friendly_name || u.user || '—');
-          const plays  = u.total_plays ?? 0;
+          const plays  = Number(u.total_plays) || 0;
           const dur    = u.total_time ? this._tlFmtDuration(u.total_time) : '0m';
-          const thumb  = u.user_thumb || '';
+          const thumb  = this._imgSrc(u.user_thumb);
           const av     = thumb
-            ? `<img src="${this._escHtml(thumb)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`
+            ? `<img src="${thumb}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`
             : `<div style="width:28px;height:28px;border-radius:50%;background:var(--is-row-hover);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--is-text)">${(uname[0]||'?').toUpperCase()}</div>`;
           return `<div style="display:flex;align-items:center;gap:8px;background:var(--is-row-hover);border-radius:10px;padding:6px 10px">
             ${av}
@@ -100,7 +100,7 @@ class _TautulliLibraryRenderMethods {
         const icon      = this._tlMediaIcon(mt, 16);
         const typeLabel = isLive?this._t('tlFilterLiveTV'):mt==='movie'?this._t('typeMovie'):mt==='episode'?this._t('typeTv'):mt==='track'?this._t('tabMusic'):null;
         const typeTag   = typeLabel ? `<span class="media-type-tag">${typeLabel}</span>` : '';
-        const rk        = h.rating_key || '';
+        const rk        = this._escHtml(h.rating_key || '');
         const mdAttr    = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${title}" data-tl-md-thumb="${this._escHtml(thumbPath)}" data-tl-md-prev="lib" style="cursor:pointer"` : '';
         const imgTag    = thumbPath
           ? `<img data-tl-plex-path="${this._escHtml(thumbPath)}" alt="" style="width:${W}px;height:${H}px;object-fit:cover;border-radius:6px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -204,7 +204,7 @@ class _TautulliLibraryRenderMethods {
     const esc = s => this._escHtml(String(s??''));
     if (isMob) {
       const cards = data.map(h => {
-        const rid   = h.reference_id || h.session_key || Math.random();
+        const rid   = this._escHtml(h.reference_id || h.session_key || Math.random());
         const isExp = m.libDetailHistExpandedRow === rid;
         const icon  = this._tlMediaIcon(h.media_type||'',15);
         const title = esc(h.full_title||h.title||'—');
@@ -239,7 +239,7 @@ class _TautulliLibraryRenderMethods {
     const thead     = vis.map(c => `<th style="text-align:${c.right?'right':'left'}">${c.label}</th>`).join('') + watchCell;
     const colCount  = vis.length + 2;
     const rows = data.map(h => {
-      const rid    = h.reference_id || h.session_key || Math.random();
+      const rid    = this._escHtml(h.reference_id || h.session_key || Math.random());
       const isExp  = m.libDetailHistExpandedRow === rid;
       const icon   = this._tlMediaIcon(h.media_type||'',15);
       const esc2   = s => this._escHtml(String(s??''));
@@ -289,9 +289,9 @@ class _TautulliLibraryRenderMethods {
 
     if (isMob) {
       const cards = data.map(item => {
-        const rk    = item.rating_key || '';
+        const rk    = this._escHtml(item.rating_key || '');
         const title = this._escHtml(item.title || '—');
-        const year  = item.year ? `<span style="color:var(--is-text-muted)">${item.year}</span>` : '';
+        const year  = item.year ? `<span style="color:var(--is-text-muted)">${this._escHtml(item.year)}</span>` : '';
         const meta  = [item.video_resolution,item.video_codec,item.audio_codec].filter(Boolean).map(v=>this._escHtml(v)).join(' · ');
         const mdAttr = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${title}" data-tl-md-prev="lib" style="cursor:pointer"` : '';
         return `<div class="tl-mob-card"${mdAttr}>
@@ -309,12 +309,12 @@ class _TautulliLibraryRenderMethods {
       _sortTh('file_size',this._t('actColSize'),true),_sortTh('last_played',this._t('tlColLastPlayed')),_sortTh('play_count',this._t('qaStatsPlays'),true),
     ].join('');
     const rows = data.map(item => {
-      const rk    = item.rating_key || '';
       const esc   = s => this._escHtml(String(s??''));
+      const rk    = esc(item.rating_key || '');
       const mdAttr = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${esc(item.title||'')}" data-tl-md-prev="lib" style="cursor:pointer"` : '';
       return `<tr${mdAttr}>
         <td class="u-nowrap-sm">${esc(item.added_at||'—')}</td>
-        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.title||'—')}${item.year?` <span style="color:var(--is-text-muted);font-size:10px">${item.year}</span>`:''}</td>
+        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.title||'—')}${item.year?` <span style="color:var(--is-text-muted);font-size:10px">${esc(item.year)}</span>`:''}</td>
         <td>${esc(item.container||'—')}</td>
         <td style="text-align:right;white-space:nowrap">${item.bitrate?esc(item.bitrate)+' kbps':'—'}</td>
         <td>${esc(item.video_codec||'—')}</td>
@@ -324,7 +324,7 @@ class _TautulliLibraryRenderMethods {
         <td style="text-align:right">${item.audio_channels?esc(item.audio_channels)+' ch':'—'}</td>
         <td style="text-align:right;white-space:nowrap">${fmtBytes(item.file_size)}</td>
         <td class="u-nowrap-sm">${esc(item.last_played||'—')}</td>
-        <td style="text-align:right;font-weight:700;color:rgba(250,180,50,0.9)">${item.play_count??0}</td>
+        <td style="text-align:right;font-weight:700;color:rgba(250,180,50,0.9)">${Number(item.play_count) || 0}</td>
       </tr>`;
     }).join('');
     return toolbar + `<div class="tl-ld-media-results-wrap" style="display:contents"><div style="overflow-x:auto;overflow-y:hidden"><table class="tl-users-table"><thead><tr>${thead}</tr></thead><tbody>${rows||`<tr><td colspan="12" class="u-empty">${this._t('tlNoMediaData')}</td></tr>`}</tbody></table></div>${this._uiPager('tl-ld-mpage', page, totalPages, true)}</div>`;
@@ -392,7 +392,7 @@ class _TautulliLibraryRenderMethods {
     if (meta.genres?.length)   metaRows.push(`<span style="color:var(--is-text-muted)">Genres:</span> ${meta.genres.map(g=>esc(g.tag||g)).join(', ')}`);
 
     const fullTitle = esc(meta.full_title || meta.title || m.mediaDetailTitle || '—');
-    const subtitle  = meta.parent_title ? `${esc(meta.parent_title)}${meta.media_index?' · E'+meta.media_index:''}` : '';
+    const subtitle  = meta.parent_title ? `${esc(meta.parent_title)}${meta.media_index?' · E'+esc(meta.media_index):''}` : '';
     const summary   = meta.summary ? `<div style="font-size:11px;color:var(--is-text-muted);margin-top:8px;line-height:1.5;max-height:60px;overflow:hidden">${esc(meta.summary)}</div>` : '';
 
     const metaHdr = `<div style="display:flex;gap:12px;margin-bottom:${isMob?'12px':'16px'}">
@@ -411,7 +411,7 @@ class _TautulliLibraryRenderMethods {
     wts.forEach(s => { statMap[Number(s.query_days)] = s; });
     const statCards = [1,7,30,0].map(d => {
       const s = statMap[d] || {};
-      const plays = s.total_plays ?? 0;
+      const plays = Number(s.total_plays) || 0;
       const dur   = s.total_time ? this._tlFmtDuration(s.total_time) : '0m';
       return `<div style="background:var(--is-row-hover);border-radius:8px;padding:${isMob?'6px':'8px 6px'};text-align:center;display:flex;flex-direction:column;gap:2px">
         <div style="font-size:${isMob?'9px':'10px'};font-weight:700;color:var(--is-text);text-transform:uppercase;letter-spacing:0.3px">${periodLabel(d)}</div>
@@ -425,10 +425,11 @@ class _TautulliLibraryRenderMethods {
       ? `<div style="display:flex;flex-wrap:wrap;gap:${isMob?'8px':'10px'}">` +
         us.map(u => {
           const uname = esc(u.friendly_name||u.user||'—');
-          const plays = u.total_plays??0;
+          const plays = Number(u.total_plays) || 0;
           const dur   = u.total_time ? this._tlFmtDuration(u.total_time) : '0m';
-          const av    = u.user_thumb
-            ? `<img src="${esc(u.user_thumb)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`
+          const avSrc = this._imgSrc(u.user_thumb);
+          const av    = avSrc
+            ? `<img src="${avSrc}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`
             : `<div style="width:28px;height:28px;border-radius:50%;background:var(--is-row-hover);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--is-text)">${(uname[0]||'?').toUpperCase()}</div>`;
           return `<div style="display:flex;align-items:center;gap:8px;background:var(--is-row-hover);border-radius:10px;padding:6px 10px">
             ${av}

@@ -334,12 +334,13 @@ _ppWireClose(overlay, closeBtn, _resetPopupTransient) {
       this._libReturnState = null;
       this._calReturnState = false;
       this._mtReturnState = null;
+      this._simReturnState = null;
       this._renderPopupEl();
     });
   }
   if (closeBtn) {
     const _backArrow = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
-    if (this._libReturnState || this._calReturnState || this._mtReturnState) {
+    if (this._libReturnState || this._calReturnState || this._mtReturnState || this._simReturnState) {
       closeBtn.innerHTML = _backArrow;
     }
     closeBtn.addEventListener('click', () => {

@@ -99,6 +99,8 @@ _lidarrRepaint() {
   // its initial while the signature was fetched, and nothing redrew the grid
   // once it came - opening the artist showed the picture at once.
   if (this._searchActive) this._reRenderSearchResults?.();
+  // Similar titles draws artists too, and their flags come the same way
+  if (this._simModal) this._simRender?.();
 }
 
 // Lidarr's mediacover API answers for most artwork it lists and 404s for the

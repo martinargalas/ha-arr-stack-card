@@ -20,8 +20,8 @@ What is covered so far:
 | `sections.test.js` | Every category renders, with data and without — a cold start is the normal state |
 | `queues.test.js` | Download queues into badges: per-album and per-artist progress, what a deleted artist leaves behind |
 
-The Home Assistant integration, which proxies the card's calls, is tested in
-its own repository, [arr-stack-integration](https://github.com/martinargalas/arr-stack-integration).
+The proxy has its own suite in [`integration/tests`](../integration/tests/README.md) —
+`npm run test:py`, or `npm run test:all` for both.
 
 Adding one: build a card with `makeCard({ ...state })`, call the method, and
 assert on what it returns — `parse()` turns rendered markup into DOM so a test

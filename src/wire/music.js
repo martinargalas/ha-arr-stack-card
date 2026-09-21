@@ -4,70 +4,6 @@
 
 class _WireMusicMethods {
 
-  // Delegated on col-right, which survives every re-render of the sections
-  // inside it — a listener on the cards themselves would be lost on the next
-  // repaint, which is how this row lost its clicks the first time round.
-  _wireMusicCards(right) {
-    if (!right || right._musicWired) return;
-    right._musicWired = true;
-    right.addEventListener('click', e => {
-      const albumCard = e.target.closest('[data-album-cal]');
-      if (albumCard) {
-        e.stopPropagation();
-        this._openCalAlbumArtist(Number(albumCard.dataset.albumCal));
-        return;
-      }
-      const likeOl = e.target.closest('.mus-like-ol');
-      if (likeOl) {
-        e.stopPropagation();
-        this._musDropSuggestion(likeOl.dataset.musMbid, 'like', likeOl.closest('.mc'));
-        return;
-      }
-      const skipOl = e.target.closest('.mus-skip-ol');
-      if (skipOl) {
-        e.stopPropagation();
-        this._musDropSuggestion(skipOl.dataset.musMbid, 'skip', skipOl.closest('.mc'));
-        return;
-      }
-      const addBtn = e.target.closest('[data-mus-add]');
-      if (addBtn) {
-        e.stopPropagation();
-        // Which row it was pressed in decides where the overlay is drawn.
-        const inSearch = !!addBtn.closest('.search-results-wrap');
-        this._musOpenAdd(addBtn.dataset.musAdd, inSearch ? 'search' : 'lastfm');
-        return;
-      }
-      if (e.target.closest('.mus-add-cancel')) {
-        e.stopPropagation();
-        const src = this._musAddPending?.source;
-        const mbid = String(this._musAddPending?.artist?.foreignArtistId || '').toLowerCase();
-        this._musAddPending = null;
-        if (src === 'lastfm') this._reRenderSection('recommendations');
-        else this._reRenderSearchResults();
-        const hit = mbid ? [...(this._lidarrArtists?.values() || [])]
-          .find(a => String(a.foreignArtistId || '').toLowerCase() === mbid) : null;
-        if (hit?.id && this._musicModal?.preview === mbid) this._openMusicModal(hit.id);
-        this._musScheduleLastfmRefresh();
-        return;
-      }
-      if (e.target.closest('.mus-add-confirm')) {
-        e.stopPropagation();
-        this._musConfirmAdd();
-        return;
-      }
-      const unowned = e.target.closest('[data-artist-unowned]');
-      if (unowned) {
-        e.stopPropagation();
-        this._openMusicPreview(unowned.dataset.artistUnowned);
-        return;
-      }
-      const card = e.target.closest('.mc-music[data-artist-id]');
-      if (!card) return;
-      e.stopPropagation();
-      this._openMusicModal(Number(card.dataset.artistId), { stream: card.dataset.streamEntity || null });
-    });
-  }
-
   async _openMusicModal(artistId, { stream = null } = {}) {
     if (!artistId) return;
     this._markActivated();
@@ -103,27 +39,6 @@ class _WireMusicMethods {
     this._renderMusicModalEl();
   }
 
-  // A deleted artist is still sitting in every list the card holds — the
-  // library grid, Recently Requested, the recently added row, the queue tally,
-  // the Last.fm card marked as added — and the next poll is minutes away. Drop
-  // it from all of them at once rather than leaving posters that 404 on click.
-  _musForgetArtist(id) {
-    this._lidarrArtists?.delete(id);
-    this._lidarrArtistFeed = (this._lidarrArtistFeed || []).filter(e => e.id !== id);
-    this._lidarrQueueArtists?.delete(id);
-    for (const [mbid, row] of (this._musAddedEntries || new Map())) {
-      if ((row?.artist?.id ?? row?.id) === id) {
-        this._musAddedEntries.delete(mbid);
-        this._musAdded?.delete(mbid);
-      }
-    }
-    // One call: the whole right column is rebuilt, so every music section in it
-    // — Recently Requested included — comes back without the artist.
-    this._reRenderSection?.('recentlyAdded');
-    const libEl = this.shadowRoot?.querySelector('[data-lib-modal]');
-    if (libEl && this._libModal) this._libRerenderBody?.(libEl);
-  }
-
   _musQueueSig() {
     const m = this._musicModal;
     if (!m) return '';
@@ -131,12 +46,6 @@ class _WireMusicMethods {
       .map(a => `${a.id}:${this._lidarrQueue?.has(a.id) ? 1 : 0}:${this._lidarrQueuePct?.get(a.id) ?? ''}`)
       .join(',');
     return `${this._lidarrQueueArtists?.get(m.artistId) ?? ''}|${albums}`;
-  }
-
-  _closeMusicModal() {
-    this._musQueueSigLast = null;
-    this._musicModal = null;
-    this.shadowRoot?.querySelector('[data-music-modal]')?.remove();
   }
 
   _renderMusicModalEl() {
@@ -168,7 +77,6 @@ class _WireMusicMethods {
     this._wireMusPanelDrag(el);
     this._wireMusAlbDrag(el);
     this._wireMusSwipe(el);
-
 
     el.addEventListener('click', e => {
       const menuBtn = e.target.closest('[data-mus-menu]');

@@ -208,16 +208,18 @@ class _WireTautulliGraphsMethods {
 
       const showColTip = (colData, eClientX, eClientY) => {
         if (!colData.vals || !colData.vals.length) return;
-        const lbl  = colData.lbl || '';
+        // The attribute decodes back to the raw names, so they are text again here.
+        const esc  = s => this._escHtml(s ?? '');
+        const lbl  = esc(colData.lbl || '');
         const rows = colData.vals.map(v => {
-          const disp = v.fv != null ? v.fv : v.v;
+          const disp = esc(v.fv != null ? v.fv : v.v);
           return `<div style="display:flex;align-items:center;gap:6px;padding:1px 0">
-            <span style="width:6px;height:6px;border-radius:1px;background:${v.hex||'var(--is-text-muted)'};flex-shrink:0"></span>
-            <span style="color:var(--is-text-muted)">${v.n}</span>
+            <span style="width:6px;height:6px;border-radius:1px;background:${esc(v.hex||'var(--is-text-muted)')};flex-shrink:0"></span>
+            <span style="color:var(--is-text-muted)">${esc(v.n)}</span>
             <span style="font-weight:600;color:var(--is-text);margin-left:auto;padding-left:10px">${disp}</span>
           </div>`;
         }).join('');
-        const totDisp = colData.ftot != null ? colData.ftot : colData.tot;
+        const totDisp = colData.ftot != null ? esc(colData.ftot) : colData.tot != null ? esc(colData.tot) : null;
         const totRow  = totDisp != null
           ? `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--is-divider);margin-top:4px;padding-top:4px">
                <span style="color:var(--is-text-muted);font-weight:600">${this._t('pwTotal')}</span>

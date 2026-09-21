@@ -1829,6 +1829,18 @@ export const STYLES = `
       }
 
       .btn-add:hover { background: rgba(var(--accent-rgb),0.45); }
+      /* Similar titles draws posters far larger than a category row, which the
+         card also scales up, so its round buttons grow with them — as the
+         actions on Maintainerr's Overview do. A phone keeps its 36px floor. */
+      @media (min-width: 601px) {
+        [data-sim-modal] .btn-add { width: 34px; height: 34px; }
+        [data-sim-modal] .btn-add svg { width: 17px; height: 17px; }
+        /* Cancel and confirm answer that same plus, so they are its size */
+        [data-sim-modal] .req-overlay .req-cancel,
+        [data-sim-modal] .req-overlay .req-confirm { width: 34px; height: 34px; }
+        [data-sim-modal] .req-overlay .req-cancel svg,
+        [data-sim-modal] .req-overlay .req-confirm svg { width: 16px; height: 16px; }
+      }
 
       /* ── Status badges v mc-act (stejný styl jako .badge v knihovně) ── */
       .b-st-avail   { background: rgba(48,209,88,0.30);  border: 1px solid rgba(48,209,88,0.62); }
@@ -1858,6 +1870,9 @@ export const STYLES = `
       @container mc (max-width: 94px) {
         .imdb { padding: 2px 3px; font-size: 9px; }
         .btn-add { width: 22px; height: 22px; }
+        /* Two buttons stacked would cover a card this narrow; its detail
+           offers Similar titles in the Actions menu instead */
+        .sim-find { display: none; }
         /* .imdb loses 1px of height here, so the flags have to follow or they
            end up taller than the badge they sit next to. */
         .fl-strip { --fl-h: 15px; }
@@ -1941,6 +1956,27 @@ export const STYLES = `
       .req-panels-wrap { flex: 1; display: flex; flex-direction: column; padding: 5px 0; min-width: 0; }
       .req-panel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
       .req-panel--hidden { display: none; }
+      /* Similar titles: the series' and the artist's add overlay as a panel
+         over the modal's grid rather than over one row of it. */
+      .sim-req-scrim {
+        position: absolute; inset: 0; z-index: 12;
+        display: flex; align-items: center; justify-content: center;
+        padding: 8px; background: rgba(6,6,10,0.66);
+        backdrop-filter: blur(3px);
+        border-radius: 11px; animation: fade-in 0.15s ease;
+      }
+      /* The panel floats over posters rather than over one card's own art, so
+         the translucent plate the rows use reads as another poster here. It
+         takes the menu surface the modal's own panels have: opaque, edged, and
+         standing on its shadow. */
+      .sim-req-scrim > .req-overlay {
+        position: relative; inset: auto;
+        width: min(440px, 100%); height: min(300px, 100%);
+        background: #18182a;
+        border: 1px solid rgba(255,255,255,0.16);
+        backdrop-filter: none;
+        border-radius: 14px; box-shadow: 0 18px 44px rgba(0,0,0,0.6);
+      }
       @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
       /* ── Trakt side overlays (Seen / Not interested) ── */

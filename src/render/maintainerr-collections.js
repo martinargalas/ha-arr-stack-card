@@ -70,8 +70,8 @@ class _MaintainerrCollectionsRenderMethods {
     const cards = view === 'table' ? '' : slice.map(c => {
       // /collections truncates media[] to two rows, so it under-reports badly —
       // a 34-item collection was showing ITEMS 2. mediaCount is the real figure.
-      const cnt    = c.mediaCount ?? (c.media || []).length;
-      const delDays = c.deleteAfterDays != null ? `After ${c.deleteAfterDays}d` : '—';
+      const cnt    = Number(c.mediaCount ?? (c.media || []).length) || 0;
+      const delDays = c.deleteAfterDays != null ? `After ${Number(c.deleteAfterDays) || 0}d` : '—';
       const name   = c.title || c.name || '—';
       const rule   = this._mtFindRuleForCol(c, rules);
       const libName = rule ? this._mtLibName(rule.libraryId) : '—';
@@ -84,8 +84,12 @@ class _MaintainerrCollectionsRenderMethods {
         : (this._isDay ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.4)');
 
       // Poster mosaic background — up to 4 posters side by side, heavily dimmed
+      // The mosaic puts these inside a CSS url(), where an apostrophe or a
+      // bracket would end the string — so only plain web addresses are kept.
       const posterUrls = (c.media || [])
         .map(mi => mi.image_path || mi.plexData?.thumb || '')
+        .filter(u => !/['"()\\]/.test(String(u)))
+        .map(u => this._imgSrc(u))
         .filter(Boolean)
         .slice(0, 4);
       const mosaic = posterUrls.length
@@ -110,7 +114,7 @@ class _MaintainerrCollectionsRenderMethods {
         || (c.media || []).reduce((s, mi) => s + (mi.plexData?.size || mi.sizeBytes || mi.size || 0), 0);
       const sizeStr = totalSize > 0 ? fmtBytes(totalSize) : 'N/A';
 
-      return `<div class="mt-col-card" data-mt-col-detail="${c.id}" style="${bgStyle};border:1px solid var(--is-card-bdr);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-height:160px;position:relative;overflow:hidden;transition:transform .15s">
+      return `<div class="mt-col-card" data-mt-col-detail="${this._escHtml(c.id)}" style="${bgStyle};border:1px solid var(--is-card-bdr);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-height:160px;position:relative;overflow:hidden;transition:transform .15s">
         ${mosaic}
         <div style="position:relative;z-index:2;font-size:13px;font-weight:700;color:${_txt};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${_sh}">${this._escHtml(name)}</div>
         <div style="position:relative;z-index:2;margin-top:auto;display:grid;grid-template-columns:1fr auto 1fr;gap:4px 12px;font-size:11px;${_sh}">
@@ -155,14 +159,14 @@ class _MaintainerrCollectionsRenderMethods {
       const libName = this._mtLibName(rule?.libraryId ?? c.libraryId);
       const type = rule?.dataType || c.type || 'movie';
       const mediaLabel = { movie: 'Movie', show: 'Show', season: 'Seasons', episode: 'Episode' }[type] || type;
-      const cnt = c.mediaCount ?? (c.media || []).length;
+      const cnt = Number(c.mediaCount ?? (c.media || []).length) || 0;
       const size = c.totalSizeBytes ? fmtBytes(c.totalSizeBytes) : 'N/A';
       const active = c.isActive !== false;
       const statusColor = active ? 'rgba(52,211,153,0.85)' : 'rgba(255,255,255,0.4)';
       const statusLabel = active ? this._t('mtActive') : this._t('mtInactive');
 
       if (isMob) {
-        return `<div data-mt-col-detail="${c.id}" style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07));cursor:pointer">
+        return `<div data-mt-col-detail="${this._escHtml(c.id)}" style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07));cursor:pointer">
           <div style="flex:1;min-width:0">
             <div style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(name)}</div>
             <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${this._escHtml(libName)} · ${cnt} · <span style="color:${statusColor}">${statusLabel}</span></div>
@@ -170,7 +174,7 @@ class _MaintainerrCollectionsRenderMethods {
         </div>`;
       }
 
-      return `<tr data-mt-col-detail="${c.id}" style="cursor:pointer">
+      return `<tr data-mt-col-detail="${this._escHtml(c.id)}" style="cursor:pointer">
         <td><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(name)}</div></td>
         <td>${this._escHtml(libName)}</td>
         <td>${this._escHtml(mediaLabel)}</td>
@@ -250,7 +254,7 @@ class _MaintainerrCollectionsRenderMethods {
     const CROSS_ICO = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="display:block"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
     const posters = pageItems.map(item => {
-      const itemId = item.mediaServerId || item.id || '';
+      const itemId = this._escHtml(item.mediaServerId || item.id || '');
       const excluded = cd.excludedIds?.has?.(String(itemId));
       const confirming = cd.confirmExclude === String(itemId);
 
@@ -387,10 +391,10 @@ class _MaintainerrCollectionsRenderMethods {
     </div>`;
 
     const added = col?.addDate ? new Date(col.addDate).toLocaleDateString() : '—';
-    const dur = col?.lastDurationInSeconds != null ? `${col.lastDurationInSeconds} ${this._t('mtSeconds')}` : '—';
+    const dur = col?.lastDurationInSeconds != null ? `${Number(col.lastDurationInSeconds) || 0} ${this._t('mtSeconds')}` : '—';
     const stats = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
       ${_stat(this._t('mtDateAdded'), added)}
-      ${_stat(this._t('mtHandledItems'), col?.handledMediaAmount ?? 0)}
+      ${_stat(this._t('mtHandledItems'), Number(col?.handledMediaAmount) || 0)}
       ${_stat(this._t('mtLastDuration'), dur)}
     </div>`;
 

@@ -135,6 +135,7 @@ _wireActionButtons() {
         this._renderDlInfoEl();
         return;
       }
+      if (hit.type === 'music') { this._openMusicModal(hit.artistId); return; }
       this._openPopup(hit.type, hit.tmdbId, hit.tvdbId, hit.title, hit.radarrId, hit.radarr2Id);
     });
   }

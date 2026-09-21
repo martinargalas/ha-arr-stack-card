@@ -1,7 +1,7 @@
 // ──────────────────────────────────────────────────────────────────────────
 // Tautulli — Graphs tab
 // ──────────────────────────────────────────────────────────────────────────
-import { MT_BTN } from './maintainerr.js';
+import { MT_BTN } from './mt-kit.js';
 
 const _TL_G_HEX = {
   'Movies':        '#FF9500',
@@ -41,7 +41,13 @@ function _tlGAssignColors(series) {
   }
   return map;
 }
-function _tlGAttr(v) { return String(v).replace(/"/g, '&quot;'); }
+function _tlGAttr(v) { return _tlGEsc(v); }
+
+// Category and series names come from the API (and, reused by Tracearr and
+// Jellystat, can be platform or user names), so every label is text.
+function _tlGEsc(v) {
+  return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 
 function _tlGFmtDur(sec) {
   if (!sec || sec <= 0) return '0';
@@ -113,7 +119,7 @@ function _tlGXLabels(visibleLabels) {
     } else {
       style = `left:${l.pct.toFixed(1)}%;transform:translateX(-50%)`;
     }
-    return `<span style="position:absolute;${style};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${l.lbl}</span>`;
+    return `<span style="position:absolute;${style};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${_tlGEsc(l.lbl)}</span>`;
   }).join('') + '</div>';
 }
 
@@ -227,7 +233,7 @@ class _TautulliGraphsMethods {
     const colMap = _tlGAssignColors(series);
     const legend = series.map(s =>
       `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--is-text-muted)">`
-      + `<span style="width:7px;height:7px;border-radius:2px;background:${colMap[s.name]};flex-shrink:0;display:inline-block;opacity:0.9"></span>${this._tlGName(s.name)}</span>`
+      + `<span style="width:7px;height:7px;border-radius:2px;background:${colMap[s.name]};flex-shrink:0;display:inline-block;opacity:0.9"></span>${this._escHtml(this._tlGName(s.name) ?? '')}</span>`
     ).join('');
 
     return `<div class="tl-g-card" style="position:relative">
@@ -522,11 +528,12 @@ class _TautulliGraphsMethods {
       const u = users.find(u => sel.has(String(u.user_id)));
       btnLabel = u ? (u.friendly_name || u.username || '1 User') : '1 User';
     }
+    btnLabel = this._escHtml(btnLabel);
     // A phone has no room for a name here — the glyph stands in and the name is
     // in the tooltip. It only lights up when the picker actually narrows
     // anything: none selected and all selected both mean "every user".
     const narrowed = !!(sel && sel.size > 0 && sel.size < users.length);
-    const title = this._escHtml(btnLabel);
+    const title = btnLabel;
     if (this._isMob) {
       btnLabel = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
     }
@@ -536,8 +543,8 @@ class _TautulliGraphsMethods {
 
     const items = users.map(u => {
       const uid = String(u.user_id), checked = !sel || sel.has(uid);
-      const name = u.friendly_name || u.username || uid;
-      return `<div class="tl-g-dd-item" data-tl-g-uid="${uid}"
+      const name = this._escHtml(u.friendly_name || u.username || uid);
+      return `<div class="tl-g-dd-item" data-tl-g-uid="${this._escHtml(uid)}"
         style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px;cursor:pointer;font-size:11px;color:var(--is-text-body)">
         <span>${name}</span>
         <span style="width:14px;height:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center">${checked ? chkSvg : ''}</span>

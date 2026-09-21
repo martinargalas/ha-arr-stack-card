@@ -109,21 +109,24 @@ class _JellystatTableMethods {
       return t;
     };
 
+    const esc = s => this._escHtml(s ?? '');
+    const num = v => Number(v) || 0;
+
     if (isMob) {
       const cards = sliced.map(lib => {
-        const icon  = this._tlLibSvgIcon(_libIcon(lib), lib.Name || '', 'sm');
+        const icon  = this._tlLibSvgIcon(_libIcon(lib), String(lib.Name || ''), 'sm');
         const plays = Number(lib.Plays) || 0;
         const dur   = lib.total_playback_duration ? this._tlFmtDuration(lib.total_playback_duration) : null;
         const mp    = [];
         if (!mobH.has('streamed')   && lib.LastActivity) mp.push('<span>' + (fmtInterval(lib.LastActivity) || '&#x2014;') + '</span>');
-        if (!mobH.has('seasons')    && lib.Season_Count  > 0) mp.push('<span style="color:var(--is-text-label)">' + lib.Season_Count + ' seasons</span>');
-        if (!mobH.has('episodes')   && lib.Episode_Count > 0) mp.push('<span style="color:var(--is-text-label)">' + lib.Episode_Count + ' episodes</span>');
-        if (!mobH.has('lastPlayed') && lib.ItemName)     mp.push('<span style="display:inline-flex;align-items:center;gap:4px;color:var(--is-text-muted)">' + this._tlMediaIcon(_mediaIcoType(lib), 13) + lib.ItemName + '</span>');
+        if (!mobH.has('seasons')    && lib.Season_Count  > 0) mp.push('<span style="color:var(--is-text-label)">' + num(lib.Season_Count) + ' seasons</span>');
+        if (!mobH.has('episodes')   && lib.Episode_Count > 0) mp.push('<span style="color:var(--is-text-label)">' + num(lib.Episode_Count) + ' episodes</span>');
+        if (!mobH.has('lastPlayed') && lib.ItemName)     mp.push('<span style="display:inline-flex;align-items:center;gap:4px;color:var(--is-text-muted)">' + this._tlMediaIcon(_mediaIcoType(lib), 13) + esc(lib.ItemName) + '</span>');
         if (!mobH.has('duration')   && dur)              mp.push('<span style="color:var(--is-text-label)">' + dur + '</span>');
         return '<div class="tl-mob-card"><div class="u-row-10">'
           + '<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">' + icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"') + '</div>'
-          + '<div style="flex:1;min-width:0"><div class="tl-mob-name">' + (lib.Name || '&#x2014;') + '</div>' + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + '</div>' : '') + '</div>'
-          + '<div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">' + (lib.Library_Count ?? '&#x2014;') + '</div><div class="u-sm-label">&#9654; ' + plays + '</div></div>'
+          + '<div style="flex:1;min-width:0"><div class="tl-mob-name">' + esc(lib.Name || '—') + '</div>' + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + '</div>' : '') + '</div>'
+          + '<div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">' + (lib.Library_Count != null ? num(lib.Library_Count) : '—') + '</div><div class="u-sm-label">&#9654; ' + plays + '</div></div>'
           + '</div></div>';
       }).join('') || '<div class="u-empty">' + this._t('tlNoLibraryData') + '</div>';
       return toolbar + '<div class="js-libs-results-wrap" style="display:contents"><div>' + cards + '</div>' + this._uiPager('js-lpage', page2, totalPages, true) + '</div>';
@@ -131,16 +134,16 @@ class _JellystatTableMethods {
 
     const thead = vis.map(c => _jsSortTh(c, sortCol, sortDir, 'js-lib-sort')).join('');
     const rows  = sliced.map(lib => {
-      const icon = this._tlLibSvgIcon(_libIcon(lib), lib.Name || '', 'md');
+      const icon = this._tlLibSvgIcon(_libIcon(lib), String(lib.Name || ''), 'md');
       const dur  = lib.total_playback_duration ? this._tlFmtDuration(lib.total_playback_duration) : '&#x2014;';
       const streamedStr = fmtInterval(lib.LastActivity);
       const cm = {
-        name:      '<td style="max-width:180px"><span style="display:flex;align-items:center;min-width:0">' + icon + '<strong class="u-truncate">' + (lib.Name || '&#x2014;') + '</strong></span></td>',
-        count:     '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (lib.Library_Count ?? '&#x2014;') + '</td>',
-        seasons:   '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Season_Count  > 0 ? lib.Season_Count  : '&#x2014;') + '</td>',
-        episodes:  '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Episode_Count > 0 ? lib.Episode_Count : '&#x2014;') + '</td>',
+        name:      '<td style="max-width:180px"><span style="display:flex;align-items:center;min-width:0">' + icon + '<strong class="u-truncate">' + esc(lib.Name || '—') + '</strong></span></td>',
+        count:     '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (lib.Library_Count != null ? num(lib.Library_Count) : '—') + '</td>',
+        seasons:   '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Season_Count  > 0 ? num(lib.Season_Count)  : '—') + '</td>',
+        episodes:  '<td style="text-align:right;color:var(--is-text-label)">' + (lib.Episode_Count > 0 ? num(lib.Episode_Count) : '—') + '</td>',
         streamed:  '<td class="u-nowrap-sm">' + (streamedStr || '<span style="color:var(--is-text-muted)">never</span>') + '</td>',
-        lastPlayed:'<td style="max-width:200px"><div style="display:flex;align-items:center;gap:7px;min-width:0;color:var(--is-text-label)">' + (lib.ItemName ? this._tlMediaIcon(_mediaIcoType(lib), 15) + '<span class="u-truncate">' + lib.ItemName + '</span>' : '<span style="color:var(--is-text-muted)">n/a</span>') + '</div></td>',
+        lastPlayed:'<td style="max-width:200px"><div style="display:flex;align-items:center;gap:7px;min-width:0;color:var(--is-text-label)">' + (lib.ItemName ? this._tlMediaIcon(_mediaIcoType(lib), 15) + '<span class="u-truncate">' + esc(lib.ItemName) + '</span>' : '<span style="color:var(--is-text-muted)">n/a</span>') + '</div></td>',
         plays:     '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (Number(lib.Plays) || 0) + '</td>',
         duration:  '<td style="text-align:right">' + dur + '</td>',
       };
@@ -184,6 +187,7 @@ class _JellystatTableMethods {
 
     const splitClient = raw => {
       if (!raw) return ['', ''];
+      raw = String(raw);
       const idx = raw.indexOf(' - ');
       return idx >= 0 ? [raw.slice(0, idx), raw.slice(idx + 3)] : [raw, ''];
     };
@@ -232,18 +236,21 @@ class _JellystatTableMethods {
     const toolbar = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0">'
       + this._uiBar('js-users-search', m.usersSearch || '', [], [{ html: colsBtn }]) + '</div>';
 
+    const esc = s => this._escHtml(s ?? '');
+
     if (isMob) {
       const cards = sliced.map(u => {
-        const name = u.UserName || u.Name || '&#x2014;';
-        const plays = u.TotalPlays ?? 0;
+        const rawName = String(u.UserName || u.Name || '—');
+        const name = esc(rawName);
+        const plays = Number(u.TotalPlays) || 0;
         const dur   = u.TotalWatchTime ? this._tlFmtDuration(u.TotalWatchTime) : '&#x2014;';
         const [platform, player] = splitClient(u.LastClient);
         const mp = [];
         if (!mobH.has('lastStreamed') && u.LastActivityDate) mp.push('<span>' + this._tlFmtDate(u.LastActivityDate) + '</span>');
-        if (!mobH.has('platform') && platform) mp.push('<span style="color:var(--is-text-label)">' + platform + '</span>');
-        if (!mobH.has('player')   && player)   mp.push('<span style="color:var(--is-text-label)">' + player + '</span>');
-        if (!mobH.has('lastPlayed') && u.LastWatched) mp.push('<span style="display:inline-flex;align-items:center;gap:4px;color:var(--is-text-muted)">' + this._tlMediaIcon('generic', 13) + u.LastWatched + '</span>');
-        const av = '<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">' + ((name[0] || '?').toUpperCase()) + '</span>';
+        if (!mobH.has('platform') && platform) mp.push('<span style="color:var(--is-text-label)">' + esc(platform) + '</span>');
+        if (!mobH.has('player')   && player)   mp.push('<span style="color:var(--is-text-label)">' + esc(player) + '</span>');
+        if (!mobH.has('lastPlayed') && u.LastWatched) mp.push('<span style="display:inline-flex;align-items:center;gap:4px;color:var(--is-text-muted)">' + this._tlMediaIcon('generic', 13) + esc(u.LastWatched) + '</span>');
+        const av = '<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">' + esc((rawName[0] || '?').toUpperCase()) + '</span>';
         return '<div class="tl-mob-card"><div class="u-row-10">' + av
           + '<div style="flex:1;min-width:0"><div class="tl-mob-name">' + name + '</div>' + (mp.length ? '<div class="tl-mob-meta">' + mp.join('<span style="color:var(--is-text-muted)"> &middot; </span>') + '</div>' : '') + '</div>'
           + '<div style="text-align:right;flex-shrink:0"><div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ' + plays + '</div><div class="u-sm-label">' + dur + '</div></div>'
@@ -254,17 +261,18 @@ class _JellystatTableMethods {
 
     const thead = vis.map(c => _jsSortTh(c, sortCol, sortDir, 'js-sort')).join('');
     const rows  = sliced.map(u => {
-      const name = u.UserName || u.Name || '&#x2014;';
-      const av   = '<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">' + ((name[0] || '?').toUpperCase()) + '</span>';
+      const rawName = String(u.UserName || u.Name || '—');
+      const name = esc(rawName);
+      const av   = '<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">' + esc((rawName[0] || '?').toUpperCase()) + '</span>';
       const dur  = u.TotalWatchTime ? this._tlFmtDuration(u.TotalWatchTime) : '&#x2014;';
       const [platform, player] = splitClient(u.LastClient);
       const cm = {
         user:        '<td><div class="u-row-8">' + av + '<span style="font-weight:600">' + name + '</span></div></td>',
         lastStreamed:'<td class="u-nowrap-sm">' + (u.LastActivityDate ? this._tlFmtDate(u.LastActivityDate) : '<span style="color:var(--is-text-muted)">never</span>') + '</td>',
-        platform:    '<td style="color:var(--is-text-label)">' + (platform || '&#x2014;') + '</td>',
-        player:      '<td style="color:var(--is-text-label)">' + (player   || '&#x2014;') + '</td>',
-        lastPlayed:  '<td style="max-width:200px"><div style="display:flex;align-items:center;gap:7px;min-width:0">' + (u.LastWatched ? this._tlMediaIcon('generic', 15) + '<span class="u-truncate">' + u.LastWatched + '</span>' : '&#x2014;') + '</div></td>',
-        plays:       '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (u.TotalPlays ?? 0) + '</td>',
+        platform:    '<td style="color:var(--is-text-label)">' + esc(platform || '—') + '</td>',
+        player:      '<td style="color:var(--is-text-label)">' + esc(player   || '—') + '</td>',
+        lastPlayed:  '<td style="max-width:200px"><div style="display:flex;align-items:center;gap:7px;min-width:0">' + (u.LastWatched ? this._tlMediaIcon('generic', 15) + '<span class="u-truncate">' + esc(u.LastWatched) + '</span>' : '&#x2014;') + '</div></td>',
+        plays:       '<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">' + (Number(u.TotalPlays) || 0) + '</td>',
         duration:    '<td style="text-align:right">' + dur + '</td>',
       };
       return '<tr>' + vis.map(c => cm[c.key] || '<td>&#x2014;</td>').join('') + '</tr>';
@@ -341,22 +349,23 @@ class _JellystatTableMethods {
       try { return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { return '—'; }
     };
     const _ico = h => this._tlMediaIcon(h.SeriesName ? 'episode' : 'movie', 15);
+    const esc = s => this._escHtml(s ?? '');
     const _titleHtml = h => {
-      const item = h.NowPlayingItemName || '—';
+      const item = esc(h.NowPlayingItemName || '—');
       if (!h.SeriesName) return item;
       const ep = (h.SeasonNumber != null && h.EpisodeNumber != null)
         ? ' S' + String(h.SeasonNumber).padStart(2,'0') + 'E' + String(h.EpisodeNumber).padStart(2,'0') + ' '
         : ' – ';
-      return '<span style="color:var(--is-text-muted)">' + h.SeriesName + ep + '</span>' + item;
+      return '<span style="color:var(--is-text-muted)">' + esc(h.SeriesName + ep) + '</span>' + item;
     };
 
     if (isMob) {
       const cards = data.map(h => {
         const dur  = h.PlaybackDuration ? this._tlFmtDuration(h.PlaybackDuration) : '—';
         const ago  = h.ActivityDateInserted ? this._tlFmtDate(h.ActivityDateInserted) : '—';
-        const mp   = ['<span>' + (h.UserName || '—') + '</span>', '<span>' + ago + '</span>'];
-        if (!mobH.has('product') && h.Client)     mp.push('<span style="color:var(--is-text-label)">' + h.Client + '</span>');
-        if (!mobH.has('player')  && h.DeviceName) mp.push('<span style="color:var(--is-text-label)">' + h.DeviceName + '</span>');
+        const mp   = ['<span>' + esc(h.UserName || '—') + '</span>', '<span>' + ago + '</span>'];
+        if (!mobH.has('product') && h.Client)     mp.push('<span style="color:var(--is-text-label)">' + esc(h.Client) + '</span>');
+        if (!mobH.has('player')  && h.DeviceName) mp.push('<span style="color:var(--is-text-label)">' + esc(h.DeviceName) + '</span>');
         if (!mobH.has('started')) mp.push('<span style="color:var(--is-text-muted)">' + _fmtStarted(h.ActivityDateInserted) + '</span>');
         return '<div class="tl-mob-card"><div class="u-row-10">'
           + '<div style="flex:1;min-width:0"><div class="tl-mob-name" style="display:flex;align-items:center;gap:6px;min-width:0">' + this._tlMediaIcon(h.SeriesName ? 'episode' : 'movie', 13) + '<span class="u-truncate">' + _titleHtml(h) + '</span></div>'
@@ -370,13 +379,13 @@ class _JellystatTableMethods {
     const rows  = data.map(h => {
       const cm = {
         date:    '<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">' + (h.ActivityDateInserted ? this._tlFmtDate(h.ActivityDateInserted) : '—') + '</td>',
-        user:    '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">' + (h.UserName || '—') + '</td>',
-        product: '<td style="color:var(--is-text-label);white-space:nowrap">' + (h.Client || '—') + '</td>',
-        player:  '<td style="color:var(--is-text-label);white-space:nowrap">' + (h.DeviceName || '—') + '</td>',
+        user:    '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">' + esc(h.UserName || '—') + '</td>',
+        product: '<td style="color:var(--is-text-label);white-space:nowrap">' + esc(h.Client || '—') + '</td>',
+        player:  '<td style="color:var(--is-text-label);white-space:nowrap">' + esc(h.DeviceName || '—') + '</td>',
         title:   '<td style="max-width:260px"><div style="display:flex;align-items:center;gap:7px;min-width:0">' + _ico(h) + '<span class="u-truncate">' + _titleHtml(h) + '</span></div></td>',
         started: '<td style="text-align:right;white-space:nowrap;color:var(--is-text-label);font-size:12px">' + _fmtStarted(h.ActivityDateInserted) + '</td>',
         duration:'<td style="text-align:right;white-space:nowrap;font-weight:600">' + (h.PlaybackDuration ? this._tlFmtDuration(h.PlaybackDuration) : '—') + '</td>',
-        ip:      '<td style="font-family:monospace;font-size:11px;color:var(--is-text-muted)">' + (h.RemoteEndPoint || '—') + '</td>',
+        ip:      '<td style="font-family:monospace;font-size:11px;color:var(--is-text-muted)">' + esc(h.RemoteEndPoint || '—') + '</td>',
       };
       return '<tr>' + vis.map(c => cm[c.key] || '<td>—</td>').join('') + '</tr>';
     }).join('');

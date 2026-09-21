@@ -71,11 +71,9 @@ class _TracearrHistoryMethods {
     const _SRV_CLR_F = { plex: '#e5a00d', jellyfin: '#7c4dff', emby: '#52b54b' };
     const srvMapF  = Object.fromEntries((m.histServers || []).map(s => [s.id, s]));
     const _srvSfx  = (id) => { const s = srvMapF[id]; if (!s?.type) return ''; return ' - ' + (s.type.charAt(0).toUpperCase() + s.type.slice(1)); };
-    const srvOpts = (m.histServers || []).map(s => `<option value="${s.id}"${m.histServer===s.id?' selected':''}>${s.name}</option>`).join('');
     const filteredUsers = m.histServer
       ? (m.histUsers || []).filter(u => u.serverId === m.histServer)
       : (m.histUsers || []);
-    const uOpts   = filteredUsers.map(u => `<option value="${u.id}"${m.histUser===u.id?' selected':''}>${u.displayName||u.username}${_srvSfx(u.serverId)}</option>`).join('');
     // One bar: search, the three pickers, then Columns. The period used to be
     // four pills — only one can be in force, which is what a picker says, and
     // on a phone four pills plus two selects never fit beside the search field.
@@ -108,11 +106,11 @@ class _TracearrHistoryMethods {
       const _TC_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
       const _CLK    = `<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
       const cards = hist.map((h, idx) => {
-        const title  = h.showTitle || h.mediaTitle || '—';
-        const yearLbl = h.showTitle
+        const title  = this._escHtml(h.showTitle || h.mediaTitle || '—');
+        const yearLbl = this._escHtml(h.showTitle
           ? `S${String(h.seasonNumber||0).padStart(2,'0')}E${String(h.episodeNumber||0).padStart(2,'0')}`
-          : (h.year ? String(h.year) : '');
-        const user   = h.user?.displayName || h.user?.username || '';
+          : (h.year ? String(h.year) : ''));
+        const user   = this._escHtml(h.user?.displayName || h.user?.username || '');
         const durRaw = h.durationMs ? (() => { const s=Math.round(h.durationMs/1000); const hh=Math.floor(s/3600); const mm=Math.floor((s%3600)/60); const ss=s%60; return hh>0?`${hh}h ${String(mm).padStart(2,'0')}m`:`${mm}m ${String(ss).padStart(2,'0')}s`; })() : '';
         const { label, color, bg, pct } = watchBadge(h);
         const dt     = fmtDt(h.startedAt);
@@ -124,7 +122,7 @@ class _TracearrHistoryMethods {
           user    ? `<span>${user}</span>`    : '',
           durRaw  ? `<span style="display:inline-flex;align-items:center;gap:3px">${_CLK}${durRaw}</span>` : '',
         ].filter(Boolean).join('<span style="opacity:0.3;margin:0 1px">·</span>');
-        return `<div class="tl-mob-card" data-tra-hist-row="${h.id||idx}" style="display:grid;grid-template-columns:1fr auto;row-gap:5px;column-gap:8px;align-items:center;cursor:pointer">
+        return `<div class="tl-mob-card" data-tra-hist-row="${this._escHtml(h.id || idx)}" style="display:grid;grid-template-columns:1fr auto;row-gap:5px;column-gap:8px;align-items:center;cursor:pointer">
           <div style="display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden">
             <span style="flex-shrink:0">${mediaIcon(h.mediaType)}</span>
             <span style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span>
@@ -155,14 +153,14 @@ class _TracearrHistoryMethods {
     }
 
     const rows = hist.map((h, idx) => {
-      const title  = h.mediaTitle || '—';
+      const title  = this._escHtml(h.mediaTitle || '—');
       const sub    = h.showTitle
-        ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${h.showTitle} · S${String(h.seasonNumber||0).padStart(2,'0')}E${String(h.episodeNumber||0).padStart(2,'0')}</div>`
-        : (h.year ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${h.year}</div>` : '');
-      const user   = h.user?.displayName || h.user?.username || '—';
+        ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${this._escHtml(`${h.showTitle} · S${String(h.seasonNumber||0).padStart(2,'0')}E${String(h.episodeNumber||0).padStart(2,'0')}`)}</div>`
+        : (h.year ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${this._escHtml(h.year)}</div>` : '');
+      const user   = this._escHtml(h.user?.displayName || h.user?.username || '—');
       const srv    = srvMapF[h.serverId] || null;
-      const srvType = srv?.type || null;
-      const srvLabel = srvType ? (srvType.charAt(0).toUpperCase() + srvType.slice(1)) : null;
+      const srvType = srv?.type ? String(srv.type) : null;
+      const srvLabel = srvType ? this._escHtml(srvType.charAt(0).toUpperCase() + srvType.slice(1)) : null;
       const srvColor = srvType ? (_SRV_CLR_F[srvType] || 'rgba(255,255,255,0.4)') : null;
       const _DP_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><polygon points="5,3 19,12 5,21"/></svg>`;
       const _TC_ICO = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" style="flex-shrink:0"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
@@ -178,12 +176,12 @@ class _TracearrHistoryMethods {
         date:     `<td style="white-space:nowrap"><div style="font-size:11px;font-weight:600;color:var(--is-text)">${dt.date}</div><div class="u-xs-muted">${dt.time}</div></td>`,
         user:     `<td><div class="u-row-6">${this._traUserAvatar(h.user,18)}<div><div style="font-size:11px;color:var(--is-text)">${user}</div>${srvLabel ? `<div style="font-size:9px;font-weight:700;color:${srvColor}">${srvLabel}</div>` : ''}</div></div></td>`,
         content:  `<td style="min-width:180px"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${mediaIcon(h.mediaType)}<strong class="u-sm-text">${title}</strong>${this._uiBadge(`${label}`, this._hexToRgbTriple(color), { small: true })}</div>${sub}</td>`,
-        platform: `<td><div style="font-size:11px;color:var(--is-text)">${h.platform||'—'}</div><div class="u-xs-muted">${h.product||''}</div></td>`,
+        platform: `<td><div style="font-size:11px;color:var(--is-text)">${this._escHtml(h.platform || '—')}</div><div class="u-xs-muted">${this._escHtml(h.product || '')}</div></td>`,
         quality:  `<td>${dec}</td>`,
         duration: `<td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${dur}</td>`,
         progress: `<td><div class="u-row-5">${watchPie(pct)}<span style="font-size:11px;color:var(--is-text-muted)">${pct}%</span></div></td>`,
       };
-      return `<tr data-tra-hist-row="${h.id||idx}" style="cursor:pointer">${vis.map(col => cm[col.key] || '<td>—</td>').join('')}</tr>`;
+      return `<tr data-tra-hist-row="${this._escHtml(h.id || idx)}" style="cursor:pointer">${vis.map(col => cm[col.key] || '<td>—</td>').join('')}</tr>`;
     }).join('');
 
     const thead = vis.map(col => `<th>${col.label}</th>`).join('');
@@ -228,10 +226,11 @@ class _TracearrHistoryMethods {
       return d.toLocaleDateString(this._locale, { month: 'short', day: 'numeric' }) + ', ' +
              d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     };
-    const row = (label, value) => (value != null && value !== '' && value !== '—')
+    // Values are text unless the caller built the markup itself.
+    const row = (label, value, html = false) => (value != null && value !== '' && value !== '—')
       ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px">
            <span style="font-size:11px;color:var(--is-text-muted);flex-shrink:0">${label}</span>
-           <span style="font-size:11px;color:var(--is-text);text-align:right;word-break:break-all">${value}</span>
+           <span style="font-size:11px;color:var(--is-text);text-align:right;word-break:break-all">${html ? value : this._escHtml(value)}</span>
          </div>` : '';
     const secHdr = (label, bdg='') =>
       `<div style="display:flex;align-items:center;gap:6px;margin:14px 0 6px">
@@ -245,10 +244,10 @@ class _TracearrHistoryMethods {
       : badge(this._t('tlFilterDirectPlay'),'#34C759','rgba(52,199,89,0.14)');
 
     // ── Media header ────────────────────────────────────────────────────────
-    const title    = h.showTitle || h.mediaTitle || '—';
-    const subtitle = h.showTitle
+    const title    = this._escHtml(h.showTitle || h.mediaTitle || '—');
+    const subtitle = this._escHtml(h.showTitle
       ? `${h.mediaTitle ? h.mediaTitle + ' · ' : ''}S${String(h.seasonNumber||0).padStart(2,'0')}E${String(h.episodeNumber||0).padStart(2,'0')}`
-      : (h.year ? String(h.year) : '');
+      : (h.year ? String(h.year) : ''));
     const p = parseInt(h.progressMs || 0), t = parseInt(h.totalDurationMs || 0);
     const pct = t ? Math.round(p / t * 100) : 0;
     const stateBadge = h.state === 'playing'
@@ -264,8 +263,8 @@ class _TracearrHistoryMethods {
     const _SRV_CLR = { plex: '#e5a00d', jellyfin: '#7c4dff', emby: '#52b54b' };
     const srvMapF  = Object.fromEntries((m.histServers || []).map(s => [s.id, s]));
     const srv      = srvMapF[h.serverId];
-    const srvType  = (srv?.type || h.serverName || '').toLowerCase();
-    const srvName  = h.serverName || srv?.name || '';
+    const srvType  = String(srv?.type || h.serverName || '').toLowerCase();
+    const srvName  = this._escHtml(h.serverName || srv?.name || '');
     const srvClr   = _SRV_CLR[srvType] || '#fff';
     const srvBadge = srvName ? badge(srvName, srvClr, 'rgba(255,255,255,0.07)') : '';
 
@@ -282,9 +281,10 @@ class _TracearrHistoryMethods {
         </tr></thead>
         <tbody>${fields.map(([lbl, sv, dv]) => {
           if (sv == null && dv == null) return '';
-          const svStr = sv != null ? String(sv) : '—';
-          const dvStr = dv != null ? String(dv) : svStr;
-          const same  = svStr === dvStr;
+          const svRaw = sv != null ? String(sv) : '—';
+          const dvRaw = dv != null ? String(dv) : svRaw;
+          const same  = svRaw === dvRaw;
+          const svStr = this._escHtml(svRaw), dvStr = this._escHtml(dvRaw);
           return `<tr>
             <td style="color:var(--is-text-muted);padding:3px 0;vertical-align:top">${lbl}</td>
             <td style="color:var(--is-text);font-weight:600;padding:3px 4px;vertical-align:top">${svStr}</td>
@@ -334,13 +334,13 @@ class _TracearrHistoryMethods {
       <div class="u-panel">
         <div class="u-row-8">
           ${this._traUserAvatar(h.user, 28)}
-          <span class="u-sm-text">${h.user?.displayName || h.user?.username || '—'}</span>
+          <span class="u-sm-text">${this._escHtml(h.user?.displayName || h.user?.username || '—')}</span>
         </div>
       </div>
 
       ${srvName ? `${secHdr(this._t('traServer'))}
       <div class="u-panel">
-        ${row(this._t('traServer'), `<span style="color:${srvClr};font-weight:700">${srvName}</span> · ${srvName}`)}
+        ${row(this._t('traServer'), `<span style="color:${srvClr};font-weight:700">${srvName}</span> · ${srvName}`, true)}
       </div>` : ''}
 
       ${secHdr(this._t('traDevice'))}
@@ -539,7 +539,7 @@ class _TracearrHistoryMethods {
         const dash = Math.max(0, full - gap);
         const off  = -cum; cum += full;
         const pct  = Math.round(sg.value / total * 100);
-        return `<circle class="donut-arc" data-idx="${i}" data-label="${sg.label}" data-value="${sg.value}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#dg-${uid}-${i})" stroke-width="${sw}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" style="cursor:pointer"><animate attributeName="r" from="0" to="${r.toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/><animate attributeName="stroke-dasharray" from="0 ${C.toFixed(2)}" to="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/></circle>`;
+        return `<circle class="donut-arc" data-idx="${i}" data-label="${this._escHtml(sg.label ?? '')}" data-value="${sg.value}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#dg-${uid}-${i})" stroke-width="${sw}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" style="cursor:pointer"><animate attributeName="r" from="0" to="${r.toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/><animate attributeName="stroke-dasharray" from="0 ${C.toFixed(2)}" to="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/></circle>`;
       }).join('');
       const fs = Math.min(size * 0.14, 12);
       const svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;overflow:visible">
@@ -558,7 +558,7 @@ class _TracearrHistoryMethods {
         const pct = total ? Math.round(s.value / total * 100) : 0;
         return `<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
           <span style="width:7px;height:7px;border-radius:2px;background:${s.color};flex-shrink:0"></span>
-          <span style="font-size:10px;color:var(--is-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.label}</span>
+          <span style="font-size:10px;color:var(--is-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(s.label ?? '')}</span>
           <span style="font-size:10px;font-weight:700;color:var(--is-text-muted)">${pct}%</span>
         </div>`;
       }).join('');
@@ -572,13 +572,13 @@ class _TracearrHistoryMethods {
     };
 
     const qualSegs = [
-      { label: this._t('tlFilterDirectPlay'),   value: qual.directPlay   || 0, color: QUAL_HEX['Direct Play']   },
-      { label: this._t('tlFilterDirectStream'), value: qual.directStream || 0, color: QUAL_HEX['Direct Stream'] },
-      { label: this._t('tlFilterTranscode'),     value: qual.transcode    || 0, color: QUAL_HEX['Transcode']     },
+      { label: this._t('tlFilterDirectPlay'),   value: Number(qual.directPlay)   || 0, color: QUAL_HEX['Direct Play']   },
+      { label: this._t('tlFilterDirectStream'), value: Number(qual.directStream) || 0, color: QUAL_HEX['Direct Stream'] },
+      { label: this._t('tlFilterTranscode'),     value: Number(qual.transcode)    || 0, color: QUAL_HEX['Transcode']     },
     ].filter(s => s.value > 0);
 
     const platSegs = (act.platforms || []).slice(0, 8).map((p, i) => ({
-      label: p.platform, value: p.count || 0, color: DONUT_HEX[i % DONUT_HEX.length]
+      label: p.platform, value: Number(p.count) || 0, color: DONUT_HEX[i % DONUT_HEX.length]
     }));
 
     const qualCard = donutCard(this._t('traStreamQuality'), qualSegs);

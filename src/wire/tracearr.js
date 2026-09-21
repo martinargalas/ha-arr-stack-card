@@ -9,18 +9,6 @@ class _WireTraceaRrMethods {
   // Poster row — delegate clicks to open modal on correct tab
   // ──────────────────────────────────────────────────────────────────────────
 
-  _wireTracearrPosters(right) {
-    // Bound to the column itself, which outlives every repaint - once is enough,
-    // and a second listener per paint made one click open the modal many times.
-    if (!right || right._traWired) return;
-    right._traWired = true;
-    right.addEventListener('click', e => {
-      const card = e.target.closest('[data-tra-open]');
-      if (!card) return;
-      this._openTracearrModal(card.dataset.traOpen);
-    });
-  }
-
   // ──────────────────────────────────────────────────────────────────────────
   // Modal outer wiring (close button, overlay click, tab buttons)
   // ──────────────────────────────────────────────────────────────────────────
@@ -186,7 +174,6 @@ class _WireTraceaRrMethods {
         this._traLoadTab('bandwidth', el);
         return;
       }
-
 
       const violsSrvBtn = e.target.closest('[data-tra-viols-srv]');
       if (violsSrvBtn) {
@@ -461,7 +448,7 @@ class _WireTraceaRrMethods {
       arcs.forEach((arc, i) => {
         arc.addEventListener('mouseenter', () => {
           if (rings[i]) rings[i].style.strokeOpacity = '0.22';
-          tt.innerHTML = `<div style="font-size:11px;font-weight:700;margin-bottom:2px">${arc.dataset.label}</div><div style="font-size:10px;opacity:0.65">${this._t('traItemsPct').replace('{n}', arc.dataset.value).replace('{p}', arc.dataset.pct)}</div>`;
+          tt.innerHTML = `<div style="font-size:11px;font-weight:700;margin-bottom:2px">${this._escHtml(arc.dataset.label ?? '')}</div><div style="font-size:10px;opacity:0.65">${this._escHtml(this._t('traItemsPct').replace('{n}', () => arc.dataset.value).replace('{p}', () => arc.dataset.pct))}</div>`;
           tt.style.display = 'block';
         });
         arc.addEventListener('mousemove', e => {

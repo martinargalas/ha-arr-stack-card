@@ -3,7 +3,7 @@
 // overview / users / violations / history / activity
 // ──────────────────────────────────────────────────────────────────────────
 
-import { MT_BTN, _ICO_CHECK } from './maintainerr.js';
+import { MT_BTN, _ICO_CHECK } from './mt-kit.js';
 import { BP, maxWidth } from '../shared/ui.js';
 
 // Severity reads the same wherever it appears.
@@ -36,7 +36,7 @@ class _TraceaRrTableMethods {
     const viols = m.overviewViols || [];
     const act   = m.overviewAct   || {};
     const plays7 = (act.plays || []).slice(-7);
-    const total7 = plays7.reduce((s, p) => s + (p.count || 0), 0);
+    const total7 = plays7.reduce((s, p) => s + (Number(p.count) || 0), 0);
     const isMob  = this._isMob;
 
     const tile = (lbl, val, sub, color) =>
@@ -47,19 +47,19 @@ class _TraceaRrTableMethods {
       </div>`;
 
     const tiles = `<div style="display:grid;grid-template-columns:repeat(${isMob?2:4},1fr);gap:${isMob?'8px':'10px'};margin-bottom:${isMob?'14px':'16px'}">
-      ${tile(this._t('traStreamsNow'), st.activeStreams ?? 0, null, '#34C759')}
-      ${tile(this._t('traUsers'), st.totalUsers ?? 0, st.totalSessions ? st.totalSessions + ' ' + this._t('tlPlays') : null, '#BF5AF2')}
-      ${tile(this._t('traViolations'), st.recentViolations ?? 0, this._t('traThisMonth'), st.recentViolations > 0 ? '#FF3B30' : '#34C759')}
+      ${tile(this._t('traStreamsNow'), Number(st.activeStreams) || 0, null, '#34C759')}
+      ${tile(this._t('traUsers'), Number(st.totalUsers) || 0, st.totalSessions ? (Number(st.totalSessions) || 0) + ' ' + this._t('tlPlays') : null, '#BF5AF2')}
+      ${tile(this._t('traViolations'), Number(st.recentViolations) || 0, this._t('traThisMonth'), st.recentViolations > 0 ? '#FF3B30' : '#34C759')}
       ${tile(this._t('traActivity7d'), total7, null, '#007AFF')}
     </div>`;
 
     const srvs = (hlth.servers || []).map(s => {
       const ic = { plex:{bg:'#e5a00d',c:'#000',l:'P'}, jellyfin:{bg:'#7c4dff',c:'#fff',l:'J'}, emby:{bg:'#52b54b',c:'#fff',l:'E'} }[s.type] || {bg:'rgba(255,255,255,0.15)',c:'#fff',l:'?'};
       const dot = s.online ? '#34d399' : '#f87171';
-      const streams = s.activeStreams > 0 ? this._uiBadge(`${s.activeStreams} live`, 'green') : '';
+      const streams = s.activeStreams > 0 ? this._uiBadge(`${Number(s.activeStreams) || 0} live`, 'green') : '';
       return `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--is-divider)">
         <span style="width:22px;height:22px;border-radius:6px;background:${ic.bg};color:${ic.c};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${ic.l}</span>
-        <span style="font-size:13px;font-weight:600;color:var(--is-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--is-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(s.name ?? '')}</span>
         ${streams}
         <span style="width:8px;height:8px;border-radius:50%;background:${dot};box-shadow:0 0 7px ${dot};flex-shrink:0"></span>
       </div>`;
@@ -69,10 +69,10 @@ class _TraceaRrTableMethods {
       const color = this._traSevColor(v.severity);
       const bg    = this._traSevBg(v.severity);
       const type  = this._traViolTypeLabel(v.type);
-      const user  = v.user?.displayName || v.username || '';
+      const user  = this._escHtml(v.user?.displayName || v.username || '');
       const when  = this._traFmtDate(v.createdAt || v.detectedAt);
       return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--is-divider)">
-        ${this._uiBadge((v.severity||'').toUpperCase(), _sevTone(v.severity), { extra: 'flex-shrink:0;margin-top:1px' })}
+        ${this._uiBadge(this._escHtml(String(v.severity||'').toUpperCase()), _sevTone(v.severity), { extra: 'flex-shrink:0;margin-top:1px' })}
         <div style="flex:1;min-width:0">
           <div class="u-sm-text">${type}</div>
           <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[user,when].filter(Boolean).join(' · ')}</div>
@@ -119,17 +119,17 @@ class _TraceaRrTableMethods {
 
     if (isMob) {
       const cards = users.map(u => {
-        const score = u.trustScore ?? 100;
+        const score = u.trustScore == null ? 100 : (Number(u.trustScore) || 0);
         const c     = this._traTrustColor(score);
         const bg    = this._traTrustBg(score);
         const badge = u.totalViolations > 0
-          ? this._uiBadge(`${u.totalViolations} viol.`, 'red')
+          ? this._uiBadge(`${Number(u.totalViolations) || 0} viol.`, 'red')
           : this._uiBadge('OK', 'green');
-        const meta = [u.serverName, `${u.sessionCount ?? 0} ${this._t('tlPlays')}`].filter(Boolean).join(' · ');
+        const meta = [u.serverName && this._escHtml(u.serverName), `${Number(u.sessionCount) || 0} ${this._t('tlPlays')}`].filter(Boolean).join(' · ');
         return `<div class="tl-mob-card u-row-10">
           ${this._traUserAvatar(u, 32)}
           <div style="flex:1;min-width:0">
-            <div class="tl-mob-name">${u.displayName || u.username}</div>
+            <div class="tl-mob-name">${this._escHtml(u.displayName || u.username || '')}</div>
             <div class="tl-mob-meta"><span>${meta}</span></div>
           </div>
           ${badge}
@@ -140,27 +140,27 @@ class _TraceaRrTableMethods {
     }
 
     const rows = users.map(u => {
-      const score  = u.trustScore ?? 100;
+      const score  = u.trustScore == null ? 100 : (Number(u.trustScore) || 0);
       const c      = this._traTrustColor(score);
       const pct    = score + '%';
       // Zero was plain text while any other count was a badge — same column,
       // same meaning, so both are badges now.
       const vBadge = u.totalViolations > 0
-        ? this._uiBadge(String(u.totalViolations), 'red')
+        ? this._uiBadge(String(Number(u.totalViolations) || 0), 'red')
         : this._uiBadge('0', 'neutral');
       const srvBg = { plex:'#e5a00d', jellyfin:'#7c4dff', emby:'#52b54b' }[u.serverType] || 'rgba(255,255,255,0.15)';
       const srvC  = u.serverType === 'plex' ? '#000' : '#fff';
       const srvL  = { plex:'P', jellyfin:'J', emby:'E' }[u.serverType] || '?';
       return `<tr${u.totalViolations > 0 ? ' class="tl-row-warn"' : ''}>
-        <td><div class="u-row-8">${this._traUserAvatar(u,22)}<strong class="u-sm-text">${u.displayName || u.username}</strong></div></td>
-        <td><span style="width:18px;height:18px;border-radius:5px;background:${srvBg};color:${srvC};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;vertical-align:middle;margin-right:5px">${srvL}</span><span style="font-size:11px;color:var(--is-text)">${u.serverName||'—'}</span></td>
+        <td><div class="u-row-8">${this._traUserAvatar(u,22)}<strong class="u-sm-text">${this._escHtml(u.displayName || u.username || '')}</strong></div></td>
+        <td><span style="width:18px;height:18px;border-radius:5px;background:${srvBg};color:${srvC};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;vertical-align:middle;margin-right:5px">${srvL}</span><span style="font-size:11px;color:var(--is-text)">${this._escHtml(u.serverName || '—')}</span></td>
         <td>
           <div class="u-row-6">
             <div style="width:52px;height:5px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;flex-shrink:0"><div style="height:100%;border-radius:4px;background:${c.replace('0.9','0.7')};width:${pct}"></div></div>
             <span style="font-size:11px;font-weight:700;color:${c}">${score}</span>
           </div>
         </td>
-        <td style="font-size:11px;color:var(--is-text)">${u.sessionCount ?? 0}</td>
+        <td style="font-size:11px;color:var(--is-text)">${Number(u.sessionCount) || 0}</td>
         <td>${vBadge}</td>
         <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${u.lastActivityAt ? this._traFmtDate(u.lastActivityAt) : '—'}</td>
       </tr>`;
@@ -225,17 +225,19 @@ class _TraceaRrTableMethods {
 
     const _mkCard = (u, di) => {
       const gold   = isGold[di];
-      const name   = u.identityName || u.displayName || u.username || '?';
-      const av     = u.thumbUrl || u.avatarUrl || u.avatar || null;
-      const plays  = u.playCount ?? u.plays ?? u.totalPlays ?? u.sessions ?? 0;
+      const rawName = String(u.identityName || u.displayName || u.username || '?');
+      const name   = this._escHtml(rawName);
+      const av     = this._imgSrc(u.thumbUrl || u.avatarUrl || u.avatar) || null;
+      const plays  = Number(u.playCount ?? u.plays ?? u.totalPlays ?? u.sessions) || 0;
       const hrs    = _fmtHr(u.watchTimeHours ?? u.totalDuration ?? u.watchTime ?? u.totalHours ?? null);
       const trust  = u.trustScore ?? u.trust ?? null;
       const loves  = u.topContent || u.favoriteTitle || u.favoriteSeries || u.favoriteMedia || null;
+      const lovesTxt = loves && this._escHtml(loves);
       const border = borders[di];
       const avSz   = gold ? (isMob ? 72 : isTablet ? 84 : 96) : (isMob ? 52 : isTablet ? 60 : 68);
       const pad    = gold ? (isMob ? '20px 8px 14px' : isTablet ? '20px 10px 14px' : '24px 14px 16px') : (isMob ? '12px 6px' : isTablet ? '12px 8px' : '16px 10px');
       const nameSz = gold ? (isMob ? 12 : 14) : (isMob ? 11 : 12);
-      const avFb   = `<div style="width:${avSz}px;height:${avSz}px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${Math.round(avSz*0.3)}px;font-weight:800;color:rgba(255,255,255,0.6)">${name.slice(0,2).toUpperCase()}</div>`;
+      const avFb   = `<div style="width:${avSz}px;height:${avSz}px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${Math.round(avSz*0.3)}px;font-weight:800;color:rgba(255,255,255,0.6)">${this._escHtml(rawName.slice(0, 2).toUpperCase())}</div>`;
       const avEl   = av
         ? `<img src="${av}" width="${avSz}" height="${avSz}" style="border-radius:50%;object-fit:cover;border:2px solid ${border};flex-shrink:0" loading="lazy" onerror="this.style.display='none'">`
         : avFb;
@@ -246,7 +248,7 @@ class _TraceaRrTableMethods {
           </div>`
         : '';
       const lovesEl = loves
-        ? `<div style="font-size:${isMob?8:9}px;color:var(--is-text-muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${this._t('traLoves').replace('{n}', loves)}</div>`
+        ? `<div style="font-size:${isMob?8:9}px;color:var(--is-text-muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${this._t('traLoves').replace('{n}', () => lovesTxt)}</div>`
         : '';
       return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:${pad};background:var(--is-row-hover);border-radius:12px;flex:1;box-sizing:border-box;text-align:center;min-width:0">
         <div style="font-size:${gold?(isMob?22:26):(isMob?16:20)}px;line-height:1">${medals[di]}</div>
@@ -273,15 +275,17 @@ class _TraceaRrTableMethods {
     const runnersHtml = runnersUp.length ? (() => {
       const rows = ruSlice.map((u, i) => {
         const pos    = ruPage * ruPP + i + 4;
-        const name   = u.identityName || u.displayName || u.username || '?';
-        const av     = u.thumbUrl || u.avatarUrl || u.avatar || null;
-        const plays  = u.playCount ?? u.plays ?? u.totalPlays ?? u.sessions ?? 0;
+        const rawName = String(u.identityName || u.displayName || u.username || '?');
+        const name   = this._escHtml(rawName);
+        const av     = this._imgSrc(u.thumbUrl || u.avatarUrl || u.avatar) || null;
+        const plays  = Number(u.playCount ?? u.plays ?? u.totalPlays ?? u.sessions) || 0;
         const hrs    = _fmtHr(u.watchTimeHours ?? u.totalDuration ?? u.watchTime ?? u.totalHours ?? null);
         const trust  = u.trustScore ?? u.trust ?? null;
         const loves  = u.topContent || u.favoriteTitle || u.favoriteSeries || u.favoriteMedia || null;
+        const lovesTxt = loves && this._escHtml(loves);
         const avSz   = isMob ? 32 : 38;
         const avEl   = `<div style="position:relative;width:${avSz}px;height:${avSz}px;flex-shrink:0">
-          <div style="width:${avSz}px;height:${avSz}px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:${Math.round(avSz*0.32)}px;font-weight:800;color:rgba(255,255,255,0.6)">${name.slice(0,2).toUpperCase()}</div>
+          <div style="width:${avSz}px;height:${avSz}px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:${Math.round(avSz*0.32)}px;font-weight:800;color:rgba(255,255,255,0.6)">${this._escHtml(rawName.slice(0, 2).toUpperCase())}</div>
           ${av ? `<img src="${av}" width="${avSz}" height="${avSz}" style="border-radius:50%;object-fit:cover;position:absolute;inset:0" loading="lazy" onerror="this.style.display='none'">` : ''}
         </div>`;
         const trustEl = trust != null
@@ -293,7 +297,7 @@ class _TraceaRrTableMethods {
           trustEl,
         ].filter(Boolean).join(`<span style="color:var(--is-divider);margin:0 3px">·</span>`);
         const lovesEl = loves
-          ? `<div style="font-size:${isMob?9:10}px;color:var(--is-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._t('traLoves').replace('{n}', loves)}</div>`
+          ? `<div style="font-size:${isMob?9:10}px;color:var(--is-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._t('traLoves').replace('{n}', () => lovesTxt)}</div>`
           : '';
         return `<div style="display:flex;align-items:center;gap:${isMob?'8px':'12px'};padding:${isMob?'6px 0':'8px 0'};border-bottom:1px solid var(--is-divider)">
           <span style="font-size:${isMob?11:13}px;font-weight:700;color:var(--is-text-muted);min-width:${isMob?20:24}px;text-align:center">#${pos}</span>

@@ -227,7 +227,7 @@ class _WireMaintainerrCollectionsMethods {
       m._animateSub = true;
       this._mtLoadTab('collections', modal);
     } catch (e) {
-      body.innerHTML = `<div class="u-empty-dim">Error: ${e.message || e}</div>`;
+      body.innerHTML = `<div class="u-empty-dim">Error: ${this._escHtml(e?.message || e)}</div>`;
     }
   }
 

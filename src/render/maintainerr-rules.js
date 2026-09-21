@@ -1,5 +1,5 @@
 import { isMobile } from '../shared/ui.js';
-import { MT_BTN, _ICO_CHECK } from './maintainerr.js';
+import { MT_BTN, _ICO_CHECK } from './mt-kit.js';
 
 // Maintainerr, the Rules tab and the rule editor. Split out of render/maintainerr.js.
 
@@ -110,7 +110,7 @@ class _MaintainerrRulesRenderMethods {
         ? `<div style="position:absolute;inset:0;z-index:5;background:${this._isDay ? 'rgba(255,255,255,0.90)' : 'rgba(0,0,0,0.78)'};border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
             <span style="font-size:12px;font-weight:600;color:var(--is-text);text-align:center;padding:0 12px">${this._t('mtConfirmDelete')}</span>
             <div style="display:flex;gap:10px">
-              ${this._mtRoundBtn(`data-mt-del-confirm="${r.id}"`, CHECK, this._t('mtYes'), { tone: 'red' })}
+              ${this._mtRoundBtn(`data-mt-del-confirm="${this._escHtml(r.id)}"`, CHECK, this._t('mtYes'), { tone: 'red' })}
               ${this._mtRoundBtn('data-mt-del-cancel', CROSS, this._t('mtNo'), { tone: 'blue' })}
             </div>
           </div>`
@@ -125,12 +125,12 @@ class _MaintainerrRulesRenderMethods {
       // The whole card opens the editor — same as a collection card — so Edit
       // needs no button of its own. Run and Delete sit in a wrapper whose
       // height is the title's, which centres them on it exactly.
-      return `<div data-mt-edit="${r.id}" style="position:relative;background:var(--is-btn-bg);border:1px solid var(--is-card-bdr);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-height:160px;cursor:pointer">
+      return `<div data-mt-edit="${this._escHtml(r.id)}" style="position:relative;background:var(--is-btn-bg);border:1px solid var(--is-card-bdr);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-height:160px;cursor:pointer">
         <div style="position:relative">
           <div style="font-size:13px;font-weight:700;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:70px">${this._escHtml(r.name || '—')}</div>
           <div style="position:absolute;top:50%;right:0;transform:translateY(-50%);z-index:2;display:flex;gap:6px">
-            ${this._mtRoundBtn(`data-mt-run="${r.id}"`, PLAY, this._t('mtRunRule'), { tone: 'green', busy })}
-            ${this._mtRoundBtn(`data-mt-delete="${r.id}"`, TRASH, this._t('mtDelete'), { tone: 'red' })}
+            ${this._mtRoundBtn(`data-mt-run="${this._escHtml(r.id)}"`, PLAY, this._t('mtRunRule'), { tone: 'green', busy })}
+            ${this._mtRoundBtn(`data-mt-delete="${this._escHtml(r.id)}"`, TRASH, this._t('mtDelete'), { tone: 'red' })}
           </div>
         </div>
         ${desc}
@@ -183,12 +183,12 @@ class _MaintainerrRulesRenderMethods {
       const TRASH_S = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
       // Row itself opens the editor, so no Edit button here either
       const actions = `<div style="display:flex;gap:5px;justify-content:flex-end">
-        ${this._mtRoundBtn(`data-mt-run="${r.id}"`, PLAY_S, this._t('mtRunRule'), { size: 24, tone: 'green', busy })}
-        ${this._mtRoundBtn(`data-mt-delete-now="${r.id}"`, TRASH_S, this._t('mtDelete'), { size: 24, tone: 'red' })}
+        ${this._mtRoundBtn(`data-mt-run="${this._escHtml(r.id)}"`, PLAY_S, this._t('mtRunRule'), { size: 24, tone: 'green', busy })}
+        ${this._mtRoundBtn(`data-mt-delete-now="${this._escHtml(r.id)}"`, TRASH_S, this._t('mtDelete'), { size: 24, tone: 'red' })}
       </div>`;
 
       if (isMob) {
-        return `<div data-mt-edit="${r.id}" style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07));cursor:pointer">
+        return `<div data-mt-edit="${this._escHtml(r.id)}" style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--is-divider,rgba(255,255,255,0.07));cursor:pointer">
           <div style="flex:1;min-width:0">
             <div style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(r.name || '—')}</div>
             <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${this._escHtml(libName)} · ${ruleCount} · <span style="color:${statusColor}">${statusLabel}</span></div>
@@ -197,7 +197,7 @@ class _MaintainerrRulesRenderMethods {
         </div>`;
       }
 
-      return `<tr data-mt-edit="${r.id}" style="cursor:pointer">
+      return `<tr data-mt-edit="${this._escHtml(r.id)}" style="cursor:pointer">
         <td><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(r.name || '—')}</div></td>
         <td>${this._escHtml(libName)}</td>
         <td style="text-align:center">${ruleCount}</td>
@@ -287,7 +287,7 @@ class _MaintainerrRulesRenderMethods {
         </div>
         <div>
           <label style="font-size:10px;color:var(--is-text-muted);display:block;margin-bottom:3px">${this._t('mtDeleteAfterDays')}</label>
-          <input id="mt-ed-del-days" type="number" min="0" value="${ed.deleteAfterDays ?? 30}" class="mt-field" style="${inpSty}">
+          <input id="mt-ed-del-days" type="number" min="0" value="${this._escHtml(ed.deleteAfterDays ?? 30)}" class="mt-field" style="${inpSty}">
         </div>
       </div>`;
 
@@ -341,7 +341,7 @@ class _MaintainerrRulesRenderMethods {
         </div>
         <div>
           <label style="font-size:10px;color:var(--is-text-muted);display:block;margin-bottom:3px">${this._t('mtKeepLogs')}</label>
-          <input id="mt-ed-keep-logs" type="number" min="0" value="${ed.keepLogsForMonths ?? 6}" class="mt-field" style="${inpSty}">
+          <input id="mt-ed-keep-logs" type="number" min="0" value="${this._escHtml(ed.keepLogsForMonths ?? 6)}" class="mt-field" style="${inpSty}">
         </div>
         <div>
           <label style="font-size:10px;color:var(--is-text-muted);display:block;margin-bottom:3px">${this._t('mtSortTitle')}</label>
@@ -349,7 +349,7 @@ class _MaintainerrRulesRenderMethods {
         </div>
         <div>
           <label style="font-size:10px;color:var(--is-text-muted);display:block;margin-bottom:3px">${this._t('mtTautulliOverride')}</label>
-          <input id="mt-ed-tautulli-pct" type="number" min="0" max="100" value="${ed.tautulliWatchedPercentOverride ?? ''}" placeholder="—" class="mt-field" style="${inpSty}">
+          <input id="mt-ed-tautulli-pct" type="number" min="0" max="100" value="${this._escHtml(ed.tautulliWatchedPercentOverride ?? '')}" placeholder="—" class="mt-field" style="${inpSty}">
         </div>
         <div>
           <label style="font-size:10px;color:var(--is-text-muted);display:block;margin-bottom:3px">${this._t('mtCronOverride')}</label>
@@ -443,7 +443,7 @@ class _MaintainerrRulesRenderMethods {
         if (!props.length) continue;
         opts += `<optgroup label="${this._escHtml(a.name)}">`;
         for (const p of props) {
-          const val = `${a.id}-${p.id}`;
+          const val = this._escHtml(`${a.id}-${p.id}`);
           const sel = (selApp !== '' && String(a.id) === String(selApp) && String(p.id) === String(selProp)) ? ' selected' : '';
           opts += `<option value="${val}"${sel}>${this._escHtml(a.name)} - ${this._escHtml(p.humanName || p.name)}</option>`;
         }
@@ -491,7 +491,7 @@ class _MaintainerrRulesRenderMethods {
       const selectedProp = (selectedApp?.props || []).find(p => p.id == firstProp);
       const possibilities = selectedProp?.type?.possibilities || Object.keys(ACTION_LABELS).map(Number);
       const actionOpts = `<option value="">Select Action…</option>` + possibilities.map(aId =>
-        `<option value="${aId}"${action !== '' && aId == action ? ' selected' : ''}>${ACTION_LABELS[aId] || `Action ${aId}`}</option>`
+        `<option value="${this._escHtml(aId)}"${action !== '' && aId == action ? ' selected' : ''}>${this._escHtml(ACTION_LABELS[aId] || `Action ${aId}`)}</option>`
       ).join('');
 
       // Second Value dropdown — either an app property (lastVal) or a custom type

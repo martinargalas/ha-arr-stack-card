@@ -115,7 +115,17 @@ async _oneClickTvRequest(show) {
 
 async _openTvRequestOverlay(m, source = 'tvUpcoming') {
   this._tvRequestPending = { show: m, seasons: null, selected: null, profileId: null, mediaId: m.id, loading: true, source };
-  this._reRenderRight();
+  // Where the overlay lives decides what has to repaint. Similar titles' modal
+  // and the search results both go their own way: _reRenderRight bails out
+  // without `force` while a search is active (see _reRenderRight), so asking it
+  // to paint a search overlay drew nothing at all — the overlay only turned up
+  // later, when paging repainted the results, by then on another page.
+  const paint = () => {
+    if (source === 'sim') this._simRender();
+    else if (source === 'search') this._reRenderSearchResults();
+    else this._reRenderRight();
+  };
+  paint();
 
   // Parallelní fetch: detail seriálu (sezóny + TVDB ID) + Sonarr profily + Sonarr settings
   await Promise.allSettled([
@@ -174,7 +184,7 @@ async _openTvRequestOverlay(m, source = 'tvUpcoming') {
   if (this._tvRequestPending) {
     this._tvRequestPending.profileId = this._seerrSonarr?.profileId ?? null;
     this._tvRequestPending.loading = false;
-    this._reRenderRight();
+    paint();
     this._wireTvOverlay();
   }
 }

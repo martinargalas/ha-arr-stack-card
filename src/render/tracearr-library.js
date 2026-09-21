@@ -122,7 +122,7 @@ class _TracearrLibraryMethods {
       const pos = i === 0 ? `left:${pct}%;transform:translateX(0)` :
                   i === n - 1 ? `left:${pct}%;transform:translateX(-100%)` :
                   `left:${pct}%;transform:translateX(-50%)`;
-      return `<span style="position:absolute;${pos};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${d.day.slice(5)}</span>`;
+      return `<span style="position:absolute;${pos};font-size:10px;color:var(--is-text-muted);white-space:nowrap;line-height:1">${this._escHtml(String(d.day ?? '').slice(5))}</span>`;
     }).join('') + '</div>';
     const chartHtml = this._tlGWrap(this._tlGSvgEl(defs + wkndRects + gridlines + areaFills + lines + hitCols, chartH), xLabelsHtml, yLblTxt);
     return `<div class="tl-g-card" style="position:relative">${header}<div style="position:relative">${chartHtml}</div><div class="tl-g-tip" style="display:none;position:absolute;top:0;left:0;background:var(--is-menu-bg,#18182a);border:1px solid var(--is-btn-bdr);border-radius:7px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:50;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div></div>`;
@@ -137,17 +137,17 @@ class _TracearrLibraryMethods {
       if (!items?.length) return '';
       // Codec lists are long, so their rows tighten on a short window too.
       const rowGap = (!isMob && window.innerHeight < 900) ? 5 : 7;
-      const maxC = items[0].count || 1;
+      const maxC = Number(items[0].count) || 1;
       return items.map((it, i) => {
-        const pct = Math.round((it.count / maxC) * 100);
+        const pct = Math.round(((Number(it.count) || 0) / maxC) * 100);
         const color = CODEC_COLORS[i % CODEC_COLORS.length];
         const delay = (i * 0.05).toFixed(2);
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${rowGap}px">
-          <span style="font-size:10px;font-weight:600;color:var(--is-text);width:44px;text-align:right;flex-shrink:0;white-space:nowrap">${it.codec}</span>
+          <span style="font-size:10px;font-weight:600;color:var(--is-text);width:44px;text-align:right;flex-shrink:0;white-space:nowrap">${this._escHtml(it.codec ?? '')}</span>
           <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden">
             <div class="tl-g-anim-bar-h" style="height:100%;border-radius:3px;background:linear-gradient(to right,${color},${color}70);width:${pct}%;animation-delay:${delay}s"></div>
           </div>
-          <span style="font-size:10px;color:var(--is-text-muted);width:32px;flex-shrink:0">${it.count}</span>
+          <span style="font-size:10px;color:var(--is-text-muted);width:32px;flex-shrink:0">${Number(it.count) || 0}</span>
         </div>`;
       }).join('');
     };
@@ -179,7 +179,7 @@ class _TracearrLibraryMethods {
       return `<div style="text-align:center;padding:48px 24px">
         <div style="font-size:28px;margin-bottom:12px">⏳</div>
         <div style="font-size:14px;font-weight:700;color:var(--is-text);margin-bottom:6px">${this._t('traGenHistory')}</div>
-        <div style="font-size:12px;color:var(--is-text-muted)">${qd.message || this._t('traSnapshots')}</div>
+        <div style="font-size:12px;color:var(--is-text-muted)">${qd.message ? this._escHtml(qd.message) : this._t('traSnapshots')}</div>
       </div>`;
     }
     const isMob  = this._isMob;
@@ -192,10 +192,10 @@ class _TracearrLibraryMethods {
     const _resSegs = (obj) => {
       if (!obj) return [];
       // Handle both {count4k, count1080p, ...} and {"4K": N, "1080p": N, ...}
-      const c4k   = obj.count4k   ?? obj['4K']    ?? obj['4k']    ?? 0;
-      const c1080 = obj.count1080p ?? obj['1080p'] ?? 0;
-      const c720  = obj.count720p  ?? obj['720p']  ?? 0;
-      const cSd   = obj.countSd   ?? obj['SD']    ?? obj['sd']    ?? 0;
+      const c4k   = Number(obj.count4k   ?? obj['4K']    ?? obj['4k']) || 0;
+      const c1080 = Number(obj.count1080p ?? obj['1080p']) || 0;
+      const c720  = Number(obj.count720p  ?? obj['720p']) || 0;
+      const cSd   = Number(obj.countSd   ?? obj['SD']    ?? obj['sd']) || 0;
       return [
         { label: '4K',    value: c4k,   color: Q_COLORS['4K']    },
         { label: '1080p', value: c1080, color: Q_COLORS['1080p'] },
@@ -323,11 +323,11 @@ class _TracearrLibraryMethods {
     const growthLabel = { week: this._t('traGrowthWk'), month: this._t('traGrowthMo'), year: this._t('traGrowthYr'), all: this._t('traGrowthTotal') }[period] || this._t('traGrowth');
     const growthSign  = growthVal >= 0 ? '+' : '';
 
-    const dupG   = m.dupsSummary?.totalGroups || 0;
+    const dupG   = Number(m.dupsSummary?.totalGroups) || 0;
     const dupSav = Number(m.dupsSummary?.totalPotentialSavingsBytes || 0);
 
     const stSum  = m.staleSummary?.total || m.staleSummary?.neverWatched || {};
-    const stCnt  = stSum.count || 0;
+    const stCnt  = Number(stSum.count) || 0;
     const stSz   = Number(stSum.sizeBytes || 0);
 
     const tiles = `<div style="display:grid;grid-template-columns:repeat(${isMob ? 2 : 4},1fr);gap:${isMob ? '6px' : '8px'};margin-bottom:${isMob ? '6px' : '6px'}">
@@ -480,7 +480,7 @@ class _TracearrLibraryMethods {
       return `<div class="tl-g-x-labels">` + allPts.map((d, i) => {
         const isLast = i === N - 1, isFirst = i === 0;
         if (!isFirst && !isLast && i % showEvery !== 0) return '';
-        const lbl = (period === 'week' || period === 'month') ? d.day.slice(5) : d.day.slice(2, 7);
+        const lbl = this._escHtml((period === 'week' || period === 'month') ? String(d.day).slice(5) : String(d.day).slice(2, 7));
         if (lbl === lastLbl) return '';
         lastLbl = lbl;
         const pct = ptX(i) / VBW * 100;
@@ -617,8 +617,8 @@ class _TracearrLibraryMethods {
     const page   = m.stalePage || 0;
     const pp     = m.stalePageSize || 10;
     const totalP = Math.max(1, Math.ceil(total / pp));
-    const nwCnt  = sum.neverWatched?.count ?? 0;
-    const stCnt  = sum.stale?.count        ?? 0;
+    const nwCnt  = Number(sum.neverWatched?.count) || 0;
+    const stCnt  = Number(sum.stale?.count)        || 0;
 
     const fmtDate = iso => {
       if (!iso) return '—';
@@ -664,8 +664,8 @@ class _TracearrLibraryMethods {
           <div class="u-row-8">
             ${this._tlMediaIcon(it.mediaType === 'movie' ? 'movie' : 'episode', 15)}
             <div style="flex:1;min-width:0">
-              <div class="tl-mob-name u-truncate">${it.title}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${it.year})</span>` : ''}</div>
-              <div class="tl-mob-meta"><span>${it.serverName || ''}</span><span style="color:var(--is-text);font-weight:600">${it.resolution || '—'}</span><span>${fmtDate(it.addedAt)}</span></div>
+              <div class="tl-mob-name u-truncate">${this._escHtml(it.title ?? '')}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${this._escHtml(it.year)})</span>` : ''}</div>
+              <div class="tl-mob-meta"><span>${this._escHtml(it.serverName || '')}</span><span style="color:var(--is-text);font-weight:600">${this._escHtml(it.resolution || '—')}</span><span>${fmtDate(it.addedAt)}</span></div>
             </div>
             <span style="font-size:11px;font-weight:700;color:#007AFF;flex-shrink:0;white-space:nowrap">${fmtBytes(it.fileSize)}</span>
           </div>
@@ -693,12 +693,12 @@ class _TracearrLibraryMethods {
           <td style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             <span style="display:flex;align-items:center;gap:4px;min-width:0">
               ${this._tlMediaIcon(it.mediaType === 'movie' ? 'movie' : 'episode', 15)}
-              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${it.year})</span>` : ''}</span>
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(it.title ?? '')}${it.year ? ` <span style="opacity:0.5;font-size:10px">(${this._escHtml(it.year)})</span>` : ''}</span>
             </span></td>
-          <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${it.serverName || '—'}</td>
+          <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${this._escHtml(it.serverName || '—')}</td>
           <td style="font-size:11px;font-weight:600;color:var(--is-text);white-space:nowrap;text-align:right">${fmtBytes(it.fileSize)}</td>
           <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${fmtDate(it.addedAt)}</td>
-          <td style="font-size:11px;font-weight:600;color:var(--is-text);white-space:nowrap">${it.resolution || '—'}</td>
+          <td style="font-size:11px;font-weight:600;color:var(--is-text);white-space:nowrap">${this._escHtml(it.resolution || '—')}</td>
           ${streamCell}
         </tr>`;
       }).join('');

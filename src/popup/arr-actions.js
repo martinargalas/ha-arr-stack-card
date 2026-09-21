@@ -112,8 +112,15 @@ async _removeFromLibrary(deleteFiles = false, addExclusion = false) {
     || (inst === 'radarr2' && d._radarrId)
     || (inst === 'sonarr' && d._sonarr2Series?.id)
     || (inst === 'sonarr2' && d._sonarrSeries?.id);
-  const _tmdb = String(d.tmdbId || d.id || '');
-  if (_tmdb && this._optimisticRequested) this._optimisticRequested.delete(_tmdb);
+  // Every other place keys these by the number TMDB and Seerr hand out, so
+  // deleting a string missed every time and the poster stayed "requested":
+  // the status stripe kept its colour and the plus never came back.
+  const _tmdb = Number(d.tmdbId || d.id) || null;
+  if (_tmdb) {
+    this._optimisticRequested?.delete(_tmdb);
+    this._optimisticRequested?.delete(String(_tmdb));
+    this._familyPendingIds?.delete(_tmdb);
+  }
   if (stillInOther) {
     if (inst === 'radarr')  d._radarrId = null;
     if (inst === 'radarr2') d._radarr2Id = null;
@@ -122,10 +129,23 @@ async _removeFromLibrary(deleteFiles = false, addExclusion = false) {
     this._renderPopupEl();
     this._reRenderRight(true);
   } else {
+    // Gone from both instances. Seerr still has the request on file and goes on
+    // reporting it until the next fetch lands — and a title it calls merely
+    // pending is not stale enough for the card to discount on its own — so it
+    // is marked taken back, the same way withdrawing a request marks it. The
+    // next request for this title clears the mark again.
+    if (_tmdb) this._withdrawnIds?.add(_tmdb);
     this._popup = null;
+    // The overlay is taken down here rather than left to the repaint below.
+    // _render() returns before it clears the popup — and before it repaints the
+    // column — while a search is on screen, so deleting from a search result
+    // left the detail standing over the results with its title already gone.
+    this._renderPopupEl();
     // Deleting from inside the Library or a Maintainerr tab must land back in
-    // that tab, not on the category list the user was two levels above.
-    if (this._popupReturn()) {
+    // that tab, not on the category list the user was two levels above. A
+    // search is the same early return again: the results only repaint when
+    // asked directly, or the poster keeps its stripe and withholds the plus.
+    if (this._popupReturn() || this._searchActive) {
       this._reRenderRight(true);
     } else {
       this._render();

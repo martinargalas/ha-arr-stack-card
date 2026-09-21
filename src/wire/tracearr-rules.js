@@ -1,4 +1,4 @@
-import { _ICO_CHECK } from '../render/maintainerr.js';
+import { _ICO_CHECK } from '../render/mt-kit.js';
 
 // Tracearr, the Rules tab: the rule form, its conditions and actions, saving. Split out of wire/tracearr.js.
 

@@ -4,64 +4,6 @@ class _LibraryDataMethods {
 
   // ─── Tile data ────────────────────────────────────────────────────────────
 
-  _libMoviesData() {
-    return (this._radarr || [])
-      .filter(m => m.hasFile)
-      .sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0))
-      .slice(0, 4)
-      .map(m => ({ url: this._getRadarrPoster(m), title: m.title, _libType: 'movie' }));
-  }
-
-  _libTvData() {
-    return (this._sonarr || [])
-      .filter(s => (s.statistics?.episodeFileCount || 0) > 0)
-      .sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0))
-      .slice(0, 4)
-      .map(s => ({ url: this._getSonarrPoster(s), title: s.title, _libType: 'tv' }));
-  }
-
-  _libMusicData() {
-    const arts = [...(this._lidarrArtists?.values() || [])]
-      .filter(a => (a.statistics?.trackFileCount || 0) > 0)
-      .sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0))
-      .slice(0, 24);
-    const out = [];
-    for (const a of arts) {
-      const url = this._lidarrArtistImage(a, 'poster', { w: 360 }) || this._lidarrArtistImage(a, 'fanart', { w: 360 });
-      if (!url) continue;   // no artwork, or its signature has not arrived yet
-      out.push({ url, title: a.artistName || '', _libType: 'music' });
-      if (out.length === 4) break;
-    }
-    return out;
-  }
-
-  _libTopRatedData() {
-    return [
-      ...(this._radarr || []).filter(m => m.hasFile).map(m => ({
-        url: this._getRadarrPoster(m), title: m.title, _libType: 'movie',
-        _score: m.ratings?.imdb?.value || m.ratings?.value || 0,
-      })),
-      ...(this._sonarr || []).filter(s => (s.statistics?.episodeFileCount || 0) > 0).map(s => ({
-        url: this._getSonarrPoster(s), title: s.title, _libType: 'tv',
-        _score: s.ratings?.imdb?.value || s.ratings?.tmdb?.value || s.ratings?.tvdb?.value || s.ratings?.tvMaze?.value || s.ratings?.trakt?.value || s.ratings?.value || 0,
-      })),
-    ].filter(i => i._score > 0).sort((a, b) => b._score - a._score).slice(0, 4);
-  }
-
-  _libTopQualityData() {
-    const Q = ['2160p', '1080p', '720p', '480p'];
-    const rank = q => { const i = Q.findIndex(r => q.includes(r)); return i === -1 ? 99 : i; };
-    return [
-      ...(this._radarr || []).filter(m => m.hasFile).map(m => ({
-        url: this._getRadarrPoster(m), title: m.title, _libType: 'movie',
-        _rank: rank(m.movieFile?.quality?.quality?.name || ''),
-      })),
-      ...(this._sonarr || []).filter(s => (s.statistics?.episodeFileCount || 0) > 0).map(s => ({
-        url: this._getSonarrPoster(s), title: s.title, _libType: 'tv', _rank: 99,
-      })),
-    ].sort((a, b) => a._rank - b._rank).slice(0, 4);
-  }
-
   // ─── Data helpers ─────────────────────────────────────────────────────────
 
   _libFilteredItems() {

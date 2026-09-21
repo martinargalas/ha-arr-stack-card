@@ -6,68 +6,6 @@ class _ActivityMissingRenderMethods {
 
   // ── Missing / Wanted poster card ─────────────────────────────────────────
 
-  _actMissingCard() {
-    const cache = this._actMissingCache;
-    const movieCount  = cache?.movieCount  ?? null;
-    const seriesCount = cache?.seriesCount ?? null;
-
-    const badge = movieCount !== null
-      ? this._uiBadge(String(movieCount + seriesCount), 'amber', { extra: 'flex-shrink:0', white: true })
-      : '';
-
-    const filmSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg>`;
-    const tvSvg   = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="15" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
-    const mkRow    = (svg, label, count) => `<div class="u-row-6"><span style="opacity:0.6;flex-shrink:0;display:flex">${svg}</span><span style="font-size:10px;font-weight:600;color:var(--is-text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.85);flex-shrink:0">${count}</span></div>`;
-    const mkSubRow = (label, count) => `<div style="display:flex;align-items:center;gap:6px;padding-left:16px"><span style="font-size:9px;color:var(--is-text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span><span style="font-size:9px;font-weight:600;color:rgba(255,255,255,0.75);flex-shrink:0">${count}</span></div>`;
-
-    let rows = '';
-    if (cache && movieCount !== null) {
-      const rRecs = cache.rRecs || [];
-      const sRecs = cache.sRecs || [];
-      const hasR2 = this._radarr2Configured === true;
-      const hasS2 = this._sonarr2Configured === true;
-      if (hasR2 || hasS2) {
-        const r1 = rRecs.filter(r => r._inst === 'radarr').length;
-        const r2 = rRecs.filter(r => r._inst === 'radarr2').length;
-        const s1 = sRecs.filter(s => s._inst === 'sonarr').length;
-        const s2 = sRecs.filter(s => s._inst === 'sonarr2').length;
-        if (movieCount > 0) {
-          rows += mkRow(filmSvg, this._t('tlFilterMovies'), movieCount);
-          if (hasR2) {
-            if (r1 > 0) rows += mkSubRow(this._instLabel('radarr'), r1);
-            if (r2 > 0) rows += mkSubRow(this._instLabel('radarr2'), r2);
-          }
-        }
-        if (seriesCount > 0) {
-          rows += mkRow(tvSvg, this._t('tlFilterTvShows'), seriesCount);
-          if (hasS2) {
-            if (s1 > 0) rows += mkSubRow(this._instLabel('sonarr'), s1);
-            if (s2 > 0) rows += mkSubRow(this._instLabel('sonarr2'), s2);
-          }
-        }
-      } else {
-        if (movieCount  > 0) rows += mkRow(filmSvg, this._t('tlFilterMovies'), movieCount);
-        if (seriesCount > 0) rows += mkRow(tvSvg,   this._t('tlFilterTvShows'),   seriesCount);
-      }
-    }
-
-    const content = cache === undefined || movieCount === null
-      ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t('loading')}</div>`
-      : (movieCount + seriesCount) === 0
-        ? `<div style="font-size:9px;color:var(--is-text-muted);padding:8px 0">${this._t('actMissingEmpty')}</div>`
-        : `<div style="display:flex;flex-direction:column;gap:4px;padding:4px 0">${rows}</div>`;
-
-    
-    return `<div class="tl-card u-sec-body" data-act-open="missing">
-      <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
-      <div class="u-row-sb-w">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t('actMissing')}</span>
-        ${badge}
-      </div>
-      <div class="u-flex-rel">${content}</div>
-    </div>`;
-  }
-
   // ── Missing tab ───────────────────────────────────────────────────────────
 
   _actMissingTabHtml(radarrMovies, sonarrSeries, page, perPage, cols) {

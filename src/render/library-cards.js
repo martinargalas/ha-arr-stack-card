@@ -6,25 +6,6 @@ class _LibraryCardsMethods {
 
   // ─── Tile card builder ────────────────────────────────────────────────────
 
-  _libBuildTile(key, label, posters) {
-    const slots = [0, 1, 2, 3].map(i => {
-      const p = posters[i];
-      if (!p) return `<div class="lib-sub-poster lib-sub-empty"></div>`;
-      return p.url
-        ? `<div class="lib-sub-poster"><img src="${p.url}" alt="${this._escHtml(p.title || '')}" loading="lazy" onerror="this.style.display='none'"></div>`
-        : `<div class="lib-sub-poster lib-sub-empty"></div>`;
-    }).join('');
-
-    return `
-      <div class="mc lib-tile-card" data-lib-open="${key}">
-        <div class="lib-tile-grid">
-          ${slots}
-          <div class="lib-tile-dim"></div>
-        </div>
-        <span class="media-type-tag">${label}</span>
-      </div>`;
-  }
-
   // ─── Modal poster card ────────────────────────────────────────────────────
 
   _libPosterCard(item) {

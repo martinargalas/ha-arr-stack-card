@@ -33,7 +33,8 @@ class _JellystatSharedMethods {
     const opts = ['<option value="">' + this._t('traAllUsers') + '</option>',
       ...(users || []).map(u => {
         const name = u.UserName || u.Name || u.UserId || '';
-        return '<option value="' + name + '"' + (String(selUser || '') === String(name) ? ' selected' : '') + '>' + name + '</option>';
+        const txt  = this._escHtml(name);
+        return '<option value="' + txt + '"' + (String(selUser || '') === String(name) ? ' selected' : '') + '>' + txt + '</option>';
       })
     ].join('');
     return '<select id="' + id + '" style="' + _TL_SEL_STY + ';max-width:130px">' + opts + '</select>';

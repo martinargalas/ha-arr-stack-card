@@ -9,18 +9,6 @@ export const _PW_TEST_ICO = `<svg viewBox="0 0 24 24" width="12" height="12" fil
 
 class _WireProwlarrMethods {
 
-  _wireProwlarrPosters(right) {
-    // Bound to the column itself, which outlives every repaint - once is enough,
-    // and a second listener per paint made one click open the modal many times.
-    if (!right || right._pwWired) return;
-    right._pwWired = true;
-    right.addEventListener('click', e => {
-      const card = e.target.closest('[data-pw-open]');
-      if (!card) return;
-      this._openProwlarrModal(card.dataset.pwOpen);
-    });
-  }
-
   async _openProwlarrModal(tab) {
     this._markActivated();
     tab = tab || 'indexers';

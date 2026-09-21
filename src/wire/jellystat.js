@@ -4,18 +4,6 @@
 
 class _WireJellystatMethods {
 
-  _wireJellystatPosters(right) {
-    // Bound to the column itself, which outlives every repaint - once is enough,
-    // and a second listener per paint made one click open the modal many times.
-    if (!right || right._jsWired) return;
-    right._jsWired = true;
-    right.addEventListener('click', e => {
-      const card = e.target.closest('[data-js-open]');
-      if (!card) return;
-      this._openJellystatModal(card.dataset.jsOpen);
-    });
-  }
-
   _wireJellystatModal(el) {
     el.querySelector('#js-close')?.addEventListener('click', () => this._closeJellystatModal());
     el.addEventListener('click', e => {
@@ -441,12 +429,14 @@ class _WireJellystatMethods {
 
       const showColTip = (colData, eClientX, eClientY) => {
         if (!colData.vals || !colData.vals.length) return;
-        const lbl  = colData.lbl || '';
+        // The attribute decodes back to the raw names, so they are text again here.
+        const esc  = s => this._escHtml(s ?? '');
+        const lbl  = esc(colData.lbl || '');
         const rows = colData.vals.map(v => {
-          const disp = v.fv != null ? v.fv : v.v;
-          return '<div style="display:flex;align-items:center;gap:6px;padding:1px 0"><span style="width:6px;height:6px;border-radius:1px;background:' + (v.hex || 'var(--is-text-muted)') + ';flex-shrink:0"></span><span style="color:var(--is-text-muted)">' + v.n + '</span><span style="font-weight:600;color:var(--is-text);margin-left:auto;padding-left:10px">' + disp + '</span></div>';
+          const disp = esc(v.fv != null ? v.fv : v.v);
+          return '<div style="display:flex;align-items:center;gap:6px;padding:1px 0"><span style="width:6px;height:6px;border-radius:1px;background:' + esc(v.hex || 'var(--is-text-muted)') + ';flex-shrink:0"></span><span style="color:var(--is-text-muted)">' + esc(v.n) + '</span><span style="font-weight:600;color:var(--is-text);margin-left:auto;padding-left:10px">' + disp + '</span></div>';
         }).join('');
-        const totDisp = colData.ftot != null ? colData.ftot : colData.tot;
+        const totDisp = colData.ftot != null ? esc(colData.ftot) : colData.tot != null ? esc(colData.tot) : null;
         const totRow  = totDisp != null ? '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--is-divider);margin-top:4px;padding-top:4px"><span style="color:var(--is-text-muted);font-weight:600">' + this._t('pwTotal') + '</span><span style="font-weight:700;color:var(--is-text)">' + totDisp + '</span></div>' : '';
         tipEl.innerHTML = '<div style="font-size:10px;color:var(--is-text-muted);margin-bottom:4px">' + lbl + '</div>' + rows + totRow;
         const cardRect = tipEl.parentElement.getBoundingClientRect();

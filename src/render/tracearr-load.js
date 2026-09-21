@@ -340,7 +340,7 @@ class _TracearrLoadMethods {
       this._wireTracearrModalBody(body);
     } catch (err) {
       console.error('[arr-card] Storage tab error:', err);
-      body.innerHTML = `<div style="color:rgba(252,165,165,0.9);padding:20px;font-size:12px;font-family:monospace">${this._t('traStorageErr').replace('{e}', () => String(err?.message || err))}</div>`;
+      body.innerHTML = `<div style="color:rgba(252,165,165,0.9);padding:20px;font-size:12px;font-family:monospace">${this._t('traStorageErr').replace('{e}', () => this._escHtml(err?.message || err))}</div>`;
     }
 
   }

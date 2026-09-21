@@ -1,44 +1,9 @@
-import { MT_BTN, _ICO_CHECK } from './maintainerr.js';
+import { MT_BTN, _ICO_CHECK } from './mt-kit.js';
 import { ICONS, dayClass, BP, maxWidth } from '../shared/ui.js';
 
 class _LibraryMethods {
 
   // ─── Section tile view ───────────────────────────────────────────────────
-
-  _renderLibrary() {
-    const hasMusic = this._lidarrConfigured !== false && (this._lidarrArtists?.size || 0) > 0;
-    const tiles = (hasMusic
-      ? [
-          this._libBuildTile('movies',   this._t('tabMovies'),    this._libMoviesData()),
-          this._libBuildTile('tv',       this._t('tlFilterTvShows'),  this._libTvData()),
-          this._libBuildTile('music',    this._t('tabMusic'),     this._libMusicData()),
-          this._libBuildTile('toprated', this._t('libTopRated'), this._libTopRatedData()),
-        ]
-      : [
-          this._libBuildTile('movies',     this._t('tabMovies'),      this._libMoviesData()),
-          this._libBuildTile('tv',         this._t('tlFilterTvShows'),    this._libTvData()),
-          this._libBuildTile('toprated',   this._t('libTopRated'),   this._libTopRatedData()),
-          this._libBuildTile('topquality', this._t('libTopQuality'), this._libTopQualityData()),
-        ]).join('');
-
-    const cols = 4;
-    const grid = `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>`;
-
-    return `
-      <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-        ${this._sectionOverlayHtml('radarr', 25, 75, 0.18)}
-        <div class="col-hdr" style="margin-bottom:5px">
-          ${this._appIconRow(['radarr', 'sonarr', 'lidarr'])}
-          <span class="col-hdr-title">${this._t('tlColLibrary')}</span>
-          <div class="col-hdr-line"></div>
-        </div>
-        <div class="pg-wrap">
-          <button class="pg-btn pg-btn-ph" disabled>‹</button>
-          ${grid}
-          <button class="pg-btn pg-btn-ph" disabled>›</button>
-        </div>
-      </div>`;
-  }
 
   // ─── Modal open / close ───────────────────────────────────────────────────
 
@@ -316,7 +281,6 @@ class _LibraryMethods {
     const pageItems = allItems.slice(page * perPage, (page + 1) * perPage);
 
     const _CHEV = `<svg class="mt-tb-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="6 9 12 15 18 9"/></svg>`;
-
 
     // View
 

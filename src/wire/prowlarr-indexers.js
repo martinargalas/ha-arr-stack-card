@@ -89,17 +89,17 @@ class _WireProwlarrIndexersMethods {
         const statusLbl = isOff ? this._t('mtSortDisabled') : hasErr ? this._t('errorState') : 'OK';
         const statusClr = isOff ? 'var(--is-text-muted)' : hasErr ? 'rgba(255,100,100,0.9)' : 'rgba(52,211,153,0.9)';
         const errMsg = '';
-        return `<div data-pw-idx-id="${idx.id}" style="padding:10px 0;border-bottom:1px solid var(--is-divider);cursor:pointer">
+        return `<div data-pw-idx-id="${this._escHtml(idx.id)}" style="padding:10px 0;border-bottom:1px solid var(--is-divider);cursor:pointer">
           <div class="u-row-8">
             <div style="width:8px;height:8px;border-radius:50%;background:${dot};flex-shrink:0"></div>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600;color:var(--is-text)">${this._escHtml(idx.name||'—')}</div>
-              <div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${(idx.protocol||'').toLowerCase()} · ${this._t('pwGrabsQueries').replace('{g}', idx.numberOfGrabs||0).replace('{q}', idx.numberOfQueries||0)}</div>
+              <div style="font-size:10px;color:var(--is-text-muted);margin-top:1px">${this._escHtml(String(idx.protocol||'').toLowerCase())} · ${this._t('pwGrabsQueries').replace('{g}', Number(idx.numberOfGrabs) || 0).replace('{q}', Number(idx.numberOfQueries) || 0)}</div>
               ${errMsg}
             </div>
             <div style="flex-shrink:0;display:flex;align-items:center;gap:6px">
-                ${this._mtRoundBtn(`class="pw-test-btn" data-idx-id="${idx.id}"`, _PW_TEST_ICO, this._t('pwTest'), { size: 24, tone: 'green' })}
-                ${this._uiSwitch(`class="pw-toggle-btn" data-idx-id="${idx.id}" data-enabled="${idx.enable}"`, idx.enable, idx.enable ? this._t('pwDisable') : this._t('pwEnable'))}
+                ${this._mtRoundBtn(`class="pw-test-btn" data-idx-id="${this._escHtml(idx.id)}"`, _PW_TEST_ICO, this._t('pwTest'), { size: 24, tone: 'green' })}
+                ${this._uiSwitch(`class="pw-toggle-btn" data-idx-id="${this._escHtml(idx.id)}" data-enabled="${idx.enable === true}"`, idx.enable, idx.enable ? this._t('pwDisable') : this._t('pwEnable'))}
             </div>
           </div>
         </div>`;
@@ -169,33 +169,33 @@ class _WireProwlarrIndexersMethods {
       const packT   = fv(idx, 'packSeedTime') ?? fv(idx, 'seedCriteria.packSeedTime');
       const magnet  = fv(idx, 'preferMagnetUrl') ?? fv(idx, 'preferMagnet');
       const idxTags = Array.isArray(idx.tags) && idx.tags.length ? idx.tags.join(', ') : '—';
-      return `<tr style="border-bottom:1px solid var(--is-divider);cursor:pointer" data-pw-idx-id="${idx.id}">
+      return `<tr style="border-bottom:1px solid var(--is-divider);cursor:pointer" data-pw-idx-id="${this._escHtml(idx.id)}">
         <td style="padding:8px;white-space:nowrap;overflow:hidden;width:65px"><span style="font-size:10px;font-weight:600;color:${statusClr}">${statusLbl}</span></td>
         <td style="padding:8px;overflow:hidden">
           <div style="font-size:12px;font-weight:600;color:var(--is-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(idx.name||'—')}</div>
           ${errMsg}
         </td>
-        ${showProt    ? td((idx.protocol||'—').toLowerCase(), '65px') : ''}
-        ${showQ       ? td(idx.numberOfQueries||0, '65px', 'right') : ''}
+        ${showProt    ? td(this._escHtml(String(idx.protocol||'—').toLowerCase()), '65px') : ''}
+        ${showQ       ? td(Number(idx.numberOfQueries) || 0, '65px', 'right') : ''}
         ${showPriv2   ? `<td style="padding:8px;overflow:hidden;width:95px">${privBadge(idx.privacy)}</td>` : ''}
-        ${showPrio    ? td(idx.priority||'—', '55px', 'right') : ''}
+        ${showPrio    ? td(this._escHtml(idx.priority||'—'), '55px', 'right') : ''}
         ${showAdded   ? td(idx.added ? fmtDate(idx.added) : '—', '80px') : ''}
         ${showVip     ? td(idx.vipExpiration ? fmtDate(idx.vipExpiration) : '—', '80px') : ''}
-        ${showMinS    ? td(minS != null ? minS : '—', '60px', 'right') : ''}
-        ${showSeedR   ? td(seedR != null ? seedR : '—', '60px', 'right') : ''}
-        ${showSeedT   ? td(seedT != null ? (seedT+'m') : '—', '60px', 'right') : ''}
-        ${showPackT   ? td(packT != null ? (packT+'m') : '—', '70px', 'right') : ''}
+        ${showMinS    ? td(minS != null ? this._escHtml(minS) : '—', '60px', 'right') : ''}
+        ${showSeedR   ? td(seedR != null ? this._escHtml(seedR) : '—', '60px', 'right') : ''}
+        ${showSeedT   ? td(seedT != null ? this._escHtml(seedT+'m') : '—', '60px', 'right') : ''}
+        ${showPackT   ? td(packT != null ? this._escHtml(packT+'m') : '—', '70px', 'right') : ''}
         ${showMagnet  ? td(magnet != null ? (magnet ? this._t('mtYes') : this._t('mtNo')) : '—', '60px') : ''}
         ${showTags    ? td(this._escHtml(idxTags), '80px') : ''}
         ${showCat     ? `<td style="padding:8px;overflow:hidden"><div class="pw-cats" style="display:flex;align-items:center;gap:4px;height:20px;overflow:hidden">${catChipsHtml||'<span class="u-xs-muted">—</span>'}</div></td>` : ''}
         <td style="padding:8px;width:52px;vertical-align:middle">
           <div style="display:flex;justify-content:center;align-items:center;height:100%">
-            ${this._uiSwitch(`class="pw-toggle-btn" data-idx-id="${idx.id}" data-enabled="${idx.enable}"`, idx.enable, idx.enable ? this._t('pwDisable') : this._t('pwEnable'))}
+            ${this._uiSwitch(`class="pw-toggle-btn" data-idx-id="${this._escHtml(idx.id)}" data-enabled="${idx.enable === true}"`, idx.enable, idx.enable ? this._t('pwDisable') : this._t('pwEnable'))}
           </div>
         </td>
         <td style="padding:8px;width:52px;vertical-align:middle">
           <div style="display:flex;justify-content:center;align-items:center;height:100%">
-            ${this._mtRoundBtn(`class="pw-test-btn" data-idx-id="${idx.id}"`, _PW_TEST_ICO, this._t('pwTest'), { size: 24, tone: 'green' })}
+            ${this._mtRoundBtn(`class="pw-test-btn" data-idx-id="${this._escHtml(idx.id)}"`, _PW_TEST_ICO, this._t('pwTest'), { size: 24, tone: 'green' })}
           </div>
         </td>
       </tr>`;
@@ -241,7 +241,7 @@ class _WireProwlarrIndexersMethods {
     // The row itself opens the editor, so Edit needs no button of its own —
     // same as the rule rows in Tracearr and Maintainerr.
     return `<div style="display:inline-flex;gap:4px;align-items:center">${
-      this._mtRoundBtn(`class="pw-delete-btn" data-idx-id="${idx.id}" data-name="${this._escHtml(idx.name||'')}"`, trashSvg, this._t('tlDelete'), { size: 24, tone: 'red' })
+      this._mtRoundBtn(`class="pw-delete-btn" data-idx-id="${this._escHtml(idx.id)}" data-name="${this._escHtml(idx.name||'')}"`, trashSvg, this._t('tlDelete'), { size: 24, tone: 'red' })
     }</div>`;
   }
 

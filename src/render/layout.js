@@ -220,6 +220,12 @@ class _LayoutMethods {
     const clearBtn = this.shadowRoot.querySelector('.sec-search .search-bar-clear');
     if (clearBtn) clearBtn.style.display = this._searchActive ? '' : 'none';
     this._wireSearchResultCards(wrap);
+    // The cards are only half of it: an add overlay painted here brings its own
+    // cancel, confirm, instance tabs and season pager, and those are wired over
+    // there. A film's overlay never noticed — its plus forces a full column
+    // redraw — but a series' arrives through this path alone, and its buttons
+    // did nothing at all. Every binding below is flagged, so this repeats free.
+    this._wireOverseerrButtons();
   }
 
   // Everything the right column's content needs once it is drawn. Every path
@@ -256,7 +262,15 @@ class _LayoutMethods {
     if (!force && (this._requestPending || this._searchActive)) return;
     const enteringSearchLayout = this._searchActive && !this._searchOnlyLayout;
     this._searchOnlyLayout = this._searchActive;
-    if (!this._searchActive) this._blurActive();
+    // The search field keeps the caret through a redraw — the first letter,
+    // the last one deleted, the clear button, a background refresh — until
+    // something else is clicked, as the field in Similar titles does. Anything
+    // else focused is let go, as before.
+    const was = this.shadowRoot.activeElement;
+    const keepSearch = this._searchKeepFocus || !!was?.classList?.contains('search-bar-input');
+    const caret = keepSearch && was?.classList?.contains('search-bar-input') ? was.selectionStart : null;
+    this._searchKeepFocus = false;
+    if (!this._searchActive && !keepSearch) this._blurActive();
     if (this._searchActive) {
       // Measure across ALL search-result pages once per search session (not per keystroke) —
       // a normal-browsing height doesn't necessarily cover a sparser/denser search grid.
@@ -266,6 +280,14 @@ class _LayoutMethods {
     }
     right.innerHTML = this._renderRight();
     this._wireRight(right);
+    if (keepSearch) {
+      const fresh = right.querySelector('.search-bar-input');
+      if (fresh) {
+        fresh.focus();
+        const at = caret ?? fresh.value.length;
+        try { fresh.setSelectionRange(at, at); } catch (_) {}
+      }
+    }
     this._syncSecHeights(false);
     requestAnimationFrame(() => this._syncSecHeights());
     this._trimActivityCards();

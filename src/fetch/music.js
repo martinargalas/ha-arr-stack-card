@@ -230,12 +230,17 @@ async _fetchLidarrQueue() {
     this._lidarrQueue = new Set(recs.map(r => r.albumId).filter(Boolean));
     const pct = new Map();
     const artists = new Map();
+    // The torrent hash or nzo_id back to the artist, so a row in the download
+    // queue on the left opens the artist it belongs to — as a film's row opens
+    // its title
+    const dlIds = new Map();
     for (const r of recs) {
       const size = Number(r.size) || 0;
       const left = Number(r.sizeleft) || 0;
       const done = size > 0 ? Math.max(0, Math.min(100, Math.round((1 - left / size) * 100))) : -1;
       if (r.albumId) pct.set(r.albumId, done);
       const aid = r.artistId ?? r.artist?.id;
+      if (aid && r.downloadId) dlIds.set(String(r.downloadId).toLowerCase(), aid);
       if (aid) {
         const cur = artists.get(aid);
         // An artist's figure is the album that has come furthest, which is what
@@ -245,10 +250,12 @@ async _fetchLidarrQueue() {
     }
     this._lidarrQueuePct = pct;
     this._lidarrQueueArtists = artists;
+    this._dlMediaLidarr = dlIds;
   } catch (_) {
     this._lidarrQueue = new Set();
     this._lidarrQueuePct = new Map();
     this._lidarrQueueArtists = new Map();
+    this._dlMediaLidarr = new Map();
   }
 }
 

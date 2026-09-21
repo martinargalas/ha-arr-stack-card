@@ -4,7 +4,7 @@ import { POPUP_TYPE } from '../constants.js';
 
 class _DiscoverCardsMethods {
 
-_renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = '', overlayIndex = null, source = 'tvUpcoming', watchedBtn = '', traktOverlays = '' } = {}) {
+_renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = '', overlayIndex = null, source = 'tvUpcoming', watchedBtn = '', traktOverlays = '', actionHtml = null } = {}) {
   const title   = this._escHtml(m.name || m.originalName || 'Unknown');
   const rating  = m.voteAverage ? m.voteAverage.toFixed(1) : '?';
   const dateStr = this.fmtDate(m.firstAirDate || m.first_air_date);
@@ -45,6 +45,9 @@ _renderTvUpcomingCard(m, { showDate = true, showRating = false, typeTag = '', ov
   } else {
     actionBtn = `<button class="btn-add tv-req-open" data-showid="${m.id}" data-title="${title}" data-source="${source}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" width="14" height="14" style="display:block"><path d="M12 5v14M5 12h14"/></svg></button>`;
   }
+  // A caller's own action (Similar titles) goes above the request button, or
+  // in its place where there is none to show.
+  actionBtn = this._simStack(actionBtn, actionHtml);
 
   const pc = this._posterCfg();
   let badgeCls = '';
@@ -143,7 +146,7 @@ _renderTrendingCard(m, overlayIndex = null) {
   return this._renderUpcomingCard(m, { showDate: false, typeTag: this._t('typeMovie'), overlayIndex, reqKey: 'trending-' + m.id });
 }
 
-_renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = '', overlayIndex = null, reqKey = String(m.id), watchedBtn = '', traktOverlays = '' } = {}) {
+_renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = '', overlayIndex = null, reqKey = String(m.id), watchedBtn = '', traktOverlays = '', actionHtml = null } = {}) {
   const title = this._escHtml(m.title || 'Unknown');
   const rating = m.voteAverage ? m.voteAverage.toFixed(1) : '?';
   const dateStr = showDate ? this.fmtDate(m.digitalRelease || m.releaseDate) : '';
@@ -196,6 +199,9 @@ _renderUpcomingCard(m, { showDate = true, showRating = !showDate, typeTag = '', 
   } else {
     actionBtn = `<button class="btn-add req-open" data-movieid="${m.id}" data-tmdb="${m.id}" data-reqkey="${reqKey}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" width="14" height="14" style="display:block"><path d="M12 5v14M5 12h14"/></svg></button>`;
   }
+  // A caller's own action (Similar titles) goes above the request button, or
+  // in its place where there is none to show.
+  actionBtn = this._simStack(actionBtn, actionHtml);
 
   const pc = this._posterCfg();
   let badgeCls = '';

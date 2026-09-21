@@ -57,6 +57,7 @@ class _BrandMethods {
       maintainerr:'mdi:broom',
       lidarr:     'mdi:music-box-multiple-outline',
       lastfm:     'mdi:radio-tower',
+      deezer:     'mdi:equalizer',
       bazarr:     'mdi:subtitles-outline',
       jellyfin:   'mdi:jellyfish-outline',
       emby:       'mdi:emby',
@@ -69,6 +70,7 @@ class _BrandMethods {
       deluge:   `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3l6 5h-4v5H10v-5H6l6-5z"/></svg>`,
       rtorrent: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm-1 3v5.27l-3.5 2.02.99 1.71L12 14.15l3.51 2.02.99-1.71L13 12.27V7h-2z"/></svg>`,
       lastfm: `<svg ${sz} viewBox="0 0 24 24" style="flex-shrink:0"><rect width="24" height="24" rx="5" fill="#D51007"/><g transform="translate(2.4 2.4) scale(0.8)"><path fill="#fff" d="M10.584 17.21l-.88-2.392s-1.43 1.594-3.573 1.594c-1.897 0-3.244-1.649-3.244-4.288 0-3.382 1.704-4.591 3.381-4.591 2.42 0 3.189 1.567 3.849 3.574l.88 2.749c.88 2.666 2.529 4.81 7.285 4.81 3.409 0 5.718-1.044 5.718-3.793 0-2.227-1.265-3.381-3.63-3.931l-1.758-.385c-1.21-.275-1.567-.77-1.567-1.595 0-.934.742-1.484 1.952-1.484 1.32 0 2.034.495 2.144 1.677l2.749-.33c-.22-2.474-1.924-3.492-4.729-3.492-2.474 0-4.893.935-4.893 3.932 0 1.87.907 3.051 3.189 3.601l1.87.44c1.402.33 1.869.907 1.869 1.704 0 1.017-.99 1.43-2.86 1.43-2.776 0-3.93-1.457-4.59-3.464l-.907-2.75c-1.155-3.573-2.997-4.893-6.653-4.893C2.144 5.333 0 7.89 0 12.233c0 4.18 2.144 6.434 5.993 6.434 3.106 0 4.591-1.457 4.591-1.457z"/></g></svg>`,
+      deezer: `<svg ${sz} viewBox="0 0 24 24" style="flex-shrink:0"><rect width="24" height="24" rx="5" fill="#A238FF"/><g fill="#fff"><rect x="4" y="15" width="3" height="4" rx="0.8"/><rect x="8.2" y="11.5" width="3" height="7.5" rx="0.8"/><rect x="12.4" y="8" width="3" height="11" rx="0.8"/><rect x="16.6" y="5" width="3" height="14" rx="0.8"/></g></svg>`,
       nzbget: `<svg ${sz} viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><rect x="5" y="2" width="14" height="2" rx="0.5"/><rect x="5" y="5.5" width="14" height="2" rx="0.5"/><rect x="5" y="9" width="14" height="2" rx="0.5"/><path d="M5 12h14v4h3L12 22 2 16h3v-4z"/></svg>`,
     };
     // A few icons exist only as raster in dashboard-icons

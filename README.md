@@ -349,9 +349,9 @@ If any of your services uses a self-signed or untrusted certificate, enable **Sk
 
 ### Manual
 
-1. Download `arr-stack-card.js` from the latest release
-2. Copy to `/config/www/arr-stack-card.js`
-3. Add to Lovelace resources:
+1. Download `arr-stack-card.js` **and every `arr-stack-card-*.js`** from the latest release
+2. Copy them all to `/config/www/` — they have to sit side by side. When updating, replace them all.
+3. Add to Lovelace resources — `arr-stack-card.js` only; it loads the others itself when they are needed:
    ```yaml
    url: /local/arr-stack-card.js
    type: module
@@ -424,15 +424,15 @@ If you would rather not take part, you can switch it off: **Settings → Devices
 
 ## Development
 
-The card's source is in [`src/`](src); `arr-stack-card.js` is built from it and is the only file Home Assistant loads.
+The card's source is in [`src/`](src); `arr-stack-card.js` is built from it, together with the `arr-stack-card-*.js` files beside it that Home Assistant fetches the first time a module or the editor is opened.
 
 ```bash
 npm install
-npm run build   # src/ → arr-stack-card.js
+npm run build   # src/ → arr-stack-card.js + arr-stack-card-*.js
 npm test        # Node's own test runner against the source
 ```
 
-Every file in `src/` is a mixin of one area (`fetch/` talks to the services, `render/` builds markup, `wire/` handles clicks, `popup/` is the title detail), and `check-mixins.js` fails the build if two of them define the same method. Translations live in `src/i18n.js`. Pull requests against `src/` are welcome — please leave `arr-stack-card.js` out of them; it is rebuilt on release.
+Every file in `src/` is a mixin of one area (`fetch/` talks to the services, `render/` builds markup, `wire/` handles clicks, `popup/` is the title detail), and `check-mixins.js` fails the build if two of them define the same method. Translations live in `src/i18n.js`. Pull requests against `src/` are welcome — please leave the built `arr-stack-card*.js` files out of them; it is rebuilt on release.
 
 ---
 

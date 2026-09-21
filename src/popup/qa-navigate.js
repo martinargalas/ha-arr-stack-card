@@ -41,33 +41,36 @@ _qaShowInLibrary(d, inst) {
   this._ppMenu = null;
   this._popup  = null;
   this._renderPopupEl();
-  this._openLibModal(isTv ? 'tv' : 'movies');
-  const m = this._libModal;
-  if (!m) return;
-  m.search = '';
-  m.page   = 0;
-  if (inst) m.instFilter = inst;
+  // The Library's own code loads the first time it opens, so everything that
+  // reaches into the modal waits for that to finish.
+  Promise.resolve(this._openLibModal(isTv ? 'tv' : 'movies')).then(() => {
+    const m = this._libModal;
+    if (!m) return;
+    m.search = '';
+    m.page   = 0;
+    if (inst) m.instFilter = inst;
 
-  const el = this.shadowRoot.querySelector('[data-lib-modal]');
-  const body = el?.querySelector('#lib-body');
-  if (!body) return;
-  // First pass establishes the measured perPage for the current view
-  body.innerHTML = this._libBodyHtml();
-  this._wireLibModalBody(el);
+    const el = this.shadowRoot.querySelector('[data-lib-modal]');
+    const body = el?.querySelector('#lib-body');
+    if (!body) return;
+    // First pass establishes the measured perPage for the current view
+    body.innerHTML = this._libBodyHtml();
+    this._wireLibModalBody(el);
 
-  const matches = x => (tvdb && String(x.tvdbId) === String(tvdb))
-                    || (tmdb && String(x.tmdbId) === String(tmdb));
-  const idx = (this._libFilteredItems() || []).findIndex(matches);
-  const per = m._perPage || 0;
-  if (idx >= 0 && per > 0) {
-    const page = Math.floor(idx / per);
-    if (page !== m.page) {
-      m.page = page;
-      body.innerHTML = this._libBodyHtml();
-      this._wireLibModalBody(el);
+    const matches = x => (tvdb && String(x.tvdbId) === String(tvdb))
+                      || (tmdb && String(x.tmdbId) === String(tmdb));
+    const idx = (this._libFilteredItems() || []).findIndex(matches);
+    const per = m._perPage || 0;
+    if (idx >= 0 && per > 0) {
+      const page = Math.floor(idx / per);
+      if (page !== m.page) {
+        m.page = page;
+        body.innerHTML = this._libBodyHtml();
+        this._wireLibModalBody(el);
+      }
     }
-  }
-  this._qaBlinkInLibrary(tmdb, tvdb);
+    this._qaBlinkInLibrary(tmdb, tvdb);
+  });
 }
 
 // Two slow pulses so the eye lands on the right card without a jarring flash.

@@ -74,15 +74,6 @@ class _WireMusicActionsMethods {
     }, 2400);
   }
 
-  // Patches one drawer in place: a re-render would close the menu the moment
-  // its contents arrived.
-  _musPatchDrawer(kind) {
-    if (this._musicModal?.menuSub !== kind) return;
-    const el = this.shadowRoot?.querySelector('[data-music-modal] .qa-drawer');
-    if (!el) return;
-    el.innerHTML = kind === 'cast' ? this._musCastRowsHtml() : this._musStatsRowsHtml();
-  }
-
   async _musCast(entityId) {
     const m = this._musicModal;
     const name = m?.artist?.artistName;
@@ -220,6 +211,18 @@ class _WireMusicActionsMethods {
     if (!m) return;
     const id = m.artistId;
     this._markActivated();
+    // Similar titles for this artist: this window closes, the modal opens on
+    // it — back into the one it came from, if it came from one
+    if (act === 'similar') {
+      const a = m.artist || {};
+      const mbid = a.foreignArtistId || m.preview || null;
+      const saved = this._simReturnState;
+      this._simReturnState = null;   // or closing would reopen that modal by itself
+      this._closeMusicModal();
+      this._simReturnState = saved;
+      this._simOpenFor({ kind: 'music', id: mbid || a.artistName, mbid, title: a.artistName || '' });
+      return;
+    }
     m.menu = null;
     m.busy = act.startsWith('search') ? 'search' : act.startsWith('remove') ? 'remove' : 'actions';
     this._renderMusicModalEl();

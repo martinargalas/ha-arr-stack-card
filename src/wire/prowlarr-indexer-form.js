@@ -1,5 +1,5 @@
 import { ICONS, dayClass, isMobile } from '../shared/ui.js';
-import { MT_BTN, _ICO_CHECK } from '../render/maintainerr.js';
+import { MT_BTN, _ICO_CHECK } from '../render/mt-kit.js';
 
 // Prowlarr, adding and editing an indexer: the schema picker and the form. Split out of wire/prowlarr.js.
 
@@ -69,7 +69,7 @@ class _WireProwlarrIndexerFormMethods {
           return `<div data-pw-schema-name="${this._escHtml(s.name||'')}" style="padding:8px;border:1px solid var(--is-divider);border-radius:6px;cursor:pointer;margin-bottom:4px;display:flex;align-items:center;gap:8px" class="pw-schema-item">
             <div style="flex:1;min-width:0">
               <div class="u-sm-text">${this._escHtml(s.name||'—')}</div>
-              <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${s.language||''}</div>
+              <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${this._escHtml(s.language||'')}</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${protoBadge}${privBadge}</div>
           </div>`;
@@ -210,31 +210,31 @@ class _WireProwlarrIndexerFormMethods {
         const shortText = (f.helpText || f.label || '').substring(0, 80);
         const hasMore   = (f.helpText || '').length > 80;
         const infoHtml  = `<div style="font-size:10px;color:rgba(99,140,255,0.8);cursor:${hasMore?'pointer':'default'}" ${hasMore?`data-pw-info-full="${this._escHtml(f.helpText||f.label||'')}" class="pw-info-toggle"`:''}>${this._escHtml(shortText)}${hasMore?' <span style="text-decoration:underline">' + this._t('pwShowMore') + '</span>':''}</div>`;
-        return row(f.label || '', infoHtml);
+        return row(this._escHtml(f.label || ''), infoHtml);
       }
       const val    = f.value !== undefined && f.value !== null ? f.value : (f.advanced ? '' : '');
       const valStr = typeof val === 'boolean' ? (val ? 'true' : 'false') : String(val ?? '');
-      const errMsg = errors[`field_${fi}`] ? `<div style="font-size:10px;color:rgba(248,113,113,0.8);margin-top:3px">${errors[`field_${fi}`]}</div>` : '';
+      const errMsg = errors[`field_${fi}`] ? `<div style="font-size:10px;color:rgba(248,113,113,0.8);margin-top:3px">${this._escHtml(errors[`field_${fi}`])}</div>` : '';
       const hint   = f.helpText && f.type !== 'info' ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:3px">${this._escHtml(f.helpText.substring(0,120))}</div>` : '';
 
       let fieldEl;
       if (f.type === 'checkbox') {
-        fieldEl = _chk(`class="pw-field" data-fi="${fi}" data-fname="${f.name}"`, !!val, '');
+        fieldEl = _chk(`class="pw-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}"`, !!val, '');
       } else if (f.type === 'password') {
-        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${f.name}" type="password" value="${this._escHtml(valStr)}" style="${inputSty(!!errors[`field_${fi}`])}">`;
+        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}" type="password" value="${this._escHtml(valStr)}" style="${inputSty(!!errors[`field_${fi}`])}">`;
       } else if (f.type === 'select' && f.selectOptions?.length) {
-        fieldEl = this._mtFieldSelectRaw(`class="pw-field" data-fi="${fi}" data-fname="${f.name}"`,
-          f.selectOptions.map(o => `<option value="${o.value}"${String(o.value)===valStr?' selected':''}>${this._escHtml(o.name||o.label||o.value)}</option>`).join(''),
+        fieldEl = this._mtFieldSelectRaw(`class="pw-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}"`,
+          f.selectOptions.map(o => `<option value="${this._escHtml(o.value)}"${String(o.value)===valStr?' selected':''}>${this._escHtml(o.name||o.label||String(o.value))}</option>`).join(''),
           f.selectOptions.find(o => String(o.value)===valStr)?.name || '', inputSty(false));
       } else if (f.type === 'number') {
-        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${f.name}" type="number" value="${this._escHtml(valStr)}" style="${inputSty(!!errors[`field_${fi}`])}">`;
+        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}" type="number" value="${this._escHtml(valStr)}" style="${inputSty(!!errors[`field_${fi}`])}">`;
       } else if (f.type === 'tag') {
-        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${f.name}" type="text" value="${this._escHtml(Array.isArray(val) ? val.join(', ') : valStr)}" placeholder="${this._t('pwCommaSep')}" style="${inputSty(!!errors[`field_${fi}`])}">`;
+        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}" type="text" value="${this._escHtml(Array.isArray(val) ? val.join(', ') : valStr)}" placeholder="${this._t('pwCommaSep')}" style="${inputSty(!!errors[`field_${fi}`])}">`;
       } else {
         // textbox / default
-        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${f.name}" type="text" value="${this._escHtml(valStr)}" style="${inputSty(!!errors[`field_${fi}`])}">`;
+        fieldEl = `<input class="pw-field mt-field" data-fi="${fi}" data-fname="${this._escHtml(f.name ?? '')}" type="text" value="${this._escHtml(valStr)}" style="${inputSty(!!errors[`field_${fi}`])}">`;
       }
-      const fieldHtml = row((f.label || f.name || ''), fieldEl + hint + errMsg);
+      const fieldHtml = row(this._escHtml(f.label || f.name || ''), fieldEl + hint + errMsg);
       return f.advanced
         ? `<div data-pw-adv-field style="display:none">${fieldHtml}</div>`
         : fieldHtml;

@@ -68,7 +68,9 @@ _searchTypeSeg() {
 // it during typing never touches .search-bar-wrap (recreating the input closes the iOS keyboard).
 _renderSearchResultsInner() {
   const inner = this._searchActive ? this._renderSearchResultsGrid() : '';
-  const overlay = this._musAddPending
+  // Similar titles draws the artist overlay inside its own modal; drawing it
+  // here as well would put a second set of its ids in the same shadow root.
+  const overlay = (this._musAddPending && this._musAddPending.source !== 'sim')
     ? this._renderMusicAddOverlay()
     : (this._tvRequestPending?.source === 'search' ? this._renderTvRequestOverlay() : '');
   if (!overlay) return inner;
@@ -146,6 +148,10 @@ _renderSearchResultsGrid() {
     } else {
       actionBtn = `<button class="btn-add tv-req-open" data-showid="${tmdbId}" data-title="${title}" data-source="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>`;
     }
+    actionBtn = this._simStack(actionBtn, this._simSeedBtn({
+      kind: isMovie ? 'movie' : 'tv', id: tmdbId, title: m.title || m.name || '',
+      year: String(m.releaseDate || m.firstAirDate || '').slice(0, 4),
+    }));
     let badgeCls = '';
     let badgeHtml = '';
     if (_isAvail) {
@@ -216,12 +222,16 @@ _renderSearchMusicCard(res) {
     : null);
   if (hit) res = { ...res, id: hit.id };
   const inLib  = !!res.id;
+  const mbid0  = artist.foreignArtistId || '';
+  const sim    = mbid0 ? this._simSeedBtn({ kind: 'music', id: mbid0, mbid: mbid0, title: artist.artistName || res.title || '' }) : '';
   const card = this._renderMusicCard(
     { id: res.id, artist: inLib ? (this._lidarrArtists?.get(res.id) || artist) : artist, newestAlbum: null, newAlbumCount: 0 },
     { noSub: true, noStatus: !inLib },
   );
-  if (inLib) return card;
-  const plus = `<div style="position:absolute;bottom:8px;right:10px;z-index:3">
+  if (inLib) {
+    return sim ? card.replace(/<\/div>\s*$/, `<div style="position:absolute;bottom:8px;right:10px;z-index:3">${sim}</div></div>`) : card;
+  }
+  const plus = `<div style="position:absolute;bottom:8px;right:10px;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:6px">${sim}
     <button class="btn-add mus-add-open" data-mus-add="${this._escHtml(artist.foreignArtistId || '')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg></button>
   </div>`;
   return card

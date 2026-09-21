@@ -5,18 +5,6 @@ import { ICONS } from '../shared/ui.js';
 
 class _WireTautulliMethods {
 
-  _wireTautulliPosters(right) {
-    // Bound to the column itself, which outlives every repaint - once is enough,
-    // and a second listener per paint made one click open the modal many times.
-    if (!right || right._tlWired) return;
-    right._tlWired = true;
-    right.addEventListener('click', e => {
-      const card = e.target.closest('[data-tl-open]');
-      if (!card) return;
-      this._openTautulliModal(card.dataset.tlOpen);
-    });
-  }
-
   _wireTautulliModal(el) {
     // While a detail view is open the close button walks back one step instead
     // of closing the modal, as it does in Maintainerr and Tracearr.
@@ -110,7 +98,6 @@ class _WireTautulliMethods {
       body.innerHTML = this._tlBodyUsers(r?.response?.data?.data);
       this._wireTautulliModalBody(body);
     });
-
 
     this._tlWireHistory(body, _q, _qa);
     this._tlWireUserDetail(body, _q, _qa);

@@ -35,7 +35,7 @@ class _TracearrWatchMethods {
       const dash = Math.max(0, full - gap);
       const off  = -cum; cum += full;
       const pct  = Math.round(sg.value / total * 100);
-      return `<circle class="donut-arc" data-idx="${i}" data-label="${sg.label}" data-value="${sg.value}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#dg-${uid}-${i})" stroke-width="${sw}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" style="cursor:pointer"><animate attributeName="r" from="0" to="${r.toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/><animate attributeName="stroke-dasharray" from="0 ${C.toFixed(2)}" to="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/></circle>`;
+      return `<circle class="donut-arc" data-idx="${i}" data-label="${this._escHtml(sg.label ?? '')}" data-value="${sg.value}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#dg-${uid}-${i})" stroke-width="${sw}" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" style="cursor:pointer"><animate attributeName="r" from="0" to="${r.toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/><animate attributeName="stroke-dasharray" from="0 ${C.toFixed(2)}" to="${dash.toFixed(2)} ${(C-dash).toFixed(2)}" dur="0.8s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" keyTimes="0;1"/></circle>`;
     }).join('');
     const fs = Math.min(size * 0.14, 12);
     return `<div class="donut-wrap" style="position:relative;display:inline-block;flex-shrink:0"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;overflow:visible">
@@ -78,13 +78,14 @@ class _TracearrWatchMethods {
       return `<tr style="${ROW_H}"><td colspan="6" style="text-align:center;color:var(--is-text-muted);font-size:11px">${this._t('tlNoData')}</td></tr>`;
     }
     return topItems.slice(0, 5).map((it, i) => {
-      const plays = it.plays ?? it.totalPlays ?? it.playCount ?? it.viewCount ?? it.watchCount ?? it.totalEpisodeViews ?? 0;
-      const wh    = it.watchHours ?? it.totalWatchHours ?? (it.totalWatchMs ? it.totalWatchMs/3600000 : 0);
-      const views = it.viewers ?? it.uniqueViewers ?? it.viewerCount ?? 1;
+      const plays = Number(it.plays ?? it.totalPlays ?? it.playCount ?? it.viewCount ?? it.watchCount ?? it.totalEpisodeViews) || 0;
+      const wh    = Number(it.watchHours ?? it.totalWatchHours ?? (it.totalWatchMs ? it.totalWatchMs/3600000 : 0)) || 0;
+      const views = Number(it.viewers ?? it.uniqueViewers ?? it.viewerCount ?? 1) || 0;
       const cr    = it.completionRate ?? it.completion ?? it.avgCompletion ?? it.averageCompletion ?? it.episodeCompletionRate ?? it.avgEpisodeCompletion ?? it.avgCompletionRate ?? it.showCompletionRate ?? null;
       const cmplt = cr !== null ? (cr > 1 ? Math.round(cr) : Math.round(cr * 100)) : null;
-      const title = it.title || it.showTitle || it.seriesTitle || '—';
-      const year  = it.year ? ` (${it.year})` : '';
+      const title = this._escHtml(it.title || it.showTitle || it.seriesTitle || '—');
+      const yearTxt = it.year ? this._escHtml(it.year) : '';
+      const year  = yearTxt ? ` (${yearTxt})` : '';
       if (isMob) {
         const metaParts = [
           plays ? `${plays}×` : null,
@@ -105,7 +106,7 @@ class _TracearrWatchMethods {
       const ROW_H = 'height:40px';
       return `<tr style="${ROW_H}">
         <td style="width:22px;font-size:10px;color:var(--is-text-muted);text-align:center">${i+1}</td>
-        <td style="font-size:11px;font-weight:600;color:var(--is-text);max-width:140px"><div style="display:flex;align-items:center;gap:5px;overflow:hidden">${this._tlMediaIcon(_topTab==='movies'?'movie':'episode',15)}<span class="u-truncate">${title}${it.year?` <span style="color:var(--is-text-muted);font-weight:400">(${it.year})</span>`:''}</span></div></td>
+        <td style="font-size:11px;font-weight:600;color:var(--is-text);max-width:140px"><div style="display:flex;align-items:center;gap:5px;overflow:hidden">${this._tlMediaIcon(_topTab==='movies'?'movie':'episode',15)}<span class="u-truncate">${title}${yearTxt?` <span style="color:var(--is-text-muted);font-weight:400">(${yearTxt})</span>`:''}</span></div></td>
         <td style="font-size:11px;font-weight:600;color:var(--is-text);text-align:right">${plays}</td>
         <td style="font-size:10px;color:var(--is-text-muted);text-align:right">${wh>0?fmtH(wh):'—'}</td>
         <td style="font-size:10px;color:var(--is-text-muted);text-align:right">${views}</td>
@@ -137,9 +138,9 @@ class _TracearrWatchMethods {
     // patterns.peakTimes
     const peakTimes   = pat.peakTimes || {};
     const hourDist    = peakTimes.hourlyDistribution || [];
-    const hourMap     = new Map(hourDist.map(r => [r.hour, r.watchCount || 0]));
+    const hourMap     = new Map(hourDist.map(r => [r.hour, Number(r.watchCount) || 0]));
     const hourVals    = Array.from({length: 24}, (_, h) => hourMap.get(h) || 0);
-    const peakHour    = peakTimes.peakHour ?? hourVals.indexOf(Math.max(...hourVals));
+    const peakHour    = Number(peakTimes.peakHour ?? hourVals.indexOf(Math.max(...hourVals))) || 0;
     const peakHourLabel = `${String(peakHour).padStart(2,'0')}:00`;
     const peakDayNum  = peakTimes.peakDayOfWeek ?? null;
     const peakDay     = peakDayNum !== null ? `(${[this._t('dowSun'),this._t('dowMon'),this._t('dowTue'),this._t('dowWed'),this._t('dowThu'),this._t('dowFri'),this._t('dowSat')][peakDayNum] || ''})` : '';
@@ -147,24 +148,25 @@ class _TracearrWatchMethods {
     // patterns.seasonalTrends
     const seasonal    = pat.seasonalTrends || {};
     const monthlyArr  = seasonal.monthlyTrends || [];
-    const busiestMonth  = seasonal.busiestMonth  || '';
-    const quietestMonth = seasonal.quietestMonth || '';
+    const busiestMonth  = this._escHtml(seasonal.busiestMonth  || '');
+    const quietestMonth = this._escHtml(seasonal.quietestMonth || '');
 
     // Total watch time from sum of monthly totalWatchMs
-    const totalWatchMs = monthlyArr.reduce((s, r) => s + (r.totalWatchMs || 0), 0);
+    const totalWatchMs = monthlyArr.reduce((s, r) => s + (Number(r.totalWatchMs) || 0), 0);
 
     // Completion
-    const completedCount = (comp.movie?.summary?.completedCount ?? 0) + (comp.episode?.summary?.completedCount ?? 0);
+    const _n = v => Number(v) || 0;
+    const completedCount = _n(comp.movie?.summary?.completedCount) + _n(comp.episode?.summary?.completedCount);
 
     // Donut data (movies/shows watched vs total from completion summary)
-    const totalMovies   = comp.movie?.summary?.totalItems ?? 0;
-    const watchedMovies = (comp.movie?.summary?.completedCount ?? 0) + (comp.movie?.summary?.inProgressCount ?? 0);
-    const totalShows    = comp.episode?.summary?.totalItems ?? 0;
-    const watchedShows  = (comp.episode?.summary?.completedCount ?? 0) + (comp.episode?.summary?.inProgressCount ?? 0);
+    const totalMovies   = _n(comp.movie?.summary?.totalItems);
+    const watchedMovies = _n(comp.movie?.summary?.completedCount) + _n(comp.movie?.summary?.inProgressCount);
+    const totalShows    = _n(comp.episode?.summary?.totalItems);
+    const watchedShows  = _n(comp.episode?.summary?.completedCount) + _n(comp.episode?.summary?.inProgressCount);
 
     // Watched stat — prefer completion-based counts (unique items) over watch-event total
-    const totalItems   = (totalMovies + totalShows) || (stat.itemCount ?? 0);
-    const watchedItems = (watchedMovies + watchedShows) || (m.watchedTotal ?? 0);
+    const totalItems   = (totalMovies + totalShows) || _n(stat.itemCount);
+    const watchedItems = (watchedMovies + watchedShows) || _n(m.watchedTotal);
     const watchedPct   = pct(watchedItems, totalItems);
 
     // Binge highlights — stored on modal so _traWatchTopRowsHtml() can access it
@@ -264,12 +266,13 @@ class _TracearrWatchMethods {
       return `${this._uiBadge(`${dl}`, this._hexToRgbTriple(txt), { small: true })}`;
     };
     const bingeRows = binge.slice(0, 5).map(b => {
-      const show = b.showTitle ?? b.show ?? b.title ?? '—';
-      const eps  = b.totalEpisodeWatches ?? b.episodes ?? '—';
-      const cons = b.consecutiveEpisodes ?? b.consecutive ?? '—';
+      const show = this._escHtml(b.showTitle ?? b.show ?? b.title ?? '—');
+      const eps  = this._escHtml(b.totalEpisodeWatches ?? b.episodes ?? '—');
+      const cons = this._escHtml(b.consecutiveEpisodes ?? b.consecutive ?? '—');
       const cp   = b.consecutivePct ?? null;
       const bS   = b.bingeScore ?? b.score ?? '—';
-      const maxP = b.maxEpisodesInOneDay ?? b.maxPerDay ?? '—';
+      const bSTxt = this._escHtml(bS);
+      const maxP = this._escHtml(b.maxEpisodesInOneDay ?? b.maxPerDay ?? '—');
       if (isMob) {
         return `<div class="tl-mob-card" style="display:flex;flex-direction:column;gap:3px">
           <div class="u-row-6">
@@ -277,9 +280,9 @@ class _TracearrWatchMethods {
             ${typeof bS==='number'?scoreTag2(bS):''}
           </div>
           <div style="font-size:10px;color:var(--is-text-muted);display:flex;gap:8px;flex-wrap:wrap">
-            <span>${this._t('traNEps').replace('{n}', eps)}</span>
+            <span>${this._t('traNEps').replace('{n}', () => eps)}</span>
             <span>${cons}${cp!==null?` (${Math.round(cp)}%)`:''} ${this._t('traConsec')}</span>
-            <span>${this._t('traMaxPerDay').replace('{n}', maxP)}</span>
+            <span>${this._t('traMaxPerDay').replace('{n}', () => maxP)}</span>
           </div>
         </div>`;
       }
@@ -288,7 +291,7 @@ class _TracearrWatchMethods {
         <td style="font-size:11px;color:var(--is-text-muted);text-align:center">${eps}</td>
         <td style="font-size:11px;color:var(--is-text-muted);text-align:center">${cons}${cp!==null?` <span style="font-size:9px">(${Math.round(cp)}%)</span>`:''}</td>
         <td style="text-align:center">
-          <span style="font-size:12px;font-weight:800;color:var(--is-text)">${bS}</span>
+          <span style="font-size:12px;font-weight:800;color:var(--is-text)">${bSTxt}</span>
           ${typeof bS==='number'?scoreTag2(bS):''}
         </td>
         <td style="font-size:11px;color:var(--is-text-muted);text-align:center">${maxP}</td>
@@ -384,13 +387,13 @@ class _TracearrWatchMethods {
     const mN   = mArr.length;
     const _mFmt = cat => {
       const [y, mo] = (cat || '').split('-');
-      if (!y || !mo) return cat;
+      if (!y || !mo) return String(cat ?? '');
       return `${mo.padStart(2,'0')}-${y.slice(2)}`;
     };
-    const mVals  = mArr.map(r => r.watchCount ?? r.count ?? r.plays ?? 0);
+    const mVals  = mArr.map(r => Number(r.watchCount ?? r.count ?? r.plays) || 0);
     const mMax   = Math.max(1, ...mVals);
     const _MC    = '#007AFF';
-    const _mEsc  = v => String(v).replace(/"/g, '&quot;');
+    const _mEsc  = v => this._escHtml(v);
     const mSvg = (() => {
       if (mN < 2) return '';
       const VBW = 1000, SVH = 200, PL = 12, PR = 6, PT = 18, PB = 6;
@@ -424,8 +427,8 @@ class _TracearrWatchMethods {
       });
       const svgEl = this._tlGSvgEl(inner, isMob ? 70 : 80);
       const xLbls = `<div style="position:relative;height:16px;margin-top:2px">
-        <span style="position:absolute;left:0;font-size:9px;color:var(--is-text-muted)">${pts[0].cat}</span>
-        <span style="position:absolute;right:0;font-size:9px;color:var(--is-text-muted)">${pts[mN-1].cat}</span>
+        <span style="position:absolute;left:0;font-size:9px;color:var(--is-text-muted)">${this._escHtml(pts[0].cat)}</span>
+        <span style="position:absolute;right:0;font-size:9px;color:var(--is-text-muted)">${this._escHtml(pts[mN-1].cat)}</span>
       </div>`;
       return this._tlGWrap(svgEl, xLbls, '');
     })();

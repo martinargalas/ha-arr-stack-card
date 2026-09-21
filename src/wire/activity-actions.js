@@ -1,5 +1,5 @@
 import { ICONS, dayClass } from '../shared/ui.js';
-import { MT_BTN } from '../render/maintainerr.js';
+import { MT_BTN } from '../render/mt-kit.js';
 import { fmtBytes } from '../shared/format.js';
 
 // Activity, row actions: removing from the queue or the blocklist, manual import, a season's Interactive Search. Split out of wire/activity.js.

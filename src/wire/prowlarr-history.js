@@ -54,7 +54,7 @@ class _WireProwlarrHistoryMethods {
 
 
     const indexers = this._prowlarr?.indexers || [];
-    const idxOpts  = indexers.map(i => `<option value="${i.id}"${String(i.id)===fIdx?' selected':''}>${this._escHtml(i.name||'—')}</option>`).join('');
+    const idxOpts  = indexers.map(i => `<option value="${this._escHtml(i.id)}"${String(i.id)===fIdx?' selected':''}>${this._escHtml(i.name||'—')}</option>`).join('');
     const toolbar = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-shrink:0">${
       this._uiBar('pw-hist-search', m?.histSearch || '', [
         { id: 'pw-hist-idx', kind: 'indexer', value: fIdx, items: [['all', this._t('pwAllIdx')], ...(this._prowlarr?.indexers || []).map(i => [i.id, i.name || '—'])] },

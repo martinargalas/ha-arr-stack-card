@@ -6,18 +6,6 @@
 
 class _WireActivityMethods {
 
-  _wireActivityPosters(right) {
-    // Bound to the column itself, which outlives every repaint - once is enough,
-    // and a second listener per paint made one click open the modal many times.
-    if (!right || right._actWired) return;
-    right._actWired = true;
-    right.addEventListener('click', e => {
-      const card = e.target.closest('[data-act-open]');
-      if (!card) return;
-      this._openActivityModal(card.dataset.actOpen);
-    });
-  }
-
   async _openActivityModal(tab) {
     this._markActivated();
     tab = tab || 'queue';
@@ -374,25 +362,6 @@ class _WireActivityMethods {
       }
       this._wireActBody(body, el, 'missing');
     });
-  }
-
-  _computeActMissingCache() {
-    const _buildProfMap = (...profArrays) => {
-      const map = new Map();
-      for (const arr of profArrays) for (const p of (arr || [])) if (p.id != null && p.name) map.set(p.id, p.name);
-      return map;
-    };
-    const rProfMap = _buildProfMap(this._radarrProfiles, this._radarr2Profiles);
-    const sProfMap = _buildProfMap(this._sonarrProfiles, this._sonarr2Profiles);
-    const rRecs = [
-      ...(this._radarr  || []).filter(m => !m.hasFile).map(m => ({ ...m, _inst: 'radarr',  _profileName: rProfMap.get(m.qualityProfileId) || '' })),
-      ...(this._radarr2 || []).filter(m => !m.hasFile).map(m => ({ ...m, _inst: 'radarr2', _profileName: rProfMap.get(m.qualityProfileId) || '' })),
-    ];
-    const sRecs = [
-      ...(this._sonarr  || []).map(s => { const s0 = (s.seasons||[]).find(ss=>ss.seasonNumber===0); const mc = Math.max(0, ((s.statistics?.totalEpisodeCount||0)-(s0?.statistics?.totalEpisodeCount||0)) - ((s.statistics?.episodeFileCount||0)-(s0?.statistics?.episodeFileCount||0))); const tc = Math.max(0,(s.statistics?.totalEpisodeCount||0)-(s0?.statistics?.totalEpisodeCount||0)); const fc = Math.max(0,(s.statistics?.episodeFileCount||0)-(s0?.statistics?.episodeFileCount||0)); return { ...s, _inst: 'sonarr',  _profileName: sProfMap.get(s.qualityProfileId) || '', _missingCount: mc, _totalCount: tc, _fileCount: fc }; }).filter(s => s._missingCount > 0),
-      ...(this._sonarr2 || []).map(s => { const s0 = (s.seasons||[]).find(ss=>ss.seasonNumber===0); const mc = Math.max(0, ((s.statistics?.totalEpisodeCount||0)-(s0?.statistics?.totalEpisodeCount||0)) - ((s.statistics?.episodeFileCount||0)-(s0?.statistics?.episodeFileCount||0))); const tc = Math.max(0,(s.statistics?.totalEpisodeCount||0)-(s0?.statistics?.totalEpisodeCount||0)); const fc = Math.max(0,(s.statistics?.episodeFileCount||0)-(s0?.statistics?.episodeFileCount||0)); return { ...s, _inst: 'sonarr2', _profileName: sProfMap.get(s.qualityProfileId) || '', _missingCount: mc, _totalCount: tc, _fileCount: fc }; }).filter(s => s._missingCount > 0),
-    ];
-    this._actMissingCache = { movieCount: rRecs.length, seriesCount: sRecs.length, rRecs, sRecs };
   }
 
   _wireActBody(body, modalEl, tab) {

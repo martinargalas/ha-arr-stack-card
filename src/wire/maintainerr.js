@@ -7,18 +7,6 @@ class _WireMaintainerrMethods {
 
   // ── Poster clicks → open modal ────────────────────────────────────────────
 
-  _wireMaintainerrPosters(right) {
-    // Bound to the column itself, which outlives every repaint - once is enough,
-    // and a second listener per paint made one click open the modal many times.
-    if (!right || right._mtWired) return;
-    right._mtWired = true;
-    right.addEventListener('click', e => {
-      const card = e.target.closest('[data-mt-open]');
-      if (!card) return;
-      this._openMaintainerrModal(card.dataset.mtOpen);
-    });
-  }
-
   // ── Modal lifecycle ───────────────────────────────────────────────────────
 
   async _openMaintainerrModal(tab) {
@@ -174,43 +162,6 @@ class _WireMaintainerrMethods {
     } finally {
       this._mtMeasuring = false;
     }
-  }
-
-  // Geometry of the fill as it stands, so a re-render can start the animation
-  // from where the old one actually was rather than from where the previous tab
-  // is assumed to be — on the first open that assumption was wrong and the fill
-  // jumped instead of sliding.
-  // Generic: any .mt-nav with an .mt-nav-ind. Maintainerr and Activity share it.
-  _navIndRect(nav) {
-    const ind = nav?.querySelector('.mt-nav-ind');
-    if (!ind) return null;
-    const w = parseFloat(ind.style.width);
-    const mt = /translateX\(([-\d.]+)px\)/.exec(ind.style.transform || '');
-    if (!Number.isFinite(w) || !mt) return null;
-    return { w, x: parseFloat(mt[1]) };
-  }
-
-  _syncNavInd(nav, btn, from) {
-    const ind = nav?.querySelector('.mt-nav-ind');
-    if (!nav || !ind || !btn) return;
-    const to = { w: btn.offsetWidth, x: btn.offsetLeft };
-    const apply = (r, animate) => {
-      ind.style.transition = animate ? '' : 'none';
-      ind.style.width = `${r.w}px`;
-      ind.style.transform = `translateX(${r.x}px)`;
-    };
-    if (!from || (from.w === to.w && from.x === to.x)) { apply(to, false); return; }
-    apply(from, false);
-    // Two frames: the first commits the un-animated start, the second lets the
-    // transition see a changed value.
-    requestAnimationFrame(() => requestAnimationFrame(() => apply(to, true)));
-  }
-
-  // The open sub-tab track carries a fill of its own, placed the same way.
-  _syncSubNavInd(nav, from) {
-    const wrap = nav?.querySelector('.mt-nav-sub-wrap.is-open');
-    if (!wrap) return;
-    this._syncNavInd(wrap, wrap.querySelector('.mt-nav-sub.is-on'), from);
   }
 
   _mtNavIndRect(el) {
@@ -694,16 +645,6 @@ class _WireMaintainerrMethods {
     return false;
   }
 
-  _mtParsePageN(val, curPage, totalPages) {
-    const last = Math.max(0, totalPages - 1);
-    if (val === 'first') return 0;
-    if (val === 'last')  return last;
-    if (val === 'prev')  return Math.max(0, curPage - 1);
-    if (val === 'next')  return Math.min(last, curPage + 1);
-    const n = parseInt(val);
-    return Number.isFinite(n) ? Math.max(0, Math.min(last, n)) : curPage;
-  }
-
   _mtParsePage(val, curPage, totalItems, cd) {
     const { perPage } = this._mtGridCalc(cd, 90);
     const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
@@ -824,124 +765,6 @@ class _WireMaintainerrMethods {
     });
   }
 
-  // Deletion dates live on the collection membership rows, not on library items,
-  // so build one mediaServerId -> daysLeft map from every collection's contents.
-  // Refreshed with every poll, not cached on first open: the Maintainerr
-  // category card previews the next deletions, so this has to stay current
-  // whether or not the modal was ever opened.
-  async _mtLoadDelMap(modal) {
-    if (this._mtDelLoading) return;
-    const cols = this._maintainerr?.collections || [];
-    if (!cols.length) { this._mtDelMap = new Map(); this._mtDelItems = []; return; }
-    const map = new Map();
-    // The media-server ids in `map` only help inside Maintainerr's own views.
-    // Every other category knows its titles by tmdb/tvdb, so the queue gets a
-    // second index those can actually look themselves up in.
-    const ext = new Map();
-    // Which collections a title actually sits in. `ext` only keeps the soonest
-    // deletion per title, so it cannot answer that on its own.
-    const memb = new Map();
-    const items = [];
-    this._mtDelLoading = true;
-    try {
-      const results = await Promise.all(cols.map(c =>
-        this._hass.callApi('GET', `arr_stack/maintainerr/collections/media/${c.id}/content/1?size=1000`).catch(() => null)
-      ));
-      results.forEach((data, i) => {
-        const c = cols[i];
-        const arr = Array.isArray(data) ? data : data?.items || data?.data || [];
-        arr.forEach(row => {
-          const due = this._mtDueMs(row.addDate, c.deleteAfterDays);
-          if (due == null || !row.mediaServerId) return;
-          // An item can sit in several collections — surface the soonest deletion
-          const put = (key, entry) => {
-            if (!key) return;
-            const prev = map.get(String(key));
-            if (!prev || entry.due < prev.due) map.set(String(key), entry);
-          };
-          put(row.mediaServerId, { due, colTitle: c.title });
-
-          // Movie and TV tmdb ids are separate namespaces, so the kind is part
-          // of the key. Seasons falling on the same day collect into a range;
-          // an earlier day always wins outright.
-          const _md = row.mediaData;
-          const _isMovie = (_md?.type || c.type) === 'movie';
-          const _season = _md?.type === 'season' ? _md.index : null;
-          const extKeys = _isMovie
-            ? (row.tmdbId ? [`mv:${row.tmdbId}`] : [])
-            : [
-              ...(row.tvdbId ? [`tv:tvdb:${row.tvdbId}`] : []),
-              ...(row.tmdbId ? [`tv:tmdb:${row.tmdbId}`] : []),
-            ];
-          const _day = ms => Math.floor(ms / 86400000);
-          for (const k of extKeys) {
-            let set = memb.get(k);
-            if (!set) { set = new Set(); memb.set(k, set); }
-            set.add(String(c.id));
-          }
-          for (const k of extKeys) {
-            const prev = ext.get(k);
-            if (!prev || _day(due) < _day(prev.due)) {
-              ext.set(k, { due, seasons: _season != null ? [_season] : [], colId: c.id, colTitle: c.title });
-            } else if (_day(due) === _day(prev.due)) {
-              prev.due = Math.min(prev.due, due);
-              if (_season != null && !prev.seasons.includes(_season)) prev.seasons.push(_season);
-            }
-          }
-
-          // A queued season also belongs on its show's poster in Overview, which
-          // browses shows and never sees the season's own id. Seasons falling on
-          // the same day are collected so the badge can show them as a range;
-          // an earlier day always wins outright, since claiming "S01-S03" for a
-          // date only S01 is due on would be wrong.
-          const md = row.mediaData;
-
-          // Flat list backing the calendar: one entry per scheduled deletion
-          const isSeason = md?.type === 'season';
-          const base = isSeason ? (md.parentTitle || md.title) : (md?.title || `#${row.mediaServerId}`);
-          items.push({
-            due,
-            addDate: row.addDate,
-            title: isSeason && md.index != null ? `${base} — ${this._t('mtSeason')} ${md.index}` : base,
-            typeLabel: { movie: 'Movie', show: 'Show', season: 'Season', episode: 'Episode' }[md?.type] || (c.type || '—'),
-            colId: c.id,
-            colTitle: c.title || `#${c.id}`,
-            // Enough to open the media detail popup straight from the calendar
-            tmdbId: row.tmdbId ?? null,
-            tvdbId: row.tvdbId ?? null,
-            popupType: (md?.type || c.type) === 'movie' ? 'movie' : 'tv',
-            // Kept so the calendar can render the same poster card as elsewhere
-            raw: row,
-            mediaType: md?.type || c.type || 'movie',
-            seasonIndex: isSeason ? md.index : null,
-          });
-
-          if (isSeason && md.parentId != null) {
-            const key = String(md.parentId);
-            const prev = map.get(key);
-            const day = ms => Math.floor(ms / 86400000);
-            if (!prev || !prev.seasons || day(due) < day(prev.due)) {
-              map.set(key, { due, colTitle: c.title, seasons: [md.index] });
-            } else if (day(due) === day(prev.due)) {
-              prev.due = Math.min(prev.due, due);
-              prev.seasons.push(md.index);
-            }
-          }
-        });
-      });
-    } catch (e) {
-      console.warn('[arr-card] Maintainerr deletion map:', e);
-    } finally {
-      this._mtDelLoading = false;
-    }
-    this._mtDelMap = map;
-    this._mtDelExt = ext;
-    this._mtColMemb = memb;
-    this._mtDelItems = items;
-    const tab = this._maintainerrModal?.tab;
-    if (modal && (tab === 'overview' || tab === 'calendar')) this._mtLoadTab(tab, modal);
-  }
-
   // Fill in artwork the *arr libraries could not supply. Maintainerr answers one
   // item at a time, so results are cached and the grid is repainted once.
   async _mtResolvePosters(items, modal) {
@@ -969,25 +792,6 @@ class _WireMaintainerrMethods {
       }));
     }
     if (changed && this._maintainerrModal?.tab === 'overview') this._mtLoadTab('overview', modal);
-  }
-
-  async _mtLoadArrServers(modal) {
-    if (this._maintainerrArrServers) return;
-    this._maintainerrArrServers = { radarr: [], sonarr: [] };  // guard against a second call
-    try {
-      const [radarrSrv, sonarrSrv] = await Promise.all([
-        this._hass.callApi('GET', 'arr_stack/maintainerr/settings/radarr').catch(() => null),
-        this._hass.callApi('GET', 'arr_stack/maintainerr/settings/sonarr').catch(() => null),
-      ]);
-      this._maintainerrArrServers = {
-        radarr: Array.isArray(radarrSrv) ? radarrSrv : radarrSrv ? [radarrSrv] : [],
-        sonarr: Array.isArray(sonarrSrv) ? sonarrSrv : sonarrSrv ? [sonarrSrv] : [],
-      };
-      if (this._maintainerrModal?.overview?.dialog) this._mtLoadTab('overview', modal);
-      // Deliberately no popup re-render here: the quick-actions menu preloads
-      // these names when the popup opens, and rebuilding it mid-interaction
-      // would close whatever drawer the user just opened.
-    } catch (_) { /* labels just stay unprefixed */ }
   }
 
 }

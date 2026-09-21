@@ -72,26 +72,27 @@ class _TautulliTableMethods {
     const sliced = filtered.slice(page2 * perPage, (page2 + 1) * perPage);
     if (isMobile) {
       const cards = sliced.map(lib => {
-        const type = (lib.section_type || '').toLowerCase();
-        const icon = this._tlLibSvgIcon(type, lib.section_name || '', 'sm');
-        const sid  = lib.section_id || '';
+        const type = String(lib.section_type || '').toLowerCase();
+        const icon = this._tlLibSvgIcon(type, String(lib.section_name || ''), 'sm');
+        const sid  = this._escHtml(lib.section_id || '');
+        const lName = this._escHtml(lib.section_name || '');
         const editBtns = editMode ? `<div class="tl-mob-edit">
-          ${this._mtRoundBtn(`data-tl-lib-delete="${sid}" data-tl-lib-name="${lib.section_name || sid}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}
-          ${this._mtRoundBtn(`data-tl-lib-purge="${sid}" data-tl-lib-name="${lib.section_name || sid}"`, _TL_PURGE, this._t('tlPurgeHistory'), { size: 24, tone: 'red' })}
+          ${this._mtRoundBtn(`data-tl-lib-delete="${sid}" data-tl-lib-name="${lName || sid}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}
+          ${this._mtRoundBtn(`data-tl-lib-purge="${sid}" data-tl-lib-name="${lName || sid}"`, _TL_PURGE, this._t('tlPurgeHistory'), { size: 24, tone: 'red' })}
         </div>` : '';
         const mp = [];
-        if (!mobHidden.has('plays'))      mp.push(`<span style="font-weight:600;flex-shrink:0">&#9654; ${lib.plays ?? 0}</span>`);
-        if (!mobHidden.has('lastPlayed') && lib.last_played) mp.push(`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lib.last_played}</span>`);
-        if (!mobHidden.has('type')       && lib.section_type) mp.push(`<span style="text-transform:capitalize;color:var(--is-text-label)">${lib.section_type}</span>`);
-        if (!mobHidden.has('parents')    && lib.parent_count != null) mp.push(`<span>${this._t('tlSeaAlb').replace('{n}', lib.parent_count)}</span>`);
-        if (!mobHidden.has('children')   && lib.child_count  != null) mp.push(`<span>${this._t('tlEpTrk').replace('{n}', lib.child_count)}</span>`);
+        if (!mobHidden.has('plays'))      mp.push(`<span style="font-weight:600;flex-shrink:0">&#9654; ${Number(lib.plays) || 0}</span>`);
+        if (!mobHidden.has('lastPlayed') && lib.last_played) mp.push(`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(lib.last_played)}</span>`);
+        if (!mobHidden.has('type')       && lib.section_type) mp.push(`<span style="text-transform:capitalize;color:var(--is-text-label)">${this._escHtml(lib.section_type)}</span>`);
+        if (!mobHidden.has('parents')    && lib.parent_count != null) mp.push(`<span>${this._t('tlSeaAlb').replace('{n}', Number(lib.parent_count) || 0)}</span>`);
+        if (!mobHidden.has('children')   && lib.child_count  != null) mp.push(`<span>${this._t('tlEpTrk').replace('{n}', Number(lib.child_count) || 0)}</span>`);
         if (!mobHidden.has('lastStream') && lib.last_accessed) mp.push(`<span>${this._tlFmtDate(lib.last_accessed)}</span>`);
         const ldAttr = !editMode ? ` data-tl-ld-open="${sid}" data-tl-ld-name="${this._escHtml(lib.section_name||'')}" style="cursor:pointer"` : '';
         return `<div class="tl-mob-card"${ldAttr}><div class="u-row-10">
           <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--is-row-hover)">${icon.replace(/width="\d+" height="\d+"/, 'width="16" height="16"')}</div>
-          <div style="flex:1;min-width:0"><div class="tl-mob-name">${lib.section_name || '—'}</div>${mp.length ? `<div class="tl-mob-meta">${mp.join('')}</div>` : ''}</div>
+          <div style="flex:1;min-width:0"><div class="tl-mob-name">${lName || '—'}</div>${mp.length ? `<div class="tl-mob-meta">${mp.join('')}</div>` : ''}</div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">${lib.count ?? '—'}</div>
+            <div style="font-size:15px;font-weight:700;color:rgba(250,180,50,0.9)">${lib.count != null ? Number(lib.count) || 0 : '—'}</div>
             ${lib.duration ? `<div class="u-sm-label">${this._tlFmtDuration(lib.duration)}</div>` : ''}
           </div>
         </div>${editBtns}</div>`;
@@ -103,25 +104,27 @@ class _TautulliTableMethods {
     const editThHdr = editMode ? `<th style="white-space:nowrap;width:1px;padding-right:12px">${this._t('tlEdit')}</th>` : '';
     const thead = vis.map(c => _tlSortTh(c, sortCol, sortDir, 'tl-lib-sort')).join('');
     const rows  = sliced.map(lib => {
-      const type = (lib.section_type || '').toLowerCase();
-      const icon = this._tlLibSvgIcon(type, lib.section_name || '', 'md');
+      const type = String(lib.section_type || '').toLowerCase();
+      const icon = this._tlLibSvgIcon(type, String(lib.section_name || ''), 'md');
+      const lName = this._escHtml(lib.section_name || '');
+      const num  = v => v != null ? Number(v) || 0 : '—';
       const lAcc = lib.last_accessed ? this._tlFmtDate(lib.last_accessed) : `<span style="color:var(--is-text-muted)">${this._t('tlNever')}</span>`;
-      const lPly = lib.last_played ? `<span style="font-size:11px;color:var(--is-text-sec)">${lib.last_played}</span>` : `<span style="color:var(--is-text-muted)">${this._t('tlNA')}</span>`;
+      const lPly = lib.last_played ? `<span style="font-size:11px;color:var(--is-text-sec)">${this._escHtml(lib.last_played)}</span>` : `<span style="color:var(--is-text-muted)">${this._t('tlNA')}</span>`;
       const cm = {
-        name:       `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong class="u-truncate">${lib.section_name || '—'}</strong></span></td>`,
-        type:       `<td style="text-transform:capitalize;color:var(--is-text-label);white-space:nowrap">${lib.section_type || '—'}</td>`,
-        count:      `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${lib.count ?? '—'}</td>`,
-        parents:    `<td style="text-align:right">${lib.parent_count != null ? lib.parent_count : '—'}</td>`,
-        children:   `<td style="text-align:right">${lib.child_count  != null ? lib.child_count  : '—'}</td>`,
+        name:       `<td style="max-width:150px"><span style="display:flex;align-items:center;min-width:0">${icon}<strong class="u-truncate">${lName || '—'}</strong></span></td>`,
+        type:       `<td style="text-transform:capitalize;color:var(--is-text-label);white-space:nowrap">${this._escHtml(lib.section_type || '—')}</td>`,
+        count:      `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${num(lib.count)}</td>`,
+        parents:    `<td style="text-align:right">${num(lib.parent_count)}</td>`,
+        children:   `<td style="text-align:right">${num(lib.child_count)}</td>`,
         lastStream: `<td style="white-space:nowrap">${lAcc}</td>`,
         lastPlayed: `<td style="max-width:160px"><div class="u-truncate">${lPly}</div></td>`,
-        plays:      `<td style="text-align:right;font-weight:700">${lib.plays ?? 0}</td>`,
+        plays:      `<td style="text-align:right;font-weight:700">${Number(lib.plays) || 0}</td>`,
         duration:   `<td style="text-align:right;white-space:nowrap">${lib.duration ? this._tlFmtDuration(lib.duration) : '—'}</td>`,
       };
-      const sid      = lib.section_id || '';
+      const sid      = this._escHtml(lib.section_id || '');
       const editCell = editMode ? `<td style="white-space:nowrap;padding-right:12px"><div style="display:inline-flex;align-items:center;gap:4px">
-        ${this._mtRoundBtn(`data-tl-lib-delete="${sid}" data-tl-lib-name="${lib.section_name || sid}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}
-        ${this._mtRoundBtn(`data-tl-lib-purge="${sid}" data-tl-lib-name="${lib.section_name || sid}"`, _TL_PURGE, this._t('tlPurgeHistory'), { size: 24, tone: 'red' })}
+        ${this._mtRoundBtn(`data-tl-lib-delete="${sid}" data-tl-lib-name="${lName || sid}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}
+        ${this._mtRoundBtn(`data-tl-lib-purge="${sid}" data-tl-lib-name="${lName || sid}"`, _TL_PURGE, this._t('tlPurgeHistory'), { size: 24, tone: 'red' })}
       </div></td>` : '';
       const ldAttr = !editMode ? ` data-tl-ld-open="${sid}" data-tl-ld-name="${this._escHtml(lib.section_name||'')}" style="cursor:pointer"` : '';
       return `<tr${ldAttr}>${editCell}${vis.map(c => cm[c.key] || '<td>—</td>').join('')}</tr>`;
@@ -142,15 +145,16 @@ class _TautulliTableMethods {
     const users = tl.sharingUsers || [];
     const report = tl.ipReport || {};
 
-    const rows = users.map(name => {
-      const ips = report[name] || [];
+    const rows = users.map(rawName => {
+      const name = this._escHtml(rawName);
+      const ips = report[rawName] || [];
       const ipRows = ips.map(e => {
         const d = e.lastSeen ? new Date(e.lastSeen * 1000) : null;
         const dateStr = d ? d.toLocaleDateString(this._locale, { month:'short', day:'numeric', year:'numeric' }) : '—';
         return `<tr>
-          <td style="padding:4px 8px;font-size:11px;font-family:monospace;color:var(--is-text)">${e.ip}</td>
+          <td style="padding:4px 8px;font-size:11px;font-family:monospace;color:var(--is-text)">${this._escHtml(e.ip ?? '')}</td>
           <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted)">${dateStr}</td>
-          <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted);text-align:right">${e.count}</td>
+          <td style="padding:4px 8px;font-size:11px;color:var(--is-text-muted);text-align:right">${Number(e.count) || 0}</td>
         </tr>`;
       }).join('');
       return `<div style="margin-bottom:12px">
@@ -254,12 +258,12 @@ class _TautulliTableMethods {
     if (isMobile) {
       const warnUsers = wU;
       const cards = sliced.map(u => {
-        const name  = u.friendly_name || u.username || '—';
-        const thumb = u.user_thumb || '';
+        const name  = String(u.friendly_name || u.username || '—');
+        const thumb = this._imgSrc(u.user_thumb);
         const av    = thumb
           ? `<img src="${thumb}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--is-divider)" loading="lazy" onerror="this.style.display='none'">`
-          : `<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">${(name[0] || '?').toUpperCase()}</span>`;
-        const uid  = u.user_id || '';
+          : `<span style="width:36px;height:36px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:13px;font-weight:700">${this._escHtml((name[0] || '?').toUpperCase())}</span>`;
+        const uid  = this._escHtml(u.user_id || '');
         const kh   = u.keep_history != null ? Number(u.keep_history) : 1;
         const ag   = u.allow_guest  != null ? Number(u.allow_guest)  : 0;
         const editBtns = editMode ? `<div class="tl-mob-edit">
@@ -280,7 +284,7 @@ class _TautulliTableMethods {
           ${av}
           <div style="flex:1;min-width:0"><div class="tl-mob-name">${this._escHtml(name)}</div>${um.length ? `<div class="tl-mob-meta">${um.join('')}</div>` : ''}</div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ${u.plays ?? 0}</div>
+            <div style="color:rgba(250,180,50,0.9);font-weight:700">&#9654; ${Number(u.plays) || 0}</div>
             <div class="u-sm-label">${u.duration ? this._tlFmtDuration(u.duration) : '—'}</div>
           </div>
         </div>${editBtns}</div>`;
@@ -293,12 +297,12 @@ class _TautulliTableMethods {
     const editThHdr = editMode ? `<th style="white-space:nowrap;width:1px;padding-right:12px">${this._t('tlEdit')}</th>` : '';
     const thead = vis.map(c => _tlSortTh(c, sortCol, sortDir, 'tl-sort')).join('');
     const rows  = sliced.map(u => {
-      const name  = u.friendly_name || u.username || '—';
+      const name  = String(u.friendly_name || u.username || '—');
       const isW   = warnUsers.includes(name) || warnUsers.includes(u.username);
-      const thumb = u.user_thumb || '';
+      const thumb = this._imgSrc(u.user_thumb);
       const av    = thumb
         ? `<img src="${thumb}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--is-divider)" loading="lazy" onerror="this.style.display='none'">`
-        : `<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">${(name[0] || '?').toUpperCase()}</span>`;
+        : `<span style="width:30px;height:30px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--is-text-muted);font-size:12px;font-weight:700">${this._escHtml((name[0] || '?').toUpperCase())}</span>`;
       const mIco = u.last_played ? this._tlMediaIcon(u.media_type) : '';
       const cm = {
         user:       `<td><div class="u-row-8">${av}<span style="font-weight:600">${this._escHtml(name)}</span></div></td>`,
@@ -310,10 +314,10 @@ class _TautulliTableMethods {
         platform:   `<td>${this._escHtml(u.platform || this._t('tlNA'))}</td>`,
         player:     `<td>${u.player ? `<span style="display:inline-flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="color:var(--is-text-muted)" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/><polygon points="10 8 17 12 10 16"/></svg>${this._escHtml(u.player)}</span>` : `<span style="color:var(--is-text-muted)">${this._t('tlNA')}</span>`}</td>`,
         lastPlayed: `<td style="max-width:160px"><div style="display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.last_played ? mIco + '<span style="overflow:hidden;text-overflow:ellipsis">' + this._escHtml(u.last_played) + '</span>' : '<span style="color:var(--is-text-muted)">n/a</span>'}</div></td>`,
-        plays:      `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${u.plays ?? 0}</td>`,
+        plays:      `<td style="text-align:right;color:rgba(250,180,50,0.9);font-weight:700">${Number(u.plays) || 0}</td>`,
         duration:   `<td style="text-align:right">${u.duration ? this._tlFmtDuration(u.duration) : '—'}</td>`,
       };
-      const uid = u.user_id || '';
+      const uid = this._escHtml(u.user_id || '');
       const kh  = u.keep_history != null ? Number(u.keep_history) : 1;
       const ag  = u.allow_guest  != null ? Number(u.allow_guest)  : 0;
       const editCell = editMode ? `<td style="white-space:nowrap;padding-right:12px"><div style="display:inline-flex;align-items:center;gap:4px">
@@ -462,10 +466,10 @@ class _TautulliTableMethods {
         if (!mobHidden.has('platform') && h.platform)      mp.push(this._escHtml(h.platform));
         if (!mobHidden.has('player')   && h.player)        mp.push(this._escHtml(h.player));
         if (!mobHidden.has('started')  && h.started)       mp.push(this._tlFmtTime(h.started));
-        if (!mobHidden.has('ip')       && h.ip_address)    mp.push(h.ip_address);
+        if (!mobHidden.has('ip')       && h.ip_address)    mp.push(this._escHtml(h.ip_address));
         if (!mobHidden.has('paused')   && h.paused_counter) mp.push(this._t('tlColPaused') + ' ' + this._tlFmtDuration(h.paused_counter));
         const meta   = `<div class="tl-mob-meta"><span>${user}</span><span style="color:var(--is-text-muted)"> &middot; </span><span>${ago}</span>${mp.map(v => `<span style="color:var(--is-text-muted)"> &middot; </span><span>${v}</span>`).join('')}</div>`;
-        const delEl  = `<div style="margin-top:6px;display:flex;justify-content:flex-end">${_rowDel(h.row_id)}</div>`;
+        const delEl  = `<div style="margin-top:6px;display:flex;justify-content:flex-end">${_rowDel(this._escHtml(h.row_id ?? ''))}</div>`;
         return `<div class="tl-mob-card"><div class="u-row-10"><div style="flex:1;min-width:0"><div class="tl-mob-name u-row-4">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>${meta}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:600;color:var(--is-text)">${dur}</div><div style="margin-top:2px;display:flex;justify-content:flex-end">${watchSvg(ws)}</div></div></div>${delEl}</div>`;
       }).join('');
       return toolbar + `<div class="tl-hist-results-wrap" style="display:contents"><div>${cards}</div>${this._uiPager('tl-hpage', page, totalPages)}</div>`;
@@ -479,12 +483,12 @@ class _TautulliTableMethods {
       const icon = this._tlMediaIcon(h.media_type || '', 15);
       const pct  = h.percent_complete ?? 0;
       const ws   = pct >= 85 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 10 ? 1 : 0;
-      const rid  = h.row_id || '';
+      const rid  = this._escHtml(h.row_id || '');
       const esc  = s => this._escHtml(s || '');
       const cm = {
         date:     `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.date ? this._tlFmtDate(h.date) : '—'}</td>`,
         user:     `<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.friendly_name || h.user)}</td>`,
-        ip:       `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.ip_address || '—'}</td>`,
+        ip:       `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${esc(h.ip_address) || '—'}</td>`,
         platform: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.platform)}</td>`,
         product:  `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.product)}</td>`,
         player:   `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.player)}</td>`,

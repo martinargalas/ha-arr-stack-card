@@ -9,6 +9,13 @@ class _PopupOpenMethods {
 // `this._popup` is already cleared. Returns false when the popup was opened
 // straight from a category and there is nothing to return to.
 _popupReturn() {
+  if (this._simReturnState) {
+    const saved = this._simReturnState;
+    this._simReturnState = null;
+    this._renderPopupEl();
+    this._openSimModal(null, saved);
+    return true;
+  }
   if (this._calReturnState) {
     this._calReturnState    = false;
     this._calendarModalOpen = true;
@@ -39,28 +46,31 @@ _popupReturn() {
     const saved = this._libReturnState;
     this._libReturnState = null;
     this._renderPopupEl();
-    this._openLibModal(
+    const opening = this._openLibModal(
       ['movies', 'tv', 'music'].includes(saved.typeKey) ? saved.typeKey : (saved.qualityKey || 'all')
     );
-    const m = this._libModal;
-    if (m) {
-      m.typeKey    = saved.typeKey;
-      m.qualityKey = saved.qualityKey;
-      m.instFilter = saved.instFilter;
-      m.search     = saved.search;
-      m.sort       = saved.sort;
-      m.sortDir    = saved.sortDir;
-      m.view       = saved.view;
-      m.filter     = saved.filter;
-      m.page       = saved.page;
-      const libEl = this.shadowRoot.querySelector('[data-lib-modal]');
-      const bodyEl = libEl?.querySelector('#lib-body');
-      if (bodyEl?.clientHeight > 0) {
-        m._bodyH = bodyEl.clientHeight;
-        bodyEl.innerHTML = this._libBodyHtml();
-        this._wireLibModalBody(libEl);
+    // Its code loads on opening, so the state to restore is set once it is in
+    Promise.resolve(opening).then(() => {
+      const m = this._libModal;
+      if (m) {
+        m.typeKey    = saved.typeKey;
+        m.qualityKey = saved.qualityKey;
+        m.instFilter = saved.instFilter;
+        m.search     = saved.search;
+        m.sort       = saved.sort;
+        m.sortDir    = saved.sortDir;
+        m.view       = saved.view;
+        m.filter     = saved.filter;
+        m.page       = saved.page;
+        const libEl = this.shadowRoot.querySelector('[data-lib-modal]');
+        const bodyEl = libEl?.querySelector('#lib-body');
+        if (bodyEl?.clientHeight > 0) {
+          m._bodyH = bodyEl.clientHeight;
+          bodyEl.innerHTML = this._libBodyHtml();
+          this._wireLibModalBody(libEl);
+        }
       }
-    }
+    });
     return true;
   }
   return false;

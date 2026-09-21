@@ -11,13 +11,13 @@ class _TautulliUserRenderMethods {
   _tlBodyUserDetail() {
     const m     = this._tautulliModal || {};
     const tab   = m.userDetailTab || 'profile';
-    const name  = m.userDetailName  || '—';
-    const thumb = m.userDetailThumb || '';
+    const name  = String(m.userDetailName || '—');
+    const thumb = this._imgSrc(m.userDetailThumb);
     const isMob = this._isMob;
 
     const av = thumb
       ? `<img src="${thumb}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--is-divider);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">`
-      : `<span style="width:40px;height:40px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;color:var(--is-text-muted);font-size:15px;font-weight:700;flex-shrink:0">${(name[0] || '?').toUpperCase()}</span>`;
+      : `<span style="width:40px;height:40px;border-radius:50%;background:var(--is-btn-bg);display:inline-flex;align-items:center;justify-content:center;color:var(--is-text-muted);font-size:15px;font-weight:700;flex-shrink:0">${this._escHtml((name[0] || '?').toUpperCase())}</span>`;
 
     const TAB_LABELS = { profile: this._t('actColProfile'), history: this._t('tlHistory'), ips: this._t('tlIpAddresses') };
     const tabBtns = `<span class="mt-nav mt-nav--inline"><span class="mt-nav-ind"></span>${
@@ -73,7 +73,7 @@ class _TautulliUserRenderMethods {
 
     const statCards = [1,7,30,0].map(d => {
       const s     = statMap[d] || {};
-      const plays = s.total_plays ?? 0;
+      const plays = Number(s.total_plays) || 0;
       const dur   = s.total_time ? this._tlFmtDuration(s.total_time) : '0m';
       return `<div style="background:var(--is-row-hover);border-radius:8px;padding:${isMob ? '6px' : '8px 6px'};text-align:center;display:flex;flex-direction:column;gap:2px">
         <div style="font-size:${isMob ? '9px' : '10px'};font-weight:700;color:var(--is-text);text-transform:uppercase;letter-spacing:0.3px">${periodLabel(d)}</div>
@@ -107,7 +107,7 @@ class _TautulliUserRenderMethods {
         ps.map(p => {
           const platform = this._escHtml(p.platform || '');
           const player   = this._escHtml(p.player   || p.friendly_name || platform);
-          const plays    = p.total_plays ?? 0;
+          const plays    = Number(p.total_plays) || 0;
           const icon     = _platIcon(p.platform || '');
           return `<div style="background:var(--is-row-hover);border-radius:12px;padding:${isMob ? '10px 12px' : '12px 16px'};display:flex;flex-direction:column;align-items:center;gap:6px;min-width:${isMob ? '76px' : '90px'};flex-shrink:0">
             <div style="color:var(--is-text-muted)">${icon}</div>
@@ -141,7 +141,7 @@ class _TautulliUserRenderMethods {
           : (mt === 'track')   ? this._t('tabMusic')
           : null;
         const typeTag   = typeLabel ? `<span class="media-type-tag">${typeLabel}</span>` : '';
-        const rk        = h.rating_key || '';
+        const rk        = this._escHtml(h.rating_key || '');
         const mdAttr    = rk ? ` data-tl-md-open="${rk}" data-tl-md-title="${title}" data-tl-md-thumb="${this._escHtml(thumbPath)}" data-tl-md-prev="user" style="cursor:pointer"` : '';
         const imgTag    = thumbPath
           ? `<img data-tl-plex-path="${this._escHtml(thumbPath)}" alt="" style="width:${W}px;height:${H}px;object-fit:cover;border-radius:6px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -304,11 +304,11 @@ class _TautulliUserRenderMethods {
         if (!mobHidden.has('platform') && h.platform)       mp.push(this._escHtml(h.platform));
         if (!mobHidden.has('player')   && h.player)         mp.push(this._escHtml(h.player));
         if (!mobHidden.has('started')  && h.started)        mp.push(this._tlFmtTime(h.started));
-        if (!mobHidden.has('ip')       && h.ip_address)     mp.push(h.ip_address);
+        if (!mobHidden.has('ip')       && h.ip_address)     mp.push(this._escHtml(h.ip_address));
         if (!mobHidden.has('paused')   && h.paused_counter) mp.push(this._t('tlColPaused') + ' ' + this._tlFmtDuration(h.paused_counter));
         const meta  = `<div class="tl-mob-meta"><span>${ago}</span>${mp.map(v => `<span style="color:var(--is-text-muted)"> &middot; </span><span>${v}</span>`).join('')}</div>`;
         const delEl = `<div style="margin-top:6px;display:flex;justify-content:flex-end">${
-          this._mtRoundBtn(`data-tl-ud-hist-delete="${rid}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}</div>`;
+          this._mtRoundBtn(`data-tl-ud-hist-delete="${this._escHtml(rid)}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}</div>`;
         let expDetail = '';
         if (isExp) {
           const decBdg = _streamBadge(h.transcode_decision);
@@ -324,7 +324,7 @@ class _TautulliUserRenderMethods {
             ${ip    ? `<span style="font-family:monospace;font-size:10px;color:var(--is-text-muted)">${ip}</span>` : ''}
           </div>`;
         }
-        return `<div class="tl-mob-card tl-ud-hist-row" data-tl-ud-hist-row="${rid}" style="cursor:pointer${isExp ? ';background:var(--is-row-hover)' : ''}">
+        return `<div class="tl-mob-card tl-ud-hist-row" data-tl-ud-hist-row="${this._escHtml(rid)}" style="cursor:pointer${isExp ? ';background:var(--is-row-hover)' : ''}">
           <div class="u-row-10">
             <div style="flex:1;min-width:0">
               <div class="tl-mob-name u-row-4">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span></div>
@@ -354,7 +354,7 @@ class _TautulliUserRenderMethods {
       const esc   = s => this._escHtml(s || '');
       const cm = {
         date:     `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.date ? this._tlFmtDate(h.date) : '—'}</td>`,
-        ip:       `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${h.ip_address || '—'}</td>`,
+        ip:       `<td style="white-space:nowrap;font-size:11px;color:var(--is-text-label)">${esc(h.ip_address) || '—'}</td>`,
         platform: `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.platform)}</td>`,
         product:  `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.product)}</td>`,
         player:   `<td style="white-space:nowrap;color:var(--is-text-label)">${esc(h.player)}</td>`,
@@ -365,8 +365,8 @@ class _TautulliUserRenderMethods {
         duration: `<td style="text-align:right;white-space:nowrap;font-weight:600">${h.duration ? this._tlFmtDuration(h.duration) : '—'}</td>`,
       };
       const watchCell = `<td style="text-align:right;padding-right:8px">${watchSvg(ws)}</td>`;
-      const delCell   = `<td style="padding:0 4px">${this._mtRoundBtn(`data-tl-ud-hist-delete="${rid}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}</td>`;
-      const mainRow = `<tr class="tl-ud-hist-row" data-tl-ud-hist-row="${rid}" style="cursor:pointer${isExp ? ';background:var(--is-row-hover)' : ''}">${vis.map(c => cm[c.key] || '<td>—</td>').join('')}${watchCell}${delCell}</tr>`;
+      const delCell   = `<td style="padding:0 4px">${this._mtRoundBtn(`data-tl-ud-hist-delete="${this._escHtml(rid)}"`, _TL_TRASH, this._t('tlDelete'), { size: 24, tone: 'red' })}</td>`;
+      const mainRow = `<tr class="tl-ud-hist-row" data-tl-ud-hist-row="${this._escHtml(rid)}" style="cursor:pointer${isExp ? ';background:var(--is-row-hover)' : ''}">${vis.map(c => cm[c.key] || '<td>—</td>').join('')}${watchCell}${delCell}</tr>`;
       return mainRow + (isExp ? _expandedRow(h, vis.length + 2) : '');
     }).join('');
 
@@ -427,7 +427,7 @@ class _TautulliUserRenderMethods {
         const plat   = this._escHtml(ip.platform    || '');
         const player = this._escHtml(ip.player      || '');
         const lp     = this._escHtml(ip.last_played || '');
-        const pc     = ip.play_count ?? 0;
+        const pc     = Number(ip.play_count) || 0;
         return `<div class="tl-mob-card">
           <div class="u-row-10">
             <div style="flex:1;min-width:0">
@@ -459,7 +459,7 @@ class _TautulliUserRenderMethods {
       const plat   = esc(ip.platform    || '—');
       const player = esc(ip.player      || '—');
       const lp     = esc(ip.last_played || '—');
-      const pc     = ip.play_count ?? 0;
+      const pc     = Number(ip.play_count) || 0;
       return `<tr>
         <td style="font-family:monospace;font-size:12px">${addr}</td>
         <td class="u-nowrap-sm">${ls}</td>

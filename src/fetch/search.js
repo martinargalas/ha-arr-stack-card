@@ -14,8 +14,9 @@ get _searchMusic() {
   return this._lidarrConfigured !== false && (t === 'all' || t === 'music');
 }
 
-async _fetchSearchMusic(query) {
-  if (!this._searchMusic) return [];
+// `any`: asked whatever the main search's type is — Similar titles has its own
+async _fetchSearchMusic(query, any = false) {
+  if (any ? this._lidarrConfigured === false : !this._searchMusic) return [];
   const [byArtist, byAlbum] = await Promise.all([
     this._callApi('GET', `arr_stack/lidarr/lookup?term=${encodeURIComponent(query)}`).catch(() => []),
     this._callApi('GET', `arr_stack/lidarr/albumlookup?term=${encodeURIComponent(query)}`).catch(() => []),
@@ -36,16 +37,28 @@ async _fetchSearchMusic(query) {
   return out.slice(0, 8);
 }
 
+// The two legs answer at their own pace: films and series come back from Seerr
+// in a few hundred ms, while the music asks Lidarr, which asks MusicBrainz, and
+// that is allowed twenty seconds. Waiting for both before painting anything is
+// what made a search sit there for seconds at a time — so what has arrived goes
+// up, and the music is folded in when it lands. Each run carries a token: an
+// answer for a query already typed past is dropped rather than painted over the
+// newer one.
 async _fetchSearch(query) {
+  const tok = this._searchTok = (this._searchTok || 0) + 1;
+  const stale = () => tok !== this._searchTok;
   this._searchLoading = true;
-  const musicP = this._fetchSearchMusic(query);
+  const musicP = this._fetchSearchMusic(query).catch(() => []);
   // Narrowed to music, there is nothing for the film and series sources to say.
   if (this._searchType === 'music') {
-    this._searchResults = await musicP.catch(() => []);
+    const only = await musicP;
+    if (stale()) return;
+    this._searchResults = only;
     this._searchLoading = false;
     this._reRenderSearchResults();
     return;
   }
+  let media = [];
   try {
     if (this._overseerrConfigured === false) {
       // Fallback: Radarr + Sonarr lookup, normalize to Overseerr-like format
@@ -93,20 +106,26 @@ async _fetchSearch(query) {
         if (movies[i]) merged.push(movies[i]);
         if (shows[i])  merged.push(shows[i]);
       }
-      this._searchResults = merged;
+      media = merged;
     } else {
       const data = await this._callApi('POST', `arr_stack/${this._discoverSvc}/search`, { query });
-      this._searchResults = (data?.results || []).filter(r => r.mediaType === 'movie' || r.mediaType === 'tv');
+      media = (data?.results || []).filter(r => r.mediaType === 'movie' || r.mediaType === 'tv');
     }
     const type = this._searchType;
-    if (type === 'movie' || type === 'tv') {
-      this._searchResults = this._searchResults.filter(r => r.mediaType === type);
-    }
-    this._searchResults = [...this._searchResults, ...(await musicP)];
+    if (type === 'movie' || type === 'tv') media = media.filter(r => r.mediaType === type);
   } catch (e) {
-    this._searchResults = await musicP.catch(() => []);
     console.error('[arr-card] Search fetch error:', e);
   }
+  if (stale()) return;
+  // Only worth a paint of its own when it has something to show: an empty grid
+  // here would read as "nothing found" while the music is still on its way.
+  if (media.length) {
+    this._searchResults = media;
+    this._reRenderSearchResults();
+  }
+  const music = await musicP;
+  if (stale()) return;
+  this._searchResults = [...media, ...music];
   this._searchLoading = false;
   this._reRenderSearchResults();
 }

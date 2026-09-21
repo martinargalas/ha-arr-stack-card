@@ -82,6 +82,7 @@ _ppGlassClick(e, root, d, overlay, glass) {
     if (k === 'seerrWithdraw') this._qaWithdraw(this._popup);
     if (k === 'lib') this._qaShowInLibrary(this._popup, this._qaLibTargets(this._popup)[0]?.inst);
     if (k === 'queue') this._qaJumpToQueue(this._popup);
+    if (k === 'similar') this._qaOpenSimilar(this._popup);
     return;
   }
   const qaLib = e.target.closest('[data-qa-lib]');

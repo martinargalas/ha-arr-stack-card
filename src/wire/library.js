@@ -1,17 +1,5 @@
 class _LibraryWireMethods {
 
-  _wireLibraryTiles(right) {
-    // Bound to the column itself, which outlives every repaint - once is enough,
-    // and a second listener per paint made one click open the modal many times.
-    if (!right || right._libWired) return;
-    right._libWired = true;
-    right.addEventListener('click', e => {
-      const tile = e.target.closest('[data-lib-open]');
-      if (!tile) return;
-      this._openLibModal(tile.dataset.libOpen);
-    });
-  }
-
   _wireLibModal(el) {
     if (this._lidarrConfigured !== false && !this._lidarrArtists?.size) {
       this._fetchLidarrArtists?.().then(() => this._libRerenderBody?.(el)).catch(() => {});
@@ -74,25 +62,9 @@ class _LibraryWireMethods {
     });
   }
 
-  _libRerenderBody(el) {
-    const body = el.querySelector('#lib-body');
-    if (!body || !this._libModal) return;
-    const prevSearch = el.querySelector('#lib-search');
-    const searchFocused = prevSearch && (this.shadowRoot?.activeElement === prevSearch);
-    const sel = prevSearch?.selectionStart ?? null;
-    body.innerHTML = this._libBodyHtml();
-    this._wireLibModalBody(el);
-    this._wireLibDragHandle(el);
-    if (searchFocused) {
-      const inp = el.querySelector('#lib-search');
-      if (inp) { inp.focus(); try { inp.setSelectionRange(sel, sel); } catch {} }
-    }
-  }
-
   _wireLibModalBody(el) {
     const glass = el.querySelector('.popup-glass');
     if (!glass) return;
-
 
     // Sort is handled via custom dropdown clicks in glass.addEventListener('click')
 

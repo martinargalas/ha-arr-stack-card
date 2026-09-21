@@ -55,12 +55,12 @@ class _TracearrNetworkMethods {
             <div style="font-size:10px;color:var(--is-text-muted);margin-top:2px">${lbl}</div>
           </div>
         </div>`;
-    const totalSess = sum.totalSessions ?? 0;
+    const totalSess = Number(sum.totalSessions) || 0;
     const dpRaw     = sum.directPlayPct ?? sum.directPlayRate ?? null;
     const dpN_s     = dpRaw != null ? Math.round(Number(dpRaw)) : null;
     const dpFmt     = dpN_s != null ? `${dpN_s}%` : '—';
-    const uDevices  = sum.uniqueDevices ?? dh.length;
-    const uCodecs   = sum.uniqueCodecs  ?? 0;
+    const uDevices  = Number(sum.uniqueDevices ?? dh.length) || 0;
+    const uCodecs   = Number(sum.uniqueCodecs) || 0;
     const statsRow = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:${isMob?'4px':'6px'};margin-bottom:8px">
       ${tile(_dIco(_dPlay),   isMob?this._t('traSessions'):this._t('traTotalSessions'),   totalSess)}
       ${tile(_dIco(_dCheck),  isMob?this._t('tlFilterDirectPlay'):this._t('traDpRate'), dpFmt)}
@@ -95,8 +95,8 @@ class _TracearrNetworkMethods {
 
     const dhPage     = dh.slice(_hP * PAGE, (_hP + 1) * PAGE);
     const healthRows = dhPage.map(d => {
-      const name = d.device || d.name || d.deviceType || '?';
-      const sess = d.sessions ?? d.totalSessions ?? d.count ?? 0;
+      const name = this._escHtml(d.device || d.name || d.deviceType || '?');
+      const sess = Number(d.sessions ?? d.totalSessions ?? d.count) || 0;
       const pct  = Math.round(Number(d.directPlayPct ?? d.directPlayRate ?? d.directPlay ?? 0));
       const col  = _dpC(pct);
       return `<div style="margin-bottom:8px">
@@ -120,17 +120,17 @@ class _TracearrNetworkMethods {
     if (matCodecs.length && matDataPage.length) {
       const cW = `${Math.max(12, Math.floor(75 / matCodecs.length))}%`;
       const thCells = matCodecs.map(c =>
-        `<th style="text-align:center;font-size:10px;font-weight:600;color:var(--is-text-muted);padding:5px 8px;width:${cW}">${c}</th>`
+        `<th style="text-align:center;font-size:10px;font-weight:600;color:var(--is-text-muted);padding:5px 8px;width:${cW}">${this._escHtml(c)}</th>`
       ).join('');
       const tRows = matDataPage.map(d => {
-        const dName = d.device || d.name || '?';
-        const dSess = d.sessions ?? d.totalSessions ?? '';
+        const dName = this._escHtml(d.device || d.name || '?');
+        const dSess = Number(d.sessions ?? d.totalSessions) || '';
         const dC    = d.codecs || {};
         const cells = matCodecs.map(codec => {
           const cell = dC[codec];
           if (!cell) return `<td style="text-align:center;color:rgba(255,255,255,0.2);font-size:10px;padding:5px 8px">—</td>`;
           const p = Math.round(Number(cell.directPct ?? cell.directPlayRate ?? cell.rate ?? 0));
-          const s = cell.sessions ?? cell.count ?? 0;
+          const s = Number(cell.sessions ?? cell.count) || 0;
           return `<td style="text-align:center;background:${_mc(p)};padding:5px 8px">
             <div style="font-size:11px;font-weight:700;color:${_mt(p)}">${p}%</div>
             <div class="u-xxs-muted">${s}</div>
@@ -174,11 +174,11 @@ class _TracearrNetworkMethods {
     const dhotPage = dhot.slice(_hoP * PAGE, (_hoP + 1) * PAGE);
     const _noData3 = `<tr><td colspan="3" style="text-align:center;color:var(--is-text-muted);font-size:11px;padding:12px">${this._t('tlNoData')}</td></tr>`;
     const hotRows  = dhotPage.map(h => {
-      const dev = h.device || h.deviceType || '?';
+      const dev = this._escHtml(h.device || h.deviceType || '?');
       const vid = h.videoCodec || h.codec || '';
       const aud = h.audioCodec || '';
-      const cod = [vid, aud].filter(Boolean).join(' + ') || h.codecCombination || '?';
-      const tr  = h.transcodeCount ?? h.transcodes ?? h.count ?? 0;
+      const cod = this._escHtml([vid, aud].filter(Boolean).join(' + ') || h.codecCombination || '?');
+      const tr  = Number(h.transcodeCount ?? h.transcodes ?? h.count) || 0;
       const pct = Math.round(Number(h.pctOfTotalTranscodes ?? h.percentage ?? h.percent ?? 0));
       const pc  = pct >= 50 ? '#FF3B30' : '#FF9500';
       const pb  = pct >= 50 ? 'rgba(255,59,48,0.12)' : 'rgba(255,149,0,0.1)';
@@ -192,11 +192,11 @@ class _TracearrNetworkMethods {
       </tr>`;
     }).join('') || _noData3;
     const hotMobCards = dhotPage.map(h => {
-      const dev = h.device || h.deviceType || '?';
+      const dev = this._escHtml(h.device || h.deviceType || '?');
       const vid = h.videoCodec || h.codec || '';
       const aud = h.audioCodec || '';
-      const cod = [vid, aud].filter(Boolean).join(' + ') || h.codecCombination || '?';
-      const tr  = h.transcodeCount ?? h.transcodes ?? h.count ?? 0;
+      const cod = this._escHtml([vid, aud].filter(Boolean).join(' + ') || h.codecCombination || '?');
+      const tr  = Number(h.transcodeCount ?? h.transcodes ?? h.count) || 0;
       const pct = Math.round(Number(h.pctOfTotalTranscodes ?? h.percentage ?? h.percent ?? 0));
       const pc  = pct >= 50 ? '#FF3B30' : '#FF9500';
       const pb  = pct >= 50 ? 'rgba(255,59,48,0.12)' : 'rgba(255,149,0,0.1)';
@@ -210,17 +210,18 @@ class _TracearrNetworkMethods {
 
     const dtuPage = dtu.slice(_uP * PAGE, (_uP + 1) * PAGE);
     const tuRows  = dtuPage.map(u => {
-      const name = u.identityName || u.username || u.displayName || '?';
-      const av   = u.avatar || u.avatarUrl || null;
-      const sess = u.totalSessions ?? u.sessions ?? 0;
+      const rawName = String(u.identityName || u.username || u.displayName || '?');
+      const name = this._escHtml(rawName);
+      const av   = this._imgSrc(u.avatar || u.avatarUrl) || null;
+      const sess = Number(u.totalSessions ?? u.sessions) || 0;
       const dpN  = Math.round(Number(u.directPlayPct ?? u.directPlayRate ?? 0));
-      const tr   = u.transcodeCount ?? u.transcodes ?? 0;
+      const tr   = Number(u.transcodeCount ?? u.transcodes) || 0;
       const pctN = Math.round(Number(u.pctOfTotalTranscodes ?? u.percentage ?? (sess ? tr / sess * 100 : 0)));
       const dc2  = dpN >= 80 ? '#34C759' : dpN >= 50 ? '#FF9500' : '#FF3B30';
       const db2  = dpN >= 80 ? 'rgba(52,199,89,0.12)' : dpN >= 50 ? 'rgba(255,149,0,0.1)' : 'rgba(255,59,48,0.12)';
       const avEl = av
         ? `<img src="${av}" width="20" height="20" style="border-radius:50%;object-fit:cover;flex-shrink:0">`
-        : `<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--is-text-muted)">${(name[0]||'?').toUpperCase()}</div>`;
+        : `<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--is-text-muted)">${this._escHtml((rawName[0]||'?').toUpperCase())}</div>`;
       return `<tr>
         <td style="padding:6px 0;font-size:11px;font-weight:600;color:var(--is-text)">
           <div class="u-row-6">${avEl}<span>${name}</span></div>
@@ -232,17 +233,18 @@ class _TracearrNetworkMethods {
       </tr>`;
     }).join('');
     const usersMobCards = dtuPage.map(u => {
-      const name = u.identityName || u.username || u.displayName || '?';
-      const av   = u.avatar || u.avatarUrl || null;
-      const sess = u.totalSessions ?? u.sessions ?? 0;
+      const rawName = String(u.identityName || u.username || u.displayName || '?');
+      const name = this._escHtml(rawName);
+      const av   = this._imgSrc(u.avatar || u.avatarUrl) || null;
+      const sess = Number(u.totalSessions ?? u.sessions) || 0;
       const dpN  = Math.round(Number(u.directPlayPct ?? u.directPlayRate ?? 0));
-      const tr   = u.transcodeCount ?? u.transcodes ?? 0;
+      const tr   = Number(u.transcodeCount ?? u.transcodes) || 0;
       const pctN = Math.round(Number(u.pctOfTotalTranscodes ?? u.percentage ?? (sess ? tr / sess * 100 : 0)));
       const dc2  = dpN >= 80 ? '#34C759' : dpN >= 50 ? '#FF9500' : '#FF3B30';
       const db2  = dpN >= 80 ? 'rgba(52,199,89,0.12)' : dpN >= 50 ? 'rgba(255,149,0,0.1)' : 'rgba(255,59,48,0.12)';
       const avEl = av
         ? `<img src="${av}" width="18" height="18" style="border-radius:50%;object-fit:cover;flex-shrink:0">`
-        : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--is-text-muted)">${(name[0]||'?').toUpperCase()}</div>`;
+        : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--is-text-muted)">${this._escHtml((rawName[0]||'?').toUpperCase())}</div>`;
       return `<div class="tl-mob-card" style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center">
         <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden">
           ${avEl}
@@ -381,17 +383,17 @@ class _TracearrNetworkMethods {
     const avgBrLbl = sum.peakBitrateMbps != null ? this._t('traAvgPeak').replace('{n}', _fmtBr(sum.peakBitrateMbps)) : this._t('traAvgBitrate');
     const statsRow = isMob
       ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">
-          ${tile(_ico(_mdiPlay),   this._t('traSessions'),   sum.totalSessions ?? 0)}
+          ${tile(_ico(_mdiPlay),   this._t('traSessions'),   Number(sum.totalSessions) || 0)}
           ${tile(_ico(_mdiDB),     this._t('traData'),       _fmtGb(sum.totalGb))}
           ${tile(_ico(_mdiWifi),   this._t('traAvgBitrate'),_fmtBr(sum.avgBitrateMbps))}
-          ${tile(_ico(_mdiPeople), this._t('tlUsers'),      sum.uniqueUsers ?? 0)}
+          ${tile(_ico(_mdiPeople), this._t('tlUsers'),      Number(sum.uniqueUsers) || 0)}
         </div>`
       : `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px">
-          ${tile(_ico(_mdiPlay),   this._t('traTotalSessions'),   sum.totalSessions ?? 0)}
+          ${tile(_ico(_mdiPlay),   this._t('traTotalSessions'),   Number(sum.totalSessions) || 0)}
           ${tile(_ico(_mdiDB),     this._t('traDataTransferred'), _fmtGb(sum.totalGb))}
           ${tile(_ico(_mdiWifi),   avgBrLbl,           _fmtBr(sum.avgBitrateMbps))}
           ${tile(_ico(_mdiClock),  this._t('traWatchTime'), _fmtHrs(sum.totalHours))}
-          ${tile(_ico(_mdiPeople), this._t('traUniqueUsers'),     sum.uniqueUsers ?? 0)}
+          ${tile(_ico(_mdiPeople), this._t('traUniqueUsers'),     Number(sum.uniqueUsers) || 0)}
         </div>`;
 
     // ── Dual-axis chart — bars=GB left axis, line=sessions right axis
@@ -571,17 +573,18 @@ class _TracearrNetworkMethods {
 
     const userRows = pageUsers.map((u, i) => {
       const rank = bwPage * BW_PAGE + i + 1;
-      const name = u.identityName || u.username || u.displayName || '?';
-      const av   = u.thumbUrl || u.avatarUrl || u.avatar || null;
+      const rawName = String(u.identityName || u.username || u.displayName || '?');
+      const name = this._escHtml(rawName);
+      const av   = this._imgSrc(u.thumbUrl || u.avatarUrl || u.avatar) || null;
       const avEl = av
         ? `<img src="${av}" width="22" height="22" style="border-radius:50%;object-fit:cover;flex-shrink:0">`
-        : `<div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--is-text-muted)">${(name[0]||'?').toUpperCase()}</div>`;
+        : `<div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--is-text-muted)">${this._escHtml((rawName[0]||'?').toUpperCase())}</div>`;
       return `<tr>
         <td style="padding:6px 8px;font-size:11px;color:var(--is-text-muted);text-align:center;width:28px">${rank}</td>
         <td style="padding:6px 0;font-size:11px;font-weight:600;color:var(--is-text)">
           <div style="display:flex;align-items:center;gap:7px">${avEl}<span>${name}</span></div>
         </td>
-        <td style="padding:6px 8px;font-size:11px;text-align:right;color:var(--is-text)">${u.sessions ?? 0}</td>
+        <td style="padding:6px 8px;font-size:11px;text-align:right;color:var(--is-text)">${Number(u.sessions) || 0}</td>
         <td style="padding:6px 8px;font-size:11px;text-align:right;color:var(--is-text)">${_fmtGb(u.totalGb)}</td>
         <td style="padding:6px 8px;font-size:11px;text-align:right;color:var(--is-text)">${_fmtHrs(u.totalHours)}</td>
         <td style="padding:6px 0;text-align:right">${this._uiBadge(`${_fmtBr(u.avgBitrateMbps)}`, this._hexToRgbTriple('#FF9500'), { extra: 'font-size:10px' })}</td>
@@ -590,13 +593,14 @@ class _TracearrNetworkMethods {
 
     const userMobCards = pageUsers.map((u, i) => {
       const rank = bwPage * BW_PAGE + i + 1;
-      const name = u.identityName || u.username || u.displayName || '?';
-      const av   = u.thumbUrl || u.avatarUrl || u.avatar || null;
+      const rawName = String(u.identityName || u.username || u.displayName || '?');
+      const name = this._escHtml(rawName);
+      const av   = this._imgSrc(u.thumbUrl || u.avatarUrl || u.avatar) || null;
       const avEl = av
         ? `<img src="${av}" width="18" height="18" style="border-radius:50%;object-fit:cover;flex-shrink:0">`
-        : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--is-text-muted)">${(name[0]||'?').toUpperCase()}</div>`;
+        : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--is-text-muted)">${this._escHtml((rawName[0]||'?').toUpperCase())}</div>`;
       const metaParts = [
-        `${u.sessions ?? 0} sess`,
+        `${Number(u.sessions) || 0} sess`,
         _fmtHrs(u.totalHours) !== '—' ? _fmtHrs(u.totalHours) : null,
       ].filter(Boolean).join('  ·  ');
       return `<div class="tl-mob-card" style="display:grid;grid-template-columns:16px 1fr auto;gap:2px 6px;align-items:center">

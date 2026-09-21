@@ -207,11 +207,14 @@ class _MusicRenderMethods {
     const m = this._musicModal;
     const chev = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     const searchSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>`;
+    const dotsSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
     const spin = `<span class="is-spin" style="width:12px;height:12px;border-width:1.5px"></span>`;
+    // Actions for an artist not in Lidarr: only what needs no library record
     return `
       <div class="pp-hero-bar">
         <div class="pp-hero-pill">
           <button class="is-open-btn${m?.menu === 'search' ? ' active' : ''}" data-mus-menu="search">${m?.adding ? spin : searchSvg}<span class="pp-lbl">${this._t('musSearch')} ${chev}</span></button>
+          <button class="is-open-btn${m?.menu === 'actions' ? ' active' : ''}" data-mus-menu="actions">${dotsSvg}<span class="pp-lbl">${this._t('musActions')} ${chev}</span></button>
         </div>
       </div>`;
   }
@@ -241,7 +244,10 @@ class _MusicRenderMethods {
       const parent = (key, label) =>
         `<button class="qa-item${sub === key ? ' qa-open' : ''}" data-mus-act="${key}"><span>${label}</span>${chev}</button>`;
 
-      rows = row('show-in-lib', this._t('qaShowInLib'));
+      // Artists like this one — the preview has nothing else to offer here
+      const similar = `<button class="qa-item" data-mus-act="similar"><span class="qa-ico">${this._simQaIcon()}</span><span>${this._t('simTitle')}</span></button>`;
+      if (m?.preview) return `<div class="qa-menu mus-menu"><div class="qa-list">${similar}</div></div>`;
+      rows = row('show-in-lib', this._t('qaShowInLib')) + similar;
       if (this._plexConfigured !== false && (artist.statistics?.trackFileCount || 0) > 0) {
         rows += parent('cast', this._t('qaCast')) + drawer('cast', this._musCastRowsHtml());
       }
@@ -273,35 +279,6 @@ class _MusicRenderMethods {
           </div>
         </div>
       </div>`;
-  }
-
-  _musCastRowsHtml() {
-    const list = this._plexClients;
-    if (!list) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t('loading')}</div>`;
-    if (!list.length) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t('qaCastNone')}</div>`;
-    const PLAY_MEDIA = 512;
-    return list.map(p => {
-      const feats = Number(this._hass?.states?.[p.entityId]?.attributes?.supported_features) || 0;
-      const can = !feats || (feats & PLAY_MEDIA);
-      return `<button class="qa-item qa-sub-item" data-mus-cast="${this._escHtml(p.entityId)}"${
-        can ? '' : ' style="opacity:0.45"'}><span>${this._escHtml(p.name)}</span></button>`;
-    }).join('');
-  }
-
-  _musStatsRowsHtml() {
-    const st = this._musStats;
-    if (!st) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t('loading')}</div>`;
-    if (!st.any) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t('qaStatsNone')}</div>`;
-    const row = (label, value) =>
-      `<div class="qa-item qa-sub-item qa-static"><span>${label}</span><span class="qa-air-date">${this._escHtml(String(value))}</span></div>`;
-    return [
-      st.tracks  ? row(this._t('musStatsTracks'), st.tracks)  : '',
-      st.plays   ? row(this._t('qaStatsPlays'),   st.plays)   : '',
-      st.watched ? row(this._t('musStatsTime'),   st.watched) : '',
-      st.last    ? row(this._t('qaStatsLast'),    st.last)    : '',
-      st.top     ? row(this._t('musStatsTop'),    st.top)     : '',
-      st.others  ? row(this._t('qaStatsOthers'),  st.others)  : '',
-    ].join('');
   }
 
   // The Sonarr panel, with albums where it has seasons: a row per album with

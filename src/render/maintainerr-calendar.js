@@ -124,7 +124,7 @@ class _MaintainerrCalendarRenderMethods {
           // Overdue titles sit on today's column; say so, or they read as due
           // today and the delay goes unnoticed.
           topBadge: (it._overdue ? `<span class="badge b-missing">${this._escHtml(this._t('mtOverdue'))}</span>` : '')
-            + (it.seasonIndex != null ? `<span class="badge b-ep">S${String(it.seasonIndex).padStart(2, '0')}</span>` : ''),
+            + (it.seasonIndex != null ? `<span class="badge b-ep">S${this._escHtml(String(it.seasonIndex).padStart(2, '0'))}</span>` : ''),
         })).join('');
 
         const more = items.length > MT_CAL_MAX
@@ -184,7 +184,7 @@ class _MaintainerrCalendarRenderMethods {
     const rows = items.map(it => `<tr data-mt-cal-item="${this._mtDelItems.indexOf(it)}" style="cursor:pointer">
       <td><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this._escHtml(it.title)}</div></td>
       <td style="white-space:nowrap;color:var(--is-text-muted)">${new Date(it.addDate).toLocaleDateString()}</td>
-      <td><span data-mt-cal-col="${it.colId}" style="color:rgba(245,158,11,0.95);cursor:pointer;text-decoration:underline">${this._escHtml(it.colTitle)}</span></td>
+      <td><span data-mt-cal-col="${this._escHtml(it.colId)}" style="color:rgba(245,158,11,0.95);cursor:pointer;text-decoration:underline">${this._escHtml(it.colTitle)}</span></td>
       <td style="white-space:nowrap;color:var(--is-text-muted)">${this._escHtml(it.typeLabel)}</td>
     </tr>`).join('');
 

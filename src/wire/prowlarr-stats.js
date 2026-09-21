@@ -102,7 +102,7 @@ class _WireProwlarrStatsMethods {
             const w = tot > 0 ? Math.round(vals[i]/maxVal*100) : 0;
             return w > 0 ? `<div style="width:${w}%;height:100%;background:${s.gradient||s.color};min-width:2px"></div>` : '';
           }).join('');
-          return `<div class="pw-stats-bar" data-bar-name="${this._escHtml(nameFn(item))}" data-bar-vals='${barVals}' style="margin-bottom:5px;cursor:pointer">
+          return `<div class="pw-stats-bar" data-bar-name="${this._escHtml(nameFn(item))}" data-bar-vals="${this._escHtml(barVals)}" style="margin-bottom:5px;cursor:pointer">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
               <span style="font-size:9px;font-weight:500;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%">${this._escHtml(nameFn(item))}</span>
               <span style="font-size:8px;color:var(--is-text-muted);flex-shrink:0">${lbl}</span>
@@ -127,7 +127,7 @@ class _WireProwlarrStatsMethods {
         const barVals = JSON.stringify(sections.map((s,i)=>({label:s.label||'',val:vals[i],color:s.color})));
         const totPct  = maxVal > 0 ? Math.round(vals.reduce((a,b)=>a+b,0) / maxVal * 100) : 0;
         const secPcts = vals.map(v => (tot>0) ? Math.round(v/tot*100) : 0);
-        return `<div class="pw-stats-bar" data-bar-name="${this._escHtml(nameFn(item))}" data-bar-vals='${barVals}' style="flex:1;min-width:0;position:relative;cursor:pointer;overflow:visible">
+        return `<div class="pw-stats-bar" data-bar-name="${this._escHtml(nameFn(item))}" data-bar-vals="${this._escHtml(barVals)}" style="flex:1;min-width:0;position:relative;cursor:pointer;overflow:visible">
           ${tot > 0 ? `<div style="position:absolute;top:-14px;left:0;right:0;text-align:center;font-size:8px;font-weight:600;color:var(--is-text-muted);pointer-events:none">${lbl}</div>` : ''}
           <div style="position:absolute;bottom:0;left:22%;right:22%;height:${totPct}%;min-height:${tot>0?2:0}px;border-radius:3px 3px 0 0;overflow:hidden;display:flex;flex-direction:column">
             ${sections.map((s,i) => secPcts[i]>0 ? `<div style="flex:${secPcts[i]};background:${s.gradient||s.color};min-height:2px"></div>` : '').reverse().join('')}
@@ -199,7 +199,7 @@ class _WireProwlarrStatsMethods {
       if (!items.length) return '<div style="color:var(--is-text-muted);font-size:11px">' + this._t('tlNoData') + '</div>';
       const bg = gradient || color;
       return items.map(item => {
-        const v   = valFn(item);
+        const v   = Number(valFn(item)) || 0;
         const w   = maxV > 0 ? Math.round(v / maxV * 100) : 0;
         const lbl = v >= 1000 ? (v/1000).toFixed(1)+'K' : String(v);
         return `<div style="margin-bottom:6px">

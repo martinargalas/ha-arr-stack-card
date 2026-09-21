@@ -4,8 +4,8 @@
  * Displays qBittorrent, SABnzbd, Radarr, Sonarr, Overseerr data
  */
 
-import './editor.js';
 import { ARR_I18N } from './i18n.js';
+import { installLazy } from './shared/lazy.js';
 import { STYLES } from './styles/index.js';
 import { uiMixin } from './render/ui.js';
 import { sectionsMixin } from './render/sections.js';
@@ -41,20 +41,15 @@ import { posterFlagsMixin } from './render/poster-flags.js';
 import { calendarCardsMixin } from './render/calendar-cards.js';
 import { discoverCardsMixin } from './render/discover-cards.js';
 import { musicCardsMixin } from './render/music-cards.js';
+import { activityTilesMixin } from './render/activity-tiles.js';
+import { libraryTilesMixin } from './render/library-tiles.js';
+import { musicRowsMixin } from './render/music-rows.js';
 import { themeMixin } from './styles/theme.js';
 import { wireMixin } from './wire/index.js';
 import { wireRequestsMixin } from './wire/requests.js';
 import { wireSearchMixin } from './wire/search.js';
 import { wireSectionsMixin } from './wire/sections.js';
 import { wireTraktMixin } from './wire/trakt.js';
-import { wireTautulliMixin } from './wire/tautulli.js';
-import { wireTautulliTablesMixin } from './wire/tautulli-tables.js';
-import { wireTautulliDetailsMixin } from './wire/tautulli-details.js';
-import { wireTautulliGraphsMixin } from './wire/tautulli-graphs.js';
-import { wireJellystatMixin } from './wire/jellystat.js';
-import { wireTracearrMixin } from './wire/tracearr.js';
-import { wireTracearrTabsMixin } from './wire/tracearr-tabs.js';
-import { wireTracearrRulesMixin } from './wire/tracearr-rules.js';
 import { popupMixin } from './popup/index.js';
 import { popupOpenMixin } from './popup/open.js';
 import { popupClickMixin } from './popup/click.js';
@@ -68,61 +63,15 @@ import { popupCalendarMixin } from './popup/calendar.js';
 import { popupArrActionsMixin } from './popup/arr-actions.js';
 import { popupActionsMixin } from './popup/actions.js';
 import { popupDetailPartsMixin } from './popup/detail-parts.js';
-import { tautulliSharedMixin } from './render/tautulli-shared.js';
-import { tautulliTableMixin }  from './render/tautulli-table.js';
-import { tautulliUserRenderMixin } from './render/tautulli-user.js';
-import { tautulliLibraryRenderMixin } from './render/tautulli-library.js';
-import { tautulliMixin } from './render/tautulli.js';
-import { tautulliGraphsMixin } from './render/tautulli-graphs.js';
-import { jellystatSharedMixin } from './render/jellystat-shared.js';
-import { jellystatTableMixin }  from './render/jellystat-table.js';
-import { jellystatMixin } from './render/jellystat.js';
-import { jellystatGraphsMixin } from './render/jellystat-graphs.js';
-import { tracearrTableMixin } from './render/tracearr-table.js';
-import { tracearrRulesMixin } from './render/tracearr-rules.js';
-import { tracearrHistoryMixin } from './render/tracearr-history.js';
-import { tracearrLibraryMixin } from './render/tracearr-library.js';
-import { tracearrWatchMixin } from './render/tracearr-watch.js';
-import { tracearrNetworkMixin } from './render/tracearr-network.js';
-import { tracearrMixin } from './render/tracearr.js';
-import { tracearrLoadMixin } from './render/tracearr-load.js';
-import { libraryMixin } from './render/library.js';
-import { libraryDataMixin } from './render/library-data.js';
-import { libraryTableMixin } from './render/library-table.js';
-import { libraryCardsMixin } from './render/library-cards.js';
-import { libraryWireMixin } from './wire/library.js';
-import { libraryClickMixin } from './wire/library-click.js';
-import { libraryLayoutMixin } from './wire/library-layout.js';
-import { activityRenderMixin } from './render/activity.js';
-import { activityQueueRenderMixin } from './render/activity-queue.js';
-import { activityHistoryRenderMixin } from './render/activity-history.js';
-import { activityMissingRenderMixin } from './render/activity-missing.js';
-import { wireActivityMixin } from './wire/activity.js';
-import { wireActivityTabsMixin } from './wire/activity-tabs.js';
-import { wireActivityActionsMixin } from './wire/activity-actions.js';
-import { wireActivityColumnsMixin } from './wire/activity-columns.js';
-import { prowlarrRenderMixin } from './render/prowlarr.js';
-import { wireProwlarrMixin }  from './wire/prowlarr.js';
-import { wireProwlarrIndexersMixin } from './wire/prowlarr-indexers.js';
-import { wireProwlarrIndexerFormMixin } from './wire/prowlarr-indexer-form.js';
-import { wireProwlarrAppsMixin } from './wire/prowlarr-apps.js';
-import { wireProwlarrStatsMixin } from './wire/prowlarr-stats.js';
-import { wireProwlarrHistoryMixin } from './wire/prowlarr-history.js';
-import { maintainerrRenderMixin } from './render/maintainerr.js';
-import { wireMaintainerrMixin }  from './wire/maintainerr.js';
-import { maintainerrOverviewRenderMixin } from './render/maintainerr-overview.js';
-import { maintainerrRulesRenderMixin } from './render/maintainerr-rules.js';
-import { maintainerrCollectionsRenderMixin } from './render/maintainerr-collections.js';
-import { maintainerrCalendarRenderMixin } from './render/maintainerr-calendar.js';
-import { wireMaintainerrOverviewMixin } from './wire/maintainerr-overview.js';
-import { wireMaintainerrRulesMixin } from './wire/maintainerr-rules.js';
-import { wireMaintainerrCollectionsMixin } from './wire/maintainerr-collections.js';
-import { musicRenderMixin }     from './render/music.js';
-import { wireMusicMixin }       from './wire/music.js';
-import { wireMusicAddMixin } from './wire/music-add.js';
-import { wireMusicAlbumsMixin } from './wire/music-albums.js';
-import { wireMusicLayoutMixin } from './wire/music-layout.js';
-import { wireMusicActionsMixin } from './wire/music-actions.js';
+import { mtKitMixin } from './render/mt-kit.js';
+import { maintainerrTilesMixin } from './render/maintainerr-tiles.js';
+import { tracearrTilesMixin } from './render/tracearr-tiles.js';
+import { tautulliTilesMixin } from './render/tautulli-tiles.js';
+import { prowlarrTilesMixin } from './render/prowlarr-tiles.js';
+import { jellystatTilesMixin } from './render/jellystat-tiles.js';
+import { similarFetchMixin } from './fetch/similar.js';
+import { similarRenderMixin } from './render/similar.js';
+import { wireSimilarMixin } from './wire/similar.js';
 import { BP, maxWidth } from './shared/ui.js';
 
 // STYLES runs to some 235 KB. A <style> per card made every card on a
@@ -204,6 +153,7 @@ class ArrStackCard extends HTMLElement {
     this._dlMediaRadarr2 = new Map();
     this._dlMediaSonarr  = new Map();
     this._dlMediaSonarr2 = new Map();
+    this._dlMediaLidarr  = new Map();
     // Same shape, filled from recent arr history — covers downloads that already
     // imported and left the queue but are still seeding in the client.
     this._dlHistRadarr  = new Map();
@@ -703,7 +653,6 @@ class ArrStackCard extends HTMLElement {
 
   // Converts "#rrggbb" or "#rgb" to "r,g,b" string for use in rgba()
 
-
   // ─────────────────────────────────────────────
   // Formatters
   // ─────────────────────────────────────────────
@@ -777,7 +726,7 @@ class ArrStackCard extends HTMLElement {
   /** Media card poster img + gradient placeholder fallback */
   _mcImg(poster, emoji, gradId, phClass = '') {
     return poster
-      ? `<img src="${poster}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img src="${this._escHtml(poster)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="${phClass}${this._grad(gradId)}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px">${emoji}</div>`;
   }
 
@@ -1134,6 +1083,14 @@ class ArrStackCard extends HTMLElement {
       .replace(/'/g, '&#39;');
   }
 
+  // An image address from another service's API, for a src attribute: a web or
+  // site-relative address only, escaped. Anything else — javascript:, data:, a
+  // quote meant to close the attribute — draws no picture at all.
+  _imgSrc(url) {
+    const u = String(url ?? '').trim();
+    return /^(https?:\/\/|\/(?!\/))/i.test(u) ? this._escHtml(u) : '';
+  }
+
   // ─────────────────────────────────────────────
   // CSS
   // ─────────────────────────────────────────────
@@ -1144,7 +1101,20 @@ class ArrStackCard extends HTMLElement {
     return 10;
   }
 
-  static getConfigElement() {
+  // A chunk that cannot be fetched nearly always means the card was updated
+  // while this page stayed open: the bundle still in memory asks for chunk names
+  // the new release no longer ships. Home Assistant's own toast says what to do.
+  _chunkFailed(name, err) {
+    console.error(`[arr-card] loading ${name} failed:`, err);
+    this.dispatchEvent(new CustomEvent('hass-notification', {
+      detail: { message: this._t('chunkReload') }, bubbles: true, composed: true,
+    }));
+  }
+
+  // Only an admin editing the dashboard ever opens the editor, so it is fetched
+  // then rather than with the card. Home Assistant awaits this.
+  static async getConfigElement() {
+    await import('./editor.js');
     return document.createElement('arr-stack-card-editor');
   }
 
@@ -1205,23 +1175,15 @@ applyMixin(ArrStackCard.prototype, posterFlagsMixin);
 applyMixin(ArrStackCard.prototype, calendarCardsMixin);
 applyMixin(ArrStackCard.prototype, discoverCardsMixin);
 applyMixin(ArrStackCard.prototype, musicCardsMixin);
-applyMixin(ArrStackCard.prototype, musicRenderMixin);
-applyMixin(ArrStackCard.prototype, wireMusicMixin);
-applyMixin(ArrStackCard.prototype, wireMusicAddMixin);
-applyMixin(ArrStackCard.prototype, wireMusicAlbumsMixin);
-applyMixin(ArrStackCard.prototype, wireMusicLayoutMixin);
-applyMixin(ArrStackCard.prototype, wireMusicActionsMixin);
+applyMixin(ArrStackCard.prototype, activityTilesMixin);
+applyMixin(ArrStackCard.prototype, libraryTilesMixin);
+applyMixin(ArrStackCard.prototype, musicRowsMixin);
 applyMixin(ArrStackCard.prototype, themeMixin);
 applyMixin(ArrStackCard.prototype, wireMixin);
 applyMixin(ArrStackCard.prototype, wireRequestsMixin);
 applyMixin(ArrStackCard.prototype, wireSearchMixin);
 applyMixin(ArrStackCard.prototype, wireSectionsMixin);
 applyMixin(ArrStackCard.prototype, wireTraktMixin);
-applyMixin(ArrStackCard.prototype, wireTautulliMixin);
-applyMixin(ArrStackCard.prototype, wireTautulliTablesMixin);
-applyMixin(ArrStackCard.prototype, wireTautulliDetailsMixin);
-applyMixin(ArrStackCard.prototype, wireTautulliGraphsMixin);
-applyMixin(ArrStackCard.prototype, wireJellystatMixin);
 applyMixin(ArrStackCard.prototype, popupMixin);
 applyMixin(ArrStackCard.prototype, popupOpenMixin);
 applyMixin(ArrStackCard.prototype, popupClickMixin);
@@ -1235,58 +1197,32 @@ applyMixin(ArrStackCard.prototype, popupCalendarMixin);
 applyMixin(ArrStackCard.prototype, popupArrActionsMixin);
 applyMixin(ArrStackCard.prototype, popupActionsMixin);
 applyMixin(ArrStackCard.prototype, popupDetailPartsMixin);
-applyMixin(ArrStackCard.prototype, tautulliSharedMixin);
-applyMixin(ArrStackCard.prototype, tautulliTableMixin);
-applyMixin(ArrStackCard.prototype, tautulliUserRenderMixin);
-applyMixin(ArrStackCard.prototype, tautulliLibraryRenderMixin);
-applyMixin(ArrStackCard.prototype, tautulliMixin);
-applyMixin(ArrStackCard.prototype, tautulliGraphsMixin);
-applyMixin(ArrStackCard.prototype, jellystatSharedMixin);
-applyMixin(ArrStackCard.prototype, jellystatTableMixin);
-applyMixin(ArrStackCard.prototype, jellystatMixin);
-applyMixin(ArrStackCard.prototype, jellystatGraphsMixin);
-applyMixin(ArrStackCard.prototype, wireTracearrMixin);
-applyMixin(ArrStackCard.prototype, wireTracearrTabsMixin);
-applyMixin(ArrStackCard.prototype, wireTracearrRulesMixin);
-applyMixin(ArrStackCard.prototype, tracearrTableMixin);
-applyMixin(ArrStackCard.prototype, tracearrRulesMixin);
-applyMixin(ArrStackCard.prototype, tracearrHistoryMixin);
-applyMixin(ArrStackCard.prototype, tracearrLibraryMixin);
-applyMixin(ArrStackCard.prototype, tracearrWatchMixin);
-applyMixin(ArrStackCard.prototype, tracearrNetworkMixin);
-applyMixin(ArrStackCard.prototype, tracearrMixin);
-applyMixin(ArrStackCard.prototype, tracearrLoadMixin);
-applyMixin(ArrStackCard.prototype, libraryMixin);
-applyMixin(ArrStackCard.prototype, libraryDataMixin);
-applyMixin(ArrStackCard.prototype, libraryTableMixin);
-applyMixin(ArrStackCard.prototype, libraryCardsMixin);
-applyMixin(ArrStackCard.prototype, libraryWireMixin);
-applyMixin(ArrStackCard.prototype, libraryClickMixin);
-applyMixin(ArrStackCard.prototype, libraryLayoutMixin);
-applyMixin(ArrStackCard.prototype, activityRenderMixin);
-applyMixin(ArrStackCard.prototype, activityQueueRenderMixin);
-applyMixin(ArrStackCard.prototype, activityHistoryRenderMixin);
-applyMixin(ArrStackCard.prototype, activityMissingRenderMixin);
-applyMixin(ArrStackCard.prototype, wireActivityMixin);
-applyMixin(ArrStackCard.prototype, wireActivityTabsMixin);
-applyMixin(ArrStackCard.prototype, wireActivityActionsMixin);
-applyMixin(ArrStackCard.prototype, wireActivityColumnsMixin);
-applyMixin(ArrStackCard.prototype, prowlarrRenderMixin);
-applyMixin(ArrStackCard.prototype, wireProwlarrMixin);
-applyMixin(ArrStackCard.prototype, wireProwlarrIndexersMixin);
-applyMixin(ArrStackCard.prototype, wireProwlarrIndexerFormMixin);
-applyMixin(ArrStackCard.prototype, wireProwlarrAppsMixin);
-applyMixin(ArrStackCard.prototype, wireProwlarrStatsMixin);
-applyMixin(ArrStackCard.prototype, wireProwlarrHistoryMixin);
-applyMixin(ArrStackCard.prototype, maintainerrRenderMixin);
-applyMixin(ArrStackCard.prototype, wireMaintainerrMixin);
-applyMixin(ArrStackCard.prototype, maintainerrOverviewRenderMixin);
-applyMixin(ArrStackCard.prototype, maintainerrRulesRenderMixin);
-applyMixin(ArrStackCard.prototype, maintainerrCollectionsRenderMixin);
-applyMixin(ArrStackCard.prototype, maintainerrCalendarRenderMixin);
-applyMixin(ArrStackCard.prototype, wireMaintainerrOverviewMixin);
-applyMixin(ArrStackCard.prototype, wireMaintainerrRulesMixin);
-applyMixin(ArrStackCard.prototype, wireMaintainerrCollectionsMixin);
+applyMixin(ArrStackCard.prototype, mtKitMixin);
+applyMixin(ArrStackCard.prototype, maintainerrTilesMixin);
+applyMixin(ArrStackCard.prototype, tracearrTilesMixin);
+applyMixin(ArrStackCard.prototype, tautulliTilesMixin);
+applyMixin(ArrStackCard.prototype, prowlarrTilesMixin);
+applyMixin(ArrStackCard.prototype, jellystatTilesMixin);
+applyMixin(ArrStackCard.prototype, similarFetchMixin);
+applyMixin(ArrStackCard.prototype, similarRenderMixin);
+applyMixin(ArrStackCard.prototype, wireSimilarMixin);
+
+// Tracearr, Tautulli, Jellystat, Prowlarr and Maintainerr are fetched the first
+// time one of their modals opens, not with the card (#36): together they are
+// the larger part of the bundle, and most installs run few of them, if any.
+// Their tiles and the shared UI kit stay in core (render/*-tiles.js,
+// render/mt-kit.js). A method core calls into them must either live in core or
+// be listed here as an entry — test/lazy-chunks.test.js holds that line.
+ArrStackCard._lazy = installLazy(ArrStackCard.prototype, {
+  tracearr:    { load: () => import('./chunks/tracearr.js'),    entries: ['_openTracearrModal'] },
+  tautulli:    { load: () => import('./chunks/tautulli.js'),    entries: ['_openTautulliModal'] },
+  jellystat:   { load: () => import('./chunks/jellystat.js'),   entries: ['_openJellystatModal'] },
+  prowlarr:    { load: () => import('./chunks/prowlarr.js'),    entries: ['_openProwlarrModal'] },
+  maintainerr: { load: () => import('./chunks/maintainerr.js'), entries: ['_openMaintainerrModal', '_mtOpenCollectionDetail', '_mtLoadTab'] },
+  activity:    { load: () => import('./chunks/activity.js'),    entries: ['_openActivityModal', '_actLoadTab'] },
+  library:     { load: () => import('./chunks/library.js'),     entries: ['_openLibModal', '_libBodyHtml', '_libFilteredItems', '_wireLibModalBody'] },
+  music:       { load: () => import('./chunks/music.js'),       entries: ['_openMusicModal', '_openMusicPreview', '_openAlbumModal', '_openCalAlbumArtist', '_renderMusicModalEl', '_renderAlbumModalEl', '_musQueueSig'] },
+}, applyMixin);
 
 customElements.define('arr-stack-card', ArrStackCard);
 

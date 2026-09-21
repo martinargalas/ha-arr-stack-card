@@ -45,6 +45,9 @@ dom.window.matchMedia = globalThis.matchMedia;
 
 await import('../src/card.js');
 const ArrStackCard = customElements.get('arr-stack-card');
+// The optional modules load on demand in the browser (src/shared/lazy.js).
+// Tests call into them directly, so every chunk is applied up front.
+await ArrStackCard._lazy.loadAll();
 
 // Only what the methods under test reach for. Anything missing surfaces as a
 // TypeError naming the field, which beats a quietly wrong answer.

@@ -94,6 +94,14 @@ _qaItems(d) {
     items.push({ key: 'airing', label: this._t('qaAiring'), icon: 'sonarr' });
   }
 
+  // Films and series like this one — needs the TMDB id every source keys on
+  const simTypes = [POPUP_TYPE.RADARR, POPUP_TYPE.MOVIE, POPUP_TYPE.SONARR, POPUP_TYPE.TV];
+  if (simTypes.includes(d._type) && this._simMediaOn?.() && (d.id || d._sonarrSeries?.tmdbId || d._sonarr2Series?.tmdbId)) {
+    items.push({
+      key: 'similar', label: this._t('simTitle'), direct: true, svg: this._simQaIcon(),
+    });
+  }
+
   // Last, whatever else is on offer. Icon names whichever source will be asked
   // first: Tracearr spans every server, Tautulli keys on the Plex item the
   // Maintainerr actions look up, and a Jellyfin-only setup runs on Jellystat.
@@ -243,7 +251,9 @@ _qaMenuHtml(d, searchRows = '', removeRows = '') {
   };
 
   const chev = `<svg class="qa-chev" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
-  const ico  = it => it.icon ? `<span class="qa-ico">${this._appIcon(it.icon, 16)}</span>` : '';
+  // An app's icon, or a row's own mark where no app answers it (Similar titles)
+  const ico  = it => it.svg ? `<span class="qa-ico">${it.svg}</span>`
+    : it.icon ? `<span class="qa-ico">${this._appIcon(it.icon, 16)}</span>` : '';
 
   const rows = items.map(it => {
     if (it.key === 'stop') {
@@ -268,7 +278,10 @@ _qaMenuHtml(d, searchRows = '', removeRows = '') {
   // qa-list-actions holds the width steady: the statistics drawer loads rows
   // wider than anything above it, and a menu that grows under the pointer after
   // the click reads as a glitch.
-  return `<div class="qa-menu" data-qa-menu><div class="qa-list qa-list-actions">${rows}</div></div>`;
+  // Only with the statistics in it — a menu of short rows sized to them rather
+  // than to a drawer it does not have
+  const wide = items.some(it => it.key === 'stats') ? ' qa-list-actions' : '';
+  return `<div class="qa-menu" data-qa-menu><div class="qa-list${wide}">${rows}</div></div>`;
 }
 
 // The drawer is rebuilt collapsed on every render, so the open state has to be

@@ -39,21 +39,6 @@ class _TautulliSharedMethods {
 
   // ── Icons ─────────────────────────────────────────────────────────────────
 
-  _tlLibSvgIcon(type, name, size) {
-    const sm  = size !== 'md';
-    const sz  = sm ? 10 : 15;
-    const clr = 'var(--is-text-sec)';
-    const sty = sm ? `flex-shrink:0;color:${clr}` : `vertical-align:middle;margin-right:7px;flex-shrink:0;color:${clr}`;
-    const isPodcast = type === 'podcast' || (name || '').toLowerCase().includes('podcast');
-    const s   = `stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
-    const w   = p => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" ${s} style="${sty}">${p}</svg>`;
-    if (type === 'movie')  return w('<rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/>');
-    if (type === 'show')   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" style="${sty}"><path d="M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,1 23,17V5A2,2 0 0,1 21,3M21,17H3V5H21V17Z"/></svg>`;
-    if (isPodcast)         return w('<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>');
-    if (type === 'artist') return w('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>');
-    return w('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>');
-  }
-
   _tlMediaIcon(type, size) {
     const sz  = size || 15;
     const s   = `stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
@@ -140,20 +125,9 @@ class _TautulliSharedMethods {
 
   _tlUserSelect(id, users, selUser) {
     const opts = [`<option value="">${this._t('traAllUsers')}</option>`,
-      ...(users || []).map(u => `<option value="${u.user_id ?? ''}"${String(selUser ?? '') === String(u.user_id ?? '') ? ' selected' : ''}>${u.friendly_name || u.user || '?'}</option>`)
+      ...(users || []).map(u => `<option value="${this._escHtml(u.user_id ?? '')}"${String(selUser ?? '') === String(u.user_id ?? '') ? ' selected' : ''}>${this._escHtml(u.friendly_name || u.user || '?')}</option>`)
     ].join('');
     return `<select id="${id}" style="${_TL_SEL_STY};max-width:130px">${opts}</select>`;
-  }
-
-  _tlFmtDate(ts) {
-    if (!ts) return '—';
-    const d   = new Date(typeof ts === 'number' ? ts * 1000 : ts);
-    const sec = Math.floor((Date.now() - d.getTime()) / 1000);
-    if (sec < 60)     return 'just now';
-    if (sec < 3600)   return Math.floor(sec / 60) + 'm ago';
-    if (sec < 86400)  return Math.floor(sec / 3600) + 'h ago';
-    if (sec < 604800) return Math.floor(sec / 86400) + 'd ago';
-    return d.toLocaleDateString(this._locale);
   }
 
   _tlSearchInput(id, value) {
@@ -162,6 +136,15 @@ class _TautulliSharedMethods {
       ${SEARCH_SVG}
       <input id="${id}" type="search" value="${this._escHtml(value || '')}" placeholder="${this._t('traSearch')}" autocomplete="off" style="background:none;border:none;outline:none;color:var(--is-text,#fff);font-size:12px;line-height:1.4;width:110px;min-width:60px;padding:0;margin:0;box-sizing:border-box">
     </div>`;
+  }
+
+  async _tlApiFetch(cmd, params) {
+    try {
+      return await this._hass.callApi('GET', `arr_stack/tautulli/${cmd}${params ? '?' + params : ''}`);
+    } catch (e) {
+      console.warn('[arr-card] Tautulli fetch error:', cmd, e);
+      return null;
+    }
   }
 }
 

@@ -19,9 +19,22 @@ _sizeSearchOverlay(root) {
   // See More lays the same row out over several lines, so the overlay has to
   // find the card the plus was pressed on rather than assume the first one.
   const mb = String(this._musAddPending?.artist?.foreignArtistId || '').toLowerCase();
+  // A series' overlay belongs to the row holding the card its plus was pressed
+  // on. Falling through to the first card put it on the top row whichever
+  // result was asked for — right where the results begin, not where the press
+  // was.
+  const tv = this._tvRequestPending?.source === 'search'
+    ? String(this._tvRequestPending.show?.id ?? '') : '';
   const target = (mb && cards.find(c =>
     String(c.querySelector('[data-mus-add]')?.dataset.musAdd || '').toLowerCase() === mb
-    || String(c.dataset.artistUnowned || '').toLowerCase() === mb)) || cards[0];
+    || String(c.dataset.artistUnowned || '').toLowerCase() === mb))
+    || (tv && cards.find(c => c.dataset.tmdbid === tv))
+    || ((mb || tv) ? null : cards[0]);
+  // Paged away from the card it was opened on: there is no row here that the
+  // overlay belongs to, and covering the first one would park it on a title
+  // the reader never pressed.
+  if (!target) { ov.style.display = 'none'; return; }
+  ov.style.display = '';
   const row = cards.filter(c => c.offsetTop === target.offsetTop);
   const first = row[0];
   const last = row[row.length - 1];
@@ -48,10 +61,24 @@ _wireSearchResultCards(root) {
     });
   });
   this._wireMusAddSelects(root);
+  // Find similar on a result: Similar titles opens on it, and its back button
+  // closes it again onto these results. Kept from the card under it.
+  root.querySelectorAll('.sim-seed').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const d = btn.dataset;
+      const music = d.simKind === 'music';
+      this._simReturnState = null;
+      this._openSimModal({
+        kind: d.simKind, id: music ? d.simMbid : Number(d.simId), mbid: d.simMbid || null,
+        title: d.simTitle || '', year: d.simYear || null,
+      }, null, { fromSearch: true });
+    });
+  });
   root.querySelectorAll('.mc[data-popup]').forEach(card => {
     card.style.cursor = 'pointer';
     card.addEventListener('click', e => {
-      if (e.target.closest('.overseerr-add, .btn-add, .req-open, .req-cancel, .req-confirm, .req-overlay, .tv-req-open, .tv-req-cancel, .tv-req-confirm, .tv-req-overlay, .req-withdraw, .pr-approve, .pr-decline')) return;
+      if (e.target.closest('.sim-seed, .overseerr-add, .btn-add, .req-open, .req-cancel, .req-confirm, .req-overlay, .tv-req-open, .tv-req-cancel, .tv-req-confirm, .tv-req-overlay, .req-withdraw, .pr-approve, .pr-decline')) return;
       const type     = card.dataset.popup;
       const tmdbId    = card.dataset.tmdbid;
       const tvdbId    = card.dataset.tvdbid;
@@ -62,7 +89,11 @@ _wireSearchResultCards(root) {
     });
   });
 
+  // The column's wiring walks these same buttons with the same flags, so the
+  // one that arrives second skips them: two listeners would send two requests.
   root.querySelectorAll('.req-open').forEach(btn => {
+    if (btn._ow2) return;
+    btn._ow2 = true;
     btn.addEventListener('click', async e => {
       e.stopPropagation();
       const movieId = parseInt(btn.dataset.movieid, 10);
@@ -103,6 +134,8 @@ _wireSearchResultCards(root) {
   });
 
   root.querySelectorAll('.tv-req-open').forEach(btn => {
+    if (btn._owTv) return;
+    btn._owTv = true;
     btn.addEventListener('click', async e => {
       e.stopPropagation();
       const showId = parseInt(btn.dataset.showid, 10);
@@ -125,6 +158,8 @@ _wireSearchResultCards(root) {
   });
 
   root.querySelectorAll('.req-withdraw').forEach(btn => {
+    if (btn._ow10) return;
+    btn._ow10 = true;
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const reqId   = parseInt(btn.dataset.reqid, 10);
@@ -226,20 +261,14 @@ _wireSearch() {
     }
     this._searchActive = true;
     // The column becomes the search at the first letter, not when the results
-    // arrive a second and a half later - until then the categories stayed on the
-    // page under the search bar. Redrawing the column recreates the input, so
-    // focus and caret are carried over to the new one.
+    // arrive — until then the categories stayed on the page under the search
+    // bar. The redraw carries focus and caret over (see _reRenderRight).
     if (!this._searchOnlyLayout) {
-      const caret = input.selectionStart;
       this._searchLoading = true;
       this._reRenderSearchResults();
-      const fresh = this.shadowRoot.querySelector('.sec-search .search-bar-input');
-      if (fresh && fresh !== input) {
-        fresh.focus();
-        try { fresh.setSelectionRange(caret, caret); } catch (_) {}
-      }
     }
-    this._searchTimer = setTimeout(() => this._fetchSearch(q), 1500);
+    // Asked as soon as typing pauses, as Similar titles' search is
+    this._searchTimer = setTimeout(() => this._fetchSearch(q), 350);
   }, { signal: sig });
   root.addEventListener('mousedown', (e) => {
     if (e.target.closest('.search-type-seg')) e.preventDefault();
@@ -302,6 +331,8 @@ _wireSearch() {
     }
     if (e.target.closest('.search-bar-clear')) {
       clearTimeout(this._searchTimer);
+      // Cleared, not left: the caret stays for the next search
+      this._searchKeepFocus = true;
       this._searchQuery   = '';
       this._searchActive  = false;
       this._searchPage    = 0;

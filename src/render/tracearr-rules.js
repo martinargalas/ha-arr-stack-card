@@ -1,5 +1,5 @@
 import { _sevTone } from './tracearr-table.js';
-import { _ICO_CHECK } from './maintainerr.js';
+import { _ICO_CHECK } from './mt-kit.js';
 
 // Tracearr, the Rules and Violations tabs: the rule list, templates and the rule form. Split out of render/tracearr-table.js.
 
@@ -29,9 +29,10 @@ class _TracearrRulesMethods {
     const _sb = s => ({ high: 'rgba(255,59,48,0.16)', warning: 'rgba(255,149,0,0.14)', low: 'rgba(52,199,89,0.14)' }[s] || 'rgba(255,149,0,0.14)');
 
     const rows = rules.map(r => {
+      const rid = this._escHtml(r.id ?? '');
       const typeLabel = r.type ? (CLASSIC_LABELS[r.type] || r.type) : this._t('traCustom');
-      const sev = (r.severity || 'warning').toLowerCase();
-      const toggle = this._uiSwitch(`data-tra-rule-toggle="${r.id}" data-active="${r.isActive}"`, r.isActive, r.isActive ? this._t('pwDisable') : this._t('pwEnable'));
+      const sev = String(r.severity || 'warning').toLowerCase();
+      const toggle = this._uiSwitch(`data-tra-rule-toggle="${rid}" data-active="${r.isActive === true}"`, r.isActive, r.isActive ? this._t('pwDisable') : this._t('pwEnable'));
       // Edit has no button of its own: the row's title already opens the editor,
       // so a pencil beside it only repeated the same action.
       const TRASH = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
@@ -40,19 +41,19 @@ class _TracearrRulesMethods {
       // Confirmed in place rather than through a browser dialog, as in Maintainerr.
       const delBtn = (m.traRuleDelId === r.id)
         ? `<span style="display:flex;gap:4px;flex-shrink:0">
-             ${this._mtRoundBtn(`data-tra-rule-del-yes="${r.id}"`, CHECK, this._t('tlDelete'), { size: 26, tone: 'red' })}
+             ${this._mtRoundBtn(`data-tra-rule-del-yes="${rid}"`, CHECK, this._t('tlDelete'), { size: 26, tone: 'red' })}
              ${this._mtRoundBtn('data-tra-rule-del-no', CROSS, this._t('cancel'), { size: 26, tone: 'blue' })}
            </span>`
-        : this._mtRoundBtn(`data-tra-rule-del="${r.id}"`, TRASH, this._t('tlDelete'), { size: 26, tone: 'red' });
-      const desc = r.description ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.description}</div>` : '';
+        : this._mtRoundBtn(`data-tra-rule-del="${rid}"`, TRASH, this._t('tlDelete'), { size: 26, tone: 'red' });
+      const desc = r.description ? `<div style="font-size:10px;color:var(--is-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(r.description)}</div>` : '';
       const classicBadge = this._uiBadge(this._escHtml(typeLabel), 'neutral', { extra: 'flex-shrink:0' });
       return `<div style="display:flex;align-items:center;gap:${isMob?'7px':'10px'};padding:9px 0;border-top:1px solid var(--is-divider)">
         ${toggle}
-        <div data-tra-rule-edit="${r.id}" style="flex:1;min-width:0;cursor:pointer">
-          <div style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+        <div data-tra-rule-edit="${rid}" style="flex:1;min-width:0;cursor:pointer">
+          <div style="font-size:12px;font-weight:600;color:var(--is-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(r.name ?? '')}</div>
           ${desc}
         </div>
-        ${this._uiBadge(sev.toUpperCase(), _sevTone(sev), { extra: 'flex-shrink:0' })}
+        ${this._uiBadge(this._escHtml(sev.toUpperCase()), _sevTone(sev), { extra: 'flex-shrink:0' })}
         ${isMob ? '' : classicBadge}
         ${delBtn}
       </div>`;
@@ -197,8 +198,8 @@ class _TracearrRulesMethods {
 
     const tplDef    = TEMPLATE_DEFAULTS[templateType] || {};
     const curType   = existingRule?.type || templateType || CLASSIC_TYPES[0][0];
-    const curName   = existingRule?.name || tplDef.name || '';
-    const curDesc   = existingRule?.description || tplDef.desc || '';
+    const curName   = String(existingRule?.name || tplDef.name || '');
+    const curDesc   = String(existingRule?.description || tplDef.desc || '');
     const curSev    = existingRule?.severity || 'warning';
     const curActive = existingRule ? existingRule.isActive !== false : true;
 
@@ -230,7 +231,7 @@ class _TracearrRulesMethods {
       return `<div class="tra-cr" data-grp="${gi}" data-row="${ci}" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;align-items:center">
         ${this._mtFieldSelectRaw('class="tra-cond-field"', fSel, FIELDS.find(([v]) => v === field)?.[1] || '', 'flex:2;min-width:130px')}
         ${this._mtFieldSelectRaw('class="tra-cond-op"', oSel, OPS.find(([v]) => v === (cond?.operator || 'gt'))?.[1] || '', 'flex:1.2;min-width:100px')}
-        <input class="tra-cond-val mt-field" type="number" value="${val}" style="width:76px;flex-shrink:0">
+        <input class="tra-cond-val mt-field" type="number" value="${this._escHtml(val)}" style="width:76px;flex-shrink:0">
         ${uniqHtml}
         ${this._mtRoundBtn('class="tra-cond-del"', trashSvg, this._t('tlDelete'), { size: 26, tone: 'red' })}
       </div>`;
@@ -258,12 +259,12 @@ class _TracearrRulesMethods {
     const actionRow = (idx, act) => {
       const aType   = act?.type || (idx===0?'log_only':'log_only');
       const msgLbl  = ACTION_MSG_LABEL[aType];
-      const msgVal  = act?.message || act?.logMessage || '';
+      const msgVal  = String(act?.message || act?.logMessage || '');
       const descTxt = ACTION_DESC[aType] || '';
       const msgInput = msgLbl
         ? `<label style="display:flex;align-items:center;gap:6px;flex-basis:100%;min-width:0;font-size:11px;color:var(--is-text-muted);white-space:nowrap;margin-top:6px">
              ${msgLbl}:
-             <input class="tra-act-msg mt-field" type="text" value="${msgVal.replace(/"/g,'&quot;')}" placeholder="${this._t('traOptMsg')}"
+             <input class="tra-act-msg mt-field" type="text" value="${this._escHtml(msgVal)}" placeholder="${this._t('traOptMsg')}"
                style="flex:1;min-width:0">
            </label>` : '';
       const trashSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
@@ -301,7 +302,7 @@ class _TracearrRulesMethods {
     const _day = this._isDay;
     const _btnClr = _day ? '#000' : '#fff';
 
-    return `<div ${ruleId ? `data-rule-id="${ruleId}"` : ''}>
+    return `<div ${ruleId ? `data-rule-id="${this._escHtml(ruleId)}"` : ''}>
       <!-- Flipped to 1 by the first edit; the header's save reads it to decide
            whether there is anything worth writing. -->
       <span id="tra-rf-dirty" data-tra-dirty="0" style="display:none"></span>
@@ -311,11 +312,11 @@ class _TracearrRulesMethods {
       <div style="display:grid;grid-template-columns:${isMob ? '1fr' : '1fr 1fr auto'};gap:10px;align-items:end;margin-bottom:12px">
         <div>
           <label style="${labelSt}">Rule Name *</label>
-          <input id="tra-rf-name" type="text" value="${curName.replace(/"/g,'&quot;')}" placeholder="${this._t('traRuleName')}" class="mt-field" style="${inputSt}">
+          <input id="tra-rf-name" type="text" value="${this._escHtml(curName)}" placeholder="${this._t('traRuleName')}" class="mt-field" style="${inputSt}">
         </div>
         <div>
           <label style="${labelSt}">${this._t('mtDescription')}</label>
-          <input id="tra-rf-description" type="text" value="${curDesc.replace(/"/g,'&quot;')}" placeholder="${this._t('mtDescription')}" class="mt-field" style="${inputSt}">
+          <input id="tra-rf-description" type="text" value="${this._escHtml(curDesc)}" placeholder="${this._t('mtDescription')}" class="mt-field" style="${inputSt}">
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="${labelSt}">${this._t('traSeverity')}</label>
@@ -378,17 +379,17 @@ class _TracearrRulesMethods {
 
     if (isMob) {
       const cards = viols.map(v => {
-        const sev  = v.severity || 'high';
+        const sev  = String(v.severity || 'high');
         const c    = this._traSevColor(sev);
         const bg   = this._traSevBg(sev);
         const type = this._traViolTypeLabel(v.type);
-        const user = v.user?.displayName || v.username || '';
+        const user = this._escHtml(v.user?.displayName || v.username || '');
         const when = this._traFmtDate(v.createdAt || v.detectedAt);
-        const det  = v.detail || v.description || '';
+        const det  = this._escHtml(v.detail || v.description || '');
         const borderC = c.replace('0.9', '0.5');
         return `<div class="tl-mob-card" style="border-left:3px solid ${borderC}">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            ${this._uiBadge(`${sev.toUpperCase()}`, this._hexToRgbTriple(c), { small: true })}
+            ${this._uiBadge(this._escHtml(sev.toUpperCase()), this._hexToRgbTriple(c), { small: true })}
             <span class="tl-mob-name">${type}</span>
           </div>
           <div class="tl-mob-meta">
@@ -402,17 +403,17 @@ class _TracearrRulesMethods {
     }
 
     const rows = viols.map(v => {
-      const sev  = v.severity || 'high';
+      const sev  = String(v.severity || 'high');
       const c    = this._traSevColor(sev);
       const bg   = this._traSevBg(sev);
       const type = this._traViolTypeLabel(v.type);
       const user = v.user || {};
       const when = this._traFmtDate(v.createdAt || v.detectedAt);
-      const det  = v.detail || v.description || '—';
+      const det  = this._escHtml(v.detail || v.description || '—');
       return `<tr${sev==='high'?' class="tl-row-warn"':''}>
-        <td>${this._uiBadge(`${sev.toUpperCase()}`, this._hexToRgbTriple(c), { small: true })}</td>
+        <td>${this._uiBadge(this._escHtml(sev.toUpperCase()), this._hexToRgbTriple(c), { small: true })}</td>
         <td class="u-sm-text">${type}</td>
-        <td><div style="display:flex;align-items:center;gap:7px">${this._traUserAvatar(v.user,18)}<span style="font-size:11px;color:var(--is-text)">${user.displayName||user.username||'—'}</span></div></td>
+        <td><div style="display:flex;align-items:center;gap:7px">${this._traUserAvatar(v.user,18)}<span style="font-size:11px;color:var(--is-text)">${this._escHtml(user.displayName || user.username || '—')}</span></div></td>
         <td style="font-size:11px;color:var(--is-text-muted);max-width:280px">${det}</td>
         <td style="font-size:11px;color:var(--is-text-muted);white-space:nowrap">${when}</td>
       </tr>`;
