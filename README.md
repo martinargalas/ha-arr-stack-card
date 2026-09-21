@@ -363,8 +363,8 @@ If any of your services uses a self-signed or untrusted certificate, enable **Sk
 
 ### Manual
 
-1. Download **every `arr-stack-card*.js`** file from the latest release — the card is several files
-2. Copy them all into `/config/www/`, side by side. When updating, replace them all.
+1. Download the repository's [`dist`](dist) folder — the card is several files and they belong together
+2. Copy its contents into `/config/www/`, side by side. When updating, replace them all.
 3. Add one of them to Lovelace resources:
    ```yaml
    url: /local/arr-stack-card.js

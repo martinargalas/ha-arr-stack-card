@@ -177,7 +177,15 @@ await import(\`/local/${DEV_BUNDLE}?v=\${encodeURIComponent(v.trim() || Date.now
   // Kopie do output/
   if (existsSync(OUT_DIR) && releaseTree) {
     deployCard(OUT_DIR);
-    if (existsSync(`${OUT_DIR}/ha-arr-stack-card`)) deployCard(`${OUT_DIR}/ha-arr-stack-card`);
+    // The public card repository keeps the built files in dist/. That is what
+    // makes HACS install all of them: with content_in_root it takes only the one
+    // file named in hacs.json, and a release asset by that name puts it in
+    // single-file mode as well (repositories/plugin.py, update_filenames).
+    const pub = `${OUT_DIR}/ha-arr-stack-card`;
+    if (existsSync(pub)) {
+      mkdirSync(`${pub}/dist`, { recursive: true });
+      deployCard(`${pub}/dist`);
+    }
     if (hasIntegration) {
       mkdirSync(`${OUT_DIR}/custom_components/arr_stack`, { recursive: true });
       cpSync(INT_SRC, `${OUT_DIR}/custom_components/arr_stack`, { recursive: true });
