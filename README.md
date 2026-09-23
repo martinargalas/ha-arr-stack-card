@@ -59,6 +59,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | qBittorrent | Torrent download management | Optional |
 | Deluge | Torrent download management | Optional |
 | rTorrent / ruTorrent | Torrent download management | Optional |
+| Transmission | Torrent download management | Optional |
 | SABnzbd | Usenet download management | Optional |
 | NZBGet | Usenet download management | Optional |
 | Seerr (Overseerr / Jellyseerr) | Media requests, discovery, approvals, Similar titles | Optional |
@@ -91,6 +92,7 @@ The left panel appears when at least one download manager is configured. You can
 - **qBittorrent** — active torrents with download and upload speed, progress, seeder/leecher counts. Pause, resume, stop seeding, delete (with or without files), global pause/resume, sort by progress or speed. Total speed chip shows combined download and upload across all active torrents.
 - **Deluge** — same feature set as qBittorrent: active torrents, speed, progress, seeds/peers, pause/resume per torrent and globally, delete with or without files.
 - **rTorrent / ruTorrent** — same feature set as qBittorrent: active torrents, speed, progress, seeds/peers, pause/resume per torrent and globally, delete with or without files. Connects via the ruTorrent XMLRPC endpoint.
+- **Transmission** — same feature set as qBittorrent: active torrents, speed, progress, seeds/peers, pause/resume per torrent and globally, delete with or without files. Connects over Transmission's own RPC, so Home Assistant's Transmission integration is not needed.
 - **SABnzbd** — NZB queue with progress and speed, completed downloads inline, failed history with retry/delete, global pause/resume.
 - **NZBGet** — NZB queue with progress, post-processing status, failed history with retry/delete, global pause/resume.
 - **Disk space** — free space with usage bar, sourced from Radarr and Sonarr root folders. Disks are deduplicated automatically. If your media is spread across multiple disks, use the chevron arrows to page through them.
