@@ -128,6 +128,7 @@ class _SectionMethods {
     if (section === 'nzbget')  return parseInt(this._cfgGet('downloads', 'usenetItems',  3)) || 3;
     if (section === 'deluge')   return parseInt(this._cfgGet('downloads', 'torrentItems', 3)) || 3;
     if (section === 'rtorrent') return parseInt(this._cfgGet('downloads', 'torrentItems', 3)) || 3;
+    if (section === 'transmission') return parseInt(this._cfgGet('downloads', 'torrentItems', 3)) || 3;
     // Left-panel pending grid is fixed at four; every right-panel category pages
     // by its own column count, which is what _pagedGrid actually slices by.
     if (section === 'pending') return 4;
@@ -215,6 +216,7 @@ _sectionOverlayHtmlSingle(app, o = 0.4) {
     if (section === 'qbit')     return Array.isArray(this._qbit) ? this._qbit : [];
     if (section === 'deluge')   return Array.isArray(this._delugeQueue) ? this._delugeQueue : [];
     if (section === 'rtorrent') return Array.isArray(this._rtorrentQueue) ? this._rtorrentQueue : [];
+    if (section === 'transmission') return Array.isArray(this._transmissionQueue) ? this._transmissionQueue : [];
     if (section === 'nzbget') {
       const queue = Array.isArray(this._nzbgetQueue) ? this._nzbgetQueue : [];
       const completed = (this._nzbgetCompleted || []).map(s => ({

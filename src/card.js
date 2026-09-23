@@ -104,6 +104,7 @@ class ArrStackCard extends HTMLElement {
     this._sort         = 'progress_desc'; // qBit sort state
     this._sortDeluge   = 'progress_desc'; // Deluge sort state
     this._sortRtorrent = 'progress_desc'; // rTorrent sort state
+    this._sortTransmission = 'progress_desc'; // Transmission sort state
 
     // Data stores
     this._radarr = [];
@@ -219,6 +220,13 @@ class ArrStackCard extends HTMLElement {
     this._rtorrentBusy       = false;
     this._rtorrentItemBusy   = null;
     this._rtorrentConfirm    = null;
+
+    this._transmissionConfigured = null;
+    this._transmissionStatus     = {};   // { download_rate, upload_rate, free_space }
+    this._transmissionQueue      = [];   // active torrents
+    this._transmissionBusy       = false;
+    this._transmissionItemBusy   = null;
+    this._transmissionConfirm    = null;
     this._bazarrConfigured    = true; // false pokud proxy vrátí 503 (není nakonfigurován)
     this._tautulliConfigured  = true; // false pokud Tautulli není nakonfigurován
     this._tautulli       = null; // { activity, stats, playsData, sharingDetected, sharingUsers, ackedIps }
@@ -401,7 +409,7 @@ class ArrStackCard extends HTMLElement {
     this._searchAbort = null;    // AbortController for search listeners
 
     // Pagination state
-    this._pages   = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, rtorrent: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, music: 0, lastfm: 0, recommendations: 0, streams: 0 };
+    this._pages   = { radarr: 0, sonarr: 0, upcoming: 0, tvUpcoming: 0, calendar: 0, trending: 0, popular: 0, qbit: 0, sab: 0, deluge: 0, rtorrent: 0, transmission: 0, pending: 0, recentlyAdded: 0, recentlyRequested: 0, music: 0, lastfm: 0, recommendations: 0, streams: 0 };
     this._pageDir = { radarr: '', sonarr: '', upcoming: '', tvUpcoming: '', calendar: '', trending: '', popular: '', qbit: '', sab: '', pending: '', streams: '' };
     this._streamsTimer     = null;
     this._streamPopupTimer = null;

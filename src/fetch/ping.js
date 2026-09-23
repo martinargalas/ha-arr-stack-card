@@ -45,6 +45,7 @@ class _PingMethods {
         this._gluetunConfigured   !== false && 'gluetun',
         this._prowlarrConfigured  !== false && 'prowlarr',
         this._rtorrentConfigured  !== false && 'rtorrent',
+        this._transmissionConfigured !== false && 'transmission',
         this._tracearrConfigured  !== false && 'tracearr',
         this._maintainerrConfigured !== false && 'maintainerr',
         // Whether this install already has its own TMDB key. With the shared key

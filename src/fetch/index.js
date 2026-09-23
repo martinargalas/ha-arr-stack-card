@@ -26,6 +26,8 @@ async _fetchCapabilities() {
     if (!caps.deluge)    this._delugeConfigured     = false;
     if (caps.rtorrent)   this._rtorrentConfigured   = true;
     else                 this._rtorrentConfigured   = false;
+    if (caps.transmission) this._transmissionConfigured = true;
+    else                   this._transmissionConfigured = false;
     if (!caps.radarr2)   this._radarr2Configured    = false;
     if (!caps.sonarr2)   this._sonarr2Configured    = false;
     if (!caps.bazarr)    this._bazarrConfigured      = false;
@@ -280,7 +282,8 @@ async _fetchDownloadsAndRender() {
   const prevNzbget   = new Set((this._nzbgetQueue || []).map(s => s.NZBID));
   const prevDeluge   = new Set((this._delugeQueue || []).map(t => t.hash));
   const prevRtorrent = new Set((this._rtorrentQueue || []).map(t => t.hash));
-  const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0 || prevRtorrent.size > 0;
+  const prevTransmission = new Set((this._transmissionQueue || []).map(t => t.hash));
+  const hadItems = prevQbit.size > 0 || prevSab.size > 0 || prevNzbget.size > 0 || prevDeluge.size > 0 || prevRtorrent.size > 0 || prevTransmission.size > 0;
 
   // Sessions at 5s only when streams are currently active — avoids ~4 calls/5s when idle
   const hasActiveStreams = (this._jellyfinSessions?.length > 0)
@@ -291,6 +294,7 @@ async _fetchDownloadsAndRender() {
     this._fetchQbit(),
     this._fetchDeluge(),
     this._fetchRtorrent(),
+    this._fetchTransmission(),
     this._fetchSab(),
     this._fetchSabHistory(),
     this._fetchNzbget(),
@@ -308,11 +312,13 @@ async _fetchDownloadsAndRender() {
     const currNzbget   = new Set((this._nzbgetQueue || []).map(s => s.NZBID));
     const currDeluge   = new Set((this._delugeQueue || []).map(t => t.hash));
     const currRtorrent = new Set((this._rtorrentQueue || []).map(t => t.hash));
+    const currTransmission = new Set((this._transmissionQueue || []).map(t => t.hash));
     const completed = [...prevQbit].some(id => !currQbit.has(id))
                    || [...prevSab].some(id => !currSab.has(id))
                    || [...prevNzbget].some(id => !currNzbget.has(id))
                    || [...prevDeluge].some(id => !currDeluge.has(id))
-                   || [...prevRtorrent].some(id => !currRtorrent.has(id));
+                   || [...prevRtorrent].some(id => !currRtorrent.has(id))
+                   || [...prevTransmission].some(id => !currTransmission.has(id));
     if (completed) {
       await Promise.all([this._fetchRadarr(), this._fetchSonarr()]);
       this._reRenderRight();

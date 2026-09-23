@@ -33,7 +33,7 @@ _dlOpenAttr(downloadId) {
 }
 _renderLeft() {
   if (!this._capsLoaded) return '';
-  if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured && !this._delugeConfigured && !this._rtorrentConfigured) return '';
+  if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured && !this._delugeConfigured && !this._rtorrentConfigured && !this._transmissionConfigured) return '';
 
   const defaultOrder = [
     { id: 'qbit',     enabled: true },
@@ -41,6 +41,7 @@ _renderLeft() {
     { id: 'nzbget',   enabled: true },
     { id: 'deluge',   enabled: true },
     { id: 'rtorrent', enabled: true },
+    { id: 'transmission', enabled: true },
   ];
   const saved   = this._config?.downloadClients;
   const cfgList = Array.isArray(saved) ? saved : defaultOrder;
@@ -50,8 +51,8 @@ _renderLeft() {
     ...defaultOrder.filter(c => !savedIds.has(c.id)),
   ];
 
-  const renderers  = { qbit: '_renderQbit', sab: '_renderSab', nzbget: '_renderNzbget', deluge: '_renderDeluge', rtorrent: '_renderRtorrent' };
-  const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured, rtorrent: this._rtorrentConfigured };
+  const renderers  = { qbit: '_renderQbit', sab: '_renderSab', nzbget: '_renderNzbget', deluge: '_renderDeluge', rtorrent: '_renderRtorrent', transmission: '_renderTransmission' };
+  const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured, rtorrent: this._rtorrentConfigured, transmission: this._transmissionConfigured };
 
   const parts = allClients
     .filter(c => c.enabled !== false && configured[c.id])
@@ -91,15 +92,17 @@ _renderDiskRow() {
   const delugeUpBytes      = this._delugeConfigured   ? (this._delugeStatus?.upload_rate     || 0) : 0;
   const rtorrentSpeedBytes = this._rtorrentConfigured ? (this._rtorrentStatus?.download_rate || 0) : 0;
   const rtorrentUpBytes    = this._rtorrentConfigured ? (this._rtorrentStatus?.upload_rate   || 0) : 0;
-  const combinedSpeed    = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes;
-  const combinedUpBytes  = qbitUpBytes + delugeUpBytes + rtorrentUpBytes;
+  const trSpeedBytes = this._transmissionConfigured ? (this._transmissionStatus?.download_rate || 0) : 0;
+  const trUpBytes    = this._transmissionConfigured ? (this._transmissionStatus?.upload_rate   || 0) : 0;
+  const combinedSpeed    = qbitSpeedBytes + sabSpeedBytes + nzbgetSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes + trSpeedBytes;
+  const combinedUpBytes  = qbitUpBytes + delugeUpBytes + rtorrentUpBytes + trUpBytes;
   const combinedStr      = this.fmtSpeed(combinedSpeed);
   const combinedUpStr    = this.fmtSpeed(combinedUpBytes);
-  const hasUpload        = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured;
+  const hasUpload        = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured || this._transmissionConfigured;
 
-  const torrentSpeed = qbitSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes;
+  const torrentSpeed = qbitSpeedBytes + delugeSpeedBytes + rtorrentSpeedBytes + trSpeedBytes;
   const usenetSpeed  = sabSpeedBytes + nzbgetSpeedBytes;
-  const hasTorrent   = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured;
+  const hasTorrent   = this._qbitConfigured || this._delugeConfigured || this._rtorrentConfigured || this._transmissionConfigured;
   const hasUsenet    = this._sabConfigured  || this._nzbgetConfigured;
   let speedSub = '';
   if (hasTorrent && hasUsenet) {
@@ -109,6 +112,7 @@ _renderDiskRow() {
       this._qbitConfigured   && 'qBittorrent',
       this._delugeConfigured && 'Deluge',
       this._rtorrentConfigured && 'rTorrent',
+      this._transmissionConfigured && 'Transmission',
     ].filter(Boolean);
     const onlyOne = torrentClients.length === 1 ? torrentClients[0] : 'Torrent';
     speedSub = onlyOne;
@@ -1069,6 +1073,132 @@ _renderRtorrentItem(t) {
       if (isSeeding)
         actionBtns += `<button class="tb tb-pause" data-rt-action="pause" data-rt-hash="${hash}" title="${this._t('stopSeed')}"><ha-icon icon="mdi:stop" class="icon-15"></ha-icon></button>`;
       actionBtns += `<button class="tb tb-remove" data-rt-action="remove-confirm" data-rt-hash="${hash}" title="${this._t('remove')}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
+    }
+  }
+
+  return `
+    <div class="dl"${this._dlOpenAttr(hash)}>
+      <div class="dl-r1">
+        <span class="dl-name" title="${name}">${name}</span>
+        ${this._dlRow('rowPercent') ? `<span class="dl-pct${isError ? ' dl-pct-err' : ''}">${pct}%</span>` : ''}
+        <div class="tb-group">${actionBtns}</div>
+      </div>
+      <div class="dl-r2">
+        ${speedCol}
+        ${this._dlRow('rowUpload') && !isCompleted && !isError && !isPaused && !isChecking
+          ? this._pill('pill-teal', 'mdi:upload', upSpeed)
+          : ''}
+        ${!this._dlRow('rowEta') ? '' : isSeeding
+          ? `<span class="dm"><ha-icon icon="mdi:swap-vertical" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}S ${peers}P</b></span>`
+          : `<span class="dm dm-eta"><ha-icon icon="mdi:clock-outline" class="icon-11-st"></ha-icon><b class="dm-val">${eta}</b></span>`}
+        ${this._dlRow('rowSize') ? `<span class="dm"><ha-icon icon="mdi:harddisk" class="icon-11-st"></ha-icon><b class="dm-val">${completed} / ${total}</b></span>` : ''}
+        ${this._dlRow('rowPeers') ? `<span class="dm-peer"><span class="dm"><ha-icon icon="mdi:upload" class="icon-11-st"></ha-icon><b class="dm-val">${seeds}</b></span><span class="dm"><ha-icon icon="mdi:download" class="icon-11-st"></ha-icon><b class="dm-val">${peers}</b></span></span>` : ''}
+      </div>
+      ${this._dlRow('rowProgress') ? `<div class="pbar"><div class="pbar-fill ${pbarClass}" style="width:${pct}%"></div></div>` : ''}
+    </div>`;
+}
+
+_renderTransmission() {
+  if (!this._transmissionConfigured) return '';
+  const status   = this._transmissionStatus || {};
+  const torrents = Array.isArray(this._transmissionQueue) ? [...this._transmissionQueue] : [];
+
+  const [sortField, sortDir] = this._sortTransmission.split('_');
+  torrents.sort((a, b) => {
+    const av = sortField === 'speed' ? (a.download_payload_rate || 0) : (a.progress || 0);
+    const bv = sortField === 'speed' ? (b.download_payload_rate || 0) : (b.progress || 0);
+    return sortDir === 'desc' ? bv - av : av - bv;
+  });
+
+  const progressActive = sortField === 'progress';
+  const speedActive    = sortField === 'speed';
+  const dir = sortDir === 'desc' ? '↓' : '↑';
+  const allPaused = torrents.length > 0 && torrents.every(t => (t.state || '').toLowerCase() === 'paused');
+
+  const items = this._pagedList(torrents, 'transmission', t => this._renderTransmissionItem(t), this._perPage('transmission'), 'dc-section-card');
+
+  return `
+  <div class="sec-card has-gradient" style="${this._sectionStyle()}">
+    ${torrents.length === 0 ? this._sectionOverlayHtml('transmission', 15, 85, 0.15, 55, 20) : (torrents.length >= this._perPage('transmission')) ? this._sectionOverlayHtml('transmission', 15, 85, 0.23) : this._sectionOverlayHtml('transmission', 15, 85, 0.23, 55, 20)}
+    <div class="col-hdr" style="margin-bottom:8px">
+      ${this._appIcon('transmission')}
+      <span class="col-hdr-title">Transmission</span>
+      <div class="col-hdr-line"></div>
+      <div class="sort-btns">
+        <button class="sb${progressActive ? ' on' : ''}" data-sort="${progressActive ? (sortDir === 'desc' ? 'progress_asc' : 'progress_desc') : 'progress_desc'}" data-client="transmission" title="${this._t('sortByProgress')}">
+          <ha-icon icon="mdi:percent" class="icon-15"></ha-icon><span class="sb-dir" style="${progressActive ? '' : 'visibility:hidden'}">${dir}</span>
+        </button>
+        <button class="sb${speedActive ? ' on' : ''}" data-sort="${speedActive ? (sortDir === 'desc' ? 'speed_asc' : 'speed_desc') : 'speed_desc'}" data-client="transmission" title="${this._t('sortBySpeed')}">
+          <ha-icon icon="mdi:speedometer" class="icon-15"></ha-icon><span class="sb-dir" style="${speedActive ? '' : 'visibility:hidden'}">${dir}</span>
+        </button>
+      </div>
+      ${this._cfgGet('downloads','allowControls',true) !== false
+        ? this._transmissionBusy
+          ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>`
+          : `<button class="action-btn transmission-global-toggle${allPaused ? ' paused' : ''}" title="${allPaused ? this._t('resumeAll') : this._t('pauseAll')}">
+               <ha-icon icon="${allPaused ? 'mdi:play' : 'mdi:pause'}" style="--mdc-icon-size:16px"></ha-icon>
+             </button>`
+        : ''
+      }
+    </div>
+    ${items}
+  </div>`;
+}
+
+_renderTransmissionItem(t) {
+  const pct      = Math.round(t.progress || 0);
+  const dlSpeed  = this.fmtSpeed(t.download_payload_rate || 0);
+  const upSpeed  = this.fmtSpeed(t.upload_payload_rate || 0);
+  const eta      = this.fmtEta(t.eta);
+  const completed = fmtBytes(t.total_done, { empty: '0 MB' });
+  const total    = fmtBytes(t.total_size, { empty: '0 MB' });
+  const seeds    = t.num_seeds || 0;
+  const peers    = t.num_peers || 0;
+  const name     = this._escHtml(t.name || 'Unknown');
+  const hash     = t.hash || '';
+
+  const state       = (t.state || '').toLowerCase();
+  const isCompleted = pct >= 100;
+  const isPaused    = state === 'paused';
+  const isSeeding   = state === 'seeding';
+  const isError     = state === 'error';
+  const isChecking  = state === 'checking';
+
+  let speedCol = '';
+  if (isSeeding) {
+    speedCol = this._pill('pill-teal', 'mdi:upload', upSpeed);
+  } else if (isCompleted) {
+    speedCol = this._pill('pill-green', 'mdi:check-circle', this._t('complete'));
+  } else if (isError) {
+    speedCol = this._pill('pill-red', 'mdi:alert-circle', t.message || this._t('errorState'));
+  } else if (isPaused) {
+    speedCol = this._pill('pill-orange', 'mdi:pause-circle', this._t('paused'));
+  } else if (isChecking) {
+    speedCol = this._pill('pill-orange', 'mdi:sync', 'Checking');
+  } else {
+    speedCol = this._pill('pill-green', 'mdi:download', dlSpeed);
+  }
+
+  const pbarClass = isError ? 'pf-red' : isPaused ? 'pf-orange' : isSeeding ? 'pf-teal' : isCompleted ? 'pf-green' : 'pf-blue';
+
+  const _allowCtrlTr = this._cfgGet('downloads', 'allowControls', true) !== false;
+  let actionBtns = '';
+  if (_allowCtrlTr) {
+    if (this._transmissionItemBusy === hash) {
+      actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
+    } else if (this._transmissionConfirm === hash) {
+      actionBtns = `
+        <button class="tb tb-cancel" data-tr-action="cancel-remove" data-tr-hash="${hash}" title="${this._t('cancelRemove')}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
+        <button class="tb tb-keep"   data-tr-action="remove-keep"   data-tr-hash="${hash}" title="${this._t('keepFiles')}"><ha-icon icon="mdi:magnet" class="icon-15"></ha-icon></button>
+        <button class="tb tb-del"    data-tr-action="remove-del"    data-tr-hash="${hash}" title="${this._t('deleteFiles')}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
+    } else {
+      if (!isCompleted && isPaused)
+        actionBtns += `<button class="tb tb-resume" data-tr-action="resume" data-tr-hash="${hash}" title="${this._t('resume')}"><ha-icon icon="mdi:play" class="icon-15"></ha-icon></button>`;
+      if (!isCompleted && !isPaused && !isError)
+        actionBtns += `<button class="tb tb-pause" data-tr-action="pause" data-tr-hash="${hash}" title="${this._t('pause')}"><ha-icon icon="mdi:pause" class="icon-15"></ha-icon></button>`;
+      if (isSeeding)
+        actionBtns += `<button class="tb tb-pause" data-tr-action="pause" data-tr-hash="${hash}" title="${this._t('stopSeed')}"><ha-icon icon="mdi:stop" class="icon-15"></ha-icon></button>`;
+      actionBtns += `<button class="tb tb-remove" data-tr-action="remove-confirm" data-tr-hash="${hash}" title="${this._t('remove')}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
     }
   }
 

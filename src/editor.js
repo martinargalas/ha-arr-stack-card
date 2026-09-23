@@ -18,7 +18,7 @@ class ArrStackCardEditor extends HTMLElement {
   async _loadCaps() {
     try {
       this._caps = await this._hass.callApi('GET', 'arr_stack/capabilities/info');
-      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge || this._caps.rtorrent;
+      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge || this._caps.rtorrent || this._caps.transmission;
       if (!hasDownloads && this._config.layout !== 'right') {
         this._config = { ...this._config, layout: 'right' };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -209,7 +209,7 @@ class ArrStackCardEditor extends HTMLElement {
               <option value="fr" ${this._val('localisation','en')==='fr'?'selected':''}>French</option>
             </select>
           </div>
-          ${(this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps?.deluge || this._caps?.rtorrent || this._caps === null) ? `
+          ${(this._caps?.qbit || this._caps?.sabnzbd || this._caps?.nzbget || this._caps?.deluge || this._caps?.rtorrent || this._caps?.transmission || this._caps === null) ? `
           <div class="row">
             <span class="row-label">Layout</span>
             <select data-key="layout">
@@ -304,11 +304,12 @@ class ArrStackCardEditor extends HTMLElement {
             if (c.id === 'qbit'     && !caps?.qbit)      return false;
             if (c.id === 'deluge'   && !caps?.deluge)     return false;
             if (c.id === 'rtorrent' && !caps?.rtorrent)   return false;
+            if (c.id === 'transmission' && !caps?.transmission) return false;
             if (c.id === 'sab'      && !caps?.sabnzbd)    return false;
             if (c.id === 'nzbget'   && !caps?.nzbget)     return false;
             return true;
           });
-          const torrentIds = ['qbit', 'deluge', 'rtorrent'];
+          const torrentIds = ['qbit', 'deluge', 'rtorrent', 'transmission'];
           const usenetIds  = ['sab', 'nzbget'];
           const torrentClients = allClients.filter(c => torrentIds.includes(c.id));
           const usenetClients  = allClients.filter(c => usenetIds.includes(c.id));
@@ -678,6 +679,7 @@ class ArrStackCardEditor extends HTMLElement {
       { id: 'qbit',     enabled: true },
       { id: 'deluge',   enabled: true },
       { id: 'rtorrent', enabled: true },
+      { id: 'transmission', enabled: true },
       { id: 'sab',      enabled: true },
       { id: 'nzbget',   enabled: true },
     ];
@@ -692,7 +694,7 @@ class ArrStackCardEditor extends HTMLElement {
   }
 
   _clientLabel(id) {
-    return { qbit: 'qBittorrent', sab: 'SABnzbd', nzbget: 'NZBGet', deluge: 'Deluge', rtorrent: 'rTorrent' }[id] || id;
+    return { qbit: 'qBittorrent', sab: 'SABnzbd', nzbget: 'NZBGet', deluge: 'Deluge', rtorrent: 'rTorrent', transmission: 'Transmission' }[id] || id;
   }
 
   _numberRow(label, key, defaultVal, min, max, step, hint) {

@@ -228,6 +228,25 @@ async _fetchDeluge() {
   }
 }
 
+async _fetchTransmission() {
+  if (this._transmissionConfigured === false) return;
+  try {
+    const [torrents, status] = await Promise.all([
+      this._callApi('GET', 'arr_stack/transmission/queue'),
+      this._callApi('GET', 'arr_stack/transmission/status').catch(() => ({})),
+    ]);
+    this._transmissionQueue  = Array.isArray(torrents) ? torrents : [];
+    this._transmissionStatus = status || {};
+    this._transmissionConfigured = true;
+  } catch (e) {
+    const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
+    const body = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+    const isNotConfigured = statusCode === 503 || body.includes('not configured');
+    this._transmissionConfigured = !isNotConfigured;
+    console.error('[arr-card] Transmission fetch error:', e);
+  }
+}
+
 async _fetchRtorrent() {
   if (this._rtorrentConfigured === false) return;
   try {

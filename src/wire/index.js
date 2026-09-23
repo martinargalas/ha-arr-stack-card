@@ -76,6 +76,35 @@ async _rtorrentAction(hash, action, deleteFiles = false) {
   }
 }
 
+async _transmissionAction(hash, action, deleteFiles = false) {
+  this._markActivated();
+  const isGlobal = action === 'pauseAll' || action === 'resumeAll';
+  if (isGlobal) {
+    this._transmissionBusy = true;
+  } else {
+    this._transmissionItemBusy = hash;
+  }
+  this._reRenderLeft();
+  try {
+    const mode = isGlobal ? (action === 'pauseAll' ? 'global_pause' : 'global_resume')
+               : deleteFiles ? 'delete_files'
+               : action === 'delete' ? 'delete'
+               : action;
+    // Transmission knows a torrent by the id it gave it, not by its hash
+    const row = (this._transmissionQueue || []).find(t => t.hash === hash);
+    await this._hass.callApi('POST', 'arr_stack/transmission/action', { action: mode, id: row?.id ?? hash });
+  } catch (e) {
+    console.error('[arr-card] Transmission action error:', e);
+  } finally {
+    this._transmissionConfirm = null;
+    await new Promise(r => setTimeout(r, 2000));
+    await this._fetchTransmission();
+    this._transmissionBusy = false;
+    this._transmissionItemBusy = null;
+    this._reRenderLeft();
+  }
+}
+
 // ─────────────────────────────────────────────
 // SABnzbd action API
 // ─────────────────────────────────────────────
@@ -295,6 +324,40 @@ _wireActionButtons() {
     });
   });
 
+  // ── Transmission global pause / resume ──
+  const transmissionToggle = this.shadowRoot.querySelector('.transmission-global-toggle');
+  if (transmissionToggle) {
+    transmissionToggle.addEventListener('click', () => {
+      const paused = transmissionToggle.classList.contains('paused');
+      this._transmissionAction(null, paused ? 'resumeAll' : 'pauseAll');
+    });
+  }
+
+  // ── Transmission per-torrent action buttons ──
+  this.shadowRoot.querySelectorAll('[data-tr-action]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const action = btn.dataset.trAction;
+      const hash   = btn.dataset.trHash || '';
+
+      if (action === 'pause') {
+        this._transmissionAction(hash, 'pause');
+      } else if (action === 'resume') {
+        this._transmissionAction(hash, 'resume');
+      } else if (action === 'remove-confirm') {
+        this._transmissionConfirm = hash;
+        this._reRenderLeft();
+      } else if (action === 'cancel-remove') {
+        this._transmissionConfirm = null;
+        this._reRenderLeft();
+      } else if (action === 'remove-keep') {
+        this._transmissionAction(hash, 'delete', false);
+      } else if (action === 'remove-del') {
+        this._transmissionAction(hash, 'delete', true);
+      }
+    });
+  });
+
   // ── Per-torrent action buttons ──
   this.shadowRoot.querySelectorAll('[data-tb-action]').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -336,6 +399,9 @@ _wireSort() {
       } else if (btn.dataset.client === 'rtorrent') {
         this._sortRtorrent = val;
         this._pages.rtorrent = 0;
+      } else if (btn.dataset.client === 'transmission') {
+        this._sortTransmission = val;
+        this._pages.transmission = 0;
       } else {
         this._sort = val;
         this._pages.qbit = 0;
