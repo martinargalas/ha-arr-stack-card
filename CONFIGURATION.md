@@ -22,7 +22,7 @@ sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (de
 
 # Download managers (left panel)
 downloads:
-  torrentItems: 3            # qBittorrent / Deluge / rTorrent items per page  (default: 3)
+  torrentItems: 3            # qBittorrent / Deluge / rTorrent / Transmission items per page  (default: 3)
   usenetItems: 3             # SABnzbd / NZBGet items per page  (default: 3)
 
 # Download client order & visibility (left panel)
