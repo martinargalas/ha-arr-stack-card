@@ -1109,6 +1109,11 @@ class ArrStackCard extends HTMLElement {
     this.dispatchEvent(new CustomEvent('hass-notification', {
       detail: { message: this._t('chunkReload') }, bubbles: true, composed: true,
     }));
+    // A window that cannot be fetched is invisible from here: the card keeps
+    // working and nobody reports it. Once per window per session, the ping
+    // carries which one it was, so a release that ships an install missing its
+    // windows shows up within hours instead of on someone's dashboard.
+    this._reportChunkFailure(name);
   }
 
   // Only an admin editing the dashboard ever opens the editor, so it is fetched

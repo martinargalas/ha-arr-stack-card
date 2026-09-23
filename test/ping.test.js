@@ -63,3 +63,37 @@ test('activation is reported once, and says so', () => {
   assert.strictEqual(sent.length, 1);
   assert.strictEqual(sent[0].act, 1);
 });
+
+// Captures every ping sent while `run` does its work.
+function captureAll(card, run) {
+  const sent = [];
+  const prev = globalThis.fetch;
+  globalThis.fetch = (url, opts) => {
+    sent.push(JSON.parse(opts.body));
+    return Promise.resolve({ ok: true });
+  };
+  try { run(); } finally { globalThis.fetch = prev; }
+  return sent;
+}
+
+test('a window that failed to load is reported once per window', () => {
+  const card = makeCard();
+  card._capsLoaded = true;
+  const sent = captureAll(card, () => {
+    card._reportChunkFailure('tracearr');
+    card._reportChunkFailure('tracearr');
+    card._reportChunkFailure('jellystat');
+  });
+  assert.deepEqual(sent.map(b => b.cf), ['tracearr', 'jellystat'],
+    'the same window twice in one session is one ping');
+  assert.ok(Array.isArray(sent[0].svcs),
+    'and it is an ordinary ping otherwise, so the install is known by its services');
+});
+
+test('an opted-out install reports no failed window either', () => {
+  const card = makeCard();
+  card._capsLoaded = true;
+  card._metricsOptOut = true;
+  const sent = captureAll(card, () => card._reportChunkFailure('tracearr'));
+  assert.deepEqual(sent, []);
+});

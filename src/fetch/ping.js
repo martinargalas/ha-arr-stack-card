@@ -9,7 +9,16 @@ class _PingMethods {
     }
   }
 
-  _sendPing() {
+  // A window that failed to load, once per window per session (from _chunkFailed)
+  _reportChunkFailure(name) {
+    if (this._metricsOptOut) return;
+    this._cfSent = this._cfSent || new Set();
+    if (this._cfSent.has(name)) return;
+    this._cfSent.add(name);
+    this._sendPing({ cf: name });
+  }
+
+  _sendPing(extra = null) {
     // Belt and braces: whoever calls this, an opted-out install sends nothing
     if (this._metricsOptOut) return;
     try {
@@ -56,6 +65,7 @@ class _PingMethods {
         body: JSON.stringify({
           v: __CARD_VERSION__, sid, mob: this._isMob ? 1 : 0, act,
           ...(this._capsLoaded ? { svcs } : {}),
+          ...(extra || {}),
         }),
       }).catch(() => {});
     } catch (_) {}
