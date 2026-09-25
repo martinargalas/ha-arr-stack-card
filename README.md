@@ -193,12 +193,13 @@ Films, episodes and music alike, from whichever client is playing them — a TV 
 
 > **Plex Server URL** — the integration auto-detects your server address during setup. If Home Assistant runs on a different machine or VLAN than Plex, you can override it with the address HA can reach (e.g. `http://192.168.1.10:32400`).
 
-**Jellyfin** — requires the official [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration. Stream monitoring, the HDR / Dolby Vision badge and stop playback work automatically once the integration is connected — no additional configuration needed in Arr Stack.
+**Jellyfin** — takes either the official [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration or [JellyHA](https://github.com/zupancicmarko/JellyHA). One of them is enough; nothing to configure in Arr Stack either way. With both installed, the card uses the best of each and never shows a stream twice.
 
-> **Want to control Jellyfin, not just watch it?** Install [JellyHA](https://github.com/zupancicmarko/JellyHA) next to the official integration. The card finds it on its own — there is nothing to set up, and nothing changes if you skip it. With it, a Jellyfin stream gets:
-> - **Play and pause**, skip to the next episode or track, and a progress bar you can click or drag to jump anywhere in the film
-> - **Play on**, to start a title on any of your Jellyfin devices
-> - Posters that vanish the moment someone stops watching, instead of lingering
+> **Which one should you install?**
+>
+> - **Official integration** — what is playing, the HDR / Dolby Vision badge, stop playback with a message on the screen, and the surest match to your Radarr and Sonarr libraries.
+> - **JellyHA** — everything above, plus what the official one cannot do: **play and pause**, skip to the next episode or track, and a progress bar you can click or drag to jump anywhere in the film. It also adds **Play on**, so you can start a title on any of your Jellyfin devices, and posters vanish the moment someone stops watching instead of lingering.
+> - **Both** — the pairing the card is happiest with: JellyHA runs the playback, the official integration keeps titles matched to your libraries.
 >
 > Just leave JellyHA's players named the way it created them — that is how the card knows which devices are your Jellyfin ones.
 

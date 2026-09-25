@@ -184,8 +184,11 @@ _qaOpenServerKind(d) {
   if (!sess) return null;
   if (sess.kind === 'plex') return sess.attr?._plexRatingKey ? 'plex' : null;
   const itemId = sess.kind === 'jellyfin' ? sess.attr?._jfItemId : sess.attr?._embyItemId;
-  const url    = sess.kind === 'jellyfin' ? sess.attr?._jfServerUrl : sess.attr?._embyServerUrl;
-  return itemId && url ? sess.kind : null;
+  if (!itemId) return null;
+  // Jellyfin's address comes from the session, or from JellyHA when the
+  // session is one of its own; either way there is somewhere to go.
+  if (sess.kind === 'jellyfin') return (sess.attr?._jfServerUrl || this._jhInstalled()) ? 'jellyfin' : null;
+  return sess.attr?._embyServerUrl ? 'emby' : null;
 }
 
 async _qaOpenOnServer(d) {
@@ -222,8 +225,17 @@ async _qaServerWebUrl(d) {
   // Jellyfin and Emby both host their own web client at the address the
   // session was read from, and both name the item the same way.
   const itemId   = sess.kind === 'jellyfin' ? a._jfItemId : a._embyItemId;
-  const base     = String(sess.kind === 'jellyfin' ? a._jfServerUrl : a._embyServerUrl).replace(/\/+$/, '');
+  let   base     = String(sess.kind === 'jellyfin' ? a._jfServerUrl : a._embyServerUrl).replace(/\/+$/, '');
   const serverId = sess.kind === 'jellyfin' ? a._jfServerId : a._embyServerId;
+  // A stream known only through JellyHA carries no server address, so JellyHA
+  // is asked where its own server is.
+  if (!base && sess.kind === 'jellyfin') {
+    if (this._jhWebBase == null) {
+      const raw = await this._callApi('GET', 'arr_stack/jellyha/server').catch(() => null);
+      this._jhWebBase = String(raw?.url || '').replace(/\/+$/, '');
+    }
+    base = this._jhWebBase;
+  }
   if (!itemId || !base) return '';
   const srv = serverId ? `&serverId=${encodeURIComponent(serverId)}` : '';
   return sess.kind === 'jellyfin'

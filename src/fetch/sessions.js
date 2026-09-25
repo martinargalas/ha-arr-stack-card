@@ -1,4 +1,4 @@
-import { plexRange } from '../shared/range.js';
+import { plexRange, rangeLabel } from '../shared/range.js';
 class _SessionsMethods {
 
 async _fetchPlexSessions() {
@@ -154,22 +154,96 @@ async _resolvePlexSessionIds() {
 
 async _fetchJellyfinSessions() {
   const now = Date.now();
-  if (now - (this._jellyfinLastFetch || 0) < 5000) return;
-  this._jellyfinLastFetch = now;
-  try {
-    const raw = await this._callApi('GET', 'arr_stack/jellyfin/sessions');
-    if (raw?._notConfigured) { this._jellyfinSessions = []; return; }
-    const sessions = raw?.sessions || [];
-    const serverUrl = raw?.server_url || '';
-    const apiToken  = raw?.api_token  || '';
-    // JellyHA, where it is installed, has an entity for the same session and
-    // is what pause, play and seek can be sent to (#39)
-    this._jellyfinSessions = this._jhAttach(
-      sessions.map(s => this._normalizeJellyfinSession(s, serverUrl, apiToken)),
-    );
-  } catch (_) {
-    this._jellyfinSessions = [];
+  // The server is asked on a timer; JellyHA's players are Home Assistant
+  // states, which cost nothing and are read on every pass so a stream that
+  // only it knows about appears at once.
+  if (now - (this._jellyfinLastFetch || 0) >= 5000) {
+    this._jellyfinLastFetch = now;
+    try {
+      const raw = await this._callApi('GET', 'arr_stack/jellyfin/sessions');
+      const sessions  = raw?._notConfigured ? [] : (raw?.sessions || []);
+      const serverUrl = raw?.server_url || '';
+      const apiToken  = raw?.api_token  || '';
+      this._jfProxySessions = sessions.map(s => this._normalizeJellyfinSession(s, serverUrl, apiToken));
+    } catch (_) {
+      this._jfProxySessions = [];
+    }
   }
+  // Jellyfin's own API is the fuller account — provider ids, the library, the
+  // user — so it stays the base where it is configured, and JellyHA overrides
+  // what it knows better (#39). Where there is no official integration at all,
+  // JellyHA is the whole account, which is enough to show and drive a stream.
+  const proxy = this._jhAttach([...(this._jfProxySessions || [])]);
+  const seen  = new Set(proxy.map(s => s.id));
+  this._jellyfinSessions = [
+    ...proxy,
+    ...this._jhStandaloneSessions().filter(s => !seen.has(s.id)),
+  ];
+}
+
+// What a client is, from whatever it calls itself. Jellyfin's own sessions and
+// JellyHA's players name the same devices, so they are read the same way.
+_jfDeviceFrom(clientish) {
+  const nl = String(clientish || '').toLowerCase();
+  if (/iphone|ios/i.test(nl))                                  return { icon: 'mdi:cellphone', name: 'Phone' };
+  if (/ipad/i.test(nl))                                        return { icon: 'mdi:tablet',    name: 'Tablet' };
+  if (/macbook|for mac\b|mac desktop/i.test(nl))               return { icon: 'mdi:laptop',    name: 'Mac' };
+  if (/windows|desktop|pc\b/i.test(nl))                        return { icon: 'mdi:monitor',   name: 'PC' };
+  if (/web|chrome|browser|safari|firefox/i.test(nl))           return { icon: 'mdi:web',       name: 'Browser' };
+  if (/android.*tv|fire.*tv|shield|apple.*tv/i.test(nl))       return { icon: 'mdi:television', name: 'TV' };
+  if (/android/i.test(nl))                                     return { icon: 'mdi:cellphone', name: 'Phone' };
+  return { icon: 'mdi:television', name: 'TV' };
+}
+
+// A stream as JellyHA alone describes it, for a household that runs JellyHA
+// and not the official Jellyfin integration. It carries everything a row and
+// its transport need; what it cannot carry is the provider ids Jellyfin's API
+// gives, so such a title is matched to the library by name.
+_jhStandaloneSessions() {
+  const out = [];
+  for (const [entityId, st] of Object.entries(this._hass?.states || {})) {
+    if (!entityId.startsWith('media_player.jellyha_')) continue;
+    if (entityId.endsWith('_library_browser')) continue;
+    const a = st?.attributes || {};
+    if (!a.session_id) continue;
+    if (st.state !== 'playing' && st.state !== 'paused') continue;
+    const type    = String(a.media_type || a.media_content_type || '').toLowerCase();
+    const series  = a.media_series_title || a.series_name || '';
+    const isTV    = type === 'episode' || type === 'tvshow' || !!series;
+    const isMusic = type === 'audio' || type === 'music';
+    const dev     = this._jfDeviceFrom(`${a.client || ''} ${a.device_name || ''}`);
+    out.push({
+      id:     `jellyfin:${a.session_id}`,
+      source: 'jellyfin',
+      state:  st.state,
+      attr: {
+        media_content_type:        isTV ? 'episode' : isMusic ? 'music' : 'movie',
+        media_title:               a.media_title || a.title || '',
+        media_series_title:        isTV ? series : '',
+        media_season:              isTV ? (a.media_season  || a.season_number  || 0) : 0,
+        media_episode:             isTV ? (a.media_episode || a.episode_number || 0) : 0,
+        media_artist:              isMusic ? (a.media_artist || '') : '',
+        media_album_name:          isMusic ? (a.media_album_name || '') : '',
+        media_channel:             '',
+        media_library_title:       '',
+        entity_picture:            a.entity_picture || null,
+        media_duration:            a.media_duration || 0,
+        media_position:            a.media_position || 0,
+        media_position_updated_at: a.media_position_updated_at || new Date().toISOString(),
+        friendly_name:             `${a.client || ''} ${a.device_name || ''}`.trim(),
+        _jfDeviceIcon:             dev.icon,
+        _jfDeviceName:             dev.name,
+        _jfUser:                   a.user_name || '',
+        _dynRange:                 rangeLabel(a.video_range_type || a.dynamic_range || a.video_range),
+        _jfItemId:                 a.item_id || a.media_content_id || '',
+        _jfServerUrl:              a.config_external_url || '',
+        _jfServerId:               '',
+        // The player is right here, so the transport needs no matching
+        _jhEntity:                 entityId,
+      },
+    });
+  }
+  return out;
 }
 
 _normalizeJellyfinSession(s, serverUrl, apiToken) {
@@ -178,16 +252,9 @@ _normalizeJellyfinSession(s, serverUrl, apiToken) {
   const type = (np.Type || '').toLowerCase();
   const isTV    = type === 'episode';
   const isMusic = type === 'audio';
-  const nl = `${(s.Client || '')} ${(s.DeviceName || '')}`.toLowerCase();
-  let deviceIcon = 'mdi:television';
-  let deviceName = 'TV';
-  if (/iphone|ios/i.test(nl))                                        { deviceIcon = 'mdi:cellphone'; deviceName = 'Phone'; }
-  else if (/ipad/i.test(nl))                                         { deviceIcon = 'mdi:tablet';    deviceName = 'Tablet'; }
-  else if (/macbook|for mac\b|mac desktop/i.test(nl))               { deviceIcon = 'mdi:laptop';    deviceName = 'Mac'; }
-  else if (/windows|desktop|pc\b/i.test(nl))                        { deviceIcon = 'mdi:monitor';   deviceName = 'PC'; }
-  else if (/web|chrome|browser|safari|firefox/i.test(nl))           { deviceIcon = 'mdi:web';       deviceName = 'Browser'; }
-  else if (/android.*tv|fire.*tv|shield|apple.*tv/i.test(nl))       { deviceIcon = 'mdi:television'; deviceName = 'TV'; }
-  else if (/android/i.test(nl))                                      { deviceIcon = 'mdi:cellphone'; deviceName = 'Phone'; }
+  const dev = this._jfDeviceFrom(`${(s.Client || '')} ${(s.DeviceName || '')}`);
+  const deviceIcon = dev.icon;
+  const deviceName = dev.name;
   const itemId    = np.Id || '';
   const providers = np.ProviderIds || {};
   const seriesIds = np.SeriesProviderIds || {};

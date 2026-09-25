@@ -742,6 +742,22 @@ _ppActStreamTerminateConfirm(t, e, { root, overlay } = {}) {
     d._plexTerminated = true;
   }
   if (this._popup?._jfSessionId) {
+    // Jellyfin's own API stops a session by its id, which needs the official
+    // integration's token; JellyHA's player stops the same playback without
+    // one. Both are asked where both exist — whichever answers, it stops.
+    const jhEntity = this._popup?._ctrlEntity || this._jhControlEntity(this._popup?._streamEntity);
+    if (jhEntity) {
+      // The notice first, then the stop — a player that has already been told
+      // to stop has nothing left to show it on.
+      if (reason) {
+        this._hass.callService('jellyha', 'session_general_command', {
+          session_id: this._popup._jfSessionId,
+          command: 'DisplayMessage',
+          arguments: { Header: this._t('terminateHeader'), Text: reason, TimeoutMs: 5000 },
+        }).catch(() => {});
+      }
+      this._hass.callService('media_player', 'media_stop', { entity_id: jhEntity }).catch(() => {});
+    }
     this._callApi('POST', 'arr_stack/jellyfin/stop', { session_id: this._popup._jfSessionId, message: reason }).catch(() => {});
   } else if (this._popup?._embySessionId) {
     this._callApi('POST', 'arr_stack/emby/stop', { session_id: this._popup._embySessionId, message: reason }).catch(() => {});

@@ -566,3 +566,107 @@ test('the wordmark is nudged down, the framed marks are not', () => {
       `${range} is drawn inside its own box and needs no help`);
   }
 });
+
+// JellyHA on its own: a household may run it instead of the official Jellyfin
+// integration, and then it is the whole account of what is playing.
+const STANDALONE = {
+  state: 'playing',
+  attributes: {
+    session_id: 'solo1', item_id: 'item-solo', media_title: 'War Machine',
+    media_type: 'Movie', media_duration: 6559, media_position: 2885,
+    media_position_updated_at: '2026-09-25T10:48:06+00:00',
+    client: 'Jellyfin Web', device_name: 'Chrome', user_name: 'argi',
+    video_range_type: 'DOVIWithHDR10', entity_picture: '/api/x.jpg',
+    config_external_url: 'https://jf.example.com',
+  },
+};
+
+test('a stream only JellyHA knows about is still a stream', () => {
+  const c = card({ 'media_player.jellyha_argi': STANDALONE });
+  const [s] = c._jhStandaloneSessions();
+  assert.equal(s.id, 'jellyfin:solo1');
+  assert.equal(s.state, 'playing');
+  assert.equal(s.attr.media_title, 'War Machine');
+  assert.equal(s.attr.media_content_type, 'movie');
+  assert.equal(s.attr._dynRange, 'DV', 'and the badge is read from its own words');
+  assert.equal(s.attr._jfUser, 'argi');
+  assert.equal(s.attr._jhEntity, 'media_player.jellyha_argi', 'the transport needs no matching');
+});
+
+test('a player with nothing playing is not a stream', () => {
+  const c = card({
+    'media_player.jellyha_argi': { state: 'idle', attributes: { session_id: 'solo1' } },
+    'media_player.jellyha_library_browser': { state: 'playing', attributes: {} },
+  });
+  assert.equal(c._jhStandaloneSessions().length, 0);
+});
+
+test('an episode keeps its show, its season and its number', () => {
+  const c = card({ 'media_player.jellyha_tv': { state: 'paused', attributes: {
+    session_id: 's2', media_type: 'Episode', media_title: 'Copycat',
+    series_name: 'Bluey', season_number: 2, episode_number: 7,
+  } } });
+  const [s] = c._jhStandaloneSessions();
+  assert.equal(s.attr.media_content_type, 'episode');
+  assert.equal(s.attr.media_series_title, 'Bluey');
+  assert.equal(s.attr.media_season, 2);
+  assert.equal(s.attr.media_episode, 7);
+});
+
+test('where both accounts exist, the proxy is the base and JellyHA is not listed twice', async () => {
+  const c = card({ 'media_player.jellyha_argi': { ...PLAYER, state: 'paused' } });
+  c._callApi = async () => ({
+    sessions: [{ Id: 'sess1', NowPlayingItem: { Id: 'x', Name: 'Film', Type: 'Movie', RunTimeTicks: 42000000000 }, PlayState: { PositionTicks: 0 } }],
+    server_url: 'http://jf:8096', api_token: 't',
+  });
+  await c._fetchJellyfinSessions();
+  assert.equal(c._jellyfinSessions.length, 1, 'one session, not one per account');
+  assert.equal(c._jellyfinSessions[0].attr._jhEntity, 'media_player.jellyha_argi');
+  assert.equal(c._jellyfinSessions[0].state, 'paused', 'and JellyHA has the fresher state');
+});
+
+test('without the official integration the JellyHA stream stands alone', async () => {
+  const c = card({ 'media_player.jellyha_argi': STANDALONE });
+  c._callApi = async () => ({ _notConfigured: true });
+  await c._fetchJellyfinSessions();
+  assert.equal(c._jellyfinSessions.length, 1);
+  assert.equal(c._jellyfinSessions[0].attr.media_title, 'War Machine');
+});
+
+// Stopping a Jellyfin stream: the official API needs a token, JellyHA's player
+// needs nothing but itself.
+test('stop asks JellyHA as well as the server', () => {
+  const c = card({ 'media_player.jellyha_argi': PLAYER });
+  const services = [];
+  const api = [];
+  c._hass = { ...c._hass, callService: async (...args) => { services.push(args); } };
+  c._callApi = async (...args) => { api.push(args); };
+  c._markActivated = () => {};
+  c._jellyfinSessions = [{ id: 'jellyfin:sess1', attr: { _jhEntity: 'media_player.jellyha_argi' } }];
+  c._popup = {
+    _jfSessionId: 'sess1', _streamEntity: 'jellyfin:sess1',
+    _ctrlEntity: 'media_player.jellyha_argi', _streamState: 'playing',
+  };
+  c.shadowRoot = { querySelector: () => null, getElementById: () => null };
+  c._ppActStreamTerminateConfirm({ dataset: { sessionId: 'sess1' } }, null, {});
+  assert.equal(services[0]?.[0], 'jellyha');
+  assert.equal(services[0]?.[1], 'session_general_command');
+  assert.equal(services[0]?.[2]?.command, 'DisplayMessage', 'the notice goes out before the stop');
+  assert.deepEqual(services[1]?.slice(0, 3), ['media_player', 'media_stop', { entity_id: 'media_player.jellyha_argi' }]);
+  assert.equal(api[0]?.[1], 'arr_stack/jellyfin/stop');
+});
+
+test('without JellyHA the server is still asked on its own', () => {
+  const c = card();
+  const services = [];
+  const api = [];
+  c._hass = { ...c._hass, callService: async (...args) => { services.push(args); } };
+  c._callApi = async (...args) => { api.push(args); };
+  c._markActivated = () => {};
+  c._jellyfinSessions = [];
+  c._popup = { _jfSessionId: 'sess1', _streamEntity: 'jellyfin:sess1', _streamState: 'playing' };
+  c.shadowRoot = { querySelector: () => null, getElementById: () => null };
+  c._ppActStreamTerminateConfirm({ dataset: { sessionId: 'sess1' } }, null, {});
+  assert.equal(services.length, 0);
+  assert.equal(api[0]?.[1], 'arr_stack/jellyfin/stop');
+});
