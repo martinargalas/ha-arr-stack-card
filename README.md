@@ -66,8 +66,7 @@ The card automatically shows only the services you have configured. No YAML requ
 | TMDB | Posters, ratings, cast, trailers, Trending and Popular rows, Similar titles | Not needed with Seerr — **your own free key otherwise** |
 | Bazarr | Subtitle status per movie/show | Optional |
 | Plex | Active stream monitoring and playback control | Optional |
-| Jellyfin | Active stream monitoring, HDR / Dolby Vision badge, stop playback | Optional |
-| JellyHA | Adds full transport and "Play on" for Jellyfin streams | Optional, alongside Jellyfin |
+| Jellyfin | Active stream monitoring and playback control | Optional |
 | Emby | Active stream monitoring and playback control | Optional |
 | Kodi | Active stream monitoring and playback control | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
@@ -196,28 +195,26 @@ Films, episodes and music alike, from whichever client is playing them — a TV 
 
 **Jellyfin** — requires the official [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration. Stream monitoring, the HDR / Dolby Vision badge and stop playback work automatically once the integration is connected — no additional configuration needed in Arr Stack.
 
-> **Optional: [JellyHA](https://github.com/zupancicmarko/JellyHA)** — a Jellyfin integration that exposes a player per session, which is the one thing Jellyfin's own API cannot give a browser. Install it alongside the official integration and the card picks it up on its own; what is playing still comes from Arr Stack, so nothing is listed twice and nothing changes for anyone who does not install it. With it you additionally get:
-> - Full playback controls on Jellyfin streams — play, pause, seek, next and previous, and a progress bar that answers a click and a drag
-> - **Play on Jellyfin** in the Actions menu, sending a title to any of your Jellyfin clients
-> - A stream that ends disappears at once rather than at the next poll
+> **Want to control Jellyfin, not just watch it?** Install [JellyHA](https://github.com/zupancicmarko/JellyHA) next to the official integration. The card finds it on its own — there is nothing to set up, and nothing changes if you skip it. With it, a Jellyfin stream gets:
+> - **Play and pause**, skip to the next episode or track, and a progress bar you can click or drag to jump anywhere in the film
+> - **Play on**, to start a title on any of your Jellyfin devices
+> - Posters that vanish the moment someone stops watching, instead of lingering
 >
-> The only requirement is that the players keep the names JellyHA gives them — the card finds them by their `media_player.jellyha_*` entity ids, which is what tells them apart from every other media player in the house. Rename the *friendly name* freely; leave the entity id alone.
+> Just leave JellyHA's players named the way it created them — that is how the card knows which devices are your Jellyfin ones.
 
 **Emby** — enter your Emby server URL and API key in the Arr Stack Integration setup (Plex / Emby step). Enables stream monitoring and remote stop with a message.
 
 **Kodi** — requires the official [Kodi](https://www.home-assistant.io/integrations/kodi/) HA integration. Stream monitoring and stop with a notification work automatically once connected — no additional configuration needed in Arr Stack.
 
-#### Cast to Plex device
+#### Play on a device
 
-A cast button appears in movie and show popups when the item exists in your Plex library. Clicking it opens a device picker — select a device to start playback immediately.
+Found something you want to watch? **Play on** in a film or show's Actions menu starts it on a TV, a phone or a browser without touching another app. Pick the device from the list and playback begins.
 
-**Requirements:**
+It works for both servers, and when you have both, each entry says which one it will use — **Play on Plex** or **Play on Jellyfin**.
 
-1. Plex configured in the Arr Stack Integration (token + server URL)
-2. Official [Plex HA integration](https://www.home-assistant.io/integrations/plex/) installed and connected — devices are discovered via `media_player.plex_*` entities
-3. Target device must be online and reachable by the Plex server
+**For Plex** you need Plex set up in the Arr Stack Integration and the official [Plex HA integration](https://www.home-assistant.io/integrations/plex/) connected. **For Jellyfin** you need [JellyHA](https://github.com/zupancicmarko/JellyHA). Either way the title has to exist in that server's library, and the device has to be switched on.
 
-> Cast to the Plex mobile app works only when the app is open and on the player screen. Idle devices may not respond — this is a Plex limitation.
+> Sending to the Plex mobile app only works while the app is open on its player screen — a phone sitting idle will not wake up for it. That is Plex's own limitation, not the card's.
 
 #### Activity Queue
 
@@ -281,8 +278,8 @@ Actions collects the things you would otherwise go looking for in other parts of
 | Show in library | The title is in Radarr or Sonarr | Opens the Library panel filtered to it — and takes you back when you close it |
 | Jump to download | It is downloading right now | Opens the Activity queue on that item |
 | Stop playback | Someone is watching it | Stops the stream, with a message to the player |
-| Play on | The file exists and Plex is configured, or JellyHA is installed | Casts to any Plex device that is on, or to a Jellyfin client |
-| Open in Plex / Jellyfin / Emby | Someone is watching it | Opens the title on the server it is playing on, in a new tab |
+| Play on | The file exists and Plex or Jellyfin can reach a device | Starts it on any device that is switched on |
+| Open in Plex / Jellyfin / Emby | Someone is watching it | Opens the title on the server it is playing on |
 | Schedule for removal | Maintainerr is configured | Queues the title, or individual seasons, for deletion |
 | Cancel scheduled removal | It is queued for deletion | Takes it back out |
 | Exclude from removal | Maintainerr is configured | Marks it as never to be touched by the rules |
