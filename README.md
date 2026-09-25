@@ -66,7 +66,8 @@ The card automatically shows only the services you have configured. No YAML requ
 | TMDB | Posters, ratings, cast, trailers, Trending and Popular rows, Similar titles | Not needed with Seerr — **your own free key otherwise** |
 | Bazarr | Subtitle status per movie/show | Optional |
 | Plex | Active stream monitoring and playback control | Optional |
-| Jellyfin | Active stream monitoring and playback control | Optional |
+| Jellyfin | Active stream monitoring, HDR / Dolby Vision badge, stop playback | Optional |
+| JellyHA | Adds full transport and "Play on" for Jellyfin streams | Optional, alongside Jellyfin |
 | Emby | Active stream monitoring and playback control | Optional |
 | Kodi | Active stream monitoring and playback control | Optional |
 | Tautulli | Watch history, statistics, and usage graphs | Optional |
@@ -193,7 +194,14 @@ Films, episodes and music alike, from whichever client is playing them — a TV 
 
 > **Plex Server URL** — the integration auto-detects your server address during setup. If Home Assistant runs on a different machine or VLAN than Plex, you can override it with the address HA can reach (e.g. `http://192.168.1.10:32400`).
 
-**Jellyfin** — requires the official [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration. Stream monitoring and stop playback work automatically once the integration is connected — no additional configuration needed in Arr Stack.
+**Jellyfin** — requires the official [Jellyfin](https://www.home-assistant.io/integrations/jellyfin/) HA integration. Stream monitoring, the HDR / Dolby Vision badge and stop playback work automatically once the integration is connected — no additional configuration needed in Arr Stack.
+
+> **Optional: [JellyHA](https://github.com/zupancicmarko/JellyHA)** — a Jellyfin integration that exposes a player per session, which is the one thing Jellyfin's own API cannot give a browser. Install it alongside the official integration and the card picks it up on its own; what is playing still comes from Arr Stack, so nothing is listed twice and nothing changes for anyone who does not install it. With it you additionally get:
+> - Full playback controls on Jellyfin streams — play, pause, seek, next and previous, and a progress bar that answers a click and a drag
+> - **Play on Jellyfin** in the Actions menu, sending a title to any of your Jellyfin clients
+> - A stream that ends disappears at once rather than at the next poll
+>
+> The only requirement is that the players keep the names JellyHA gives them — the card finds them by their `media_player.jellyha_*` entity ids, which is what tells them apart from every other media player in the house. Rename the *friendly name* freely; leave the entity id alone.
 
 **Emby** — enter your Emby server URL and API key in the Arr Stack Integration setup (Plex / Emby step). Enables stream monitoring and remote stop with a message.
 
@@ -273,7 +281,8 @@ Actions collects the things you would otherwise go looking for in other parts of
 | Show in library | The title is in Radarr or Sonarr | Opens the Library panel filtered to it — and takes you back when you close it |
 | Jump to download | It is downloading right now | Opens the Activity queue on that item |
 | Stop playback | Someone is watching it | Stops the stream, with a message to the player |
-| Play on | The file exists and Plex is configured | Casts to any Plex device that is on |
+| Play on | The file exists and Plex is configured, or JellyHA is installed | Casts to any Plex device that is on, or to a Jellyfin client |
+| Open in Plex / Jellyfin / Emby | Someone is watching it | Opens the title on the server it is playing on, in a new tab |
 | Schedule for removal | Maintainerr is configured | Queues the title, or individual seasons, for deletion |
 | Cancel scheduled removal | It is queued for deletion | Takes it back out |
 | Exclude from removal | Maintainerr is configured | Marks it as never to be touched by the rules |
