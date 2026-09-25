@@ -2,7 +2,7 @@
 
 class _WireMusicAddMethods {
 
-  async _openMusicPreview(mbid) {
+  async _openMusicPreview(mbid, { stream = null } = {}) {
     const artist = this._musUnownedArtist(mbid);
     if (!artist) return;
     const hit = { artist };
@@ -12,8 +12,9 @@ class _WireMusicAddMethods {
     this._musGlassH = null;
     this._musAlbCols = null;
     this._musicModal = {
-      artistId: null, artist: hit.artist, albums: [], loading: true, preview: mbid,
+      artistId: null, artist: hit.artist, albums: [], loading: true, preview: mbid, stream,
     };
+    if (stream) this._musLoadTrackQuality(stream);
     this._renderMusicModalEl();
     let list = [];
     try {

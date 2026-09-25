@@ -304,7 +304,11 @@ class _ItemMethods {
       }
     }
 
-    return [...extras, ...items].sort((a, b) => String(b._sortDate).localeCompare(String(a._sortDate)));
+    // Seerr answers for films and shows and knows nothing about music, so an
+    // album on its way used to vanish from this section the moment Seerr was
+    // configured. It rides along here the same way it does in the library list.
+    return [...extras, ...items, ...this._rqMusicItems()]
+      .sort((a, b) => String(b._sortDate).localeCompare(String(a._sortDate)));
   }
 
   get recentlyRequested() {
@@ -383,6 +387,7 @@ class _ItemMethods {
   _rqMusicItems() {
     if (this._lidarrConfigured === false) return [];
     const dl = this._lidarrQueueArtists || new Map();
+    const _now = new Date().toISOString();
     const out = [];
     for (const a of (this._lidarrArtists?.values() || [])) {
       const st = a.statistics || {};
@@ -398,7 +403,9 @@ class _ItemMethods {
         newestAlbum: feed?.newestAlbum || null,
         newAlbumCount: 0,
         _mediaType: 'music',
-        _sortDate: a.added || '',
+        // Something downloading now belongs at the top, the way a film in the
+        // queue does; everything else keeps the date it was added.
+        _sortDate: downloading ? _now : (a.added || ''),
       });
     }
     return out;

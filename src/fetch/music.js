@@ -223,6 +223,12 @@ async _fetchLidarrArtists() {
   } catch (_) { /* the cards fall back to a blurred cover */ }
 }
 
+// A release title as it compares: the client renames nothing, but the dots,
+// dashes and brackets differ between what was grabbed and what is queued.
+_qTitle(t) {
+  return String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
 async _fetchLidarrQueue() {
   try {
     const q = await this._callApi('GET', 'arr_stack/lidarr/queue?pageSize=100');
@@ -234,11 +240,17 @@ async _fetchLidarrQueue() {
     // queue on the left opens the artist it belongs to — as a film's row opens
     // its title
     const dlIds = new Map();
+    // What is downloading but belongs to no album Lidarr could name: a release
+    // it failed to parse still runs in the client, and the only thing that ties
+    // it back to the row somebody grabbed is its own title.
+    const titles = new Map();
     for (const r of recs) {
       const size = Number(r.size) || 0;
       const left = Number(r.sizeleft) || 0;
       const done = size > 0 ? Math.max(0, Math.min(100, Math.round((1 - left / size) * 100))) : -1;
       if (r.albumId) pct.set(r.albumId, done);
+      const t = this._qTitle(r.title);
+      if (t) titles.set(t, done);
       const aid = r.artistId ?? r.artist?.id;
       if (aid && r.downloadId) dlIds.set(String(r.downloadId).toLowerCase(), aid);
       if (aid) {
@@ -249,11 +261,13 @@ async _fetchLidarrQueue() {
       }
     }
     this._lidarrQueuePct = pct;
+    this._lidarrQueueTitles = titles;
     this._lidarrQueueArtists = artists;
     this._dlMediaLidarr = dlIds;
   } catch (_) {
     this._lidarrQueue = new Set();
     this._lidarrQueuePct = new Map();
+    this._lidarrQueueTitles = new Map();
     this._lidarrQueueArtists = new Map();
     this._dlMediaLidarr = new Map();
   }

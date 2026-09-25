@@ -1,3 +1,4 @@
+import { plexRange } from '../shared/range.js';
 class _SessionsMethods {
 
 async _fetchPlexSessions() {
@@ -83,8 +84,15 @@ _normalizePlexSession(s) {
       media_position_updated_at: new Date().toISOString(),
       friendly_name:           player.product || player.title || '',
       supported_features:      0,
+      // Plex words the picture its own way — a Dolby Vision flag and a
+      // colour transfer — reduced to the same name Jellyfin's is
+      _dynRange:               plexRange(s),
     },
     _machineIdentifier: player.machineIdentifier,
+    // Plex says which of its players will take a command. Plex Web takes none
+    // — it never registers as controllable — so a card that offered pause and
+    // seek there was promising something the client throws away.
+    _plexCanControl:    /playback/i.test(player.protocolCapabilities || ''),
     _playerUrl:         playerUrl,
     _plexUser:          s.User?.title || '',
     _plexUserThumb:     s.User?.thumb || '',
@@ -154,7 +162,11 @@ async _fetchJellyfinSessions() {
     const sessions = raw?.sessions || [];
     const serverUrl = raw?.server_url || '';
     const apiToken  = raw?.api_token  || '';
-    this._jellyfinSessions = sessions.map(s => this._normalizeJellyfinSession(s, serverUrl, apiToken));
+    // JellyHA, where it is installed, has an entity for the same session and
+    // is what pause, play and seek can be sent to (#39)
+    this._jellyfinSessions = this._jhAttach(
+      sessions.map(s => this._normalizeJellyfinSession(s, serverUrl, apiToken)),
+    );
   } catch (_) {
     this._jellyfinSessions = [];
   }
@@ -178,6 +190,7 @@ _normalizeJellyfinSession(s, serverUrl, apiToken) {
   else if (/android/i.test(nl))                                      { deviceIcon = 'mdi:cellphone'; deviceName = 'Phone'; }
   const itemId    = np.Id || '';
   const providers = np.ProviderIds || {};
+  const seriesIds = np.SeriesProviderIds || {};
   const poster    = itemId && serverUrl
     ? `${serverUrl}/Items/${itemId}/Images/Primary${apiToken ? '?api_key=' + apiToken : ''}`
     : null;
@@ -203,8 +216,29 @@ _normalizeJellyfinSession(s, serverUrl, apiToken) {
       _jfDeviceIcon:             deviceIcon,
       _jfDeviceName:             deviceName,
       _jfUser:                   s.UserName || '',
+      // HDR, Dolby Vision and the rest, as Jellyfin itself reports them, so a
+      // card without JellyHA shows the badge too
+      _dynRange:                 this._jfRangeOf(np),
+      // An episode's own ids are the episode's; the series is what Sonarr and
+      // the detail are keyed by, and the proxy looks it up (#39)
+      _jfSeriesTmdbId:           seriesIds.Tmdb || seriesIds.tmdb || null,
+      _jfSeriesTvdbId:           seriesIds.Tvdb || seriesIds.tvdb || null,
+      // A library that gives its series no ids at all still gives the episode
+      // some, and an episode names the show it belongs to
+      _jfEpTvdbId:               isTV ? (providers.Tvdb || providers.tvdb || null) : null,
+      _jfEpImdbId:               isTV ? (providers.Imdb || providers.imdb || null) : null,
       _jfTmdbId:                 providers.Tmdb  || providers.tmdb  || null,
       _jfTvdbId:                 providers.Tvdb  || providers.tvdb  || null,
+      // What it takes to open this very item in Jellyfin's own web client.
+      // The session already knows all three, so opening the title needs no
+      // lookup and cannot land on the wrong entry.
+      // What the track itself is, for the chip the artist window shows beside
+      // the transport. Jellyfin says it in the session; Plex has to be asked.
+      _audioCodec:               (np.MediaStreams || []).find(x => (x.Type || '') === 'Audio')?.Codec || '',
+      _audioBitrate:             Math.round(((np.MediaStreams || []).find(x => (x.Type || '') === 'Audio')?.BitRate || 0) / 1000),
+      _jfItemId:                 itemId,
+      _jfServerUrl:              serverUrl || '',
+      _jfServerId:               s.ServerId || np.ServerId || '',
     },
   };
 }
@@ -270,6 +304,12 @@ _normalizeEmbySession(s, serverUrl, apiToken) {
       _embyUser:                 s.UserName || '',
       _embyTmdbId:               providers.Tmdb  || providers.tmdb  || null,
       _embyTvdbId:               providers.Tvdb  || providers.tvdb  || null,
+      // The same three Jellyfin's session carries, for the same reason
+      _audioCodec:               (np.MediaStreams || []).find(x => (x.Type || '') === 'Audio')?.Codec || '',
+      _audioBitrate:             Math.round(((np.MediaStreams || []).find(x => (x.Type || '') === 'Audio')?.BitRate || 0) / 1000),
+      _embyItemId:               itemId,
+      _embyServerUrl:            serverUrl || '',
+      _embyServerId:             s.ServerId || np.ServerId || '',
     },
   };
 }

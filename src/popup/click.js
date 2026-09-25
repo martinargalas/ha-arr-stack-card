@@ -23,7 +23,7 @@ _ppGlassClick(e, root, d, overlay, glass) {
   }
   // Choosing something in the Actions menu counts as using the card. Merely
   // expanding a branch does not — that is still looking around.
-  if (e.target.closest('[data-qa-do],[data-qa-lib],[data-qa-run],[data-qa-apply],[data-qa-season-pick],[data-action="plex-cast-play"],[data-action="stream-terminate-show"]')) {
+  if (e.target.closest('[data-qa-do],[data-qa-lib],[data-qa-run],[data-qa-apply],[data-qa-season-pick],[data-action="plex-cast-play"],[data-action="jf-play-on"],[data-action="stream-terminate-show"]')) {
     this._markActivated();
   }
   const qaSub = e.target.closest('[data-qa-sub]');
@@ -83,6 +83,7 @@ _ppGlassClick(e, root, d, overlay, glass) {
     if (k === 'lib') this._qaShowInLibrary(this._popup, this._qaLibTargets(this._popup)[0]?.inst);
     if (k === 'queue') this._qaJumpToQueue(this._popup);
     if (k === 'similar') this._qaOpenSimilar(this._popup);
+    if (k === 'srvOpen') this._qaOpenOnServer(this._popup);
     return;
   }
   const qaLib = e.target.closest('[data-qa-lib]');

@@ -342,6 +342,10 @@ class _MusicRowsMethods {
     if (inSearch?.artist) return inSearch.artist;
     const inSug = (this._lastfm || []).find(r => r.artist?.foreignArtistId === mbid);
     if (inSug?.artist) return inSug.artist;
+    // An artist a playing stream ran into: looked up when the track changed to
+    // somebody the library does not hold.
+    const fromStream = this._musStreamArtists?.get(String(mbid).toLowerCase());
+    if (fromStream) return fromStream;
     return this._simArtists?.get(String(mbid).toLowerCase()) || null;
   }
 }

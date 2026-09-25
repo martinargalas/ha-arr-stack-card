@@ -71,8 +71,32 @@ _qaItems(d) {
   }
   // Nothing on disk means nothing to cast — the device list would load only to
   // fail on whichever one was picked.
-  if (this._plexConfigured !== false && this._qaHasFiles(d)) {
-    items.push({ key: 'cast', label: this._t('qaCast'), icon: 'plex' });
+  // Playing somewhere else is about the title, not about what is on screen
+  // now: watching on Jellyfin is no reason to hide a Plex client in the next
+  // room. With both offered, "Play on" alone says too little, so each names
+  // its own server.
+  const _castPlex = this._plexConfigured !== false && this._qaHasFiles(d);
+  const _castJf   = this._jhInstalled() && this._qaHasFiles(d);
+  // Jellyfin first: its own API cannot start playback on a client from a
+  // browser, JellyHA's service can (#39).
+  // Opening the title on a server is about the stream, not about the title:
+  // it goes to the server this is playing on and to no other, so it sits with
+  // that server's own actions and appears only while something is playing.
+  const openSrc = this._qaOpenServerKind(d);
+  if (openSrc === 'jellyfin') {
+    items.push({ key: 'srvOpen', label: this._t('qaOpenJf'), icon: 'jellyfin', direct: true });
+  }
+  if (_castJf) {
+    items.push({ key: 'jfPlay', label: this._t(_castPlex ? 'qaJfPlay' : 'qaCast'), icon: 'jellyfin' });
+  }
+  if (_castPlex) {
+    items.push({ key: 'cast', label: this._t(_castJf ? 'qaCastPlex' : 'qaCast'), icon: 'plex' });
+  }
+  if (openSrc === 'plex') {
+    items.push({ key: 'srvOpen', label: this._t('qaOpenPlex'), icon: 'plex', direct: true });
+  }
+  if (openSrc === 'emby') {
+    items.push({ key: 'srvOpen', label: this._t('qaOpenEmby'), icon: 'emby', direct: true });
   }
 
   if (this._qaMaintainerrReady() && this._qaHasFiles(d) && this._qaCollectionsFor(d).length) {
@@ -159,6 +183,16 @@ _qaCastRowsHtml() {
   ).join('');
 }
 
+// The Jellyfin clients, the ones already awake first — a screen that is idle
+// may well be off, and Jellyfin cannot tell the card which.
+_qaJfPlayRowsHtml() {
+  const list = this._jhTargets();
+  if (!list.length) return `<div class="qa-item qa-sub-item qa-static" style="opacity:0.6">${this._t('qaCastNone')}</div>`;
+  return list.map(p =>
+    `<button class="qa-item qa-sub-item" data-action="jf-play-on" data-entity="${this._escHtml(p.entityId)}"><span${p.idle ? ' style="opacity:0.7"' : ''}>${this._escHtml(p.name)}</span></button>`
+  ).join('');
+}
+
 _qaAiringRowsHtml() {
   const rows = this._ppAiring;
   if (!rows) return this._qaLoadingRow();
@@ -238,6 +272,7 @@ _qaMenuHtml(d, searchRows = '', removeRows = '') {
   // Sub-items roll down under their own parent rather than opening beside it.
   const subRows = key => {
     if (key === 'cast') return this._qaCastRowsHtml();
+    if (key === 'jfPlay') return this._qaJfPlayRowsHtml();
     if (key === 'stats') return this._qaStatsRowsHtml();
     if (key === 'airing') return this._qaAiringRowsHtml();
     if (key === 'lib') {

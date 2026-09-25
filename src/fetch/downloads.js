@@ -1,6 +1,7 @@
 class _DownloadsMethods {
 
 async _fetchSab() {
+  if (this._dlHeld('SABnzbd')) return;
   try {
     const data = await this._callApi('GET', 'arr_stack/sabnzbd/queue');
     // SABnzbd returns HTTP 200 with {status:false} on wrong API key — treat as unconfigured
@@ -33,13 +34,10 @@ async _fetchSab() {
     this._sabActiveIds  = queue.status === 'Paused' ? new Set() : active;
     this._sab           = queue;
     this._sabConfigured = true;
+    this._dlFetchOk('SABnzbd');
     this._fetchVpnIp();
   } catch (e) {
-    const status = e?.status_code ?? e?.status ?? e?.response?.status;
-    const body   = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-    const isNotConfigured = status === 503 || body.includes('not configured');
-    this._sabConfigured = !isNotConfigured;
-    console.error('[arr-card] SABnzbd fetch error:', e);
+    this._dlFetchFailed('SABnzbd', '_sabConfigured', e);
   }
 }
 
@@ -116,6 +114,7 @@ async _sabRetry(nzoId) {
 }
 
 async _fetchNzbget() {
+  if (this._dlHeld('NZBGet')) return;
   try {
     const [statusResp, queueResp] = await Promise.all([
       this._callApi('GET', 'arr_stack/nzbget/status'),
@@ -124,11 +123,9 @@ async _fetchNzbget() {
     this._nzbget      = statusResp?.result || null;
     this._nzbgetQueue = queueResp?.result || [];
     this._nzbgetConfigured = true;
+    this._dlFetchOk('NZBGet');
   } catch (e) {
-    const status = e?.status_code ?? e?.status ?? e?.response?.status;
-    const body   = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-    this._nzbgetConfigured = !(status === 503 || (body && body.includes('not configured')));
-    if (this._nzbgetConfigured) console.error('[arr-card] NZBGet fetch error:', e);
+    this._dlFetchFailed('NZBGet', '_nzbgetConfigured', e);
   }
 }
 
@@ -189,7 +186,52 @@ async _nzbgetItemDelete(nzbId) {
   }
 }
 
+// What a failed fetch of a download client means, in one place.
+//
+// Three different things arrive here. 503 says the client is not set up, and
+// the card stops asking. 502 says it is set up but not answering — a stopped
+// container, a web server in front of it — so the client stays and the next
+// poll tries again. Anything else is a real fault and reads the same way.
+//
+// Either way the console gets one line per change of state, not one per poll:
+// a client that is down for an hour used to write hundreds of them.
+_dlFetchFailed(name, flag, e) {
+  const status = e?.status_code ?? e?.status ?? e?.response?.status;
+  const body   = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
+  const notConfigured = status === 503 || body.includes('not configured');
+  this[flag] = !notConfigured;
+  this._dlLastError = this._dlLastError || {};
+  const signature = `${status}:${notConfigured}`;
+  if (this._dlLastError[name] !== signature) {
+    this._dlLastError[name] = signature;
+    console.error(`[arr-card] ${name} fetch error${notConfigured ? ' (not configured)' : ''}:`, e);
+  }
+  // Backing off. The card's own line is written once, but the browser logs
+  // every failed request itself, and a client that is down for an hour would
+  // otherwise be asked twelve hundred times. Five seconds, then doubling to a
+  // minute; the client stays on the card and comes back on its own.
+  this._dlFails = this._dlFails || {};
+  this._dlHoldUntil = this._dlHoldUntil || {};
+  const fails = (this._dlFails[name] = (this._dlFails[name] || 0) + 1);
+  this._dlHoldUntil[name] = Date.now() + Math.min(60000, 5000 * 2 ** (fails - 1));
+}
+
+// A client that answers again says so once, so the next outage is logged, and
+// is asked at the usual rate from then on.
+_dlFetchOk(name) {
+  if (this._dlLastError?.[name]) delete this._dlLastError[name];
+  if (this._dlFails?.[name]) delete this._dlFails[name];
+  if (this._dlHoldUntil?.[name]) delete this._dlHoldUntil[name];
+}
+
+// True while a client that just failed is being left alone.
+_dlHeld(name) {
+  const until = this._dlHoldUntil?.[name] || 0;
+  return until > Date.now();
+}
+
 async _fetchQbit() {
+  if (this._dlHeld('qBittorrent')) return;
   try {
     const [torrents, transfer, maindata] = await Promise.all([
       this._callApi('GET', 'arr_stack/qbit/torrents'),
@@ -200,17 +242,15 @@ async _fetchQbit() {
     this._qbitTransfer = transfer;
     this._qbitDiskFreeBytes = maindata?.server_state?.free_space_on_disk ?? null;
     this._qbitConfigured = true;
+    this._dlFetchOk('qBittorrent');
   } catch (e) {
-    const status = e?.status_code ?? e?.status ?? e?.response?.status;
-    const body   = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-    const isNotConfigured = status === 503 || body.includes('not configured');
-    this._qbitConfigured = !isNotConfigured;
-    console.error('[arr-card] qBittorrent fetch error:', e);
+    this._dlFetchFailed('qBittorrent', '_qbitConfigured', e);
   }
 }
 
 async _fetchDeluge() {
   if (this._delugeConfigured === false) return;
+  if (this._dlHeld('Deluge')) return;
   try {
     const [torrents, status] = await Promise.all([
       this._callApi('GET', 'arr_stack/deluge/queue'),
@@ -219,17 +259,15 @@ async _fetchDeluge() {
     this._delugeQueue = Array.isArray(torrents) ? torrents : [];
     this._delugeStatus = status || {};
     this._delugeConfigured = true;
+    this._dlFetchOk('Deluge');
   } catch (e) {
-    const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
-    const body = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-    const isNotConfigured = statusCode === 503 || body.includes('not configured');
-    this._delugeConfigured = !isNotConfigured;
-    console.error('[arr-card] Deluge fetch error:', e);
+    this._dlFetchFailed('Deluge', '_delugeConfigured', e);
   }
 }
 
 async _fetchTransmission() {
   if (this._transmissionConfigured === false) return;
+  if (this._dlHeld('Transmission')) return;
   try {
     const [torrents, status] = await Promise.all([
       this._callApi('GET', 'arr_stack/transmission/queue'),
@@ -238,17 +276,15 @@ async _fetchTransmission() {
     this._transmissionQueue  = Array.isArray(torrents) ? torrents : [];
     this._transmissionStatus = status || {};
     this._transmissionConfigured = true;
+    this._dlFetchOk('Transmission');
   } catch (e) {
-    const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
-    const body = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-    const isNotConfigured = statusCode === 503 || body.includes('not configured');
-    this._transmissionConfigured = !isNotConfigured;
-    console.error('[arr-card] Transmission fetch error:', e);
+    this._dlFetchFailed('Transmission', '_transmissionConfigured', e);
   }
 }
 
 async _fetchRtorrent() {
   if (this._rtorrentConfigured === false) return;
+  if (this._dlHeld('rTorrent')) return;
   try {
     const [torrents, status] = await Promise.all([
       this._callApi('GET', 'arr_stack/rtorrent/queue'),
@@ -257,12 +293,9 @@ async _fetchRtorrent() {
     this._rtorrentQueue  = Array.isArray(torrents) ? torrents : [];
     this._rtorrentStatus = status || {};
     this._rtorrentConfigured = true;
+    this._dlFetchOk('rTorrent');
   } catch (e) {
-    const statusCode = e?.status_code ?? e?.status ?? e?.response?.status;
-    const body = typeof e?.body === 'string' ? e.body : JSON.stringify(e?.body ?? e?.message ?? e);
-    const isNotConfigured = statusCode === 503 || body.includes('not configured');
-    this._rtorrentConfigured = !isNotConfigured;
-    console.error('[arr-card] rTorrent fetch error:', e);
+    this._dlFetchFailed('rTorrent', '_rtorrentConfigured', e);
   }
 }
 

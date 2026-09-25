@@ -287,6 +287,7 @@ _renderPopupEl() {
   this._ppWireIsPanel(root, glass);
 
   this._ppStreamProgress(root);
+  this._ppWireSeekDrag(root);
 }
 
 // Closing the detail: the overlay and the close button.
@@ -323,6 +324,32 @@ _ppWireClose(overlay, closeBtn, _resetPopupTransient) {
           } catch (err) { console.warn('[arr-card] Plex cast error:', err); }
           this._plexCasting = null;
           this._renderPopupEl();
+        })();
+        return;
+      }
+      // Playing on a Jellyfin client, through JellyHA (#39). Jellyfin knows the
+      // title by an id of its own, so it is looked up by name and year first.
+      const jfBtn = e.target.closest('[data-action="jf-play-on"]');
+      if (jfBtn) {
+        const target = jfBtn.dataset.entity;
+        const dd = this._popup;
+        if (!target || !dd) return;
+        const isMovieType = dd._type === 'radarr' || dd._type === 'movie';
+        const title = dd.title || dd.name || '';
+        const year = String(dd.year || dd.releaseDate || dd.firstAirDate || dd.inCinemas || '').slice(0, 4);
+        this._ppMenu = null;
+        this._renderPopupEl();
+        (async () => {
+          const itemId = await this._jhFindItem(title, /^\d{4}$/.test(year) ? year : null, isMovieType);
+          if (!itemId) {
+            this.dispatchEvent(new CustomEvent('hass-notification', {
+              detail: { message: this._t('qaJfPlayFailed') }, bubbles: true, composed: true,
+            }));
+            return;
+          }
+          try {
+            await this._hass.callService('jellyha', 'session_play', { entity_id: target, item_id: itemId });
+          } catch (err) { console.warn('[arr-card] Jellyfin play error:', err); }
         })();
         return;
       }

@@ -145,6 +145,92 @@ async _qaJumpToQueue(d) {
   if (row) this._qaBlinkRow(row);
 }
 
+// Opening the title on the server it is playing on. The card shows what a
+// media server knows about a title; the server itself is where it is watched,
+// and getting there meant finding it by hand.
+//
+// Everything comes from the session, never from a lookup: the session already
+// names the server, the item and — for Plex — the library key, so the link
+// cannot land on a different title, and a Jellyfin library that carries no
+// TMDB ids is no obstacle.
+
+// The session behind the popup, whichever server it came from.
+_qaStreamSession(d) {
+  const eid = d?._streamEntity || '';
+  if (!eid) return null;
+  if (d._jfSessionId) {
+    const hit = (this._jellyfinSessions || []).find(x => x.id === eid);
+    return hit ? { kind: 'jellyfin', attr: hit.attr } : null;
+  }
+  if (d._embySessionId) {
+    const hit = (this._embySessions || []).find(x => x.id === eid);
+    return hit ? { kind: 'emby', attr: hit.attr } : null;
+  }
+  // Plex reaches the popup either as a proxy session, keyed by its player, or
+  // as one of Home Assistant's own media players — then the session id the
+  // popup was given is what ties the two together. The library key sits on the
+  // session itself rather than among the media attributes.
+  const px = (this._plexSessions || []).find(x => x.id === eid)
+          || (d._plexSessionId
+              ? (this._plexSessions || []).find(x => x._plexSessionId === d._plexSessionId)
+              : null);
+  return px ? { kind: 'plex', attr: px } : null;
+}
+
+// Whether there is anywhere to go. Kodi plays to a screen rather than to a
+// library, so it has no page to open and is not offered one.
+_qaOpenServerKind(d) {
+  const sess = this._qaStreamSession(d);
+  if (!sess) return null;
+  if (sess.kind === 'plex') return sess.attr?._plexRatingKey ? 'plex' : null;
+  const itemId = sess.kind === 'jellyfin' ? sess.attr?._jfItemId : sess.attr?._embyItemId;
+  const url    = sess.kind === 'jellyfin' ? sess.attr?._jfServerUrl : sess.attr?._embyServerUrl;
+  return itemId && url ? sess.kind : null;
+}
+
+async _qaOpenOnServer(d) {
+  const url = await this._qaServerWebUrl(d);
+  if (!url) {
+    this.dispatchEvent(new CustomEvent('hass-notification', {
+      detail: { message: this._t('qaOpenFailed') }, bubbles: true, composed: true,
+    }));
+    return;
+  }
+  // A new tab rather than this one: the card is a dashboard somebody is in
+  // the middle of using.
+  window.open(url, '_blank', 'noopener');
+}
+
+async _qaServerWebUrl(d) {
+  const sess = this._qaStreamSession(d);
+  if (!sess) return '';
+  const a = sess.attr || {};
+  if (sess.kind === 'plex') {
+    if (!a._plexRatingKey) return '';
+    // app.plex.tv rather than the server's own address: it is reachable from
+    // wherever the dashboard is open and hands off to the desktop app where
+    // that is installed. It keys on the server's identifier, which is not the
+    // player's — the session carries the player's.
+    if (!this._plexServerId) {
+      const raw = await this._callApi('GET', 'arr_stack/plex/identity').catch(() => null);
+      this._plexServerId = raw?.machineIdentifier || '';
+    }
+    if (!this._plexServerId) return '';
+    const key = encodeURIComponent(`/library/metadata/${a._plexRatingKey}`);
+    return `https://app.plex.tv/desktop/#!/server/${encodeURIComponent(this._plexServerId)}/details?key=${key}`;
+  }
+  // Jellyfin and Emby both host their own web client at the address the
+  // session was read from, and both name the item the same way.
+  const itemId   = sess.kind === 'jellyfin' ? a._jfItemId : a._embyItemId;
+  const base     = String(sess.kind === 'jellyfin' ? a._jfServerUrl : a._embyServerUrl).replace(/\/+$/, '');
+  const serverId = sess.kind === 'jellyfin' ? a._jfServerId : a._embyServerId;
+  if (!itemId || !base) return '';
+  const srv = serverId ? `&serverId=${encodeURIComponent(serverId)}` : '';
+  return sess.kind === 'jellyfin'
+    ? `${base}/web/index.html#/details?id=${encodeURIComponent(itemId)}${srv}`
+    : `${base}/web/index.html#!/item?id=${encodeURIComponent(itemId)}${srv}`;
+}
+
 // Two slow pulses, same as the library jump
 _qaBlinkRow(row) {
   row.scrollIntoView({ block: 'nearest' });

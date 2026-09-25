@@ -21,6 +21,7 @@ import { sonarrIsMixin } from './render/interactive-search-sonarr.js';
 import { autoSearchMixin } from './render/auto-search.js';
 import { fetchMixin } from './fetch/index.js';
 import { sessionsMixin } from './fetch/sessions.js';
+import { jellyhaMixin } from './fetch/jellyha.js';
 import { downloadsMixin } from './fetch/downloads.js';
 import { arrMixin } from './fetch/arr.js';
 import { fetchCalendarMixin } from './fetch/calendar.js';
@@ -479,6 +480,15 @@ class ArrStackCard extends HTMLElement {
       const cur = hass.states || {};
       const old = prev.states || {};
 
+      // 0) A Jellyfin stream that ended, where JellyHA can say so at once
+      if (this._jhSessionsEnded(cur, old)) {
+        this._reRenderSection('streams');
+        this._fetchJellyfinSessions?.();
+      }
+
+      // 0b) The track in an open artist window changed on its own
+      if (this._musicModal?.stream) this._musWatchStream();
+
       // 1) New stream started (idle/off → playing/paused)
       for (const id of Object.keys(cur)) {
         if (!(id.startsWith('media_player.plex_') || id.startsWith('media_player.jellyfin_'))) continue;
@@ -564,6 +574,13 @@ class ArrStackCard extends HTMLElement {
       // scroll position onto whatever replaces it would fight the navigation.
       this._scrollRestore = null;
       this._applyScrollLock(false);
+    }
+    if (this._skipTimer) {
+      // A skip being waited on: the token stops the loop, the timer stops the
+      // next tick from ever firing.
+      clearTimeout(this._skipTimer);
+      this._skipTimer = null;
+      this._skipWatch = (this._skipWatch || 0) + 1;
     }
     if (this._interval) {
       clearInterval(this._interval);
@@ -1167,6 +1184,7 @@ applyMixin(ArrStackCard.prototype, interactiveSearchMixin);
 applyMixin(ArrStackCard.prototype, sonarrIsMixin);
 applyMixin(ArrStackCard.prototype, autoSearchMixin);
 applyMixin(ArrStackCard.prototype, sessionsMixin);
+applyMixin(ArrStackCard.prototype, jellyhaMixin);
 applyMixin(ArrStackCard.prototype, downloadsMixin);
 applyMixin(ArrStackCard.prototype, arrMixin);
 applyMixin(ArrStackCard.prototype, fetchCalendarMixin);
@@ -1234,7 +1252,7 @@ ArrStackCard._lazy = installLazy(ArrStackCard.prototype, {
   maintainerr: { load: () => import('./chunks/maintainerr.js'), entries: ['_openMaintainerrModal', '_mtOpenCollectionDetail', '_mtLoadTab'] },
   activity:    { load: () => import('./chunks/activity.js'),    entries: ['_openActivityModal', '_actLoadTab'] },
   library:     { load: () => import('./chunks/library.js'),     entries: ['_openLibModal', '_libBodyHtml', '_libFilteredItems', '_wireLibModalBody'] },
-  music:       { load: () => import('./chunks/music.js'),       entries: ['_openMusicModal', '_openMusicPreview', '_openAlbumModal', '_openCalAlbumArtist', '_renderMusicModalEl', '_renderAlbumModalEl', '_musQueueSig'] },
+  music:       { load: () => import('./chunks/music.js'),       entries: ['_openMusicModal', '_openMusicPreview', '_openAlbumModal', '_openCalAlbumArtist', '_renderMusicModalEl', '_renderAlbumModalEl', '_musQueueSig', '_musFollowStream', '_musOpenForStream'] },
 }, applyMixin);
 
 customElements.define('arr-stack-card', ArrStackCard);

@@ -1,8 +1,12 @@
 import { POPUP_TYPE } from '../constants.js';
 import { dayClass } from '../shared/ui.js';
+import { normName } from '../shared/format.js';
 
 // Now Playing: the popup a playing stream opens, its transport and seek bar,
 // and playing a title on a Plex client. Split out of popup/index.js.
+
+// A title as it compares: lower case, without the year a player appends.
+const _normT = s => (s || '').toLowerCase().replace(/\s*\(\d{4}\)\s*$/, '').trim();
 
 class _PopupStreamMethods {
 
@@ -10,7 +14,7 @@ class _PopupStreamMethods {
 // Stream popup — open from stream card click
 // ─────────────────────────────────────────────
 
-async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
+async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle, { bare = false } = {}) {
   const isMusic  = contentType === 'music' || contentType === 'artist' || contentType === 'album';
   const streamAttr = this._hass?.states?.[entityId]?.attributes || {};
   const isLiveTV = contentType === 'channel' || !!streamAttr.media_channel
@@ -19,11 +23,20 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
                  || !!seriesTitle || !!streamAttr.media_series_title;
 
   if (isMusic) {
+    // A track opens the artist's window — their detail when the library holds
+    // them, the same window as a preview when it does not. Only a stream that
+    // has no artist to show falls through to the plain popup below.
+    if (!bare && this._lidarrConfigured !== false) {
+      this._markActivated();
+      this._musOpenForStream(entityId, trackTitle);
+      return;
+    }
     const s    = this._hass?.states?.[entityId];
     const attr = s?.attributes || {};
     this._popup = {
       _type:         POPUP_TYPE.STREAM,
       _streamEntity: entityId,
+      _ctrlEntity:   this._streamControlEntity(entityId),
       _streamState:  s?.state || 'idle',
       title:         attr.media_title || '',
       _artist:       attr.media_artist || '',
@@ -41,12 +54,41 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
   }
 
   if (isTV) {
-    const lookupTitle = seriesTitle || trackTitle;
-    const lt = lookupTitle.toLowerCase();
+    // The name the show is looked up by: what the player says, unless the ids
+    // turn up the name TMDB uses.
+    let lookupName = seriesTitle || trackTitle;
 
     // Ids first. Two different shows can carry the same name, and the old
     // bidirectional includes() also paired "Alien" with "Aliens".
     let showIds = { tvdbId: null, tmdbId: null };
+    // Jellyfin names its own series, and those names are not TMDB's: a library
+    // holding Bluey as "Blue" used to open Blue Bloods. The proxy carries the
+    // series' provider ids, so the show is found by id like every other source.
+    let jfEpIds = null;
+    if (entityId.startsWith('jellyfin:')) {
+      const jf = (this._jellyfinSessions || []).find(x => x.id === entityId);
+      showIds = {
+        tvdbId: jf?.attr?._jfSeriesTvdbId || null,
+        tmdbId: jf?.attr?._jfSeriesTmdbId || null,
+      };
+      // Some libraries carry no ids on the series at all. The episode has
+      // them, and TMDB names the show an episode belongs to, so that is asked
+      // before falling back to the name the library happens to use.
+      if (!showIds.tvdbId && !showIds.tmdbId) {
+        jfEpIds = {
+          tvdbId: jf?.attr?._jfEpTvdbId || null,
+          imdbId: jf?.attr?._jfEpImdbId || null,
+        };
+        const src = jfEpIds.tvdbId ? `tvdb/${jfEpIds.tvdbId}` : jfEpIds.imdbId ? `imdb/${jfEpIds.imdbId}` : null;
+        if (src) {
+          const found = await this._callApi('GET', `arr_stack/tmdb/find/${src}`).catch(() => null);
+          if (found?.tmdbId) {
+            showIds.tmdbId = String(found.tmdbId);
+            if (found.name) lookupName = found.name;
+          }
+        }
+      }
+    }
     if (!isLiveTV && entityId.startsWith('media_player.plex')) {
       try {
         const raw = await this._hass.callApi('GET', 'arr_stack/plex/sessions');
@@ -61,25 +103,59 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
     );
     // Exact title only — used when the show has no usable ids (Live TV, or a
     // source that does not expose series-level providers).
+    const lt = lookupName.toLowerCase();
     const _snMatch = arr => (arr || []).find(s => (s.title?.toLowerCase() || '') === lt);
-    const s  = _snById(this._sonarr)  || _snMatch(this._sonarr);
-    const s2 = !s && (_snById(this._sonarr2) || _snMatch(this._sonarr2));
-    const snHit = s || s2;
+    // Both instances, ids before names across the pair rather than within each
+    // one: a name that happens to match in the first instance must not beat the
+    // show the id points at in the second.
+    const snHit = _snById(this._sonarr) || _snById(this._sonarr2)
+               || _snMatch(this._sonarr) || _snMatch(this._sonarr2);
     if (snHit) {
-      const popType = snHit === s ? POPUP_TYPE.SONARR : POPUP_TYPE.SONARR;
-      await this._openPopup(popType, snHit.tmdbId ? String(snHit.tmdbId) : null, snHit.tvdbId ? String(snHit.tvdbId) : null, snHit.title);
+      await this._openPopup(
+        POPUP_TYPE.SONARR,
+        snHit.tmdbId ? String(snHit.tmdbId) : null,
+        snHit.tvdbId ? String(snHit.tvdbId) : null,
+        snHit.title,
+      );
     } else if (this._overseerrConfigured !== false) {
       // Not in Sonarr + Overseerr available — search for tmdbId
       let tvTmdbId = null;
-      try {
-        const sr = await this._hass.callApi('POST', 'arr_stack/overseerr/search', { query: lookupTitle, page: 1 });
-        const hit = (sr?.results || []).find(r => r.mediaType === 'tv');
-        if (hit?.id) tvTmdbId = String(hit.id);
-      } catch (_) {}
-      await this._openPopup(POPUP_TYPE.TV, tvTmdbId, null, lookupTitle);
+      let tvTitle = lookupName;
+      if (showIds.tmdbId) {
+        tvTmdbId = String(showIds.tmdbId);
+      } else if (showIds.tvdbId) {
+        // The show is known by its TVDB id alone, which is what Jellyfin
+        // carries. TMDB answers for it, and with it comes the name the rest of
+        // the card uses rather than whatever the library called it.
+        const found = await this._callApi('GET', `arr_stack/tmdb/find/tvdb/${encodeURIComponent(showIds.tvdbId)}`)
+          .catch(() => null);
+        if (found?.tmdbId) {
+          tvTmdbId = String(found.tmdbId);
+          if (found.name) tvTitle = found.name;
+        }
+      } else {
+        try {
+          const sr = await this._hass.callApi('POST', 'arr_stack/overseerr/search', { query: lookupName, page: 1 });
+          const want = _normT(lookupName);
+          const tv = (sr?.results || []).filter(r => r.mediaType === 'tv');
+          // The name has to match. Taking the first result turned "Blue" into
+          // "Blue Bloods"; a title the card cannot place is better left as the
+          // title it was given than shown as somebody else's show.
+          const hit = tv.find(r => _normT(r.name || r.title) === want
+                              || _normT(r.originalName || r.originalTitle || '') === want);
+          if (hit?.id) tvTmdbId = String(hit.id);
+        } catch (_) {}
+      }
+      await this._openPopup(POPUP_TYPE.TV, tvTmdbId, showIds.tvdbId ? String(showIds.tvdbId) : null, tvTitle);
     } else {
-      // No Overseerr — local fallback
-      await this._openPopup(POPUP_TYPE.TV, null, null, lookupTitle);
+      // No Overseerr — local fallback, but the ids are still worth more than
+      // the name the library happens to use
+      await this._openPopup(
+        POPUP_TYPE.TV,
+        showIds.tmdbId ? String(showIds.tmdbId) : null,
+        showIds.tvdbId ? String(showIds.tvdbId) : null,
+        lookupName,
+      );
     }
     if (this._popup) {
       this._popup._noIS = isLiveTV; // disable IS only for Live TV
@@ -91,7 +167,6 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
 
   // Movie — keep Interactive Search
   const titleNoYear = trackTitle.replace(/\s*\(\d{4}\)\s*$/, '').trim();
-  const _normT = s => (s || '').toLowerCase().replace(/\s*\(\d{4}\)\s*$/, '').trim();
 
   // Show loading immediately while we resolve IDs
   this._popup = { _loading: true, title: trackTitle };
@@ -219,6 +294,7 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle) {
       this._popup = {
         _type:         POPUP_TYPE.STREAM,
         _streamEntity: entityId,
+        _ctrlEntity:   this._streamControlEntity(entityId),
         _streamState:  this._hass?.states?.[entityId]?.state || 'idle',
         title:         trackTitle,
         _artist:       '',
@@ -252,6 +328,14 @@ _attachStreamData(entityId) {
     updatedAt = attr.media_position_updated_at
       ? new Date(attr.media_position_updated_at).getTime()
       : Date.now();
+  } else if (entityId.startsWith('plex:')) {
+    // A Plex session read through the proxy is not a Home Assistant entity,
+    // so asking the states for it gave the popup an empty stream.
+    const px = (this._plexSessions || []).find(s => s.id === entityId);
+    if (px) { state = px.state; attr = px.attr; }
+    updatedAt = attr.media_position_updated_at
+      ? new Date(attr.media_position_updated_at).getTime()
+      : Date.now();
   } else {
     const s = this._hass?.states?.[entityId];
     attr = s?.attributes || {};
@@ -270,6 +354,20 @@ _attachStreamData(entityId) {
   this._popup._embySessionId  = entityId.startsWith('emby:') ? entityId.replace('emby:', '') : null;
   const isKodiSession = (this._kodiSessions || []).some(s => s.id === entityId);
   this._popup._kodiEntityId   = isKodiSession ? entityId : null;
+  // A Jellyfin session cannot be driven from a browser, but JellyHA's player
+  // for the same session can (#39). The row is still the proxy's, so the
+  // progress bar and everything keyed on the session id stay as they are.
+  this._popup._ctrlEntity     = this._streamControlEntity(entityId);
+  // A Plex session read through the proxy is driven by its machine id rather
+  // than by an entity; the popup was only given one for Plex players that
+  // Home Assistant happens to expose, so proxy sessions had no controls.
+  if (entityId.startsWith('plex:')) {
+    const ps = (this._plexSessions || []).find(x => x.id === entityId);
+    if (ps?._machineIdentifier && ps._plexCanControl) {
+      this._popup._plexMachineId = ps._machineIdentifier;
+      this._popup._plexPlayerUrl = ps._playerUrl || null;
+    }
+  }
   if (entityId.startsWith('media_player.plex_')) this._fetchPlexMachineId(entityId);
 }
 
@@ -351,7 +449,10 @@ async _fetchPlexMachineId(entityId) {
                || this._plexSessionFallback(sessions, entityId);
     const p = match?.Player;
     if (p && this._popup) {
-      this._popup._plexMachineId  = p.machineIdentifier;
+      // Only a player that says it takes playback commands gets the buttons;
+      // Plex Web says it does not, and quietly drops whatever is sent.
+      const canControl = /playback/i.test(p.protocolCapabilities || '');
+      this._popup._plexMachineId  = canControl ? p.machineIdentifier : null;
       this._popup._plexSessionId  = match?.Session?.id || match?.sessionKey || '';
       this._popup._plexSessionKey = match?.sessionKey || '';
       this._popup._plexUser       = match?.User?.title || '';
@@ -395,6 +496,111 @@ _updateStreamFills(entityId, newPos, dur) {
     f.dataset.pos     = newPos.toFixed(2);
     f.dataset.updated = now;
   });
+}
+
+// What a stream is playing, wherever the card reads it from.
+_streamAttrOf(streamId) {
+  if (!streamId) return {};
+  for (const pool of [this._jellyfinSessions, this._plexSessions, this._embySessions, this._kodiSessions]) {
+    const hit = (pool || []).find(s => s.id === streamId);
+    if (hit) return hit.attr || {};
+  }
+  return this._hass?.states?.[streamId]?.attributes || {};
+}
+
+// The artist a stream is playing right now, as the library knows them. The
+// name is all a player gives, which is what the Now Playing tile matches on
+// too — one rule for both, or a tile and its window could disagree.
+_musStreamArtist(streamId) {
+  const a = this._streamAttrOf(streamId) || {};
+  const want = normName(a.media_artist || a.media_album_artist);
+  if (!want) return null;
+  return [...(this._lidarrArtists?.values() || [])]
+    .find(x => normName(x.artistName) === want) || null;
+}
+
+// A track that simply ended and handed over to the next one. A skip is
+// watched for, but most changes are not skips — an album runs out, a shuffled
+// playlist moves on — and the window stood on the track it was opened with
+// until somebody pressed something.
+_musWatchStream() {
+  const streamId = this._musicModal?.stream;
+  if (!streamId) { this._musWatchSig = null; return; }
+  const sig = this._streamSignature(streamId);
+  if (this._musWatchKey !== streamId) {
+    // A different window, or the same one reopened: this is where it starts.
+    this._musWatchKey = streamId;
+    this._musWatchSig = sig;
+    return;
+  }
+  if (sig === this._musWatchSig) return;
+  this._musWatchSig = sig;
+  // A skip is already being followed; two followers would fight over the window
+  if (this._skipTimer) return;
+  this._musFollowStream(streamId);
+}
+
+// A shuffled playlist walks from one artist to the next, and the window it
+// is being watched in has to walk with it — redrawing the same artist around
+// a track that is no longer theirs is worse than showing nothing.
+
+// Everything a skip changes. The position is left out on purpose: it moves on
+// its own, and waiting on it would call every second a new track.
+_streamSignature(streamId) {
+  const a = this._streamAttrOf(streamId) || {};
+  return [
+    a.media_title, a.media_series_title, a.media_season, a.media_episode,
+    a.media_artist, a.media_album_name, a.entity_picture,
+  ].join('|');
+}
+
+// A session read through the proxy is polled every five seconds, so after a
+// skip the card would show the old track for most of that. This asks again at
+// once, and is the only place allowed past the throttle.
+async _streamRefetch(streamId) {
+  const id = String(streamId || '');
+  if (id.startsWith('jellyfin:')) { this._jellyfinLastFetch = 0; await this._fetchJellyfinSessions(); }
+  else if (id.startsWith('emby:')) { this._embyLastFetch = 0; await this._fetchEmbySessions(); }
+  else if (id.startsWith('plex:')) { this._plexLastFetch = 0; await this._fetchPlexSessions(); }
+}
+
+// Next and previous: the command goes out, and the card follows the moment the
+// player answers rather than on a fixed wait. A player takes a beat to load
+// the next track, so what is shown cannot change before it does — but it must
+// change as soon as it has, not two seconds later.
+_streamAfterSkip(streamId, apply) {
+  const before = this._streamSignature(streamId);
+  const token = (this._skipWatch || 0) + 1;
+  this._skipWatch = token;
+  const tick = async (left) => {
+    // A newer skip, or a closed window, owns the card now
+    if (this._skipWatch !== token) return;
+    await this._streamRefetch(streamId);
+    if (this._skipWatch !== token) return;
+    if (this._streamSignature(streamId) !== before) { apply(); return; }
+    if (left <= 0) { apply(); return; }
+    this._skipTimer = setTimeout(() => tick(left - 1), 300);
+  };
+  this._skipTimer = setTimeout(() => tick(20), 150);
+}
+
+// The popup, redrawn around whatever is playing now.
+_streamRefreshPopup(streamId) {
+  const d = this._popup;
+  if (!d || d._streamEntity !== streamId) return;
+  if (d._type !== POPUP_TYPE.STREAM) { this._attachStreamData(streamId); this._renderPopupEl(); return; }
+  const a = this._streamAttrOf(streamId) || {};
+  this._popup = {
+    ...d,
+    title:      a.media_title || d.title,
+    _artist:    a.media_artist || '',
+    _album:     a.media_album_name || '',
+    _duration:  a.media_duration || 0,
+    _position:  a.media_position || 0,
+    _updatedAt: a.media_position_updated_at ? new Date(a.media_position_updated_at).getTime() : Date.now(),
+    _poster:    a.entity_picture || null,
+  };
+  this._renderPopupEl();
 }
 
 // Sync music popup to current hass state (called from _renderStreams on each refresh)
@@ -451,8 +657,45 @@ _syncStreamPopup() {
 // ─────────────────────────────────────────────
 // Stream controls embedded in movie/TV popup
 // ─────────────────────────────────────────────
+// The transport row, the one every popup uses: the artist window, a stream's
+// own popup and the detail of a film or episode. They drifted apart — a lone
+// oversized button in one, three of another size in the next — so the markup
+// lives here and each caller says only what the player can do.
+_streamCtrlRowHtml(entityId, { playing, feats = 0, plexFallback = false, step = true, style = '' } = {}) {
+  const canPause = !!(feats & 1) || plexFallback;
+  const canPlay  = !!(feats & 16384) || plexFallback;
+  if (!canPause && !canPlay) return '';
+  const eid  = this._escHtml(entityId || '');
+  // Skipping is for something with a next one: an episode or a track. A film
+  // has neither. The player's own features do not say so — JellyHA reports the
+  // same mask for a film as for an episode — so the caller decides.
+  const canStep = step && ((!!(feats & 16) && !!(feats & 32)) || plexFallback);
+  const btn = (action, icon, size, cls = 'popup-ctrl-btn', title = '') =>
+    `<button class="${cls}" data-action="${action}" data-entity="${eid}"${title ? ` title="${this._escHtml(title)}"` : ''}><ha-icon icon="mdi:${icon}" style="--mdc-icon-size:${size}px"></ha-icon></button>`;
+  return `
+    <div class="popup-stream-ctrls" style="display:flex;align-items:center;gap:14px;${style}">
+      ${canStep ? btn('stream-prev', 'skip-previous', 22, 'popup-ctrl-btn', this._t('previous')) : ''}
+      ${btn('stream-playpause', playing ? 'pause' : 'play', 26, 'popup-ctrl-btn popup-ctrl-btn-main', this._t(playing ? 'pause' : 'resume'))}
+      ${canStep ? btn('stream-next', 'skip-next', 22, 'popup-ctrl-btn', this._t('next')) : ''}
+    </div>`;
+}
+
+// What a stream's transport is sent to. A player Home Assistant already has an
+// entity for is driven directly; a Jellyfin session needs JellyHA's player for
+// the same session; a Plex session read through the proxy has neither and goes
+// by its machine id instead (see _plexMachineId).
+_streamControlEntity(streamId) {
+  if (!streamId) return '';
+  if (String(streamId).startsWith('media_player.')) return streamId;
+  return this._jhControlEntity(streamId) || '';
+}
+
 _renderPopupStreamControls(d) {
-  const eid     = d._streamEntity;
+  // Two different ids. The progress fill is found by the stream's own id, the
+  // same one the card's tile uses; the transport is sent to whatever can
+  // actually be driven, which for Jellyfin is JellyHA's player.
+  const fillId  = d._streamEntity;
+  const eid     = d._ctrlEntity || d._streamEntity;
   const dur     = d._duration || 0;
   const pos     = d._position || 0;
   const upd     = d._updatedAt || Date.now();
@@ -462,19 +705,37 @@ _renderPopupStreamControls(d) {
   const initPct = dur > 0 ? (current / dur * 100).toFixed(2) : 0;
   const fmt     = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const timeLabel = dur > 0 ? `${fmt(current)} / ${fmt(dur)}` : '';
-  const canSeek     = false; // seek only for Plexamp (music popup)
-  const canPlexSeek = false;
+  // Seek is for Plexamp (music popup) and for a Jellyfin session JellyHA can
+  // drive; every other player is read-only here.
+  const _ctrlFeats  = this._hass?.states?.[d._ctrlEntity || '']?.attributes?.supported_features || 0;
+  const canSeek     = !!(_ctrlFeats & 2);
+  const canPlexSeek = !!d._plexMachineId;
 
   const seekBar = dur > 0 ? `
-    <div ${(canSeek || canPlexSeek) ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${this._escHtml(eid)}" data-dur="${dur}" style="cursor:pointer;padding:6px 0;margin-bottom:2px"` : `style="padding:6px 0;margin-bottom:2px"`}>
+    <div ${(canSeek || canPlexSeek) ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${this._escHtml(eid)}" data-fill="${this._escHtml(fillId)}" data-dur="${dur}" style="cursor:pointer;padding:5px 0"` : `style="padding:5px 0"`}>
       <div class="stream-popup-track" style="position:relative;height:4px;border-radius:2px;overflow:hidden">
-        <div class="stream-prog-fill stream-popup-fill" data-entity="${this._escHtml(eid)}" data-pos="${pos}" data-dur="${dur}" data-updated="${upd}" style="position:absolute;inset:0 auto 0 0;width:${initPct}%;border-radius:2px;transition:none"></div>
+        <div class="stream-prog-fill stream-popup-fill" data-entity="${this._escHtml(fillId)}" data-pos="${pos}" data-dur="${dur}" data-updated="${upd}" style="position:absolute;inset:0 auto 0 0;width:${initPct}%;border-radius:2px;transition:none"></div>
       </div>
     </div>
-    <div class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:8px">${timeLabel}</div>` : '';
+    <div class="stream-popup-time" style="font-size:10px">${timeLabel}</div>` : '';
 
-  return `<div style="margin-top:10px;margin-bottom:2px">
+  // Until now a film or episode opened from a stream showed the bar and
+  // nothing else — the buttons lived only in the music popup. Anything the
+  // card can drive gets them: Plex through its own entity, Jellyfin through
+  // JellyHA's player.
+  // A film is one thing from beginning to end; an episode sits in a season
+  const isMovieType = d._type === POPUP_TYPE.RADARR || d._type === POPUP_TYPE.MOVIE;
+  const buttons = this._streamCtrlRowHtml(eid, {
+    playing, feats: _ctrlFeats, plexFallback: !!d._plexMachineId,
+    step: !isMovieType, style: 'margin-top:6px',
+  });
+
+  // The order the artist window uses: the bar, its clock, then the transport.
+  // Only its width differs — a detail has the room, so the bar runs the whole
+  // way rather than stopping where the artist window's does.
+  return `<div class="mus-stream-bar pp-stream-bar">
     ${seekBar}
+    ${buttons}
   </div>`;
 }
 
@@ -497,7 +758,7 @@ _renderStreamPopup(d) {
   const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const timeLabel = duration > 0 ? `${fmt(currentPos)} / ${fmt(duration)}` : '';
 
-  const eid        = this._escHtml(d._streamEntity || '');
+  const eid        = this._escHtml(d._ctrlEntity || d._streamEntity || '');
   const posterUrl  = d._poster || '';
   const posterHtml = posterUrl
     ? `<img class="popup-poster" src="${this._escHtml(posterUrl)}" loading="lazy" onerror="this.style.display='none'" />`
@@ -508,31 +769,27 @@ _renderStreamPopup(d) {
 
   const subLine = [artist, album].filter(Boolean).join(' · ');
 
-  const rawEid      = d._streamEntity || '';
+  const rawEid      = d._ctrlEntity || d._streamEntity || '';
   const suppFeats   = this._hass?.states?.[rawEid]?.attributes?.supported_features || 0;
-  const canControl  = !!(suppFeats & 1) || !!(suppFeats & 16384) || !!d._plexMachineId;
   const canSeek     = !!(suppFeats & 2);
   const canPlexSeek = !!d._plexMachineId;
 
   const seekBar = duration > 0 ? `
-    <div ${(canSeek || canPlexSeek) ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${eid}" data-dur="${duration}" style="cursor:pointer;padding:6px 0;margin-bottom:4px"` : `style="padding:6px 0;margin-bottom:4px"`}>
+    <div ${(canSeek || canPlexSeek) ? `class="stream-seek-wrap" data-action="stream-seek" data-entity="${eid}" data-fill="${this._escHtml(d._streamEntity || '')}" data-dur="${duration}" style="cursor:pointer;padding:6px 0;margin-bottom:4px"` : `style="padding:6px 0;margin-bottom:4px"`}>
       <div class="stream-prog-track" style="height:4px;position:relative;bottom:auto;left:auto;right:auto;border-radius:2px">
-        <div class="stream-prog-fill" data-entity="${eid}" data-pos="${position}" data-dur="${duration}" data-updated="${updatedAt}" style="width:${initPct}%;transition:none;border-radius:2px"></div>
+        <div class="stream-prog-fill" data-entity="${this._escHtml(d._streamEntity || '')}" data-pos="${position}" data-dur="${duration}" data-updated="${updatedAt}" style="width:${initPct}%;transition:none;border-radius:2px"></div>
       </div>
     </div>
-    <div class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:10px">${timeLabel}</div>` : '';
-  const controls = canControl ? `
-    <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
-      <button class="popup-ctrl-btn" data-action="stream-prev" data-entity="${eid}">
-        <ha-icon icon="mdi:skip-previous" style="--mdc-icon-size:26px"></ha-icon>
-      </button>
-      <button class="popup-ctrl-btn popup-ctrl-btn-main" data-action="stream-playpause" data-entity="${eid}">
-        <ha-icon icon="mdi:${isPlaying ? 'pause' : 'play'}" style="--mdc-icon-size:32px"></ha-icon>
-      </button>
-      <button class="popup-ctrl-btn" data-action="stream-next" data-entity="${eid}">
-        <ha-icon icon="mdi:skip-next" style="--mdc-icon-size:26px"></ha-icon>
-      </button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span class="stream-popup-time" style="font-size:10px;color:rgba(255,255,255,0.4)">${timeLabel}</span>
+      ${this._streamRangeBadge(this._streamRangeOf(d._streamEntity), { long: true, cls: 'pp-hdr-chip' })}
     </div>` : '';
+  const controls = this._streamCtrlRowHtml(d._ctrlEntity || d._streamEntity, {
+    playing: isPlaying, feats: suppFeats, plexFallback: !!d._plexMachineId,
+    // This popup is music and whatever the card could not place; both have a
+    // next one, unlike a film
+    step: true, style: 'margin-top:4px',
+  });
 
 
   return `
@@ -694,6 +951,77 @@ _ppWireSeek(root) {
 }
 
 // A stream's detail: live progress and the time label.
+// Dragging the progress bar. Clicking it already seeked; holding and moving
+// did nothing, which is what a bar that looks like this invites. The fill
+// follows the finger and the seek is sent once, on release.
+_ppWireSeekDrag(root) {
+  root.querySelectorAll('.stream-seek-wrap').forEach(wrap => {
+    if (wrap._seekWired) return;
+    wrap._seekWired = true;
+
+    const posFrom = e => {
+      const rect = wrap.getBoundingClientRect();
+      const x = e.clientX ?? e.changedTouches?.[0]?.clientX ?? 0;
+      const pct = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+      return { pct, dur: parseFloat(wrap.dataset.dur) || 0 };
+    };
+    const paint = pct => {
+      const fill = wrap.querySelector('.stream-prog-fill');
+      if (fill) fill.style.width = (pct * 100).toFixed(2) + '%';
+      const timeEl = root.querySelector('.stream-popup-time');
+      const dur = parseFloat(wrap.dataset.dur) || 0;
+      if (timeEl && dur > 0) {
+        const fmt = v => `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(Math.floor(v % 60)).padStart(2, '0')}`;
+        timeEl.textContent = `${fmt(pct * dur)} / ${fmt(dur)}`;
+      }
+    };
+
+    // Move and release are listened for on the document, not on the bar. A
+    // pointer capture that does not take — or a finger that leaves the bar,
+    // which is most of them — meant the release landed elsewhere: the fill
+    // followed along and nothing was ever sent.
+    const onMove = e => {
+      if (this._seekDrag?.wrap !== wrap) return;
+      const { pct } = posFrom(e);
+      this._seekDrag.pct = pct;
+      this._seekDrag.moved = true;
+      paint(pct);
+    };
+    const onUp = e => {
+      if (this._seekDrag?.wrap !== wrap) return;
+      const drag = this._seekDrag;
+      this._seekDrag = null;
+      document.removeEventListener('pointermove', onMove, true);
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onUp, true);
+      const dur = parseFloat(wrap.dataset.dur) || 0;
+      if (dur <= 0 || e.type === 'pointercancel') return;
+      // A press without a drag seeks to where it landed. It used to be left to
+      // the click handler, but preventDefault on pointerdown — which is what
+      // stops the page selecting text while dragging — suppresses the click
+      // that would have followed, so pressing did nothing at all.
+      const newPos = drag.pct * dur;
+      this._updateStreamFills(wrap.dataset.fill || wrap.dataset.entity, newPos, dur);
+      this._doSeek(wrap.dataset.entity, newPos);
+      // The click that follows a drag would seek a second time
+      // Whatever click still arrives would seek a second time
+      this._seekJustDragged = true;
+      setTimeout(() => { this._seekJustDragged = false; }, 300);
+    };
+
+    wrap.addEventListener('pointerdown', e => {
+      const { pct } = posFrom(e);
+      // While a finger is down the ticking timer would fight it
+      this._seekDrag = { wrap, pct, moved: false };
+      document.addEventListener('pointermove', onMove, true);
+      document.addEventListener('pointerup', onUp, true);
+      document.addEventListener('pointercancel', onUp, true);
+      paint(pct);
+      e.preventDefault();
+    });
+  });
+}
+
 _ppStreamProgress(root) {
   // ── Stream popup: live progress + time label update ──
   if (this._popup?._type === POPUP_TYPE.STREAM || this._popup?._streamEntity) {
@@ -706,6 +1034,7 @@ _ppStreamProgress(root) {
       const dur       = parseFloat(fill.dataset.dur);
       const updatedAt = parseFloat(fill.dataset.updated);
       if (!dur) return;
+      if (this._seekDrag) return;   // a finger is on the bar
       const playing = this._popup?._streamState === 'playing';
       const elapsed = playing ? (Date.now() - updatedAt) / 1000 : 0;
       const current = Math.min(pos + elapsed, dur);

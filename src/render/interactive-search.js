@@ -145,7 +145,12 @@ _renderIsPanel() {
   }
 
   _isPeers(r) {
-    if (r.protocol !== 'torrent') return `<span class="is-peers-na">—</span>`;
+    // Lidarr does not word the protocol the way Radarr and Sonarr do, so an
+    // exact comparison read every music release as usenet and the column
+    // showed a dash for all of them.
+    const torrent = /torrent/i.test(String(r.protocol || ''))
+      || r.seeders != null || r.leechers != null;
+    if (!torrent) return `<span class="is-peers-na">—</span>`;
     const s = r.seeders  ?? '?';
     const l = r.leechers ?? '?';
     return `<div class="is-peers"><span class="is-s">↑${s}</span>/<span class="is-l">↓${l}</span></div>`;
@@ -214,11 +219,11 @@ _renderIsPanel() {
 
   _isSortValue(r, col) {
     switch (col) {
-      case 'src':     return r.protocol === 'torrent' ? 0 : 1;
+      case 'src':     return /torrent/i.test(String(r.protocol || '')) ? 0 : 1;
       case 'title':   return (r.title || '').toLowerCase();
       case 'indexer': return (r.indexer || '').toLowerCase();
       case 'size':    return r.size || 0;
-      case 'peers':   return r.protocol === 'torrent' ? (r.seeders ?? -1) : -1;
+      case 'peers':   return /torrent/i.test(String(r.protocol || '')) ? (r.seeders ?? -1) : -1;
       case 'lang':    return ((r.languages || [])[0]?.name || '').toLowerCase();
       case 'quality': return r.quality?.quality?.name || '';
       case 'score':   return r.customFormatScore ?? -Infinity;

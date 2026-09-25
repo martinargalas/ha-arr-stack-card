@@ -591,12 +591,27 @@ _ppActStreamPlaypause(t, e, { root, overlay } = {}) {
   }
   // Optimistic UI — flip state immediately
   const newState = curState === 'playing' ? 'paused' : 'playing';
-  if (this._popup?._streamEntity === entityId) {
-    this._popup._streamState = newState;
-    if (this._popup._type === POPUP_TYPE.STREAM) this._renderPopupEl();
+  if (this._popup?._streamEntity === entityId || this._popup?._ctrlEntity === entityId) {
+    const d = this._popup;
+    // Where the stream actually is, right now. Without this the position stayed
+    // as the last poll left it: pausing dropped the clock back to that moment,
+    // and playing carried on counting from it, so both jumped.
+    const dur = d._duration || 0;
+    const was = d._streamState === 'playing';
+    const drift = was ? (Date.now() - (d._updatedAt || Date.now())) / 1000 : 0;
+    const now = dur > 0 ? Math.min((d._position || 0) + drift, dur) : (d._position || 0) + drift;
+    d._position   = now;
+    d._updatedAt  = Date.now();
+    d._streamState = newState;
+    // The tile in the column reads the same clock
+    this._updateStreamFills(d._streamEntity, now, dur);
+    if (d._type === POPUP_TYPE.STREAM) this._renderPopupEl();
     else {
-      const btn = this.shadowRoot?.getElementById('popup-root')?.querySelector('[data-action="stream-playpause"]');
-      if (btn) btn.innerHTML = `<ha-icon icon="mdi:${newState === 'playing' ? 'pause' : 'play'}" style="--mdc-icon-size:32px"></ha-icon>`;
+      const root = this.shadowRoot?.getElementById('popup-root');
+      const btn = root?.querySelector('[data-action="stream-playpause"] ha-icon');
+      if (btn) btn.setAttribute('icon', `mdi:${newState === 'playing' ? 'pause' : 'play'}`);
+      const fill = root?.querySelector('.stream-popup-fill');
+      if (fill) { fill.dataset.pos = String(now); fill.dataset.updated = String(Date.now()); }
     }
   }
   return;
@@ -606,9 +621,19 @@ _ppActStreamPrev(t, e, { root, overlay } = {}) {
   const _plexPrev = () => this._popup?._plexMachineId && this._hass.callApi('POST', 'arr_stack/plex/player', {
     action: 'skipPrevious', machineIdentifier: this._popup._plexMachineId, playerUrl: this._popup._plexPlayerUrl || null,
   }).catch(() => {});
+  const eid = t.dataset.entity || this._popup?._streamEntity || '';
   this._hass.callService('media_player', 'media_previous_track', { entity_id: t.dataset.entity })
     .catch(() => _plexPrev());
-  setTimeout(() => { this._syncStreamPopup(); this._reRenderSection('streams'); }, 2000);
+  // No fixed wait: the popup and the tile follow the player as soon as it has
+  // moved on, which is what a skip is supposed to look like.
+  this._streamAfterSkip(this._popup?._streamEntity || eid, () => {
+    const id = this._popup?._streamEntity || eid;
+    this._streamRefreshPopup(id);
+    // Only when an artist window is open: the entry point would otherwise
+    // fetch the music chunk to be told there is nothing to follow.
+    if (this._musicModal) this._musFollowStream(id);
+    this._reRenderSection('streams');
+  });
   return;
 }
 
@@ -616,9 +641,19 @@ _ppActStreamNext(t, e, { root, overlay } = {}) {
   const _plexNext = () => this._popup?._plexMachineId && this._hass.callApi('POST', 'arr_stack/plex/player', {
     action: 'skipNext', machineIdentifier: this._popup._plexMachineId, playerUrl: this._popup._plexPlayerUrl || null,
   }).catch(() => {});
+  const eid = t.dataset.entity || this._popup?._streamEntity || '';
   this._hass.callService('media_player', 'media_next_track', { entity_id: t.dataset.entity })
     .catch(() => _plexNext());
-  setTimeout(() => { this._syncStreamPopup(); this._reRenderSection('streams'); }, 2000);
+  // No fixed wait: the popup and the tile follow the player as soon as it has
+  // moved on, which is what a skip is supposed to look like.
+  this._streamAfterSkip(this._popup?._streamEntity || eid, () => {
+    const id = this._popup?._streamEntity || eid;
+    this._streamRefreshPopup(id);
+    // Only when an artist window is open: the entry point would otherwise
+    // fetch the music chunk to be told there is nothing to follow.
+    if (this._musicModal) this._musFollowStream(id);
+    this._reRenderSection('streams');
+  });
   return;
 }
 
@@ -739,13 +774,15 @@ _ppActStreamTerminateConfirm(t, e, { root, overlay } = {}) {
 }
 
 _ppActStreamSeek(t, e, { root, overlay } = {}) {
+  if (this._seekJustDragged) return;   // the drag has already seeked
   const rect    = t.getBoundingClientRect();
   const clientX = e.clientX ?? e.changedTouches?.[0]?.clientX ?? 0;
   const pct     = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   const dur     = parseFloat(t.dataset.dur);
   if (dur > 0) {
     const newPos = pct * dur;
-    this._updateStreamFills(t.dataset.entity, newPos, dur);
+    // The bar belongs to the stream, the command goes to whatever drives it
+    this._updateStreamFills(t.dataset.fill || t.dataset.entity, newPos, dur);
     this._doSeek(t.dataset.entity, newPos);
   }
   return;

@@ -142,6 +142,9 @@ class _WireActivityActionsMethods {
         this._callApi('GET', `arr_stack/${svc}/languages`).catch(() => []),
       ]);
       let candidates = allCandidates || [];
+      // A folder comes back in whatever order the file system answered in.
+      // Music reads as a record, so it is listed as one: disc, then track.
+      if (svc === 'lidarr') candidates = this._miSortTracks(candidates);
       if (episodeId) {
         candidates = candidates.filter(c =>
           c.episodes?.some(ep => String(ep.id) === episodeId)
@@ -160,12 +163,32 @@ class _WireActivityActionsMethods {
     }
   }
 
+  // A folder comes back in whatever order the file system answered in. Music
+  // reads as a record, so it is listed as one: disc, then track, then the file
+  // name for anything Lidarr could not number.
+  _miSortTracks(candidates) {
+    const key = c => {
+      const t = (c.tracks || [])[0];
+      return [
+        t?.mediumNumber ?? 99,
+        t?.absoluteTrackNumber ?? t?.trackNumber ?? 999,
+        (c.path || '').toLowerCase(),
+      ];
+    };
+    return [...(candidates || [])].sort((a, b) => {
+      const [am, at, ap] = key(a);
+      const [bm, bt, bp] = key(b);
+      return am - bm || at - bt || ap.localeCompare(bp);
+    });
+  }
+
   // Render candidates with select dropdowns and wire change + import buttons
   _miRenderAndWire(candidates, svc, qDefs, langs, miBody, overlay, modalEl) {
     const lib = svc === 'radarr'  ? (this._radarr  || [])
               : svc === 'radarr2' ? (this._radarr2 || [])
               : svc === 'sonarr'  ? (this._sonarr  || [])
               : svc === 'sonarr2' ? (this._sonarr2 || [])
+              : svc === 'lidarr'  ? [...(this._lidarrArtists?.values() || [])].map(a => ({ id: a.id, title: a.artistName }))
               : [];
 
     miBody.innerHTML = this._actManualImportCandidatesHtml(candidates, svc, qDefs, langs);
@@ -181,7 +204,11 @@ class _WireActivityActionsMethods {
       const valStr = sel.value;
       const valNum = parseInt(valStr);
 
-      if (field === 'movie') {
+      if (field === 'artist') {
+        const a = lib.find(x => x.id === valNum);
+        candidates[idx].artist   = a || { id: valNum };
+        candidates[idx].artistId = valNum;
+      } else if (field === 'movie') {
         const m = lib.find(x => x.id === valNum);
         candidates[idx].movie   = m || { id: valNum };
         candidates[idx].movieId = valNum;
@@ -218,6 +245,57 @@ class _WireActivityActionsMethods {
         console.error('[arr-card] manual import submit:', err);
       }
     });
+  }
+
+  // The same command Lidarr's own dialog sends: one entry per file, each
+  // carrying the album release it belongs to and the tracks it holds.
+  async _submitLidarrImport(candidates, indices, overlayEl, modalEl) {
+    const files = indices.map(i => candidates[i])
+      .filter(c => c && c.artist && c.album && (c.tracks || []).length)
+      .map(c => ({
+        path:           c.path,
+        artistId:       c.artist.id,
+        albumId:        c.album.id,
+        albumReleaseId: c.albumReleaseId ?? c.album?.currentRelease?.id ?? null,
+        trackIds:       (c.tracks || []).map(t => t.id),
+        quality:        c.quality,
+        downloadId:     c.downloadId || '',
+        disableReleaseSwitching: false,
+      }));
+    if (!files.length) return;
+    const downloadIds = new Set(files.map(f => f.downloadId).filter(Boolean));
+    try {
+      await this._callApi('POST', 'arr_stack/lidarr/command', {
+        name: 'ManualImport', importMode: 'auto', replaceExistingFiles: false, files,
+      });
+      downloadIds.forEach(id => this._actImporting.add(id));
+      overlayEl.remove();
+      this._actShowStatus(this._t('actImporting'), { spin: true }, 0);
+      // The command runs on Lidarr's own schedule; the queue says when it is
+      // done, and the artist's counts follow.
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await new Promise(r => setTimeout(r, attempt === 0 ? 2000 : 3000));
+        if (!this._activityModal) break;
+        await this._actLoadTab('queue', modalEl);
+        if (!this._activityModal) break;
+        // Lidarr's rows ride in the same list as Sonarr's; each says which
+        // service it came from.
+        const items = (this._activityModal.queueData?.sonarr || []).filter(x => x._svc === 'lidarr');
+        if (!items.some(item => downloadIds.has(item.downloadId))) break;
+      }
+      downloadIds.forEach(id => this._actImporting.delete(id));
+      // The import history is what Recently Added is built from, so it is read
+      // again here rather than at the next poll — an import somebody just
+      // watched finish should not need the page reloaded to show up.
+      await this._fetchLidarr();
+      this._reRenderSection?.('recentlyAdded');
+      this._reRenderSection?.('recentlyRequested');
+      this._actShowStatus(this._t('actImported'), { ok: true });
+    } catch (err) {
+      console.error('[arr-card] Lidarr manual import:', err);
+      downloadIds.forEach(id => this._actImporting.delete(id));
+      this._actShowStatus(err?.body?.message || this._t('actImportFailed'), { err: true });
+    }
   }
 
   async _openSeasonIsOverlay(seriesId, svc, seasonNumber, seriesTitle) {
@@ -369,6 +447,9 @@ class _WireActivityActionsMethods {
     this._markActivated();
     const isRadarr = svc === 'radarr' || svc === 'radarr2';
     const isSonarr = svc === 'sonarr' || svc === 'sonarr2';
+    // Music is imported against a track of an album of an artist, and names
+    // none of the fields the other two use — so it builds its own command.
+    if (svc === 'lidarr') return this._submitLidarrImport(candidates, indices, overlayEl, modalEl);
     const toImport = indices.map(i => candidates[i]).filter(c => {
       if (!c) return false;
       if (isRadarr && !c.movie) return false;

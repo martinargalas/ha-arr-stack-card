@@ -182,6 +182,9 @@ _ppFileInfoRow({ isMovieType, radarr2Entry, radarrEntry, sonarr2Entry, sonarrEnt
         // Subtitles before audio throughout the card — the poster strip reads
         // the same way round.
         _fiQual ? `<span class="pp-fi-chip"><span class="pp-fi-txt">${this._escHtml(_fiQual)}</span></span>` : '',
+        // What is playing right now, beside the quality of the copy on disk:
+        // both describe the picture, so they belong in the same row
+        this._streamRangeBadge(this._streamRangeOf(this._popup?._streamEntity), { long: true, cls: 'pp-fi-chip' }),
         this._ppLangChip('subs',  _fiLangs.subCodes),
         this._ppLangChip('audio', _fiLangs.audioCodes),
       ].filter(Boolean).join('');

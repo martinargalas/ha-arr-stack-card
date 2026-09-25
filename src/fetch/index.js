@@ -134,7 +134,11 @@ async _fetchAll() {
     see('prowlarr')      ? this._fetchProwlarr()      : Promise.resolve(),
     see('maintainerr')   ? this._fetchMaintainerr()   : Promise.resolve(),
     see('recentlyRequested') ? this._fetchSeerrRequests() : Promise.resolve(),
-    see('music')         ? this._fetchLidarr()         : Promise.resolve(),
+    // Music has no category of its own — it rides inside Recently Added and
+    // Recently Requested — so asking for `music` here was asking for something
+    // no page ever says it shows, and the library was read once and never
+    // again until the page was reloaded.
+    (see('recentlyAdded') || see('recentlyRequested')) ? this._fetchLidarr() : Promise.resolve(),
     (see('recommendations') && this._recSources.lastfm) ? this._fetchLastfm() : Promise.resolve(),
     // episodefiles + bazarr episodes — only needed for recentlyAdded sonarr cards
     see('recentlyAdded') ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
@@ -252,7 +256,7 @@ async _fetchVisibleCats() {
     see('prowlarr')      ? this._fetchProwlarr()      : Promise.resolve(),
     see('maintainerr')   ? this._fetchMaintainerr()   : Promise.resolve(),
     see('recentlyRequested') ? this._fetchSeerrRequests() : Promise.resolve(),
-    see('music')         ? this._fetchLidarr()         : Promise.resolve(),
+    (see('recentlyAdded') || see('recentlyRequested')) ? this._fetchLidarr() : Promise.resolve(),
     (see('recommendations') && this._recSources.lastfm) ? this._fetchLastfm() : Promise.resolve(),
     see('recentlyAdded') ? this._fetchSonarrEpisodeFiles().then(() => this._fetchBazarrEpisodes()) : Promise.resolve(),
     see('activity')      ? this._fetchActivityHistory()   : Promise.resolve(),

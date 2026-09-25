@@ -172,12 +172,20 @@ class _WireMusicActionsMethods {
       await this._callApi('POST', 'arr_stack/lidarr/release', { ...release, albumId: sp.albumId });
       sp.grabbed = sp.grabbed || new Set();
       sp.grabbed.add(guid);
+      // When it was sent, so the button can stop waiting. Lidarr accepts the
+      // release before its queue knows anything about it, and a release the
+      // queue never claims — handed straight to the client, or tracked under
+      // another album — used to spin for as long as the window stayed open.
+      sp.grabbedAt = sp.grabbedAt || new Map();
+      sp.grabbedAt.set(guid, Date.now());
     } catch (e) {
       console.error('[arr-card] Lidarr grab error:', e);
     }
     sp.grabbing = null;
     this._renderMusicModalEl();
-    for (const ms of [0, 2000, 5000, 10000, 20000]) {
+    // Lidarr imports on its own schedule; the queue is asked for longer than
+    // the few seconds it used to be, with the gaps widening.
+    for (const ms of [0, 2000, 5000, 10000, 20000, 35000, 60000]) {
       setTimeout(async () => {
         if (!this._musicModal) return;
         await this._fetchLidarrQueue();
@@ -324,6 +332,8 @@ class _WireMusicActionsMethods {
     const st = this._hass?.states?.[eid];
     const feats = st?.attributes?.supported_features || 0;
     if (act === 'stream-seek') {
+      // A drag has already seeked; the click that follows it would do it again
+      if (this._seekJustDragged) return;
       const rect = el.getBoundingClientRect();
       const x = ev.clientX ?? ev.changedTouches?.[0]?.clientX ?? 0;
       const dur = parseFloat(el.dataset.dur);
@@ -348,8 +358,13 @@ class _WireMusicActionsMethods {
       const svc = act === 'stream-prev' ? 'media_previous_track' : 'media_next_track';
       try { this._hass.callService('media_player', svc, { entity_id: eid }); } catch (_) {}
       // A skip changes the track, not the queue, so the modal is redrawn on its
-      // own rather than by the queue signature.
-      setTimeout(() => { if (this._musicModal?.stream === eid) this._renderMusicModalEl(); }, 1500);
+      // own rather than by the queue signature — and the moment the player has
+      // the new track, not on a wait long enough to be seen.
+      this._streamAfterSkip(eid, () => {
+        this._musFollowStream(eid);
+        this._streamRefreshPopup(eid);
+        this._reRenderSection('streams');
+      });
       return;
     }
   }

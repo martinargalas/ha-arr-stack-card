@@ -63,6 +63,7 @@ class _MusicRenderMethods {
                   <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${name}${this._musMonMark(artist)}</h2>
                 </div>
                 ${(subLine || ratingsRow || originFlag) ? `<div class="popup-subrow">${subLine ? `<div class="popup-sub">${subLine}</div>` : ''}${originFlag}${ratingsRow}</div>` : ''}
+                ${this._musStreamQualChip()}
                 ${this._musInstChip(artist)}
                 ${this._musStreamBar()}
                 ${artist.overview
@@ -92,6 +93,19 @@ class _MusicRenderMethods {
       + `<span class="pp-fi-flag" title="${this._escHtml(origin)}">${flag}</span></span></span>`;
   }
 
+  // What the track being played actually is — FLAC or MP3, and at what rate.
+  // The film detail says as much about its copy one line above its own
+  // transport ("4K · BLURAY"), and a track deserves the same sentence.
+  _musStreamQualChip() {
+    const eid = this._musicModal?.stream;
+    if (!eid) return '';
+    const q = this._musTrackQual?.get(this._musTrackKey(eid));
+    if (!q?.codec) return '';
+    const label = [q.codec.toUpperCase(), q.bitrate ? `${q.bitrate} kbps` : ''].filter(Boolean).join(' · ');
+    return `<div class="popup-fileinfo mus-fileinfo"><span class="pp-fi-chip">`
+      + `<span class="pp-fi-txt">${this._escHtml(label)}</span></span></div>`;
+  }
+
   // The transport for a track opened from Now Playing: the same seek bar and
   // buttons the stream popup carries, sitting under the artist's own line.
   // data-state on the fill is what the streams timer looks for, so the bar
@@ -112,7 +126,6 @@ class _MusicRenderMethods {
 
     const feats = attr.supported_features || 0;
     const canSeek = !!(feats & 2);
-    const canControl = !!(feats & 1) || !!(feats & 16384);
     const _e = this._escHtml(eid);
 
     const bar = dur > 0 ? `
@@ -123,12 +136,8 @@ class _MusicRenderMethods {
       </div>
       <div class="stream-popup-time" style="font-size:10px;color:var(--is-dim,rgba(255,255,255,0.4))">${fmt(cur)} / ${fmt(dur)}</div>` : '';
 
-    const controls = canControl ? `
-      <div style="display:flex;align-items:center;gap:14px;margin-top:6px">
-        <button class="popup-ctrl-btn" data-action="stream-prev" data-entity="${_e}"><ha-icon icon="mdi:skip-previous" style="--mdc-icon-size:22px"></ha-icon></button>
-        <button class="popup-ctrl-btn popup-ctrl-btn-main" data-action="stream-playpause" data-entity="${_e}"><ha-icon icon="mdi:${playing ? 'pause' : 'play'}" style="--mdc-icon-size:26px"></ha-icon></button>
-        <button class="popup-ctrl-btn" data-action="stream-next" data-entity="${_e}"><ha-icon icon="mdi:skip-next" style="--mdc-icon-size:22px"></ha-icon></button>
-      </div>` : '';
+    // The same row the stream popup and a title's detail draw (_streamCtrlRowHtml)
+    const controls = this._streamCtrlRowHtml(eid, { playing, feats, style: 'margin-top:6px' });
 
     return `<div class="mus-stream-bar">${bar}${controls}</div>`;
   }
@@ -146,9 +155,20 @@ class _MusicRenderMethods {
     const total = st.trackCount ?? 0;           // what the monitored albums hold
     const allTr = st.totalTrackCount ?? total;  // everything the artist released
     const done  = total > 0 && have >= total;
-    const dlPct = this._lidarrQueueArtists?.get(artist.id);
     const sp = this._musicModal?.search;
-    const waiting = !!(sp?.grabbing || (sp?.grabbed?.size && dlPct === undefined));
+    // A release Lidarr could not parse belongs to no artist either, so the chip
+    // falls back to the release somebody grabbed here, found by its own title.
+    let _grabbedPct;
+    for (const r of (sp?.results || [])) {
+      if (!sp?.grabbed?.has(r.guid)) continue;
+      const p = this._lidarrQueueTitles?.get(this._qTitle(r.title));
+      if (p !== undefined) { _grabbedPct = p; break; }
+    }
+    const dlPct = this._lidarrQueueArtists?.get(artist.id) ?? _grabbedPct;
+    // The same cutoff the grab button uses: a release the queue never claims
+    // must not leave the chip spinning for the rest of the evening.
+    const recentGrab = [...(sp?.grabbedAt?.values() || [])].some(at => Date.now() - at <= 30000);
+    const waiting = !!(sp?.grabbing || (sp?.grabbed?.size && dlPct === undefined && recentGrab));
     const dl = dlPct !== undefined
       ? `<span class="inst-chip ic--downloading">${
           dlPct >= 0
@@ -447,7 +467,23 @@ class _MusicRenderMethods {
       </div>`;
     }
 
-    const rows = list.map(r => {
+    // Sorted and labelled the way a film's sources are. Lidarr answers with the
+    // same fields, so the same comparator and the same header serve both.
+    const { col, dir } = sp.sort || {};
+    const sorted = col ? [...list].sort((a, b) => {
+      const av = this._isSortValue(a, col);
+      const bv = this._isSortValue(b, col);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return  1 * dir;
+      return 0;
+    }) : list;
+    const arrow = c => (col !== c
+      ? `<span class="is-sort-arrow is-sort-inactive">⇅</span>`
+      : `<span class="is-sort-arrow">${dir === -1 ? '↓' : '↑'}</span>`);
+    const th = (c, label) =>
+      `<th data-mus-issort="${c}" style="cursor:pointer;user-select:none">${label}${arrow(c)}</th>`;
+
+    const rows = sorted.map(r => {
       const rej = !r.approved && r.rejections?.length
         ? `<div class="is-rej-row">⚠ ${this._escHtml(r.rejections.slice(0, 2).join(' · '))}</div>` : '';
       return `<tr>
@@ -465,11 +501,16 @@ class _MusicRenderMethods {
     // A grab button showing progress is three times the width of the plain
     // arrow, so the column it sits in has to make room — pulled leftwards with
     // a negative margin instead, it climbed over the quality badge.
-    const wideGrab = this._lidarrQueuePct?.get(sp.albumId) !== undefined;
+    const wideGrab = this._lidarrQueuePct?.get(sp.albumId) !== undefined
+      || (sp.results || []).some(r => this._lidarrQueueTitles?.get(this._qTitle(r.title)) !== undefined);
     return `<div class="sn-is-panel">
       <div class="is-results-wrap">
         <table class="is-table">
           <colgroup><col style="width:50px"><col><col style="width:80px"><col style="width:60px"><col style="width:70px"><col style="width:74px"><col style="width:${wideGrab ? 78 : 56}px"></colgroup>
+          <thead><tr>
+            ${th('src','Src')}${th('title','Title')}${th('indexer','Indexer')}
+            ${th('size','Size')}${th('peers','Peers')}${th('quality','Quality')}<th></th>
+          </tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -509,8 +550,20 @@ class _MusicRenderMethods {
       </button>`;
     }
     if (sp.grabbed?.has(r.guid) || this._lidarrQueue?.has(sp.albumId)) {
-      const p = this._lidarrQueuePct?.get(sp.albumId);
+      // By album where Lidarr knows which album it is, by the release's own
+      // title where it does not — an unparsable release downloads all the same.
+      const p = this._lidarrQueuePct?.get(sp.albumId)
+             ?? this._lidarrQueueTitles?.get(this._qTitle(r.title));
       if (p === undefined) {
+        // Waiting for the queue to pick it up — but not for ever. Lidarr said
+        // yes to the release, and after half a minute that is the honest thing
+        // to show: the grab went through, wherever the download sits now.
+        const at = sp.grabbedAt?.get(r.guid);
+        if (at && Date.now() - at > 30000) {
+          return `<button class="is-grab-btn is-grab-done" disabled title="${this._t('isGrabbed')}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>`;
+        }
         return `<button class="is-grab-btn" disabled title="${this._t('isGrabbed')}">
           <span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>
         </button>`;

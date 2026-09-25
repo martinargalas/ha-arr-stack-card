@@ -246,7 +246,10 @@ class _ActivityQueueRenderMethods {
           </div>
           <button class="popup-close u-rel-shrink0" id="mi-close">${ICONS.close}</button>
         </div>
-        <div id="mi-body" class="popup-body" style="padding:14px 20px 18px;overflow-y:auto;flex:1">
+        <!-- Block flow, not the column flex .popup-body brings: in a column a
+             child taller than the box is shrunk to fit, so a long list of files
+             was squashed into the window instead of scrolling inside it. -->
+        <div id="mi-body" class="popup-body" style="padding:14px 20px 18px;overflow-y:auto;flex:1;min-height:0;display:block">
           <div class="is-loading"><span>${this._t('loading')}</span></div>
         </div>
       </div>
@@ -264,6 +267,7 @@ class _ActivityQueueRenderMethods {
     const isMobile = this._isMob;
     const isRadarr = svc === 'radarr' || svc === 'radarr2';
     const isSonarr = svc === 'sonarr' || svc === 'sonarr2';
+    const isLidarr = svc === 'lidarr';
     const isDay    = this._isDay;
 
     // Day/night compatible select style
@@ -282,6 +286,7 @@ class _ActivityQueueRenderMethods {
               : svc === 'radarr2' ? (this._radarr2 || [])
               : svc === 'sonarr'  ? (this._sonarr  || [])
               : svc === 'sonarr2' ? (this._sonarr2 || [])
+              : isLidarr ? [...(this._lidarrArtists?.values() || [])].map(a => ({ id: a.id, title: a.artistName }))
               : [];
     const buildLibOpts = (curId) => lib
       .slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''))
@@ -304,6 +309,10 @@ class _ActivityQueueRenderMethods {
     const allCanImport = candidates.every(c => {
       if (isRadarr && !c.movie) return false;
       if (isSonarr && !c.series) return false;
+      // A track file is imported against the album it belongs to, and Lidarr
+      // has to have named all three before that means anything. Music carries
+      // no languages, so the check below does not apply to it.
+      if (isLidarr) return !!(c.artist && c.album && (c.tracks || []).length);
       // Quality must be set — Unknown triggers Radarr filename re-parse which fails on non-ASCII paths
       const qName = c.quality?.quality?.name;
       if (!qName || qName === 'Unknown') return false;
@@ -314,8 +323,75 @@ class _ActivityQueueRenderMethods {
     });
     const importBtn = `<button id="mi-import-all" data-ready="${allCanImport ? '1' : ''}" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;background:${allCanImport ? 'rgba(60,200,120,0.18)' : 'var(--is-btn-bg)'};color:${allCanImport ? 'rgba(80,220,140,0.95)' : 'var(--is-text-muted)'};font-size:13px;font-weight:700;cursor:${allCanImport ? 'pointer' : 'not-allowed'};opacity:${allCanImport ? '1' : '0.5'}">${this._t('actImport')}</button>`;
 
-    const mediaLabel = isRadarr ? this._t('typeMovie') : this._t('typeTv');
-    const mediaField = isRadarr ? 'movie' : 'series';
+    const mediaLabel = isRadarr ? this._t('typeMovie') : isLidarr ? this._t('typeMusic') : this._t('typeTv');
+    const mediaField = isRadarr ? 'movie' : isLidarr ? 'artist' : 'series';
+
+    // Music: the file, what Lidarr matched it to, and its quality. Artist,
+    // album and the track number are Lidarr's own reading of the file, which
+    // is what its dialog shows and what the import is sent with.
+    if (isLidarr) {
+      const rowsHtml = candidates.map((c, i) => {
+        const fname     = (c.path || '').split(/[/\\]/).pop() || '—';
+        const artist    = c.artist?.artistName || '';
+        const album     = c.album?.title || '';
+        const track     = (c.tracks || [])[0];
+        const trackNo   = track
+          ? `${track.mediumNumber ?? 1}x${track.absoluteTrackNumber ?? track.trackNumber ?? '?'}`
+          : '';
+        const curQualId = c.quality?.quality?.id ?? '';
+        const qualName  = c.quality?.quality?.name;
+        const qualMiss  = !qualName || qualName === 'Unknown';
+        const size      = c.size ? fmtBytes(c.size) : '—';
+        const rej       = (c.rejections || []).map(r => r.reason || r).filter(Boolean);
+        const qualSel   = `<select class="mi-field-sel" data-field="quality" data-idx="${i}" style="${SEL_STYle(qualMiss)}"><option value="" disabled hidden${curQualId === '' || qualMiss ? ' selected' : ''}>${this._t('actSelectQuality')}</option>${buildQualOpts(curQualId)}</select>`;
+        const miss      = txt => `<span style="font-size:11px;color:rgba(248,113,113,0.95)">${txt}</span>`;
+        const cell      = txt => `<span style="font-size:11px;color:var(--is-text-sec)">${this._escHtml(txt)}</span>`;
+
+        if (isMobile) {
+          const lbl = t => `<div style="font-size:9px;font-weight:700;color:var(--is-text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">${t}</div>`;
+          return `<div data-mi-idx="${i}" style="border:1px solid var(--is-divider);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--is-btn-bg)">
+            <div style="font-size:11px;color:var(--is-text);margin-bottom:8px;word-break:break-all">${this._escHtml(fname)}</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div>${lbl(mediaLabel)}${artist ? cell(artist) : miss(this._t('actSelectMedia'))}</div>
+              <div>${lbl(this._t('actAlbum'))}${album ? cell(album) : miss('—')}</div>
+              <div>${lbl(this._t('actQuality'))}${qualSel}</div>
+              <div>${lbl(this._t('actSize'))}${cell(size)}</div>
+              ${rej.length ? `<div>${lbl(this._t('actError'))}<div style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</div></div>` : ''}
+            </div>
+          </div>`;
+        }
+        return `<tr class="u-divider-b">
+          <td style="padding:7px 8px;font-size:11px;color:var(--is-text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${this._escHtml(c.path || '')}">${this._escHtml(fname)}</td>
+          <td style="padding:7px 8px">${artist ? cell(artist) : miss(this._t('actSelectMedia'))}</td>
+          <td style="padding:7px 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${album ? cell(album) : miss('—')}</td>
+          <td style="padding:7px 8px;white-space:nowrap">${cell(trackNo)}</td>
+          <td style="padding:7px 4px">${qualSel}</td>
+          <td style="padding:7px 8px;white-space:nowrap">${cell(size)}</td>
+          <td style="padding:7px 8px;overflow:hidden">${rej.length
+            ? `<span style="font-size:10px;color:rgba(255,160,80,0.9)">${this._escHtml(rej[0])}</span>`
+            : `<span style="color:var(--is-text-muted);font-size:10px">—</span>`}</td>
+        </tr>`;
+      }).join('');
+
+      if (isMobile) return `<div>${rowsHtml}${importBtn}</div>`;
+      const thS = `padding:4px 8px 8px 0;font-size:10px;font-weight:600;color:var(--is-text-muted);text-align:left;white-space:nowrap`;
+      return `<div class="u-col">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <colgroup><col style="width:30%"><col style="width:14%"><col style="width:16%"><col style="width:7%"><col style="width:14%"><col style="width:8%"><col style="width:11%"></colgroup>
+          <thead><tr class="u-divider-b">
+            <th style="${thS};padding-left:8px">${this._t('actPath')}</th>
+            <th style="${thS};padding-left:8px">${mediaLabel}</th>
+            <th style="${thS};padding-left:8px">${this._t('actAlbum')}</th>
+            <th style="${thS};padding-left:8px">${this._t('actTracks')}</th>
+            <th style="${thS};padding-left:8px">${this._t('actQuality')}</th>
+            <th style="${thS};padding-left:8px">${this._t('actSize')}</th>
+            <th style="${thS};padding-left:8px">${this._t('actError')}</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        ${importBtn}
+      </div>`;
+    }
 
     if (isMobile) {
       // ── Mobile: stacked cards ──────────────────────────────────────────────

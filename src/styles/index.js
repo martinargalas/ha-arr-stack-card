@@ -244,6 +244,32 @@ export const STYLES = `
       .stream-paused img { filter: brightness(0.55) saturate(0.4); }
       .stream-paused-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2; color: rgba(255,255,255,0.9); }
       .stream-device-tag { position: absolute; top: 6px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.85); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; pointer-events: none; }
+      /* Dynamic range of what is playing — the one thing on a stream card that
+         describes the picture rather than the title, so it is tinted apart. */
+      .stream-hdr-tag { position: absolute; bottom: 6px; right: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: #ffd166; border: 1px solid rgba(255,209,102,0.35); font-size: 8px; font-weight: 800; letter-spacing: 0.4px; padding: 1px 4px; border-radius: 3px; pointer-events: none; }
+      /* Dolby Vision is black and gold everywhere it appears; the card says so
+         in type rather than in somebody else's logo. */
+      .stream-hdr-tag.hdr-dv, .pp-hdr-chip.hdr-dv { background: rgba(8,8,10,0.92); color: #e8c469; border-color: rgba(232,196,105,0.5); letter-spacing: 1px; }
+      .stream-hdr-tag.hdr-hlg, .pp-hdr-chip.hdr-hlg { color: rgba(255,209,102,0.72); border-color: rgba(255,209,102,0.22); }
+      /* A badge carrying a mark is the mark and its breathing room, nothing
+         else — no letter spacing to fight the drawing. */
+      /* On a tile the mark sits in the text block above the title, so it is
+         part of the line rather than something laid over the artwork. */
+      .stream-hdr-tag.stream-hdr-line { position: static; display: inline-flex; align-items: center; bottom: auto; right: auto; backdrop-filter: none; background: rgba(0,0,0,0.35); }
+      /* A mark is a drawing, not a line of text: no letter spacing to fight it,
+         no line box to push it off centre, and room to breathe on either side. */
+      .stream-hdr-tag.hdr-logo, .pp-hdr-chip.hdr-logo, .pp-fi-chip.hdr-logo {
+        letter-spacing: 0; line-height: 0; display: inline-flex;
+        align-items: center; justify-content: center;
+      }
+      .stream-hdr-tag.hdr-logo, .pp-hdr-chip.hdr-logo { padding: 3px 6px; }
+      /* HDR10 and HDR10+ are drawn inside their own outline; a capsule around
+         that reads as two borders, so the badge steps back and shows the mark. */
+      .hdr-logo.hdr-bare { border: none; background: none; padding: 0; backdrop-filter: none; }
+      .stream-hdr-tag.hdr-logo.hdr-bare { color: rgba(255,255,255,0.95); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.75)); }
+      .stream-hdr-tag.hdr-logo { color: rgba(255,255,255,0.92); }
+      .stream-hdr-tag.hdr-logo.hdr-dv, .pp-hdr-chip.hdr-logo.hdr-dv { color: #e8c469; }
+      .pp-hdr-chip { display: inline-flex; align-items: center; font-size: 9px; font-weight: 800; letter-spacing: 0.6px; padding: 2px 6px; border-radius: 4px; color: #ffd166; border: 1px solid rgba(255,209,102,0.35); background: rgba(255,209,102,0.08); }
       .stream-user-tag { position: absolute; top: 28px; left: 6px; z-index: 2; background: rgba(0,0,0,0.62); backdrop-filter: blur(4px); color: rgba(var(--arr-st-rgb,255,255,255),0.92); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; pointer-events: none; max-width: calc(100% - 12px); overflow: hidden; }
       .popup-ctrl-btn { background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.85); transition: background 0.15s; }
       .popup-ctrl-btn:hover { background: rgba(255,255,255,0.16); }
@@ -2147,9 +2173,19 @@ export const STYLES = `
          strip rather than a chip parked on its own row. */
       .mus-origin-chip { align-self: center; }
 
-      .mus-stream-bar { margin: 6px 0 2px; max-width: 320px; }
-      .mus-stream-bar .popup-ctrl-btn { width: 32px; height: 32px; }
-      .mus-stream-bar .popup-ctrl-btn-main { width: 38px; height: 38px; }
+      /* The track's own format, on the line the instance chip sits on rather
+         than on one of its own. */
+      .mus-fileinfo { margin: 4px 0 0; }
+      /* The transport runs the width of the window, in the artist's detail and
+         in a film's alike — a bar that stops a third of the way across reads
+         as a bar that is only a third full. */
+      .mus-stream-bar { margin: 6px 0 2px; }
+      .mus-stream-bar.pp-stream-bar { margin: 10px 0 2px; }
+      /* The transport row, wherever it is drawn (_streamCtrlRowHtml). The
+         artist window shrank its own copy and nothing else knew, so a film's
+         detail ended up with buttons half again as large. */
+      .popup-stream-ctrls .popup-ctrl-btn { width: 32px; height: 32px; }
+      .popup-stream-ctrls .popup-ctrl-btn-main { width: 38px; height: 38px; }
 
       .rec-src-badge {
         position: absolute; top: 6px; right: 6px; z-index: 4;
@@ -2789,6 +2825,10 @@ export const STYLES = `
          unpins the panel from the bottom, so the drag moved the wrong edge. */
       .popup-body,
       .popup-body--sn-is { overflow: hidden !important; }
+      /* Manual import is a list and nothing else — no dragged sheet to pin, and
+         a folder of tracks is longer than any window. It says otherwise, the
+         way the artist window has to. */
+      .popup-body#mi-body { overflow-y: auto !important; }
       /* The poster row stays a two-column flex; the description is its own
          full-width block below it (rendered outside .popup-meta on mobile). */
       /* The sheet is absolutely positioned now, so the content column no longer
@@ -3238,6 +3278,18 @@ export const STYLES = `
       }
       .popup-day .pp-fi-chip { color: rgba(0,0,0,0.65); border-color: rgba(0,0,0,0.14); background: rgba(0,0,0,0.04); }
       .pp-fi-chip ha-icon { opacity: 0.75; flex-shrink: 0; }
+      /* A mark sitting among the file chips keeps their height and outline,
+         and only Dolby Vision brings its own colour. */
+      /* Among the file chips the mark keeps their height, so it is centred in
+         an 18px capsule rather than sitting on their text baseline. */
+      .pp-fi-chip.hdr-logo { padding: 0 8px; color: rgba(255,255,255,0.88); }
+      .popup-day .pp-fi-chip.hdr-logo { color: rgba(0,0,0,0.78); }
+      /* A mark is the same mark wherever it is shown, so Dolby Vision keeps
+         its gold among the file chips as well; only the capsule around it
+         belongs to whichever row it sits in. */
+      .pp-fi-chip.hdr-logo.hdr-dv, .popup-day .pp-fi-chip.hdr-logo.hdr-dv { color: #e8c469; }
+      .popup-day .pp-fi-chip.hdr-logo.hdr-dv { border-color: rgba(0,0,0,0.14); background: rgba(0,0,0,0.04); }
+      .pp-fi-chip.hdr-hlg { color: rgba(255,255,255,0.6); }
       .pp-fi-txt { text-transform: uppercase; line-height: 1; }
       .pp-fi-flags { display: inline-flex; align-items: center; gap: 3px; }
       /* Side by side rather than overlapped: the poster strip tucks flags to

@@ -1,3 +1,4 @@
+import { RANGE_MARKS, rangeMarkSvg } from '../shared/logos.js';
 // Now Playing: the stream cards and their timer. Split out of render/right.js.
 
 class _StreamsRenderMethods {
@@ -115,6 +116,15 @@ _startStreamsTimer(streams) {
       const elapsed = isPlaying ? (Date.now() - updatedAt) / 1000 : 0;
       const current = Math.min(pos + elapsed, dur);
       el.style.width = (current / dur * 100).toFixed(2) + '%';
+      // The clock beside the bar, where there is one. The artist window has no
+      // popup timer behind it, so its label was written once at render and then
+      // stood still while the bar ran on — most visible right after a seek.
+      const timeEl = el.closest('.mus-stream-bar')?.querySelector('.stream-popup-time');
+      if (timeEl) {
+        const fmt = v => `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(Math.floor(v % 60)).padStart(2, '0')}`;
+        const next = `${fmt(current)} / ${fmt(dur)}`;
+        if (timeEl.textContent !== next) timeEl.textContent = next;
+      }
       // Detect playback end before HA updates — only for playing streams
       if (isPlaying && entity && current >= dur && !this._streamsEnded.has(entity)) {
         this._streamsEnded.add(entity);
@@ -122,6 +132,9 @@ _startStreamsTimer(streams) {
       }
     });
     if (anyNewlyEnded) this._reRenderSection('streams');
+    // A session read through the proxy arrives on a poll rather than as a state
+    // push, so this is where an artist window hears about the next track.
+    if (this._musicModal?.stream) this._musWatchStream();
 
     // Check if entities we marked as ended now have new content in HA
     let anyRestarted = false;
@@ -176,6 +189,41 @@ _streamLibPoster(id, attr, isTV, plexMatch) {
   const movies = [...(this._radarr || []), ...(this._radarr2 || [])];
   const hit = movies.find(m => eq(m.tmdbId, tmdbId));
   return hit ? this._getRadarrPoster(hit) : null;
+}
+
+// The dynamic range of a stream the card is showing, whatever the source.
+_streamRangeOf(streamId) {
+  if (!streamId) return '';
+  const pools = [this._jellyfinSessions, this._plexSessions, this._embySessions];
+  for (const pool of pools) {
+    const hit = (pool || []).find(s => s.id === streamId);
+    if (hit) return hit.attr?._dynRange || '';
+  }
+  return this._hass?.states?.[streamId]?.attributes?._dynRange || '';
+}
+
+// The badge itself. Dolby Vision, HDR10 and HDR10+ each have a logo of their
+// own, and each belongs to somebody: reproducing them in a card distributed
+// through HACS would mean using three trademarks on licence terms the card
+// cannot meet, and HLG has no mark at all — four badges in four visual
+// languages. Typography instead, told apart by colour and spacing: the
+// black-and-gold capsule reads as Dolby at a glance without being its logo.
+_streamRangeBadge(range, { long = false, cls = 'stream-hdr-tag' } = {}) {
+  if (!range) return '';
+  const dv = range === 'DV';
+  const tone = dv ? ' hdr-dv' : range === 'HLG' ? ' hdr-hlg' : '';
+  // Dolby Vision, HDR10 and HDR10+ are known by their marks; HLG has none and
+  // says its name instead. The drawings take the badge's own colour.
+  const mark = RANGE_MARKS[range];
+  if (mark) {
+    // The Dolby Vision wordmark carries a whole word beside its symbol, so it
+    // needs more height than the HDR marks to stay legible at all.
+    const svg = rangeMarkSvg(range, long ? (dv ? 13 : 15) : (dv ? 10 : 13));
+    // A mark that draws its own frame gets no second one from the badge
+    const bare = mark.boxed ? ' hdr-bare' : '';
+    return `<span class="${cls}${tone} hdr-logo${bare}" title="${this._escHtml(mark.name)}">${svg}</span>`;
+  }
+  return `<span class="${cls}${tone}">${this._escHtml(range)}</span>`;
 }
 
 _renderStreamCard({ id, state, attr }) {
@@ -281,6 +329,13 @@ _renderStreamCard({ id, state, attr }) {
   // Device tag (top-left, like media-type-tag)
   const deviceTag = `<span class="stream-device-tag"><ha-icon icon="${deviceIcon}" style="--mdc-icon-size:9px"></ha-icon> ${this._escHtml(deviceName)}</span>`;
 
+  // Dolby Vision or HDR, when the stream carries it. SDR is the ordinary case
+  // and gets no chip — a badge on everything says nothing.
+  // Above the title rather than floating over the artwork: the mark belongs to
+  // what is playing, and the poster underneath is rarely quiet enough to read
+  // a badge against.
+  const rangeTag = this._streamRangeBadge(attr._dynRange, { cls: 'stream-hdr-tag stream-hdr-line' });
+
   // User name — for Plex match against _plexSessions (has _plexUser from API)
   //             Jellyfin: parse from entity_id segment
   let userName = '';
@@ -328,9 +383,7 @@ _renderStreamCard({ id, state, attr }) {
   // than the plain stream popup — the same detail every other music poster
   // opens, with the transport added.
   const _musArtist = isMusic && this._lidarrConfigured !== false
-    ? [...(this._lidarrArtists?.values() || [])].find(a =>
-        String(a.artistName || '').trim().toLowerCase()
-          === String(attr.media_artist || attr.media_album_artist || '').trim().toLowerCase())
+    ? this._musStreamArtist(id)
     : null;
 
   const grad = 'rgba(0,0,0,0.88)';
@@ -353,6 +406,7 @@ _renderStreamCard({ id, state, attr }) {
       ` : `
         ${epLabel ? `<div style="margin-bottom:3px"><span class="imdb">${epLabel}</span></div>` : ''}
         ${isLiveTV && channel ? `<div style="margin-bottom:3px"><span class="imdb">${this._escHtml(channel)}</span></div>` : ''}
+        ${rangeTag ? `<div style="margin-bottom:3px">${rangeTag}</div>` : ''}
         <div style="font-size:10px;font-weight:700;color:${tc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this._escHtml(title)}</div>
         ${sub}
       `)}
