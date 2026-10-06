@@ -1,6 +1,7 @@
 # Announces a release in the Discord server's #announcements, with @everyone.
 #
-# Runs once, when a release is first published — a new version. Editing the
+# Runs once, when a release is first published — a new version — unless its
+# notes carry <!-- no-announce -->. Editing the
 # notes, moving the tag or pushing to main later sends nothing. A release
 # deleted and published again under the same tag is not announced twice
 # either: an announced tag is remembered in the Actions cache.
@@ -28,7 +29,9 @@ concurrency:
 jobs:
   announce:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
+    # Not for a prerelease, nor for one whose notes say <!-- no-announce -->
+    # (an HTML comment: invisible on GitHub). A manual run always posts.
+    if: ${{ github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !contains(github.event.release.body, '<!-- no-announce -->')) }}
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
