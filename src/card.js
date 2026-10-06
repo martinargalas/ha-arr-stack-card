@@ -73,7 +73,7 @@ import { jellystatTilesMixin } from './render/jellystat-tiles.js';
 import { similarFetchMixin } from './fetch/similar.js';
 import { similarRenderMixin } from './render/similar.js';
 import { wireSimilarMixin } from './wire/similar.js';
-import { BP, maxWidth } from './shared/ui.js';
+import { BP, maxWidth, savedDlSort } from './shared/ui.js';
 
 // STYLES runs to some 235 KB. A <style> per card made every card on a
 // dashboard parse all of it again; one constructed sheet is parsed once and
@@ -102,10 +102,11 @@ class ArrStackCard extends HTMLElement {
     this._fastInterval = null;
     this._initialized = false;
     this._pageBtnAbort = null; // AbortController pro page-button listenery
-    this._sort         = 'progress_desc'; // qBit sort state
-    this._sortDeluge   = 'progress_desc'; // Deluge sort state
-    this._sortRtorrent = 'progress_desc'; // rTorrent sort state
-    this._sortTransmission = 'progress_desc'; // Transmission sort state
+    // Queue order per client: as last sorted on this device, else progress first
+    this._sort         = savedDlSort('qbit');
+    this._sortDeluge   = savedDlSort('deluge');
+    this._sortRtorrent = savedDlSort('rtorrent');
+    this._sortTransmission = savedDlSort('transmission');
 
     // Data stores
     this._radarr = [];

@@ -159,7 +159,7 @@ class _TracearrTilesMethods {
     const total = Number(d.violationTotal) || 0;
     const typeLabel = {
       impossible_travel:     this._t('traVtImpossible'),
-      simultaneous_locations:'Souběžné lokace',
+      simultaneous_locations:this._t('traVtSimLoc'),
       concurrent_streams:    this._t('traVtConcurrent'),
       device_velocity:       this._t('traVtVelocity'),
     };

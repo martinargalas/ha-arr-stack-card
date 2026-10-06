@@ -3092,7 +3092,9 @@ ${TOKEN_CSS}
       /* ── Day mode ── the capsule is a light surface with dark labels; the
          active pill keeps the accent fill and its white text. */
       .popup-day .pp-hero-pill {
-        background: var(--_nav-bg, rgba(var(--_fill, 255, 255, 255), 0.78));
+        /* A light surface, not a fill: the ha preset makes the modal's fill
+           its text colour, which by day is dark */
+        background: var(--_nav-bg, rgba(255, 255, 255, 0.78));
         border-color: var(--_nav-bdr, rgba(var(--_line, 0, 0, 0), 0.10));
       }
       .popup-day .pp-hero-pill .is-open-btn,

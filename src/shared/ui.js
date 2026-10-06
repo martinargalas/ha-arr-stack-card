@@ -71,3 +71,21 @@ export const SEL_STY_A = `background:var(--is-btn-abg);border:1px solid var(--is
  * Wide full-width `<select>` / `<input>` style (form fields inside modal panels).
  */
 export const SEL_STY_WIDE = `width:100%;box-sizing:border-box;background:var(--is-btn-bg);border:1px solid var(--is-divider);border-radius:6px;color:var(--is-text);font-size:12px;padding:6px 10px;outline:none;color-scheme:light dark`;
+
+// The order each download queue was last sorted in, on this device. Kept per
+// client; a value the buttons cannot produce is ignored.
+const DL_SORT_KEY = 'arr-dl-sort';
+const DL_SORTS = ['progress_desc', 'progress_asc', 'speed_desc', 'speed_asc', 'added_desc', 'added_asc'];
+export function savedDlSort(client) {
+  try {
+    const v = JSON.parse(localStorage.getItem(DL_SORT_KEY) || '{}')[client];
+    return DL_SORTS.includes(v) ? v : 'progress_desc';
+  } catch (_) { return 'progress_desc'; }
+}
+export function saveDlSort(client, sort) {
+  try {
+    const o = JSON.parse(localStorage.getItem(DL_SORT_KEY) || '{}');
+    o[client] = sort;
+    localStorage.setItem(DL_SORT_KEY, JSON.stringify(o));
+  } catch (_) { /* storage blocked: the order holds until the page reloads */ }
+}

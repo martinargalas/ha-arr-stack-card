@@ -1,3 +1,5 @@
+import { saveDlSort } from '../shared/ui.js';
+
 class _WireMethods {
 async _qbitAction(hash, action, deleteFiles = false) {
   this._markActivated();
@@ -406,6 +408,7 @@ _wireSort() {
         this._sort = val;
         this._pages.qbit = 0;
       }
+      saveDlSort(['deluge', 'rtorrent', 'transmission'].includes(btn.dataset.client) ? btn.dataset.client : 'qbit', val);
       this._render();
     });
   });
