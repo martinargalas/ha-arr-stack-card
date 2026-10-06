@@ -56,8 +56,19 @@ jobs:
             $r[0] as $rel
             # The first picture in the notes becomes the embed's one large image
             | ([($rel.body // "") | match("!\\[[^\\]]*\\]\\((https?://[^)\\s]+)\\)"; "g") | .captures[0].string] | first) as $img
-            | ($rel.body // "" | gsub("!\\[[^\\]]*\\]\\([^)]*\\)"; "") | gsub("\r"; "")) as $body
-            | (if ($body | length) > 3500 then ($body[0:3500] | sub("\n[^\n]*$"; "")) + "\n\n…" else $body end) as $text
+            # Discord-ready text: no pictures, headings in bold (an embed may not
+            # draw them), links into the repository made absolute
+            | ($rel.body // ""
+                | gsub("\r"; "")
+                | gsub("!\\[[^\\]]*\\]\\([^)]*\\)\\n*"; "")
+                | gsub("(?m)^#{1,6} +(?<t>[^\\n]+)"; "**\(.t)**")
+                | gsub("\\]\\((?<p>(?!https?:|#|mailto:)[^)]+)\\)"; "](https://github.com/\($repo)/blob/main/\(.p))")
+                | sub("^\\s+"; "")) as $body
+            # Only the opening: whole lines up to about 1000 characters; the
+            # rest is a click away
+            | (if ($body | length) > 1000
+                then ($body[0:1000] | sub("\\n[^\\n]*$"; ""))
+                else $body end) as $text
             | {
                 content: "@everyone",
                 allowed_mentions: { parse: ["everyone"] },
