@@ -54,6 +54,8 @@ jobs:
           jq -n --slurpfile r release.json \
             --arg name "Arr Stack Card" --arg repo "${{ github.repository }}" --argjson color $((16#5b8cff)) '
             $r[0] as $rel
+            # The first picture in the notes becomes the embed's one large image
+            | ([($rel.body // "") | match("!\\[[^\\]]*\\]\\((https?://[^)\\s]+)\\)"; "g") | .captures[0].string] | first) as $img
             | ($rel.body // "" | gsub("!\\[[^\\]]*\\]\\([^)]*\\)"; "") | gsub("\r"; "")) as $body
             | (if ($body | length) > 3500 then ($body[0:3500] | sub("\n[^\n]*$"; "")) + "\n\n…" else $body end) as $text
             | {
@@ -66,7 +68,7 @@ jobs:
                   color: $color,
                   footer: { text: $repo },
                   timestamp: $rel.published_at
-                }]
+                } + (if $img then { image: { url: $img } } else {} end)]
               }' > payload.json
           curl -fsS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK"
           mkdir -p .announced && echo "$TAG" > .announced/tag
