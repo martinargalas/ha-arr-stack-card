@@ -287,13 +287,16 @@ export function stylesTabHtml(ed, general = '') {
       <div class="row">
         <span class="row-label">Preset</span>
         <select data-st-preset>
-          ${opt('glass', 'Glass (default)')}${opt('ha', 'Home Assistant theme')}${opt('solid', 'Solid')}
+          ${opt('glass', 'Glass (default)')}${opt('ha', 'Home Assistant theme')}${opt('solid', 'Solid')}${opt('nord', 'Nord')}${opt('catppuccin', 'Catppuccin')}${opt('cinema', 'Cinema')}
         </select>
       </div>
       <div class="hint">${{
         glass: 'The card as it has always looked: frosted glass over your dashboard.',
         ha: 'Background, border, corners, text and accent from your Home Assistant theme — modals included.',
         solid: 'Opaque and flat: no blur and no glass shine.',
+        nord: 'Arctic frost: slate glass, frost-blue headings and icons, aurora status colours.',
+        catppuccin: 'Soothing pastels: a mauve glow on a deep base, pink headings, rounder corners.',
+        cinema: 'The dark of a theatre: a velvet-red glow from below, gold accents, sharper corners.',
       }[preset] || ''} Anything you set below wins over the preset.</div>
       ${general ? group(ed, 'general', 'General', general) : ''}
       ${group(ed, 'panels', 'Panels', scoped(ed, 'panels', SURFACE))}

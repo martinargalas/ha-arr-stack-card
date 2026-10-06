@@ -12,7 +12,7 @@ In the editor, open the **Appearance** tab and pick a preset — or in YAML:
 
 ```yaml
 styles:
-  preset: ha        # glass (default) | ha | solid
+  preset: ha        # glass (default) | ha | solid | nord | catppuccin | cinema
 ```
 
 | Preset | What it does |
@@ -20,6 +20,9 @@ styles:
 | `glass` | The card as it has always looked: frosted glass over your dashboard. |
 | `ha` | Takes everything from your Home Assistant theme: the background, border, corners and shadow of a regular card (`ha-card`), the theme's text colour, its primary colour as the accent, and its success, warning, error and info colours. Modals follow it too, by day and by night. Use this one to make the card match the rest of your dashboard. |
 | `solid` | Opaque and flat — no blur and no glass shine. |
+| `nord` | Arctic frost, after the [Nord](https://www.nordtheme.com) palette: slate glass lit from the top, frost-blue headings and icons in soft capsules, aurora colours for status — and the modals to match. |
+| `catppuccin` | Soothing pastels, after [Catppuccin](https://catppuccin.com) Mocha: a mauve glow on a deep base, pink headings, rounder corners, pastel quality and status colours. |
+| `cinema` | The dark of a theatre: a velvet-red glow from below, gold for headings, buttons and everything that matters, sharper corners. |
 
 Anything you set yourself wins over the preset.
 

@@ -1252,11 +1252,10 @@ _renderVpnBar() {
   const online  = this._gluetunStatus === 'running';
   const cls     = online ? 'vpn-bar-online' : 'vpn-bar-offline';
   const details = [this._gluetunCountry, this._gluetunIp].filter(Boolean).join(' • ');
-  const useMdi = this._cfgGet('styles', 'applicationIcons', 'real') === 'mdi';
-  const shieldFallback = online ? `<ha-icon icon="mdi:shield-check" style="--mdc-icon-size:18px;flex-shrink:0"></ha-icon>` : '';
-  const providerLogo = (online && this._gluetunProviderSvg && !useMdi)
-    ? `<img src="${this._gluetunProviderSvg}" width="18" height="18" style="flex-shrink:0;opacity:0.9" alt="">`
-    : shieldFallback;
+  // The provider's own icon, styled like every app's; a shield when it is not known
+  const providerLogo = !online ? ''
+    : (this._gluetunProvider && this._appIcon(this._gluetunProvider, 18))
+      || `<ha-icon icon="mdi:shield-check" style="--mdc-icon-size:18px;flex-shrink:0"></ha-icon>`;
   const tag = online
     ? `<span class="g" style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:rgb(var(--_fg, 255, 255, 255))">VPN Active</span>`
     : `<span class="pill-red" style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:rgb(var(--_fg, 255, 255, 255))">VPN Offline</span>`;

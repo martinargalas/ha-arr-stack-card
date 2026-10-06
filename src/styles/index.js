@@ -748,8 +748,8 @@ ${TOKEN_CSS}
         background: var(--_sw-off, rgba(255,255,255,0.06));
       }
       .ui-sw.is-on {
-        border-color: var(--_sw-on, rgba(0,122,255,0.8));
-        background: var(--_sw-on, rgba(0,122,255,0.7));
+        border-color: var(--_sw-on, rgba(var(--arr-accent-rgb, 0,122,255),0.8));
+        background: var(--_sw-on, rgba(var(--arr-accent-rgb, 0,122,255),0.7));
       }
       .ui-sw-k {
         position: absolute; top: 50%; transform: translateY(-50%); left: 4px;
@@ -801,7 +801,7 @@ ${TOKEN_CSS}
       /* The fill is one element the wire layer slides between buttons, exactly
          as the desktop header menu does. */
       .tra-mnav-row > .mt-nav-ind { top: 4px; bottom: 4px; border-radius: 14px; }
-      .tra-mnav-sub > .mt-nav-ind { --nav-accent: rgba(0,122,255,0.28); background: var(--_sub-on, var(--nav-accent)); }
+      .tra-mnav-sub > .mt-nav-ind { --nav-accent: rgba(var(--arr-accent-rgb, 0,122,255),0.28); background: var(--_sub-on, var(--nav-accent)); }
       .tra-mnav-btn {
         position: relative; z-index: 1;
         flex: 1; min-width: 40px;

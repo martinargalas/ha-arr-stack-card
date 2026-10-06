@@ -339,7 +339,7 @@ Control what appears on poster cards across all categories. All options are avai
 
 ### Appearance & UX
 
-- **Styling** — every colour, surface and corner can be changed, for the whole card or one panel at a time, and the modals by day and by night. A preset takes the look from your Home Assistant theme (`styles.preset: ha`), so the card matches the rest of your dashboard in one line; the editor's **Appearance** tab has a colour picker, a hex/RGB field and an opacity slider for each setting, in folding categories. The same settings work from a Home Assistant theme or card-mod. See **[STYLING.md](STYLING.md)**
+- **Styling** — every colour, surface and corner can be changed, for the whole card or one panel at a time, and the modals by day and by night. A preset takes the look from your Home Assistant theme (`styles.preset: ha`), so the card matches the rest of your dashboard in one line — or gives it a palette of its own: Nord, Catppuccin or Cinema; the editor's **Appearance** tab has a colour picker, a hex/RGB field and an opacity slider for each setting, in folding categories. The same settings work from a Home Assistant theme or card-mod. See **[STYLING.md](STYLING.md)**
 - One visual language across every category and panel — the same capsules, tables, filters and pagination everywhere, so a panel you have never opened still works the way you expect
 - Day / night theming based on `sun.sun`
 - Responsive layout — mobile, tablet, desktop

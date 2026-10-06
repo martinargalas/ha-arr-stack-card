@@ -1,3 +1,4 @@
+import { STATUS_RGB } from '../styles/tokens.js';
 // ──────────────────────────────────────────────────────────────────────────
 // Shared UI helpers — imported by render/wire modules
 // ──────────────────────────────────────────────────────────────────────────
@@ -88,4 +89,12 @@ export function saveDlSort(client, sort) {
     o[client] = sort;
     localStorage.setItem(DL_SORT_KEY, JSON.stringify(o));
   } catch (_) { /* storage blocked: the order holds until the page reloads */ }
+}
+
+// 'r,g,b' as a status token when it is one of the card's status shades — the
+// accent blue becomes var(--arr-accent-rgb, 0,122,255) — so a colour written
+// in code follows a theme or preset. Anything else comes back as it was.
+export function statusTok(rgb) {
+  const k = String(rgb).replace(/\s+/g, '');
+  return STATUS_RGB[k] ? `var(--arr-${STATUS_RGB[k]}-rgb, ${k})` : rgb;
 }

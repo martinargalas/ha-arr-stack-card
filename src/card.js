@@ -6,6 +6,7 @@
 
 import { ARR_I18N } from './i18n.js';
 import { installLazy } from './shared/lazy.js';
+import { statusTok } from './shared/ui.js';
 import { STYLES } from './styles/index.js';
 import { uiMixin } from './render/ui.js';
 import { sectionsMixin } from './render/sections.js';
@@ -218,7 +219,7 @@ class ArrStackCard extends HTMLElement {
     this._gluetunStatus     = null;  // 'running' | 'stopped' | null
     this._gluetunCountry    = null;  // e.g. 'Netherlands'
     this._gluetunIp         = null;  // public IP string
-    this._gluetunProvider   = null;  // detected provider slug for Simple Icons
+    this._gluetunProvider   = null;  // detected VPN provider, an _appIcon key
     this._rtorrentConfigured = null;
     this._rtorrentStatus     = {};   // { download_rate, upload_rate }
     this._rtorrentQueue      = [];   // active torrents
@@ -1082,9 +1083,10 @@ class ArrStackCard extends HTMLElement {
   // background has almost no contrast.
   _tabFill(rgb = '0,122,255') {
     const day = this._isDay;
+    const t = statusTok(rgb);
     return {
-      bg:  `rgba(${rgb},${day ? 0.85 : 0.5})`,
-      bdr: `rgba(${rgb},${day ? 0.95 : 0.8})`,
+      bg:  `rgba(${t},${day ? 0.85 : 0.5})`,
+      bdr: `rgba(${t},${day ? 0.95 : 0.8})`,
       clr: '#fff',
     };
   }

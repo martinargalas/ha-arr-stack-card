@@ -377,31 +377,21 @@ async _fetchGluetun() {
     this._gluetunCountry = ip?.country    || null;
     this._gluetunIp      = ip?.public_ip  || null;
     const orgStr = `${ip?.isp || ''} ${ip?.organization || ''}`.toLowerCase();
+    // The provider, by the exit's network owner — drawn like any app's icon
     const PROVIDERS = [
-      ['surfshark',             /surfshark|m247/],
-      ['nordvpn',               /nordvpn|nord\s+security/],
-      ['mullvadvpn',            /mullvad/],
-      ['protonvpn',             /proton\s*vpn|protonvpn/],
-      ['expressvpn',            /expressvpn|express\s+vpn/],
-      ['ipvanish',              /ipvanish/],
-      ['cyberghostvpn',         /cyberghost/],
-      ['privateinternetaccess', /private.internet.access|\bpia\b/],
-      ['hidemyass',             /hidemyass|\bhma\b/],
+      ['surfshark',  /surfshark|m247/],
+      ['nordvpn',    /nordvpn|nord\s+security/],
+      ['mullvad',    /mullvad/],
+      ['protonvpn',  /proton\s*vpn|protonvpn/],
+      ['expressvpn', /expressvpn|express\s+vpn/],
+      ['pia',        /private.internet.access|\bpia\b/],
+      ['airvpn',     /airvpn/],
+      ['ipvanish',   /ipvanish/],
+      ['cyberghost', /cyberghost/],
+      ['hidemyass',  /hidemyass|\bhma\b/],
     ];
     const match = PROVIDERS.find(([, re]) => re.test(orgStr));
     const newProvider = match ? match[0] : null;
-    if (newProvider && newProvider !== this._gluetunProvider) {
-      this._gluetunProviderSvg = null;
-      try {
-        const r = await fetch(`https://cdn.simpleicons.org/${newProvider}`);
-        if (r.ok) {
-          const svg = await r.text();
-          this._gluetunProviderSvg = `data:image/svg+xml,${encodeURIComponent(svg)}`;
-        }
-      } catch (_) {}
-    } else if (!newProvider) {
-      this._gluetunProviderSvg = null;
-    }
     this._gluetunProvider = newProvider;
   } catch (e) {
     if (e?.status === 503) { this._gluetunConfigured = false; return; }

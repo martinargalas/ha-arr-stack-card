@@ -1,4 +1,4 @@
-import { isMobile, dayClass, ICONS } from '../shared/ui.js';
+import { isMobile, dayClass, ICONS, statusTok } from '../shared/ui.js';
 import { genreFamily } from '../shared/genres.js';
 import { ORIGIN_COUNTRIES, regionName } from '../shared/countries.js';
 
@@ -313,7 +313,7 @@ class _SimilarRenderMethods {
 
   _simPickStyle(state, view, fill = 0.32) {
     if (!state) return 'border:1px solid var(--is-divider);background:var(--is-btn-bg);color:var(--is-text)';
-    const rgb = state === 'ex' ? '229,72,77' : '0,122,255';
+    const rgb = statusTok(state === 'ex' ? '229,72,77' : '0,122,255');
     return state === view
       ? `border:1px solid rgba(${rgb},0.65);background:rgba(${rgb},${fill});color:rgb(var(--_fg, 255, 255, 255))`
       : `border:1px dashed rgba(${rgb},0.6);background:var(--is-btn-bg);color:var(--is-text-muted)${state === 'ex' ? ';text-decoration:line-through' : ''}`;

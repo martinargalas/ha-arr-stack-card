@@ -298,6 +298,105 @@ export const STYLE_PRESETS = {
     shine:       0,
     panelShadow: 'none',
   },
+
+  // Nord (nordtheme.com, MIT): arctic frost. Slate glass lit from the top,
+  // frost-blue headings and icons in soft capsules, aurora status colours.
+  nord: {
+    background:  'radial-gradient(120% 80% at 100% 0%, rgba(136, 192, 208, 0.14), transparent 55%), linear-gradient(165deg, rgba(59, 66, 82, 0.94) 0%, rgba(46, 52, 64, 0.96) 55%, rgba(36, 41, 51, 0.97) 100%)',
+    border:      '1px solid rgba(136, 192, 208, 0.20)',
+    radius:      18,
+    blur:        'blur(28px) saturate(120%)',
+    shine:       0.08,
+    tintOpacity: 35,
+    panelShadow: '0 24px 60px -12px rgba(15, 18, 25, 0.55)',
+    iconBackground: 'rgba(136, 192, 208, 0.14)', iconRadius: 10, iconPadding: 4,
+    text: '#ECEFF4', textSecondary: '#D8DEE9', textMuted: '#8F9BB3',
+    heading: '#88C0D0', headingLine: '#5E81AC', icon: '#88C0D0',
+    fill: '#88C0D0', line: '#88C0D0', button: '#5E81AC', buttonText: '#ECEFF4', buttonIcon: '#ECEFF4', pillText: '#ECEFF4',
+    dot: '#616E88', dotActive: '#88C0D0', posterText: '#ECEFF4', shade: '#2E3440', shadow: '#1A1E26',
+    accent: '#88C0D0', success: '#A3BE8C', warning: '#EBCB8B', error: '#BF616A', info: '#81A1C1',
+    modal: {
+      background: 'linear-gradient(170deg, rgba(59, 66, 82, 0.97), rgba(46, 52, 64, 0.98))',
+      header: 'linear-gradient(180deg, rgba(76, 86, 106, 0.55), rgba(59, 66, 82, 0.35))', menu: '#3B4252',
+      text: '#ECEFF4', textSecondary: '#D8DEE9', textMuted: '#8F9BB3', fill: '#D8DEE9', line: '#88C0D0', shine: 0.2, radius: 22,
+      navBackground: 'rgba(46, 52, 64, 0.72)', navBorder: 'rgba(136, 192, 208, 0.18)', navText: '#D8DEE9',
+      navActive: 'linear-gradient(135deg, #88C0D0, #81A1C1)', navActiveText: '#2E3440', subText: '#D8DEE9', subActive: '#5E81AC', subActiveText: '#ECEFF4',
+      toolbar: 'rgba(59, 66, 82, 0.60)', toolbarBorder: 'rgba(136, 192, 208, 0.16)', toolbarText: '#D8DEE9',
+      toolbarActive: '#88C0D0', toolbarActiveText: '#2E3440', filter: '#88C0D0',
+      button: 'rgba(76, 86, 106, 0.75)', buttonBorder: 'rgba(136, 192, 208, 0.22)', buttonText: '#ECEFF4',
+      buttonHover: 'rgba(94, 129, 172, 0.55)', buttonActive: '#88C0D0', buttonActiveText: '#2E3440',
+      switchOn: '#A3BE8C', switchOff: '#4C566A', switchKnob: '#ECEFF4', progressTrack: 'rgba(216, 222, 233, 0.12)', progressFill: '#88C0D0',
+      grab: '#88C0D0', grabDone: '#A3BE8C', grabFailed: '#BF616A', quality4k: '#B48EAD', quality1080: '#81A1C1', quality720: '#8FBCBB',
+      torrent: '#A3BE8C', usenet: '#EBCB8B', scorePositive: '#A3BE8C', scoreNegative: '#BF616A', rejected: '#D08770',
+      seeds: '#A3BE8C', leechers: '#BF616A', searchDone: '#A3BE8C', searchDownloading: '#88C0D0',
+    },
+  },
+
+  // Catppuccin Mocha (catppuccin.com, MIT): soothing pastels. A mauve glow
+  // in the corner of a deep base, rounder corners, pink headings, mauve accent.
+  catppuccin: {
+    background:  'radial-gradient(110% 80% at 0% 0%, rgba(203, 166, 247, 0.34), transparent 55%), radial-gradient(90% 70% at 100% 100%, rgba(245, 194, 231, 0.12), transparent 60%), linear-gradient(160deg, rgba(41, 41, 60, 0.95), rgba(30, 30, 46, 0.97) 50%, rgba(24, 24, 37, 0.98))',
+    border:      '1px solid rgba(203, 166, 247, 0.24)',
+    radius:      24,
+    blur:        'blur(24px) saturate(140%)',
+    shine:       0.06,
+    tintOpacity: 35,
+    panelShadow: '0 30px 70px -18px rgba(17, 17, 27, 0.75), 0 0 0 1px rgba(245, 194, 231, 0.04)',
+    iconBackground: 'rgba(203, 166, 247, 0.16)', iconRadius: 12, iconPadding: 4,
+    text: '#CDD6F4', textSecondary: '#BAC2DE', textMuted: '#9399B2',
+    heading: '#F5C2E7', headingLine: '#CBA6F7', icon: '#CBA6F7',
+    fill: '#B4BEFE', line: '#B4BEFE', button: '#45475A', buttonText: '#CDD6F4', buttonIcon: '#F5C2E7', pillText: '#CDD6F4',
+    dot: '#585B70', dotActive: '#F5C2E7', posterText: '#CDD6F4', shade: '#181825', shadow: '#11111B',
+    accent: '#CBA6F7', success: '#A6E3A1', warning: '#FAB387', error: '#F38BA8', info: '#89B4FA',
+    modal: {
+      background: 'radial-gradient(90% 60% at 100% 0%, rgba(245, 194, 231, 0.10), transparent 60%), linear-gradient(170deg, rgba(36, 36, 54, 0.97), rgba(30, 30, 46, 0.98))',
+      header: 'linear-gradient(180deg, rgba(49, 50, 68, 0.70), rgba(30, 30, 46, 0.30))', menu: '#181825',
+      text: '#CDD6F4', textSecondary: '#BAC2DE', textMuted: '#9399B2', fill: '#CDD6F4', line: '#B4BEFE', shine: 0.15, radius: 28,
+      navBackground: 'rgba(24, 24, 37, 0.75)', navBorder: 'rgba(203, 166, 247, 0.20)', navText: '#BAC2DE',
+      navActive: 'linear-gradient(135deg, #CBA6F7, #F5C2E7)', navActiveText: '#1E1E2E', subText: '#BAC2DE', subActive: '#B4BEFE', subActiveText: '#1E1E2E',
+      toolbar: 'rgba(49, 50, 68, 0.55)', toolbarBorder: 'rgba(180, 190, 254, 0.18)', toolbarText: '#BAC2DE',
+      toolbarActive: '#CBA6F7', toolbarActiveText: '#1E1E2E', filter: '#F5C2E7',
+      button: 'rgba(69, 71, 90, 0.80)', buttonBorder: 'rgba(203, 166, 247, 0.24)', buttonText: '#CDD6F4',
+      buttonHover: 'rgba(88, 91, 112, 0.85)', buttonActive: '#CBA6F7', buttonActiveText: '#1E1E2E',
+      switchOn: '#A6E3A1', switchOff: '#45475A', switchKnob: '#CDD6F4', progressTrack: 'rgba(205, 214, 244, 0.12)', progressFill: '#CBA6F7',
+      grab: '#CBA6F7', grabDone: '#A6E3A1', grabFailed: '#F38BA8', quality4k: '#F5C2E7', quality1080: '#89B4FA', quality720: '#94E2D5',
+      torrent: '#A6E3A1', usenet: '#89DCEB', scorePositive: '#A6E3A1', scoreNegative: '#F38BA8', rejected: '#FAB387',
+      seeds: '#A6E3A1', leechers: '#F38BA8', searchDone: '#A6E3A1', searchDownloading: '#CBA6F7',
+    },
+  },
+
+  // Cinema: the dark of a theatre, a velvet-red glow from below, gold for
+  // everything that matters — sharper corners, titles in brass.
+  cinema: {
+    background:  'radial-gradient(140% 70% at 50% 120%, rgba(128, 20, 32, 0.45), transparent 60%), linear-gradient(180deg, rgba(24, 18, 14, 0.96), rgba(9, 7, 6, 0.98))',
+    border:      '1px solid rgba(229, 160, 13, 0.26)',
+    radius:      12,
+    blur:        'blur(18px) saturate(110%)',
+    shine:       0,
+    tintOpacity: 45,
+    panelShadow: '0 0 0 1px rgba(229, 160, 13, 0.06), 0 30px 70px -10px rgba(0, 0, 0, 0.75)',
+    iconBackground: 'rgba(229, 160, 13, 0.12)', iconRadius: 6, iconPadding: 3,
+    text: '#F5EFE3', textSecondary: '#D9CFBF', textMuted: '#9C9286',
+    heading: '#E5A00D', headingLine: '#8B1E2D', icon: '#E5A00D',
+    fill: '#E5A00D', line: '#E5A00D', button: '#3A2A12', buttonText: '#F5EFE3', buttonIcon: '#E5A00D', pillText: '#F5EFE3',
+    dot: '#5C4A33', dotActive: '#E5A00D', posterText: '#F5EFE3', shade: '#0A0806', shadow: '#000000',
+    accent: '#E5A00D', success: '#7BC47F', warning: '#F2B544', error: '#D9453B', info: '#C9A66B',
+    modal: {
+      background: 'radial-gradient(120% 60% at 50% 115%, rgba(128, 20, 32, 0.30), transparent 60%), linear-gradient(180deg, rgba(20, 16, 12, 0.98), rgba(9, 7, 6, 0.99))',
+      header: 'linear-gradient(90deg, rgba(92, 16, 26, 0.55), rgba(26, 20, 16, 0.40) 70%)', menu: '#16110C',
+      text: '#F5EFE3', textSecondary: '#D9CFBF', textMuted: '#9C9286', fill: '#F5EFE3', line: '#E5A00D', shine: 0, radius: 14,
+      navBackground: 'rgba(16, 12, 9, 0.80)', navBorder: 'rgba(229, 160, 13, 0.22)', navText: '#D9CFBF',
+      navActive: 'linear-gradient(135deg, #F2C14E, #E5A00D 55%, #B87A08)', navActiveText: '#140F08', subText: '#D9CFBF', subActive: '#8B1E2D', subActiveText: '#F5EFE3',
+      toolbar: 'rgba(30, 24, 18, 0.65)', toolbarBorder: 'rgba(229, 160, 13, 0.20)', toolbarText: '#D9CFBF',
+      toolbarActive: '#E5A00D', toolbarActiveText: '#140F08', filter: '#E5A00D',
+      button: 'rgba(42, 33, 22, 0.85)', buttonBorder: 'rgba(229, 160, 13, 0.28)', buttonText: '#F5EFE3',
+      buttonHover: 'rgba(70, 52, 24, 0.90)', buttonActive: '#E5A00D', buttonActiveText: '#140F08',
+      switchOn: '#E5A00D', switchOff: '#3A2E22', switchKnob: '#F5EFE3', progressTrack: 'rgba(245, 239, 227, 0.10)', progressFill: '#E5A00D',
+      grab: '#E5A00D', grabDone: '#7BC47F', grabFailed: '#D9453B', quality4k: '#F2C14E', quality1080: '#C9A66B', quality720: '#9C9286',
+      torrent: '#7BC47F', usenet: '#C9A66B', scorePositive: '#E5A00D', scoreNegative: '#D9453B', rejected: '#D9453B',
+      seeds: '#7BC47F', leechers: '#D9453B', searchDone: '#7BC47F', searchDownloading: '#E5A00D',
+    },
+  },
 };
 
 // A value lands inside a <style>; nothing in it may close the rule.
@@ -358,8 +457,10 @@ export function styleDeclarations(styles = {}) {
   const out = [], bad = [];
   declsFor(merged, '', [...SIDE_COLORS, ...SIDE_SURFACE, ...SIDE_OPACITY, ...CARD_ONLY.map(([k, t]) => [k, t])], out, bad);
   for (const side of ['left', 'right']) {
-    if (styles[side] && typeof styles[side] === 'object') {
-      declsFor(styles[side], `${side}-`, [...SIDE_COLORS, ...SIDE_SURFACE, ...SIDE_OPACITY], out, bad);
+    // A preset may shape one side; what the user sets for that side wins
+    const own = styles[side] && typeof styles[side] === 'object' ? styles[side] : null;
+    if (own || preset[side]) {
+      declsFor({ ...(preset[side] || {}), ...(own || {}) }, `${side}-`, [...SIDE_COLORS, ...SIDE_SURFACE, ...SIDE_OPACITY], out, bad);
     }
   }
   const modalKeys = MODAL_TOKENS.map(([t]) => [camel(t.replace(/-rgb$/, '')), t]);

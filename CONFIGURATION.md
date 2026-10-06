@@ -124,7 +124,7 @@ styles:
   applicationIcons: real          # real | mdi — use real app logos or MDI icons  (default: real)
   uiScale: 1                      # scale all card content — use >1 on large screens/TVs  (default: 1)
   leftPanelWidth: 40              # downloads panel width as % of card width  (default: 40)
-  preset: glass                   # glass | ha | solid — see STYLING.md
+  preset: glass                   # glass | ha | solid | nord | catppuccin | cinema — see STYLING.md
   text: "#ffffff"                 # every colour, surface and opacity key, and the
   radius: 34                      #   left:/right:/modal:/modalDay: groups: STYLING.md
   iconStyle: brand                # brand | mono — real logos in their own colours or the icon colour

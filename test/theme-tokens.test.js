@@ -108,6 +108,27 @@ test('a preset starts the keys, and a key the user sets wins', () => {
   assert.deepEqual(styleDeclarations({ preset: 'glass' }).decls, []);
 });
 
+test('the palette presets read in full, card and modals, and the user still wins', () => {
+  for (const name of ['nord', 'catppuccin', 'cinema']) {
+    const { decls, bad } = styleDeclarations({ preset: name });
+    assert.deepEqual(bad, [], name);
+    for (const t of ['--arr-background:', '--arr-accent-rgb:', '--arr-heading-rgb:', '--arr-modal-background:', '--arr-modal-nav-active:', '--arr-modal-grab-rgb:', '--arr-modal-day-background:']) {
+      assert.ok(decls.some(d => d.startsWith(t)), `${name} ${t}`);
+    }
+  }
+  const { decls } = styleDeclarations({ preset: 'cinema', accent: '#00ff00' });
+  assert.ok(decls.includes('--arr-accent-rgb: 0, 255, 0;'));
+});
+
+test('a preset may shape one side, and what the user sets for that side wins', () => {
+  STYLE_PRESETS.__t = { left: { text: '#111111', heading: '#222222' } };
+  try {
+    const { decls } = styleDeclarations({ preset: '__t', left: { text: '#ffffff' } });
+    assert.ok(decls.includes('--arr-left-text-rgb: 255, 255, 255;'));
+    assert.ok(decls.includes('--arr-left-heading-rgb: 34, 34, 34;'));
+  } finally { delete STYLE_PRESETS.__t; }
+});
+
 test('what cannot be read is named, and nothing closes the style rule', () => {
   const { decls, bad } = styleDeclarations({ text: 'reddish', preset: 'neon', left: { line: '#12' }, background: 'red; } * { display:none' });
   assert.deepEqual(bad.sort(), ['left.line', 'preset: neon', 'text'].sort());

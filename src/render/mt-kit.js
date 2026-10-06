@@ -4,6 +4,7 @@
 // Maintainerr modal, but Library, Search, Similar titles, Activity, the calendar
 // and the request overlays all draw with it, so it is core — only the Maintainerr
 // modal itself loads on demand (chunks/maintainerr.js).
+import { statusTok } from '../shared/ui.js';
 
 export const MT_BTN = `background:rgba(var(--_fill, 255, 255, 255), 0.06);border:1px solid rgba(var(--_line, 255, 255, 255), 0.10);border-radius:999px;color:var(--is-text);font-size:12px;height:32px;padding:0 14px;box-sizing:border-box;cursor:pointer;outline:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-weight:600;white-space:nowrap`;
 export const _ICO_CHECK = `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -241,7 +242,8 @@ class _MtKitMethods {
       green: ['52,211,153', '0.50', '0.28', '#0b7c4c'],
       red:   ['248,113,113', '0.50', '0.28', '#d1373c'],
     };
-    const [rgb, bdrA, bgA, solid] = TONES[tone] || TONES.blue;
+    const [raw, bdrA, bgA, solid] = TONES[tone] || TONES.blue;
+    const rgb = statusTok(raw);
     const sty = active
       ? (day
         ? `border:1px solid rgba(${rgb},0.65);background:rgba(${rgb},0.18);color:${solid}`
@@ -302,7 +304,7 @@ class _MtKitMethods {
       const vars = [
         ...ws.map((w, i) => `--w${i}:${w}px`),
         ...xs.map((x, i) => `--x${i}:${x}px`),
-        accent ? `--seg-accent:rgba(${accent},${accentAlpha ?? (this._isDay ? 0.85 : 0.5)});--seg-accent-bdr:rgba(${accent},${this._isDay ? 0.95 : 0.8})` : '',
+        accent ? `--seg-accent:rgba(${statusTok(accent)},${accentAlpha ?? (this._isDay ? 0.85 : 0.5)});--seg-accent-bdr:rgba(${statusTok(accent)},${this._isDay ? 0.95 : 0.8})` : '',
       ].filter(Boolean).join(';');
       // Fresh markup carries only the caller's guess at the widths; the real
       // ones arrive a frame later from _syncSegVars. With the indicator's

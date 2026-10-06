@@ -30,7 +30,7 @@ class _ItemMethods {
     // The same fill and edge the peanut's own selected half carries — those are
     // dimmer at night than the flat blue this used, which is why the funnel read
     // as a different control.
-    const accent = `--seg-accent:rgba(0,122,255,${this._isDay ? 0.85 : 0.5});--seg-accent-bdr:rgba(0,122,255,${this._isDay ? 0.95 : 0.8})`;
+    const accent = `--seg-accent:rgba(var(--arr-accent-rgb, 0,122,255),${this._isDay ? 0.85 : 0.5});--seg-accent-bdr:rgba(var(--arr-accent-rgb, 0,122,255),${this._isDay ? 0.95 : 0.8})`;
     return `<div class="hdr-filter${isSet ? ' is-set' : ''}${open}" data-hdr-filter="${key}" style="${accent}">
       <button class="hdr-filter-btn" data-hdr-filter-btn aria-label="${this._t('tabAll')}">${funnel}</button>
       ${segHtml}

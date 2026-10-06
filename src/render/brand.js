@@ -49,6 +49,14 @@ class _BrandMethods {
       jellyfin:   'jellyfin',
       emby:       'emby',
       kodi:       'kodi',
+      // VPN providers behind Gluetun
+      surfshark:  'surfshark',
+      nordvpn:    'nordvpn',
+      mullvad:    'mullvad',
+      protonvpn:  'proton-vpn',
+      expressvpn: 'expressvpn',
+      pia:        'private-internet-access',
+      airvpn:     'airvpn',
     };
     const mdiIcons = {
       radarr:     'mdi:filmstrip',
@@ -71,6 +79,7 @@ class _BrandMethods {
       jellyfin:   'mdi:jellyfish-outline',
       emby:       'mdi:emby',
       kodi:       'mdi:kodi',
+      ...Object.fromEntries(['surfshark', 'nordvpn', 'mullvad', 'protonvpn', 'expressvpn', 'pia', 'airvpn', 'ipvanish', 'cyberghost', 'hidemyass'].map(k => [k, 'mdi:shield-check'])),
     };
     // Custom SVGs — monochrome silhouettes matching real app logos
     const customSvgs = {

@@ -62,14 +62,14 @@ test('each panel opens on Include; what is set on the other side shows faintly',
   let dom = parse(card._simGenreHtml());
   assert.ok(dom.querySelector('[data-sim-fview="genre:in"]') && dom.querySelector('[data-sim-fview="genre:ex"]'), 'the peanut');
   const pill = g => dom.querySelector(`[data-sim-genre="${g}"]`).getAttribute('style');
-  assert.match(pill('28'), /rgba\(0,122,255,0\.32\)/, 'included: filled blue');
-  assert.match(pill('35'), /dashed rgba\(229,72,77/, 'left out: a faint red edge in the Include view');
+  assert.match(pill('28'), /rgba\(var\(--arr-accent-rgb, 0,122,255\),0\.32\)/, 'included: filled in the accent');
+  assert.match(pill('35'), /dashed rgba\(var\(--arr-error-rgb, 229,72,77\)/, 'left out: a faint red edge in the Include view');
   assert.match(pill('35'), /line-through/);
 
   card._simModal._genreView = 'ex';
   dom = parse(card._simGenreHtml());
-  assert.match(pill('35'), /rgba\(229,72,77,0\.32\)/, 'in the Exclude view it is filled red');
-  assert.match(pill('28'), /dashed rgba\(0,122,255/, 'and the included one is the faint one');
+  assert.match(pill('35'), /rgba\(var\(--arr-error-rgb, 229,72,77\),0\.32\)/, 'in the Exclude view it is filled red');
+  assert.match(pill('28'), /dashed rgba\(var\(--arr-accent-rgb, 0,122,255\)/, 'and the included one is the faint one');
 });
 
 test('the peanut switches where the next picks go', () => {
