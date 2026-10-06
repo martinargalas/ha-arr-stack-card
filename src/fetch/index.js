@@ -356,8 +356,9 @@ async _fetchDownloadsAndRender() {
   const left = this.shadowRoot.getElementById('col-left');
   if (!left) return;
   const newHtml = this._mobMinWrap('left', this._renderLeft());
-  if (left.innerHTML !== newHtml) {
-    left.innerHTML = newHtml;
+  // The browser's own serialisation never matched the markup written, so this
+  // used to rewrite the whole column on every five-second poll
+  if (this._paintCol(left, newHtml)) {
     this._wireSort();
     this._wireActionButtons();
     this._wirePageButtons();

@@ -254,7 +254,7 @@ _reRenderSection(section) {
       ? left.getBoundingClientRect().bottom < navOffset
       : false;
 
-    right.innerHTML = this._mobMinWrap('right', this._renderRight());
+    this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
 
     if (isMobile) {
       if (this._overlay?.section) {
@@ -331,8 +331,9 @@ _swapRightKeepNav(right, scrollState) {
     }
     right.innerHTML = tmp.innerHTML;
     right.appendChild(oldNav);
+    right._arrHtml = null;   // written here by hand: the next paint starts over
   } else {
-    right.innerHTML = wrap;
+    this._paintCol(right, wrap);
     if (navVisible) {
       const newNav = right.querySelector('.rp-nav');
       if (newNav) { newNav.style.transition = 'none'; newNav.classList.add('rp-nav-visible'); requestAnimationFrame(() => { newNav.style.transition = ''; }); }

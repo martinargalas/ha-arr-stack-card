@@ -135,7 +135,7 @@ _reRenderLeft() {
   if (!left) return;
   this._blurActive();
   this._lastLeftHtml = null;
-  left.innerHTML = this._mobMinWrap('left', this._renderLeft());
+  this._paintCol(left, this._mobMinWrap('left', this._renderLeft()));
   this._wireSort();
   this._wireActionButtons();
   // Scope na levý sloupec — nevkládá duplicitní listenery na rp-btn/rp-dot pravého sloupce

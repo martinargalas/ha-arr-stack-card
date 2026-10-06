@@ -1,6 +1,6 @@
 {
   "name": "arr-stack-card",
-  "version": "1.9.7",
+  "version": "1.10.1",
   "type": "module",
   "scripts": {
     "build": "node build.js",

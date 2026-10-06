@@ -928,15 +928,13 @@ class ArrStackCard extends HTMLElement {
     if (layout !== 'right') {
       const leftContent = this._renderLeft();
       const leftHtml = this._mobMinWrap('left', leftContent);
-      if (leftHtml !== this._lastLeftHtml) {
-        this._lastLeftHtml = leftHtml;
-        left.innerHTML = leftHtml;
-      }
+      this._lastLeftHtml = leftHtml;
+      this._paintCol(left, leftHtml);
       const body = this.shadowRoot.querySelector('.card-body');
       if (body) body.classList.toggle('no-downloads', !leftContent);
     }
     if (this._requestPending || this._searchActive) return;
-    if (layout !== 'left')  right.innerHTML = this._mobMinWrap('right', this._renderRight());
+    if (layout !== 'left')  this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
     this._wireSort();
     this._wireActionButtons();
     this._wireRight(right);

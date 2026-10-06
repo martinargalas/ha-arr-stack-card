@@ -2,7 +2,64 @@ import { BP, maxWidth } from '../shared/ui.js';
 
 // Repainting the right column, sticky navigation, measuring and locking heights, scroll locks. Split out of card.js.
 
+// Two elements from parsed markup that open the same way: tag and attributes
+const sameOpening = (a, b) => {
+  if (a.tagName !== b.tagName || a.attributes.length !== b.attributes.length) return false;
+  for (const at of a.attributes) if (b.getAttribute(at.name) !== at.value) return false;
+  return true;
+};
+
+// Brings `live` from what `prev` described to what `next` describes, replacing
+// only the nodes that differ. A node the two agree on is left alone — its
+// pictures loaded, its scroll position, what the card added to it since. One
+// whose opening tag is the same is walked into, so a changed poster replaces
+// that poster and not its whole row. Returns false when the shapes differ;
+// the caller then replaces the node whole.
+function morph(live, prev, next, depth) {
+  const a = live.childNodes, p = prev.childNodes, n = next.childNodes;
+  if (a.length !== p.length || p.length !== n.length) return false;
+  const swaps = [];
+  for (let i = 0; i < n.length; i++) {
+    if (p[i].isEqualNode(n[i])) continue;
+    if (depth < 16 && p[i].nodeType === 1 && n[i].nodeType === 1 && a[i].nodeType === 1
+        && a[i].tagName === n[i].tagName && sameOpening(p[i], n[i]) && morph(a[i], p[i], n[i], depth + 1)) continue;
+    swaps.push([a[i], n[i]]);
+  }
+  for (const [old, fresh] of swaps) old.replaceWith(document.importNode(fresh, true));
+  return true;
+}
+
+const parse = html => { const t = document.createElement('template'); t.innerHTML = html; return t.content; };
+
 class _LayoutMethods {
+
+  // Puts a column's new markup in place, touching only what changed. Every
+  // refresh used to swap the whole column, so each answer that came back
+  // rebuilt every poster and the card blinked a few times on every load.
+  // The markup last painted is kept on the element; unchanged markup paints
+  // nothing, and changed markup replaces only the nodes that differ. A write
+  // to the column that bypasses this must clear el._arrHtml.
+  _paintCol(el, html) {
+    html = html || '';
+    if (el._arrHtml === html && el.firstChild) return false;
+    const prev = el._arrHtml;
+    el._arrHtml = html;
+    const next = parse(html);
+    if (prev != null && el.firstChild && morph(el, parse(prev), next, 0)) return true;
+    el.replaceChildren(document.importNode(next, true));
+    return true;
+  }
+
+  // A hidden copy of the right column to measure pages in, so measuring never
+  // touches what is on screen
+  _rightProbe(right) {
+    const probe = right.cloneNode(false);
+    probe.removeAttribute('id');
+    probe._arrHtml = null;
+    Object.assign(probe.style, { position: 'absolute', visibility: 'hidden', pointerEvents: 'none', left: '0', top: '0', width: right.clientWidth + 'px', minHeight: '' });
+    right.after(probe);
+    return probe;
+  }
 
   // Odstraní focus před innerHTML zápisem — zabrání neočekávanému chování prohlížeče.
   _blurActive() {
@@ -216,6 +273,9 @@ class _LayoutMethods {
     if (html !== this._searchResultsHtml || !wrap.firstElementChild) {
       this._searchResultsHtml = html;
       wrap.innerHTML = html;
+      // Written into the column past _paintCol: its next paint starts over
+      const col = this.shadowRoot.getElementById('col-right');
+      if (col) col._arrHtml = null;
     }
     const clearBtn = this.shadowRoot.querySelector('.sec-search .search-bar-clear');
     if (clearBtn) clearBtn.style.display = this._searchActive ? '' : 'none';
@@ -278,7 +338,9 @@ class _LayoutMethods {
       const lockH = this._searchLockHeight();
       if (lockH) right.style.minHeight = lockH + 'px';
     }
-    right.innerHTML = this._renderRight();
+    // The same wrapper _render paints on a phone; without it, each switch
+    // between the two paths rebuilt the whole column
+    this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
     this._wireRight(right);
     if (keepSearch) {
       const fresh = right.querySelector('.search-bar-input');
@@ -323,17 +385,16 @@ class _LayoutMethods {
     if (!right) return 0;
     const savedPage = this._searchPage;
     let maxH = 0;
-    right.style.visibility = 'hidden';
-    right.style.minHeight  = '';
+    const probe = this._rightProbe(right);
     for (let p = 0; p < 20; p++) {
       this._searchPage = p;
-      right.innerHTML = this._renderRight();
-      maxH = Math.max(maxH, right.scrollHeight);
-      const hasNext = !!right.querySelector('.rp-btn[data-dir="next"]:not(.rp-btn-hidden):not([disabled])');
+      probe.innerHTML = this._mobMinWrap('right', this._renderRight());
+      maxH = Math.max(maxH, probe.scrollHeight);
+      const hasNext = !!probe.querySelector('.rp-btn[data-dir="next"]:not(.rp-btn-hidden):not([disabled])');
       if (!hasNext) break;
     }
+    probe.remove();
     this._searchPage = savedPage;
-    right.style.visibility = '';
     return maxH;
   }
 
@@ -377,8 +438,8 @@ class _LayoutMethods {
     const savedPages = { ...this._pages };  // uložit stav section pagination
 
     let maxH = 0;
-    right.style.visibility = 'hidden';
-    right.style.minHeight  = '';
+    // Every page is drawn into a hidden copy; the column on screen stays as it is
+    const probe = this._rightProbe(right);
 
     // Iterujeme stránky stejnou logikou jako _renderRight() — dokud existuje "next".
     // Původní výpočet totalPages byl nesprávný (ignoroval regularPerPage = perPage-1),
@@ -387,17 +448,17 @@ class _LayoutMethods {
       this._rightPage = p;
       // Měříme s _pages = 0 pro každou sekci — strana 0 = nejvíce položek = nejvyšší grid
       Object.keys(this._pages).forEach(k => { this._pages[k] = 0; });
-      right.innerHTML = this._renderRight();
-      maxH = Math.max(maxH, right.scrollHeight);
+      probe.innerHTML = this._mobMinWrap('right', this._renderRight());
+      maxH = Math.max(maxH, probe.scrollHeight);
       // Zastavíme na poslední stránce (žádné "next" tlačítko)
-      const hasNext = !!right.querySelector('.rp-btn[data-dir="next"]:not(.rp-btn-hidden):not([disabled])');
+      const hasNext = !!probe.querySelector('.rp-btn[data-dir="next"]:not(.rp-btn-hidden):not([disabled])');
       if (!hasNext) break;
     }
+    probe.remove();
 
     this._rightPage = savedPage;
     Object.assign(this._pages, savedPages);  // obnovit section pagination
-    right.innerHTML       = this._renderRight();
-    right.style.visibility = '';
+    this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
     this._rightMaxH       = maxH;
     this._rightMaxHFor    = key;
     this._rightMaxHCfg    = this._config;
