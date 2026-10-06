@@ -20,15 +20,10 @@ _renderRight() {
   const catConfig = this._config?.categories
     ? this._catConfigMigrated(this._config.categories)
     : DEFAULT_CATS.map(id => ({ id, enabled: true }));
-  const states = this._hass?.states || {};
-  const hasActiveStreams = (this._jellyfinSessions || []).length > 0
-    || (this._embySessions || []).length > 0
-    || (this._kodiSessions || []).length > 0
-    || Object.keys(states).some(id => {
-      if (!id.startsWith('media_player.plex_')) return false;
-      const st = states[id].state;
-      return st === 'playing' || st === 'paused';
-    });
+  // Now Playing takes a slot only when it draws something: a session can be
+  // live and still be left out — ended, played to its last seconds, closed by
+  // hand — and an empty slot pushed the next category onto the next page.
+  const streamsHtml = this._renderStreams();
 
   const CAT_FN = {
     radarr:            () => this._renderRadarr(),
@@ -44,7 +39,7 @@ _renderRight() {
       return (src.trakt || src.suggestarr || src.lastfm) ? () => this._renderRecommendations() : null;
     })(),
     calendar:   hasCalendar ? () => this._renderCalendar() : null,
-    streams:    hasActiveStreams ? () => this._renderStreams() : null,
+    streams:    streamsHtml ? () => streamsHtml : null,
     tautulli:   (this._hass?.user?.is_admin && this._tautulliConfigured  !== false) ? () => this._renderTautulli()  : null,
     jellystat:  (this._hass?.user?.is_admin && this._jellystatConfigured  !== false) ? () => this._renderJellystat()  : null,
     tracearr:   (this._hass?.user?.is_admin && this._tracearrConfigured   !== false) ? () => this._renderTracearr()   : null,
