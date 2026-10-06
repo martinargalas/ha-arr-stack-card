@@ -1,0 +1,79 @@
+# Announces a release in the Discord server's #announcements, with @everyone.
+#
+# Runs once, when a release is first published — a new version. Editing the
+# notes, moving the tag or pushing to main later sends nothing. A release
+# deleted and published again under the same tag is not announced twice
+# either: an announced tag is remembered in the Actions cache.
+#
+# Needs the repository secret DISCORD_RELEASE_WEBHOOK: the URL of a webhook in
+# #announcements (Edit Channel → Integrations → Webhooks).
+name: Announce release
+
+on:
+  release:
+    types: [published]
+  # By hand, for an existing release that deserves a second word
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to announce, e.g. v1.9.8'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: announce-${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Already announced?
+        if: github.event_name == 'release'
+        id: seen
+        uses: actions/cache/restore@v4
+        with:
+          path: .announced
+          key: announced-${{ github.event.release.tag_name }}
+          lookup-only: true
+
+      - name: Post to Discord
+        if: steps.seen.outputs.cache-hit != 'true'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WEBHOOK" ]; then echo "DISCORD_RELEASE_WEBHOOK is not set"; exit 1; fi
+          gh api "repos/${{ github.repository }}/releases/tags/$TAG" > release.json
+          # The notes, without images, cut to fit an embed with a link to the rest
+          jq -n --slurpfile r release.json \
+            --arg name "Arr Stack Card" --arg repo "${{ github.repository }}" --argjson color $((16#5b8cff)) '
+            $r[0] as $rel
+            | ($rel.body // "" | gsub("!\\[[^\\]]*\\]\\([^)]*\\)"; "") | gsub("\r"; "")) as $body
+            | (if ($body | length) > 3500 then ($body[0:3500] | sub("\n[^\n]*$"; "")) + "\n\n…" else $body end) as $text
+            | {
+                content: "@everyone",
+                allowed_mentions: { parse: ["everyone"] },
+                embeds: [{
+                  title: ("\($name) " + (($rel.name // "") as $n | if ($n | startswith($rel.tag_name)) then $n elif $n != "" then "\($rel.tag_name) — \($n)" else $rel.tag_name end)),
+                  url: $rel.html_url,
+                  description: ($text + "\n\n[Read the full notes on GitHub](\($rel.html_url))"),
+                  color: $color,
+                  footer: { text: $repo },
+                  timestamp: $rel.published_at
+                }]
+              }' > payload.json
+          curl -fsS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK"
+          mkdir -p .announced && echo "$TAG" > .announced/tag
+
+      - name: Remember the tag
+        if: github.event_name == 'release' && steps.seen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .announced
+          key: announced-${{ github.event.release.tag_name }}
