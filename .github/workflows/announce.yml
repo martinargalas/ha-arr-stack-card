@@ -54,7 +54,7 @@ jobs:
           jq -n --slurpfile r release.json \
             --arg name "Arr Stack Card" --arg repo "${{ github.repository }}" --argjson color $((16#5b8cff)) '
             $r[0] as $rel
-            # The first picture in the notes becomes the embed's one large image
+            # The first picture in the notes becomes the one large image of the embed
             | ([($rel.body // "") | match("!\\[[^\\]]*\\]\\((https?://[^)\\s]+)\\)"; "g") | .captures[0].string] | first) as $img
             # Discord-ready text: no pictures, headings in bold (an embed may not
             # draw them), links into the repository made absolute
