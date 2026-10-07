@@ -215,6 +215,9 @@ export const ARR_I18N = {
     // Interactive Search — filmy
     isQueryingIndexers: 'Dotazuji indexery…',
     isResults:        'Výsledky',
+    isFilters:        'Filtry',
+    ddFilter:         'Hledat…',
+    isWhyRejected:    'Proč ho *arr nevybral',
     isImported:       'Importováno',
     isGrabbed:        'Grabbováno',
     isFailed:         'Selhalo — klikni pro opakování',
@@ -1358,6 +1361,9 @@ export const ARR_I18N = {
     // Interactive Search — movies
     isQueryingIndexers: 'Querying indexers…',
     isResults:        'Results',
+    isFilters:        'Filters',
+    ddFilter:         'Find…',
+    isWhyRejected:    'Why the *arr passed it over',
     isImported:       'Imported',
     isGrabbed:        'Grabbed',
     isFailed:         'Failed — click to retry',
@@ -2502,6 +2508,9 @@ export const ARR_I18N = {
     // Interactive Search — movies
     isQueryingIndexers: 'Interrogation des indexeurs…',
     isResults:        'Résultats',
+    isFilters:        'Filtres',
+    ddFilter:         'Chercher…',
+    isWhyRejected:    'Pourquoi le *arr l’a écarté',
     isImported:       'Importé',
     isGrabbed:        'Récupéré',
     isFailed:         'Échec — cliquer pour réessayer',

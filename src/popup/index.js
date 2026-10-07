@@ -221,7 +221,10 @@ _renderPopupEl() {
         : glass.getBoundingClientRect().bottom;
       const glassVisBottom  = Math.min(_floor, window.innerHeight);
       const pagerH          = pager ? pager.getBoundingClientRect().height : 0;
-      const available       = glassVisBottom - hdrBottom - pagerH - 8;
+      // A table's own header row sits above the rows too; left out, the last
+      // row of a page slid under the pager
+      const theadH          = wrap.querySelector('thead')?.getBoundingClientRect().height || 0;
+      const available       = glassVisBottom - hdrBottom - pagerH - theadH - 8;
       const rowH            = Math.max(20, ...rows.map(r => r.getBoundingClientRect().height));
       const fits            = Math.max(1, Math.floor(available / rowH));
       // A/B oscillation guard: measuring changes the layout, which can change the

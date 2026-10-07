@@ -1,6 +1,5 @@
 // Sonarr Interactive Search — seasons/episodes/IS panel render
 // Přidáno na ArrStackCard.prototype v card.js
-import { fmtBytes } from '../shared/format.js';
 
 class _SonarrIS {
 
@@ -266,8 +265,9 @@ class _SonarrIS {
       return true;
     });
 
-    const isMobile = this._isMob;
-    const rowsHtml = isMobile ? this._renderSnIsCards(visible) : this._renderSnIsTable(visible);
+    const rowsHtml = this._isMob
+      ? this._isCards(visible, r => this._snGrabBtn(r))
+      : this._isTable(visible, { sortAttr: 'snissort', sort: this._snIsSort, grab: r => this._snGrabBtn(r), peersW: 48, grabW: 52, compact: true });
 
     const uniqIndexers  = [...new Set(all.map(r => r.indexer).filter(Boolean))].sort();
     const uniqQualities = [...new Set(all.map(r => this._isQualityLabel(r)).filter(Boolean))];
@@ -286,93 +286,22 @@ class _SonarrIS {
       ? `<span class="is-count">${visible.length}<span style="opacity:0.45">/${all.length}</span></span>`
       : `<span class="is-count">${all.length}</span>`;
 
+    const filters = this._isFilterBar(`
+          ${mkSel('protocol', 'Protocol', protocol, ['torrent','usenet'])}
+          ${uniqIndexers.length  > 1 ? mkSel('indexer', 'Indexer', indexer, uniqIndexers)   : ''}
+          ${uniqQualities.length > 1 ? mkSel('quality', 'Quality', quality, uniqQualities)  : ''}
+          ${uniqLangs.length     > 1 ? mkSel('lang',    'Lang',    lang,    uniqLangs)      : ''}`,
+      [protocol, indexer, quality, lang].filter(Boolean).length);
+
     return `<div class="sn-is-panel">
       <div class="is-panel-hdr">
         <span class="is-panel-title">${this._snActiveIs?.type === 'season' ? this._t('snSeasonPack').charAt(0).toUpperCase()+this._t('snSeasonPack').slice(1) : this._t('snEpisode')}</span>
         ${countHtml}
-        <div class="is-filter">
-          ${mkSel('protocol', 'Protocol', protocol, ['torrent','usenet'])}
-          ${uniqIndexers.length  > 1 ? mkSel('indexer', 'Indexer', indexer, uniqIndexers)   : ''}
-          ${uniqQualities.length > 1 ? mkSel('quality', 'Quality', quality, uniqQualities)  : ''}
-          ${uniqLangs.length     > 1 ? mkSel('lang',    'Lang',    lang,    uniqLangs)      : ''}
-        </div>
+        ${filters.hdr}
       </div>
+      ${filters.below}
       <div class="is-results-wrap">${rowsHtml}</div>
     </div>`;
-  }
-
-  _renderSnIsTable(releases) {
-    const { col, dir } = this._snIsSort || {};
-    const sorted = col ? [...releases].sort((a, b) => {
-      const av = this._isSortValue(a, col);
-      const bv = this._isSortValue(b, col);
-      if (av < bv) return -1 * dir;
-      if (av > bv) return  1 * dir;
-      return 0;
-    }) : releases;
-
-    const arrow = (c) => col !== c
-      ? `<span class="is-sort-arrow is-sort-inactive">⇅</span>`
-      : `<span class="is-sort-arrow">${dir === -1 ? '↓' : '↑'}</span>`;
-    const th = (c, label) =>
-      `<th data-snissort="${c}" style="cursor:pointer;user-select:none">${label}${arrow(c)}</th>`;
-
-    const rows = sorted.map(r => {
-      const rejHtml = !r.approved && r.rejections?.length
-        ? `<div class="is-rej-row">⚠ ${this._escHtml(r.rejections.slice(0,2).join(' · '))}</div>` : '';
-      return `<tr>
-        <td>${this._isSrcPill(r)}</td>
-        <td>
-          <span class="is-rel-title">${this._escHtml(r.title || '')}</span>
-          <span class="is-rel-age">${r.ageHours < 48 ? Math.round(r.ageHours) + 'h ago' : Math.round(r.age || 0) + 'd ago'}</span>
-          ${rejHtml}
-        </td>
-        <td><span class="is-indexer">${this._escHtml(r.indexer || '')}</span></td>
-        <td><span class="is-size">${fmtBytes(r.size)}</span></td>
-        <td>${this._isPeers(r)}</td>
-        <td>${this._isLang(r)}</td>
-        <td>${this._isQualityBadge(r)}</td>
-        <td>${this._isScoreHtml(r.customFormatScore)}</td>
-        <td>${this._snGrabBtn(r)}</td>
-      </tr>`;
-    }).join('');
-    return `<table class="is-table">
-      <colgroup>
-        <col style="width:50px"><col><col style="width:75px">
-        <col style="width:52px"><col style="width:48px"><col style="width:38px"><col style="width:68px"><col style="width:58px"><col style="width:52px">
-      </colgroup>
-      <thead><tr>
-        ${th('src','Src')}${th('title','Title')}${th('indexer','Indexer')}
-        ${th('size','Size')}${th('peers','Peers')}${th('lang','Lang')}${th('quality','Quality')}${th('score','Score')}<th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-  }
-
-  _renderSnIsCards(releases) {
-    return releases.map(r => {
-      const rejHtml = !r.approved && r.rejections?.length
-        ? `<div class="is-ic-rej">⚠ ${this._escHtml(r.rejections.slice(0,1).join(''))}</div>` : '';
-      return `<div class="is-card">
-        <div class="is-ic-r1">
-          ${this._isSrcPill(r)}
-          ${this._isQualityBadge(r)}
-          ${this._isScoreHtml(r.customFormatScore)}
-          <span class="is-size">${fmtBytes(r.size)}</span>
-          ${this._isLang(r)}
-          <div class="is-ic-spacer"></div>
-          ${this._snGrabBtn(r)}
-        </div>
-        <div class="is-ic-title">${this._escHtml(r.title || '')}</div>
-        <div class="is-ic-meta">
-          <span>${this._escHtml(r.indexer || '')}</span>
-          ${r.protocol === 'torrent' ? `<span class="sep">·</span><span class="is-s">↑${r.seeders ?? '?'}</span>/<span class="is-l">↓${r.leechers ?? '?'}</span>` : ''}
-          <span class="sep">·</span>
-          <span>${r.ageHours < 48 ? Math.round(r.ageHours) + 'h ago' : Math.round(r.age || 0) + 'd ago'}</span>
-        </div>
-        ${rejHtml}
-      </div>`;
-    }).join('');
   }
 
   _snGrabBtn(r) {

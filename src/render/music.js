@@ -7,7 +7,6 @@
 // band wants; the portrait beside the name is the square one.
 // ──────────────────────────────────────────────────────────────────────────
 import { ICONS, dayClass } from '../shared/ui.js';
-import { fmtBytes } from '../shared/format.js';
 
 class _MusicRenderMethods {
 
@@ -468,79 +467,22 @@ class _MusicRenderMethods {
     }
 
     // Sorted and labelled the way a film's sources are. Lidarr answers with the
-    // same fields, so the same comparator and the same header serve both.
-    const { col, dir } = sp.sort || {};
-    const sorted = col ? [...list].sort((a, b) => {
-      const av = this._isSortValue(a, col);
-      const bv = this._isSortValue(b, col);
-      if (av < bv) return -1 * dir;
-      if (av > bv) return  1 * dir;
-      return 0;
-    }) : list;
-    const arrow = c => (col !== c
-      ? `<span class="is-sort-arrow is-sort-inactive">⇅</span>`
-      : `<span class="is-sort-arrow">${dir === -1 ? '↓' : '↑'}</span>`);
-    const th = (c, label) =>
-      `<th data-mus-issort="${c}" style="cursor:pointer;user-select:none">${label}${arrow(c)}</th>`;
-
-    const rows = sorted.map(r => {
-      const rej = !r.approved && r.rejections?.length
-        ? `<div class="is-rej-row">⚠ ${this._escHtml(r.rejections.slice(0, 2).join(' · '))}</div>` : '';
-      return `<tr>
-        <td>${this._isSrcPill(r)}</td>
-        <td><span class="is-rel-title">${this._escHtml(r.title || '')}</span>
-            <span class="is-rel-age">${Math.round(r.age || 0)}d</span>${rej}</td>
-        <td><span class="is-indexer">${this._escHtml(r.indexer || '')}</span></td>
-        <td><span class="is-size">${fmtBytes(r.size)}</span></td>
-        <td>${this._isPeers(r)}</td>
-        <td>${this._isQualityBadge(r)}</td>
-        <td>${this._musGrabBtn(r, sp)}</td>
-      </tr>`;
-    }).join('');
-
+    // same fields, so the same table serves both — without language and score.
     // A grab button showing progress is three times the width of the plain
     // arrow, so the column it sits in has to make room — pulled leftwards with
     // a negative margin instead, it climbed over the quality badge.
     const wideGrab = this._lidarrQueuePct?.get(sp.albumId) !== undefined
       || (sp.results || []).some(r => this._lidarrQueueTitles?.get(this._qTitle(r.title)) !== undefined);
     return `<div class="sn-is-panel">
-      <div class="is-results-wrap">
-        <table class="is-table">
-          <colgroup><col style="width:50px"><col><col style="width:80px"><col style="width:60px"><col style="width:70px"><col style="width:74px"><col style="width:${wideGrab ? 78 : 56}px"></colgroup>
-          <thead><tr>
-            ${th('src','Src')}${th('title','Title')}${th('indexer','Indexer')}
-            ${th('size','Size')}${th('peers','Peers')}${th('quality','Quality')}<th></th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      <div class="is-results-wrap">${this._isTable(list, {
+        sortAttr: 'mus-issort', sort: sp.sort, grab: r => this._musGrabBtn(r, sp),
+        lang: false, score: false, peersW: 70, grabW: wideGrab ? 78 : 56,
+      })}</div>
     </div>`;
   }
 
   _musIsCards(releases, sp) {
-    return releases.map(r => {
-      const rejHtml = !r.approved && r.rejections?.length
-        ? `<div class="is-ic-rej">⚠ ${this._escHtml(r.rejections.slice(0, 1).join(''))}</div>` : '';
-      return `<div class="is-card">
-        <div class="is-ic-r1">
-          ${this._isSrcPill(r)}
-          ${this._isQualityBadge(r)}
-          <span class="is-size">${fmtBytes(r.size)}</span>
-          <div class="is-ic-spacer"></div>
-          ${this._musGrabBtn(r, sp)}
-        </div>
-        <div class="is-ic-title">${this._escHtml(r.title || '')}</div>
-        <div class="is-ic-meta">
-          <span>${this._escHtml(r.indexer || '')}</span>
-          ${/torrent/i.test(String(r.protocol || ''))
-            ? `<span class="sep">·</span><span class="is-s">↑${r.seeders ?? '?'}</span>/<span class="is-l">↓${r.leechers ?? '?'}</span>`
-            : ''}
-          <span class="sep">·</span>
-          <span>${Math.round(r.age || 0)}d ago</span>
-        </div>
-        ${rejHtml}
-      </div>`;
-    }).join('');
+    return this._isCards(releases, r => this._musGrabBtn(r, sp), { score: false, lang: false });
   }
 
   _musGrabBtn(r, sp) {

@@ -559,6 +559,9 @@ class _LayoutMethods {
     this._overlayObserver.observe(this.shadowRoot, { childList: true, subtree: true });
     this._syncScrollLock();
     this._backInit();
+    this._isWireSheet();
+    this._ddInit();
+    this._ppWatchViewport();
   }
 }
 

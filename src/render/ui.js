@@ -166,7 +166,9 @@ class _UiMethods {
   // Chevrons either side of dots (up to 15 pages) or of "page/total".
   _uiPager(attr, page, totalPages, numeric = false) {
     if (totalPages <= 1) return '';
-    const DOT_LIMIT = 15;
+    // Fifteen dots and four arrows are wider than a phone: the last arrow
+    // went off the edge. A phone counts instead past eight pages.
+    const DOT_LIMIT = this._isMob ? 8 : 15;
     let center;
     if (!numeric && totalPages <= DOT_LIMIT) {
       const dots = Array.from({ length: totalPages }, (_, i) =>

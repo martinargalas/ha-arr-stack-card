@@ -3572,6 +3572,55 @@ ${TOKEN_CSS}
       }
       .is-f-select option { background: var(--is-menu-bg); color: var(--is-text); }
 
+      /* ── The card's own dropdown (render/dropdown.js) ──
+         Every select opens this instead of the system's list: the panel of
+         the card's own pickers, the options down a list as the Library's sort
+         has them, the current one in an accent capsule. */
+      .arr-dd-overlay { z-index: 2100; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; display: block; }
+      .arr-dd {
+        position: fixed; box-sizing: border-box; overflow: hidden; overscroll-behavior: contain;
+        display: flex; flex-direction: column; gap: 4px; padding: 4px;
+        background: var(--is-menu-bg, #1c1c1e);
+        border: 1px solid var(--is-divider, rgba(var(--_line, 255, 255, 255), 0.15));
+        border-radius: 14px; box-shadow: 0 6px 24px rgba(var(--_shadow, 0, 0, 0), 0.4);
+        animation: fade-in 0.12s ease;
+      }
+      .arr-dd-list { display: flex; flex-direction: column; gap: 1px; }
+      .arr-dd-group {
+        padding: 8px 12px 3px; font-size: 9px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.09em; color: var(--is-text-label, var(--is-text-muted));
+      }
+      .arr-dd-opt {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        width: 100%; box-sizing: border-box; text-align: left; flex-shrink: 0;
+        padding: 7px 12px; border-radius: 999px; border: none; background: transparent;
+        font: inherit; font-size: 12px; color: var(--is-text); cursor: pointer;
+      }
+      .arr-dd-lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .arr-dd-opt:hover:not(:disabled) { background: var(--is-row-hover, rgba(var(--_fill, 255, 255, 255), 0.06)); }
+      .arr-dd-opt.is-sel,
+      .arr-dd-opt.is-sel:hover {
+        background: rgba(var(--arr-accent-rgb, 0, 122, 255), 0.32);
+        box-shadow: inset 0 0 0 1px rgba(var(--arr-accent-rgb, 0, 122, 255), 0.65);
+        color: rgb(var(--_fg, 255, 255, 255)); font-weight: 700;
+      }
+      .popup-day .arr-dd-opt.is-sel { color: var(--is-text); }
+      .arr-dd-opt:disabled { opacity: 0.4; cursor: default; }
+      .arr-dd-find {
+        box-sizing: border-box; width: 100%; height: 30px; padding: 0 12px; border-radius: 999px; outline: none; flex-shrink: 0;
+        border: 1px solid var(--is-divider); background: var(--is-btn-bg); color: var(--is-text); font: inherit; font-size: 12px;
+      }
+      /* A select the user sees (not the invisible one inside a toolbar capsule)
+         gets the capsules' chevron instead of each system's own arrow. The
+         !important outweighs inline background shorthands, which would reset
+         the image. */
+      select:not(.is-f-select) {
+        appearance: none; -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important; background-position: right 8px center !important; background-size: 12px !important;
+        padding-right: 26px !important;
+      }
+
       .popup-day .is-f-select {
         background-color: rgba(var(--_fill, 0, 0, 0), 0.06);
         border-color: rgba(var(--_line, 0, 0, 0), 0.14);
@@ -3732,8 +3781,8 @@ ${TOKEN_CSS}
 
       /* ── CARDS (mobile) ── */
       .is-card {
-        padding: 9px 14px; border-bottom: 1px solid var(--is-divider);
-        display: flex; flex-direction: column; gap: 4px; transition: background 0.10s;
+        padding: 5px 12px 6px 14px; border-bottom: 1px solid var(--is-divider);
+        display: flex; flex-direction: column; gap: 2px; transition: background 0.10s;
       }
       .is-card:hover { background: var(--is-row-hover); }
       .is-ic-r1 { display: flex; align-items: center; gap: 5px; }
@@ -3741,11 +3790,48 @@ ${TOKEN_CSS}
       .is-ic-title {
         font-size: 10px; font-weight: 500; color: var(--is-text-body);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        /* a button, so it is tappable — reset to read as text */
+        display: block; width: 100%; text-align: left; padding: 0; margin: 0; line-height: 1.35;
+        background: none; border: none; font-family: inherit; cursor: pointer;
       }
       .is-ic-meta {
-        display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
-        font-size: 9px; color: var(--is-text-muted);
+        display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; overflow: hidden;
+        font-size: 9px; line-height: 1.3; color: var(--is-text-muted); white-space: nowrap;
       }
+      .is-ic-idx { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+      .is-rej-ico {
+        background: none; border: none; padding: 0 2px; margin: 0; cursor: pointer;
+        font-size: 11px; line-height: 1; color: var(--is-rej-clr); font-family: inherit;
+      }
+      .is-rel-age .is-rej-ico { margin-left: 4px; font-size: 10px; }
+      .is-rel-title[data-is-info] { cursor: pointer; }
+      .is-rel-title.is-rel-2l {
+        white-space: normal; word-break: break-all; line-height: 1.3;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      }
+      .is-f-toggle { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; flex-shrink: 0; }
+      .is-filter-wrap {
+        flex-wrap: wrap; padding: 6px 12px; border-bottom: 1px solid var(--is-divider); flex-shrink: 0;
+      }
+      .is-filter-wrap .is-f-select { flex: 1 1 40%; min-width: 0; }
+      /* The whole name of a release, and why it was passed over */
+      .is-sheet-overlay { z-index: 1400; background: rgba(var(--_shade, 0, 0, 0), 0.35); backdrop-filter: none; -webkit-backdrop-filter: none; padding: 16px; }
+      .is-sheet {
+        width: min(520px, 100%); max-height: 70vh; overflow: auto; box-sizing: border-box;
+        background: var(--is-glass-bg); border: 1px solid var(--is-glass-bdr); border-radius: 16px;
+        padding: 14px 14px 12px 16px; box-shadow: 0 10px 40px rgba(var(--_shadow, 0, 0, 0), 0.5);
+        backdrop-filter: var(--is-glass-blur); -webkit-backdrop-filter: var(--is-glass-blur);
+      }
+      .is-sheet-hdr { display: flex; align-items: flex-start; gap: 10px; }
+      .is-sheet-title {
+        flex: 1; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.45;
+        color: var(--is-text); word-break: break-all; user-select: text; -webkit-user-select: text;
+      }
+      .is-sheet-lbl {
+        margin-top: 12px; font-size: 9px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.09em; color: var(--is-text-label);
+      }
+      .is-sheet-rej { margin: 6px 0 0; padding-left: 16px; font-size: 11px; line-height: 1.5; color: var(--is-rej-clr); }
       .is-ic-meta .sep { opacity: 0.5; }
       .is-ic-rej { font-size: 9px; color: var(--is-rej-clr); }
 
@@ -3826,7 +3912,9 @@ ${TOKEN_CSS}
       .is-confirm-no:not(.is-confirm-btn):hover { filter: brightness(1.2); }
 
       /* ── Mobile IS grab button (larger) ── */
-      .is-ic-r1 .is-grab-btn { width: 30px; height: 30px; margin: 0; }
+      .is-ic-r1 .is-grab-btn { width: 28px; height: 28px; margin: 0; }
+      /* a season's sources scroll, and the scrollbar sits over the card's edge */
+      .sn-is-panel .is-card { padding-right: 16px; }
 
       /* ════════════════════════════════════
          RIGHT COLUMN PAGE NAV

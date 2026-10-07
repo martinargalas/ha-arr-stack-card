@@ -1,6 +1,7 @@
 // Interactive Search — fetch, render, grab
 // Přidáno na ArrStackCard.prototype v card.js
 import { fmtBytes } from '../shared/format.js';
+import { BP, maxWidth } from '../shared/ui.js';
 
 class _InteractiveSearch {
 _renderIsPanel() {
@@ -50,10 +51,9 @@ _renderIsPanel() {
     const page         = Math.min(this._isPage || 0, totalPages - 1);
     const paged        = visible.slice(page * IS_PER_PAGE, (page + 1) * IS_PER_PAGE);
 
-    const isMobile = this._isMob;
-    const rowsHtml = isMobile
-      ? this._renderIsCards(paged)
-      : this._renderIsTable(paged);
+    const rowsHtml = this._isMob
+      ? this._isCards(paged, r => this._isGrabBtn(r))
+      : this._isTable(paged, { sortAttr: 'issort', sort: this._isSort, grab: r => this._isGrabBtn(r), compact: true });
 
     const { protocol, indexer, quality, lang } = this._isFilters;
     const countHtml = visible.length !== all.length
@@ -76,19 +76,21 @@ _renderIsPanel() {
     };
 
     const paginationHtml = this._uiPager('is-page', page, totalPages);
+    const filters = this._isFilterBar(`
+            ${mkSelect('protocol', 'Protocol', protocol, ['torrent', 'usenet'])}
+            ${uniqIndexers.length  > 1 ? mkSelect('indexer',  'Indexer',  indexer,  uniqIndexers)  : ''}
+            ${uniqQualities.length > 1 ? mkSelect('quality',  'Quality',  quality,  uniqQualities) : ''}
+            ${uniqLangs.length     > 1 ? mkSelect('lang',     'Lang',     lang,     uniqLangs)     : ''}`,
+      [protocol, indexer, quality, lang].filter(Boolean).length);
 
     return `
       <div class="is-panel">
         <div class="is-panel-hdr">
           <span class="is-panel-title">${this._t('isResults')}</span>
           ${countHtml}
-          <div class="is-filter">
-            ${mkSelect('protocol', 'Protocol', protocol, ['torrent', 'usenet'])}
-            ${uniqIndexers.length  > 1 ? mkSelect('indexer',  'Indexer',  indexer,  uniqIndexers)  : ''}
-            ${uniqQualities.length > 1 ? mkSelect('quality',  'Quality',  quality,  uniqQualities) : ''}
-            ${uniqLangs.length     > 1 ? mkSelect('lang',     'Lang',     lang,     uniqLangs)     : ''}
-          </div>
+          ${filters.hdr}
         </div>
+        ${filters.below}
         <div class="is-results-wrap">${rowsHtml}</div>
         ${paginationHtml ? `<div style="flex-shrink:0">${paginationHtml}</div>` : ''}
       </div>`;
@@ -231,8 +233,74 @@ _renderIsPanel() {
     }
   }
 
-  _renderIsTable(releases) {
-    const { col, dir } = this._isSort || {};
+  // ── Release rows, shared by films, series and music ──
+
+  // How old a release is, in the largest unit that still reads well — "8.8 y"
+  // rather than "3217d ago", which nobody converts in their head.
+  _isAge(r) {
+    const h = r.ageHours ?? (r.age || 0) * 24;
+    const d = h / 24;
+    const [n, unit] = h < 48 ? [Math.round(h), 'hour']
+      : d < 60  ? [Math.round(d), 'day']
+      : d < 365 ? [Math.round(d / 30.44), 'month']
+      : [Math.round(d / 36.5) / 10, 'year'];
+    try {
+      return new Intl.NumberFormat(this._lg(), { style: 'unit', unit, unitDisplay: 'narrow', maximumFractionDigits: 1 }).format(n);
+    } catch { return `${n}${unit[0]}`; }
+  }
+
+  // What a tap on a release's title or warning opens: the whole name and why
+  // the *arr would not pick it. Carried on the element itself, so the same
+  // sheet serves a film, a series and an album wherever their list is drawn.
+  _isInfoAttrs(r) {
+    const rej = !r.approved && r.rejections?.length ? r.rejections.join('\n') : '';
+    return ` data-is-info data-full="${this._escHtml(r.title || '')}"${rej ? ` data-rej="${this._escHtml(rej)}"` : ''}`;
+  }
+
+  _isRejIcon(r) {
+    if (r.approved || !r.rejections?.length) return '';
+    return `<button class="is-rej-ico"${this._isInfoAttrs(r)} title="${this._escHtml(r.rejections[0])}">⚠</button>`;
+  }
+
+  _isPeersInline(r) {
+    return /torrent/i.test(String(r.protocol || '')) || r.seeders != null
+      ? `<span class="sep">·</span><span class="is-s">↑${r.seeders ?? '?'}</span>/<span class="is-l">↓${r.leechers ?? '?'}</span>` : '';
+  }
+
+  // A phone's release: the badges and the grab button, then the name on one
+  // line, then where it is from in small print. Why it was rejected is a ⚠
+  // that opens the sheet — written out, it took a quarter of every card and
+  // a page held three releases.
+  _isCards(releases, grab, { score = true, lang = true } = {}) {
+    return releases.map(r => `<div class="is-card">
+        <div class="is-ic-r1">
+          ${this._isSrcPill(r)}
+          ${this._isQualityBadge(r)}
+          ${score ? this._isScoreHtml(r.customFormatScore) : ''}
+          <span class="is-size">${fmtBytes(r.size)}</span>
+          ${lang ? this._isLang(r) : ''}
+          ${this._isRejIcon(r)}
+          <div class="is-ic-spacer"></div>
+          ${grab(r)}
+        </div>
+        <button class="is-ic-title"${this._isInfoAttrs(r)}>${this._escHtml(r.title || '')}</button>
+        <div class="is-ic-meta">
+          <span class="is-ic-idx">${this._escHtml(r.indexer || '')}</span>
+          ${this._isPeersInline(r)}
+          <span class="sep">·</span>
+          <span>${this._isAge(r)}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  // The sources as a table. Where the table is narrow the indexer moves under
+  // the name and the name gets two lines: in its own column it pushed the name
+  // down to "Late Fame 2026 1080p Bl…", the one thing a release is chosen by.
+  // The detail is never wider than 800px, so there it is always narrow — a
+  // Nest Hub or a desktop gave it no more room than a tablet. Other windows
+  // (the album's) go by the screen.
+  _isTable(releases, { sortAttr, sort, grab, lang = true, score = true, peersW = 72, grabW = 76, compact = maxWidth(BP.STACKED) }) {
+    const { col, dir } = sort || {};
     const sorted = col ? [...releases].sort((a, b) => {
       const av = this._isSortValue(a, col);
       const bv = this._isSortValue(b, col);
@@ -241,70 +309,105 @@ _renderIsPanel() {
       return 0;
     }) : releases;
 
-    const arrow = (c) => {
-      if (col !== c) return `<span class="is-sort-arrow is-sort-inactive">⇅</span>`;
-      return `<span class="is-sort-arrow">${dir === -1 ? '↓' : '↑'}</span>`;
-    };
-    const th = (c, label) =>
-      `<th data-issort="${c}" style="cursor:pointer;user-select:none">${label}${arrow(c)}</th>`;
+    const arrow = c => (col !== c
+      ? `<span class="is-sort-arrow is-sort-inactive">⇅</span>`
+      : `<span class="is-sort-arrow">${dir === -1 ? '↓' : '↑'}</span>`);
+    const cols = [
+      ['src', 'Src', 50],
+      ['title', 'Title', null],
+      !compact && ['indexer', 'Indexer', 75],
+      ['size', 'Size', 52],
+      ['peers', 'Peers', peersW],
+      lang && ['lang', 'Lang', 38],
+      ['quality', 'Quality', 68],
+      score && ['score', 'Score', 58],
+    ].filter(Boolean);
 
     const rows = sorted.map(r => {
-      const rejHtml = !r.approved && r.rejections?.length
-        ? `<div class="is-rej-row">⚠ ${this._escHtml(r.rejections.slice(0,2).join(' · '))}</div>` : '';
-      return `<tr>
-        <td>${this._isSrcPill(r)}</td>
-        <td>
-          <span class="is-rel-title">${this._escHtml(r.title || '')}</span>
-          <span class="is-rel-age">${r.ageHours < 48 ? Math.round(r.ageHours) + 'h ago' : Math.round(r.age || 0) + 'd ago'}</span>
-          ${rejHtml}
-        </td>
-        <td><span class="is-indexer">${this._escHtml(r.indexer || '')}</span></td>
-        <td><span class="is-size">${fmtBytes(r.size)}</span></td>
-        <td>${this._isPeers(r)}</td>
-        <td>${this._isLang(r)}</td>
-        <td>${this._isQualityBadge(r)}</td>
-        <td>${this._isScoreHtml(r.customFormatScore)}</td>
-        <td>${this._isGrabBtn(r)}</td>
-      </tr>`;
+      const rej = compact ? '' : (!r.approved && r.rejections?.length
+        ? `<div class="is-rej-row">⚠ ${this._escHtml(r.rejections.slice(0, 2).join(' · '))}</div>` : '');
+      const meta = compact
+        ? `<span class="is-rel-age">${r.indexer ? `${this._escHtml(r.indexer)} · ` : ''}${this._isAge(r)}${this._isRejIcon(r)}</span>`
+        : `<span class="is-rel-age">${this._isAge(r)}</span>`;
+      const cells = {
+        src:     this._isSrcPill(r),
+        title:   `<span class="is-rel-title${compact ? ' is-rel-2l' : ''}"${this._isInfoAttrs(r)}>${this._escHtml(r.title || '')}</span>${meta}${rej}`,
+        indexer: `<span class="is-indexer">${this._escHtml(r.indexer || '')}</span>`,
+        size:    `<span class="is-size">${fmtBytes(r.size)}</span>`,
+        peers:   this._isPeers(r),
+        lang:    this._isLang(r),
+        quality: this._isQualityBadge(r),
+        score:   this._isScoreHtml(r.customFormatScore),
+      };
+      return `<tr>${cols.map(([k]) => `<td>${cells[k]}</td>`).join('')}<td>${grab(r)}</td></tr>`;
     }).join('');
 
     return `<table class="is-table">
-      <colgroup>
-        <col style="width:50px"><col><col style="width:75px">
-        <col style="width:52px"><col style="width:72px"><col style="width:38px"><col style="width:68px"><col style="width:58px"><col style="width:76px">
-      </colgroup>
+      <colgroup>${cols.map(([, , w]) => (w ? `<col style="width:${w}px">` : '<col>')).join('')}<col style="width:${grabW}px"></colgroup>
       <thead><tr>
-        ${th('src','Src')}${th('title','Title')}${th('indexer','Indexer')}
-        ${th('size','Size')}${th('peers','Peers')}${th('lang','Lang')}${th('quality','Quality')}${th('score','Score')}<th></th>
+        ${cols.map(([k, label]) => `<th data-${sortAttr}="${k}" style="cursor:pointer;user-select:none">${label}${arrow(k)}</th>`).join('')}<th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   }
 
-  _renderIsCards(releases) {
-    return releases.map(r => {
-      const rejHtml = !r.approved && r.rejections?.length
-        ? `<div class="is-ic-rej">⚠ ${this._escHtml(r.rejections.slice(0,1).join(''))}</div>` : '';
-      return `<div class="is-card">
-        <div class="is-ic-r1">
-          ${this._isSrcPill(r)}
-          ${this._isQualityBadge(r)}
-          ${this._isScoreHtml(r.customFormatScore)}
-          <span class="is-size">${fmtBytes(r.size)}</span>
-          ${this._isLang(r)}
-          <div class="is-ic-spacer"></div>
-          ${this._isGrabBtn(r)}
+  // The filters: in the header on a wide screen; on a phone, four selects ran
+  // off its edge, so they fold under one button that says how many are on.
+  _isFilterBar(selects, active) {
+    if (!this._isMob) return { hdr: `<div class="is-filter">${selects}</div>`, below: '' };
+    const open = !!this._isFiltersOpen;
+    return {
+      // Drawn as one of the selects (their chevron included), which is what it opens
+      hdr: `<button class="is-f-select is-f-toggle${active ? ' active' : ''}${open ? ' open' : ''}" data-is-filters>${this._t('isFilters')}${active ? ` · ${active}` : ''}</button>`,
+      below: open ? `<div class="is-filter is-filter-wrap">${selects}</div>` : '',
+    };
+  }
+
+  // One listener for the whole card, in the capture phase: the popups stop
+  // clicks at their glass, and the album window draws its sources elsewhere.
+  _isWireSheet() {
+    if (this._isSheetWired || !this.shadowRoot) return;
+    this._isSheetWired = true;
+    this.shadowRoot.addEventListener('click', e => {
+      const f = e.target.closest?.('[data-is-filters]');
+      if (f) {
+        e.stopPropagation();
+        this._isFiltersOpen = !this._isFiltersOpen;
+        this._isFitHist = null; this._snFitHist = null;
+        this._renderPopupEl();
+        return;
+      }
+      const t = e.target.closest?.('[data-is-info]');
+      if (!t) return;
+      e.stopPropagation();
+      e.preventDefault();
+      this._isOpenSheet(t.dataset.full || '', t.dataset.rej || '');
+    }, true);
+  }
+
+  _isOpenSheet(title, rej) {
+    this.shadowRoot.querySelector('[data-is-sheet]')?.remove();
+    const wrap = document.createElement('div');
+    const reasons = rej ? rej.split('\n').filter(Boolean) : [];
+    wrap.innerHTML = `<div class="popup-overlay is-sheet-overlay${this._isDay ? ' popup-day' : ''}" data-is-sheet>
+      <div class="is-sheet">
+        <div class="is-sheet-hdr">
+          <div class="is-sheet-title">${this._escHtml(title)}</div>
+          <button class="popup-close" style="position:static;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
-        <div class="is-ic-title">${this._escHtml(r.title || '')}</div>
-        <div class="is-ic-meta">
-          <span>${this._escHtml(r.indexer || '')}</span>
-          ${r.protocol === 'torrent' ? `<span class="sep">·</span><span class="is-s">↑${r.seeders ?? '?'}</span>/<span class="is-l">↓${r.leechers ?? '?'}</span>` : ''}
-          <span class="sep">·</span>
-          <span>${r.ageHours < 48 ? Math.round(r.ageHours) + 'h ago' : Math.round(r.age || 0) + 'd ago'}</span>
-        </div>
-        ${rejHtml}
-      </div>`;
-    }).join('');
+        ${reasons.length ? `<div class="is-sheet-lbl">${this._t('isWhyRejected')}</div>
+        <ul class="is-sheet-rej">${reasons.map(x => `<li>${this._escHtml(x)}</li>`).join('')}</ul>` : ''}
+      </div>
+    </div>`;
+    const el = wrap.firstElementChild;
+    const close = () => el.remove();
+    el.addEventListener('click', e => {
+      if (e.target === el || e.target.closest('.popup-close')) close();
+      e.stopPropagation();
+    });
+    this.shadowRoot.appendChild(el);
   }
 
   // ─────────────────────────────────────────────

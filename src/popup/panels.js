@@ -176,6 +176,28 @@ _ppWirePanelGrab(root) {
   grab.addEventListener('touchstart', onDown, { passive: false, signal });
 }
 
+// Turning a phone or a tablet changes which layout the sources get (cards or a
+// table) and how many fit on a page; without this the detail kept the ones it
+// was opened with until something else redrew it. Only the width counts: a
+// phone's address bar sliding away changes the height on every scroll.
+_ppWatchViewport() {
+  if (this._ppViewportWired) return;
+  this._ppViewportWired = true;
+  let timer = null, lastW = window.innerWidth;
+  window.addEventListener('resize', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      if (!this._popup || !this.isConnected) return;
+      this._isFitHist = null; this._snFitHist = null;
+      this._isPerPage = null; this._snSeasonsPerPage = null;
+      this._ppPanelH = null; this._ppRenderedH = null;
+      this._renderPopupEl();
+    }, 200);
+  }, { passive: true });
+}
+
 // The Interactive Search panel: swipe on a phone, the filter selects.
 _ppWireIsPanel(root, glass) {
   // ── IS filter selects — change event delegation ──
