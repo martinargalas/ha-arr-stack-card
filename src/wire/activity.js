@@ -135,12 +135,15 @@ class _WireActivityMethods {
     });
   }
 
-  async _actLoadTab(tab, el) {
+  // `quiet` reloads a tab that is already on screen without first swapping it
+  // for the loading placeholder — refreshing behind an import did that every
+  // few seconds, and the list blinked each time.
+  async _actLoadTab(tab, el, { quiet = false } = {}) {
     const m = this._activityModal;
     if (!m) return;
     const body = el.querySelector('#act-body');
     if (!body) return;
-    body.innerHTML = '<div class="is-loading"><span>Loading…</span></div>';
+    if (!quiet) body.innerHTML = '<div class="is-loading"><span>Loading…</span></div>';
 
     const hasR2 = this._radarr2Configured === true;
     const hasS2 = this._sonarr2Configured === true;
@@ -198,7 +201,17 @@ class _WireActivityMethods {
         const alb = r.album?.title || r.title || '';
         return { ...r, _svc: 'lidarr', _enrichedTitle: [who, alb].filter(Boolean).join(' — ') || r.title || null };
       });
-      m.queueData = { radarr: rRecords, sonarr: [...sRecords, ...lRecords] };
+      // An import that finished leaves its row in the *arr's queue for a while
+      // (until its next check of the download client). It is done as far as
+      // the user is concerned, so it goes now; once the *arr has dropped it,
+      // so does the note.
+      const done = this._actImported;
+      if (done?.size) {
+        const listed = new Set([...rRecords, ...sRecords, ...lRecords].map(r => r.downloadId).filter(Boolean));
+        for (const id of done) if (!listed.has(id)) done.delete(id);
+      }
+      const keep = r => !(r.downloadId && done?.has(r.downloadId));
+      m.queueData = { radarr: rRecords.filter(keep), sonarr: [...sRecords, ...lRecords].filter(keep) };
       this._actRenderQueue(body, el);
     }
     else if (tab === 'history') {

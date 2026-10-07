@@ -922,6 +922,7 @@ _renderPlexCastDropdown() {
 // The stream's seek bar: tap and drag on touch screens.
 _ppWireSeek(root) {
   // ── Stream seek bar — touch support (tap + drag on mobile/tablet) ──
+  const signal = this._ppAbort?.signal;
   const seekWrap = root.querySelector('.stream-seek-wrap');
   if (seekWrap) {
     const applySeek = (clientX, commit) => {
@@ -938,15 +939,15 @@ _ppWireSeek(root) {
     seekWrap.addEventListener('touchstart', e => {
       e.preventDefault();
       applySeek(e.touches[0].clientX, true);
-    }, { passive: false });
+    }, { passive: false, signal });
     seekWrap.addEventListener('touchmove', e => {
       e.preventDefault();
       applySeek(e.touches[0].clientX, false);
-    }, { passive: false });
+    }, { passive: false, signal });
     seekWrap.addEventListener('touchend', e => {
       e.preventDefault();
       applySeek(e.changedTouches[0].clientX, true);
-    }, { passive: false });
+    }, { passive: false, signal });
   }
 }
 
@@ -954,10 +955,12 @@ _ppWireSeek(root) {
 // Dragging the progress bar. Clicking it already seeked; holding and moving
 // did nothing, which is what a bar that looks like this invites. The fill
 // follows the finger and the seek is sent once, on release.
-_ppWireSeekDrag(root) {
+_ppWireSeekDrag(root, signal) {
   root.querySelectorAll('.stream-seek-wrap').forEach(wrap => {
-    if (wrap._seekWired) return;
-    wrap._seekWired = true;
+    // Once per bar — or, for the detail's, once per paint (its listeners go
+    // with the paint, a kept bar is wired again)
+    if (wrap._seekWired && wrap._seekWired === (signal || true)) return;
+    wrap._seekWired = signal || true;
 
     const posFrom = e => {
       const rect = wrap.getBoundingClientRect();
@@ -1018,7 +1021,7 @@ _ppWireSeekDrag(root) {
       document.addEventListener('pointercancel', onUp, true);
       paint(pct);
       e.preventDefault();
-    });
+    }, { signal });
   });
 }
 

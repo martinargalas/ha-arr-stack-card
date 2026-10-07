@@ -84,7 +84,9 @@ _renderPopupEl() {
   if (this._streamPopupTimer) { clearInterval(this._streamPopupTimer); this._streamPopupTimer = null; }
 
   if (!this._popup) {
-    root.innerHTML = '';
+    this._ppAbort?.abort();
+    root.replaceChildren();
+    root._arrHtml = null;
     return;
   }
 
@@ -128,7 +130,18 @@ _renderPopupEl() {
   const _oldBar = root.querySelector('.pp-hero-bar');
   const _oldBarHtml = _oldBar?.outerHTML;
 
-  root.innerHTML = this._renderPopup();
+  // Painted like the columns: only what changed is replaced. Swapping the
+  // whole popup on each answer that came back (ratings, files, history)
+  // rebuilt the blurred glass and every picture, and a phone showed each of
+  // those as a blink. Anything that wrote into the root since the last paint
+  // makes the next one start over.
+  if (root._arrOverlay !== root.firstElementChild) root._arrHtml = null;
+  // Listeners added below are tied to this paint; nodes that survive it would
+  // otherwise collect a second copy of each.
+  this._ppAbort?.abort();
+  this._ppAbort = new AbortController();
+  this._paintCol(root, this._renderPopup());
+  root._arrOverlay = root.firstElementChild;
 
   if (_oldBar) {
     const _newBar = root.querySelector('.pp-hero-bar');
@@ -280,18 +293,19 @@ _renderPopupEl() {
   this._ppWireClose(overlay, closeBtn, _resetPopupTransient);
 
   // ── Jeden click handler na glass: stopPropagation + event delegation ──
-  if (glass) glass.addEventListener('click', e => this._ppGlassClick(e, root, d, overlay, glass));
+  if (glass) glass.addEventListener('click', e => this._ppGlassClick(e, root, d, overlay, glass), { signal: this._ppAbort.signal });
 
   this._ppWireSeek(root);
 
   this._ppWireIsPanel(root, glass);
 
   this._ppStreamProgress(root);
-  this._ppWireSeekDrag(root);
+  this._ppWireSeekDrag(root, this._ppAbort.signal);
 }
 
 // Closing the detail: the overlay and the close button.
 _ppWireClose(overlay, closeBtn, _resetPopupTransient) {
+  const signal = this._ppAbort?.signal;
   if (overlay) {
     overlay.addEventListener('click', e => {
       // Handle plex cast play buttons inside dropdown (outside glass)
@@ -363,7 +377,7 @@ _ppWireClose(overlay, closeBtn, _resetPopupTransient) {
       this._mtReturnState = null;
       this._simReturnState = null;
       this._renderPopupEl();
-    });
+    }, { signal });
   }
   if (closeBtn) {
     const _backArrow = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
@@ -375,7 +389,7 @@ _ppWireClose(overlay, closeBtn, _resetPopupTransient) {
       this._popup = null;
       this._isState = null;
       if (!this._popupReturn()) this._renderPopupEl();
-    });
+    }, { signal });
   }
 }
 

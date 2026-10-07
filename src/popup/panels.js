@@ -67,7 +67,8 @@ _ppWirePanelGrab(root) {
   }
   // Once, per opening. The panel is re-rendered several times while the sources
   // load, and re-adding the class each time made it flicker.
-  if (!this._ppPanelAnimDone) {
+  if (!this._ppPanelAnimDone && !panel._ppAnimWired) {
+    panel._ppAnimWired = true;
     panel.classList.add('pp-panel-in');
     panel.addEventListener('animationend', () => {
       this._ppPanelAnimDone = true;
@@ -114,12 +115,15 @@ _ppWirePanelGrab(root) {
       applyH(h);
     });
   }
-  if (panel.querySelector('.pp-grab')) return;
-
-  const grab = document.createElement('div');
-  grab.className = 'pp-grab';
-  grab.innerHTML = '<span></span>';
-  panel.insertBefore(grab, panel.firstChild);
+  // A panel kept from the last paint still has its grabber; its listeners
+  // went with that paint, so they are added again below.
+  let grab = panel.querySelector(':scope > .pp-grab');
+  if (!grab) {
+    grab = document.createElement('div');
+    grab.className = 'pp-grab';
+    grab.innerHTML = '<span></span>';
+    panel.insertBefore(grab, panel.firstChild);
+  }
 
   const glass = root.querySelector('.popup-glass');
   let startY = 0, startH = 0;
@@ -167,18 +171,20 @@ _ppWirePanelGrab(root) {
     e.preventDefault();
     e.stopPropagation();
   };
-  grab.addEventListener('pointerdown', onDown);
-  grab.addEventListener('touchstart', onDown, { passive: false });
+  const signal = this._ppAbort?.signal;
+  grab.addEventListener('pointerdown', onDown, { signal });
+  grab.addEventListener('touchstart', onDown, { passive: false, signal });
 }
 
 // The Interactive Search panel: swipe on a phone, the filter selects.
 _ppWireIsPanel(root, glass) {
   // ── IS filter selects — change event delegation ──
   // ── IS panel swipe (mobile) ──
+  const signal = this._ppAbort?.signal;
   const isPanel = root.querySelector('.is-panel');
   if (isPanel) {
     let _swipeX = null;
-    isPanel.addEventListener('touchstart', e => { _swipeX = e.touches[0].clientX; }, { passive: true });
+    isPanel.addEventListener('touchstart', e => { _swipeX = e.touches[0].clientX; }, { passive: true, signal });
     isPanel.addEventListener('touchend', e => {
       if (_swipeX === null) return;
       const dx = e.changedTouches[0].clientX - _swipeX;
@@ -190,7 +196,7 @@ _ppWireIsPanel(root, glass) {
         ? Math.min(totalPages - 1, (this._isPage || 0) + 1)
         : Math.max(0, (this._isPage || 0) - 1);
       if (p !== this._isPage) { this._isPage = p; this._renderPopupEl(); }
-    }, { passive: true });
+    }, { passive: true, signal });
   }
 
   if (glass) glass.addEventListener('change', e => {
@@ -203,7 +209,7 @@ _ppWireIsPanel(root, glass) {
       this._snIsFilters = { ...this._snIsFilters, [sel.dataset.snisselect]: sel.value };
     }
     this._renderPopupEl();
-  });
+  }, { signal });
 }
 
 }

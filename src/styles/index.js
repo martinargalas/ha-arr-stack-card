@@ -1435,6 +1435,8 @@ ${TOKEN_CSS}
       .dl-list { flex: 1; min-width: 0; }
       .dl-list.anim-next { animation: pg-slide-next 0.22s cubic-bezier(.25,.46,.45,.94) both; }
       .dl-list.anim-prev { animation: pg-slide-prev 0.22s cubic-bezier(.25,.46,.45,.94) both; }
+      .rp-sections > .rp-turn-next { animation: pg-slide-next 0.22s cubic-bezier(.25,.46,.45,.94) both; }
+      .rp-sections > .rp-turn-prev { animation: pg-slide-prev 0.22s cubic-bezier(.25,.46,.45,.94) both; }
 
       /* ════════════════════════════════════
          MEDIA CARD

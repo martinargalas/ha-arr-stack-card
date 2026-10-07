@@ -9,6 +9,22 @@ const sameOpening = (a, b) => {
   return true;
 };
 
+// A button that only turns disabled, or a dot that only becomes the active
+// one, is updated where it stands. Replacing it rebuilt the icon inside, and
+// an ha-icon draws a frame empty before its glyph arrives — the pager blinked
+// on every page. Classes are changed one by one, so those the card added
+// since (a pill shown, a ping running) stay.
+const FLIPS = new Set(['class', 'disabled']);
+const flipsOnly = (live, a, b) => {
+  const names = new Set([...a.getAttributeNames(), ...b.getAttributeNames()]);
+  for (const k of names) if (a.getAttribute(k) !== b.getAttribute(k) && !FLIPS.has(k)) return false;
+  const was = new Set(a.classList), now = new Set(b.classList);
+  for (const c of was) if (!now.has(c)) live.classList.remove(c);
+  for (const c of now) if (!was.has(c)) live.classList.add(c);
+  live.toggleAttribute('disabled', b.hasAttribute('disabled'));
+  return true;
+};
+
 // Brings `live` from what `prev` described to what `next` describes, replacing
 // only the nodes that differ. A node the two agree on is left alone — its
 // pictures loaded, its scroll position, what the card added to it since. One
@@ -22,7 +38,8 @@ function morph(live, prev, next, depth) {
   for (let i = 0; i < n.length; i++) {
     if (p[i].isEqualNode(n[i])) continue;
     if (depth < 16 && p[i].nodeType === 1 && n[i].nodeType === 1 && a[i].nodeType === 1
-        && a[i].tagName === n[i].tagName && sameOpening(p[i], n[i]) && morph(a[i], p[i], n[i], depth + 1)) continue;
+        && a[i].tagName === n[i].tagName && (sameOpening(p[i], n[i]) || flipsOnly(a[i], p[i], n[i]))
+        && morph(a[i], p[i], n[i], depth + 1)) continue;
     swaps.push([a[i], n[i]]);
   }
   for (const [old, fresh] of swaps) old.replaceWith(document.importNode(fresh, true));
@@ -538,9 +555,10 @@ class _LayoutMethods {
 
   _watchOverlays() {
     if (this._overlayObserver || !this.shadowRoot) return;
-    this._overlayObserver = new MutationObserver(() => this._syncScrollLock());
+    this._overlayObserver = new MutationObserver(() => { this._syncScrollLock(); this._backSync(); });
     this._overlayObserver.observe(this.shadowRoot, { childList: true, subtree: true });
     this._syncScrollLock();
+    this._backInit();
   }
 }
 

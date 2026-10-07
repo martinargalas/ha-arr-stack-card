@@ -18,6 +18,8 @@ globalThis.Node = dom.window.Node;
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.customElements = dom.window.customElements;
 globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+// jsdom only takes its own signals in addEventListener options
+globalThis.AbortController = dom.window.AbortController;
 globalThis.requestAnimationFrame = fn => setTimeout(() => fn(Date.now()), 0);
 globalThis.cancelAnimationFrame = id => clearTimeout(id);
 

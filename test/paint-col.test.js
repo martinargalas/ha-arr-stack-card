@@ -45,3 +45,26 @@ test('a write past _paintCol that clears the record makes the next paint start o
   card._paintCol(el, row([poster(1, 'A')]));
   assert.equal(el.querySelectorAll('.mc').length, 1);
 });
+
+test('a button that only turns disabled stays, with its icon and the classes added since', () => {
+  const card = makeCard(), el = col();
+  const nav = (page, last) => `<div class="rp-nav"><button class="rp-btn"${page === 0 ? ' disabled' : ''}><ha-icon icon="mdi:chevron-left"></ha-icon></button>`
+    + `<div class="rp-dots">${[0, 1, 2].map(i => `<button class="rp-dot${i === page ? ' rp-dot-active' : ''}"></button>`).join('')}</div>`
+    + `<button class="rp-btn"${page === last ? ' disabled' : ''}><ha-icon icon="mdi:chevron-right"></ha-icon></button></div>`;
+  card._paintCol(el, nav(0, 2));
+  const navEl = el.querySelector('.rp-nav');
+  navEl.classList.add('rp-nav-visible');
+  const [prev] = el.querySelectorAll('.rp-btn');
+  const icon = prev.querySelector('ha-icon');
+  const dots = [...el.querySelectorAll('.rp-dot')];
+  card._paintCol(el, nav(1, 2));
+  assert.equal(el.querySelector('.rp-nav'), navEl);
+  assert.ok(navEl.classList.contains('rp-nav-visible'), 'shown stays shown');
+  assert.equal(el.querySelector('.rp-btn'), prev, 'the same button');
+  assert.equal(prev.querySelector('ha-icon'), icon, 'the same icon');
+  assert.equal(prev.disabled, false);
+  assert.deepEqual([...el.querySelectorAll('.rp-dot')], dots);
+  assert.equal(el.querySelector('.rp-dot-active'), dots[1]);
+  card._paintCol(el, nav(2, 2));
+  assert.equal(el.querySelectorAll('.rp-btn')[1].disabled, true);
+});

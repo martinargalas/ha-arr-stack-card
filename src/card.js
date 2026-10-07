@@ -13,6 +13,7 @@ import { sectionsMixin } from './render/sections.js';
 import { itemsMixin } from './render/items.js';
 import { brandMixin } from './render/brand.js';
 import { layoutMixin } from './render/layout.js';
+import { backMixin } from './render/back.js';
 import { certMixin } from './render/cert.js';
 import { pendingMixin } from './fetch/pending.js';
 import { posterInfoMixin } from './fetch/poster-info.js';
@@ -173,6 +174,7 @@ class ArrStackCard extends HTMLElement {
     this._ppJfId = null;        // { key: popup, id } — Jellyfin item id per popup
     this._traV2 = undefined;    // undefined = not probed, then true/false for Tracearr 2.x
     this._actImporting = new Set();  // downloadIds with a manual import in flight
+    this._actImported  = new Set();  // downloadIds imported, hidden until the *arr drops them from its queue
     this._ppGrabWait = null;    // { inst, until } — grabbed, waiting for the queue to show it
     this._ppGrabTimer = null;   // interval that watches for that download to appear
     this._plexClientsTs = 0;    // cast device list is cached briefly
@@ -591,6 +593,7 @@ class ArrStackCard extends HTMLElement {
       this._overlayObserver.disconnect();
       this._overlayObserver = null;
     }
+    this._backStop();
     if (this._scrollLocked) {
       // Unlock but do not restore — the card is going away, and forcing a
       // scroll position onto whatever replaces it would fight the navigation.
@@ -642,6 +645,7 @@ class ArrStackCard extends HTMLElement {
     // a nav watcher musíme obnovit sami.
     if (!this._initialized) return; // ještě nebyla inicializována, set hass() to vyřeší
     this._wireVisibility();
+    this._watchOverlays();
 
     if (!this._interval) {
       this._interval = setInterval(() => this._pollFull(), 30000);
@@ -1197,6 +1201,7 @@ applyMixin(ArrStackCard.prototype, sectionsMixin);
 applyMixin(ArrStackCard.prototype, itemsMixin);
 applyMixin(ArrStackCard.prototype, brandMixin);
 applyMixin(ArrStackCard.prototype, layoutMixin);
+applyMixin(ArrStackCard.prototype, backMixin);
 applyMixin(ArrStackCard.prototype, certMixin);
 applyMixin(ArrStackCard.prototype, pendingMixin);
 applyMixin(ArrStackCard.prototype, posterInfoMixin);

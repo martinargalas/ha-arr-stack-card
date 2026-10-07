@@ -306,38 +306,38 @@ _reRenderSection(section) {
   }
 }
 
-_swapRightKeepNav(right, scrollState) {
+_swapRightKeepNav(right, scrollState, fromPage) {
   const isMobile = maxWidth(BP.STACKED);
   const lockH = this._searchActive ? this._searchLockHeight() : this._rightMaxH;
   if (lockH) right.style.minHeight = lockH + 'px';
 
-  // Na mobilu: zachovat existující nav element (zabránit překreslení/bliknutí)
-  const oldNav = isMobile ? right.querySelector('.rp-nav') : null;
-  const navVisible = oldNav?.classList.contains('rp-nav-visible') ?? false;
-  if (oldNav) oldNav.remove();
-
-  // Renderovat nový obsah
-  const newHtml = this._renderRight();
-  const wrap = this._mobMinWrap('right', newHtml);
-
-  // Parsovat nový nav z renderovaného HTML a aplikovat jeho innerHTML na starý nav
-  if (oldNav && navVisible) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = wrap;
-    const renderedNav = tmp.querySelector('.rp-nav');
-    if (renderedNav) {
-      oldNav.innerHTML = renderedNav.innerHTML;
-      renderedNav.remove();
+  // The floating nav on a phone stays the node it is: painting the column
+  // keeps it and changes only the dots and buttons that moved. Taking it out
+  // and putting it back, as this used to, recreated its blurred capsule — a
+  // blink on every page.
+  const navVisible = isMobile && !!right.querySelector('.rp-nav.rp-nav-visible');
+  // The page slides in the way it was turned — what arrives from the right
+  // is the next page. Only what changed moves: a search bar that stays on
+  // every page stays put. Compared by markup, since painting keeps a section's
+  // own node and changes what is inside it.
+  const pageNow = () => (this._searchActive ? this._searchPage : this._rightPage) || 0;
+  const dir = typeof fromPage === 'number' && pageNow() !== fromPage
+    ? (pageNow() > fromPage ? 'next' : 'prev') : null;
+  const before = new Set([...(right.querySelector('.rp-sections')?.children || [])].map(el => el.outerHTML));
+  this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
+  if (dir) {
+    for (const el of right.querySelector('.rp-sections')?.children || []) {
+      if (before.has(el.outerHTML) || !el.offsetHeight) continue;
+      el.classList.add(`rp-turn-${dir}`);
+      el.addEventListener('animationend', () => el.classList.remove(`rp-turn-${dir}`), { once: true });
     }
-    right.innerHTML = tmp.innerHTML;
-    right.appendChild(oldNav);
-    right._arrHtml = null;   // written here by hand: the next paint starts over
-  } else {
-    this._paintCol(right, wrap);
-    if (navVisible) {
-      const newNav = right.querySelector('.rp-nav');
-      if (newNav) { newNav.style.transition = 'none'; newNav.classList.add('rp-nav-visible'); requestAnimationFrame(() => { newNav.style.transition = ''; }); }
-    }
+  }
+  const newNav = navVisible ? right.querySelector('.rp-nav') : null;
+  if (newNav && !newNav.classList.contains('rp-nav-visible')) {
+    // Replaced after all (the column changed shape): shown without fading in
+    newNav.style.transition = 'none';
+    newNav.classList.add('rp-nav-visible');
+    requestAnimationFrame(() => { newNav.style.transition = ''; });
   }
 
   this._wireRight(right);
@@ -370,6 +370,7 @@ _wirePageButtons(scope = this.shadowRoot) {
       const scrollState = this._captureScrollState(); // ← PŘED renderem
 
       const dir = btn.dataset.dir;
+      const fromPage = (this._searchActive ? this._searchPage : this._rightPage) || 0;
       if (this._searchActive) {
         const _sc = Math.max(2, Math.min(10, parseInt(this._cfgGet('discover', 'itemsPerCategory', 4)) || 4));
         const searchTotal = Math.ceil((this._searchResults || []).length / (_sc * 2));
@@ -388,7 +389,7 @@ _wirePageButtons(scope = this.shadowRoot) {
       }
       const right = this.shadowRoot.getElementById('col-right');
       if (right) {
-        this._swapRightKeepNav(right, scrollState);
+        this._swapRightKeepNav(right, scrollState, fromPage);
       }
     }, { signal: sig });
   });
@@ -401,11 +402,12 @@ _wirePageButtons(scope = this.shadowRoot) {
       const targetPage = parseInt(dot.dataset.page, 10);
       if (!isNaN(targetPage)) {
         const scrollState = this._captureScrollState(); // ← PŘED renderem
+        const fromPage = (this._searchActive ? this._searchPage : this._rightPage) || 0;
         if (this._searchActive) this._searchPage = targetPage;
         else                    this._rightPage   = targetPage;
         const right = this.shadowRoot.getElementById('col-right');
         if (right) {
-          this._swapRightKeepNav(right, scrollState);
+          this._swapRightKeepNav(right, scrollState, fromPage);
         }
       }
     }, { signal: sig });
@@ -537,36 +539,28 @@ _wireSwipe(sig) {
     }, { passive: true, signal: sig });
   });
 
-  // Swipe na rp-nav (pravý panel — přepínání mezi sekcemi)
+  // A swipe across the right column's pager — the floating one on a phone —
+  // turns one page, by pressing the arrow it would have pressed. The arrows
+  // know how pages are counted (filled to fit, search results) and keep the
+  // pager in place while the page changes; counting here as well got both
+  // wrong.
   const rpNav = this.shadowRoot.querySelector('.rp-nav');
   if (rpNav) {
-    let startX = null;
+    let startX = null, startY = 0;
 
     rpNav.addEventListener('touchstart', e => {
       startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
     }, { passive: true, signal: sig });
 
     rpNav.addEventListener('touchend', e => {
       if (startX === null) return;
       const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
       startX = null;
-      if (Math.abs(dx) < THRESHOLD) return;
-
-      const dir = dx < 0 ? 'next' : 'prev';
-      const allCategories = (this._cfg.categories || this._defaultCategories()).filter(c => c.enabled !== false);
-      const perPage    = Math.max(1, parseInt(this._cfgGet('discover', 'categoriesCount', 3)) || 3);
-      const totalPages = Math.ceil(allCategories.length / perPage);
-      const cur        = this._pages['right'] || 0;
-
-      if (dir === 'next' && cur < totalPages - 1) {
-        this._pages['right'] = cur + 1;
-      } else if (dir === 'prev' && cur > 0) {
-        this._pages['right'] = cur - 1;
-      } else {
-        return;
-      }
-
-      this._reRenderRight(true);
+      if (Math.abs(dx) < THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+      const arrow = rpNav.querySelector(`.rp-btn[data-dir="${dx < 0 ? 'next' : 'prev'}"]`);
+      if (arrow && !arrow.disabled) arrow.click();
     }, { passive: true, signal: sig });
   }
 }

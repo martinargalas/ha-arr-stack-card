@@ -265,32 +265,25 @@ class _WireActivityActionsMethods {
     if (!files.length) return;
     const downloadIds = new Set(files.map(f => f.downloadId).filter(Boolean));
     try {
-      await this._callApi('POST', 'arr_stack/lidarr/command', {
+      const cmd = await this._callApi('POST', 'arr_stack/lidarr/command', {
         name: 'ManualImport', importMode: 'auto', replaceExistingFiles: false, files,
       });
       downloadIds.forEach(id => this._actImporting.add(id));
       overlayEl.remove();
       this._actShowStatus(this._t('actImporting'), { spin: true }, 0);
-      // The command runs on Lidarr's own schedule; the queue says when it is
-      // done, and the artist's counts follow.
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await new Promise(r => setTimeout(r, attempt === 0 ? 2000 : 3000));
-        if (!this._activityModal) break;
-        await this._actLoadTab('queue', modalEl);
-        if (!this._activityModal) break;
-        // Lidarr's rows ride in the same list as Sonarr's; each says which
-        // service it came from.
-        const items = (this._activityModal.queueData?.sonarr || []).filter(x => x._svc === 'lidarr');
-        if (!items.some(item => downloadIds.has(item.downloadId))) break;
+      this._actRepaintQueue(modalEl);
+      const outcome = await this._actAwaitImport('lidarr', cmd, downloadIds, modalEl);
+      if (outcome === 'failed') {
+        this._actShowStatus(this._t('actImportFailed'), { err: true }, 6000);
+        return;
       }
-      downloadIds.forEach(id => this._actImporting.delete(id));
       // The import history is what Recently Added is built from, so it is read
       // again here rather than at the next poll — an import somebody just
       // watched finish should not need the page reloaded to show up.
       await this._fetchLidarr();
       this._reRenderSection?.('recentlyAdded');
       this._reRenderSection?.('recentlyRequested');
-      this._actShowStatus(this._t('actImported'), { ok: true });
+      this._actShowStatus(outcome === 'done' ? this._t('actImported') : this._t('actImportQueued'), { ok: true });
     } catch (err) {
       console.error('[arr-card] Lidarr manual import:', err);
       downloadIds.forEach(id => this._actImporting.delete(id));
@@ -443,6 +436,42 @@ class _WireActivityActionsMethods {
     panel.innerHTML = rows;
   }
 
+  // Repaints the queue from what is already loaded — no fetch, no placeholder
+  _actRepaintQueue(modalEl) {
+    const m = this._activityModal;
+    const body = modalEl?.querySelector('#act-body');
+    if (m?.tab === 'queue' && body && m.queueData) this._actRenderQueue(body, modalEl);
+  }
+
+  // Waits for a ManualImport command by asking the *arr about the command
+  // itself, rather than reloading the queue until the rows go: the *arr keeps
+  // an imported download listed until its next look at the download client,
+  // which is often a minute or more, so the row outlived any wait. Once the
+  // command has completed its rows are hidden, and the queue is read again
+  // once, quietly. Returns 'done', 'failed' or 'pending' (still running when
+  // the wait ran out, or no command id to follow).
+  async _actAwaitImport(svc, cmd, downloadIds, modalEl) {
+    let outcome = 'pending';
+    if (cmd?.id != null) {
+      const until = Date.now() + 90000;
+      while (Date.now() < until) {
+        await new Promise(r => setTimeout(r, 1500));
+        let st = null;
+        try { st = await this._callApi('GET', `arr_stack/${svc}/command/${cmd.id}`); } catch { /* try again */ }
+        const s = String(st?.status || '').toLowerCase();
+        if (s === 'completed') { outcome = st.result === 'unsuccessful' ? 'failed' : 'done'; break; }
+        if (s === 'failed' || s === 'aborted' || s === 'cancelled') { outcome = 'failed'; break; }
+      }
+    }
+    downloadIds.forEach(id => this._actImporting.delete(id));
+    if (outcome === 'done') downloadIds.forEach(id => this._actImported.add(id));
+    if (this._activityModal?.tab === 'queue') {
+      this._actRepaintQueue(modalEl);
+      await this._actLoadTab('queue', modalEl, { quiet: true });
+    }
+    return outcome;
+  }
+
   async _submitManualImport(candidates, indices, svc, overlayEl, modalEl) {
     this._markActivated();
     const isRadarr = svc === 'radarr' || svc === 'radarr2';
@@ -474,7 +503,7 @@ class _WireActivityActionsMethods {
     }));
     if (!toImport.length) return;
     try {
-      await this._callApi('POST', `arr_stack/${svc}/command`, {
+      const cmd = await this._callApi('POST', `arr_stack/${svc}/command`, {
         name: 'ManualImport',
         importMode: 'Auto',
         files: toImport.map(c => ({
@@ -491,33 +520,22 @@ class _WireActivityActionsMethods {
           disableReleaseSwitching: false,
         })),
       });
-      // Command is async — poll queue until imported items disappear (max ~15s)
       const importedIds = new Set(toImport.map(c => c.downloadId).filter(Boolean));
       // Marks the rows themselves, so the wait is visible where it happens and
       // not only in the pill at the bottom of the screen.
       importedIds.forEach(id => this._actImporting.add(id));
       overlayEl.remove();
       this._actShowStatus(this._t('actImporting'), { spin: true }, 0);
-      let gone = false;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await new Promise(r => setTimeout(r, attempt === 0 ? 2000 : 3000));
-        if (!this._activityModal) break;
-        await this._actLoadTab('queue', modalEl);
-        if (!this._activityModal) break;
-        const qd = this._activityModal.queueData;
-        const allItems = [...(qd?.radarr || []), ...(qd?.sonarr || [])];
-        if (!allItems.some(item => importedIds.has(item.downloadId))) { gone = true; break; }
-      }
-      // Whether it landed or the wait ran out, the row stops claiming to work
-      importedIds.forEach(id => this._actImporting.delete(id));
-      if (this._activityModal) await this._actLoadTab('queue', modalEl);
+      this._actRepaintQueue(modalEl);
+      const outcome = await this._actAwaitImport(svc, cmd, importedIds, modalEl);
       // The modal reloads its own tab, but the Activity card on the dashboard
       // reads the queue counters refreshed by the poll — so until the next one
       // it kept reporting the failure the import had just cleared.
       await this._refreshQueueCounters();
-      // Still queued after the wait is not a failure — the *arr accepted the
-      // command and may simply be slower than the poll.
-      this._actShowStatus(gone ? this._t('actImported') : this._t('actImportQueued'));
+      // Still running after the wait is not a failure — the *arr accepted the
+      // command and may simply be slower than us.
+      if (outcome === 'failed') this._actShowStatus(this._t('actImportFailed'), { err: true }, 6000);
+      else this._actShowStatus(outcome === 'done' ? this._t('actImported') : this._t('actImportQueued'));
     } catch (err) {
       console.error('[arr-card] Manual import submit error:', err);
       this._actImporting.clear();

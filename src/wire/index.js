@@ -138,8 +138,11 @@ _reRenderLeft() {
   this._paintCol(left, this._mobMinWrap('left', this._renderLeft()));
   this._wireSort();
   this._wireActionButtons();
-  // Scope na levý sloupec — nevkládá duplicitní listenery na rp-btn/rp-dot pravého sloupce
-  this._wirePageButtons(left);
+  // The whole card, not just this column: wiring starts by dropping every
+  // paging listener the card has, so a call scoped to the left left the right
+  // column's arrows, dots and swipe dead until the next poll rewired them.
+  // The full call drops and rewires both, so nothing is wired twice.
+  this._wirePageButtons();
   this._wireMinimize();
 }
 
