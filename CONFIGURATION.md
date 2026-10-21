@@ -20,6 +20,8 @@ layout: both                 # both | left | right  (default: both)
 swap_sides: false            # swap left and right panels  (default: false)
                              # Note: on mobile, right panel moves above left. Set sticky_nav_offset ~2000 for nav to appear immediately.
 sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (default: 100)
+search_in_header: false      # the search field lives in a pop-up's header — an arr-stack-search card, see below  (default: false)
+search_link: ""              # only with several such cards on one page: pairs this card with the header that has the same link
 
 # Download managers (left panel)
 downloads:
@@ -121,10 +123,12 @@ styles:
   cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only)
   dayNightMode: true              # auto switch popup colours based on sun.sun
   categoryOverlays: true          # colour-tinted overlays on category poster grids  (default: true)
-  applicationIcons: real          # real | mdi — use real app logos or MDI icons  (default: real)
+  applicationIcons: real          # real | mdi | none — real app logos, MDI icons, or no icons next to the section titles  (default: real)
   uiScale: 1                      # scale all card content — use >1 on large screens/TVs  (default: 1)
   leftPanelWidth: 40              # downloads panel width as % of card width  (default: 40)
-  preset: glass                   # glass | ha | solid | nord | catppuccin | cinema — see STYLING.md
+  preset: glass                   # glass | ha | solid | nord | catppuccin | cinema | apple-home — see STYLING.md
+  appearance: auto                # Apple Home only: auto (with Home Assistant's dark mode) | sun | light | dark  (default: auto)
+  sectionGap: 8                   # px — room between the right panel's categories  (default: 8)
   text: "#ffffff"                 # every colour, surface and opacity key, and the
   radius: 34                      #   left:/right:/modal:/modalDay: groups: STYLING.md
   iconStyle: brand                # brand | mono — real logos in their own colours or the icon colour
@@ -136,6 +140,21 @@ styles:
 ```
 
 The older colour keys (`headingTextColor`, `primaryTextColor`, `modalBackgroundColor` …) keep working — [STYLING.md](STYLING.md#the-older-keys) lists what each one sets now.
+
+## Search header — `arr-stack-search`
+
+A second card that holds the Arr Stack Card's search field, for the header of a pop-up. Pair it with a card that has `search_in_header: true`.
+
+```yaml
+type: custom:arr-stack-search
+header: true                 # a whole pop-up header: icon, name, the search field and a close button  (default: false)
+name: Movies                 # with header
+icon: mdi:movie-play-outline # with header
+close: true                  # with header: the close button, which closes the pop-up  (default: true)
+background: none             # optional: no surface of its own, for a header that draws one
+link: ""                     # only with several search headers on one page: the card with the same search_link
+styles: {}                   # optional: the card's style keys, over the look it takes from the card
+```
 
 ## Category IDs
 

@@ -674,7 +674,7 @@ _ppActStreamTerminateShow(t, e, { root, overlay } = {}) {
   const userName  = d?._plexUser || '';
   const userThumb = d?._plexUserThumb || '';
   const title     = d?.title || '';
-  const isDay     = this._isDaytime && this._config?.styles?.dayNightMode !== false;
+  const isDay     = this._isDay;
   // Inside the modal's glass, so the modal palette of the hour applies (#42)
   const fg   = isDay ? 'rgba(var(--_fg, 0, 0, 0), 0.85)' : 'rgba(var(--_fg, 255, 255, 255), 0.9)';
   const fgSub= isDay ? 'rgba(var(--_fg2, 0, 0, 0), 0.55)' : 'rgba(var(--_fg2, 255, 255, 255), 0.55)';

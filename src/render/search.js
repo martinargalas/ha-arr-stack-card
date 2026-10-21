@@ -5,14 +5,29 @@ import { POPUP_TYPE } from '../constants.js';
 class _SearchRenderMethods {
 
 _renderSearch() {
+  // With the field in a pop-up header, the column carries only what it found
+  const bar = this._searchExt ? '' : this._searchBarHtml();
+  return `
+    <div class="sec-card sec-search" style="position:relative">
+      ${bar}
+      ${this._searchActive ? `<div class="col-hdr" style="margin:${bar ? 13 : 2}px 0 5px">
+        ${this._searchHdrIcon()}
+        <span class="col-hdr-title">${this._t('searchResults')}</span>
+        <div class="col-hdr-line"></div>
+      </div>` : ''}
+      <div class="search-results-wrap">${this._renderSearchResultsInner()}</div>
+    </div>`;
+}
+
+// The field itself: icon, input, type switch, clear. Drawn in the column, or
+// handed to an arr-stack-search card in a pop-up header (search_in_header).
+_searchBarHtml() {
   const hasQuery        = !!this._searchQuery;
   const headingColor    = this._cfgGet('styles', 'headingTextColor', '#fff') || '#fff';
   const iconDefaultColor = this._cfgGet('styles', 'searchBarIconColor', '') || '';
   const iconStyle    = hasQuery ? `color:${headingColor};` : iconDefaultColor ? `color:${iconDefaultColor};` : '';
   const inputStyle   = hasQuery ? `color:${headingColor};` : '';
-  return `
-    <div class="sec-card sec-search" style="position:relative">
-      <div class="search-bar-wrap">
+  return `<div class="search-bar-wrap">
         <ha-icon icon="mdi:magnify" class="search-bar-icon" style="--mdc-icon-size:22px;${iconStyle}"></ha-icon>
         <input
           class="search-bar-input"
@@ -25,15 +40,8 @@ _renderSearch() {
         >
         ${this._searchTypeSeg()}
         <button class="search-bar-clear" data-action="search-clear" style="${iconStyle}${this._searchActive ? '' : 'display:none;'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-        ${this._tmdbNoticeHtml()}
-      </div>
-      ${this._searchActive ? `<div class="col-hdr" style="margin:13px 0 5px">
-        ${this._searchHdrIcon()}
-        <span class="col-hdr-title">${this._t('searchResults')}</span>
-        <div class="col-hdr-line"></div>
-      </div>` : ''}
-      <div class="search-results-wrap">${this._renderSearchResultsInner()}</div>
-    </div>`;
+        ${this._searchExt ? '' : this._tmdbNoticeHtml()}
+      </div>`;
 }
 
 _searchHdrIcon() {

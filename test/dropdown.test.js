@@ -95,3 +95,15 @@ test('the list stays inside its window and scrolls only when it does not fit', (
   assert.equal(st.overflowY, 'auto');
   assert.ok(parseFloat(st.maxHeight) <= bounds.bottom - 130 - 6 - 8, 'no taller than the room under it');
 });
+
+test('the list opens above the window it came from, however high that sits', () => {
+  const { host, sr, sel } = setup(SORT);
+  const dialog = document.createElement('div');
+  dialog.className = 'popup-overlay';
+  dialog.style.zIndex = '10000';
+  sr.appendChild(dialog);
+  dialog.appendChild(sel.closest('.popup-glass'));
+  sel.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 }));
+  assert.equal(sr.querySelector('[data-arr-dd]').style.zIndex, '10001');
+  host.remove();
+});

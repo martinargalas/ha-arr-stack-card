@@ -65,6 +65,7 @@ const STATUS = [
 const CARD = [
   ['gap',         'Gap between panels', 'px',   '12'],
   ['cardPadding', 'Card padding',       'text', '',  'In px, or CSS like 0 12px 8px.'],
+  ['sectionGap',  'Gap between categories', 'px', '8', 'Between the right panel\'s categories. With the right panel\'s Padding (e.g. 18px 15px 14px) it gives them room.'],
 ];
 // A modal's settings, grouped as the editor shows them; day and night each
 // get the whole set
@@ -263,17 +264,17 @@ function scoped(ed, id, list) {
 }
 
 // One picker for which icons and in what colour — styles.applicationIcons
-// (real | mdi) and styles.iconStyle (brand | mono) together
+// (real | mdi | none) and styles.iconStyle (brand | mono) together
 function iconStyleRow(ed) {
-  const mdi = read(ed, [], 'applicationIcons') === 'mdi';
+  const icons = read(ed, [], 'applicationIcons');
   const mono = read(ed, [], 'iconStyle') === 'mono';
-  const v = mdi ? 'mdi' : mono ? 'mono' : 'brand';
+  const v = icons === 'none' ? 'none' : icons === 'mdi' ? 'mdi' : mono ? 'mono' : 'brand';
   const opt = (val, label) => `<option value="${val}"${v === val ? ' selected' : ''}>${label}</option>`;
   return `<div class="st-row"><span class="st-label">App icons</span><span class="st-ctl"><span class="st-field">
       <select class="st-select" data-st-iconstyle>
-        ${opt('brand', 'Real logos, own colours')}${opt('mono', 'Real logos, icon colour')}${opt('mdi', 'MDI icons, icon colour')}
+        ${opt('brand', 'Real logos, own colours')}${opt('mono', 'Real logos, icon colour')}${opt('mdi', 'MDI icons, icon colour')}${opt('none', 'No icons')}
       </select></span><span class="st-suffix"></span><span class="st-clear" hidden></span></span></div>
-    <div class="st-hint">The icons beside the section titles. Real logos are the apps' own; MDI icons are plain glyphs.</div>`;
+    <div class="st-hint">The icons beside the section titles. Real logos are the apps' own; MDI icons are plain glyphs; No icons leaves the titles on their own.</div>`;
 }
 
 // general: the Appearance tab's own settings, shown as the first group
@@ -282,12 +283,13 @@ export function stylesTabHtml(ed, general = '') {
   ed._stOpen = ed._stOpen || new Set(['general']);
   const preset = read(ed, [], 'preset') || 'glass';
   const opt = (v, l) => `<option value="${v}"${preset === v ? ' selected' : ''}>${l}</option>`;
+  // Liquid Glass is held back for now: offered only to a card that has it
   return `
     <div class="section">
       <div class="row">
         <span class="row-label">Preset</span>
         <select data-st-preset>
-          ${opt('glass', 'Glass (default)')}${opt('ha', 'Home Assistant theme')}${opt('solid', 'Solid')}${opt('nord', 'Nord')}${opt('catppuccin', 'Catppuccin')}${opt('cinema', 'Cinema')}
+          ${opt('glass', 'Glass (default)')}${opt('ha', 'Home Assistant theme')}${opt('solid', 'Solid')}${opt('nord', 'Nord')}${opt('catppuccin', 'Catppuccin')}${opt('cinema', 'Cinema')}${preset === 'liquid' ? opt('liquid', 'Liquid Glass') : ''}${opt('apple-home', 'Apple Home')}
         </select>
       </div>
       <div class="hint">${{
@@ -297,7 +299,17 @@ export function stylesTabHtml(ed, general = '') {
         nord: 'Arctic frost: slate glass, frost-blue headings and icons, aurora status colours.',
         catppuccin: 'Soothing pastels: a mauve glow on a deep base, pink headings, rounder corners.',
         cinema: 'The dark of a theatre: a velvet-red glow from below, gold accents, sharper corners.',
+        liquid: 'Liquid glass, as in macOS 26: both columns bend the wallpaper behind them through a lens along the edge. Light or dark with Home Assistant or the sun, windows included.',
+        'apple-home': 'Apple Home: the posters straight on the wallpaper, the downloads as the app\'s dark glass sidebar with orange icons. Light or dark with Home Assistant or the sun.',
       }[preset] || ''} Anything you set below wins over the preset.</div>
+      ${preset === 'liquid' || preset === 'apple-home' ? `<div class="row">
+        <span class="row-label">Light / dark</span>
+        <select data-st-appearance>
+          ${[['auto', 'With Home Assistant'], ['sun', 'By the sun (dark at night)'], ['light', 'Always light'], ['dark', 'Always dark']]
+            .map(([v, l]) => `<option value="${v}"${(read(ed, [], 'appearance') || 'auto') === v ? ' selected' : ''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="hint">When the glass turns dark. Set it as glass-dashboard's appearance to match its pop-ups.</div>` : ''}
       ${general ? group(ed, 'general', 'General', general) : ''}
       ${group(ed, 'panels', 'Panels', scoped(ed, 'panels', SURFACE))}
       ${group(ed, 'text', 'Text', scoped(ed, 'text', TEXT))}
@@ -379,9 +391,13 @@ export function wireStylesTab(ed, root) {
     ed._update({ styles: setStyle(ed._config.styles, [], 'preset', v === 'glass' ? undefined : v) });
     ed._render();
   });
+  root.querySelector('[data-st-appearance]')?.addEventListener('change', e => {
+    const v = e.target.value;
+    ed._update({ styles: setStyle(ed._config.styles, [], 'appearance', v === 'auto' ? undefined : v) });
+  });
   root.querySelector('[data-st-iconstyle]')?.addEventListener('change', e => {
     const v = e.target.value;
-    let st = setStyle(ed._config.styles, [], 'applicationIcons', v === 'mdi' ? 'mdi' : undefined);
+    let st = setStyle(ed._config.styles, [], 'applicationIcons', v === 'mdi' || v === 'none' ? v : undefined);
     st = setStyle(st, [], 'iconStyle', v === 'mono' ? 'mono' : undefined);
     ed._update({ styles: st });
   });

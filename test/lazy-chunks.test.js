@@ -55,7 +55,7 @@ test('a chunk that lacks its entry throws instead of calling itself forever', as
 
 // ── The line between core and the chunks ──────────────────────────────────────
 
-const OPTIONAL = /^src\/(?:(?:render|wire)\/(?:(tracearr|tautulli|jellystat|prowlarr|maintainerr)(?!-tiles)[\w-]*|(activity|library)(?!-tiles)[\w-]*|music(?!-cards|-rows)[\w-]*)|editor)\.js$/;
+const OPTIONAL = /^src\/(?:(?:render|wire)\/(?:(tracearr|tautulli|jellystat|prowlarr|maintainerr)(?!-tiles)[\w-]*|(activity|library)(?!-tiles)[\w-]*|music(?!-cards|-rows)[\w-]*|liquid[\w-]*)|editor)\.js$/;
 
 test('nothing from an optional module is fetched when the card loads', async () => {
   // Built the way build.js builds it: the windows are separate bundles, and the
@@ -79,8 +79,9 @@ test('nothing from an optional module is fetched when the card loads', async () 
   const statik = out.imports.filter(i => i.kind === 'import-statement');
   assert.deepEqual(statik, [], 'the entry has to load on its own — HACS may install it alone');
 
-  const lazy = out.imports.filter(i => i.kind === 'dynamic-import').length;
-  assert.equal(lazy, 9, 'eight windows and the editor');
+  // The editor is asked for by the card and by the search header alike
+  const lazy = new Set(out.imports.filter(i => i.kind === 'dynamic-import').map(i => i.path)).size;
+  assert.equal(lazy, 10, 'eight windows, the liquid glass and the editor');
 });
 
 test('core reaches into a chunk only through a listed entry', () => {

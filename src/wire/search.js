@@ -226,50 +226,13 @@ _wireSearch() {
   this._raSegAnim = false;
   this._calCatSegAnim = false;
   this._recSegAnim = false;
-  const input = root.querySelector('.search-bar-input');
-  if (!input) return;
   if (this._searchAbort) this._searchAbort.abort();
   this._searchAbort = new AbortController();
   const sig = this._searchAbort.signal;
-  const headingColor    = this._cfgGet('styles', 'headingTextColor', '#fff') || '#fff';
-  const iconDefaultColor = this._cfgGet('styles', 'searchBarIconColor', '') || '';
-  const _setSearchColors = (on) => {
-    const wrap = input.closest('.search-bar-wrap');
-    if (!wrap) return;
-    const icon  = wrap.querySelector('ha-icon');
-    const clear = wrap.querySelector('.search-bar-clear');
-    if (icon)  icon.style.color  = on ? headingColor : iconDefaultColor;
-    if (clear) clear.style.color = on ? headingColor : '';
-    input.style.color = on ? headingColor : '';
-  };
-  input.addEventListener('focus', () => _setSearchColors(true), { signal: sig });
-  input.addEventListener('blur', () => {
-    if (!this._searchQuery?.trim()) _setSearchColors(false);
-  }, { signal: sig });
-  input.addEventListener('input', () => {
-    const q = input.value.trim();
-    this._searchQuery = input.value;
-    this._searchPage  = 0;
-    clearTimeout(this._searchTimer);
-    _setSearchColors(!!q || document.activeElement === input);
-    if (!q) {
-      this._searchActive  = false;
-      this._searchResults = [];
-      this._searchMaxH    = null;
-      this._reRenderRight(true);
-      return;
-    }
-    this._searchActive = true;
-    // The column becomes the search at the first letter, not when the results
-    // arrive — until then the categories stayed on the page under the search
-    // bar. The redraw carries focus and caret over (see _reRenderRight).
-    if (!this._searchOnlyLayout) {
-      this._searchLoading = true;
-      this._reRenderSearchResults();
-    }
-    // Asked as soon as typing pauses, as Similar titles' search is
-    this._searchTimer = setTimeout(() => this._fetchSearch(q), 350);
-  }, { signal: sig });
+  // The field may be in a pop-up header instead (search_in_header); the type
+  // buttons in the categories below are wired either way.
+  const input = root.querySelector('.search-bar-input');
+  if (input) this._wireSearchField(input, sig);
   root.addEventListener('mousedown', (e) => {
     if (e.target.closest('.search-type-seg')) e.preventDefault();
   }, { signal: sig });
@@ -304,43 +267,100 @@ _wireSearch() {
       return;
     }
     const seg = e.target.closest('[data-search-type]');
-    if (seg) {
-      const next = seg.dataset.searchType;
-      if (next !== this._searchType) {
-        this._searchSegPrev = this._searchType;
-        this._searchSegAnim = true;
-        try { localStorage.setItem('arr-search-type', next); } catch (_) {}
-        this._searchPage = 0;
-        const segEl = seg.closest('.mt-seg');
-        if (segEl) {
-          const idx = [...segEl.querySelectorAll('.mt-seg-half')].indexOf(seg);
-          if (idx >= 0) {
-            segEl.dataset.segTo = String(idx);
-            requestAnimationFrame(() => { segEl.dataset.seg = String(idx); });
-          }
-        }
-        this._searchSegAnim = false;
-        // Narrowing changes what the answer is, so what is typed is asked again
-        // rather than waiting for the next keystroke.
-        const q = (this._searchQuery || '').trim();
-        clearTimeout(this._searchTimer);
-        if (q) this._fetchSearch(q);
-        else this._reRenderSearchResults();
-      }
-      return;
-    }
-    if (e.target.closest('.search-bar-clear')) {
-      clearTimeout(this._searchTimer);
-      // Cleared, not left: the caret stays for the next search
-      this._searchKeepFocus = true;
-      this._searchQuery   = '';
-      this._searchActive  = false;
-      this._searchPage    = 0;
-      this._searchResults = [];
-      this._searchMaxH    = null;
-      this._reRenderRight(true);
-    }
+    if (seg) { this._searchPickType(seg); return; }
+    if (e.target.closest('.search-bar-clear')) this._searchClearAll();
   }, { signal: sig });
+}
+
+// The search field's own listeners: colours while focused, typing. Shared by
+// the field in the column and by one in a pop-up header (arr-stack-search),
+// which hands its input over here.
+_wireSearchField(input, sig) {
+  const headingColor    = this._cfgGet('styles', 'headingTextColor', '#fff') || '#fff';
+  const iconDefaultColor = this._cfgGet('styles', 'searchBarIconColor', '') || '';
+  const _setSearchColors = (on) => {
+    const wrap = input.closest('.search-bar-wrap');
+    if (!wrap) return;
+    const icon  = wrap.querySelector('ha-icon');
+    const clear = wrap.querySelector('.search-bar-clear');
+    if (icon)  icon.style.color  = on ? headingColor : iconDefaultColor;
+    if (clear) clear.style.color = on ? headingColor : '';
+    input.style.color = on ? headingColor : '';
+  };
+  input.addEventListener('focus', () => _setSearchColors(true), { signal: sig });
+  input.addEventListener('blur', () => {
+    if (!this._searchQuery?.trim()) _setSearchColors(false);
+  }, { signal: sig });
+  input.addEventListener('input', () => {
+    _setSearchColors(!!input.value.trim() || document.activeElement === input || input.getRootNode().activeElement === input);
+    this._searchSetQuery(input.value);
+  }, { signal: sig });
+}
+
+// What typing does, wherever the field is
+_searchSetQuery(value) {
+  const q = (value || '').trim();
+  this._searchQuery = value;
+  this._searchPage  = 0;
+  clearTimeout(this._searchTimer);
+  if (!q) {
+    this._searchActive  = false;
+    this._searchResults = [];
+    this._searchMaxH    = null;
+    this._reRenderRight(true);
+    this._extSearchSync();
+    return;
+  }
+  const was = this._searchActive;
+  this._searchActive = true;
+  // The column becomes the search at the first letter, not when the results
+  // arrive — until then the categories stayed on the page under the search
+  // bar. The redraw carries focus and caret over (see _reRenderRight).
+  if (!this._searchOnlyLayout) {
+    this._searchLoading = true;
+    this._reRenderSearchResults();
+  }
+  if (!was) this._extSearchSync();
+  // Asked as soon as typing pauses, as Similar titles' search is
+  this._searchTimer = setTimeout(() => this._fetchSearch(q), 350);
+}
+
+// All, films, series, music: a press on the type switch, in either field
+_searchPickType(seg) {
+  const next = seg.dataset.searchType;
+  if (next === this._searchType) return;
+  this._searchSegPrev = this._searchType;
+  this._searchSegAnim = true;
+  try { localStorage.setItem('arr-search-type', next); } catch (_) {}
+  this._searchPage = 0;
+  const segEl = seg.closest('.mt-seg');
+  if (segEl) {
+    const idx = [...segEl.querySelectorAll('.mt-seg-half')].indexOf(seg);
+    if (idx >= 0) {
+      segEl.dataset.segTo = String(idx);
+      requestAnimationFrame(() => { segEl.dataset.seg = String(idx); });
+    }
+  }
+  this._searchSegAnim = false;
+  // Narrowing changes what the answer is, so what is typed is asked again
+  // rather than waiting for the next keystroke.
+  const q = (this._searchQuery || '').trim();
+  clearTimeout(this._searchTimer);
+  if (q) this._fetchSearch(q);
+  else this._reRenderSearchResults();
+}
+
+_searchClearAll() {
+  clearTimeout(this._searchTimer);
+  // Cleared, not left: the caret stays for the next search
+  this._searchKeepFocus = true;
+  this._searchQuery   = '';
+  this._searchActive  = false;
+  this._searchPage    = 0;
+  this._searchResults = [];
+  this._searchMaxH    = null;
+  this._reRenderRight(true);
+  this._extSearchSync();
 }
 
 }

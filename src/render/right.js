@@ -11,8 +11,12 @@ _renderRight() {
   const perPage        = Math.max(2, parseInt(this._cfgGet('discover', 'categoriesCount', 3)) || 3);
   // The search bar can be switched off (a static or e-ink dashboard wants the
   // room); its slot then goes to one more category.
-  const showSearch     = this._cfgGet('discover', 'showSearch', true) !== false;
-  const regularPerPage = showSearch ? perPage - 1 : perPage; // regular cats per page (rest goes to search)
+  // The search's slot. With the field in a pop-up header the column draws it
+  // only while there are results to show; the categories stay as many as with
+  // the field in the column, so what the header saves is the field's height.
+  const searchOn       = this._cfgGet('discover', 'showSearch', true) !== false;
+  const showSearch     = searchOn && (!this._searchExt || this._searchActive);
+  const regularPerPage = searchOn ? perPage - 1 : perPage; // regular cats per page (rest goes to search)
   const hasCalendar    = this._calendar && this._calendar.length > 0;
   const hasPending     = this._hass.user.is_admin && this._pendingRequests.length > 0;
 

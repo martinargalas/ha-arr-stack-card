@@ -78,7 +78,7 @@ class _MtKitMethods {
     // "GONE AUGUST 26TH" is wider than a poster at 11px/nowrap, and clipping it
     // looked like a rendering fault. Wrapping keeps it inside; spanning the
     // poster's full width between the type tag's margins buys back a size.
-    const base = `font-size:10px;font-weight:800;letter-spacing:0.02em;color:rgb(var(--_fg, 255, 255, 255));background:${bg};border:1px solid #ff3b30;border-radius:5px;max-width:100%;box-sizing:border-box;white-space:normal;text-align:center;line-height:1.2;box-shadow:0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.45)${stretch ? ';flex:1' : ''}`;
+    const base = `font-size:10px;font-weight:800;letter-spacing:0.02em;color:rgb(var(--_ptx, 255, 255, 255));background:${bg};border:1px solid #ff3b30;border-radius:5px;max-width:100%;box-sizing:border-box;white-space:normal;text-align:center;line-height:1.2;box-shadow:0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.45)${stretch ? ';flex:1' : ''}`;
 
     if (prefix && compact) {
       return `<span title="${this._escHtml(full)}" style="${base};padding:3px 6px">${this._escHtml(prefix)} ${this._escHtml(this._mtGoneText(days, dueMs, true))}</span>`;
@@ -249,7 +249,8 @@ class _MtKitMethods {
         ? `border:1px solid rgba(${rgb},0.65);background:rgba(${rgb},0.18);color:${solid}`
         : `border:1px solid rgba(${rgb},${bdrA});background:rgba(${rgb},${bgA});color:rgb(var(--_fg, 255, 255, 255))`)
       : 'border:1px solid var(--is-divider);background:var(--is-btn-bg);color:var(--is-text-muted)';
-    return `<button ${attr} title="${this._escHtml(title)}"${off ? ' disabled' : ''} style="width:${size}px;height:${size}px;padding:0;border-radius:50%;cursor:${off ? 'default' : 'pointer'};display:flex;align-items:center;justify-content:center;line-height:0;flex-shrink:0;transition:background 0.15s,color 0.15s;backdrop-filter:blur(8px);${disabled && !busy ? 'opacity:0.55;' : ''}${sty}">${busy ? '<span class="is-spin"></span>' : icon}</button>`;
+    // data-mt-round lets a look restyle the family as one (Apple Home)
+    return `<button ${attr}${active ? ' data-mt-round' : ''} title="${this._escHtml(title)}"${off ? ' disabled' : ''} style="width:${size}px;height:${size}px;padding:0;border-radius:50%;cursor:${off ? 'default' : 'pointer'};display:flex;align-items:center;justify-content:center;line-height:0;flex-shrink:0;transition:background 0.15s,color 0.15s;backdrop-filter:blur(8px);${disabled && !busy ? 'opacity:0.55;' : ''}${sty}">${busy ? '<span class="is-spin"></span>' : icon}</button>`;
   }
 
   // Overview posters reuse the library grid's chrome (.mc shell, gradient

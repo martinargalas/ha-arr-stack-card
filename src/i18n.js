@@ -252,6 +252,7 @@ export const ARR_I18N = {
     snBack:           'Zpět',
     // Search
     searchPlaceholder: 'Hledat filmy a seriály…',
+    extSearchHint:     'Zapněte v Arr Stack Card „Hledání v hlavičce popupu“ a hledání se přesune sem.',
     typeShow:          'Seriál',
     // Pending badges
     fromSeerr:         'ze Seerr',
@@ -1398,6 +1399,7 @@ export const ARR_I18N = {
     snBack:           'Back',
     // Search
     searchPlaceholder: 'Search Movies and Shows…',
+    extSearchHint:     'Turn on “Search in a pop-up header” in an Arr Stack Card and its search moves here.',
     typeShow:          'Show',
     // Pending badges
     fromSeerr:         'from Seerr',
@@ -2545,6 +2547,7 @@ export const ARR_I18N = {
     snBack:           'Retour',
     // Search
     searchPlaceholder: 'Rechercher des films et séries…',
+    extSearchHint:     'Activez « Recherche dans l’en-tête du pop-up » dans une Arr Stack Card et sa recherche viendra ici.',
     typeShow:          'Série',
     // Pending badges
     fromSeerr:         'depuis Seerr',

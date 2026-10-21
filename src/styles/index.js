@@ -111,6 +111,19 @@ ${TOKEN_CSS}
 
       .col > * { position: relative; z-index: 1; }
 
+      /* Liquid glass (render/liquid.js): canvases in a layer under the columns,
+         and a column whose glass they draw drops its CSS glass — keeping only
+         its lift off the wallpaper */
+      .card-body { position: relative; }
+      .lq-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: visible; }
+      .lq-layer canvas.lq { position: absolute; pointer-events: none; }
+      .lg-on {
+        background: none !important; border-color: transparent !important;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        box-shadow: 0 12px 32px rgba(var(--_shadow, 0, 0, 0), 0.14), 0 2px 6px rgba(var(--_shadow, 0, 0, 0), 0.06) !important;
+      }
+      .lg-on::before { opacity: 0 !important; }
+
       /* The column's own text colour, so what inherits it — MDI icons, text
          no rule colours — follows the text token too. */
       .col { color: rgb(var(--_fg, 255, 255, 255)); }
@@ -143,7 +156,8 @@ ${TOKEN_CSS}
       ════════════════════════════════════ */
       .divider    { height: 1px; background: rgba(var(--_fill, 255, 255, 255), calc(0.18 * var(--_a-line, 1))); margin: 9px 0; }
       .spacer     { height: 16px; }
-      .spacer-sm  { height: 8px; }
+      /* Between the right panel's categories */
+      .spacer-sm  { height: var(--arr-section-gap, 8px); }
       /* Every category stands as tall as the tallest one on the page, so the
          headings line up at the same height whichever page is shown and the
          card does not resize as you page through it. The measurement lives in
@@ -1913,7 +1927,7 @@ ${TOKEN_CSS}
       }
 
       .btn-add {
-        background: rgba(var(--accent-rgb), calc(0.28 * var(--_a-ctl, 1))); color: rgba(var(--_pill-fg, 255, 255, 255), 1);
+        background: rgba(var(--accent-rgb), calc(0.28 * var(--_a-ctl, 1))); color: rgba(var(--_ptx, 255, 255, 255), 1);
         width: 28px; height: 28px; padding: 0;
         border-radius: 50%; border: 1px solid rgba(var(--accent-rgb),0.50);
         cursor: pointer; flex-shrink: 0; margin-left: auto;
@@ -1942,9 +1956,11 @@ ${TOKEN_CSS}
       .b-st-pend    { background: rgba(var(--arr-warning-rgb, 255, 149, 0), 0.30);  border: 1px solid rgba(var(--arr-warning-rgb, 255, 149, 0), 0.62); }
       .b-st-proc    { background: rgba(var(--arr-accent-rgb, 10, 132, 255), 0.30); border: 1px solid rgba(var(--arr-accent-rgb, 10, 132, 255), 0.62); }
       .mc-act .badge { margin-left: auto; flex-shrink: 0; }
+      /* On a poster's scrim: the poster text, which stays light whatever the panel's text does */
+      .mc .badge { color: rgba(var(--_ptx, 255, 255, 255), 1); }
       .req-withdraw {
         -webkit-appearance: none; appearance: none;
-        background: rgba(var(--arr-error-rgb, 255, 69, 58), 0.28); color: rgba(var(--_pill-fg, 255, 255, 255), 1);
+        background: rgba(var(--arr-error-rgb, 255, 69, 58), 0.28); color: rgba(var(--_ptx, 255, 255, 255), 1);
         width: 28px; height: 28px; padding: 0; margin: 0;
         border-radius: 50%; border: 1px solid rgba(var(--arr-error-rgb, 255, 69, 58), 0.50);
         cursor: pointer; flex-shrink: 0; margin-left: auto;
@@ -2490,7 +2506,7 @@ ${TOKEN_CSS}
         --is-btn-hbg:    var(--arr-modal-button-hover, rgba(var(--arr-modal-fill-rgb, 255, 255, 255), 0.15));
         --is-btn-hclr:   var(--arr-modal-button-text, rgb(var(--arr-modal-text-rgb, 255, 255, 255)));
         --is-btn-abg:    var(--arr-modal-button-active, rgba(var(--arr-accent-rgb, 10, 132, 255), 0.18));
-        --is-btn-abdr:   var(--arr-modal-button-active, rgba(var(--arr-accent-rgb, 10, 132, 255), 0.40));
+        --is-btn-abdr:   var(--arr-modal-button-active-border, var(--arr-modal-button-active, rgba(var(--arr-accent-rgb, 10, 132, 255), 0.40)));
         --is-btn-aclr:   var(--arr-modal-button-active-text, rgba(100,180,255,0.95));
         --is-fade-btm:   var(--arr-modal-background, rgba(10,10,18,0.94));
         --is-close-bg:   rgba(0,0,0,0.50);
@@ -2539,7 +2555,7 @@ ${TOKEN_CSS}
         --is-btn-hbg:    var(--arr-modal-day-button-hover, rgba(var(--arr-modal-day-fill-rgb, 0, 0, 0), 0.09));
         --is-btn-hclr:   var(--arr-modal-day-button-text, rgba(var(--arr-modal-day-text-rgb, 0, 0, 0), 0.88));
         --is-btn-abg:    var(--arr-modal-day-button-active, rgba(var(--arr-accent-rgb, 10, 132, 255), 0.12));
-        --is-btn-abdr:   var(--arr-modal-day-button-active, rgba(var(--arr-accent-rgb, 10, 132, 255), 0.35));
+        --is-btn-abdr:   var(--arr-modal-day-button-active-border, var(--arr-modal-day-button-active, rgba(var(--arr-accent-rgb, 10, 132, 255), 0.35)));
         --is-btn-aclr:   var(--arr-modal-day-button-active-text, rgba(0,100,220,0.90));
         --is-fade-btm:   var(--arr-modal-day-background, rgba(255,255,255,0.68));
         --is-close-bg:   rgba(0,0,0,0.12);

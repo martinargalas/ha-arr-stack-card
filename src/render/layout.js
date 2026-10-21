@@ -555,7 +555,7 @@ class _LayoutMethods {
 
   _watchOverlays() {
     if (this._overlayObserver || !this.shadowRoot) return;
-    this._overlayObserver = new MutationObserver(() => { this._syncScrollLock(); this._backSync(); });
+    this._overlayObserver = new MutationObserver(() => { this._syncScrollLock(); this._backSync(); this._liquidHeroMaybe(); });
     this._overlayObserver.observe(this.shadowRoot, { childList: true, subtree: true });
     this._syncScrollLock();
     this._backInit();

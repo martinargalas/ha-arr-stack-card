@@ -85,7 +85,8 @@ export const OPACITY_TOKENS = [
 
 // Status colours are one set for the whole card, modals included, so they are
 // read by their public names directly. So are the gap between the columns
-// (--arr-gap) and the card's own padding (--arr-card-padding).
+// (--arr-gap), the card's own padding (--arr-card-padding) and the space
+// between the right panel's categories (--arr-section-gap).
 export const STATUS_TOKENS = ['accent', 'success', 'warning', 'error', 'info'];
 
 // The shades the card has used for each status, so a colour chosen in code
@@ -159,6 +160,7 @@ export const MODAL_TOKENS = [
   ['button-text',        'value'],
   ['button-hover',       'value'],
   ['button-active',      'value'],
+  ['button-active-border', 'value'],
   ['button-active-text', 'value'],
   // Switches and checkboxes
   ['switch-on',          'value'],
@@ -252,11 +254,31 @@ const CARD_ONLY = [
   ...STATUS_TOKENS.map(n => [n, `${n}-rgb`, 'color']),
   ['gap', 'gap', 'length'],
   ['cardPadding', 'card-padding', 'length'],
+  ['sectionGap', 'section-gap', 'length'],
 ];
 const LENGTHS = new Set(['radius', 'padding', 'iconRadius', 'iconPadding']);
 
 // Presets set the same keys a user would, and a key the user sets wins.
 // glass is the card as it always looked, so it sets nothing.
+// glass-cards' control glass (Apple Home): buttons, and the chosen item in a
+// window's menu, toolbar and tabs, as dark glass with a white label
+function homeControls(glass, label, quiet, quietHover, text) {
+  const g = c => `linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 60%), rgba(${c})`;
+  return {
+    // A plain button, and the cards drawn in a button's fill: the quiet pill
+    // of a choice that isn't selected, with the text's colour
+    button: quiet, buttonHover: quietHover, buttonBorder: 'transparent', buttonText: text,
+    // What is on or chosen: the control glass, with a white label
+    buttonActive: g(glass), buttonActiveBorder: 'transparent', buttonActiveText: `rgba(${label})`,
+    navActive: g(glass), navActiveText: `rgba(${label})`,
+    toolbarActive: g(glass), toolbarActiveText: `rgba(${label})`,
+    // A sub-tab stays quieter than the tab it opens from: the quiet pill
+    subActive: quiet, subActiveText: text,
+    // What a toolbar's sort and filters are set to: the text, not the accent
+    filter: text,
+  };
+}
+
 export const STYLE_PRESETS = {
   glass: {},
   // Takes everything from the Home Assistant theme: the card's own surfaces
@@ -397,6 +419,118 @@ export const STYLE_PRESETS = {
       seeds: '#7BC47F', leechers: '#D9453B', searchDone: '#7BC47F', searchDownloading: '#E5A00D',
     },
   },
+
+  // The two looks of glass-cards' dashboard. Both follow Home Assistant's own
+  // light or dark appearance (styleDeclarations' `dark`), and their windows go
+  // light or dark with it rather than with the sun. The refraction on top — the
+  // backdrop bent through a lens along the edge — is drawn by render/liquid.js;
+  // what is here is the glass without it: where WebGL and the wallpaper are not
+  // there to draw from, this is what shows.
+
+  // Liquid Glass (macOS 26): both columns are thick luminous glass — a bright
+  // rim, a specular edge from the top left, a milky glow along the inside.
+  liquid: {
+    background:  'linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.07) 55%, rgba(255, 255, 255, 0.11))',
+    border:      '0 solid transparent',
+    blur:        'blur(30px) saturate(170%)',
+    shine:       0.1,
+    panelShadow: '0 12px 32px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.42), inset 2px 2.5px 1.5px -1.5px rgba(255, 255, 255, 0.95), inset -2px -2.5px 1.5px -1.5px rgba(255, 255, 255, 0.55), inset 0 0 18px 1px rgba(255, 255, 255, 0.26), inset 0 -16px 24px -18px rgba(0, 0, 0, 0.18)',
+    // At night the milk turns to smoke
+    dark: {
+      background: 'linear-gradient(180deg, rgba(36, 39, 47, 0.55), rgba(26, 29, 36, 0.62))',
+      panelShadow: '0 12px 32px rgba(0, 0, 0, 0.30), 0 2px 6px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.16), inset 2px 2.5px 1.5px -1.5px rgba(255, 255, 255, 0.45), inset -2px -2.5px 1.5px -1.5px rgba(255, 255, 255, 0.22), inset 0 0 18px 1px rgba(255, 255, 255, 0.06)',
+    },
+    modal: {
+      background: 'linear-gradient(180deg, rgba(36, 39, 47, 0.86), rgba(26, 29, 36, 0.90))',
+      header: 'rgba(255, 255, 255, 0.06)', menu: '#24272F', shine: 0.12, radius: 26,
+    },
+    modalDay: {
+      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(240, 241, 245, 0.84))',
+      header: 'rgba(255, 255, 255, 0.55)', menu: 'rgba(246, 246, 248, 0.98)',
+      text: '#1C1C1E', textSecondary: '#3C3C43', textMuted: '#6E6E73', fill: '#1C1C1E', line: '#1C1C1E', shine: 0.2,
+    },
+  },
+
+  // Apple Home, as glass-cards draws it: the downloads as the app's sidebar —
+  // dark glass tinted by the wallpaper, white text, orange icons — and the
+  // posters on a pop-up's big panel in the bars' material: milky light glass
+  // with dark text by day, graphite with white text at night. The search
+  // header is the same bar. The sidebar is the downloads column wherever it
+  // sits, so it moves with it when the sides are swapped.
+  'apple-home': {
+    left: {
+      background:  'linear-gradient(rgba(30, 42, 62, 0.42), rgba(30, 42, 62, 0.42))',
+      border:      '0.5px solid rgba(255, 255, 255, 0.10)',
+      blur:        'blur(40px) saturate(150%)',
+      shine:       0,
+      panelShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+      text: '#FFFFFF', heading: '#FFFFFF', icon: '#FF9F0A', buttonIcon: '#FF9F0A',
+      // The sidebar has no boxes: what is in it stands on the glass itself,
+      // as in glass-cards' sidebar — no fill, no frame
+      lineOpacity: 0, boxOpacity: 0,
+    },
+    right: {
+      // glass-cards' bar material, made firmer: at its own 0.62 → 0.22 the
+      // panel and the header took the colour of whatever lay under them, so a
+      // dashboard without a pop-up, or a short header over a darker patch,
+      // looked different from the panel beside it
+      background:  'linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.5) 55%, rgba(255, 255, 255, 0.6))',
+      border:      '0 solid transparent',
+      // glass-cards' bars blur 10px and saturate what is behind, over a
+      // pop-up's backdrop already blurred into grey; on a plain dashboard the
+      // wallpaper's waves and its blue came through, stronger on a short bar
+      // over a deep patch. A heavy blur that draws most of the colour out keeps
+      // the glass close to the same white on any ground.
+      blur:        'blur(40px) saturate(40%) brightness(1.08)',
+      shine:       0,
+      panelShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(255, 255, 255, 0.45), inset 0 0 14px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.06), 0 6px 18px rgba(0, 0, 0, 0.08)',
+      text: '#1C1C1E', textSecondary: '#3C3C43', textMuted: '#6E6E73',
+      heading: '#1C1C1E', headingLine: '#3C3C43', icon: '#FF9F0A',
+      fill: '#3C3C43', line: '#3C3C43', button: '#3C3C43', buttonText: '#1C1C1E', buttonIcon: '#1C1C1E', pillText: '#1C1C1E',
+      dot: '#8E8E93', dotActive: '#1C1C1E',
+    },
+    dark: {
+      left: {
+        background:  'linear-gradient(rgba(24, 26, 32, 0.60), rgba(24, 26, 32, 0.60))',
+        border:      '0.5px solid rgba(255, 255, 255, 0.07)',
+        blur:        'blur(40px) saturate(150%)',
+        shine:       0,
+        panelShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
+        text: '#DBDBDB', heading: '#FFFFFF', icon: '#FF9F0A', buttonIcon: '#FF9F0A',
+        lineOpacity: 0, boxOpacity: 0,
+      },
+      right: {
+        background:  'linear-gradient(180deg, rgba(36, 39, 47, 0.82), rgba(26, 29, 36, 0.86))',
+        border:      '0 solid transparent',
+          blur:        'blur(40px) saturate(50%) brightness(1.04)',
+        shine:       0,
+        panelShadow: 'inset 0 0.5px 0 rgba(255, 255, 255, 0.38), inset 0 -0.5px 0 rgba(255, 255, 255, 0.12), inset 0 0 12px rgba(255, 255, 255, 0.06), 0 4px 14px rgba(0, 0, 0, 0.22)',
+        text: '#DBDBDB', textSecondary: '#FFFFFF', textMuted: '#9E9EA6',
+        heading: '#DBDBDB', headingLine: '#DBDBDB', icon: '#FF9F0A',
+        fill: '#FFFFFF', line: '#FFFFFF', button: '#FFFFFF', buttonText: '#DBDBDB', buttonIcon: '#DBDBDB', pillText: '#DBDBDB',
+        dot: '#8E8E93', dotActive: '#FFFFFF',
+      },
+    },
+    // The windows are the posters' panel: its glass by day and by night, a
+    // firmer blur since they lie over the card, and glass-cards' controls —
+    // quiet pills for buttons, dark glass with white labels for what is chosen
+    modal: {
+      background: 'linear-gradient(180deg, rgba(36, 39, 47, 0.86), rgba(26, 29, 36, 0.9))',
+      blur: 'blur(24px) saturate(170%) brightness(1.04)',
+      header: 'rgba(255, 255, 255, 0.06)', menu: '#262A33', shine: 0, radius: 26,
+      text: '#DBDBDB', textSecondary: '#FFFFFF', textMuted: '#9E9EA6', fill: '#FFFFFF', line: '#FFFFFF',
+      ...homeControls('74, 79, 92, 0.7', '255, 255, 255, 0.86', 'rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.14)', 'rgba(255, 255, 255, 0.92)'),
+    },
+    modalDay: {
+      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.5) 55%, rgba(255, 255, 255, 0.58))',
+      blur: 'blur(24px) saturate(170%) brightness(1.04)',
+      header: 'rgba(255, 255, 255, 0.35)', menu: 'rgba(246, 246, 248, 0.98)', shine: 0,
+      // The windows' secondary and muted text is drawn at half strength: one
+      // step darker, or it fades into the light glass
+      text: '#1C1C1E', textSecondary: '#1C1C1E', textMuted: '#3C3C43', fill: '#3C3C43', line: '#3C3C43',
+      ...homeControls('22, 30, 46, 0.62', '255, 255, 255, 1', 'rgba(118, 118, 128, 0.16)', 'rgba(118, 118, 128, 0.24)', '#1C1C1E'),
+    },
+  },
 };
 
 // A value lands inside a <style>; nothing in it may close the rule.
@@ -431,7 +565,7 @@ function surfaceValue(key, v) {
   if (typeof v === 'number') {
     if (key === 'shine') return String(Math.max(0, Math.min(1, v > 1 ? v / 100 : v)));
     if (key === 'blur') return v > 0 ? `blur(${v}px) saturate(100%)` : 'none';
-    if (LENGTHS.has(key) || key === 'gap' || key === 'cardPadding') return `${v}px`;
+    if (LENGTHS.has(key) || key === 'gap' || key === 'cardPadding' || key === 'sectionGap') return `${v}px`;
   }
   if (key === 'blur' && (v === false || v === 'none' || v === 0)) return 'none';
   const s = safe(v);
@@ -450,10 +584,12 @@ function declsFor(obj, prefix, keys, out, bad) {
 
 // The declarations styles: sets on the card's host, and the keys it could not
 // read (shown as a warning, so a typo in a colour is not silently ignored).
-export function styleDeclarations(styles = {}) {
-  const preset = STYLE_PRESETS[styles.preset] || {};
+export function styleDeclarations(styles = {}, { dark = false } = {}) {
+  const base = STYLE_PRESETS[styles.preset] || {};
+  // A preset may look different in Home Assistant's dark appearance
+  const preset = dark && base.dark ? { ...base, ...base.dark } : base;
   const merged = { ...preset, ...styles };
-  delete merged.modal; delete merged.modalDay;
+  delete merged.modal; delete merged.modalDay; delete merged.dark;
   const out = [], bad = [];
   declsFor(merged, '', [...SIDE_COLORS, ...SIDE_SURFACE, ...SIDE_OPACITY, ...CARD_ONLY.map(([k, t]) => [k, t])], out, bad);
   for (const side of ['left', 'right']) {
@@ -464,8 +600,9 @@ export function styleDeclarations(styles = {}) {
     }
   }
   const modalKeys = MODAL_TOKENS.map(([t]) => [camel(t.replace(/-rgb$/, '')), t]);
-  const presetModal = preset.modal || {};
   for (const [key, prefix, extra] of [['modal', 'modal-', MODAL_ONLY], ['modalDay', 'modal-day-', []]]) {
+    // A preset's day windows are its own where it has them, else its night ones
+    const presetModal = (key === 'modalDay' && preset.modalDay) || preset.modal || {};
     const m = { ...presetModal, ...(styles[key] || {}) };
     declsFor(m, prefix, [...modalKeys, ...extra.map(([t]) => [camel(t), t])], out, bad);
   }

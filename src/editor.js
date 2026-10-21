@@ -1,102 +1,8 @@
 // Arr Stack Card — Visual Editor
 import { stylesTabHtml, wireStylesTab, STYLES_TAB_CSS } from './editor-styles.js';
 
-class ArrStackCardEditor extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this._config = {};
-    this._caps = null;
-    this._activeTab = 'general';
-  }
-
-  set hass(hass) {
-    const wasAdmin = this._hass?.user?.is_admin;
-    this._hass = hass;
-    if (!this._caps) this._loadCaps();
-    if (wasAdmin !== hass?.user?.is_admin) this._render();
-  }
-
-  async _loadCaps() {
-    try {
-      this._caps = await this._hass.callApi('GET', 'arr_stack/capabilities/info');
-      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge || this._caps.rtorrent || this._caps.transmission;
-      if (!hasDownloads && this._config.layout !== 'right') {
-        this._config = { ...this._config, layout: 'right' };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config }, bubbles: true, composed: true }));
-      }
-      if (this._caps.overseerr) {
-        try {
-          const accts = await this._hass.callApi('GET', 'arr_stack/overseerr/seerr_accounts');
-          this._seerrAccounts = accts || [];
-        } catch (_) { this._seerrAccounts = []; }
-      }
-      this._render();
-    } catch (_) {
-      this._caps = {};
-    }
-  }
-
-  setConfig(config) {
-    config = config || {};
-    if (Array.isArray(config.categories)) {
-      const CAT_MAP = { radarr: 'recentlyAdded', sonarr: 'recentlyRequested' };
-      const seen = new Set();
-      config = {
-        ...config,
-        categories: config.categories
-          .map(c => CAT_MAP[c.id] ? { ...c, id: CAT_MAP[c.id] } : c)
-          .filter(c => seen.has(c.id) ? false : seen.add(c.id)),
-      };
-    }
-    // Home Assistant hands back every config this editor sends. Redrawing on
-    // our own change would take the focus out of the field being typed in and
-    // fold the open style groups, so that one is only stored.
-    if (this._sent && JSON.stringify(config) === this._sent) { this._config = config; return; }
-    this._config = config;
-    this._render();
-  }
-
-  connectedCallback() {
-    this._render();
-  }
-
-  _cfg(group, key, fallback) {
-    const v = this._config?.[group]?.[key];
-    if (v !== undefined) return v;
-    const flat = this._config?.[key];
-    if (flat !== undefined) return flat;
-    return fallback;
-  }
-
-  _val(key, fallback) {
-    const v = this._config?.[key];
-    return v !== undefined ? v : fallback;
-  }
-
-  _styleVal(key, fallback) {
-    const v = this._config?.styles?.[key];
-    return v !== undefined ? v : fallback;
-  }
-
-  // Extract hex from stored hex or rgba string
-  _toHex(val, fallback) {
-    if (!val) return fallback;
-    if (/^#/.test(val)) return val;
-    // rgba(r,g,b,...) → #rrggbb
-    const m = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-    if (m) return '#' + [m[1],m[2],m[3]].map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
-    return fallback;
-  }
-
-  _render() {
-    const perfMode = !!this._styleVal('performanceMode', false);
-    // Styles had a tab of its own for a while
-    if (this._activeTab === 'styles') this._activeTab = 'appearance';
-    const tab = this._activeTab;
-
-    this.shadowRoot.innerHTML = `
-      <style>
+// The editors' own look: the card's editor and the search header's share it
+const EDITOR_CSS = `
         :host {
           display: block;
           font-family: var(--paper-font-body1_-_font-family, -apple-system, sans-serif);
@@ -197,6 +103,105 @@ class ArrStackCardEditor extends HTMLElement {
         .cat-item.dragging { opacity: 0.4; }
         .cat-label { flex: 1; font-size: 13px; }
         .cat-disabled .cat-label { opacity: 0.45; }
+`;
+
+class ArrStackCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._config = {};
+    this._caps = null;
+    this._activeTab = 'general';
+  }
+
+  set hass(hass) {
+    const wasAdmin = this._hass?.user?.is_admin;
+    this._hass = hass;
+    if (!this._caps) this._loadCaps();
+    if (wasAdmin !== hass?.user?.is_admin) this._render();
+  }
+
+  async _loadCaps() {
+    try {
+      this._caps = await this._hass.callApi('GET', 'arr_stack/capabilities/info');
+      const hasDownloads = this._caps.qbit || this._caps.sabnzbd || this._caps.nzbget || this._caps.deluge || this._caps.rtorrent || this._caps.transmission;
+      if (!hasDownloads && this._config.layout !== 'right') {
+        this._config = { ...this._config, layout: 'right' };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config }, bubbles: true, composed: true }));
+      }
+      if (this._caps.overseerr) {
+        try {
+          const accts = await this._hass.callApi('GET', 'arr_stack/overseerr/seerr_accounts');
+          this._seerrAccounts = accts || [];
+        } catch (_) { this._seerrAccounts = []; }
+      }
+      this._render();
+    } catch (_) {
+      this._caps = {};
+    }
+  }
+
+  setConfig(config) {
+    config = config || {};
+    if (Array.isArray(config.categories)) {
+      const CAT_MAP = { radarr: 'recentlyAdded', sonarr: 'recentlyRequested' };
+      const seen = new Set();
+      config = {
+        ...config,
+        categories: config.categories
+          .map(c => CAT_MAP[c.id] ? { ...c, id: CAT_MAP[c.id] } : c)
+          .filter(c => seen.has(c.id) ? false : seen.add(c.id)),
+      };
+    }
+    // Home Assistant hands back every config this editor sends. Redrawing on
+    // our own change would take the focus out of the field being typed in and
+    // fold the open style groups, so that one is only stored.
+    if (this._sent && JSON.stringify(config) === this._sent) { this._config = config; return; }
+    this._config = config;
+    this._render();
+  }
+
+  connectedCallback() {
+    this._render();
+  }
+
+  _cfg(group, key, fallback) {
+    const v = this._config?.[group]?.[key];
+    if (v !== undefined) return v;
+    const flat = this._config?.[key];
+    if (flat !== undefined) return flat;
+    return fallback;
+  }
+
+  _val(key, fallback) {
+    const v = this._config?.[key];
+    return v !== undefined ? v : fallback;
+  }
+
+  _styleVal(key, fallback) {
+    const v = this._config?.styles?.[key];
+    return v !== undefined ? v : fallback;
+  }
+
+  // Extract hex from stored hex or rgba string
+  _toHex(val, fallback) {
+    if (!val) return fallback;
+    if (/^#/.test(val)) return val;
+    // rgba(r,g,b,...) → #rrggbb
+    const m = val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (m) return '#' + [m[1],m[2],m[3]].map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
+    return fallback;
+  }
+
+  _render() {
+    const perfMode = !!this._styleVal('performanceMode', false);
+    // Styles had a tab of its own for a while
+    if (this._activeTab === 'styles') this._activeTab = 'appearance';
+    const tab = this._activeTab;
+
+    this.shadowRoot.innerHTML = `
+      <style>
+${EDITOR_CSS}
         ${STYLES_TAB_CSS}
       </style>
 
@@ -390,6 +395,16 @@ class ArrStackCardEditor extends HTMLElement {
             <label class="toggle"><input type="checkbox" data-group="discover" data-key="showSearch" ${this._cfg('discover','showSearch',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
           <div class="hint">Off gives its slot to one more category — for a static or e-ink dashboard.</div>
+          <div class="row">
+            <span class="row-label">Search in a pop-up header</span>
+            <label class="toggle"><input type="checkbox" data-key="search_in_header" ${this._config.search_in_header ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="hint">Put an <b>Arr Stack Search</b> card in the header of the pop-up this card is in (Bubble Card with its header hidden, or any header that takes cards) and the field moves there — the card is a field shorter. Until one is on the page, the field stays here.</div>
+          ${this._config.search_in_header ? `<div class="row">
+            <span class="row-label">Link</span>
+            <input type="text" data-text-key="search_link" value="${String(this._config.search_link || '').replace(/"/g, '&quot;')}" placeholder="optional" style="width:140px"/>
+          </div>
+          <div class="hint">Only with several of these cards on one page: give this card and its search card the same name.</div>` : ''}
           <div class="hint">Number of poster columns per category row, search results and More overlay. Default: 4.</div>
           <div class="row">
             <span class="row-label">Show More card on page</span>
@@ -804,6 +819,19 @@ class ArrStackCardEditor extends HTMLElement {
       el.addEventListener('change', () => this._update({ [el.dataset.key]: el.checked }));
     });
 
+    // The search header's switch shows or hides its Link field
+    this.shadowRoot.querySelector('input[data-key="search_in_header"]')?.addEventListener('change', () => this._render());
+    // Top-level text fields; an emptied one leaves the config
+    this.shadowRoot.querySelectorAll('input[type="text"][data-text-key]').forEach(el => {
+      el.addEventListener('change', () => {
+        const v = el.value.trim();
+        const next = { ...this._config };
+        if (v) next[el.dataset.textKey] = v; else delete next[el.dataset.textKey];
+        this._config = next;
+        this._update({});
+      });
+    });
+
     // Grouped checkboxes
     this.shadowRoot.querySelectorAll('input[type="checkbox"][data-group]').forEach(el => {
       el.addEventListener('change', () => {
@@ -1057,3 +1085,79 @@ class ArrStackCardEditor extends HTMLElement {
 }
 
 customElements.define('arr-stack-card-editor', ArrStackCardEditor);
+
+// The search header's editor: what it shows, which card it searches for, and
+// the Styles tab the card has — empty, it wears the card's look.
+class ArrStackSearchEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._config = {};
+    this._activeTab = 'general';
+  }
+
+  set hass(hass) { this._hass = hass; }
+
+  setConfig(config) {
+    config = config || {};
+    if (this._sent && JSON.stringify(config) === this._sent) { this._config = config; return; }
+    this._config = config;
+    this._render();
+  }
+
+  _update(patch) {
+    const next = { ...this._config, ...patch };
+    for (const [k, v] of Object.entries(next)) if (v === undefined || v === '') delete next[k];
+    this._config = next;
+    this._sent = JSON.stringify(this._config);
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config }, bubbles: true, composed: true }));
+  }
+
+  _render() {
+    const c = this._config;
+    const tab = this._activeTab;
+    const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const text = (key, label, ph = '') => `<div class="row"><span class="row-label">${label}</span>
+      <input type="text" data-sk="${key}" value="${esc(c[key])}" placeholder="${ph}" style="width:180px"/></div>`;
+    const toggle = (key, label, on) => `<div class="row"><span class="row-label">${label}</span>
+      <label class="toggle"><input type="checkbox" data-sb="${key}" ${on ? 'checked' : ''}><span class="toggle-slider"></span></label></div>`;
+    const general = `
+      <div class="section">
+        ${toggle('header', 'Pop-up header', !!c.header)}
+        <div class="hint">On: a whole header — icon, name, the field and a close button. For a Bubble Card pop-up with <code>show_header: false</code>, as its first card. Off: the field alone, for a header that brings its own.</div>
+        ${c.header ? text('name', 'Name', 'Movies') + text('icon', 'Icon', 'mdi:movie-play-outline')
+          + toggle('close', 'Close button', c.close !== false)
+          + '<div class="hint">Closes the pop-up, as its own header did.</div>' : ''}
+        ${toggle('bare', 'No background', c.background === 'none')}
+        <div class="hint">For a header that draws its own surface: only the field and buttons are left.</div>
+        ${text('link', 'Link', 'optional')}
+        <div class="hint">Searches for the Arr Stack Card that has <b>Search in a pop-up header</b> on. Only with several of those on one page: give the card the same Link.</div>
+      </div>`;
+    this.shadowRoot.innerHTML = `
+      <style>
+${EDITOR_CSS}
+        ${STYLES_TAB_CSS}
+      </style>
+      <div class="tabs">
+        <button class="tab${tab === 'general' ? ' active' : ''}" data-tab="general">General</button>
+        <button class="tab${tab === 'appearance' ? ' active' : ''}" data-tab="appearance">Appearance</button>
+      </div>
+      ${tab === 'general' ? general : `<div class="hint" style="margin:0 0 12px">Left empty, the header looks like the card it searches for — its preset and colours. What you set here is laid over that.</div>${stylesTabHtml(this)}`}`;
+
+    this.shadowRoot.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+      this._activeTab = b.dataset.tab;
+      this._render();
+    }));
+    this.shadowRoot.querySelectorAll('input[data-sk]').forEach(el => el.addEventListener('change', () => this._update({ [el.dataset.sk]: el.value.trim() })));
+    this.shadowRoot.querySelectorAll('input[data-sb]').forEach(el => el.addEventListener('change', () => {
+      const k = el.dataset.sb;
+      if (k === 'bare') this._update({ background: el.checked ? 'none' : undefined });
+      else if (k === 'close') this._update({ close: el.checked ? undefined : false });
+      else this._update({ [k]: el.checked || undefined });
+      this._render();
+    }));
+    if (tab === 'appearance') wireStylesTab(this, this.shadowRoot);
+  }
+}
+
+customElements.define('arr-stack-search-editor', ArrStackSearchEditor);

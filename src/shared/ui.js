@@ -30,11 +30,11 @@ export const ICONS = {
 
 /**
  * Returns the day/night CSS class string.
- * @param {object} ctx - card instance (has _isDaytime, _config)
+ * @param {object} ctx - card instance (has _isDay)
  * @returns {' popup-day'|''}
  */
 export function dayClass(ctx) {
-  return (ctx._isDaytime && ctx._config?.styles?.dayNightMode !== false) ? ' popup-day' : '';
+  return ctx._isDay ? ' popup-day' : '';
 }
 
 /** The widths the card lays out by, in px. Each is a max-width: "this wide or less". */

@@ -109,7 +109,7 @@ class _ActivityTilesMethods {
     return `<div class="tl-card u-sec-body" data-act-open="queue">
       <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
       <div class="u-row-sb-w">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(var(--_shade, 0, 0, 0), 0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t('actQueue')}</span>
+        <span class="u-media-badge-s">${this._t('actQueue')}</span>
         ${badge}
       </div>
       <div data-act-content class="u-flex-ovh-rel">${rowsHtml}</div>
@@ -139,7 +139,7 @@ class _ActivityTilesMethods {
     return `<div class="tl-card u-sec-body" data-act-open="history">
       <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <div class="u-row-sb-w">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(var(--_shade, 0, 0, 0), 0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t('actHistory')}</span>
+        <span class="u-media-badge-s">${this._t('actHistory')}</span>
       </div>
       <div data-act-content class="u-flex-ovh-rel">${content}</div>
     </div>`;
@@ -168,7 +168,7 @@ class _ActivityTilesMethods {
     return `<div class="tl-card u-sec-body" data-act-open="blocklist">
       <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
       <div class="u-row-sb-w">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(var(--_shade, 0, 0, 0), 0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t('actBlocklist')}</span>
+        <span class="u-media-badge-s">${this._t('actBlocklist')}</span>
       </div>
       <div data-act-content class="u-flex-ovh-rel">${content}</div>
     </div>`;
@@ -364,7 +364,7 @@ class _ActivityTilesMethods {
     return `<div class="tl-card u-sec-body" data-act-open="missing">
       <div class="u-bg-icon"><svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
       <div class="u-row-sb-w">
-        <span style="font-size:10px;font-weight:800;color:var(--is-text);background:rgba(var(--_shade, 0, 0, 0), 0.45);backdrop-filter:blur(4px);padding:2px 6px;border-radius:4px;line-height:1">${this._t('actMissing')}</span>
+        <span class="u-media-badge-s">${this._t('actMissing')}</span>
         ${badge}
       </div>
       <div class="u-flex-rel">${content}</div>

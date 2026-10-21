@@ -119,6 +119,11 @@ class _DropdownMethods {
       ov.querySelectorAll('.arr-dd-group').forEach(g => { g.hidden = !!q; });
     });
 
+    // Above whatever window it was opened from: some sit at 10000 (the queue's
+    // Remove dialog), and at a fixed 2100 the list opened behind them.
+    const top = Math.max(0, ...[...this.shadowRoot.querySelectorAll('.popup-overlay')]
+      .map(o => parseInt(o.style.zIndex || getComputedStyle(o).zIndex, 10) || 0));
+    if (top >= 2100) ov.style.zIndex = String(top + 1);
     this.shadowRoot.appendChild(ov);
     this._ddPlace(panel, sel.closest('.mt-tb-sel, .mt-fsel') || sel, this._ddBounds(sel));
     ov.querySelector('.arr-dd-opt.is-sel')?.scrollIntoView?.({ block: 'nearest' });

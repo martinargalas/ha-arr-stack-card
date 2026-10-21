@@ -56,7 +56,7 @@ class _MaintainerrOverviewRenderMethods {
     const EXCL_ICO = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:block"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`;
     // Overview posters are far larger than the category cards, so the round
     // actions are scaled up from .btn-add's 28px to keep the same visual weight
-    const _rnd = (bdr, bg) => `width:34px;height:34px;padding:0;border-radius:50%;border:1px solid ${bdr};background:${bg};color:rgb(var(--_fg, 255, 255, 255));cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:0;backdrop-filter:blur(8px)`;
+    const _rnd = (bdr, bg) => `width:34px;height:34px;padding:0;border-radius:50%;border:1px solid ${bdr};background:${bg};color:rgb(var(--_ptx, 255, 255, 255));cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:0;backdrop-filter:blur(8px)`;
 
     // Countdown replaces a plain "in a collection" tag: membership is implied by
     // having a deletion date, and the date is the part that is actually useful.

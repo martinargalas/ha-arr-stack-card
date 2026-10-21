@@ -317,6 +317,25 @@ Rows in the qBittorrent, Deluge, rTorrent, Transmission, SABnzbd and NZBGet list
 
 Anything added by hand, outside Radarr and Sonarr, has nothing to open. Clicking those says so plainly instead of opening the wrong title.
 
+#### Search in a pop-up header
+
+If the card lives in a pop-up — Bubble Card, for example — its search field can move up into the pop-up's header, next to the close button. The card gets a little shorter, and the search is always in reach.
+
+1. In the card's editor, turn on **Search in a pop-up header**.
+2. Add the **Arr Stack Search** card to the pop-up, above the Arr Stack Card. Turn on **Pop-up header** in its editor to get a whole header — icon, name, the search field and a close button — sized like Bubble Card's own.
+
+```yaml
+- type: custom:arr-stack-search
+  header: true
+  name: Movies
+  icon: mdi:movie-play-outline
+- type: custom:arr-stack-card
+  search_in_header: true
+  # …the rest of your card
+```
+
+The header wears the card's look, whichever preset or colours you use. Typing in it searches in the card as before, and the results appear in the card. Several cards with a header each on one page? Give each pair the same **Link**.
+
 ### Poster display settings
 
 Control what appears on poster cards across all categories. All options are available in the visual editor under **Posters**.
@@ -339,7 +358,7 @@ Control what appears on poster cards across all categories. All options are avai
 
 ### Appearance & UX
 
-- **Styling** — every colour, surface and corner can be changed, for the whole card or one panel at a time, and the modals by day and by night. A preset takes the look from your Home Assistant theme (`styles.preset: ha`), so the card matches the rest of your dashboard in one line — or gives it a palette of its own: Nord, Catppuccin or Cinema; the editor's **Appearance** tab has a colour picker, a hex/RGB field and an opacity slider for each setting, in folding categories. The same settings work from a Home Assistant theme or card-mod. See **[STYLING.md](STYLING.md)**
+- **Styling** — every colour, surface and corner can be changed, for the whole card or one panel at a time, and the modals by day and by night. A preset takes the look from your Home Assistant theme (`styles.preset: ha`), so the card matches the rest of your dashboard in one line — or gives it a look of its own: Nord, Catppuccin, Cinema, or **Apple Home** — a dark sidebar for the downloads and light frosted glass for the posters, like Apple's Home app, light by day and dark at night; the editor's **Appearance** tab has a colour picker, a hex/RGB field and an opacity slider for each setting, in folding categories. The same settings work from a Home Assistant theme or card-mod. See **[STYLING.md](STYLING.md)**
 - One visual language across every category and panel — the same capsules, tables, filters and pagination everywhere, so a panel you have never opened still works the way you expect
 - Day / night theming based on `sun.sun`
 - Responsive layout — mobile, tablet, desktop
@@ -349,7 +368,7 @@ Control what appears on poster cards across all categories. All options are avai
 - Visual card editor in HA (no YAML required for basic setup)
 - Performance mode — disables backdrop blur
 - Category colour overlays — colour-tinted poster overlays per section, toggle via `styles.categoryOverlays`
-- Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos, in their own colours or one colour of your choice; or MDI icons (**App icons** under Icons in the Appearance tab)
+- Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos, in their own colours or one colour of your choice; or MDI icons; or no icons at all next to the section titles (**App icons** under Icons in the Appearance tab)
 - UI scale — proportionally scales all card content via `styles.uiScale`. Useful on large monitors or TVs where the default size is too small
 - Left panel width — adjustable via `styles.leftPanelWidth` (percentage of card width, default 40)
 - Download client order — enable, disable, and reorder qBittorrent, Deluge, rTorrent, Transmission, SABnzbd, and NZBGet from the visual editor. Only configured clients appear in the list

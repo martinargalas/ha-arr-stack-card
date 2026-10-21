@@ -8,6 +8,8 @@ import { ARR_I18N } from './i18n.js';
 import { installLazy } from './shared/lazy.js';
 import { statusTok } from './shared/ui.js';
 import { STYLES } from './styles/index.js';
+import { arrSharedSheet } from './styles/sheet.js';
+import { ARR_LINK, barForCard } from './shared/link.js';
 import { uiMixin } from './render/ui.js';
 import { sectionsMixin } from './render/sections.js';
 import { itemsMixin } from './render/items.js';
@@ -78,22 +80,8 @@ import { similarRenderMixin } from './render/similar.js';
 import { wireSimilarMixin } from './wire/similar.js';
 import { BP, maxWidth, savedDlSort } from './shared/ui.js';
 
-// STYLES runs to some 235 KB. A <style> per card made every card on a
-// dashboard parse all of it again; one constructed sheet is parsed once and
-// adopted by each card's shadow root. Browsers without constructable sheets
-// keep the <style>.
-let ARR_SHEET;
-function arrSharedSheet() {
-  if (ARR_SHEET !== undefined) return ARR_SHEET;
-  try {
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(STYLES);
-    ARR_SHEET = sheet;
-  } catch (_) {
-    ARR_SHEET = null;
-  }
-  return ARR_SHEET;
-}
+// The presets whose glass follows Home Assistant's appearance and is drawn by render/liquid.js
+const LIQUID_LOOKS = new Set(['liquid', 'apple-home']);
 
 class ArrStackCard extends HTMLElement {
   constructor() {
@@ -458,6 +446,9 @@ class ArrStackCard extends HTMLElement {
     }
     this._config = config;
     this._debug = !!config.debug;
+    // A header that searches for this card may have been waiting for it
+    ARR_LINK.cards.add(this);
+    this._extSearchNotify();
     // Pokud je karta už inicializována, obnov sticky nav observer s novým offsetem
     if (this._initialized) {
       this._wireStickyNav();
@@ -483,6 +474,15 @@ class ArrStackCard extends HTMLElement {
       this._resizeObserver.observe(this);
       this._wireVisibility();
       return;
+    }
+
+    // Night fell or Home Assistant turned dark: the glass looks follow it
+    const night = this._lookNight;
+    if (prev && night !== this._lookNightWas && LIQUID_LOOKS.has(this._config?.styles?.preset)) {
+      this._lookNightWas = night;
+      this._applyTheme();
+      this._render();
+      this._renderPopupEl?.();
     }
 
     // Detect Plex/Jellyfin stream changes — re-render streams section immediately
@@ -590,6 +590,9 @@ class ArrStackCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    ARR_LINK.cards.delete(this);
+    if (this._lqLayers?.size) this._liquidOff();
+    this._extSearchNotify();
     if (this._overlayObserver) {
       this._overlayObserver.disconnect();
       this._overlayObserver = null;
@@ -641,6 +644,8 @@ class ArrStackCard extends HTMLElement {
   }
 
   connectedCallback() {
+    ARR_LINK.cards.add(this);
+    this._extSearchNotify();
     // Karta byla odpojena a znovu zapojena (např. Bubble Card přepnutí/schování).
     // _initialized zůstane true — HA set hass() přeskočí re-init, takže intervaly
     // a nav watcher musíme obnovit sami.
@@ -953,6 +958,9 @@ class ArrStackCard extends HTMLElement {
       requestAnimationFrame(() => { this._checkBadgeOverflow(); this._fixPeerChips(); });
     });
     this._trimActivityCards();
+    // A search header lines its field up with the posters drawn just now
+    this._extSearchSync('align');
+    requestAnimationFrame(() => this._liquidMaybe());
   }
 
   _renderDlInfoEl() {
@@ -1114,7 +1122,33 @@ class ArrStackCard extends HTMLElement {
     }
     return parts.join(' ');
   }
-  get _isDay()  { return !!(this._isDaytime && this._config?.styles?.dayNightMode !== false); }
+  get _isDay()  {
+    if (LIQUID_LOOKS.has(this._config?.styles?.preset)) return !this._lookNight;
+    return !!(this._isDaytime && this._config?.styles?.dayNightMode !== false);
+  }
+
+  // Night for the glass looks, by their appearance as glass-dashboard's:
+  // Home Assistant's dark mode (auto), always light or dark, or the sun
+  get _lookNight() {
+    const a = this._config?.styles?.appearance || 'auto';
+    if (a === 'dark') return true;
+    if (a === 'light') return false;
+    if (a === 'sun') return this._hass?.states?.['sun.sun']?.state === 'below_horizon';
+    return !!this._hass?.themes?.darkMode;
+  }
+
+  // The liquid glass of the Liquid Glass and Apple Home presets. Its code is
+  // fetched only once one of them is on, or to take the glass off again.
+  // The lens on a detail's buttons follows the windows, once a frame
+  _liquidHeroMaybe() {
+    if (this._config?.styles?.preset !== 'apple-home' && !this._lqHero) return;
+    if (this._lqHeroFrame) return;
+    this._lqHeroFrame = requestAnimationFrame(() => { this._lqHeroFrame = 0; this._liquidHeroSync(); });
+  }
+
+  _liquidMaybe() {
+    if (LIQUID_LOOKS.has(this._config?.styles?.preset) || this._lqLayers?.size) this._liquidSync();
+  }
 
   // ─────────────────────────────────────────────
   // Age rating (certification)
@@ -1165,6 +1199,29 @@ class ArrStackCard extends HTMLElement {
     // carries which one it was, so a release that ships an install missing its
     // windows shows up within hours instead of on someone's dashboard.
     this._reportChunkFailure(name);
+  }
+
+  // ── The search field in a pop-up header (arr-stack-search) ──
+  // The header that searches for this card, while one is on the page
+  get _searchExt() { return barForCard(this); }
+
+  // Headers find their card again: one was added, removed or reconfigured
+  _extSearchNotify() {
+    for (const b of ARR_LINK.bars) b._bind?.();
+  }
+
+  // The header redraws what changed in the field (the type switch, the clear
+  // button) or in the card's look
+  _extSearchSync(what = 'bar') {
+    this._searchExt?._syncFromCard?.(what);
+  }
+
+  // Called by a header that has just paired with this card or let go of it:
+  // the column draws the field again, or stops drawing it
+  _extSearchChanged() {
+    if (!this._initialized || !this.shadowRoot?.getElementById('col-right')) return;
+    this._reRenderRight(true);
+    this._liquidMaybe();
   }
 
   // Only an admin editing the dashboard ever opens the editor, so it is fetched
@@ -1280,6 +1337,7 @@ ArrStackCard._lazy = installLazy(ArrStackCard.prototype, {
   maintainerr: { load: () => import('./chunks/maintainerr.js'), entries: ['_openMaintainerrModal', '_mtOpenCollectionDetail', '_mtLoadTab'] },
   activity:    { load: () => import('./chunks/activity.js'),    entries: ['_openActivityModal', '_actLoadTab'] },
   library:     { load: () => import('./chunks/library.js'),     entries: ['_openLibModal', '_libBodyHtml', '_libFilteredItems', '_wireLibModalBody'] },
+  liquid:      { load: () => import('./chunks/liquid.js'),      entries: ['_liquidSync', '_liquidOff', '_liquidHeroSync'] },
   music:       { load: () => import('./chunks/music.js'),       entries: ['_openMusicModal', '_openMusicPreview', '_openAlbumModal', '_openCalAlbumArtist', '_renderMusicModalEl', '_renderAlbumModalEl', '_musQueueSig', '_musFollowStream', '_musOpenForStream'] },
 }, applyMixin);
 

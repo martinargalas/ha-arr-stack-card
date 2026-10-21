@@ -12,7 +12,7 @@ In the editor, open the **Appearance** tab and pick a preset — or in YAML:
 
 ```yaml
 styles:
-  preset: ha        # glass (default) | ha | solid | nord | catppuccin | cinema
+  preset: ha        # glass (default) | ha | solid | nord | catppuccin | cinema | apple-home
 ```
 
 | Preset | What it does |
@@ -23,8 +23,27 @@ styles:
 | `nord` | Arctic frost, after the [Nord](https://www.nordtheme.com) palette: slate glass lit from the top, frost-blue headings and icons in soft capsules, aurora colours for status — and the modals to match. |
 | `catppuccin` | Soothing pastels, after [Catppuccin](https://catppuccin.com) Mocha: a mauve glow on a deep base, pink headings, rounder corners, pastel quality and status colours. |
 | `cinema` | The dark of a theatre: a velvet-red glow from below, gold for headings, buttons and everything that matters, sharper corners. |
+| `apple-home` | Looks like Apple's Home app. The downloads sit in a dark, tinted sidebar with white text and orange icons; the posters and the windows sit on light frosted glass, with dark round buttons. It is light by day and dark at night — see below. |
 
 Anything you set yourself wins over the preset.
+
+### Light and dark (Apple Home)
+
+Apple Home has a light and a dark version, and switches between them on its own. You choose when, in the editor right under the preset (**Light / dark**), or in YAML:
+
+```yaml
+styles:
+  preset: apple-home
+  appearance: sun     # auto (default) | sun | light | dark
+```
+
+| Value | When it is dark |
+|---|---|
+| `auto` | When Home Assistant is in dark mode |
+| `sun` | After sunset — the same as glass-cards' `appearance: sun` |
+| `light` · `dark` | Never · always |
+
+If your dashboard has its own light and dark switch (glass-cards' `appearance`, for example), give the card the same setting as your dashboard so both turn dark at the same moment.
 
 ## The Appearance tab
 
@@ -111,11 +130,12 @@ A surface's own colour — `background`, `iconBackground` and the modals' `backg
 
 | Key | What it changes |
 |---|---|
-| `iconStyle` | `brand` (default) draws the apps' real logos in their own colours; `mono` draws them in the `icon` colour. With `applicationIcons: mdi` the icons are plain glyphs, always in the `icon` colour. The editor sets both from one picker, **App icons** under Icons. |
+| `iconStyle` | `brand` (default) draws the apps' real logos in their own colours; `mono` draws them in the `icon` colour. With `applicationIcons: mdi` the icons are plain glyphs, always in the `icon` colour. `applicationIcons: none` hides the icons next to the section titles, on both sides. The editor sets both from one picker, **App icons** under Icons. |
 | `accent` | Selected controls, links, progress |
 | `success` · `warning` · `error` · `info` | Status colours, in the panels and the modals |
 | `gap` | Space between the two panels (px) |
 | `cardPadding` | Space around the panels (px or CSS) |
+| `sectionGap` | More room between the categories on the right (px, default 8). Together with `right.padding` — for example `14px 15px 12px` — it also moves the first title away from the top edge and the page buttons away from the bottom. Keep 15px at the sides. |
 
 ### Modals — `styles.modal` (night) and `styles.modalDay` (day)
 
@@ -139,7 +159,7 @@ Day colours apply while the sun is up, when **Day / night modal colours** is on 
 | `toolbar` · `toolbarBorder` · `toolbarText` | The bar of search, filters and toggles under a modal's header: background, border and separators, text and icons |
 | `toolbarActive` · `toolbarActiveText` · `filter` | A toggle that is on, its text; the value of a filter that narrows the list |
 | `button` · `buttonBorder` · `buttonText` · `buttonHover` | Buttons in a modal |
-| `buttonActive` · `buttonActiveText` | A button that is on |
+| `buttonActive` · `buttonActiveText` · `buttonActiveBorder` | A button that is on; its border follows `buttonActive` unless set (give it a colour when `buttonActive` is a gradient) |
 | `switchOn` · `switchOff` · `switchKnob` | Switches and checkboxes |
 | `progressTrack` · `progressFill` | Progress bars — playback position, season progress, a download in a title's detail |
 | `grab` · `grabDone` · `grabFailed` | Interactive Search: the grab button, a release grabbed, a grab that failed |
