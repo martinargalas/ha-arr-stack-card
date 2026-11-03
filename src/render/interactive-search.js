@@ -46,7 +46,9 @@ _renderIsPanel() {
     const all     = this._isResults;
     const visible = this._applyIsFilters(all);
 
-    const IS_PER_PAGE  = this._isPerPage || 8;
+    // A phone scrolls through every release, as Sonarr's sources already do,
+    // instead of turning pages of three or four
+    const IS_PER_PAGE  = this._isMob ? Math.max(1, visible.length) : (this._isPerPage || 8);
     const totalPages   = Math.max(1, Math.ceil(visible.length / IS_PER_PAGE));
     const page         = Math.min(this._isPage || 0, totalPages - 1);
     const paged        = visible.slice(page * IS_PER_PAGE, (page + 1) * IS_PER_PAGE);
@@ -91,7 +93,7 @@ _renderIsPanel() {
           ${filters.hdr}
         </div>
         ${filters.below}
-        <div class="is-results-wrap">${rowsHtml}</div>
+        <div class="is-results-wrap${this._isMob ? ' is-scroll' : ''}">${rowsHtml}</div>
         ${paginationHtml ? `<div style="flex-shrink:0">${paginationHtml}</div>` : ''}
       </div>`;
   }

@@ -1,6 +1,8 @@
 // Maintainerr, the Collections tab: the collections, one collection's media, exclusions and info. Split out of render/maintainerr.js.
 import { fmtBytes } from '../shared/format.js';
 
+import { MT_BATCH } from './mt-kit.js';
+
 class _MaintainerrCollectionsRenderMethods {
 
   // ── Collections tab ───────────────────────────────────────────────────────
@@ -218,11 +220,15 @@ class _MaintainerrCollectionsRenderMethods {
     if (search) filtered = filtered.filter(i => ((i.mediaData?.title || i.title || i.name || '')).toLowerCase().includes(search));
 
     const isMob = this._isMob;
-    const { cols, perPage, gap, gridMaxW } = this._mtGridCalc(cd, 90);
+    const calc = this._mtGridCalc(cd, 90);
+    const { perPage, gap, gridMaxW } = calc;
+    const cols = isMob ? this._mobCols : calc.cols;
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
     const safePage = Math.min(page, totalPages - 1);
-    const pageItems = filtered.slice(safePage * perPage, (safePage + 1) * perPage);
+    const shown = isMob ? this._mtShown(cd, `${search}|${sort}`) : 0;
+    const pageItems = isMob ? filtered.slice(0, shown) : filtered.slice(safePage * perPage, (safePage + 1) * perPage);
+    const more = isMob && shown < filtered.length;
 
 
     const sortItems = [
@@ -288,7 +294,7 @@ class _MaintainerrCollectionsRenderMethods {
     }).join('');
 
     const grid = `<div id="mt-poster-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap}px;overflow:hidden${gridMaxW ? `;max-width:${gridMaxW}px;margin:0 auto` : ''}">${posters}</div>`;
-    const pagHtml = this._uiPager('mt-col-d-page', safePage, totalPages, true);
+    const pagHtml = isMob ? '' : this._uiPager('mt-col-d-page', safePage, totalPages, true);
     const dragHandle = this._mtDragHandleHtml(cd, isMob);
     const pagWrap = (pagHtml || dragHandle)
       ? `<div id="mt-pag-wrap" style="flex-shrink:0;position:relative;${dragHandle && !pagHtml ? 'height:36px' : ''}">${pagHtml}${dragHandle}</div>`
@@ -296,7 +302,7 @@ class _MaintainerrCollectionsRenderMethods {
 
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">` +
       `<div style="flex-shrink:0">${header}${toolbar}</div>` +
-      `<div style="flex:1;min-height:0;overflow:hidden">${grid}</div>` +
+      `<div style="flex:1;min-height:0;overflow:hidden;position:relative">${isMob ? this._mtScrollWrap(grid, more) : grid}</div>` +
       pagWrap +
       `</div>`;
   }
@@ -338,12 +344,16 @@ class _MaintainerrCollectionsRenderMethods {
 
     const mediaType = cd.mediaType || 'movie';
 
-    const { cols, perPage, gap, gridMaxW } = this._mtGridCalc(cd, 48);
+    const calc = this._mtGridCalc(cd, 48);
+    const { perPage, gap, gridMaxW } = calc;
+    const cols = isMob ? this._mobCols : calc.cols;
 
     const exclPage = cd.exclPage || 0;
     const totalPages = Math.max(1, Math.ceil(filteredExcl.length / perPage));
     const safePage = Math.min(exclPage, totalPages - 1);
-    const pageItems = filteredExcl.slice(safePage * perPage, (safePage + 1) * perPage);
+    const shown = isMob ? this._mtShown(cd, `${exclSearch}|${exclSort}`, '_exShown') : 0;
+    const pageItems = isMob ? filteredExcl.slice(0, shown) : filteredExcl.slice(safePage * perPage, (safePage + 1) * perPage);
+    const more = isMob && shown < filteredExcl.length;
 
     const _rnd = (bdr, bg) => `width:34px;height:34px;padding:0;border-radius:50%;border:1px solid ${bdr};background:${bg};color:rgb(var(--_ptx, 255, 255, 255));cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:0;backdrop-filter:blur(8px)`;
     const UNDO_ICO = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg>`;
@@ -364,7 +374,7 @@ class _MaintainerrCollectionsRenderMethods {
     }).join('');
 
     const grid = `<div id="mt-poster-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap}px;overflow:hidden${gridMaxW ? `;max-width:${gridMaxW}px;margin:0 auto` : ''}">${posters}</div>`;
-    const pagHtml = this._uiPager('mt-col-excl-page', safePage, totalPages, true);
+    const pagHtml = isMob ? '' : this._uiPager('mt-col-excl-page', safePage, totalPages, true);
     const dragHandle = this._mtDragHandleHtml(cd, isMob);
     const pagWrap = (pagHtml || dragHandle)
       ? `<div id="mt-pag-wrap" style="flex-shrink:0;position:relative;${dragHandle && !pagHtml ? 'height:36px' : ''}">${pagHtml}${dragHandle}</div>`
@@ -372,7 +382,7 @@ class _MaintainerrCollectionsRenderMethods {
 
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">` +
       `<div style="flex-shrink:0">${toolbar}</div>` +
-      `<div style="flex:1;min-height:0;overflow:hidden">${grid}</div>` +
+      `<div style="flex:1;min-height:0;overflow:hidden;position:relative">${isMob ? this._mtScrollWrap(grid, more) : grid}</div>` +
       pagWrap +
       `</div>`;
   }

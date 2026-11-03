@@ -97,6 +97,7 @@ _renderPopupEl() {
   const savedIsScroll    = prevIsWrap  ? prevIsWrap.scrollTop  : 0;
   const savedBodyScroll  = prevBody    ? prevBody.scrollTop    : 0;
   const savedSnIsScroll  = prevSnPanel ? prevSnPanel.scrollTop : 0;
+  const savedSeasonsScroll = root.querySelector('.sn-seasons-rows')?.scrollTop || 0;
 
   const d = this._popup;
   if (d && !d._loading && !d._streamEntity) {
@@ -181,9 +182,16 @@ _renderPopupEl() {
   });
   this._ppSubOpenKeys = openKeys;
 
-  if (savedIsScroll > 0) {
+  // A new filter is a new list, read from its start
+  if (savedIsScroll > 0 && !this._isScrollTop) {
     const newIsWrap = root.querySelector('.is-results-wrap');
     if (newIsWrap) newIsWrap.scrollTop = savedIsScroll;
+  }
+  this._isScrollTop = false;
+  // The seasons a phone scrolls through stay where they were when one opens
+  if (savedSeasonsScroll > 0) {
+    const rows = root.querySelector('.sn-seasons-rows');
+    if (rows) rows.scrollTop = savedSeasonsScroll;
   }
   if (savedSnIsScroll > 0) {
     const newSnPanel = root.querySelector('.sn-is-panel');
@@ -197,8 +205,9 @@ _renderPopupEl() {
   // Anchor an open dropdown under its own trigger
   requestAnimationFrame(() => this._qaPositionMenu());
 
-  // Dynamic IS per-page: measure available space in glass viewport, account for pager height
-  if (this._isState === 'results') {
+  // Dynamic IS per-page: measure available space in glass viewport, account for pager height.
+  // A phone has no pages to fit: it scrolls the whole list.
+  if (this._isState === 'results' && !this._isMob) {
     const _gen = (this._isMeasureGen = ((this._isMeasureGen || 0) + 1));
     requestAnimationFrame(() => {
       if (this._isMeasureGen !== _gen) return;
@@ -245,7 +254,7 @@ _renderPopupEl() {
   // Dynamic seasons-per-page: measure how many season rows fit in the glass viewport
   // (same approach as the IS per-page block above), so paging stays visible but no rows go unused.
   // Skip when a season is expanded — expanded rows have different height, causing oscillation.
-  if (this._snIsOpen && !(this._snExpandedSeasons?.size > 0) && !this._snActiveIs) {
+  if (this._snIsOpen && !this._isMob && !(this._snExpandedSeasons?.size > 0) && !this._snActiveIs) {
     const _snGen = (this._snSeasonsMeasureGen = ((this._snSeasonsMeasureGen || 0) + 1));
     requestAnimationFrame(() => {
       if (this._snSeasonsMeasureGen !== _snGen) return;

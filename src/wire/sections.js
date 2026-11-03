@@ -1,4 +1,5 @@
 import { BP, maxWidth } from '../shared/ui.js';
+import { SHEET_BATCH, SHEET_COLS_MAX, SHEET_COLS_MIN } from '../render/sections.js';
 
 // The right column's sections: See More overlays, paging, swipe, repainting one section. Split out of wire/index.js.
 
@@ -38,7 +39,8 @@ _wireSectionOverlay() {
       // long as the overlay is open.
       const _rc = this.shadowRoot?.getElementById('col-right');
       this._overlayLockH = _rc ? _rc.offsetHeight : 0;
-      this._overlay = { section: sec, page: startPage, tvPending: null };
+      this._overlay = { section: sec, page: startPage, tvPending: null, shown: SHEET_BATCH };
+      this._sheetFetchFailed = null;
       this._reRenderSection(sec);
       // Proaktivně načti data na pozadí, pokud máme málo položek
       const cfg = this._getSectionOverlayConfig(sec);
@@ -47,6 +49,8 @@ _wireSectionOverlay() {
   });
 
   const overlay = sr.querySelector('.trending-overlay');
+  this._sheetIo?.disconnect();
+  this._sheetIo = null;
   if (!overlay) return;
 
   // Swipe doleva/doprava v overlay (mobile)
@@ -71,6 +75,20 @@ _wireSectionOverlay() {
     this._overlayLockH = 0;
     this._reRenderSection(sec || 'trending');
   }, { signal: ovSig });
+
+  if (overlay.classList.contains('to-sheet')) {
+    // Every wiring watches afresh, and a fresh observer reports at once: a page
+    // of posters too short to push the footer off screen loads the next one too.
+    const foot = overlay.querySelector('[data-sheet-more]');
+    if (foot) {
+      this._sheetIo = new IntersectionObserver(en => {
+        if (en.some(x => x.isIntersecting)) this._sheetMore();
+      }, { root: overlay.querySelector('.to-sheet-body'), rootMargin: '0px 0px 600px 0px' });
+      this._sheetIo.observe(foot);
+    }
+    if (this._overlay.tvPending) requestAnimationFrame(() => this._positionTvOverlay());
+    return;
+  }
 
   // První stránka overlay
   sr.querySelector('[data-action="overlay-first"]')?.addEventListener('click', e => {
@@ -103,21 +121,7 @@ _wireSectionOverlay() {
     const newPage  = (this._overlay.page || 0) + 1;
 
     // Načti další API stránku, pokud máme málo položek a existuje endpoint
-    if (cfg.apiEndpoint && newPage * perPage >= items.length) {
-      const apiPage  = this._overlayApiPage[sec] || 0;
-      const apiTotal = this._overlayApiTotalPages[sec] || 1;
-      if (apiPage < apiTotal) {
-        try {
-          const nextApiPage = apiPage + 1;
-          const data = await this._hass.callApi('GET', `arr_stack/${cfg.apiEndpoint}?page=${nextApiPage}`);
-          this[cfg.dataKey] = [...items, ...(data.results || [])];
-          this._overlayApiTotalPages[sec] = data.totalPages || apiTotal;
-          this._overlayApiPage[sec] = nextApiPage;
-        } catch (err) {
-          console.error(`[arr-card] ${sec} overlay lazy load error:`, err);
-        }
-      }
-    }
+    if (cfg.apiEndpoint && newPage * perPage >= items.length) await this._overlayFetchNext(sec, cfg);
 
     // Clamp against what is actually loaded — a lazy load that brings nothing
     // back would otherwise leave the overlay on an empty page past the end.
@@ -168,6 +172,48 @@ _wireSectionOverlay() {
   }
 }
 
+// The next page of a category from the server, added to what is loaded.
+// False when there was none or it failed.
+async _overlayFetchNext(sec, cfg) {
+  const apiPage  = this._overlayApiPage[sec] || 0;
+  const apiTotal = this._overlayApiTotalPages[sec] || 1;
+  if (apiPage >= apiTotal) return false;
+  try {
+    const nextApiPage = apiPage + 1;
+    const data = await this._hass.callApi('GET', `arr_stack/${cfg.apiEndpoint}?page=${nextApiPage}`);
+    const items = (cfg.getItems ? cfg.getItems() : this[cfg.dataKey]) || [];
+    this[cfg.dataKey] = [...items, ...(data.results || [])];
+    this._overlayApiTotalPages[sec] = data.totalPages || apiTotal;
+    this._overlayApiPage[sec] = nextApiPage;
+    return true;
+  } catch (err) {
+    console.error(`[arr-card] ${sec} overlay lazy load error:`, err);
+    return false;
+  }
+}
+
+// The phone's See More nears its end: show the next posters, from the server
+// when everything loaded is already on screen
+async _sheetMore() {
+  const sec = this._overlay?.section;
+  const cfg = this._getSectionOverlayConfig(sec);
+  if (!cfg || this._sheetLoading) return;
+  const items = (cfg.getItems ? cfg.getItems() : this[cfg.dataKey]) || [];
+  const shown = this._overlay.shown || SHEET_BATCH;
+  if (shown >= items.length) {
+    if (!this._sheetCanFetch(sec, cfg)) return;
+    this._sheetLoading = true;
+    const ok = await this._overlayFetchNext(sec, cfg);
+    this._sheetLoading = false;
+    // A failed page is not asked for again until See More is opened afresh,
+    // or the footer, still in view, would ask for it in a loop
+    if (!ok) this._sheetFetchFailed = sec;
+    if (this._overlay?.section !== sec) return;
+  }
+  this._overlay.shown = shown + SHEET_BATCH;
+  this._reRenderSection(sec);
+}
+
 _scrollToSectionOverlay() {
   // Na tabletu/desktopu karta viditelná — nescrollovat.
   // Na mobilu overlay může být pod foldem — scrolluj jen pokud chybí.
@@ -188,6 +234,54 @@ _scrollToSectionOverlay() {
 // floor for all of them, carried on the column as --sec-min-h so it applies the
 // moment a page is drawn rather than a frame later. Desktop only: on a phone the
 // column is one category wide and scrolls anyway.
+// The slider in a tablet's window header: dragged, the window's grid takes
+// that many posters a row at once, with nothing redrawn; let go, the count is
+// kept in this browser for every window after
+_wireSheetSize(root) {
+  const span = SHEET_COLS_MAX - SHEET_COLS_MIN;
+  const clamp = n => Math.max(SHEET_COLS_MIN, Math.min(SHEET_COLS_MAX, n));
+  for (const sl of root?.querySelectorAll('[data-sheet-size]') || []) {
+    if (sl._arrWired) continue;
+    sl._arrWired = true;
+    const sheet = sl.closest('.to-sheet');
+    const track = sl.querySelector('.sz-track');
+    if (!sheet || !track) continue;
+    const place = n => sl.style.setProperty('--sz', String((n - SHEET_COLS_MIN) / span));
+    // Where it starts: the count kept, or the one the grid has now
+    const grid = sheet.querySelector('.to-grid-sheet, .to-sheet-body .mgrid');
+    let live = this._sheetCols
+      || clamp(grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 6);
+    place(live);
+    const at = x => {
+      const r = track.getBoundingClientRect();
+      return SHEET_COLS_MIN + Math.round(Math.max(0, Math.min(1, (x - r.left) / (r.width || 1))) * span);
+    };
+    const set = n => {
+      place(n);
+      if (n === live && sheet.style.getPropertyValue('--arr-tab-grid')) return;
+      live = n;
+      sheet.style.setProperty('--arr-tab-grid', `repeat(${n},minmax(0,1fr))`);
+    };
+    sl.addEventListener('pointerdown', e => {
+      sl.setPointerCapture(e.pointerId);
+      set(at(e.clientX));
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    sl.addEventListener('pointermove', e => {
+      if (sl.hasPointerCapture(e.pointerId)) set(at(e.clientX));
+    });
+    const done = e => {
+      if (!sl.hasPointerCapture(e.pointerId)) return;
+      sl.releasePointerCapture(e.pointerId);
+      try { localStorage.setItem('arr-sheet-cols', String(live)); } catch (_) {}
+    };
+    sl.addEventListener('pointerup', done);
+    sl.addEventListener('pointercancel', done);
+    sl.addEventListener('click', e => e.stopPropagation());
+  }
+}
+
 _syncSecHeights(measure = true) {
   const right = this.shadowRoot?.getElementById('col-right');
   if (!right) return;
@@ -196,7 +290,9 @@ _syncSecHeights(measure = true) {
     right.style.removeProperty('--sec-wrap-h');
     return;
   }
-  if (measure) {
+  if (this._mobFlow && this._flowSecH) {
+    this._secMaxH = this._flowSecH;
+  } else if (measure) {
     const cards = [...right.querySelectorAll('.sec-card:not(.sec-search)')];
     if (cards.length) {
       // Measured with the floor lifted, or it could only ever grow.
@@ -208,12 +304,26 @@ _syncSecHeights(measure = true) {
     }
   }
   if (this._secMaxH) right.style.setProperty('--sec-min-h', `${this._secMaxH}px`);
+  // A shelf's posters take the height its category has left under the
+  // heading; a percentage of a box sized by min-height resolves to nothing
+  const shelf = right.querySelector('.shelf-fill .mgrid.shelf');
+  if (shelf) {
+    const pad = parseFloat(getComputedStyle(shelf).paddingBottom) || 0;
+    const h = Math.round(shelf.clientHeight - pad);
+    if (h > 40) right.style.setProperty('--shelf-h', `${h}px`);
+  } else right.style.removeProperty('--shelf-h');
 
   // The last page often holds fewer categories than the rest, and without a
   // floor of its own the column would end short there. A full page's height is
   // remembered and every page is held to it.
   const wrap = right.querySelector('.rp-sections');
   if (!wrap) return;
+  // Shelves and the list hold no page of categories to take the height of:
+  // measured, they gave every category at once as a page, thousands of pixels
+  if (this._mobFlow) {
+    right.style.removeProperty('--sec-wrap-h');
+    return;
+  }
   const perPage = Math.max(2, parseInt(this._cfgGet('discover', 'categoriesCount', 3)) || 3) - 1;
   const shown = wrap.querySelectorAll('.sec-card:not(.sec-search)').length;
   if (measure && shown >= perPage) {
@@ -264,6 +374,9 @@ _reRenderSection(section) {
       }
     } else if (this._overlay?.section && this._overlayLockH) {
       right.style.minHeight = this._overlayLockH + 'px';
+    } else if (this._flowFits && this._rightMaxH) {
+      // A tablet's shelves and list hold to the pages' height by this alone
+      right.style.minHeight = this._rightMaxH + 'px';
     } else {
       right.style.minHeight = '';
     }

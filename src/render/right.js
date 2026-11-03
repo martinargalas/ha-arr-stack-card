@@ -1,5 +1,19 @@
-import { dayClass, ICONS } from '../shared/ui.js';
+import { BP, dayClass, ICONS, maxWidth } from '../shared/ui.js';
 import { fmtBytes } from '../shared/format.js';
+
+// The attributes a service's tile opens its window by (the render/…-tiles.js files)
+const SERVICE_OPEN = ['data-lib-open', 'data-tl-open', 'data-js-open', 'data-tra-open', 'data-act-open', 'data-pw-open', 'data-mt-open'];
+
+// The phone list's tile for a service: its app's icon where a category of
+// titles shows its posters
+const SERVICE_TILE = {
+  tautulli:    { apps: ['tautulli'] },
+  jellystat:   { apps: ['jellystat'] },
+  tracearr:    { apps: ['tracearr'] },
+  prowlarr:    { apps: ['prowlarr'] },
+  activity:    { apps: ['radarr', 'sonarr', 'lidarr'] },
+  maintainerr: { apps: ['maintainerr'] },
+};
 
 // Module scope, not a class field: applyMixin copies prototype members only.
 const TMDB_NOTICE_KEY  = 'arr-stack-tmdb-notice';
@@ -53,13 +67,13 @@ _renderRight() {
     library:    (this._radarr?.length || this._sonarr?.length) ? () => this._renderLibrary() : null,
   };
 
-  const regularCategories = [
-    ...(hasPending ? [() => this._renderPendingRequests()] : []),
+  const regular = [
+    ...(hasPending ? [{ id: 'pending', fn: () => this._renderPendingRequests() }] : []),
     ...catConfig
-      .filter(c => c.enabled !== false)
-      .map(c => CAT_FN[c.id])
-      .filter(Boolean),
+      .filter(c => c.enabled !== false && CAT_FN[c.id])
+      .map(c => ({ id: c.id, fn: CAT_FN[c.id] })),
   ];
+  const regularCategories = regular.map(r => r.fn);
 
   // Search is on every page as the first slot; regular cats fill remaining slots
   const totalPages = Math.max(1, Math.ceil(regularCategories.length / regularPerPage));
@@ -90,12 +104,100 @@ _renderRight() {
   // belongs to the categories, which are not on the page.
   if (this._searchActive && showSearch) return `<div class="rp-sections">${this._renderSearch()}</div>`;
 
+  // A phone set to shelves or a list: every category, one under another, and
+  // the page scrolls rather than pages
+  if (this._mobFlow) {
+    const search = showSearch ? `${this._renderSearch()}<div style="height:3px"></div>` : '';
+    // A tablet's are turned in pages that keep to the column's height
+    const fp = this._flowFits && this._flowPages?.length > 1 ? this._flowPages : null;
+    const fPage = fp ? Math.max(0, Math.min(this._rightPage || 0, fp.length - 1)) : 0;
+    const [from, to] = fp ? fp[fPage] : [0, regular.length];
+    if (fp) this._rightTotalPages = fp.length;
+    const fNav = fp ? this._rpPag(fPage, fp.length, {
+      firstAttr: 'data-section="right" data-dir="first"',
+      prevAttr:  'data-section="right" data-dir="prev"',
+      nextAttr:  'data-section="right" data-dir="next"',
+      lastAttr:  'data-section="right" data-dir="last"',
+      dotAttr: 'data-page', dotSecAttr: 'data-section="right" ',
+    }) : '';
+    if (this._mobLayout === 'list') return `<div class="rp-sections mob-list">${search}${this._mobListHtml(regular, from, to)}</div>${fNav}`;
+    const cats = regular.slice(from, to).map(r => `<div class="mob-cat" data-mob-cat="${r.id}">${r.fn()}</div>`);
+    // Beside the downloads every category stands as tall as the tallest
+    // (_syncSecHeights): a shelf's posters take that height instead of
+    // leaving it empty under them
+    const fill = maxWidth(BP.STACKED) ? '' : ' shelf-fill';
+    return `<div class="rp-sections mob-shelves${fill}">${search}${cats.join('<div class="spacer-sm"></div>')}</div>${fNav}`;
+  }
+
   // Compensate for missing inter-category spacers on short pages (e.g. last page with 1 category).
   // Each missing regular category slot = 1 missing spacer-sm (8px) between sections.
   const filler = Array(Math.max(0, regularPerPage - regSlice.length))
     .fill('<div class="spacer-sm"></div>').join('');
 
   return `<div class="rp-sections">${_join(pageSlice)}${filler}</div>${navBar}`;
+}
+
+// The phone's list layout: each category one tile — a peek at its first
+// posters, its name, how many — that opens it over the whole screen. A poster
+// category opens as See More does; the rest (Now Playing, the statistics,
+// Activity, Maintainerr…) open their own row of tiles in the same sheet.
+// What a tile shows is read off the category as it is drawn, so every
+// category, present and future, gets one without a line of its own.
+_mobListHtml(regular, from = 0, to = regular.length) {
+  let sheet = '';
+  // Every category is looked at, so the one open over the screen is drawn
+  // whichever page its tile is on; the tiles are the page's
+  const rows = regular.map((r, i) => {
+    if ((i < from || i >= to) && this._mobSheet !== r.id) return '';
+    const html = r.fn();
+    const tpl = document.createElement('template');
+    tpl.innerHTML = html;
+    const doc = tpl.content;
+    const title = doc.querySelector('.col-hdr-title')?.textContent.trim() || r.id;
+    // One picture an item — a playing film's card or a library tile carries
+    // several — and none from the See More card
+    const grid = doc.querySelector('.mgrid, .tl-row');
+    const imgs = [...(grid?.children || [])]
+      .filter(it => !it.matches('.smp-card'))
+      .map(it => [...it.querySelectorAll('img[src]')].find(i => !i.closest('.app-ico')))
+      .filter(Boolean).slice(0, 3).map(i => i.getAttribute('src'));
+    const ico = doc.querySelector('.col-hdr :is(.app-icon-row, .app-ico)');
+    // As many posters as the category has, up to three: one film playing
+    // shows one, not two blanks beside it. A service shows what it is.
+    const svcTile = SERVICE_TILE[r.id];
+    const peek = svcTile
+      // The app icons the headers wear, even with them off there: the tile
+      // has no other picture, and the header's setting is about headers
+      ? `<span class="mob-app">${svcTile.apps.length > 1 ? this._appIconRow(svcTile.apps, 18) : this._appIcon(svcTile.apps[0], 30)}</span>`
+      : imgs.length
+      ? imgs.map(src => `<img src="${this._escHtml(src)}" alt="" loading="lazy">`).join('')
+      : ico ? `<span class="mob-app">${ico.outerHTML}</span>` : '';
+    if (this._mobSheet === r.id) {
+      sheet = `
+        <div class="to-sheet-veil"></div>
+        <div class="to-sheet mob-sheet"${this._sheetColsStyle()}>
+          ${this._sheetHdr(title, '', 'data-mob-sheet-close')}
+          <div class="to-sheet-body vscroll mob-cat" data-mob-cat="${r.id}">${html}</div>
+          ${this._toTopHtml()}
+        </div>`;
+    }
+    // The calendar has a window of its own, the week and the month — the
+    // tile opens that rather than a row of its next few days
+    // A service's tiles each open its window at their own tab; the category's
+    // tile opens it at the first, through the same attribute the first tile
+    // carries, so the column's own listener for that service answers it.
+    const svc = SERVICE_OPEN.map(a => doc.querySelector(`[${a}]`) && [a, doc.querySelector(`[${a}]`).getAttribute(a)]).find(Boolean);
+    const open = r.id === 'calendar' ? 'data-action="open-cal-modal"'
+      : svc ? `${svc[0]}="${this._escHtml(svc[1])}"`
+      : `data-mob-open="${r.id}"`;
+    if (i < from || i >= to) return '';
+    return `<button class="mob-row" ${open}>
+      <span class="mob-peek" data-n="${svcTile ? 'app' : imgs.length}">${peek}</span>
+      <span class="mob-row-t"><b>${this._escHtml(title)}</b></span>
+      <svg class="mob-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m9 6 6 6-6 6"/></svg>
+    </button>`;
+  });
+  return `<div class="mob-rows">${rows.join('')}</div>${sheet}`;
 }
 
 // One-off notice for installs with neither Seerr nor their own TMDB key: those
@@ -315,6 +417,7 @@ _ratingBadge(m, inline = false, solid = false) {
 }
 
 _pageIndicator(section, itemsOrCount, perPage = null) {
+  if (this._mobFlow) return '';
   const count = Array.isArray(itemsOrCount) ? itemsOrCount.length : (itemsOrCount || 0);
   // Must match what _pagedGrid slices by, or the indicator counts pages the grid
   // does not have — every caller passes the count only and relied on a hardcoded 4.
@@ -425,7 +528,7 @@ _renderRecentlyAdded() {
   const headerIcon = noSeerr
     ? this._appIconRow(hasMusic ? ['radarr', 'sonarr', 'lidarr'] : ['radarr', 'sonarr'])
     : (hasMusic
-        ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon('lidarr', 24)}</div>`
+        ? `<div class="app-icon-row" style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon('lidarr', 24)}</div>`
         : this._appIcon(this._discoverIconKey(), 24));
   const raSeg = this._raFilterHtml();
   return `
@@ -454,7 +557,7 @@ _renderRecentlyRequested() {
   const headerIconRq = noSeerrRq
     ? this._appIconRow(['radarr', 'sonarr', 'lidarr'])
     : (hasMusic
-        ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon('lidarr', 24)}</div>`
+        ? `<div class="app-icon-row" style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon('lidarr', 24)}</div>`
         : this._appIcon(this._discoverIconKey(), 24));
   // The search bar's own type peanut, a size down, sitting right after the
   // title: All, the two the row always held, and music.

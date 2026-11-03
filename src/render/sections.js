@@ -1,4 +1,12 @@
-import { BP, maxWidth } from '../shared/ui.js';
+import { BP, isTouch, maxWidth } from '../shared/ui.js';
+
+// How many posters the phone's See More adds each time the reader nears the end
+export const SHEET_BATCH = 24;
+// How many a shelf holds before its last place opens See More
+export const SHELF_MAX = 20;
+// The posters a row a tablet's window can be set to by its slider
+export const SHEET_COLS_MIN = 3;
+export const SHEET_COLS_MAX = 10;
 
 // Sections of the right column: their See More overlays, grids and paging. Split out of card.js.
 
@@ -103,9 +111,57 @@ class _SectionMethods {
     return items.length > showMorePage * cols - 1;
   }
 
+  // How the right column lays out on a phone (#48, discover.mobileLayout):
+  // 'pages' as on a tablet, 'shelves' — every category at once, each a row
+  // swiped sideways — or 'list', the categories folded to their titles with
+  // one open at a time. A tablet has the same choice of its own
+  // (tabletLayout): a screen up to where the card stacks its columns, or a
+  // touch screen up to a narrow desktop's width — an iPad held sideways, a
+  // Nest Hub — whose columns sit side by side. A desktop worked by a mouse
+  // always pages.
+  get _mobLayout() {
+    // Measuring the height a tablet's column is held to draws it as pages
+    if (this._measuringPages) return 'pages';
+    const tablet = maxWidth(BP.STACKED) || (isTouch() && maxWidth(BP.NARROW));
+    if (!tablet) return 'pages';
+    const v = this._cfgGet('discover', maxWidth(BP.PHONE) ? 'mobileLayout' : 'tabletLayout', 'pages');
+    return v === 'shelves' || v === 'list' ? v : 'pages';
+  }
+
+  // Posters a row in a phone's full-screen lists — See More, a category from
+  // the list, the search, Library, Maintainerr (discover.mobileColumns)
+  get _mobCols() {
+    return parseInt(this._cfgGet('discover', 'mobileColumns', 3), 10) === 2 ? 2 : 3;
+  }
+
+  // The same on a tablet (discover.tabletColumns): a count, or 0 for as many
+  // as fit its width
+  get _tabCols() {
+    const n = parseInt(this._cfgGet('discover', 'tabletColumns', 0), 10);
+    return n >= 3 && n <= 8 ? n : 0;
+  }
+
+  // Shelves or list: the column flows down instead of paging
+  get _mobFlow() {
+    return this._mobLayout !== 'pages';
+  }
+
+  // A tablet's column keeps the height its categories have as pages
+  // (categoriesCount): shelves or a list taller than that are turned in pages
+  // of their own (_flowPages, measured in _measureAndLockHeight). A phone's
+  // page scrolls instead.
+  get _flowFits() {
+    return this._mobFlow && !maxWidth(BP.PHONE);
+  }
+
   // Paged grid with automatic See-More card insertion (if items exceed showMoreOnPage threshold)
   _pagedGridWithSmp(items, section, renderFn) {
     if (!items || items.length === 0) return '';
+    if (this._mobFlow) {
+      const more = items.length > SHELF_MAX && this._getSectionOverlayConfig(section);
+      const shown = more ? [...items.slice(0, SHELF_MAX - 1), { _isSeeMore: true }] : items;
+      return this._pagedGrid(shown, section, m => m._isSeeMore ? this._renderSeeMoreCardFor(section, items.length - SHELF_MAX + 1) : renderFn(m));
+    }
     const showMorePage = Math.max(1, parseInt(this._cfgGet('discover', 'showMoreOnPage', 3)) || 3);
     const cols         = Math.max(2, Math.min(10, parseInt(this._cfgGet('discover', 'itemsPerCategory', 4)) || 4));
     const itemsBefore  = showMorePage * cols - 1;
@@ -159,6 +215,11 @@ class _SectionMethods {
     return this._cfgGet('styles', 'categoryOverlays', true) !== false;
   }
 
+  // The windows' tint, switched apart from the categories' (styles.modalOverlays)
+  get _modalOverlaysEnabled() {
+    return this._cfgGet('styles', 'modalOverlays', true) !== false;
+  }
+
   _sectionOverlayHtml(app, posL = 15, posR = 85, o = 0.4, bottomFade = 80, topFade = 6) {
     if (!this._categoryOverlaysEnabled) return '';
     const mask = `linear-gradient(to bottom,transparent 0.07%,black ${topFade}%,black ${bottomFade}%,transparent 100%)`;
@@ -174,8 +235,8 @@ _sectionOverlayHtmlSingle(app, o = 0.4) {
     return `<div style="position:absolute;left:-15px;right:-15px;top:0;bottom:0;background:${g};mask-image:${mask};-webkit-mask-image:${mask};filter:blur(25px);opacity:var(--_a-tint, 1);pointer-events:none;z-index:0;"></div>`;
   }
 
-  _sectionOverlayHtmlTop(app, posL = 15, posR = 85, o = 0.4) {
-    if (!this._categoryOverlaysEnabled) return '';
+  _sectionOverlayHtmlTop(app, posL = 15, posR = 85, o = 0.4, on = this._categoryOverlaysEnabled) {
+    if (!on) return '';
     const mask = 'linear-gradient(to bottom,transparent 0.07%,black 6%,transparent 100%)';
     const gradL = `radial-gradient(circle at ${posL}% 30%,${this._brandColor(app, o)} 0%,transparent 48%)`;
     const gradR = `radial-gradient(circle at ${posR}% 30%,${this._brandColorSecondary(app, o)} 0%,transparent 48%)`;
@@ -183,8 +244,18 @@ _sectionOverlayHtmlSingle(app, o = 0.4) {
   }
 
 
+  // A window wears the colours of its app at the top, softer than a
+  // category in the column: Activity, Library and the calendar Radarr's and
+  // Sonarr's, Prowlarr, Maintainerr and the statistics their own, a
+  // category's full-screen window its source's
+  _modalTint(app, posL = 15, posR = 85) {
+    return this._sectionOverlayHtmlTop(app, posL, posR, 0.28, this._modalOverlaysEnabled);
+  }
+
   _pagedGrid(items, section, renderFn, perPage = 4) {
     if (!items || items.length === 0) return '';
+    // A shelf: the whole row, swiped sideways, no pages
+    if (this._mobFlow) return `<div class="mgrid shelf">${items.slice(0, SHELF_MAX).map(it => renderFn(it)).join('')}</div>`;
     const page       = this._pages[section] || 0;
     const totalPages = Math.ceil(items.length / perPage);
     const pageItems  = items.slice(page * perPage, page * perPage + perPage);
@@ -292,7 +363,7 @@ _smpPageCount(items, section) {
   return items.length > itemsBefore ? itemsBefore + 1 : items.length;
 }
 
-_renderSeeMoreCardFor(section) {
+_renderSeeMoreCardFor(section, remaining = null) {
   const cfg = this._getSectionOverlayConfig(section);
   const items = (cfg ? (cfg.getItems ? cfg.getItems() : this[cfg.dataKey]) : []) || [];
   const showMorePage = Math.max(1, parseInt(this._cfgGet('discover', 'showMoreOnPage', 3)) || 3);
@@ -312,7 +383,7 @@ _renderSeeMoreCardFor(section) {
       cells.push(`<div style="width:100%;height:100%;background:rgba(var(--_fill, 255, 255, 255), 0.06)"></div>`);
     }
   }
-  const remainCount = Math.max(0, items.length - itemsBefore);
+  const remainCount = remaining ?? Math.max(0, items.length - itemsBefore);
   return `
     <div class="mc smp-card" data-action="overlay-open" data-sec="${section}">
       <!-- 2×2 grid pokrývá celou kartu -->
@@ -388,7 +459,7 @@ _secHeaderIcons(section) {
     const noSeerr = this._overseerrConfigured === false;
     if (noSeerr) return this._appIconRow(hasMusic ? ['radarr', 'sonarr', 'lidarr'] : ['radarr', 'sonarr']);
     return hasMusic
-      ? `<div style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon('lidarr', 24)}</div>`
+      ? `<div class="app-icon-row" style="display:inline-flex;gap:4px;flex-shrink:0;align-items:center">${this._appIcon(this._discoverIconKey(), 24)}${this._appIcon('lidarr', 24)}</div>`
       : this._appIcon(this._discoverIconKey(), 24);
   }
   return '';
@@ -401,10 +472,25 @@ _secFilterHtml(section) {
   return '';
 }
 
+// On a phone See More is the whole screen: a category a few posters wide was
+// paged two posters at a time (#48). It scrolls down instead and loads more as
+// the reader nears the end. A tablet does the same when its categories are
+// shelves or a list: a shelf's last poster opening pages would be a stranger.
+get _secSheet() {
+  return maxWidth(BP.PHONE_S) || this._mobFlow;
+}
+
+// Whether the server has another page of this category to give
+_sheetCanFetch(section, cfg) {
+  return !!cfg?.apiEndpoint && this._sheetFetchFailed !== section
+    && (this._overlayApiPage[section] || 0) < (this._overlayApiTotalPages[section] || 1);
+}
+
 _renderSectionOverlay(section) {
   const cfg = this._getSectionOverlayConfig(section);
   if (!cfg) return '';
   const items    = (cfg.getItems ? cfg.getItems() : this[cfg.dataKey]) || [];
+  if (this._secSheet) return this._renderSectionSheet(section, cfg, items);
   const isMobile = maxWidth(BP.PHONE_S);
   const cols     = Math.max(2, Math.min(10, parseInt(this._cfgGet('discover', 'itemsPerCategory', 4)) || 4));
   const perPage  = isMobile ? cols : cols * 2;
@@ -461,10 +547,121 @@ _renderSectionOverlay(section) {
     </div>`;
 }
 
+_renderSectionSheet(section, cfg, items) {
+  const shown     = Math.min(items.length, this._overlay.shown || SHEET_BATCH);
+  const pageItems = items.slice(0, shown);
+  const gridHtml  = pageItems.map((m, i) => cfg.renderCard(m, i)).join('');
+  // The same music add row as the paged grid, on a grid three wide
+  let musAddOv = '';
+  if (this._musAddPending && section === 'recommendations') {
+    const mb = String(this._musAddPending.artist?.foreignArtistId || '').toLowerCase();
+    const idx = pageItems.findIndex(x =>
+      String(x?.artist?.foreignArtistId || x?.foreignArtistId || '').toLowerCase() === mb);
+    musAddOv = `<div class="mus-add-row" style="grid-column:1/-1;grid-row:${Math.floor(Math.max(0, idx) / 3) + 1}">${this._renderMusicAddOverlay()}</div>`;
+  }
+  const more = shown < items.length || this._sheetCanFetch(section, cfg);
+  const foot = more
+    ? `<div class="to-sheet-foot" data-sheet-more>${this._t('loading')}</div>`
+    : '';
+  const [gposL = 15, gposR = 85] = cfg.gradPos || [];
+  return `
+    <div class="to-sheet-veil"></div>
+    <div class="trending-overlay to-sheet"${this._sheetColsStyle()}>
+      ${cfg.appKey ? this._modalTint(cfg.appKey, gposL, gposR) : ''}
+      ${this._sheetHdr(this._t(cfg.titleKey), this._sheetTypeNav(section), 'data-action="overlay-close"')}
+      <div class="to-sheet-body vscroll">
+        <div class="to-grid to-grid-sheet">${gridHtml}${musAddOv}</div>
+        ${foot}
+      </div>
+      ${this._toTopHtml()}
+    </div>`;
+}
+
+// The header of a category opened over the whole screen on a phone: its
+// name, its type filter where it has one, and a close. Not the column's
+// header, whose line and back arrow belonged to a category drawn in place.
+// Dressed as the calendar window's header, with the same controls: the
+// name, the type switch beside the close, the close the modal's own round
+// button.
+// The type switch where a window's name would start, the name in the middle,
+// the poster size and the close at the end. A phone's header, a switch and a
+// close wide, leaves the name out where there is a switch: the category was
+// opened a moment ago by that name.
+_sheetHdr(title, filter, closeAttr) {
+  return `<div class="col-hdr to-sheet-hdr${filter ? ' has-filter' : ''}">
+    <div class="sh-side">${filter || ''}</div>
+    <span class="col-hdr-title">${this._escHtml(title)}</span>
+    <div class="sh-side sh-end">
+      ${this._isMob ? '' : this._sheetSizeHtml()}
+      <button class="popup-close sheet-x" ${closeAttr} aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" width="14" height="14"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+// A tablet's window sizes its posters by a slider in its header: how many a
+// row, from SHEET_COLS_MIN to SHEET_COLS_MAX, remembered in this browser. Until
+// it is moved the card's own setting (tabletColumns) or the width decides.
+get _sheetCols() {
+  try {
+    const n = parseInt(localStorage.getItem('arr-sheet-cols'), 10);
+    if (n >= SHEET_COLS_MIN && n <= SHEET_COLS_MAX) return n;
+  } catch (_) {}
+  return 0;
+}
+
+_sheetColsStyle() {
+  const n = this._sheetCols;
+  return n && !this._isMob ? ` style="--arr-tab-grid:repeat(${n},minmax(0,1fr))"` : '';
+}
+
+_sheetSizeHtml() {
+  return `<div class="sz-slider" data-sheet-size title="${this._escHtml(this._t('posterSize'))}">
+    <div class="sz-track"><div class="sz-fill"></div><div class="sz-thumb"></div></div>
+  </div>`;
+}
+
+// The category's type filter for its sheet's header, drawn as the windows'
+// tab bar; the same choices and attributes as the column's peanut, so the
+// column's handler answers it
+_sheetTypeNav(section) {
+  const _si = this._mtSegIcons;
+  const pair = `<span style="display:inline-flex;align-items:center;gap:4px">${_si.movie}${_si.tv}</span>`;
+  const spec = {
+    recentlyAdded:     { attr: 'data-ra-type',  cur: this._raTypeSaved,  key: 'ra',  on: this._lidarrConfigured !== false },
+    recentlyRequested: { attr: 'data-rq-type',  cur: this._rqTypeSaved,  key: 'rq',  on: this._lidarrConfigured !== false },
+    recommendations:   { attr: 'data-rec-type', cur: this._recTypeSaved, key: 'rec',
+      on: this._recSources.lastfm && (this._recSources.trakt || this._recSources.suggestarr) },
+  }[section];
+  if (!spec?.on) return '';
+  const nav = this._mtTypeNav([
+    { v: 'all',   label: this._t('tabAll'), attr: `${spec.attr}="all"` },
+    { v: 'video', label: `${this._t('tabMovies')} / ${this._t('tabTvShows')}`, icon: pair, attr: `${spec.attr}="video"` },
+    { v: 'music', label: this._t('tabMusic'), icon: _si.music, attr: `${spec.attr}="music"` },
+  // A sheet's header is the phone's on a tablet too: All in words, the rest
+  // as their icons
+  ], spec.cur, { compact: true });
+  return this._hdrFilter(`<div class="search-type-seg">${nav}</div>`, spec.cur !== 'all', spec.key);
+}
+
+// A sheet's header with its switch out: when the name next to it would be cut
+// short, the funnel stands in for the switch and opens it on a tap
+_fitSheetHdr(root) {
+  for (const h of root?.querySelectorAll('.to-sheet-hdr') || []) {
+    h.classList.remove('tight');
+    // The switch does not fit its side: the funnel stands in for it
+    const side = h.querySelector('.sh-side');
+    if (h.querySelector('.hdr-filter') && side && side.scrollWidth > side.clientWidth + 1) h.classList.add('tight');
+  }
+  this._syncTypeNavs(root);
+}
+
 // Paging nav pro sekce overlay — stejná struktura jako standardní rp-nav
 _renderSectionOverlayNav(section) {
   const cfg = this._getSectionOverlayConfig(section);
-  if (!cfg) return '';
+  if (!cfg || this._secSheet) return '';
   const items    = (cfg.getItems ? cfg.getItems() : this[cfg.dataKey]) || [];
   const isMobile = maxWidth(BP.PHONE_S);
   const cols     = Math.max(2, Math.min(10, parseInt(this._cfgGet('discover', 'itemsPerCategory', 4)) || 4));

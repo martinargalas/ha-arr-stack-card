@@ -53,7 +53,7 @@
   "src/render/tracearr.js": 4,
   "src/render/ui.js": 1,
   "src/styles/index.js": 192,
-  "src/styles/theme.js": 38,
+  "src/styles/theme.js": 34,
   "src/styles/tokens.js": 367,
   "src/wire/activity-actions.js": 12,
   "src/wire/activity-columns.js": 3,

@@ -1,3 +1,5 @@
+import { SCREEN_OVERLAYS } from '../shared/ui.js';
+
 // The phone's back button (and the browser's) closes the card's topmost modal
 // instead of leaving the dashboard — the way Home Assistant's own dialogs work.
 //
@@ -36,7 +38,7 @@ class _BackMethods {
   }
 
   _backOpen() {
-    return [...(this.shadowRoot?.querySelectorAll('.popup-overlay') || [])].filter(o => o.isConnected);
+    return [...(this.shadowRoot?.querySelectorAll(SCREEN_OVERLAYS) || [])].filter(o => o.isConnected);
   }
 
   // What the user sees on top: the highest z-index, and of equals the later one
@@ -96,8 +98,8 @@ class _BackMethods {
   }
 
   _backClose(overlay) {
-    const own = [...overlay.querySelectorAll('.popup-close')]
-      .find(b => b.closest('.popup-overlay') === overlay && !b.disabled);
+    const own = [...overlay.querySelectorAll('.popup-close, .to-sheet-hdr :is([data-action="overlay-close"], [data-mob-sheet-close])')]
+      .find(b => b.closest(SCREEN_OVERLAYS) === overlay && !b.disabled);
     if (own) { own.click(); return true; }
     // A modal without a close button closes on its backdrop
     overlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));

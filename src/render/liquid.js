@@ -177,7 +177,7 @@ class LiquidLayer {
     lens.markup = `<filter id="${lens.id}" x="0" y="0" width="${w}" height="${h}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">`
       + `${map}${shift(1, 'dr')}${shift(0.92, 'dg')}${shift(0.84, 'db')}${only('dr', 0, 'r')}${only('dg', 1, 'g')}${only('db', 2, 'b')}`
       + '<feBlend in="r" in2="g" mode="screen" result="rg"/><feBlend in="rg" in2="b" mode="screen"/></filter>';
-    const f = `url(#${lens.id}) blur(6px) saturate(115%) brightness(1.06)`;
+    const f = `url(#${lens.id}) blur(6px) saturate(115%)`;
     el.style.setProperty('backdrop-filter', f);
     el.style.setProperty('-webkit-backdrop-filter', f);
     return true;

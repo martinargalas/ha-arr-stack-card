@@ -14,6 +14,9 @@ export const MT_ACCENTS = {
   green: ['rgba(var(--arr-success-rgb, 52, 211, 153), 0.14)', 'rgba(var(--arr-success-rgb, 52, 211, 153), 0.35)', '#0f9d60'],
 };
 
+// What a phone's Maintainerr grid adds each time the reader nears the end
+export const MT_BATCH = 30;
+
 class _MtKitMethods {
 
   // Same rules the detail popup uses for its instance chips: the 4K flag wins,
@@ -90,6 +93,20 @@ class _MtKitMethods {
       </span>`;
     }
     return `<span title="${this._escHtml(full)}" style="${base};padding:3px 6px">${this._escHtml(this._mtGoneText(days, dueMs, compact))}</span>`;
+  }
+
+  // A Maintainerr poster grid on a phone scrolls instead of paging (#48):
+  // three wide, the footer under it asking for the next batch
+  // (_mtWireMore), the way back to the top at the bottom of the box
+  _mtScrollWrap(grid, more) {
+    return `<div id="mt-scroll" class="vscroll lib-scroll">${grid}${more ? `<div class="sheet-more" data-mt-more>${this._t('loading')}</div>` : ''}${this._toTopHtml()}</div>`;
+  }
+
+  // How many of a grid the phone shows: a batch, more as the reader nears the
+  // end, a batch again when what is listed changes
+  _mtShown(st, key, field = '_shown') {
+    if (st[field + 'For'] !== key) { st[field + 'For'] = key; st[field] = MT_BATCH; }
+    return st[field];
   }
 
   _mtDragHandleHtml(cd, isMob) {
@@ -268,6 +285,40 @@ class _MtKitMethods {
   }
 
   // Icons used by the view switches
+  // A type switch (All, films, series, music) drawn as the windows' tab bar
+  // - Activity's, Maintainerr's: the chosen one its icon and its name in the
+  // filled pill, the others their icon alone. Each option is { v, label,
+  // icon, attr }; All without an icon of its own takes the grid.
+  // On a phone the icons carry it alone, chosen or not, and All - which has
+  // no obvious glyph - keeps its word.
+  _mtTypeNav(opts, current, { compact = false } = {}) {
+    const all = this._mtSegIcons.cards;
+    const mob = compact || this._isMob;
+    return `<div class="mt-nav type-nav"><span class="mt-nav-ind"></span>${opts.map(o => {
+      const on = o.v === current;
+      const label = this._escHtml(o.label);
+      const inner = mob
+        ? (o.v === 'all' ? label : o.icon)
+        : `${o.icon || all}${on ? label : ''}`;
+      return `<button class="mt-nav-btn${on ? ' is-on' : ''}" ${o.attr || ''} title="${label}">${inner}</button>`;
+    }).join('')}</div>`;
+  }
+
+  // Its pill under the chosen one, once it is on screen. The switch is drawn
+  // anew with what it switches, so where the pill stood is remembered by the
+  // switch's choices and it slides from there, as every other switch does.
+  _syncTypeNavs(root) {
+    this._typeNavAt ||= {};
+    for (const nav of root?.querySelectorAll('.type-nav') || []) {
+      const btn = nav.querySelector('.mt-nav-btn.is-on');
+      if (!btn) continue;
+      const key = [...(nav.querySelector('.mt-nav-btn')?.attributes || [])]
+        .map(a => a.name).filter(n => n.startsWith('data-')).join(',');
+      this._syncNavInd(nav, btn, this._typeNavAt[key]);
+      this._typeNavAt[key] = { w: btn.offsetWidth, x: btn.offsetLeft };
+    }
+  }
+
   get _mtSegIcons() {
     const F = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="display:block"';
     return {

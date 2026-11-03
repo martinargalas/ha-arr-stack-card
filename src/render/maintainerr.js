@@ -52,6 +52,7 @@ class _MaintainerrRenderMethods {
 
     return `<div class="popup-overlay${dayClass(this)}" data-mt-modal>
       <div class="popup-glass tl-wide">
+        ${this._modalTint('maintainerr')}
         <div class="is-panel-hdr" style="flex-direction:row;align-items:center;padding:${hdrPad};gap:8px">
           <div id="mt-nav-area" style="min-width:0;flex-shrink:1;overflow:hidden">${this._mtNavHtml(tab)}</div>
           <div id="mt-status" style="flex-shrink:0;display:flex;align-items:center">${this._mtStatusHtml()}</div>

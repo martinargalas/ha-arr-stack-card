@@ -1,4 +1,5 @@
-import { BP, maxWidth } from '../shared/ui.js';
+import { BP, maxWidth, SCREEN_OVERLAYS } from '../shared/ui.js';
+import { SHEET_BATCH } from './sections.js';
 
 // Repainting the right column, sticky navigation, measuring and locking heights, scroll locks. Split out of card.js.
 
@@ -25,6 +26,23 @@ const flipsOnly = (live, a, b) => {
   return true;
 };
 
+// A picture whose address alone changed — Home Assistant renews a player's
+// artwork token every few minutes, the picture itself the same — keeps showing
+// the old one until the new has loaded. Swapped at once it drew empty for a
+// moment and every refresh blinked the row it was in.
+const srcOnly = (a, b) => {
+  if (a.tagName !== 'IMG' || b.tagName !== 'IMG') return false;
+  const names = new Set([...a.getAttributeNames(), ...b.getAttributeNames()]);
+  for (const k of names) if (k !== 'src' && a.getAttribute(k) !== b.getAttribute(k)) return false;
+  return true;
+};
+const swapWhenLoaded = (live, src) => {
+  live._arrNextSrc = src;
+  const pre = new Image();
+  pre.onload = pre.onerror = () => { if (live._arrNextSrc === src) live.setAttribute('src', src); };
+  pre.src = src;
+};
+
 // Brings `live` from what `prev` described to what `next` describes, replacing
 // only the nodes that differ. A node the two agree on is left alone — its
 // pictures loaded, its scroll position, what the card added to it since. One
@@ -37,6 +55,8 @@ function morph(live, prev, next, depth) {
   const swaps = [];
   for (let i = 0; i < n.length; i++) {
     if (p[i].isEqualNode(n[i])) continue;
+    if (p[i].nodeType === 1 && n[i].nodeType === 1 && a[i].nodeType === 1 && a[i].tagName === 'IMG'
+        && srcOnly(p[i], n[i])) { swapWhenLoaded(a[i], n[i].getAttribute('src')); continue; }
     if (depth < 16 && p[i].nodeType === 1 && n[i].nodeType === 1 && a[i].nodeType === 1
         && a[i].tagName === n[i].tagName && (sameOpening(p[i], n[i]) || flipsOnly(a[i], p[i], n[i]))
         && morph(a[i], p[i], n[i], depth + 1)) continue;
@@ -57,6 +77,9 @@ class _LayoutMethods {
   // nothing, and changed markup replaces only the nodes that differ. A write
   // to the column that bypasses this must clear el._arrHtml.
   _paintCol(el, html) {
+    // While a tablet's pages are measured the column's state is the probe's:
+    // painted then, it showed every tile at once for a moment
+    if (this._flowMeasuring && el.id === 'col-right') return false;
     html = html || '';
     if (el._arrHtml === html && el.firstChild) return false;
     const prev = el._arrHtml;
@@ -313,6 +336,13 @@ class _LayoutMethods {
   // wiring below is safe to repeat, so calling it twice doubles nothing.
   _wireRight(right) {
     if (!right) return;
+    // A tablet's shelves and list are held to the pages' height from their
+    // first paint: until their own pages are measured they would show every
+    // tile at once
+    const hold = this._flowFits && this._rightMaxH ? this._rightMaxH + 'px' : '';
+    right.style.maxHeight = hold;
+    right.classList.toggle('flow-held', !!hold);
+    if (hold) right.style.minHeight = hold;
     this._wirePageButtons();
     this._wirePopup();
     this._wireOverseerrButtons();
@@ -327,10 +357,54 @@ class _LayoutMethods {
     this._wireTmdbNotice(right);
     this._wireLibraryTiles(right);
     this._wireMinimize(['right']);
+    this._wireMobList(right);
+    if (right.querySelector('.mob-shelves')) requestAnimationFrame(() => this._wireShelfFade());
+    if (right.querySelector('.to-sheet-hdr')) requestAnimationFrame(() => {
+      this._fitSheetHdr(right);
+      this._wireSheetSize(right);
+      right.querySelectorAll('.to-sheet-body').forEach(b => this._syncEdgeFade(b));
+    });
     if (this._searchActive) {
       const srWrap = right.querySelector('.search-results-wrap');
       if (srWrap) this._wireSearchResultCards(srWrap);
     }
+  }
+
+  // The phone's list layout: a tile opens its category over the whole screen
+  // — a poster category as See More, the rest in a sheet of their own — and
+  // the sheet's arrow puts it away.
+  _wireMobList(right) {
+    if (right._mobListWired) return;
+    right._mobListWired = true;
+    right.addEventListener('click', e => {
+      // A tablet's sheet is a window over a dimmed screen: a tap beside it
+      // closes it, as its own close button does
+      if (e.target.closest('.to-sheet-veil')) {
+        e.stopPropagation();
+        right.querySelector('.to-sheet .sheet-x')?.click();
+        return;
+      }
+      if (e.target.closest('[data-mob-sheet-close]')) {
+        e.stopPropagation();
+        this._mobSheet = null;
+        this._reRenderRight(true);
+        return;
+      }
+      const row = e.target.closest('[data-mob-open]');
+      if (!row) return;
+      e.stopPropagation();
+      const id = row.dataset.mobOpen;
+      const cfg = this._getSectionOverlayConfig(id);
+      if (cfg) {
+        this._overlay = { section: id, page: 0, tvPending: null, shown: SHEET_BATCH };
+        this._sheetFetchFailed = null;
+        this._reRenderSection(id);
+        if (cfg.apiEndpoint) this._proactiveSectionLoad(id);
+        return;
+      }
+      this._mobSheet = id;
+      this._reRenderRight(true);
+    });
   }
 
   _reRenderRight(force = false) {
@@ -399,7 +473,9 @@ class _LayoutMethods {
   // stejná logika jako _measureAndLockHeight(), ale iteruje _searchPage místo _rightPage.
   _measureSearchMaxHeight() {
     const right = this.shadowRoot.getElementById('col-right');
-    if (!right) return 0;
+    // Results a phone scrolls through only grow: held to the tallest, a short
+    // answer after a long one would sit above an empty screen
+    if (!right || this._searchScroll) return 0;
     const savedPage = this._searchPage;
     let maxH = 0;
     const probe = this._rightProbe(right);
@@ -430,6 +506,18 @@ class _LayoutMethods {
   _measureAndLockHeight() {
     const right = this.shadowRoot.getElementById('col-right');
     if (!right) return;
+
+    // A phone's shelves and list have no pages to hold the column to: it is as
+    // tall as what it shows, and grows and shrinks with a category opened
+    if (this._mobFlow && !this._flowFits) {
+      this._rightMaxH = 0;
+      this._rightMaxHFor = null;
+      this._flowPages = null;
+      right.style.minHeight = '';
+      return;
+    }
+    if (this._flowFits) { this._measureFlowPages(right); return; }
+    this._flowPages = null;
 
     // Overlay otevřen → na mobilu nenastavovat cached výšku (overlay má jen 1 kategorii),
     // na desktopu aplikovat cached výšku jako dříve
@@ -487,6 +575,107 @@ class _LayoutMethods {
     this._wireRight(right);
   }
 
+  // A tablet's shelves or list: the column is held to the height its
+  // categories have as pages (categoriesCount), and what it shows is cut into
+  // pages that keep to it — each a run of tiles or shelves, a list's broken
+  // where a row of tiles ends.
+  _measureFlowPages(right) {
+    const key = this._rightMaxHKey() + '|' + this._mobLayout + '|' + this._cfgGet('discover', 'categoriesCount', 3);
+    if (this._rightMaxHFor === key && this._rightMaxHCfg === this._config) {
+      right.style.minHeight = this._rightMaxH + 'px';
+      return;
+    }
+    // Measured without what lies over the column: a category opened over the
+    // screen, See More
+    const saved = { page: this._rightPage, pages: { ...this._pages }, sheet: this._mobSheet, overlay: this._overlay, flow: this._flowPages };
+    this._mobSheet = null;
+    this._overlay = null;
+    this._flowMeasuring = true;
+    const probe = this._rightProbe(right);
+    let pages = saved.flow ? [...saved.flow] : [];
+    let maxH = this._rightMaxH || 0;
+    try {
+    // The height the categories have as pages, the tallest page of them. As
+    // on screen every category stands as tall as the tallest (_syncSecHeights):
+    // found first with nothing held, then the pages measured holding to it.
+    // What the column holds now belongs to shelves or a list, not to pages.
+    this._measuringPages = true;
+    probe.style.setProperty('--sec-wrap-h', 'auto');
+    const eachPage = fn => {
+      for (let p = 0; p < 20; p++) {
+        this._rightPage = p;
+        Object.keys(this._pages).forEach(k => { this._pages[k] = 0; });
+        probe.innerHTML = this._mobMinWrap('right', this._renderRight());
+        fn();
+        if (!probe.querySelector('.rp-btn[data-dir="next"]:not(.rp-btn-hidden):not([disabled])')) break;
+      }
+    };
+    let tallest = 0;
+    if (!maxWidth(BP.STACKED)) {
+      probe.style.setProperty('--sec-min-h', '0px');
+      eachPage(() => probe.querySelectorAll('.sec-card:not(.sec-search)').forEach(c => { tallest = Math.max(tallest, c.offsetHeight); }));
+      probe.style.setProperty('--sec-min-h', `${Math.min(900, tallest)}px`);
+    }
+    // A shelf stands as tall as a category does as pages; measured on screen
+    // its posters, sized from the last measurement, would only let it grow
+    this._flowSecH = tallest ? Math.min(900, tallest) : 0;
+    maxH = 0;
+    eachPage(() => { maxH = Math.max(maxH, probe.scrollHeight); });
+    this._measuringPages = false;
+    probe.style.removeProperty('--sec-wrap-h');
+    // Everything at once, with a pager under it, to see where each part ends
+    // and how much the pager and the column's padding take below the last
+    this._flowPages = [[0, 999], [999, 999]];
+    this._rightPage = 0;
+    probe.innerHTML = this._mobMinWrap('right', this._renderRight());
+    const units = [...probe.querySelectorAll('.rp-sections > .mob-rows > .mob-row, .rp-sections > .mob-cat')];
+    const top0 = probe.getBoundingClientRect().top;
+    const box = u => { const r = u.getBoundingClientRect(); return { top: r.top - top0, bottom: r.bottom - top0 }; };
+    const boxes = units.map(box);
+    pages = [];
+    if (this._mobLayout === 'shelves') {
+      // A shelf stands where a category stood, as tall: a page holds as many
+      // as a page of categories does (categoriesCount)
+      const per = Math.max(2, parseInt(this._cfgGet('discover', 'categoriesCount', 3)) || 3)
+        - (this._cfgGet('discover', 'showSearch', true) !== false ? 1 : 0);
+      for (let i = 0; i < units.length; i += per) pages.push([i, Math.min(units.length, i + per)]);
+    } else if (boxes.length) {
+      const tail = probe.scrollHeight - Math.max(...boxes.map(b => b.bottom));
+      const limit = maxH - tail;
+      let start = 0;
+      while (start < boxes.length) {
+        // A later page starts where the first did, under the search
+        const shift = boxes[start].top - boxes[0].top;
+        let end = start + 1;
+        while (end < boxes.length && boxes[end].bottom - shift <= limit) end++;
+        // Never part of a row of tiles on one page and the rest on the next
+        while (end < boxes.length && end > start + 1 && boxes[end].top === boxes[end - 1].top) end--;
+        pages.push([start, end]);
+        start = end;
+      }
+    }
+    } finally {
+      probe.remove();
+      this._measuringPages = false;
+      this._flowMeasuring = false;
+    }
+    this._flowPages = pages.length > 1 ? pages : null;
+    this._mobSheet = saved.sheet;
+    this._overlay = saved.overlay;
+    Object.assign(this._pages, saved.pages);
+    this._rightPage = Math.min(saved.page || 0, Math.max(0, pages.length - 1));
+    this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
+    this._rightMaxH    = maxH;
+    this._rightMaxHFor = key;
+    this._rightMaxHCfg = this._config;
+    right.style.minHeight = maxH + 'px';
+    this._wireRight(right);
+    // The shelves take the categories' height just measured, and their
+    // posters the height left under each heading
+    this._syncSecHeights(false);
+    requestAnimationFrame(() => this._syncSecHeights());
+  }
+
   _checkBadgeOverflow() {
     // Pro každou kartu: pokud badge řádek (mc-act nebo mc-badges) přetéká → badge-compact
     this.shadowRoot.querySelectorAll('.mc').forEach(card => {
@@ -507,7 +696,7 @@ class _LayoutMethods {
       if (this._scrollLocked) this._applyScrollLock(false);
       return;
     }
-    const open = !!this.shadowRoot?.querySelector('.popup-overlay');
+    const open = !!this.shadowRoot?.querySelector(SCREEN_OVERLAYS);
     if (open !== !!this._scrollLocked) this._applyScrollLock(open);
   }
 
@@ -559,6 +748,7 @@ class _LayoutMethods {
     this._overlayObserver.observe(this.shadowRoot, { childList: true, subtree: true });
     this._syncScrollLock();
     this._backInit();
+    this._wireToTop();
     this._isWireSheet();
     this._ddInit();
     this._ppWatchViewport();

@@ -91,7 +91,7 @@ _renderStreams() {
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
       ${_streamOverlay}
       <div class="col-hdr" style="margin-bottom:5px">
-        <div style="display:flex;gap:4px;align-items:center">${iconHtml}</div>
+        <div class="app-icon-row" style="display:flex;gap:4px;align-items:center">${iconHtml}</div>
         <span class="col-hdr-title">${this._t('streamsTitle')}</span>
         <div class="col-hdr-line"></div>
         <span class="sec-badge" style="background:rgba(229,160,13,0.12);border:1px solid rgba(229,160,13,0.25)">${streams.length} ${this._t('streamsActive')}</span>

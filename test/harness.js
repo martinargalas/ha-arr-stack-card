@@ -36,10 +36,14 @@ globalThis.localStorage = {
 // query itself has to be answerable. Default is a desktop.
 let viewportWidth = 1400;
 export function setViewport(px) { viewportWidth = px; }
+// A mouse unless a test says the screen is touched
+let touchScreen = false;
+export function setTouch(on) { touchScreen = !!on; }
 globalThis.matchMedia = q => {
   const max = /max-width:\s*(\d+)/.exec(q);
   const min = /min-width:\s*(\d+)/.exec(q);
   let matches = true;
+  if (/pointer:\s*coarse/.test(q)) matches = touchScreen;
   if (max) matches = matches && viewportWidth <= Number(max[1]);
   if (min) matches = matches && viewportWidth >= Number(min[1]);
   return { matches, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} };

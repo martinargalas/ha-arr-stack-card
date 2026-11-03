@@ -411,6 +411,7 @@ class _TraceaRrMethods {
     if (isMobile) {
       return `<div class="popup-overlay${dayClass(this)}" data-tra-modal>
         <div class="popup-glass tl-wide">
+          ${this._modalTint('tracearr')}
           <div class="is-panel-hdr" style="flex-direction:row;align-items:center;padding:${pad};gap:6px">
             <div id="tra-hdr-actions" style="display:flex;gap:6px;align-items:center;flex-shrink:0"></div>
             <div id="tra-hdr-server" style="display:none;gap:5px;align-items:center;flex-shrink:0"></div>
@@ -426,6 +427,7 @@ class _TraceaRrMethods {
     }
     return `<div class="popup-overlay${dayClass(this)}" data-tra-modal>
       <div class="popup-glass tl-wide">
+        ${this._modalTint('tracearr')}
         <div class="is-panel-hdr" style="flex-direction:row;align-items:center;padding:${pad};gap:8px">
           <div id="tra-nav-area" style="min-width:0;flex-shrink:1;overflow:hidden">${this._traNavHtml(tab, navGroup)}</div>
           <div style="flex:1"></div>

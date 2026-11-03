@@ -1,3 +1,5 @@
+import { LIB_BATCH } from '../render/library.js';
+
 class _LibraryWireMethods {
 
   _wireLibModal(el) {
@@ -65,6 +67,7 @@ class _LibraryWireMethods {
   _wireLibModalBody(el) {
     const glass = el.querySelector('.popup-glass');
     if (!glass) return;
+    this._libWireMore(el);
 
     // Sort is handled via custom dropdown clicks in glass.addEventListener('click')
 
@@ -89,9 +92,41 @@ class _LibraryWireMethods {
           // .popup-glass (see _wireLibModal), so nothing needs re-wiring here. Leaving
           // #lib-search untouched keeps the iOS keyboard open while typing.
           this._patchResultsWrap(el, 'lib-results-wrap', () => this._libBodyHtml());
+          this._libWireMore(el);
         }, 220);
       });
     }
+  }
+
+  // The phone's Library scrolls (#48): the footer under the last batch, once
+  // it nears the screen, adds the next batch where it stands — the reader's
+  // place and the posters already drawn are left as they are.
+  _libWireMore(el) {
+    this._libMoreIo?.disconnect();
+    this._libMoreIo = null;
+    const box = el.querySelector('#lib-scroll');
+    const foot = box?.querySelector('[data-lib-more]');
+    if (!foot) return;
+    this._libMoreIo = new IntersectionObserver(en => {
+      if (en.some(x => x.isIntersecting)) this._libMore(el);
+    }, { root: box, rootMargin: '0px 0px 600px 0px' });
+    this._libMoreIo.observe(foot);
+  }
+
+  _libMore(el) {
+    const m = this._libModal;
+    const box = el.querySelector('#lib-scroll');
+    const foot = box?.querySelector('[data-lib-more]');
+    if (!m || !foot) return;
+    const all = this._libFilteredItems();
+    const next = all.slice(m._shown, m._shown + LIB_BATCH);
+    m._shown += next.length;
+    const list = m.view === 'posters' ? box.querySelector('#lib-poster-grid') : box.firstElementChild;
+    list?.insertAdjacentHTML('beforeend', next.map(i => m.view === 'posters' ? this._libPosterCard(i) : this._libOverviewCard(i)).join(''));
+    if (m._shown >= all.length) { foot.remove(); this._libMoreIo?.disconnect(); return; }
+    // Still in reach after the batch (a tall phone): look again
+    this._libMoreIo.unobserve(foot);
+    this._libMoreIo.observe(foot);
   }
 }
 

@@ -47,9 +47,18 @@ export const BP = {
   NARROW:  1400, // a narrow desktop
 };
 
+/** What covers the screen: the modals, and See More on a phone (#48). The back
+ *  button closes them and the page behind them stops scrolling. */
+export const SCREEN_OVERLAYS = '.popup-overlay, .to-sheet';
+
 /** True when the screen is `px` wide or less. */
 export function maxWidth(px) {
   return window.matchMedia(`(max-width:${px}px)`).matches;
+}
+
+/** A screen worked by touch rather than a mouse: a tablet, a Nest Hub, a wall panel. */
+export function isTouch() {
+  return window.matchMedia('(pointer: coarse)').matches;
 }
 
 /** The phone check most modals use. */

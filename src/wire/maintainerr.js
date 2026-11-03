@@ -1,3 +1,4 @@
+import { MT_BATCH } from '../render/mt-kit.js';
 // ──────────────────────────────────────────────────────────────────────────
 // Maintainerr wire — card clicks, modal event handling, CRUD, rule editor
 // ──────────────────────────────────────────────────────────────────────────
@@ -129,6 +130,75 @@ class _WireMaintainerrMethods {
       if (!m.colDetail.logs) this._mtLoadColLogs(el);
       else this._mtMeasureLogs(el);
     }
+    this._mtWireMore(el);
+  }
+
+  // A phone's grid scrolls (#48): the footer under it, once near the screen,
+  // brings the next batch - the next page from Maintainerr for Overview,
+  // more of what is loaded elsewhere - added where it stands
+  _mtWireMore(el) {
+    this._mtMoreIo?.disconnect();
+    this._mtMoreIo = null;
+    const box = el?.querySelector('#mt-scroll');
+    const foot = box?.querySelector('[data-mt-more]');
+    if (!foot) return;
+    this._mtMoreIo = new IntersectionObserver(en => {
+      if (en.some(x => x.isIntersecting)) this._mtMore(el);
+    }, { root: box, rootMargin: '0px 0px 600px 0px' });
+    this._mtMoreIo.observe(foot);
+  }
+
+  async _mtMore(el) {
+    const m = this._maintainerrModal;
+    if (!m || this._mtMoreBusy) return;
+    this._mtMoreBusy = true;
+    try {
+      if (m.tab === 'overview' && m.overview) {
+        const ov = m.overview;
+        if (ov.searchItems) ov._shown = (ov._shown || MT_BATCH) + MT_BATCH;
+        else if ((ov.items || []).length < (ov.totalSize || 0)) {
+          ov.page = (ov.page || 0) + 1;
+          const data = await this._mtOverviewPageData(ov, MT_BATCH).catch(() => null);
+          const add = data?.items || [];
+          // Nothing came back: the end, whatever the total said
+          if (!add.length) ov.totalSize = ov.items.length;
+          ov.items = [...ov.items, ...add];
+          this._mtResolvePosters(add, el);
+        }
+      } else if (m.tab === 'collections' && m.colDetail) {
+        const cd = m.colDetail;
+        if (m.colSubTab === 'exclusions') cd._exShown = (cd._exShown || MT_BATCH) + MT_BATCH;
+        else cd._shown = (cd._shown || MT_BATCH) + MT_BATCH;
+      }
+    } finally { this._mtMoreBusy = false; }
+    if (!this._maintainerrModal) return;
+    if (!this._mtPatchGrid(el)) this._mtLoadTab(m.tab, el);
+  }
+
+  // Brings a phone's scrolling grid up to date in place: posters that are
+  // the same stay as they are, changed ones are swapped one by one, new ones
+  // added at the end. Redrawing the tab would throw the reader back to the top
+  // and draw every poster again. False when there is no such grid.
+  _mtPatchGrid(el) {
+    const m = this._maintainerrModal;
+    const box = el?.querySelector('#mt-scroll');
+    const grid = box?.querySelector('#mt-poster-grid');
+    if (!m || !grid) return false;
+    const html = m.tab === 'overview' ? this._mtOverviewTabHtml()
+      : m.tab === 'collections' ? this._mtCollectionsTabHtml() : '';
+    const t = document.createElement('template');
+    t.innerHTML = html;
+    const next = t.content.querySelector('#mt-poster-grid');
+    if (!next) return false;
+    const live = [...grid.children];
+    [...next.children].forEach((n, i) => {
+      if (!live[i]) grid.appendChild(n);
+      else if (live[i].outerHTML !== n.outerHTML) live[i].replaceWith(n);
+    });
+    live.slice(next.children.length).forEach(n => n.remove());
+    if (!t.content.querySelector('[data-mt-more]')) box.querySelector('[data-mt-more]')?.remove();
+    this._mtWireMore(el);
+    return true;
   }
 
   // Measure the gap between the top of the grid and the paging row. Reading the
@@ -791,7 +861,7 @@ class _WireMaintainerrMethods {
         } catch (_) { /* leave blank */ }
       }));
     }
-    if (changed && this._maintainerrModal?.tab === 'overview') this._mtLoadTab('overview', modal);
+    if (changed && this._maintainerrModal?.tab === 'overview' && !this._mtPatchGrid(modal)) this._mtLoadTab('overview', modal);
   }
 
 }

@@ -87,6 +87,9 @@ class _ThemeMethods {
       this._styleWarned = badKey;
       console.warn(`[arr-card] styles: could not read ${badKey} — colours take a hex value, rgb() or "r, g, b"`);
     }
+    // Posters a row in a phone's full-screen lists (discover.mobileColumns)
+    if (this._mobCols !== 3) props.push(`--arr-mob-cols: ${this._mobCols};`);
+    if (this._tabCols) props.push(`--arr-tab-grid: repeat(${this._tabCols}, minmax(0, 1fr));`);
     if (props.length) rules.push(`:host { ${props.join(' ')} }`);
 
     const mci = c('modalCloseButtonIconColor');
@@ -124,15 +127,23 @@ class _ThemeMethods {
       // nowhere to go. A section's side chevrons stay bare. The gradient starts
       // at the outer edge: from the padding box it repeated in the transparent
       // border and drew a thin ring inside the button.
-      const bg = `linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 60%), ${dark ? 'rgba(74, 79, 92, 0.7)' : 'rgba(22, 30, 46, 0.62)'}`;
+      const tint = dark ? '74, 79, 92' : '22, 30, 46';
+      const bg = `linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 60%), rgba(${tint}, ${dark ? 0.7 : 0.62})`;
+      // At night the glass's top edge catching the light and a faint ring
+      // round it — no drop shadow under a control in the dark, where it made
+      // every button stand out in 3D
+      const edgeDark = 'inset 0 0.5px 0 rgba(255, 255, 255, 0.35)';
       const sh = dark
-        ? 'inset 0 0.5px 0 rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 10px rgba(var(--_shadow, 0, 0, 0), 0.3)'
+        ? `${edgeDark}, 0 0 0 1px rgba(255, 255, 255, 0.06)`
         : 'inset 0 0.5px 0 rgba(255, 255, 255, 0.45), inset 0 -0.5px 0 rgba(255, 255, 255, 0.12), 0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.12)';
       const fg = dark ? '255, 255, 255, 0.86' : '255, 255, 255, 1';
       const ctl = '.col-right :is(.rp-btn, .cal-hdr-btn, .smp-hdr-btn, .hdr-filter-btn, .mt-tb-sel, .sv-chev, .dc-chev)';
       rules.push(`${ctl} { background: ${bg} !important; background-origin: border-box !important; box-shadow: ${sh} !important; border-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; color: rgba(${fg}) !important; }`);
       rules.push(`${ctl} :is(svg, ha-icon, .mt-tb-lbl, .mt-tb-chev) { color: rgba(${fg}) !important; }`);
       rules.push('.col-right .rp-btn:disabled { opacity: 0.3 !important; }');
+      // At night the page arrows keep the glass and its lit top edge, without
+      // the ring and the drop shadow, which together read as soft and blurred
+      if (dark) rules.push(`.col-right .rp-btn { box-shadow: ${edgeDark} !important; }`);
       // The windows' buttons and chosen items wear the same glass through
       // their tokens; from the border box, or it rings inside their edge
       rules.push('.popup-overlay :is(button, .mt-seg-ind, .is-f-btn, select) { background-origin: border-box; }');
@@ -167,15 +178,27 @@ class _ThemeMethods {
       // pane elsewhere — with a white label; the one whose panel is open takes
       // the control glass. The close button is an action: always the glass.
       const btns = '.popup-overlay .pp-hero-pill :is(.is-open-btn, .remove-lib-btn, .is-collapse-btn)';
-      const quiet = `background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)) !important; color: rgba(${fg}) !important;`;
+      // A faint shade of the control glass under the sheen: over a light
+      // stretch of the picture, white glass with a white label was blank
+      const quiet = `background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04) 60%), rgba(${tint}, ${dark ? 0.38 : 0.3}) !important; color: rgba(${fg}) !important; text-shadow: 0 1px 2px rgba(var(--_shadow, 0, 0, 0), 0.25);`;
       rules.push('.popup-overlay .pp-hero-pill { background: none !important; border-color: transparent !important; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; }');
-      rules.push(`${btns} { ${quiet} box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.45), inset 0 -0.5px 0 rgba(255, 255, 255, 0.12), 0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.12); border-color: transparent !important; backdrop-filter: blur(6px) saturate(115%) brightness(1.06); -webkit-backdrop-filter: blur(6px) saturate(115%) brightness(1.06); }`);
+      rules.push(`${btns} { ${quiet} box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.45), inset 0 -0.5px 0 rgba(255, 255, 255, 0.12)${dark ? '' : ', 0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.12)'}; border-color: transparent !important; backdrop-filter: blur(6px) saturate(115%); -webkit-backdrop-filter: blur(6px) saturate(115%); }`);
       rules.push(`${btns} :is(svg, ha-icon, span) { color: inherit !important; }`);
-      rules.push(`:is(${btns}.active, .popup-overlay .popup-close) { background: ${bg} !important; background-origin: border-box; box-shadow: ${sh}; border-color: transparent !important; color: rgba(${fg}) !important; }`);
+      rules.push(`:is(${btns}.active, .popup-overlay .popup-close, .to-sheet .popup-close) { background: ${bg} !important; background-origin: border-box; box-shadow: ${sh}; border-color: transparent !important; color: rgba(${fg}) !important; }`);
       // The open one is plain control glass: under it the lens bent the
       // picture round its edge and, with the glass's own sheen, read as 3D
       rules.push(`${btns}.active { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }`);
-      rules.push(`.popup-overlay .popup-close :is(svg, ha-icon) { color: rgba(${fg}) !important; }`);
+      rules.push(`:is(.popup-overlay, .to-sheet) .popup-close :is(svg, ha-icon) { color: rgba(${fg}) !important; }`);
+      // The calendars' "this week / this month" and today's date strip are
+      // the current thing, not a link: the control glass, as every chosen
+      // control here, not the accent blue
+      rules.push(`.popup-overlay .tl-page-btn.is-here:disabled { background: ${bg} !important; background-origin: border-box; box-shadow: ${sh}; border-color: transparent !important; color: rgba(${fg}) !important; }`);
+      rules.push(`.popup-overlay .cal-day-col.cal-day-today .cal-day-hdr { background: ${bg} !important; background-origin: border-box; border-color: transparent !important; }`);
+      rules.push(`.popup-overlay .cal-day-col.cal-day-today .cal-day-hdr :is(.cal-day-name, .cal-day-num) { color: rgba(${fg}) !important; }`);
+      // A sheet's type switch takes the windows' tab bar's pill: the sheet sits
+      // in the column, where the windows' own nav colours are not defined
+      rules.push(`.to-sheet .type-nav .mt-nav-ind { background: ${bg}; background-origin: border-box; box-shadow: ${sh}; border-color: transparent; }`);
+      rules.push(`.to-sheet .type-nav .mt-nav-btn.is-on { color: rgba(${fg}); }`);
       rules.push('.popup-overlay :is(.popup-close, .pp-hero-pill button):hover { filter: brightness(1.15); }');
       // The headers' type switch (All, films, shows, music) as glass-cards'
       // heat pump draws its choices, without the track on the light panel:
@@ -191,8 +214,11 @@ class _ThemeMethods {
       // own: the sort choices in a recessed track with the current one lifted
       // out of it in the control glass, and a lone button — pause all, pause or
       // remove a download — in that glass outright, white like its glyphs
-      rules.push(`.col-left .sort-btns { gap: 2px; padding: 3px; border-radius: 999px; background: ${dark ? 'rgba(0, 0, 0, 0.18)' : 'rgba(255, 255, 255, 0.08)'}; }`);
+      // On the windows' tab bar's track: a faint fill and a hairline round it
+      rules.push('.col-left .sort-btns { gap: 2px; padding: 3px; border-radius: 999px; background: rgba(var(--_fill, 255, 255, 255), 0.06); border: 1px solid rgba(var(--_line, 255, 255, 255), calc(0.12 * var(--_a-line, 1))); }');
       rules.push('.col-left .sb { background: none; border-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; color: rgba(235, 235, 245, 0.6); }');
+      // The order switch is drawn as the windows' tab bar is: the chosen one
+      // in the control glass, the others quiet
       rules.push(`.col-left .sb.on { background: ${bg}; background-origin: border-box; box-shadow: ${sh}; border-color: transparent; color: rgb(255, 255, 255); }`);
       rules.push('.col-left .sort-btns .sb:not(.on) :is(svg, ha-icon) { color: rgba(235, 235, 245, 0.6); }');
       rules.push('.col-left .sort-btns .sb.on :is(svg, ha-icon) { color: rgb(255, 255, 255); }');
@@ -221,7 +247,7 @@ class _ThemeMethods {
     }
 
     // No app icons: the section titles stand alone, on both sides
-    if (cfg.applicationIcons === 'none') rules.push('.col-hdr :is(.app-ico, .app-icon-row) { display: none; }');
+    if (cfg.applicationIcons === 'none') rules.push('.col-hdr :is(.app-ico, .app-icon-row) { display: none !important; }');
 
     const uiScale = parseFloat(cfg['uiScale']);
     if (uiScale && uiScale !== 1 && !isNaN(uiScale)) {

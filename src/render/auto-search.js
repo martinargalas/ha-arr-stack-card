@@ -63,7 +63,8 @@ class _AutoSearchMethods {
       .filter(s => s.seasonNumber > 0)
       .sort((a, b) => b.seasonNumber - a.seasonNumber);
 
-    const PER_PAGE   = this._snSeasonsPerPage || 6;
+    // A phone scrolls through every season instead of turning pages
+    const PER_PAGE   = this._isMob ? Math.max(1, seasons.length) : (this._snSeasonsPerPage || 6);
     const totalPages = Math.max(1, Math.ceil(seasons.length / PER_PAGE));
     const page       = Math.min(this._snSeasonsPage || 0, totalPages - 1);
     const sliced     = seasons.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
@@ -71,7 +72,7 @@ class _AutoSearchMethods {
     const pagination = this._uiPager('sn-spage', page, totalPages);
     // Fixed min-height for PER_PAGE rows — keeps the pagination row from jumping up
     // when the last page has fewer seasons than a full page.
-    const rowsMinH   = this._snSeasonsRowH ? (PER_PAGE * this._snSeasonsRowH + (PER_PAGE - 1) * 4) : 234;
+    const rowsMinH   = this._isMob ? 0 : this._snSeasonsRowH ? (PER_PAGE * this._snSeasonsRowH + (PER_PAGE - 1) * 4) : 234;
 
     return `<div class="sn-is-section">
       <div class="sn-seasons-label">${this._t('snSeasonsLabel')}</div>

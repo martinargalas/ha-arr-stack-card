@@ -391,6 +391,40 @@ ${EDITOR_CSS}
             <input type="number" data-group="discover" data-key="itemsPerCategory" value="${this._cfg('discover','itemsPerCategory',4)}" min="2" max="10"/>
           </div>
           <div class="row">
+            <span class="row-label">Layout on a phone</span>
+            <select data-group="discover" data-key="mobileLayout" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+              <option value="pages" ${this._cfg('discover','mobileLayout','pages')==='pages'?'selected':''}>Pages</option>
+              <option value="shelves" ${this._cfg('discover','mobileLayout','pages')==='shelves'?'selected':''}>Shelves</option>
+              <option value="list" ${this._cfg('discover','mobileLayout','pages')==='list'?'selected':''}>List</option>
+            </select>
+          </div>
+          <div class="row">
+            <span class="row-label">Posters a row on a phone</span>
+            <select data-group="discover" data-key="mobileColumns" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+              <option value="3" ${String(this._cfg('discover','mobileColumns','3'))==='3'?'selected':''}>3</option>
+              <option value="2" ${String(this._cfg('discover','mobileColumns','3'))==='2'?'selected':''}>2</option>
+            </select>
+          </div>
+          <div class="row">
+            <span class="row-label">Layout on a tablet</span>
+            <select data-group="discover" data-key="tabletLayout" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+              <option value="pages" ${this._cfg('discover','tabletLayout','pages')==='pages'?'selected':''}>Pages</option>
+              <option value="shelves" ${this._cfg('discover','tabletLayout','pages')==='shelves'?'selected':''}>Shelves</option>
+              <option value="list" ${this._cfg('discover','tabletLayout','pages')==='list'?'selected':''}>List</option>
+            </select>
+          </div>
+          <div class="row">
+            <span class="row-label">Posters a row on a tablet</span>
+            <select data-group="discover" data-key="tabletColumns" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+              <option value="0" ${String(this._cfg('discover','tabletColumns','0'))==='0'?'selected':''}>Auto</option>
+              <option value="3" ${String(this._cfg('discover','tabletColumns','0'))==='3'?'selected':''}>3</option>
+              <option value="4" ${String(this._cfg('discover','tabletColumns','0'))==='4'?'selected':''}>4</option>
+              <option value="5" ${String(this._cfg('discover','tabletColumns','0'))==='5'?'selected':''}>5</option>
+              <option value="6" ${String(this._cfg('discover','tabletColumns','0'))==='6'?'selected':''}>6</option>
+            </select>
+          </div>
+          <div class="hint">Pages turns a few categories at a time, as on a wider screen. Shelves shows every category, one under another, each a row you swipe sideways. List folds them to their titles; tap one to open it. A phone is up to 600 px wide; a tablet is up to 900 px, or a touch screen up to 1400 px (an iPad held sideways, a Nest Hub); a desktop worked by a mouse always uses pages. Posters a row counts for the lists that fill the screen: See More, a category opened from the list and, on a phone, the search, Library and Maintainerr. Auto fits as many as the tablet's width takes.</div>
+          <div class="row">
             <span class="row-label">Search bar</span>
             <label class="toggle"><input type="checkbox" data-group="discover" data-key="showSearch" ${this._cfg('discover','showSearch',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
@@ -620,6 +654,15 @@ ${EDITOR_CSS}
           </div>
           <div class="hint">Show brand-colour background tint behind each section's content.</div>
 
+          <div class="row">
+            <span class="row-label">Window colour overlays</span>
+            <label class="toggle">
+              <input type="checkbox" data-style-key="modalOverlays" ${this._styleVal('modalOverlays', true) !== false ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="hint">Show the app's colours at the top of its windows: Activity, Library, the calendar, the statistics, Prowlarr, Maintainerr and the full-screen category windows.</div>
+
           ${this._numberRow('UI scale', 'uiScale', 1, 0.5, 3, 0.05, '0.5–3')}
           <div class="hint">Scale all card content proportionally. Use values above 1 on large screens or TVs where the default text is too small. Reduce columns (Items per category) if content overflows.</div>
 
@@ -789,7 +832,7 @@ ${EDITOR_CSS}
     });
 
     // Top-level selects
-    this.shadowRoot.querySelectorAll('select[data-key]').forEach(el => {
+    this.shadowRoot.querySelectorAll('select[data-key]:not([data-group])').forEach(el => {
       el.addEventListener('change', () => this._update({ [el.dataset.key]: el.value }));
     });
 
@@ -1124,8 +1167,8 @@ class ArrStackSearchEditor extends HTMLElement {
     const general = `
       <div class="section">
         ${toggle('header', 'Pop-up header', !!c.header)}
-        <div class="hint">On: a whole header — icon, name, the field and a close button. For a Bubble Card pop-up with <code>show_header: false</code>, as its first card. Off: the field alone, for a header that brings its own.</div>
-        ${c.header ? text('name', 'Name', 'Movies') + text('icon', 'Icon', 'mdi:movie-play-outline')
+        <div class="hint">On: a whole header — icon, the field and a close button. For a Bubble Card pop-up with <code>show_header: false</code>, as its first card. Off: the field alone, for a header that brings its own.</div>
+        ${c.header ? text('icon', 'Icon', 'mdi:movie-play-outline')
           + toggle('close', 'Close button', c.close !== false)
           + '<div class="hint">Closes the pop-up, as its own header did.</div>' : ''}
         ${toggle('bare', 'No background', c.background === 'none')}

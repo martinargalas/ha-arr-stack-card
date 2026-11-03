@@ -203,7 +203,7 @@ _ppWireIsPanel(root, glass) {
   // ── IS filter selects — change event delegation ──
   // ── IS panel swipe (mobile) ──
   const signal = this._ppAbort?.signal;
-  const isPanel = root.querySelector('.is-panel');
+  const isPanel = this._isMob ? null : root.querySelector('.is-panel');
   if (isPanel) {
     let _swipeX = null;
     isPanel.addEventListener('touchstart', e => { _swipeX = e.touches[0].clientX; }, { passive: true, signal });
@@ -227,6 +227,7 @@ _ppWireIsPanel(root, glass) {
     if (sel.dataset.isselect !== undefined) {
       this._isFilters = { ...this._isFilters, [sel.dataset.isselect]: sel.value };
       this._isPage = 0;
+      this._isScrollTop = true;
     } else if (sel.dataset.snisselect !== undefined) {
       this._snIsFilters = { ...this._snIsFilters, [sel.dataset.snisselect]: sel.value };
     }

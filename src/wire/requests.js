@@ -178,6 +178,7 @@ _wireOverseerrButtons() {
       const fromSearch   = tvSource === 'search';
       if (!show) return;
       btn.disabled = true;
+      btn._arrIdle = btn.innerHTML;
       btn.textContent = '…';
 
       // One-click TV request — přeskočí overlay, requestuje automaticky Season 1
@@ -457,6 +458,16 @@ _wireTvAbsOverlay(el, tvp) {
   el.querySelector('.to-tv-cancel-abs')?.addEventListener('click', e => {
     e.stopPropagation();
     this._overlay.tvPending = null;
+    // The overlay and the busy plus are drawn by hand, outside the markup the
+    // column was painted from — unchanged markup repaints nothing, so they are
+    // put back by hand too.
+    el.remove();
+    this.shadowRoot.querySelectorAll('.trending-overlay .tv-req-open').forEach(b => {
+      if (b._arrIdle == null) return;
+      b.innerHTML = b._arrIdle;
+      b._arrIdle = null;
+      b.disabled = false;
+    });
     this._reRenderSection(this._overlay.section);
   });
 

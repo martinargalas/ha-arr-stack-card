@@ -1,3 +1,5 @@
+import { MT_BATCH } from '../render/mt-kit.js';
+
 // Maintainerr, the Overview tab: the library as Maintainerr sees it, paged on the server. Split out of wire/maintainerr.js.
 
 class _WireMaintainerrOverviewMethods {
@@ -37,7 +39,9 @@ class _WireMaintainerrOverviewMethods {
     if (!ov.libId) { ov.loading = false; return; }
 
     const lib = (this._maintainerrLibraries || []).find(l => String(l.id) === String(ov.libId));
-    const { perPage } = this._mtGridCalc(ov, 90);
+    // A phone starts from the first batch and scrolls on (_mtMore)
+    if (this._isMob) ov.page = 0;
+    const perPage = this._isMob ? MT_BATCH : this._mtGridCalc(ov, 90).perPage;
     const q = (ov.search || '').trim();
 
     ov.loading = true;

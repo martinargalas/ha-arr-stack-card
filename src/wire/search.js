@@ -1,4 +1,5 @@
 // The main search: typing, the type switch, result cards and paging. Split out of wire/index.js.
+import { SHEET_BATCH } from '../render/sections.js';
 
 class _WireSearchMethods {
 
@@ -46,6 +47,40 @@ _sizeSearchOverlay(root) {
   ov.style.height = `${first.offsetHeight}px`;
 }
 
+// A phone's results end in a footer; nearing it adds the next batch under the
+// cards already there, which stay as they are. A fresh observer reports at
+// once, so a batch too short to push the footer away brings the next one too.
+_searchWireMore() {
+  this._searchIo?.disconnect();
+  const foot = this.shadowRoot?.querySelector('.sec-search [data-search-more]');
+  if (!foot) return;
+  this._searchIo = new IntersectionObserver(en => {
+    if (en.some(x => x.isIntersecting)) this._searchMore();
+  }, { rootMargin: '0px 0px 600px 0px' });
+  this._searchIo.observe(foot);
+}
+
+_searchMore() {
+  const wrap  = this.shadowRoot?.querySelector('.sec-search .search-results-wrap');
+  const grid  = wrap?.querySelector('.mgrid.search-scroll');
+  const total = (this._searchResults || []).length;
+  const from  = Math.min(total, this._searchShown || SHEET_BATCH);
+  if (!grid || from >= total) return;
+  const to = Math.min(total, from + SHEET_BATCH);
+  this._searchShown = to;
+  const tpl = document.createElement('template');
+  tpl.innerHTML = this._searchCards(from, to);
+  const fresh = tpl.content;
+  if (to >= total) wrap.querySelector('[data-search-more]')?.remove();
+  this._wireSearchResultCards(fresh);
+  grid.append(fresh);
+  // Written past both painters: their next paint starts over
+  this._searchResultsHtml = null;
+  const col = this.shadowRoot.getElementById('col-right');
+  if (col) col._arrHtml = null;
+  this._wireOverseerrButtons();
+}
+
 _wireSearchResultCards(root) {
   requestAnimationFrame(() => this._sizeSearchOverlay(root));
   root.querySelectorAll('.pg-btn[data-search-dir]').forEach(btn => {
@@ -61,6 +96,7 @@ _wireSearchResultCards(root) {
     });
   });
   this._wireMusAddSelects(root);
+  this._searchWireMore();
   // Find similar on a result: Similar titles opens on it, and its back button
   // closes it again onto these results. Kept from the card under it.
   root.querySelectorAll('.sim-seed').forEach(btn => {
@@ -302,6 +338,7 @@ _searchSetQuery(value) {
   const q = (value || '').trim();
   this._searchQuery = value;
   this._searchPage  = 0;
+  this._searchShown = 0;
   clearTimeout(this._searchTimer);
   if (!q) {
     this._searchActive  = false;
@@ -333,6 +370,7 @@ _searchPickType(seg) {
   this._searchSegAnim = true;
   try { localStorage.setItem('arr-search-type', next); } catch (_) {}
   this._searchPage = 0;
+  this._searchShown = 0;
   const segEl = seg.closest('.mt-seg');
   if (segEl) {
     const idx = [...segEl.querySelectorAll('.mt-seg-half')].indexOf(seg);
@@ -357,6 +395,7 @@ _searchClearAll() {
   this._searchQuery   = '';
   this._searchActive  = false;
   this._searchPage    = 0;
+  this._searchShown   = 0;
   this._searchResults = [];
   this._searchMaxH    = null;
   this._reRenderRight(true);

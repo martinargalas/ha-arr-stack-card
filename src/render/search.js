@@ -1,4 +1,6 @@
 import { POPUP_TYPE } from '../constants.js';
+import { BP, maxWidth } from '../shared/ui.js';
+import { SHEET_BATCH } from './sections.js';
 
 // The main search: the field, the type switch, the result grid, music results. Split out of render/right.js.
 
@@ -12,11 +14,22 @@ _renderSearch() {
       ${bar}
       ${this._searchActive ? `<div class="col-hdr" style="margin:${bar ? 13 : 2}px 0 5px">
         ${this._searchHdrIcon()}
-        <span class="col-hdr-title">${this._t('searchResults')}</span>
+        ${this._searchSegBelow
+          // On a phone the row is too narrow for both: the switch says what
+          // these are, and stays clear of the minimise dot at the far end
+          ? this._searchTypeSeg()
+          : `<span class="col-hdr-title">${this._t('searchResults')}</span>`}
         <div class="col-hdr-line"></div>
       </div>` : ''}
       <div class="search-results-wrap">${this._renderSearchResultsInner()}</div>
     </div>`;
+}
+
+// A pop-up header on a phone is one short field between an icon and the close
+// button; the type switch filled it and hid what was typed. There it sits on
+// the results' own header instead.
+get _searchSegBelow() {
+  return !!this._searchExt && maxWidth(BP.PHONE);
 }
 
 // The field itself: icon, input, type switch, clear. Drawn in the column, or
@@ -38,7 +51,7 @@ _searchBarHtml() {
           autocomplete="off"
           style="${inputStyle}"
         >
-        ${this._searchTypeSeg()}
+        ${this._searchSegBelow ? '' : this._searchTypeSeg()}
         <button class="search-bar-clear" data-action="search-clear" style="${iconStyle}${this._searchActive ? '' : 'display:none;'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         ${this._searchExt ? '' : this._tmdbNoticeHtml()}
       </div>`;
@@ -93,15 +106,42 @@ _renderSearchResultsGrid() {
   if (!this._searchResults.length) {
     return `<div class="placeholder" style="font-size:12px;color:var(--secondary-text-color,#888)">No results</div>`;
   }
-  const gradColor = 'rgba(0,0,0,0.88)';
-  const textColor = 'rgba(var(--_ptx, 255, 255, 255), 1)';
+  // A phone scrolls down the results instead of paging them, three a row as
+  // in See More, the next batch added as the end comes near (_searchMore)
+  if (this._searchScroll) {
+    const shown = Math.min(this._searchResults.length, this._searchShown || SHEET_BATCH);
+    return `<div class="mgrid search-scroll">${this._searchCards(0, shown)}</div>
+      ${shown < this._searchResults.length ? '<div class="sheet-more" data-search-more></div>' : ''}`;
+  }
   const cols  = Math.max(2, Math.min(10, parseInt(this._cfgGet('discover', 'itemsPerCategory', 4)) || 4));
   const sPage = cols * 2;
   const sp    = this._searchPage || 0;
+  const cards = this._searchCards(sp * sPage, (sp + 1) * sPage);
+  // Paged by the chevrons beside the grid, the way every category row is. With
+  // one page they stay as spacers so the grid keeps its place.
+  const total = Math.ceil(this._searchResults.length / sPage);
+  const chev = (dir, glyph, off) => total > 1
+    ? `<button class="pg-btn" data-search-dir="${dir}"${off ? ' disabled' : ''}>${glyph}</button>`
+    : `<button class="pg-btn pg-btn-ph" disabled>${glyph}</button>`;
+  return `<div class="pg-wrap">
+    ${chev('prev', '‹', sp === 0)}
+    <div class="mgrid" style="grid-template-columns:repeat(${cols},1fr);row-gap:10px">${cards}</div>
+    ${chev('next', '›', sp >= total - 1)}
+  </div>`;
+}
+
+get _searchScroll() {
+  return this._isMob;
+}
+
+// The result cards from one place in the list to another
+_searchCards(from, to) {
+  const gradColor = 'rgba(0,0,0,0.88)';
+  const textColor = 'rgba(var(--_ptx, 255, 255, 255), 1)';
   // Same poster settings the category rows honour — search results were built
   // before those existed and had their own hardcoded treatment.
   const pc    = this._posterCfg();
-  const cards = this._searchResults.slice(sp * sPage, (sp + 1) * sPage).map(m => {
+  return this._searchResults.slice(from, to).map(m => {
     if (m.mediaType === 'music') return this._renderSearchMusicCard(m);
     const isMovie = m.mediaType === 'movie';
     const title = this._escHtml(m.title || m.name || '');
@@ -206,17 +246,6 @@ _renderSearchResultsGrid() {
         ${reqOverlay}
       </div>`;
   }).join('');
-  // Paged by the chevrons beside the grid, the way every category row is. With
-  // one page they stay as spacers so the grid keeps its place.
-  const total = Math.ceil(this._searchResults.length / sPage);
-  const chev = (dir, glyph, off) => total > 1
-    ? `<button class="pg-btn" data-search-dir="${dir}"${off ? ' disabled' : ''}>${glyph}</button>`
-    : `<button class="pg-btn pg-btn-ph" disabled>${glyph}</button>`;
-  return `<div class="pg-wrap">
-    ${chev('prev', '‹', sp === 0)}
-    <div class="mgrid" style="grid-template-columns:repeat(${cols},1fr);row-gap:10px">${cards}</div>
-    ${chev('next', '›', sp >= total - 1)}
-  </div>`;
 }
 
 _renderSearchMusicCard(res) {

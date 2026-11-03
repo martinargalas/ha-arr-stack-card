@@ -64,6 +64,7 @@ class _JellystatMethods {
       : 'padding:14px 22px 10px;gap:12px;align-items:center';
     return '<div class="popup-overlay' + dayClass(this) + '" data-js-modal>'
       + '<div class="popup-glass tl-wide">'
+      + this._modalTint('jellystat')
       + '<div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div>'
       + '<div class="popup-body" id="js-body" style="padding:' + (isMobile ? '12px 14px 16px' : '14px 22px 20px') + '"><div class="is-loading"><span>' + this._t('loading') + '</span></div></div>'
       + '</div></div>';

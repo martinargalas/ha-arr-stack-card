@@ -1,5 +1,7 @@
 // Maintainerr, the Overview tab: the library as Maintainerr sees it, paged on the server. Split out of render/maintainerr.js.
 
+import { MT_BATCH } from './mt-kit.js';
+
 class _MaintainerrOverviewRenderMethods {
 
   _mtOverviewTabHtml() {
@@ -9,7 +11,9 @@ class _MaintainerrOverviewRenderMethods {
     if (!ov) return `<div class="is-loading"><span>${this._t('loading')}</span></div>`;
 
     const isMob = this._isMob;
-    const { cols, perPage, gap, gridMaxW } = this._mtGridCalc(ov, 90);
+    const calc = this._mtGridCalc(ov, 90);
+    const { perPage, gap, gridMaxW } = calc;
+    const cols = isMob ? this._mobCols : calc.cols;
 
     const libs = this._maintainerrLibraries || [];
     const libItems = libs.map(l => [l.id, l.title]);
@@ -48,7 +52,13 @@ class _MaintainerrOverviewRenderMethods {
     const safePage = Math.min(ov.page || 0, totalPages - 1);
     // Unsearched items are already one page, but sliced anyway: while the column
     // slider is held the grid is re-laid from the page fetched for the old size.
-    const pageItems = searching ? allItems.slice(safePage * perPage, (safePage + 1) * perPage) : allItems.slice(0, perPage);
+    // A phone holds every page fetched so far (_mtMore adds the next), or
+    // as many search results as it has been asked for
+    const shown = isMob && searching ? this._mtShown(ov, ov.search) : 0;
+    const pageItems = isMob
+      ? (searching ? allItems.slice(0, shown) : allItems)
+      : searching ? allItems.slice(safePage * perPage, (safePage + 1) * perPage) : allItems.slice(0, perPage);
+    const more = isMob && (searching ? shown < allItems.length : allItems.length < total);
 
     // Archive box, same glyph as the Collections nav pill. Deliberately not a
     // plus — that means "request this title" everywhere else on the card.
@@ -77,7 +87,7 @@ class _MaintainerrOverviewRenderMethods {
     const grid = posters
       ? `<div id="mt-poster-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap}px;overflow:hidden${gridMaxW ? `;max-width:${gridMaxW}px;margin:0 auto` : ''}">${posters}</div>`
       : empty;
-    const pagHtml = this._uiPager('mt-ov-page', safePage, totalPages, true);
+    const pagHtml = isMob ? '' : this._uiPager('mt-ov-page', safePage, totalPages, true);
     const dragHandle = this._mtDragHandleHtml(ov, isMob);
     const pagWrap = (pagHtml || dragHandle)
       ? `<div id="mt-pag-wrap" style="flex-shrink:0;position:relative;${dragHandle && !pagHtml ? 'height:36px' : ''}">${pagHtml}${dragHandle}</div>`
@@ -85,7 +95,7 @@ class _MaintainerrOverviewRenderMethods {
 
     return `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative">` +
       `<div style="flex-shrink:0">${toolbar}</div>` +
-      `<div style="flex:1;min-height:0;overflow:hidden">${grid}</div>` +
+      `<div style="flex:1;min-height:0;overflow:hidden;position:relative">${isMob ? this._mtScrollWrap(grid, more) : grid}</div>` +
       pagWrap +
       this._mtOverviewDialogHtml() +
       `</div>`;

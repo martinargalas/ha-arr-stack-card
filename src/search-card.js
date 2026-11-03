@@ -13,8 +13,7 @@
 // for a header that draws its own.
 //
 //   type: custom:arr-stack-search
-//   header: true          # optional: a whole pop-up header — icon, name, field, close
-//   name: Movies          # with header
+//   header: true          # optional: a whole pop-up header — icon, field, close
 //   icon: mdi:movie-play-outline
 //   close: true           # with header, default on: closes the pop-up (drops its #hash)
 //   background: none      # optional: no surface of its own
@@ -55,7 +54,6 @@ const BAR_CSS = `
   /* The bar's own text, as glass-cards' header has it: the secondary text
      colour, a touch lighter at night */
   .ash-ico ha-icon { --mdc-icon-size: 24px; display: flex; color: rgba(var(--_fg2, 255, 255, 255), var(--ash-fg-a, 0.85)); }
-  .ash-name { flex: none; font-size: 15px; font-weight: 600; white-space: nowrap; color: rgba(var(--_fg2, 255, 255, 255), var(--ash-fg-a, 0.85)); }
   :host([dark]) { --ash-fg-a: 0.76; }
   .ash-col:not(.ash-has-ico) { padding-left: 10px; }
   .ash-field { flex: 1; min-width: 0; }
@@ -68,8 +66,17 @@ const BAR_CSS = `
   }
   .ash-close svg { width: 18px; height: 18px; display: block; position: relative; z-index: 1; }
   .ash-hint { flex: 1; font-size: 12px; color: rgba(var(--_fg3, 255, 255, 255), 0.65); padding: 0 4px; }
-  /* A phone keeps the icon and gives the name's width to the field */
-  @media (max-width: 600px) { .ash-name { display: none; } }
+  /* Stacked columns: the field is the bar's own width, and while there is a
+     search the icon gives it its room too */
+  @media (max-width: 900px) {
+    .ash-col.ash-searching .ash-ico { display: none; }
+    .ash-col.ash-searching { padding-left: 10px; }
+  }
+  /* A phone: the field has the whole bar, searching or not */
+  @media (max-width: 600px) {
+    .ash-ico { display: none; }
+    .ash-col { padding-left: 10px; }
+  }
 `;
 
 const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
@@ -150,7 +157,6 @@ class ArrStackSearch extends HTMLElement {
     const header = !!c.header;
     const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
     const ico = header && c.icon ? `<div class="ash-ico"><ha-icon icon="${esc(c.icon)}"></ha-icon></div>` : '';
-    const name = header && c.name ? `<span class="ash-name">${esc(c.name)}</span>` : '';
     const field = card
       ? `<div class="ash-field">${card._searchBarHtml()}</div>`
       : `<div class="ash-hint">${esc(ARR_I18N[this._lang()]?.extSearchHint || ARR_I18N.en.extSearchHint)}</div>`;
@@ -160,7 +166,7 @@ class ArrStackSearch extends HTMLElement {
       ? `<button class="col col-right ash-close${bare ? ' ash-bare' : ''}" data-ash-close title="Close">${CLOSE_SVG}</button>` : '';
     const wrap = sr.querySelector('.card');
     wrap.classList.add('ash');
-    wrap.innerHTML = `<div class="col col-right ash-col${bare ? ' ash-bare' : ''}${ico ? ' ash-has-ico' : ''}">${ico}${name}${field}</div>${close}`;
+    wrap.innerHTML = `<div class="col col-right ash-col${bare ? ' ash-bare' : ''}${ico ? ' ash-has-ico' : ''}">${ico}${field}</div>${close}`;
     this._drawn = !!card?._hass;
     this._applyLook();
     this._wire();
@@ -182,6 +188,9 @@ class ArrStackSearch extends HTMLElement {
     sr.addEventListener('mousedown', e => {
       if (e.target.closest('.search-type-seg')) e.preventDefault();
     }, { signal: sig });
+    sr.addEventListener('focusin', () => this._markSearching(), { signal: sig });
+    sr.addEventListener('focusout', () => setTimeout(() => this._markSearching(), 0), { signal: sig });
+    this._markSearching();
     sr.addEventListener('click', e => {
       if (e.target.closest('[data-ash-close]')) { this._closePopup(); return; }
       if (!this._card) return;
@@ -194,6 +203,17 @@ class ArrStackSearch extends HTMLElement {
         input?.focus();
       }
     }, { signal: sig });
+  }
+
+  // Searching: the field has the caret or holds a search
+  _markSearching() {
+    const sr = this.shadowRoot;
+    const col = sr.querySelector('.ash-col');
+    if (!col) return;
+    const input = sr.querySelector('.search-bar-input');
+    const on = (!!input && sr.activeElement === input)
+      || !!this._card?._searchActive || !!(this._card?._searchQuery || '').trim();
+    col.classList.toggle('ash-searching', on);
   }
 
   // What changed in the card: the type switch shows up with the first letter,
@@ -218,6 +238,7 @@ class ArrStackSearch extends HTMLElement {
     if (clear) clear.style.display = card._searchActive ? '' : 'none';
     const input = wrap.querySelector('.search-bar-input');
     if (input && sr.activeElement !== input) input.value = card._searchQuery || '';
+    this._markSearching();
     card._syncSegVars?.(sr);
     sr.querySelectorAll('.search-type-seg .mt-seg[data-seg-to]').forEach(seg => {
       if (seg.dataset.seg !== seg.dataset.segTo) requestAnimationFrame(() => { seg.dataset.seg = seg.dataset.segTo; });
@@ -261,7 +282,7 @@ class ArrStackSearch extends HTMLElement {
       const target = right.getBoundingClientRect().left;
       field.style.marginLeft = '0px';
       const gap = target - field.getBoundingClientRect().left;
-      // Only ever further in: the icon and the name are not pushed out of the bar
+      // Only ever further in: the icon is not pushed out of the bar
       field.style.marginLeft = gap > 0 ? `${Math.round(gap)}px` : '0px';
     });
   }
@@ -283,7 +304,7 @@ class ArrStackSearch extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { header: true, name: 'Movies', icon: 'mdi:movie-play-outline' };
+    return { header: true, icon: 'mdi:movie-play-outline' };
   }
 }
 

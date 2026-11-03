@@ -46,6 +46,10 @@ discover:
   categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
   itemsPerCategory: 4        # columns per category grid  (default: 4)
   showSearch: true           # search bar at the top of the right panel; false gives its slot to one more category  (default: true)
+  mobileLayout: pages        # pages | shelves | list — the right panel on a phone (up to 600 px)  (default: pages)
+  mobileColumns: 3           # 2 | 3 — posters a row in a phone's full-screen windows  (default: 3)
+  tabletLayout: pages        # pages | shelves | list — the same on a tablet: up to 900 px, or a touch screen up to 1400 px  (default: pages)
+  tabletColumns: 0           # 0 (as many as fit) | 3–6 — posters a row in a tablet's windows; the slider in a window's header overrides it  (default: 0)
   showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
   oneClickRequest: false     # skip request overlay — uses defaults below  (default: false)
   oneClickNonAdminOnly: false         # one-click only for non-admin users  (default: false)
@@ -123,6 +127,7 @@ styles:
   cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only)
   dayNightMode: true              # auto switch popup colours based on sun.sun
   categoryOverlays: true          # colour-tinted overlays on category poster grids  (default: true)
+  modalOverlays: true             # the app's colours at the top of its windows and the full-screen category windows  (default: true)
   applicationIcons: real          # real | mdi | none — real app logos, MDI icons, or no icons next to the section titles  (default: real)
   uiScale: 1                      # scale all card content — use >1 on large screens/TVs  (default: 1)
   leftPanelWidth: 40              # downloads panel width as % of card width  (default: 40)
@@ -147,9 +152,8 @@ A second card that holds the Arr Stack Card's search field, for the header of a 
 
 ```yaml
 type: custom:arr-stack-search
-header: true                 # a whole pop-up header: icon, name, the search field and a close button  (default: false)
-name: Movies                 # with header
-icon: mdi:movie-play-outline # with header
+header: true                 # a whole pop-up header: an icon, the search field and a close button  (default: false)
+icon: mdi:movie-play-outline # with header; left out on a phone, where the field needs the room
 close: true                  # with header: the close button, which closes the pop-up  (default: true)
 background: none             # optional: no surface of its own, for a header that draws one
 link: ""                     # only with several search headers on one page: the card with the same search_link

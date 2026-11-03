@@ -322,12 +322,11 @@ Anything added by hand, outside Radarr and Sonarr, has nothing to open. Clicking
 If the card lives in a pop-up — Bubble Card, for example — its search field can move up into the pop-up's header, next to the close button. The card gets a little shorter, and the search is always in reach.
 
 1. In the card's editor, turn on **Search in a pop-up header**.
-2. Add the **Arr Stack Search** card to the pop-up, above the Arr Stack Card. Turn on **Pop-up header** in its editor to get a whole header — icon, name, the search field and a close button — sized like Bubble Card's own.
+2. Add the **Arr Stack Search** card to the pop-up, above the Arr Stack Card. Turn on **Pop-up header** in its editor to get a whole header — an icon, the search field and a close button — sized like Bubble Card's own. On a phone the icon steps aside so the field has the room, and the results' type switch sits on the results themselves.
 
 ```yaml
 - type: custom:arr-stack-search
   header: true
-  name: Movies
   icon: mdi:movie-play-outline
 - type: custom:arr-stack-card
   search_in_header: true
@@ -335,6 +334,18 @@ If the card lives in a pop-up — Bubble Card, for example — its search field 
 ```
 
 The header wears the card's look, whichever preset or colours you use. Typing in it searches in the card as before, and the results appear in the card. Several cards with a header each on one page? Give each pair the same **Link**.
+
+#### On a phone and a tablet
+
+The right panel can be laid out three ways, chosen apart for a phone and for a tablet (**Layout on a phone** and **Layout on a tablet** in the editor):
+
+- **Pages** — a few categories at a time, turned with the page bar, as on a desktop (the default)
+- **Shelves** — every category one under another, each a row of posters you swipe sideways; its edges fade where the row goes on
+- **List** — every category folded to its name and a peek at its first posters; tap one to open it
+
+A category opened from a shelf or the list fills the phone's screen — on a tablet it is a window the size of the card's others — and scrolls down, loading more as you near the end. Choose how many posters a row (**Posters a row** in the editor); on a tablet a slider in the window's header changes it on the spot and remembers it. On a tablet, shelves and the list keep to the height the panel has as pages and page through what does not fit.
+
+On a phone the search results, Library, Maintainerr and a film's or show's Interactive Search all scroll instead of paging, with an arrow back to the top. A tablet here is anything up to 900 px wide, or a touch screen up to 1400 px — an iPad held sideways, a Nest Hub.
 
 ### Poster display settings
 
@@ -364,10 +375,11 @@ Control what appears on poster cards across all categories. All options are avai
 - Responsive layout — mobile, tablet, desktop
 - Sticky navigation bar on mobile
 - Pagination for all sections; configurable columns per category
-- **See More overlay** — full-screen grid for any section
+- **See More overlay** — every title of a section in one grid; on a phone and a tablet a full-screen window that scrolls
 - Visual card editor in HA (no YAML required for basic setup)
 - Performance mode — disables backdrop blur
 - Category colour overlays — colour-tinted poster overlays per section, toggle via `styles.categoryOverlays`
+- Window colour overlays — the app's colours at the top of its windows (Activity, Library, the calendar, the statistics, Prowlarr, Maintainerr, the full-screen category windows), toggle via `styles.modalOverlays`
 - Real app icons — uses the actual Radarr, Sonarr, qBittorrent, etc. logos, in their own colours or one colour of your choice; or MDI icons; or no icons at all next to the section titles (**App icons** under Icons in the Appearance tab)
 - UI scale — proportionally scales all card content via `styles.uiScale`. Useful on large monitors or TVs where the default size is too small
 - Left panel width — adjustable via `styles.leftPanelWidth` (percentage of card width, default 40)

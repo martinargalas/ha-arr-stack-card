@@ -80,6 +80,12 @@ ${TOKEN_CSS}
         .card-body.swap-sides { grid-template-columns: 1fr; }
       }
 
+      /* A search from a pop-up header, columns stacked: the results come
+         straight under the field (see _searchFocus) */
+      @media (max-width: 900px) {
+        .card-body.search-focus .col-left { display: none; }
+      }
+
       /* ── Glass outer panel ── */
       .col {
         position: relative;
@@ -362,6 +368,14 @@ ${TOKEN_CSS}
       .cl-speed { font-size: 12px; font-weight: 800; }
 
       .sort-btns { margin-left: auto; display: flex; gap: 3px; }
+      /* Each the same width, its glyph in the middle; the order's arrow only
+         on the chosen one — held hidden on the rest, it pushed their glyphs
+         off centre */
+      /* A set height, not one from the glyph's line: an odd 21px in a 29px
+         track left one pixel more below than above once the card was scaled */
+      .sort-btns { align-items: center; }
+      .sort-btns .sb { flex: 1 1 0; min-width: 36px; height: 22px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; }
+      .sort-btns .sb:not(.on) .sb-dir { display: none; }
 
       .sb {
         display: inline-flex; align-items: center; justify-content: center; gap: 1px;
@@ -1744,6 +1758,247 @@ ${TOKEN_CSS}
         column-gap: 7px; row-gap: 7px; align-content: start;
       }
 
+      /* See More on a phone (#48): the category over the whole screen, three
+         posters wide, scrolled down. It stays in the right column so the
+         column's wiring and tokens still reach it; while it is open the column
+         drops what would trap a fixed box inside it — its backdrop filter and
+         the stacking layer every child of a column gets. */
+      .to-sheet {
+        position: fixed; inset: 0; z-index: 8;
+        margin: 0 !important; padding: 0 !important;
+        display: flex; flex-direction: column;
+        background: var(--_bg, var(--card-bg));
+        backdrop-filter: var(--_blur, blur(35px) saturate(100%));
+        -webkit-backdrop-filter: var(--_blur, blur(35px) saturate(100%));
+      }
+      .col-right.flow-held { overflow: hidden; }
+      /* A window's posters fade out at its edges where the list runs on
+         (_syncEdgeFade); its arrow to the top sits over the list, not in it */
+      .to-sheet-body {
+        --fe: color-mix(in srgb, black 35%, transparent);
+        -webkit-mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px)), var(--fe-b, black) 100%);
+        mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px)), var(--fe-b, black) 100%);
+      }
+      /* A soft fade: the edge keeps a third of the poster, over a short run */
+      .to-sheet-body.fade-t { --ft: 28px; --fe-t: var(--fe); }
+      .to-sheet-body.fade-b { --fb: 40px; --fe-b: var(--fe); }
+      .to-sheet > .to-top-wrap {
+        position: absolute; right: max(16px, env(safe-area-inset-right, 0px));
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 2;
+      }
+      /* A tablet's window header: the posters' size, a slider as the windows'
+         column sliders draw it (_wireSheetSize) */
+      .sz-slider { flex: none; width: 110px; padding: 12px 8px; touch-action: none; cursor: ew-resize; --sz: 0.5; }
+      .sz-track { position: relative; height: 3px; border-radius: 2px; background: rgba(var(--_fg3, 255, 255, 255), 0.22); }
+      .sz-fill { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--sz) * 100%); border-radius: 2px; background: rgba(var(--_fg2, 255, 255, 255), 0.6); }
+      .sz-thumb {
+        position: absolute; top: 50%; left: calc(var(--sz) * 100%);
+        width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%;
+        background: rgb(var(--_fg, 255, 255, 255)); box-shadow: 0 1px 4px rgba(var(--_shadow, 0, 0, 0), 0.35);
+      }
+      .to-sheet-veil { display: none; }
+      /* A tablet keeps it to a window the size of the card's other windows,
+         over the screen dimmed as they dim it */
+      @media (min-width: 601px) {
+        .to-sheet {
+          inset: 0; margin: auto !important;
+          width: min(800px, 90vw); height: 85vh;
+          border-radius: var(--arr-modal-radius, 28px); overflow: hidden;
+          box-shadow: 0 20px 60px rgba(var(--_shadow, 0, 0, 0), 0.4);
+        }
+        .to-sheet .to-sheet-hdr { padding: 14px 16px 10px; }
+        .to-sheet-veil {
+          display: block; position: fixed; inset: 0; z-index: 7;
+          background: rgba(var(--_shade, 0, 0, 0), 0.6);
+          backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        }
+      }
+      .col:has(.to-sheet) { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+      .col:has(.to-sheet) > * { z-index: auto; }
+      .col:has(.to-sheet) .rp-nav { display: none !important; }
+      .to-sheet .to-sheet-hdr {
+        flex: none; margin: 0 !important;
+        padding: calc(env(safe-area-inset-top, 0px) + 10px) max(12px, env(safe-area-inset-right, 0px)) 10px max(12px, env(safe-area-inset-left, 0px));
+      }
+      /* The calendar window's header, control for control: its padding and
+         gap, the switch at its height with 52px choices, the name where the
+         dates are, the modal's round close. The switch stands in the row; when
+         the name beside it would be cut (.tight, _fitSheetHdr) the funnel
+         takes its place and opens it as in the column. */
+      .to-sheet .to-sheet-hdr {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center; gap: 8px;
+      }
+      .to-sheet-hdr .sh-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+      .to-sheet-hdr .sh-end { justify-content: flex-end; }
+      .to-sheet-hdr .col-hdr-title {
+        min-width: 0; max-width: 46vw; overflow: hidden; text-overflow: ellipsis;
+        white-space: nowrap; text-align: center;
+      }
+      @media (max-width: 600px) {
+        .to-sheet-hdr.has-filter { grid-template-columns: minmax(0, 1fr) auto; }
+        .to-sheet-hdr.has-filter .col-hdr-title { display: none; }
+      }
+      .to-sheet-hdr .popup-close.sheet-x { position: static; flex-shrink: 0; margin: 0 0 0 4px; box-shadow: none; }
+      .to-sheet-hdr:not(.tight) .hdr-filter-btn { display: none !important; }
+      .to-sheet-hdr:not(.tight) .hdr-filter > .search-type-seg {
+        position: static !important; transform: none !important;
+        max-width: none !important; opacity: 1 !important; pointer-events: auto !important;
+        background: none !important; box-shadow: none !important;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+      }
+      .to-sheet-hdr.tight .hdr-filter-btn { width: 36px; height: 36px; margin: 0; }
+      .to-sheet-body {
+        flex: 1; min-height: 0; position: relative; z-index: 1;
+        overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        padding: 4px max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left, 0px));
+      }
+      .to-grid.to-grid-sheet { flex: none; grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)) !important; row-gap: 12px; }
+      /* Search results on a phone: scrolled down like See More, as many a row */
+      .mgrid.search-scroll { grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)) !important; gap: 12px 8px; }
+      /* Never the scroll anchor: held in place while posters are added above
+         it, it would stay in view and ask for the next batch without end */
+      .to-sheet-foot {
+        overflow-anchor: none;
+        padding: 18px 0 4px; text-align: center; font-size: 12px;
+        color: rgba(var(--_fg3, 255, 255, 255), 0.5);
+      }
+
+      /* The phone's flowing layouts of the right column (#48,
+         discover.mobileLayout). A category's posters or tiles are one row,
+         swiped sideways and snapping to a poster, running out to the
+         column's edges; the pager arrows have nothing to page. */
+      .rp-sections:is(.mob-shelves, .mob-list) .pg-btn { display: none; }
+      .rp-sections:is(.mob-shelves, .mob-list) :is(.mgrid, .tl-row) {
+        display: flex !important; gap: 8px;
+        overflow-x: auto; overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory; scrollbar-width: none;
+        margin: 0 calc(-1 * var(--mob-bleed, 12px)); padding: 0 var(--mob-bleed, 12px) 2px;
+        scroll-padding: 0 var(--mob-bleed, 12px);
+      }
+      .rp-sections:is(.mob-shelves, .mob-list) :is(.mgrid, .tl-row)::-webkit-scrollbar { display: none; }
+      /* Posters fade out at the column's edges where the row goes on past
+         them: on the right while there is more, on the left once it has
+         moved (_syncShelfFade) */
+      .rp-sections.mob-shelves :is(.mgrid, .tl-row) {
+        -webkit-mask-image: linear-gradient(to right, transparent 0, black var(--fl, 0px), black calc(100% - var(--fr, 0px)), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0, black var(--fl, 0px), black calc(100% - var(--fr, 0px)), transparent 100%);
+      }
+      .rp-sections.mob-shelves .fade-l { --fl: 44px; }
+      .rp-sections.mob-shelves .fade-r { --fr: 44px; }
+      .rp-sections:is(.mob-shelves, .mob-list) :is(.mgrid, .tl-row) > * {
+        flex: 0 0 calc((100% - 2 * var(--mob-bleed, 12px) - 16px) / 2.6);
+        min-width: 0; scroll-snap-align: start;
+      }
+      /* Shelves beside the downloads: each category is as tall as the
+         tallest (a row of tiles), and the posters fill that height, their
+         width following from it */
+      .mob-shelves.shelf-fill .sec-card:not(.sec-search) { display: flex; flex-direction: column; }
+      .mob-shelves.shelf-fill .sec-card > .mgrid.shelf { flex: 1 1 auto; min-height: 100px; }
+      .mob-shelves.shelf-fill .sec-card > .mgrid.shelf > * { flex: 0 0 calc(var(--shelf-h, 180px) * 2 / 3); height: var(--shelf-h, 180px); aspect-ratio: auto; }
+      /* A tablet's shelf shows more of the row, the next poster still cut to
+         say there is more */
+      @media (min-width: 601px) {
+        .rp-sections:is(.mob-shelves, .mob-list) :is(.mgrid, .tl-row) > * {
+          flex-basis: calc((100% - 2 * var(--mob-bleed, 12px) - 32px) / 4.6);
+        }
+        .rp-sections:is(.mob-shelves, .mob-list) .tl-row > * {
+          flex-basis: calc((100% - 2 * var(--mob-bleed, 12px) - 24px) / 3.4);
+        }
+      }
+
+      /* The list: one tile a category — a peek at its first posters, its
+         name, how many — opening it over the whole screen */
+      /* As many tiles a row as the column has room for: one across a wide
+         column was mostly air, two in a narrow one cut their names */
+      .mob-rows { display: grid; gap: var(--arr-section-gap, 8px); grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+      .mob-row {
+        display: flex; align-items: center; gap: 14px; width: 100%; box-sizing: border-box;
+        padding: 10px 12px 10px 10px; border: 0; border-radius: 18px; cursor: pointer;
+        background: rgba(var(--_fill, 255, 255, 255), calc(0.07 * var(--_a-box, 1)));
+        color: inherit; font: inherit; text-align: left;
+        -webkit-tap-highlight-color: transparent; transition: transform .12s;
+      }
+      .mob-row:active { transform: scale(0.98); }
+      .mob-peek { position: relative; flex: none; width: 72px; height: 54px; }
+      .mob-peek > img {
+        position: absolute; top: 0; width: 37px; height: 54px; border-radius: 7px; object-fit: cover;
+        background: rgba(var(--_fill, 255, 255, 255), 0.1);
+        box-shadow: 0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.35);
+      }
+      .mob-peek > :nth-child(1) { left: 0; transform: rotate(-6deg); }
+      .mob-peek > :nth-child(2) { left: 17px; z-index: 1; }
+      .mob-peek > :nth-child(3) { left: 35px; transform: rotate(6deg); }
+      /* Fewer than three: centred in the same room, the one alone upright */
+      .mob-peek[data-n="1"] > img { left: 17px; transform: none; }
+      .mob-peek[data-n="2"] > :nth-child(1) { left: 8px; }
+      .mob-peek[data-n="2"] > :nth-child(2) { left: 27px; transform: rotate(6deg); }
+      /* A service: its icon on a glass square, in the posters' room */
+      .mob-app {
+        position: absolute; left: 9px; top: 0; width: 54px; height: 54px; box-sizing: border-box;
+        display: grid; place-items: center;
+        color: rgba(var(--_fg2, 255, 255, 255), 0.85);
+      }
+      /* Upright, not fanned like posters; three icons two over one, the one
+         centred under the pair */
+      .mob-peek > .mob-app { transform: none; left: 9px; }
+      .mob-app .app-icon-row {
+        display: grid !important; grid-template-columns: repeat(2, auto);
+        justify-content: center; justify-items: center; gap: 2px !important;
+      }
+      .mob-app .app-icon-row > :nth-child(3):last-child { grid-column: 1 / -1; }
+      .mob-row-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .mob-row-t b {
+        font-size: 16px; font-weight: 650; color: rgb(var(--_hd, var(--_fg, 255, 255, 255)));
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .mob-row-chev { flex: none; color: rgba(var(--_fg2, 255, 255, 255), 0.5); }
+
+      /* A category that is not posters, opened from the list: its own header
+         gives way to the sheet's; posters wrap three to a row, tiles — text
+         to read — two */
+      .mob-sheet .to-sheet-body .sec-card { margin: 0 !important; padding: 0 !important; }
+      .mob-sheet .to-sheet-body .sec-card > .col-hdr { display: none; }
+      .mob-sheet .to-sheet-body .pg-btn { display: none; }
+      .mob-sheet .to-sheet-body :is(.mgrid, .tl-row) {
+        display: grid !important; grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)) !important; gap: 12px 8px;
+      }
+      .mob-sheet .to-sheet-body .tl-row { grid-template-columns: repeat(2, 1fr) !important; }
+      /* On a tablet the screen-wide lists take its own count of posters
+         (discover.tabletColumns), or as many as fit, about the width a phone's
+         three have */
+      @media (min-width: 601px) {
+        :is(.to-grid.to-grid-sheet, .mob-sheet .to-sheet-body .mgrid) {
+          grid-template-columns: var(--arr-tab-grid, repeat(auto-fill, minmax(118px, 1fr))) !important;
+        }
+        .mob-sheet .to-sheet-body .tl-row { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important; }
+      }
+
+      /* A long list scrolled on a phone (#48): the Library's posters and
+         overview, and the way back to the top that every such list carries —
+         sticky to the scrolling box's bottom, shown a screen and a half down */
+      .lib-scroll {
+        position: absolute; inset: 0; overflow-y: auto;
+        overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+      }
+      .lib-grid-scroll { display: grid; grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)); gap: 10px 8px; }
+      .sheet-more { overflow-anchor: none; padding: 18px 0 4px; text-align: center; font-size: 12px; color: rgba(var(--_fg3, 255, 255, 255), 0.5); }
+      .to-top-wrap {
+        position: sticky; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); height: 0;
+        display: flex; justify-content: flex-end; pointer-events: none; z-index: 5;
+      }
+      .to-top {
+        width: 44px; height: 44px; margin-top: -44px; border-radius: 50%; padding: 0;
+        display: grid; place-items: center; cursor: pointer; pointer-events: none;
+        border: 1px solid var(--is-btn-bdr, rgba(var(--_line, 255, 255, 255), 0.2));
+        background: var(--is-btn-bg, rgba(var(--_fill, 255, 255, 255), 0.14));
+        backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+        color: var(--is-btn-clr, rgb(var(--_fg, 255, 255, 255)));
+        box-shadow: 0 6px 18px rgba(var(--_shadow, 0, 0, 0), 0.3);
+        opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s;
+      }
+      .to-top-wrap.on .to-top { opacity: 1; transform: none; pointer-events: auto; }
+
       /* Abs TV req overlay — pokryje řádek karet */
       .to-tv-abs-overlay {
         position: absolute; left: 0; right: 0; z-index: 5;
@@ -2656,7 +2911,6 @@ ${TOKEN_CSS}
         gap: 8px;
         padding: 10px 14px;
         min-height: 52px;
-        border-bottom: 1px solid rgba(var(--_line, 255, 255, 255), calc(0.1 * var(--_a-line, 1)));
         flex-shrink: 0;
       }
       .cal-modal-glass .popup-close {
@@ -2716,7 +2970,7 @@ ${TOKEN_CSS}
         font-size: 9px;
         font-weight: 700;
         letter-spacing: 0.06em;
-        opacity: 0.55;
+        opacity: 0.75;
         text-transform: uppercase;
       }
       .cal-day-num {
@@ -2729,13 +2983,12 @@ ${TOKEN_CSS}
       .cal-day-col.cal-day-today .cal-day-name { opacity: 0.85; color: rgb(var(--_fg, 255, 255, 255)); }
 
       /* ── Calendar day mode overrides ── */
-      .popup-day .cal-modal-hdr { border-bottom-color: rgba(var(--_line, 0, 0, 0), 0.1); }
       .popup-day .cal-week-label { color: rgba(var(--_fg, 0, 0, 0), 0.85); }
       .popup-day .cal-day-col { background: rgba(var(--_fill, 0, 0, 0), 0.04); }
       .popup-day .cal-day-col.cal-day-today { background: rgba(var(--_fill, 0, 0, 0), 0.04); }
       .popup-day .cal-day-col.cal-day-today .cal-day-hdr { background: rgba(var(--arr-accent-rgb, 0, 122, 255), 0.5); border-bottom-color: rgba(var(--arr-accent-rgb, 0, 122, 255), 0.8); }
       .popup-day .cal-day-hdr { background: rgba(var(--_fill, 0, 0, 0), 0.05); border-bottom-color: rgba(var(--_line, 0, 0, 0), 0.12); }
-      .popup-day .cal-day-name { color: rgba(var(--_fg2, 0, 0, 0), 0.55); }
+      .popup-day .cal-day-name { color: rgba(var(--_fg2, 0, 0, 0), 0.7); }
       .popup-day .cal-day-num { color: rgba(var(--_fg, 0, 0, 0), 0.85); }
       /* Both need the .popup-day prefix to outrank the two rules above */
       .popup-day .cal-day-num-today { color: rgb(var(--_fg, 255, 255, 255)); }
@@ -2790,7 +3043,10 @@ ${TOKEN_CSS}
           overflow-x: hidden;
           gap: 4px;
         }
-        .cal-day-col.cal-day-empty { opacity: 0.4; }
+        /* A day with nothing on it steps back, its date still readable: the
+           fade on the whole row multiplied into the date's own and left it at
+           a tenth of its colour */
+        .cal-day-col.cal-day-empty .cal-day-hdr { opacity: 0.7; }
         .cal-day-col { flex-direction: row; }
         .cal-day-hdr {
           flex-direction: column;
@@ -2955,6 +3211,11 @@ ${TOKEN_CSS}
       .popup-body .sn-episodes > *,
       .popup-body .sn-ep-item,
       .popup-body .is-results-wrap > * { flex-shrink: 0; }
+      /* A phone's sources are one list scrolled inside the sheet, not pages */
+      .popup-body .is-panel .is-results-wrap.is-scroll {
+        flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
       /* Grabber on the sources panel — drag to trade height with the text */
       .pp-grab {
         flex-shrink: 0; height: 18px; margin: -2px 0 2px;
@@ -3727,6 +3988,10 @@ ${TOKEN_CSS}
         border-bottom: 1px solid var(--is-divider);
         flex-shrink: 0;
       }
+      /* A window's own header stands over its contents without a line: they
+         start in a panel of their own, and the full-screen windows part theirs
+         by fading the list. A panel's header inside a window keeps its line. */
+      .popup-glass > .is-panel-hdr { border-bottom: 0; }
       .is-panel-title {
         font-size: 10px; font-weight: 700; text-transform: uppercase;
         letter-spacing: 0.09em; color: var(--is-text-label);

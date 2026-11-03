@@ -43,6 +43,7 @@ class _WireProwlarrMethods {
       : 'padding:14px 22px 10px;gap:12px;align-items:center';
     return `<div class="popup-overlay${dayClass(this)}" data-pw-modal>
       <div class="popup-glass tl-wide">
+        ${this._modalTint('prowlarr')}
         <div class="is-panel-hdr" style="${hdrStyle}">${hdrInner}</div>
         <div class="popup-body" id="pw-body" style="padding:${_mob ? '12px 14px 16px' : '14px 22px 20px'};overflow:hidden">
           <div class="is-loading"><span>${this._t('loading')}</span></div>

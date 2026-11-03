@@ -164,6 +164,71 @@ class _UiMethods {
   // ── Paging ──────────────────────────────────────────────────────────────
 
   // Chevrons either side of dots (up to 15 pages) or of "page/total".
+  // The way back to the top of a long list scrolled on a phone (#48). It
+  // rides at the end of the scrolling box, sticky to its bottom, and shows
+  // once the reader is a screen and a half down (_wireToTop).
+  _toTopHtml() {
+    return `<div class="to-top-wrap"><button class="to-top" data-to-top aria-label="Top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+    </button></div>`;
+  }
+
+  // Once for the card: scroll events do not bubble, so they are caught on the
+  // way down, for every box with a way back to the top in it
+  _wireToTop() {
+    const sr = this.shadowRoot;
+    if (!sr || sr._toTopWired) return;
+    sr._toTopWired = true;
+    sr.addEventListener('scroll', e => {
+      const box = e.target;
+      if (!box?.classList?.contains('vscroll')) return;
+      this._toTopWrap(box)?.classList.toggle('on', box.scrollTop > box.clientHeight * 1.5);
+      if (box.classList.contains('to-sheet-body')) this._syncEdgeFade(box);
+    }, { capture: true, passive: true });
+    sr.addEventListener('click', e => {
+      const btn = e.target.closest?.('[data-to-top]');
+      if (!btn) return;
+      e.stopPropagation();
+      (btn.closest('.vscroll') || btn.closest('.to-sheet')?.querySelector(':scope > .to-sheet-body'))
+        ?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // A window's arrow sits beside its list rather than in it, out of the
+  // list's faded edge; elsewhere it rides in the scrolled box
+  _toTopWrap(box) {
+    return box.querySelector(':scope > .to-top-wrap')
+      || (box.classList.contains('to-sheet-body') ? box.parentElement?.querySelector(':scope > .to-top-wrap') : null);
+  }
+
+  // Posters cut by a window's edge fade out there: at the bottom while there
+  // is more below, at the top once the list has moved
+  _syncEdgeFade(box) {
+    box.classList.toggle('fade-t', box.scrollTop > 2);
+    box.classList.toggle('fade-b', box.scrollHeight - box.clientHeight - box.scrollTop > 2);
+  }
+
+  // A shelf's edges fade where it runs on past them: the right while there
+  // is more to see, the left once it has moved. Once for the card, scroll
+  // caught on the way down as for the arrow to the top.
+  _syncShelfFade(row) {
+    const max = row.scrollWidth - row.clientWidth;
+    row.classList.toggle('fade-l', row.scrollLeft > 2);
+    row.classList.toggle('fade-r', max - row.scrollLeft > 2);
+  }
+
+  _wireShelfFade() {
+    const sr = this.shadowRoot;
+    if (!sr) return;
+    for (const row of sr.querySelectorAll('.mob-shelves :is(.mgrid, .tl-row)')) this._syncShelfFade(row);
+    if (sr._shelfFadeWired) return;
+    sr._shelfFadeWired = true;
+    sr.addEventListener('scroll', e => {
+      const row = e.target;
+      if (row?.matches?.('.mob-shelves :is(.mgrid, .tl-row)')) this._syncShelfFade(row);
+    }, { capture: true, passive: true });
+  }
+
   _uiPager(attr, page, totalPages, numeric = false) {
     if (totalPages <= 1) return '';
     // Fifteen dots and four arrows are wider than a phone: the last arrow

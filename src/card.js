@@ -402,6 +402,7 @@ class ArrStackCard extends HTMLElement {
     this._searchQuery   = '';
     this._searchResults = [];
     this._searchPage    = 0;
+    this._searchShown   = 0;    // results drawn on a phone, which scrolls instead of paging
     this._searchLoading = false;
     this._searchActive  = false;  // overlay visible
     this._searchTimer = null;    // debounce timer
@@ -416,6 +417,7 @@ class ArrStackCard extends HTMLElement {
     this._diskPage = { radarr: 0, sonarr: 0, left: null }; // null = auto-select SAB disk
     this._rightPage = 0;
     this._rightMaxH = 0;    // cached max height across all outer pages (used to pre-lock before innerHTML swap)
+    this._mobSheet = null;  // the category open over the screen in the phone's list layout (discover.mobileLayout)
 
     // Cover gradient classes pool
     this._gradients = ['ca','cb','cc','cd','ce','cf','cg','ch','ci','cj','ck','cl','cm','cn','co','cp','cq','cr'];
@@ -434,6 +436,7 @@ class ArrStackCard extends HTMLElement {
   // ─────────────────────────────────────────────
 
   setConfig(config) {
+    const was = this._config;
     if (Array.isArray(config.categories)) {
       const CAT_MAP = { radarr: 'recentlyAdded', sonarr: 'recentlyRequested' };
       const seen = new Set();
@@ -453,6 +456,9 @@ class ArrStackCard extends HTMLElement {
     if (this._initialized) {
       this._wireStickyNav();
       this._applyTheme();
+      // A setting changed in the editor (a layout, the posters a row) shows at
+      // once, not after the page is reloaded
+      if (JSON.stringify(was) !== JSON.stringify(this._config)) this._render();
     }
   }
 
@@ -893,7 +899,8 @@ class ArrStackCard extends HTMLElement {
     const layoutClass = layout === 'left' ? ' layout-left' : layout === 'right' ? ' layout-right' : '';
     const perfClass = (this._cfg?.styles?.performanceMode || this._cfg?.performanceMode) ? ' perf-mode' : '';
     const swapClass = this._cfg?.swap_sides ? ' swap-sides' : '';
-    wrapper.innerHTML = `<div class="card-body${layoutClass}${perfClass}${swapClass}">
+    const focusClass = this._searchFocus ? ' search-focus' : '';
+    wrapper.innerHTML = `<div class="card-body${layoutClass}${perfClass}${swapClass}${focusClass}">
       <div class="col col-left" id="col-left"></div>
       <div class="col col-right" id="col-right"></div>
     </div>`;
@@ -998,6 +1005,7 @@ class ArrStackCard extends HTMLElement {
       this._calAnimType = false;
       this._calAnimView = false;
       this._syncSegVars(root);
+      this._syncTypeNavs(root);
       root.querySelectorAll('.mt-seg[data-seg-to]').forEach(seg => {
         if (seg.dataset.seg === seg.dataset.segTo) return;
         requestAnimationFrame(() => { seg.dataset.seg = seg.dataset.segTo; });
@@ -1028,6 +1036,8 @@ class ArrStackCard extends HTMLElement {
   // Buttons are baked into HTML so they survive all re-renders.
   _mobMinWrap(side, html) {
     if (!maxWidth(BP.STACKED) || !html) return html || '';
+    // Shelves and the list scroll by; folding the column away saves nothing
+    if (side === 'right' && this._mobFlow) return html;
     const isMin    = side === 'left' ? this._leftMinimized : this._rightMinimized;
     const btnBase  = 'width:18px;height:18px;border-radius:50%;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(0,0,0,0.25)';
     const minusSvg = `<svg width="10" height="2" viewBox="0 0 10 2"><rect x="0" y="0" width="10" height="2" rx="1" fill="rgba(0,0,0,0.55)"/></svg>`;
@@ -1214,6 +1224,14 @@ class ArrStackCard extends HTMLElement {
   // button) or in the card's look
   _extSearchSync(what = 'bar') {
     this._searchExt?._syncFromCard?.(what);
+    if (what === 'bar') this.shadowRoot?.querySelector('.card-body')?.classList.toggle('search-focus', this._searchFocus);
+  }
+
+  // A search typed in a pop-up header: on a phone the columns stack and the
+  // results would sit under the whole download column, a screen or more away
+  // from the field. The download column steps aside until the search is cleared.
+  get _searchFocus() {
+    return !!this._searchActive && !!this._searchExt;
   }
 
   // Called by a header that has just paired with this card or let go of it:

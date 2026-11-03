@@ -150,14 +150,14 @@ _renderCalendarModal() {
   // Type filter and view switch, matching the Maintainerr calendar
   const _si = this._mtSegIcons;
   // "All" has no obvious glyph, so it keeps its word; the other two are icons
-  const typeSeg = this._mtSegmented('data-cal-type-seg', [
+  const typeSeg = this._mtTypeNav([
     { v: 'all', label: this._t('tabAll'), attr: 'data-cal-action="tab-all"' },
     { v: 'movie', label: this._t('tabMovies'), icon: _si.movie, attr: 'data-cal-action="tab-movie"' },
     { v: 'tv', label: this._t('tabTvShows'), icon: _si.tv, attr: 'data-cal-action="tab-tv"' },
     ...(this._lidarrConfigured !== false
       ? [{ v: 'music', label: this._t('tabMusic'), icon: _si.music, attr: 'data-cal-action="tab-music"' }]
       : []),
-  ], activeTab, { width: 52, accent: '0,122,255', animatePrev: !!this._calAnimType, prev: this._calPrevTab });
+  ], activeTab);
 
   // A month grid needs seven usable columns; on a phone the modal collapses to
   // one column per day, so the view has nowhere to live and the switch goes too.
@@ -169,6 +169,7 @@ _renderCalendarModal() {
   return `
     <div class="popup-overlay${isDay ? ' popup-day' : ''}" id="cal-overlay">
       <div class="popup-glass cal-modal-glass" id="cal-glass">
+        ${this._modalTint('radarr')}
         ${loading}
         <div class="cal-modal-hdr" style="justify-content:flex-start">
           <div class="is-filter" style="flex-shrink:0">${typeSeg}</div>

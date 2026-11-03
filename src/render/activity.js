@@ -49,6 +49,7 @@ class _ActivityRenderMethods {
       : 'padding:14px 22px 10px;gap:12px;align-items:center';
     return `<div class="popup-overlay${dayClass(this)}" data-act-modal>
       <div class="popup-glass tl-wide">
+        ${this._modalTint('radarr')}
         <div class="is-panel-hdr" style="${hdrStyle}">${hdrInner}</div>
         <div class="popup-body" id="act-body" style="padding:${isMobile ? '12px 14px 16px' : '14px 22px 20px'};overflow:hidden">
           <div class="is-loading"><span>${this._t('loading')}</span></div>

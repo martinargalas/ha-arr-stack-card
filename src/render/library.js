@@ -1,6 +1,9 @@
 import { MT_BTN, _ICO_CHECK } from './mt-kit.js';
 import { ICONS, dayClass, BP, maxWidth } from '../shared/ui.js';
 
+// What the phone's Library adds each time the reader nears the end
+export const LIB_BATCH = 30;
+
 class _LibraryMethods {
 
   // ─── Section tile view ───────────────────────────────────────────────────
@@ -197,6 +200,7 @@ class _LibraryMethods {
 
     return `<div class="popup-overlay${dayClass(this)}" data-lib-modal>
       <div class="popup-glass tl-wide">
+        ${this._modalTint('radarr')}
         <div class="is-panel-hdr" style="flex-direction:${isMob?'column':'row'};align-items:${isMob?'stretch':'center'};padding:${hdrPad};gap:${isMob?'4px':'8px'}">
           ${hdrInner}
         </div>
@@ -272,13 +276,31 @@ class _LibraryMethods {
       perPage = Math.max(5, Math.floor((availH - 30) / 38));
     }
 
+    // A phone scrolls the posters and the overview down instead of paging
+    // them four at a time (#48): a batch at first, the next as the reader
+    // nears the end. A page asked for (Show in library) becomes as many
+    // batches as reach it. The table, which reads across, still pages.
+    const scrollMode = isMob && m.view !== 'table';
+    if (scrollMode) {
+      perPage = LIB_BATCH;
+      // Another type, filter, order or search starts from the first batch
+      const key = [m.typeKey, m.qualityKey, m.instFilter, m.search, m.sort, m.sortDir, m.view, m.filter].join('|');
+      if (m._shownFor !== key) { m._shownFor = key; m._shown = LIB_BATCH; }
+      m._shown = Math.max(m._shown || LIB_BATCH, ((m.page || 0) + 1) * LIB_BATCH);
+      m.page = 0;
+    }
+
     // Published so callers (Show in library) can work out which page a title
     // lands on — perPage is measured from the rendered body, not a constant.
     m._perPage = perPage;
-    const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
+    const totalPages = scrollMode ? 1 : Math.max(1, Math.ceil(allItems.length / perPage));
     const page = Math.min(m.page, totalPages - 1);
     m._totalPages = totalPages;
-    const pageItems = allItems.slice(page * perPage, (page + 1) * perPage);
+    const pageItems = scrollMode
+      ? allItems.slice(0, m._shown)
+      : allItems.slice(page * perPage, (page + 1) * perPage);
+    const moreHtml = scrollMode && m._shown < allItems.length
+      ? `<div class="sheet-more" data-lib-more>${this._t('loading')}</div>` : '';
 
     const _CHEV = `<svg class="mt-tb-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><polyline points="6 9 12 15 18 9"/></svg>`;
 
@@ -393,7 +415,12 @@ class _LibraryMethods {
       : `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">${searchTb}</div>`;
 
     let contentHtml;
-    if (m.view === 'posters') {
+    if (scrollMode) {
+      const inner = m.view === 'posters'
+        ? `<div id="lib-poster-grid" class="lib-grid-scroll">${pageItems.map(i => this._libPosterCard(i)).join('')}</div>`
+        : `<div style="display:flex;flex-direction:column;gap:6px">${pageItems.map(i => this._libOverviewCard(i)).join('')}</div>`;
+      contentHtml = `<div id="lib-scroll" class="vscroll lib-scroll">${inner}${moreHtml}${this._toTopHtml()}</div>`;
+    } else if (m.view === 'posters') {
       // The slider is desktop-only, so its remembered value must not leak into
       // the phone layout — four columns there left posters barely legible.
       const cols = isMob ? 2 : (m._libCols || 7);
@@ -411,7 +438,7 @@ class _LibraryMethods {
       contentHtml = `<div style="overflow:hidden;flex:1;min-height:0">${this._libTableHtml(pageItems)}</div>`;
     }
 
-    const pagHtml = this._uiPager('lib-page', page, totalPages, true);
+    const pagHtml = scrollMode ? '' : this._uiPager('lib-page', page, totalPages, true);
     const LIB_COLS_MIN = 3, LIB_COLS_MAX = 12, LIB_TRACK_W = 120, LIB_INSET = 7;
     const dragHandle = (!isMob && m.view === 'posters') ? (() => {
       const cur = m._libCols || 7;
