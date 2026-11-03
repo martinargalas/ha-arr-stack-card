@@ -1784,7 +1784,7 @@ ${TOKEN_CSS}
       .to-sheet-body.fade-b { --fb: 40px; --fe-b: var(--fe); }
       .to-sheet > .to-top-wrap {
         position: absolute; right: max(16px, env(safe-area-inset-right, 0px));
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 2;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 14px + var(--arr-bottom-bar, 0px)); z-index: 2;
       }
       /* A tablet's window header: the posters' size, a slider as the windows'
          column sliders draw it (_wireSheetSize) */
@@ -1851,7 +1851,7 @@ ${TOKEN_CSS}
       .to-sheet-body {
         flex: 1; min-height: 0; position: relative; z-index: 1;
         overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
-        padding: 4px max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left, 0px));
+        padding: 4px max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px + var(--arr-bottom-bar, 0px)) max(16px, env(safe-area-inset-left, 0px));
       }
       .to-grid.to-grid-sheet { flex: none; grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)) !important; row-gap: 12px; }
       /* Search results on a phone: scrolled down like See More, as many a row */
@@ -1984,7 +1984,7 @@ ${TOKEN_CSS}
       .lib-grid-scroll { display: grid; grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)); gap: 10px 8px; }
       .sheet-more { overflow-anchor: none; padding: 18px 0 4px; text-align: center; font-size: 12px; color: rgba(var(--_fg3, 255, 255, 255), 0.5); }
       .to-top-wrap {
-        position: sticky; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); height: 0;
+        position: sticky; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px + var(--arr-bottom-bar, 0px)); height: 0;
         display: flex; justify-content: flex-end; pointer-events: none; z-index: 5;
       }
       .to-top {

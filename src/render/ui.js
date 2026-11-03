@@ -182,7 +182,10 @@ class _UiMethods {
     sr.addEventListener('scroll', e => {
       const box = e.target;
       if (!box?.classList?.contains('vscroll')) return;
-      this._toTopWrap(box)?.classList.toggle('on', box.scrollTop > box.clientHeight * 1.5);
+      const wrap = this._toTopWrap(box);
+      const on = box.scrollTop > box.clientHeight * 1.5;
+      if (on && wrap && !wrap.classList.contains('on')) this._syncBottomBar();
+      wrap?.classList.toggle('on', on);
       if (box.classList.contains('to-sheet-body')) this._syncEdgeFade(box);
     }, { capture: true, passive: true });
     sr.addEventListener('click', e => {
@@ -192,6 +195,29 @@ class _UiMethods {
       (btn.closest('.vscroll') || btn.closest('.to-sheet')?.querySelector(':scope > .to-sheet-body'))
         ?.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  }
+
+  // A bar fixed along the bottom of the screen — Bubble Card's row of buttons —
+  // covers what sits there: the arrow back to the top rises above it, and a
+  // window's list ends above it. Looked for when the arrow is about to show,
+  // through every shadow root on the page, so not more than once a few seconds.
+  _syncBottomBar() {
+    const now = Date.now();
+    if (now - (this._bottomBarAt || 0) < 3000) return;
+    this._bottomBarAt = now;
+    const found = [];
+    const look = root => {
+      root.querySelectorAll('.bubble-horizontal-buttons-stack-card-container').forEach(e => found.push(e));
+      root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) look(e.shadowRoot); });
+    };
+    try { look(document); } catch (_) { return; }
+    const vh = window.innerHeight;
+    const top = Math.min(vh, ...found.map(e => e.getBoundingClientRect())
+      .filter(r => r.height > 0 && r.top > vh / 2 && r.top < vh).map(r => r.top));
+    const h = Math.max(0, Math.round(vh - top));
+    // With room between, as the arrow keeps from the screen's own edge
+    if (h) this.style.setProperty('--arr-bottom-bar', `${h + 14}px`);
+    else this.style.removeProperty('--arr-bottom-bar');
   }
 
   // A window's arrow sits beside its list rather than in it, out of the
