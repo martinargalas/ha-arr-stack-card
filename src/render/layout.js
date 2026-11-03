@@ -38,6 +38,10 @@ const srcOnly = (a, b) => {
 };
 const swapWhenLoaded = (live, src) => {
   live._arrNextSrc = src;
+  // One that shows nothing yet — still loading on a slow line, or its address
+  // gone stale — has nothing to keep: it takes the new address at once. Held
+  // back, it waited on a load the next refresh started over, and stayed empty.
+  if (!live.complete || !live.naturalWidth) { live.setAttribute('src', src); return; }
   const pre = new Image();
   pre.onload = pre.onerror = () => { if (live._arrNextSrc === src) live.setAttribute('src', src); };
   pre.src = src;
