@@ -56,7 +56,7 @@ const swapWhenLoaded = (live, src) => {
 function morph(live, prev, next, depth) {
   const a = live.childNodes, p = prev.childNodes, n = next.childNodes;
   if (a.length !== p.length) return false;
-  if (p.length !== n.length) return keyedMorph(live, prev, next, depth);
+  if (p.length !== n.length) return keyedMorph(live, prev, next, depth) || spliceMorph(live, prev, next, depth);
   const swaps = [];
   for (let i = 0; i < n.length; i++) {
     if (p[i].isEqualNode(n[i])) continue;
@@ -89,6 +89,59 @@ function keyedMorph(live, prev, next, depth) {
     return document.importNode(nn, true);
   });
   live.replaceChildren(...out);
+  return true;
+}
+
+// A child that comes or goes among children with no data-key — a detail's
+// Actions menu opening between its picture and its text — is put in or taken
+// out, and the rest stay where they are. The whole parent used to be rebuilt:
+// the detail's glass, its picture and every button blinked at each menu.
+// Children are paired in order by tag, class and id; only a few may differ,
+// or the shapes are too far apart and the caller rebuilds the parent.
+const sigOf = el => (el.nodeType === 1
+  ? `${el.tagName}.${el.getAttribute('class') || ''}#${el.id || ''}`
+  : `#${el.nodeType}`);
+const SPLICE_MAX = 3;          // children put in or taken out, each with its whitespace
+function spliceMorph(live, prev, next, depth) {
+  const a = [...live.childNodes], p = [...prev.childNodes], n = [...next.childNodes];
+  // Paired by the longest run they share in order (a menu brings the
+  // whitespace around it too, and pairing greedily matched that whitespace
+  // past the text and gave up)
+  if (p.length * n.length > 40000) return false;
+  const ps = p.map(sigOf), ns = n.map(sigOf);
+  const L = Array.from({ length: p.length + 1 }, () => new Uint16Array(n.length + 1));
+  for (let x = p.length - 1; x >= 0; x--) {
+    for (let y = n.length - 1; y >= 0; y--) {
+      L[x][y] = ps[x] === ns[y] ? L[x + 1][y + 1] + 1 : Math.max(L[x + 1][y], L[x][y + 1]);
+    }
+  }
+  if (p.length + n.length - 2 * L[0][0] > SPLICE_MAX * 2) return false;
+  const pair = new Array(n.length).fill(-1);
+  for (let x = 0, y = 0; x < p.length && y < n.length;) {
+    if (ps[x] === ns[y]) { pair[y] = x; x++; y++; }
+    else if (L[x + 1][y] >= L[x][y + 1]) x++;
+    else y++;
+  }
+  const kept = new Set(pair.filter(k => k >= 0));
+  for (let k = 0; k < a.length; k++) if (!kept.has(k)) a[k].remove();
+  let after = null;              // the last node placed, in live
+  for (let i = 0; i < n.length; i++) {
+    const k = pair[i];
+    let node;
+    if (k >= 0) {
+      node = a[k];
+      if (!p[k].isEqualNode(n[i])) {
+        const same = p[k].nodeType === 1 && n[i].nodeType === 1 && node.nodeType === 1
+          && node.tagName === n[i].tagName && depth < 16
+          && (sameOpening(p[k], n[i]) || flipsOnly(node, p[k], n[i])) && morph(node, p[k], n[i], depth + 1);
+        if (!same) { const fresh = document.importNode(n[i], true); node.replaceWith(fresh); node = fresh; }
+      }
+    } else {
+      node = document.importNode(n[i], true);
+      live.insertBefore(node, after ? after.nextSibling : live.firstChild);
+    }
+    after = node;
+  }
   return true;
 }
 
@@ -856,7 +909,7 @@ class _LayoutMethods {
   _watchOverlays() {
     if (this._overlayObserver || !this.shadowRoot) return;
     this._overlayObserver = new MutationObserver(() => {
-      this._syncScrollLock(); this._backSync(); this._liquidHeroMaybe();
+      this._syncScrollLock(); this._backSync(); this._hdrTakeSync(); this._liquidHeroMaybe();
       // A window opening on a phone looks for a bar along the screen's bottom
       // (Bubble Card's buttons) to end above it
       const n = this.shadowRoot.querySelectorAll('.popup-overlay').length;

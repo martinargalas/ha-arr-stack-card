@@ -210,6 +210,9 @@ _wireCalendarModal() {
   const overlay = root.querySelector('#cal-overlay');
   const glass   = root.querySelector('#cal-glass');
   if (!overlay || !glass) return;
+  // A repaint keeps the glass, so it is wired once
+  if (glass._calWired) return;
+  glass._calWired = true;
 
   // Backdrop closes modal
   overlay.addEventListener('click', () => {

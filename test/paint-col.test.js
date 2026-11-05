@@ -68,3 +68,31 @@ test('a button that only turns disabled stays, with its icon and the classes add
   card._paintCol(el, nav(2, 2));
   assert.equal(el.querySelectorAll('.rp-btn')[1].disabled, true);
 });
+
+// The detail's Actions, Search and Remove menus open between its picture and
+// its text: the glass, the picture and the buttons stay, only the menu comes
+const glass = menu => `<div class="popup-overlay"><div class="popup-glass"><button class="popup-close">x</button><div class="popup-backdrop" style="background-image:url(a.jpg)"></div>${menu ? '<div class="qa-menu">menu</div>' : ''}<div class="popup-body"><p>text</p></div></div></div>`;
+
+test('a menu opening in the detail puts in the menu and leaves the rest', () => {
+  const card = makeCard(), el = col();
+  card._paintCol(el, glass(false));
+  const g = el.querySelector('.popup-glass'), bd = el.querySelector('.popup-backdrop'), body = el.querySelector('.popup-body');
+  card._paintCol(el, glass(true));
+  assert.equal(el.querySelector('.popup-glass'), g, 'the glass is kept');
+  assert.equal(el.querySelector('.popup-backdrop'), bd, 'the picture is kept');
+  assert.equal(el.querySelector('.popup-body'), body);
+  assert.deepEqual([...g.children].map(x => x.className), ['popup-close', 'popup-backdrop', 'qa-menu', 'popup-body']);
+  card._paintCol(el, glass(false));
+  assert.equal(el.querySelector('.popup-glass'), g, 'and closing it only takes the menu out');
+  assert.equal(el.querySelector('.qa-menu'), null);
+  assert.equal(el.querySelector('.popup-backdrop'), bd);
+});
+
+test('children too far apart still rebuild their parent', () => {
+  const card = makeCard(), el = col();
+  card._paintCol(el, '<div class="w"><a></a><b></b></div>');
+  const w = el.querySelector('.w');
+  card._paintCol(el, '<div class="w"><i></i><i></i><i></i><i></i><i></i><i></i></div>');
+  assert.notEqual(el.querySelector('.w'), w);
+  assert.equal(el.querySelectorAll('.w i').length, 6);
+});

@@ -124,10 +124,16 @@ async _fetchCalendarWeek(weekOffset) {
 }
 
 async _fetchCalendarRange(start, end) {
-  this._calendarModalLoading = true;
-  this._renderCalendarModalEl();
   const startStr = start.toISOString().split('T')[0];
   const endStr   = end.toISOString().split('T')[0];
+  // A week seen before shows at once and is brought up to date behind it;
+  // every opening and every step waited on five services with a spinner
+  const key = `${startStr}_${endStr}`;
+  this._calRangeKey = key;
+  const seen = this._calRangeCache?.get(key);
+  if (seen) this._calendarModalData = seen;
+  this._calendarModalLoading = !seen;
+  this._renderCalendarModalEl();
   try {
     const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw, lidarrRaw] = await Promise.all([
       this._callApi('GET', `arr_stack/sonarr/calendar?start=${startStr}&end=${endStr}`).catch(() => []),
@@ -193,10 +199,18 @@ async _fetchCalendarRange(start, end) {
       };
     }).filter(m => m.airDate);
 
-    this._calendarModalData = [...tvItems, ...movieItems, ...this._calMusicItems(lidarrRaw)];
+    const data = [...tvItems, ...movieItems, ...this._calMusicItems(lidarrRaw)];
+    this._calRangeCache ||= new Map();
+    this._calRangeCache.delete(key);
+    this._calRangeCache.set(key, data);
+    if (this._calRangeCache.size > 12) this._calRangeCache.delete(this._calRangeCache.keys().next().value);
+    // An answer for a week already stepped away from draws nothing
+    if (this._calRangeKey !== key) return;
+    this._calendarModalData = data;
   } catch (e) {
     console.error('[arr-card] Calendar week fetch error:', e);
-    this._calendarModalData = [];
+    if (this._calRangeKey !== key) return;
+    if (!seen) this._calendarModalData = [];
   }
   this._calendarModalLoading = false;
   this._renderCalendarModalEl();

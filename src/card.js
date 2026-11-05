@@ -16,6 +16,7 @@ import { itemsMixin } from './render/items.js';
 import { brandMixin } from './render/brand.js';
 import { layoutMixin } from './render/layout.js';
 import { backMixin } from './render/back.js';
+import { hdrTakeMixin } from './render/hdr-take.js';
 import { dropdownMixin } from './render/dropdown.js';
 import { certMixin } from './render/cert.js';
 import { pendingMixin } from './fetch/pending.js';
@@ -1002,7 +1003,10 @@ class ArrStackCard extends HTMLElement {
   _renderCalendarModalEl() {
     const root = this.shadowRoot?.getElementById('cal-modal-root');
     if (!root) return;
-    root.innerHTML = this._calendarModalOpen ? this._renderCalendarModal() : '';
+    // Only what changed is redrawn: the window was rebuilt whole when it
+    // opened, again when its data came and at every refresh of the card —
+    // its glass and every poster blinked each time
+    this._paintCol(root, this._calendarModalOpen ? this._renderCalendarModal() : '');
     if (this._calendarModalOpen) {
       this._wireCalendarModal();
       this._wirePopup();
@@ -1283,6 +1287,7 @@ applyMixin(ArrStackCard.prototype, itemsMixin);
 applyMixin(ArrStackCard.prototype, brandMixin);
 applyMixin(ArrStackCard.prototype, layoutMixin);
 applyMixin(ArrStackCard.prototype, backMixin);
+applyMixin(ArrStackCard.prototype, hdrTakeMixin);
 applyMixin(ArrStackCard.prototype, dropdownMixin);
 applyMixin(ArrStackCard.prototype, certMixin);
 applyMixin(ArrStackCard.prototype, pendingMixin);

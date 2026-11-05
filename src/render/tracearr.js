@@ -284,15 +284,21 @@ class _TraceaRrMethods {
       const k = keyFn ? keyFn(s) : (() => { const t=(s.type||s.name||'').toLowerCase(); return t.includes('jellyfin')?'jellyfin':t.includes('plex')?'plex':t.includes('emby')?'emby':null; })();
       if (k && !typeMap.has(k)) typeMap.set(k, s);
     }
-    srvEl.innerHTML = TYPES.map(t => {
+    // A peanut, as every other switch in the card: the chosen server under
+    // the pill, one not set up greyed out
+    const btns = TYPES.map(t => {
       const s = typeMap.get(t);
       const active = s?.id === activeId;
-      const dis = !s;
-      const st = `padding:4px 6px;display:flex;align-items:center;justify-content:center${dis ? ';opacity:0.3;filter:grayscale(1);pointer-events:none' : ''}`;
-      const icon = `<img src="${CDN}/${t}.svg" width="20" height="20" style="display:block;object-fit:contain">`;
-      return `<button class="tl-page-btn${active ? ' active' : ''}" ${s ? `${attr}="${this._escHtml(s.id)}"` : ''} title="${t}" style="${st}">${icon}</button>`;
+      const st = `padding:0 9px${s ? '' : ';opacity:0.3;filter:grayscale(1);pointer-events:none'}`;
+      const icon = `<img src="${CDN}/${t}.svg" width="18" height="18" style="display:block;object-fit:contain">`;
+      return `<button class="mt-nav-btn${active ? ' is-on' : ''}" ${s ? `${attr}="${this._escHtml(s.id)}"` : ''} title="${t}" style="${st}">${icon}</button>`;
     }).join('');
+    const at = srvEl.querySelector('.mt-nav-btn.is-on');
+    const from = at ? { w: at.offsetWidth, x: at.offsetLeft } : null;
+    srvEl.innerHTML = `<div class="mt-nav tra-srv-nav"><span class="mt-nav-ind"></span>${btns}</div>`;
     srvEl.style.display = 'flex';
+    const nav = srvEl.firstElementChild;
+    this._syncNavInd(nav, nav.querySelector('.mt-nav-btn.is-on'), from);
   }
 
   _closeTracearrModal() {

@@ -160,6 +160,8 @@ link: ""                     # only with several search headers on one page: the
 styles: {}                   # optional: the card's style keys, over the look it takes from the card
 ```
 
+On a phone, a header with `header: true` also serves the card's windows. A category opened full screen, the calendar, the Library, a service's window, Now Playing or an artist moves its switches and tabs up into the header, where the close turns into a back arrow. The window then starts just under the header. A title's details and the dialogs keep their own header.
+
 ## Category IDs
 
 | id | Section |

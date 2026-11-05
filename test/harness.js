@@ -16,6 +16,7 @@ globalThis.__CARD_VERSION__ = 'test';
 globalThis.location = dom.window.location;
 globalThis.Node = dom.window.Node;
 globalThis.HTMLElement = dom.window.HTMLElement;
+globalThis.MutationObserver = dom.window.MutationObserver;
 globalThis.customElements = dom.window.customElements;
 globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
 // jsdom only takes its own signals in addEventListener options

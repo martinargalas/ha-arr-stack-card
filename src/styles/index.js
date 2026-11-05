@@ -688,6 +688,8 @@ ${TOKEN_CSS}
         transition: background 0.15s, color 0.15s;
       }
       .mt-nav-btn:hover:not(.is-on) { background: rgba(var(--_fill, 255, 255, 255), 0.08); }
+      /* A switch of logos alone (Tracearr's servers): round choices, the pill a circle */
+      .tra-srv-nav .mt-nav-btn { aspect-ratio: 1; padding: 0 !important; }
       .mt-nav-btn.is-on { color: var(--_nav-on-fg, rgb(var(--_fg, 255, 255, 255))); }
 
       /* Nested one level down: smaller, quieter, and only ever visible while
@@ -986,6 +988,9 @@ ${TOKEN_CSS}
         .mt-tb--card .mt-nav--inline .mt-nav-btn { height: 28px; }
         .mt-nav-btn { height: 32px; padding: 0 11px; }
         .mt-nav-ind { top: 4px; bottom: 4px; }
+        .tra-srv-nav .mt-nav-btn { height: 30px; }
+        /* The fill as far from the bar's ends as from its top and bottom */
+        .mt-nav:not(.mt-nav--inline) { padding: 0 4px; }
         .mt-nav-btn svg { width: 17px; height: 17px; }
         .mt-tb .mt-tb-btn, .mt-tb .mt-tgl { height: 32px; }
         .mt-tb .mt-seg { height: 36px !important; }
@@ -1867,6 +1872,47 @@ ${TOKEN_CSS}
         backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
       }
       .to-sheet-hdr.tight .hdr-filter-btn { width: 36px; height: 36px; margin: 0; }
+      /* A pop-up header of the card's own has taken the window's controls
+         (render/hdr-take.js): the window drops its header and starts under
+         the pop-up's, rounded as the pop-up is */
+      @media (max-width: 600px) {
+        :host([hdr-take]) .to-sheet > .to-sheet-hdr { display: none; }
+        :host([hdr-take]) .to-sheet {
+          top: calc(var(--arr-top-bar, 0px) + 8px);
+          /* As wide as the header with its close, no wider */
+          left: var(--arr-take-l, 0px); right: auto; width: var(--arr-take-w, 100%);
+          border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
+          overflow: hidden;
+        }
+        :host([hdr-take]) .to-sheet > .to-sheet-body { padding-top: 12px; }
+        /* A window (the calendar, the Library, a service's) the same way:
+           under the header and as wide, ending above a bar along the
+           bottom; the header stays sharp, no veil */
+        :host([hdr-take]) .popup-overlay.hdr-taken {
+          top: calc(var(--arr-top-bar, 0px) + 8px); bottom: 0;
+          left: var(--arr-take-l, 0px); right: auto; width: var(--arr-take-w, 100%);
+          align-items: stretch;
+          background: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+        }
+        :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass {
+          width: 100% !important; max-width: 100% !important;
+          height: 100% !important; max-height: 100% !important;
+          border-radius: var(--arr-modal-radius, 28px);
+        }
+        :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass::before { border-radius: inherit; }
+        :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass > :is(.is-panel-hdr, .cal-modal-hdr, .popup-close) { display: none; }
+        :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass:has(> .is-panel-hdr) > .popup-body { padding-top: 12px; }
+        /* The calendar runs on to the screen's bottom, as the categories'
+           windows: its paging just above a bar there, not a gap away */
+        :host([hdr-take]) #cal-overlay.hdr-taken { padding-bottom: 0; }
+        :host([hdr-take]) #cal-overlay.hdr-taken > .cal-modal-glass {
+          border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
+        }
+        :host([hdr-take]) #cal-glass > .cal-modal-footer {
+          padding-bottom: max(8px, calc(var(--arr-bottom-bar, 0px) - 6px + env(safe-area-inset-bottom, 0px)));
+        }
+        :host([hdr-take]) #cal-glass > .cal-modal-grid { padding-top: 12px; }
+      }
       .to-sheet-body {
         flex: 1; min-height: 0; position: relative; z-index: 1;
         overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
@@ -4306,9 +4352,10 @@ ${TOKEN_CSS}
         }
       }
       @media (max-width: 700px) {
+        /* Over Bubble Card's bottom bar it ends above it, as the windows do */
         #cal-overlay .cal-modal-glass {
-          height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px);
-          max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px);
+          height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px - var(--arr-bottom-bar, 0px));
+          max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px - var(--arr-bottom-bar, 0px));
         }
       }
 
@@ -4333,6 +4380,12 @@ ${TOKEN_CSS}
         padding-inline: calc(var(--_pad, 12px) + 8px);
         -webkit-mask-image: linear-gradient(to bottom, black calc(var(--dock-y, 100%) - 64px), rgba(var(--_shade, 0, 0, 0), 0.08) var(--dock-y, 100%), rgba(var(--_shade, 0, 0, 0), 0.08) 100%);
         mask-image: linear-gradient(to bottom, black calc(var(--dock-y, 100%) - 64px), rgba(var(--_shade, 0, 0, 0), 0.08) var(--dock-y, 100%), rgba(var(--_shade, 0, 0, 0), 0.08) 100%);
+      }
+
+      /* A mask clips all it holds, a fixed window too: a category opened from
+         the phone's list was cut to the list's box, under the downloads */
+      .col > .dock-fade:has(.to-sheet) {
+        -webkit-mask-image: none; mask-image: none; animation: none;
       }
 
       /* TMDB info modal */
