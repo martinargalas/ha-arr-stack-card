@@ -111,15 +111,31 @@ _catStale(html) {
   return tpl.innerHTML;
 }
 
+// The list's peeks change once, not at every step of the first load. Until
+// every category is in and the posters' signatures have come (render/
+// arr-img.js), a peek keeps what it showed last time, or grey shapes; then
+// each takes its own posters in one go, and is dealt in once. Latched: once
+// settled, a signature asked later (the Library opening) changes nothing here.
+get _peeksSettled() {
+  if (!this._catReady || this._peeksSettledOnce) return true;
+  if (!this._catAllReady || this._arrImgBusy) return false;
+  this._peeksSettledOnce = true;
+  return true;
+}
+
 // The list's peek of a category: what it shows now, noted for next time once
-// everything is in; last time's, or grey shapes, until its data comes
+// everything is in; last time's, or grey shapes, until then
 _catPeek(id, title, imgs) {
-  if (imgs.length) {
-    if (this._catAllReady) (this._catPeekNow ||= {})[id] = { t: title, i: imgs };
+  if (!this._peeksSettled) {
+    const kept = this._catCache?.[id]?.i;
+    if (kept?.length) return kept;
+    // A category with nothing kept shows its own posters when they are in,
+    // as long as none is still waiting for its signature
+    if (!this._catIsReady(id) || this._arrImgBusy) return null;   // null: grey shapes
     return imgs;
   }
-  if (this._catIsReady(id)) return imgs;
-  return this._catCache?.[id]?.i || null;   // null: not in yet, nothing kept
+  if (imgs.length && this._catAllReady) (this._catPeekNow ||= {})[id] = { t: title, i: imgs };
+  return imgs;
 }
 
 // Start of the first round: what is kept is drawn before anything is asked

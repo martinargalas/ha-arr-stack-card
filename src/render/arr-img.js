@@ -101,6 +101,7 @@ _arrImgSignSoon() {
     if (!paths.length) return;
     const sigs = this._arrImgSigs();
     let changed = false;
+    this._arrImgInFlight = (this._arrImgInFlight || 0) + 1;
     await Promise.all(paths.map(async path => {
       try {
         const res = await this._hass.callWS({ type: 'auth/sign_path', path, expires: ARR_IMG_LIFE });
@@ -114,13 +115,21 @@ _arrImgSignSoon() {
         changed = true;
       }
     }));
-    if (!changed) return;
+    this._arrImgInFlight -= 1;
+    if (!changed) { if (!this._arrImgBusy) this._arrImgRepaint(); return; }
     this._arrImgKeep();
     this._arrImgRepaint();
   }, 40);
 }
 
 // Everything a Sonarr poster is drawn on
+// Signatures asked for and not answered yet
+get _arrImgBusy() {
+  return !!(this._arrImgQueue?.size || this._arrImgInFlight
+    // Lidarr's covers are signed the same way, by their own queue (fetch/music-art.js)
+    || this._lidarrSignQueue?.size || this._lidarrSignTimer || this._lidarrSignInFlight);
+}
+
 _arrImgRepaint() {
   if (!this.isConnected) return;
   this._reRenderRight?.();

@@ -1771,6 +1771,15 @@ ${TOKEN_CSS}
         backdrop-filter: var(--_blur, blur(35px) saturate(100%));
         -webkit-backdrop-filter: var(--_blur, blur(35px) saturate(100%));
       }
+      /* Under the column's glass, the dashboard's own background: the glass
+         alone is a few percent of white and a blur, and where the blur does
+         not reach (or the page behind is busy — Home Assistant's toolbar at
+         the top) the controls behind showed through the window */
+      .to-sheet::before {
+        content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+        background: var(--arr-sheet-base, var(--primary-background-color, rgb(var(--_shade, 0, 0, 0))));
+        opacity: .86;
+      }
       .col-right.flow-held { overflow: hidden; }
       /* A window's posters fade out at its edges where the list runs on
          (_syncEdgeFade); its arrow to the top sits over the list, not in it */
@@ -1933,6 +1942,16 @@ ${TOKEN_CSS}
       .mob-peek[data-n="1"] > img { left: 17px; transform: none; }
       .mob-peek[data-n="2"] > :nth-child(1) { left: 8px; }
       .mob-peek[data-n="2"] > :nth-child(2) { left: 27px; transform: rotate(6deg); }
+      /* A poster arriving in a peek is dealt in, left to right. translate and
+         scale, not transform: the fan's tilt stays on transform. */
+      .mob-peek > img.peek-in { animation: peek-in .45s cubic-bezier(.2, .8, .2, 1) both; }
+      .mob-peek > img.peek-in:nth-child(2) { animation-delay: .07s; }
+      .mob-peek > img.peek-in:nth-child(3) { animation-delay: .14s; }
+      @keyframes peek-in {
+        from { opacity: 0; translate: 0 8px; scale: .86; filter: blur(4px); }
+        to   { opacity: 1; translate: 0 0; scale: 1; filter: none; }
+      }
+      @media (prefers-reduced-motion: reduce) { .mob-peek > img.peek-in { animation: none; } }
       /* A category whose data is not in yet: grey poster shapes, breathing */
       .mob-peek > .mob-skel {
         position: absolute; top: 0; width: 37px; height: 54px; border-radius: 7px;

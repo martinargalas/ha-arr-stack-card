@@ -55,7 +55,8 @@ const swapWhenLoaded = (live, src) => {
 // the caller then replaces the node whole.
 function morph(live, prev, next, depth) {
   const a = live.childNodes, p = prev.childNodes, n = next.childNodes;
-  if (a.length !== p.length || p.length !== n.length) return false;
+  if (a.length !== p.length) return false;
+  if (p.length !== n.length) return keyedMorph(live, prev, next, depth);
   const swaps = [];
   for (let i = 0; i < n.length; i++) {
     if (p[i].isEqualNode(n[i])) continue;
@@ -67,6 +68,27 @@ function morph(live, prev, next, depth) {
     swaps.push([a[i], n[i]]);
   }
   for (const [old, fresh] of swaps) old.replaceWith(document.importNode(fresh, true));
+  return true;
+}
+
+// A list whose items carry data-key — the phone's list of categories — keeps
+// each item it still has when items come or go: during the first load
+// categories appear one by one (the Library once the libraries are in, the
+// calendar with its days), and the list used to be rebuilt whole each time,
+// every poster in it loaded and dealt in again. Kept items are moved, not
+// rebuilt, so their pictures stay as they are.
+const keyOf = el => (el.nodeType === 1 ? el.getAttribute('data-key') : null);
+function keyedMorph(live, prev, next, depth) {
+  const a = [...live.childNodes], p = [...prev.childNodes], n = [...next.childNodes];
+  if (![...a, ...p, ...n].every(keyOf)) return false;
+  const liveBy = new Map(a.map((el, i) => [keyOf(el), [el, p[i]]]));
+  const out = n.map(nn => {
+    const [la, pp] = liveBy.get(keyOf(nn)) || [];
+    if (la && pp && (pp.isEqualNode(nn)
+      || (depth < 16 && la.tagName === nn.tagName && (sameOpening(pp, nn) || flipsOnly(la, pp, nn)) && morph(la, pp, nn, depth + 1)))) return la;
+    return document.importNode(nn, true);
+  });
+  live.replaceChildren(...out);
   return true;
 }
 
@@ -89,8 +111,9 @@ class _LayoutMethods {
     const prev = el._arrHtml;
     el._arrHtml = html;
     const next = parse(html);
-    if (prev != null && el.firstChild && morph(el, parse(prev), next, 0)) return true;
+    if (prev != null && el.firstChild && morph(el, parse(prev), next, 0)) { this._paintLog?.('morph', el.id); return true; }
     el.replaceChildren(document.importNode(next, true));
+    this._paintLog?.('replace', el.id);
     return true;
   }
 
@@ -103,6 +126,42 @@ class _LayoutMethods {
     Object.assign(probe.style, { position: 'absolute', visibility: 'hidden', pointerEvents: 'none', left: '0', top: '0', width: right.clientWidth + 'px', minHeight: '' });
     right.after(probe);
     return probe;
+  }
+
+  // The list's peeks: a poster that arrives — the first time, or in place of
+  // last time's when the category's fresh data comes in — is dealt in, the
+  // three one after another, rather than popping in or flipping over in place
+  _wirePeekDeal() {
+    if (this._peekDealWired || !this.shadowRoot) return;
+    this._peekDealWired = true;
+    this.shadowRoot.addEventListener('load', ev => {
+      const img = ev.target;
+      const peek = img?.tagName === 'IMG' ? img.parentElement : null;
+      if (!peek?.classList.contains('mob-peek')) return;
+      // A picture the category's peek has already dealt — drawn again by a
+      // repaint, or at a renewed address (a signature, a player's token) —
+      // is not dealt again
+      const key = (img.getAttribute('src') || '').replace(/([?&])(authSig|token|X-Plex-Token)=[^&]*&?/gi, '$1').replace(/[?&]$/, '');
+      this._peekDealt ||= new Map();
+      const cat = peek.getAttribute('data-peek') || '';
+      let seen = this._peekDealt.get(cat);
+      if (!seen) this._peekDealt.set(cat, seen = new Set());
+      if (seen.has(key)) { this._paintLog?.('peek-load-seen', cat); return; }
+      seen.add(key);
+      this._paintLog?.('peek-deal', cat, key.slice(-40));
+      img.classList.remove('peek-in');
+      void img.offsetWidth;   // restart the animation for a picture swapped in place
+      img.classList.add('peek-in');
+    }, true);
+  }
+
+  // localStorage 'arr-debug-paint' = '1': every paint of a column and every
+  // poster dealt in a peek, timed from the page's start, in the console
+  _paintLog(...what) {
+    if (this._paintDebug === undefined) {
+      try { this._paintDebug = localStorage.getItem('arr-debug-paint') === '1'; } catch { this._paintDebug = false; }
+    }
+    if (this._paintDebug) console.info('[arr-paint]', Math.round(performance.now()), ...what);
   }
 
   // Odstraní focus před innerHTML zápisem — zabrání neočekávanému chování prohlížeče.
@@ -340,6 +399,7 @@ class _LayoutMethods {
   // wiring below is safe to repeat, so calling it twice doubles nothing.
   _wireRight(right) {
     if (!right) return;
+    this._wirePeekDeal();
     // A tablet's shelves and list are held to the pages' height from their
     // first paint: until their own pages are measured they would show every
     // tile at once

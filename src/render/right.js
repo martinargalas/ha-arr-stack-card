@@ -67,6 +67,17 @@ _renderRight() {
     library:    (this._radarr?.length || this._sonarr?.length) ? () => this._renderLibrary() : null,
   };
 
+  // The first load: a category that only shows once its data says so (the
+  // Library with the libraries in, the calendar with days in it) stands where
+  // it stood last time, from what was kept, instead of turning up a moment
+  // later and pushing the rows below it down
+  if (this._catReady && !this._catAllReady) {
+    const listed = this._mobFlow && this._mobLayout === 'list';
+    for (const [id, k] of Object.entries(this._catCache || {})) {
+      if (id in CAT_FN && !CAT_FN[id] && !this._catIsReady(id) && (k?.h || (listed && k?.i?.length))) CAT_FN[id] = () => '';
+    }
+  }
+
   const regular = [
     ...(hasPending ? [{ id: 'pending', fn: () => this._renderPendingRequests() }] : []),
     ...catConfig
@@ -154,7 +165,7 @@ _mobListHtml(regular, from = 0, to = regular.length) {
     const tpl = document.createElement('template');
     tpl.innerHTML = html;
     const doc = tpl.content;
-    const title = doc.querySelector('.col-hdr-title')?.textContent.trim() || r.id;
+    const title = doc.querySelector('.col-hdr-title')?.textContent.trim() || this._catCache?.[r.id]?.t || r.id;
     // One picture an item — a playing film's card or a library tile carries
     // several — and none from the See More card
     const grid = doc.querySelector('.mgrid, .tl-row');
@@ -197,8 +208,8 @@ _mobListHtml(regular, from = 0, to = regular.length) {
       : svc ? `${svc[0]}="${this._escHtml(svc[1])}"`
       : `data-mob-open="${r.id}"`;
     if (i < from || i >= to) return '';
-    return `<button class="mob-row" ${open}>
-      <span class="mob-peek" data-n="${svcTile ? 'app' : loading ? 3 : peekImgs.length}">${peek}</span>
+    return `<button class="mob-row" data-key="${r.id}" ${open}>
+      <span class="mob-peek" data-peek="${r.id}" data-n="${svcTile ? 'app' : loading ? 3 : peekImgs.length}">${peek}</span>
       <span class="mob-row-t"><b>${this._escHtml(title)}</b></span>
       <svg class="mob-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m9 6 6 6-6 6"/></svg>
     </button>`;

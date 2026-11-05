@@ -170,6 +170,7 @@ class _WireMusicActionsMethods {
       // Lidarr wants the release back whole, with the album it belongs to —
       // the same shape Radarr expects for a film.
       await this._callApi('POST', 'arr_stack/lidarr/release', { ...release, albumId: sp.albumId });
+      this._grabWatchAdd('lidarr', sp.albumId);
       sp.grabbed = sp.grabbed || new Set();
       sp.grabbed.add(guid);
       // When it was sent, so the button can stop waiting. Lidarr accepts the

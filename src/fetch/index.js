@@ -13,6 +13,8 @@ const CAPS_OFF = [
 // when a title leaves a Radarr or Sonarr queue (imported, most likely).
 const LIB_EVERY = 5 * 60_000;
 const LIB_AFTER_ACTION = 2 * 60_000;
+// How long a grab is followed for the moment its download shows up
+const GRAB_WATCH_MS = 3 * 60_000;
 // POSTs that only read: searches and statistics
 const READ_POSTS = /\/(search|getItemDetails|getItemHistory|apptest)(\?|$)|\/(jellystat|tracearr|tautulli)\//;
 
@@ -116,6 +118,52 @@ _arrQueueSig() {
   for (const [svc, top] of Object.entries(this._dlHistTop || {})) ids.add(`hist:${svc}:${top}`);
   for (const r of this._seerrRequests || []) ids.add(`seerr:${r.id}:${r.status}:${r.media?.status}`);
   return ids;
+}
+
+// How far along each download in the Radarr and Sonarr queues is
+_queuePctSig() {
+  return ['_radarrQueuePct', '_radarr2QueuePct', '_sonarrQueueSeriesPct', '_sonarr2QueueSeriesPct']
+    .map(k => [...(this[k] || [])].map(([id, p]) => `${id}:${p}`).join(',')).join('|');
+}
+
+// ── A grab, followed after its window is closed ──────────────────────────
+// A release grabbed in Interactive Search or a search started from the
+// detail: the detail waits for the queue to show it, but only while it is
+// open. Closed early, the poster only learnt of the download at the next
+// full poll — and a show's poster never did. Each grab is now followed for
+// three minutes by the five-second poll, and the column is redrawn the moment
+// the queue has it.
+_grabWatchAdd(inst, id, ms = GRAB_WATCH_MS) {
+  if (!inst || id == null) return;
+  const until = Date.now() + ms;
+  this._grabWatch = (this._grabWatch || []).filter(w => !(w.inst === inst && String(w.id) === String(id)));
+  this._grabWatch.push({ inst, id, until });
+}
+
+_grabInQueue(w) {
+  const pct = w.inst === 'radarr'  ? this._radarrQueuePct
+            : w.inst === 'radarr2' ? this._radarr2QueuePct
+            : w.inst === 'sonarr'  ? this._sonarrQueueSeriesPct
+            : w.inst === 'sonarr2' ? this._sonarr2QueueSeriesPct
+            : null;
+  if (w.inst === 'lidarr') return this._lidarrQueue?.has?.(w.id) || this._lidarrQueue?.has?.(Number(w.id));
+  return !!(pct?.has(w.id) || pct?.has(Number(w.id)));
+}
+
+async _grabWatchTick() {
+  const now = Date.now();
+  const ws = (this._grabWatch || []).filter(w => now < w.until);
+  this._grabWatch = ws;
+  if (!ws.length) return;
+  const insts = [...new Set(ws.map(w => w.inst))].filter(i => i !== 'lidarr');
+  await Promise.allSettled(insts.map(i =>
+    i === 'radarr' ? this._fetchRadarrQueue()
+      : i === 'radarr2' ? this._fetchRadarr2Queue()
+      : this._fetchSonarrQueue(i)));
+  const left = ws.filter(w => !this._grabInQueue(w));
+  if (left.length === ws.length) return;
+  this._grabWatch = left;
+  this._reRenderRight?.();
 }
 
 // A title came or went, or anything else in the signature changed
@@ -295,8 +343,13 @@ _dataFingerprint() {
     ra2?.length, ra2?.[0]?.id,
     so2?.length, so2?.[0]?.id,
     // Queue / downloads
-    this._radarrQueueActive?.size, this._radarrQueueFailed?.size,
-    this._sonarrQueue?.length, this._sonarr2Queue?.length,
+    // Every title in a Radarr, Sonarr or Lidarr queue and how far along it
+    // is: a download that started, moved or ended redraws its poster's bar.
+    // (This read _sonarrQueue, which nothing sets — a show starting to
+    // download never redrew anything.)
+    [...this._arrQueueSig()].sort().join(','),
+    this._queuePctSig(),
+    [...(this._lidarrQueue || [])].sort().join(','),
     q?.length, q?.map?.(t=>t.hash).join(','),
     this._sab?.noofslots, this._sabFailed?.length,
     this._nzbget?.DownloadRate, this._nzbgetFailed?.length,
@@ -441,6 +494,12 @@ async _fetchDownloadsAndRender() {
     this._lidarrConfigured !== false ? this._fetchLidarrQueue() : Promise.resolve(),
   ]);
   if (this._streamSessionSig() !== prevSessions) this._reRenderSection('streams');
+  // A grab followed after its window closed (_grabWatchAdd), and an album
+  // that started or finished downloading: the posters show it now
+  await this._grabWatchTick();
+  const lidarrSig = [...(this._lidarrQueue || [])].sort().join(',');
+  if (this._lidarrQueueSigLast != null && lidarrSig !== this._lidarrQueueSigLast) this._reRenderRight?.();
+  this._lidarrQueueSigLast = lidarrSig;
 
   if (hadItems) {
     const currQbit     = new Set((this._qbit || []).map(t => t.hash));

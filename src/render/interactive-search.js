@@ -531,6 +531,8 @@ _renderIsPanel() {
       // opened before the queue caught up inherited the spinner and looked stuck.
       this._ppGrabWait = { inst: svc, id: release.movieId, until: Date.now() + 180000 };
       this._ppGrabPollStart();
+      // …and followed after the detail closes, so the poster shows it too
+      this._grabWatchAdd(svc, release.movieId);
       this._dlTriggeredBy = 'is';
       // Set movie monitored after grab
       const radarrId = release.movieId;

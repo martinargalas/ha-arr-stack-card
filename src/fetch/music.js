@@ -82,6 +82,7 @@ async _lidarrApplyMonitor(artistId, monitor) {
   const search = albums.filter(a => wantSet.has(a.id) && !(a.statistics?.trackFileCount > 0)).map(a => a.id);
   if (search.length) {
     await this._callApi('POST', 'arr_stack/lidarr/command', { name: 'AlbumSearch', albumIds: search });
+    for (const id of search) this._grabWatchAdd('lidarr', id, 5 * 60_000);
   }
   await this._fetchLidarrQueue();
   this._reRenderSection?.('recentlyAdded');

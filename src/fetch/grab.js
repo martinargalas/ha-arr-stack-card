@@ -108,6 +108,7 @@ async _sonarrGrab(guid, indexerId) {
     const snGrabId = snSvc === 'sonarr2' ? this._popup?._sonarr2Series?.id : this._popup?._sonarrSeries?.id;
     this._ppGrabWait = { inst: snSvc, id: snGrabId, until: Date.now() + 180000 };
     this._ppGrabPollStart();
+    this._grabWatchAdd(snSvc, snGrabId);
     this._dlTriggeredBy = 'is';
     // Set series + season monitored after grab
     const seriesId = release.seriesId;
@@ -159,6 +160,8 @@ async _sonarrGrab(guid, indexerId) {
           this._callApi('POST', `arr_stack/${svc}/command`, { name: 'MoviesSearch', movieIds: [movieId] }),
           _asDelay(1000),
         ]);
+        // A search takes longer than a grab to reach the queue
+        this._grabWatchAdd(svc, movieId, 5 * 60_000);
         this._asMovieSearched = true;
         this._asState = 'done';
         this._asPollForDownload(`movie:${instance}`, svc, movieId);
@@ -317,6 +320,7 @@ async _sonarrGrab(guid, indexerId) {
       ]);
       this._asSearchedItems.add(key);
       this._asPollForDownload(key, svc, seriesId);
+      this._grabWatchAdd(svc, seriesId, 5 * 60_000);
     } catch (e) {
       console.error('[arr-card] Season search error:', e);
     }
@@ -338,6 +342,7 @@ async _sonarrGrab(guid, indexerId) {
       ]);
       this._asSearchedItems.add(key);
       if (series?.id) this._asPollForDownload(key, svc, series.id);
+      if (series?.id) this._grabWatchAdd(svc, series.id, 5 * 60_000);
     } catch (e) {
       console.error('[arr-card] Episode search error:', e);
     }

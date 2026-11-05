@@ -1,5 +1,15 @@
 // What the rows hold: Recently Added, Recently Requested, recommendations, their type filters. Split out of card.js.
 
+// Something downloading stands at the top of its row. It used to take the
+// time of the render as its date, read separately for films and shows and for
+// music: two downloads swapped places whenever the two reads fell in different
+// milliseconds, and every refresh redrew both posters.
+const DL_TOP = '9999-12-31T00:00:00Z';
+// Newest first; a tie (two downloads, two titles added the same second) in an
+// order that stays the same from one refresh to the next
+const stableKey = m => `${m._mediaType || ''}:${m.tmdbId ?? m.tvdbId ?? m.foreignAlbumId ?? m.id ?? m.title ?? ''}`;
+const bySortDate = (a, b) => String(b._sortDate).localeCompare(String(a._sortDate)) || stableKey(a).localeCompare(stableKey(b));
+
 class _ItemMethods {
 
   // Recently Requested's type filter: all, films and shows, or music.
@@ -179,7 +189,7 @@ class _ItemMethods {
       .map(e => ({ ...e, _mediaType: 'music', _sortDate: e._importedAt || '' }));
 
     return [...movieMap.values(), ...showMap.values(), ...music]
-      .sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+      .sort(bySortDate);
   }
 
   // Recently Added through its header peanut: everything, the two the row
@@ -278,10 +288,10 @@ class _ItemMethods {
     const _rq2A = this._radarr2QueueActive      || new Set();
     const _snQ  = this._sonarrQueueSeriesPct    || new Map();
     const _snQ2 = this._sonarr2QueueSeriesPct   || new Map();
-    const _now  = new Date().toISOString();
+    const _now  = DL_TOP;
     const extras = [];
     if (this._cfgGet('discover', 'requestedSource', 'both') === 'seerr') {
-      return items.sort((a, b) => String(b._sortDate).localeCompare(String(a._sortDate)));
+      return items.sort(bySortDate);
     }
     // Radarr's second instance is not tagged the way Sonarr's is, so which queue
     // an entry belongs to has to come from the list it was read out of.
@@ -308,7 +318,7 @@ class _ItemMethods {
     // album on its way used to vanish from this section the moment Seerr was
     // configured. It rides along here the same way it does in the library list.
     return [...extras, ...items, ...this._rqMusicItems()]
-      .sort((a, b) => String(b._sortDate).localeCompare(String(a._sortDate)));
+      .sort(bySortDate);
   }
 
   get recentlyRequested() {
@@ -321,7 +331,7 @@ class _ItemMethods {
     const _snQ2  = this._sonarr2QueueSeriesPct || new Map();
     const _pM    = this._pendingRequestedMovies || new Set();
     const _pS    = this._pendingRequestedShows  || new Set();
-    const _now   = new Date().toISOString();
+    const _now   = DL_TOP;
 
     const movies = (this._radarr || [])
       .filter(m => (m.monitored || _rqA.has(m.id) || _pM.has(String(m.tmdbId))) && !m.hasFile)
@@ -378,7 +388,7 @@ class _ItemMethods {
     });
 
     return [...finalMovies, ...finalShows, ...this._rqMusicItems()]
-      .sort((a, b) => b._sortDate.localeCompare(a._sortDate));
+      .sort(bySortDate);
   }
 
   // Artists whose music is still on its way — monitored with tracks missing, or
@@ -387,7 +397,7 @@ class _ItemMethods {
   _rqMusicItems() {
     if (this._lidarrConfigured === false) return [];
     const dl = this._lidarrQueueArtists || new Map();
-    const _now = new Date().toISOString();
+    const _now = DL_TOP;
     const out = [];
     for (const a of (this._lidarrArtists?.values() || [])) {
       const st = a.statistics || {};

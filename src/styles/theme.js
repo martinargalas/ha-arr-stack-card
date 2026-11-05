@@ -184,6 +184,11 @@ class _ThemeMethods {
       rules.push('.popup-overlay .pp-hero-pill { background: none !important; border-color: transparent !important; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; }');
       rules.push(`${btns} { ${quiet} box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.45), inset 0 -0.5px 0 rgba(255, 255, 255, 0.12)${dark ? '' : ', 0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.12)'}; border-color: transparent !important; backdrop-filter: blur(6px) saturate(115%); -webkit-backdrop-filter: blur(6px) saturate(115%); }`);
       rules.push(`${btns} :is(svg, ha-icon, span) { color: inherit !important; }`);
+      // A title on its way (the chip with its spinner, then its progress):
+      // the info blue over a light picture was unreadable. The quiet glass
+      // with a white label, the bar in white on a shade of the glass.
+      rules.push(`.popup-overlay .inst-chip.ic--downloading { ${quiet} border-color: transparent !important; backdrop-filter: blur(6px) saturate(115%); -webkit-backdrop-filter: blur(6px) saturate(115%); --_pg-fill: rgba(${fg}); --_pg-track: rgba(${tint}, 0.45); }`);
+      rules.push('.popup-overlay .inst-chip.ic--downloading :is(span, .is-spin) { color: inherit !important; }');
       rules.push(`:is(${btns}.active, .popup-overlay .popup-close, .to-sheet .popup-close) { background: ${bg} !important; background-origin: border-box; box-shadow: ${sh}; border-color: transparent !important; color: rgba(${fg}) !important; }`);
       // The open one is plain control glass: under it the lens bent the
       // picture round its edge and, with the glass's own sheen, read as 3D

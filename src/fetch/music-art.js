@@ -71,6 +71,7 @@ _lidarrSignSoon() {
     this._lidarrSignQueue = new Set();
     if (!paths.length) return;
     let changed = false;
+    this._lidarrSignInFlight = (this._lidarrSignInFlight || 0) + 1;
     await Promise.all(paths.map(async path => {
       try {
         const res = await this._hass.callWS({ type: 'auth/sign_path', path, expires: 60 * 60 * 12 });
@@ -79,6 +80,10 @@ _lidarrSignSoon() {
         this._lidarrSigned.set(path, null);   // do not ask again this session
       }
     }));
+    this._lidarrSignInFlight -= 1;
+    // The list's peeks wait for every signature of the first load and then
+    // change once (render/cat-cache.js): the last batch lets them
+    if (this._catReady && !this._peeksSettledOnce && !this._arrImgBusy) this._reRenderRight?.();
     if (!changed) return;
     this._lidarrRepaint();
   }, 60);

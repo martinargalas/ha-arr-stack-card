@@ -262,3 +262,98 @@ test('a signature that cannot be had falls back to TheTVDB', async () => {
   await new Promise(r => setTimeout(r, 60));
   assert.equal(card._getSonarrPoster(show()), 'https://artworks.thetvdb.com/banners/p.jpg');
 });
+
+test('a poster that loads in a peek is dealt in; anywhere else it is not', () => {
+  const card = makeCard();
+  const root = document.createElement('div');
+  Object.defineProperty(card, 'shadowRoot', { value: root });
+  root.innerHTML = '<span class="mob-peek" data-peek="trending"><img src="a.jpg"></span><div class="mc"><img src="b.jpg"></div>';
+  card._wirePeekDeal();
+  const [peek, other] = root.querySelectorAll('img');
+  for (const img of [peek, other]) img.dispatchEvent(new Event('load'));
+  assert.ok(peek.classList.contains('peek-in'));
+  assert.ok(!other.classList.contains('peek-in'));
+  // A refresh: another title's poster is dealt again, a renewed signature is not
+  peek.classList.remove('peek-in');
+  peek.setAttribute('src', 'a.jpg?authSig=new');
+  peek.dispatchEvent(new Event('load'));
+  assert.ok(!peek.classList.contains('peek-in'), 'same picture, new signature');
+  peek.setAttribute('src', 'c.jpg');
+  peek.dispatchEvent(new Event('load'));
+  assert.ok(peek.classList.contains('peek-in'), 'another poster');
+  // The row drawn again from scratch: its pictures are not dealt a second time
+  root.querySelector('.mob-peek').innerHTML = '<img src="c.jpg">';
+  const again = root.querySelector('.mob-peek img');
+  again.dispatchEvent(new Event('load'));
+  assert.ok(!again.classList.contains('peek-in'));
+});
+
+test('a list whose rows come and go keeps the rows it still has, pictures and all', async () => {
+  const { makeCard: mk } = await import('./harness.js');
+  const card = mk();
+  const col = document.createElement('div');
+  const row = (k, src) => `<button data-key="${k}"><span class="mob-peek"><img src="${src}"></span></button>`;
+  card._paintCol(col, `<div class="mob-rows">${row('a', '1.jpg')}${row('b', '2.jpg')}</div>`);
+  const imgB = col.querySelector('[data-key="b"] img');
+  card._paintCol(col, `<div class="mob-rows">${row('a', '1.jpg')}${row('lib', '3.jpg')}${row('b', '2.jpg')}</div>`);
+  assert.deepEqual([...col.querySelectorAll('[data-key]')].map(e => e.dataset.key), ['a', 'lib', 'b']);
+  assert.equal(col.querySelector('[data-key="b"] img'), imgB, 'the same picture element, not a new one');
+});
+
+test("a peek keeps last time's posters through the load and changes once, when everything is in", () => {
+  const card = makeCard({ _catReady: new Set(['trending']), _catCache: { trending: { i: ['old.jpg'] } } });
+  assert.deepEqual(card._catPeek('trending', 'T', ['new.jpg']), ['old.jpg'], 'its data is in, the others not yet');
+  card._catAllReady = true;
+  card._arrImgQueue = new Set(['/api/arr_stack/sonarr/image?id=1']);
+  assert.deepEqual(card._catPeek('trending', 'T', ['new.jpg']), ['old.jpg'], 'a signature still on its way');
+  card._arrImgQueue = new Set();
+  assert.deepEqual(card._catPeek('trending', 'T', ['new.jpg']), ['new.jpg'], 'settled: one change');
+  card._arrImgQueue = new Set(['/later']);
+  assert.deepEqual(card._catPeek('trending', 'T', ['new.jpg']), ['new.jpg'], 'a signature asked later changes nothing');
+});
+
+test('a grab is followed after its window closes, and the column redrawn when the queue has it', async () => {
+  let redrawn = 0;
+  const card = makeCard({ _sonarrQueueSeriesPct: new Map() });
+  card._reRenderRight = () => { redrawn++; };
+  card._fetchSonarrQueue = async () => { card._sonarrQueueSeriesPct = new Map([[7, 0]]); };
+  card._grabWatchAdd('sonarr', 7);
+  card._grabWatchAdd('sonarr', 7);
+  assert.equal(card._grabWatch.length, 1, 'one watch a title');
+  await card._grabWatchTick();
+  assert.equal(redrawn, 1);
+  assert.equal(card._grabWatch.length, 0);
+  await card._grabWatchTick();
+  assert.equal(redrawn, 1, 'nothing left to follow');
+});
+
+test('a show starting to download changes what the full poll compares', () => {
+  const card = makeCard();
+  const before = card._dataFingerprint();
+  card._sonarrQueueEpisodes = new Set([12]);
+  card._sonarrQueueSeriesPct = new Map([[3, 10]]);
+  assert.notEqual(card._dataFingerprint(), before);
+});
+
+test('two downloads keep their order from one refresh to the next', () => {
+  const card = makeCard({
+    _seerrRequests: [], _radarr: [], _radarr2: [], _sonarr2: [],
+    _sonarr: [{ id: 3, tvdbId: 30, title: 'Show', added: '2026-01-01' }],
+    _sonarrQueueSeriesPct: new Map([[3, 10]]),
+  });
+  card._rqMusicItems = () => [{ _mediaType: 'music', id: 9, title: 'Album', _sortDate: '9999-12-31T00:00:00Z' }];
+  const order = () => (card._seerrRequestItems() || []).map(i => i._mediaType);
+  const first = order();
+  for (let i = 0; i < 5; i++) assert.deepEqual(order(), first);
+});
+
+test("a category that waits for its data to show at all stands in the list from last time's", () => {
+  setViewport(390);
+  const card = listCard({ _catReady: new Set(), _catCache: { library: { t: 'Library', i: ['l.jpg'] } },
+    _config: { discover: { categoriesCount: 3, mobileLayout: 'list' }, categories: [{ id: 'trending', enabled: true }, { id: 'library', enabled: true }] } });
+  const doc = parse(card._renderRight());
+  const row = doc.querySelector('.mob-row[data-key="library"]');
+  assert.ok(row, 'the Library row is there before the libraries are');
+  assert.equal(row.querySelector('.mob-row-t b').textContent, 'Library');
+  assert.equal(row.querySelector('.mob-peek img').getAttribute('src'), 'l.jpg');
+});
