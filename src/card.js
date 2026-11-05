@@ -188,6 +188,7 @@ class ArrStackCard extends HTMLElement {
     this._sabDeleteBusy = null;      // nzo_id položky, jejíž smazání z history probíhá
     this._qbCookies = null;
     this._capsLoaded = false;       // true after first capabilities fetch
+    this._heightsLoading = true;    // until every category is in: no height measured is kept (wire/sections.js)
     // null = unknown until capabilities answer; a fetch that succeeds sets true,
     // a 503 sets false. Starting at true made the card poll clients that were
     // never set up whenever the capabilities call failed.
@@ -950,7 +951,9 @@ class ArrStackCard extends HTMLElement {
       this._lastLeftHtml = leftHtml;
       this._paintCol(left, leftHtml);
       const body = this.shadowRoot.querySelector('.card-body');
-      if (body) body.classList.toggle('no-downloads', !leftContent);
+      // Until the services are known the column stays: dropped and brought
+      // back, it handed its width to the categories, posters twice as large
+      if (body) body.classList.toggle('no-downloads', !leftContent && !!this._capsLoaded);
     }
     if (this._requestPending || this._searchActive) return;
     if (layout !== 'left')  this._paintCol(right, this._mobMinWrap('right', this._renderRight()));

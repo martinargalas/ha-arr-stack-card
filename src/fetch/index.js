@@ -194,11 +194,14 @@ async _fetchAll(opts = {}) {
   const starting = !this._initialFetchDone;
   // First run: what the categories showed last time on this device is drawn
   // before anything is asked (render/cat-cache.js)
-  if (starting) this._catStart();
   // Which services are set up and where Seerr sends requests. Last time's
   // answers are used at once and asked again behind (render/cat-cache.js);
-  // without them they are waited for, one after another.
-  if (starting && !this._capsLoaded && this._bootApply()) {
+  // without them they are waited for, one after another. Taken before last
+  // time's look is drawn: without them the downloads' column is not known to
+  // be there, and the categories took its width for a moment.
+  const booted = starting && !this._capsLoaded && this._bootApply();
+  if (starting) this._catStart();
+  if (booted) {
     this._bootRefresh();
   } else {
     // First run: load capabilities to initialize configured flags before any fetches.

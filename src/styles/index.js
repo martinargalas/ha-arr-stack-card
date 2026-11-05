@@ -1785,8 +1785,11 @@ ${TOKEN_CSS}
          (_syncEdgeFade); its arrow to the top sits over the list, not in it */
       .to-sheet-body {
         --fe: color-mix(in srgb, black 35%, transparent);
-        -webkit-mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px)), var(--fe-b, black) 100%);
-        mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px)), var(--fe-b, black) 100%);
+        /* A bar fixed along the screen's bottom (Bubble Card's buttons,
+           _syncBottomBar) covers the list's end: the fade ends above it */
+        --fbar: var(--arr-bottom-bar, 0px);
+        -webkit-mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
+        mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
       }
       /* A soft fade: the edge keeps a third of the poster, over a short run */
       .to-sheet-body.fade-t { --ft: 28px; --fe-t: var(--fe); }
@@ -1890,11 +1893,15 @@ ${TOKEN_CSS}
          them: on the right while there is more, on the left once it has
          moved (_syncShelfFade) */
       .rp-sections.mob-shelves :is(.mgrid, .tl-row) {
-        -webkit-mask-image: linear-gradient(to right, transparent 0, black var(--fl, 0px), black calc(100% - var(--fr, 0px)), transparent 100%);
-        mask-image: linear-gradient(to right, transparent 0, black var(--fl, 0px), black calc(100% - var(--fr, 0px)), transparent 100%);
+        /* Never to nothing: a poster at the edge stays faintly there, the
+           step eased in its middle, so the fade hints rather than cuts */
+        --fade-edge: rgba(var(--_shade, 0, 0, 0), 0.3);
+        --fade-mid: rgba(var(--_shade, 0, 0, 0), 0.75);
+        -webkit-mask-image: linear-gradient(to right, var(--fade-edge) 0, var(--fade-mid) calc(var(--fl, 0px) / 2), black var(--fl, 0px), black calc(100% - var(--fr, 0px)), var(--fade-mid) calc(100% - var(--fr, 0px) / 2), var(--fade-edge) 100%);
+        mask-image: linear-gradient(to right, var(--fade-edge) 0, var(--fade-mid) calc(var(--fl, 0px) / 2), black var(--fl, 0px), black calc(100% - var(--fr, 0px)), var(--fade-mid) calc(100% - var(--fr, 0px) / 2), var(--fade-edge) 100%);
       }
-      .rp-sections.mob-shelves .fade-l { --fl: 44px; }
-      .rp-sections.mob-shelves .fade-r { --fr: 44px; }
+      .rp-sections.mob-shelves .fade-l { --fl: 28px; }
+      .rp-sections.mob-shelves .fade-r { --fr: 28px; }
       .rp-sections:is(.mob-shelves, .mob-list) :is(.mgrid, .tl-row) > * {
         flex: 0 0 calc((100% - 2 * var(--mob-bleed, 12px) - 16px) / 2.6);
         min-width: 0; scroll-snap-align: start;
@@ -1904,10 +1911,20 @@ ${TOKEN_CSS}
          width following from it */
       .mob-shelves.shelf-fill .sec-card:not(.sec-search) { display: flex; flex-direction: column; }
       .mob-shelves.shelf-fill .sec-card > .mgrid.shelf { flex: 1 1 auto; min-height: 100px; }
-      .mob-shelves.shelf-fill .sec-card > .mgrid.shelf > * { flex: 0 0 calc(var(--shelf-h, 180px) * 2 / 3); height: var(--shelf-h, 180px); aspect-ratio: auto; }
+      .mob-shelves.shelf-fill .sec-card .mgrid.shelf > * { flex: 0 0 calc(var(--shelf-h, 180px) * 2 / 3); height: var(--shelf-h, 180px); aspect-ratio: auto; }
+      /* The statistics' tiles are posters too: as tall and as wide as the
+         posters on the shelves above and below them, as they are on pages */
+      .mob-shelves.shelf-fill .sec-card .tl-row > * { flex: 0 0 calc(var(--shelf-h, 180px) * 2 / 3); height: var(--shelf-h, 180px); aspect-ratio: auto; }
+      .mob-shelves.shelf-fill .sec-card .pg-wrap:has(> :is(.tl-row, .mgrid.shelf)) { flex: 0 0 auto !important; }
       /* A tablet's shelf shows more of the row, the next poster still cut to
          say there is more */
       @media (min-width: 601px) {
+        /* …and keeps to the category's padding, as its heading does: run out
+           to the card's edge, the posters met it with no margin at all */
+        .rp-sections.mob-shelves { --mob-bleed: 0px; }
+        /* Inside the padding the row needs only a hint that it goes on */
+        .rp-sections.mob-shelves .fade-l { --fl: 18px; }
+        .rp-sections.mob-shelves .fade-r { --fr: 18px; }
         .rp-sections:is(.mob-shelves, .mob-list) :is(.mgrid, .tl-row) > * {
           flex-basis: calc((100% - 2 * var(--mob-bleed, 12px) - 32px) / 4.6);
         }
@@ -4262,6 +4279,54 @@ ${TOKEN_CSS}
         .tmdb-notice-txt { display: none; }
       }
 
+      /* A phone's windows take the screen's whole height, as the categories'
+         full-screen windows do: at 85vh a seventh of it stood empty under
+         them. dvh, so the browser's own bars are not counted in; a margin
+         and the notch's inset kept clear. Over the inline heights the
+         windows set for wider screens, hence !important. */
+      @media (max-width: 600px) {
+        /* A bar fixed along the screen's bottom (Bubble Card's buttons,
+           _syncBottomBar) is kept clear: the window ends above it */
+        .popup-overlay {
+          --phone-win-h: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px - var(--arr-bottom-bar, 0px));
+          --phone-win-h: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px - var(--arr-bottom-bar, 0px));
+          box-sizing: border-box;
+          padding-bottom: var(--arr-bottom-bar, 0px);
+        }
+        .popup-overlay > .popup-glass:not(.info-modal) {
+          height: var(--phone-win-h) !important;
+          max-height: var(--phone-win-h) !important;
+        }
+      }
+      @media (max-width: 700px) {
+        #cal-overlay .cal-modal-glass {
+          height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px);
+          max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px);
+        }
+      }
+
+      /* The columns' content over a bar fixed along the screen's bottom (_syncDockFade):
+         they fade out over the 64 px above it, next to nothing left under
+         its icons */
+      .col > .dock-fade.dock-tl {
+        animation: arr-dock-y linear both;
+        animation-timeline: view();
+      }
+      @keyframes arr-dock-y {
+        from { --dock-y: var(--dock-from); }
+        to   { --dock-y: var(--dock-to); }
+      }
+      .col > .dock-fade {
+        /* A mask clips to its box: the categories' cards stand out past it
+           and the shelves' rows run on into their padding, so they lost
+           their edges, corners and shadows. The box takes all that in, out
+           to the column's edge; the layout stays where it was. */
+        margin-inline: -32px;
+        padding-inline: 32px;
+        -webkit-mask-image: linear-gradient(to bottom, black calc(var(--dock-y, 100%) - 64px), rgba(var(--_shade, 0, 0, 0), 0.08) var(--dock-y, 100%), rgba(var(--_shade, 0, 0, 0), 0.08) 100%);
+        mask-image: linear-gradient(to bottom, black calc(var(--dock-y, 100%) - 64px), rgba(var(--_shade, 0, 0, 0), 0.08) var(--dock-y, 100%), rgba(var(--_shade, 0, 0, 0), 0.08) 100%);
+      }
+
       /* TMDB info modal */
       .info-modal {
         max-width: 520px; width: 100%;
@@ -4511,7 +4576,9 @@ ${TOKEN_CSS}
         /* Floating sticky nav — glass pill, fade-in po nascrollování */
         .rp-nav {
           position: sticky;
-          bottom: 12px;
+          /* Above a bar fixed along the screen's bottom (Bubble Card's
+             buttons, _syncBottomBar), which already counts its own gap */
+          bottom: max(12px, var(--arr-bottom-bar, 0px));
           z-index: 10;
           align-self: stretch;
           background: rgba(var(--_fill, 255, 255, 255), calc(0.07 * var(--_a-box, 1)));

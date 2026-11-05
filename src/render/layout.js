@@ -193,6 +193,7 @@ class _LayoutMethods {
     const right = swapped ? colLeft  : colRight;
 
     const syncNav = () => {
+      try { this._syncDockFade(); } catch { /* not on a page */ }
       const nav = this.shadowRoot.querySelector('.rp-nav');
       if (!nav) return;
       const lRect = left.getBoundingClientRect();
@@ -210,9 +211,16 @@ class _LayoutMethods {
         rightEnough   = rRect.height > 0 && visible / rRect.height >= 0.9;
       }
 
-      nav.classList.toggle('rp-nav-visible', leftIsGone || rightEnough);
+      const show = leftIsGone || rightEnough;
+      // Bubble Card's bar along the screen's bottom: the nav floats above it
+      if (show && !nav.classList.contains('rp-nav-visible')) { try { this._syncBottomBar(); } catch { /* not on a page */ } }
+      nav.classList.toggle('rp-nav-visible', show);
     };
 
+    // Bubble Card's bar along the screen's bottom, looked for now and once
+    // more when its own cards have drawn
+    try { this._syncBottomBar(true); } catch { /* not on a page */ }
+    setTimeout(() => { try { this._syncBottomBar(true); syncNav(); } catch { /* not on a page */ } }, 1500);
     syncNav();                                        // okamžitý stav
 
     // The nav only changes when something moves, so it is recomputed then (PR
@@ -424,6 +432,9 @@ class _LayoutMethods {
     this._wireMobList(right);
     if (right.querySelector('.mob-shelves')) requestAnimationFrame(() => this._wireShelfFade());
     if (right.querySelector('.to-sheet-hdr')) requestAnimationFrame(() => {
+      // Bubble Card's bar at the screen's bottom, looked for as the window
+      // opens: its fade and its arrow back to the top keep above it
+      this._syncBottomBar(true);
       this._fitSheetHdr(right);
       this._wireSheetSize(right);
       right.querySelectorAll('.to-sheet-body').forEach(b => this._syncEdgeFade(b));
@@ -628,10 +639,12 @@ class _LayoutMethods {
     this._rightPage = savedPage;
     Object.assign(this._pages, savedPages);  // obnovit section pagination
     this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
-    this._rightMaxH       = maxH;
-    this._rightMaxHFor    = key;
+    const lockH = this._colLockH(right, maxH);
+    this._rightMaxH       = lockH;
+    this._rightMaxHFor    = this._heightsLoading ? null : key;
     this._rightMaxHCfg    = this._config;
-    right.style.minHeight  = maxH + 'px';
+    right.style.minHeight  = lockH ? lockH + 'px' : '';
+    this._heightSnap?.(`measurePages maxH=${maxH}`);
 
     // Re-wire po finálním renderu
     // Poznámka: _checkBadgeOverflow() volá volající (_reRenderRight) přes druhý RAF
@@ -682,7 +695,14 @@ class _LayoutMethods {
     }
     // A shelf stands as tall as a category does as pages; measured on screen
     // its posters, sized from the last measurement, would only let it grow
-    this._flowSecH = tallest ? Math.min(900, tallest) : 0;
+    // Only with every category in: while the rest load, one stands alone in
+    // the column and measures as tall as the column. Until then last time's.
+    if (!this._heightsLoading) {
+      this._flowSecH = tallest ? Math.min(900, tallest) : 0;
+      this._shelfKeep(right.clientWidth, this._flowSecH);
+    } else {
+      this._flowSecH = this._shelfKept(right.clientWidth) || 0;
+    }
     maxH = 0;
     eachPage(() => { maxH = Math.max(maxH, probe.scrollHeight); });
     this._measuringPages = false;
@@ -693,6 +713,20 @@ class _LayoutMethods {
     this._rightPage = 0;
     probe.innerHTML = this._mobMinWrap('right', this._renderRight());
     const units = [...probe.querySelectorAll('.rp-sections > .mob-rows > .mob-row, .rp-sections > .mob-cat')];
+    // What a category takes above and below its shelf, the most of any: every
+    // shelf's posters are as tall, whatever its heading carries
+    if (this._mobLayout === 'shelves') {
+      probe.style.setProperty('--sec-min-h', '0px');
+      let over = 0;
+      for (const row of probe.querySelectorAll('.shelf-fill .sec-card :is(.mgrid.shelf, .tl-row)')) {
+        over = Math.max(over, row.closest('.sec-card').offsetHeight - row.offsetHeight);
+      }
+      probe.style.removeProperty('--sec-min-h');
+      if (over && !this._heightsLoading) {
+        this._shelfOver = over;
+        this._shelfKeep(right.clientWidth, this._flowSecH);
+      }
+    }
     const top0 = probe.getBoundingClientRect().top;
     const box = u => { const r = u.getBoundingClientRect(); return { top: r.top - top0, bottom: r.bottom - top0 }; };
     const boxes = units.map(box);
@@ -724,20 +758,33 @@ class _LayoutMethods {
       this._flowMeasuring = false;
     }
     this._flowPages = pages.length > 1 ? pages : null;
+    this._heightSnap?.(`measureFlow tallest=${tallest} maxH=${maxH}`);
     this._mobSheet = saved.sheet;
     this._overlay = saved.overlay;
     Object.assign(this._pages, saved.pages);
     this._rightPage = Math.min(saved.page || 0, Math.max(0, pages.length - 1));
     this._paintCol(right, this._mobMinWrap('right', this._renderRight()));
-    this._rightMaxH    = maxH;
-    this._rightMaxHFor = key;
+    const lockH = this._colLockH(right, maxH);
+    this._rightMaxH    = lockH;
+    this._rightMaxHFor = this._heightsLoading ? null : key;
     this._rightMaxHCfg = this._config;
-    right.style.minHeight = maxH + 'px';
+    right.style.minHeight = lockH ? lockH + 'px' : '';
     this._wireRight(right);
     // The shelves take the categories' height just measured, and their
     // posters the height left under each heading
     this._syncSecHeights(false);
     requestAnimationFrame(() => this._syncSecHeights());
+  }
+
+  // The height the column is held to. Measured during the first load, from
+  // categories with no data yet, it came out several times too tall and held
+  // both columns there: last time's at this width until everything is in, or
+  // nothing held. Measured with everything in, it is kept for the next load.
+  _colLockH(right, maxH) {
+    const what = `col_${this._mobLayout}`;
+    if (this._heightsLoading) return this._secKept(right.clientWidth)[what] || 0;
+    this._secKeep(right.clientWidth, { [what]: maxH });
+    return maxH;
   }
 
   _checkBadgeOverflow() {
@@ -808,7 +855,14 @@ class _LayoutMethods {
 
   _watchOverlays() {
     if (this._overlayObserver || !this.shadowRoot) return;
-    this._overlayObserver = new MutationObserver(() => { this._syncScrollLock(); this._backSync(); this._liquidHeroMaybe(); });
+    this._overlayObserver = new MutationObserver(() => {
+      this._syncScrollLock(); this._backSync(); this._liquidHeroMaybe();
+      // A window opening on a phone looks for a bar along the screen's bottom
+      // (Bubble Card's buttons) to end above it
+      const n = this.shadowRoot.querySelectorAll('.popup-overlay').length;
+      if (n > (this._overlayCount || 0) && this._isMob) this._syncBottomBar(true);
+      this._overlayCount = n;
+    });
     this._overlayObserver.observe(this.shadowRoot, { childList: true, subtree: true });
     this._syncScrollLock();
     this._backInit();

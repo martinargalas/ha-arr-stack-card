@@ -141,6 +141,7 @@ _catPeek(id, title, imgs) {
 // Start of the first round: what is kept is drawn before anything is asked
 _catStart() {
   if (this._catReady) return;
+  this._heightLogStart();
   this._loadLogStart();
   this._catReady = new Set();
   this._catCacheLoad();
@@ -164,6 +165,12 @@ _renderSoon() {
 
 _catDone() {
   this._catAllReady = true;
+  this._heightsLoading = false;
+  // The heights measured while loading are dropped: measured afresh with
+  // everything in (wire/sections.js _syncSecHeights, render/layout.js)
+  this._secMaxH = 0;
+  this._secWrapH = 0;
+  this._rightMaxHFor = null;
   clearTimeout(this._renderSoonT);
   this._renderSoonT = null;
   this._loadLogPrint();
@@ -208,6 +215,83 @@ _loadLogPrint() {
     console.table(rows);
     console.groupEnd();
   } catch { /* a console without groups */ }
+}
+
+// ── Why the columns grow (debug, off unless asked for) ─────────────────────
+// localStorage.setItem('arr-debug-height', '1') and reload: every change of
+// the columns' height and of what decides it is written to the console for
+// the first 20 s, with the card's state at that moment, and a table at the end.
+
+_heightLogStart() {
+  let on = false;
+  try { on = localStorage.getItem('arr-debug-height') === '1'; } catch { /* storage off */ }
+  if (!on || this._heightLog) return;
+  const t0 = performance.now();
+  const rows = (this._heightLog = []);
+  let last = '';
+  const snap = why => {
+    const sr = this.shadowRoot;
+    const r = sr?.getElementById('col-right');
+    const l = sr?.getElementById('col-left');
+    if (!r) return;
+    const cards = [...r.querySelectorAll('.sec-card:not(.sec-search)')];
+    const item = r.querySelector('.mgrid > *, .tl-row > *');
+    const row = {
+      ms: Math.round(performance.now() - t0),
+      why,
+      layout: this._mobLayout,
+      body: sr.querySelector('.card-body')?.className.replace('card-body', '').trim(),
+      win: `${innerWidth}x${innerHeight}`,
+      rW: r.clientWidth,
+      R: r.offsetHeight,
+      L: l?.offsetHeight,
+      rMin: r.style.minHeight,
+      rMax: r.style.maxHeight,
+      lMin: l?.style.minHeight,
+      secMin: r.style.getPropertyValue('--sec-min-h'),
+      secWrap: r.style.getPropertyValue('--sec-wrap-h'),
+      shelf: r.style.getPropertyValue('--shelf-h'),
+      cards: cards.map(c => c.offsetHeight).join('/'),
+      item: item ? `${item.offsetWidth}x${item.offsetHeight}` : '',
+      rightMaxH: this._rightMaxH,
+      flowSecH: this._flowSecH,
+      secMaxH: this._secMaxH,
+      over: this._shelfOver,
+      pages: this._flowPages?.length ?? null,
+      ready: this._catAllReady ? 'all' : (this._catReady?.size ?? '-'),
+      caps: !!this._capsLoaded,
+      overlay: this._overlay?.section || '',
+      search: !!this._searchActive,
+    };
+    const key = JSON.stringify({ ...row, ms: 0, why: '' });
+    if (key === last) return;
+    last = key;
+    rows.push(row);
+    console.log('[arr-height]', row.ms, why, row);
+  };
+  this._heightSnap = snap;
+  const watch = () => {
+    const sr = this.shadowRoot;
+    const r = sr?.getElementById('col-right');
+    if (!r) { requestAnimationFrame(watch); return; }
+    const l = sr.getElementById('col-left');
+    const mo = new MutationObserver(ms => snap('attr:' + [...new Set(ms.map(m => `${m.target.id || m.target.className}.${m.attributeName}`))].join(',')));
+    for (const el of [r, l, sr.querySelector('.card-body')].filter(Boolean)) mo.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+    const ro = new ResizeObserver(() => snap('resize'));
+    ro.observe(r); if (l) ro.observe(l);
+    const tick = setInterval(() => snap('tick'), 250);
+    setTimeout(() => {
+      mo.disconnect(); ro.disconnect(); clearInterval(tick);
+      this._heightSnap = null;
+      try {
+        console.groupCollapsed(`[arr-height] ${rows.length} changes in 20 s — copy this table`);
+        console.table(rows);
+        console.log(JSON.stringify(rows));
+        console.groupEnd();
+      } catch { /* a console without groups */ }
+    }, 20000);
+  };
+  watch();
 }
 
 // ── What the card asks before anything else ───────────────────────────────

@@ -21,7 +21,8 @@ class _LibraryTilesMethods {
         ]).join('');
 
     const cols = 4;
-    const grid = `<div class="mgrid" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>`;
+    // On shelves the tiles are a shelf too, as tall as the posters
+    const grid = `<div class="mgrid${this._mobFlow ? ' shelf' : ''}" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>`;
 
     return `
       <div class="sec-card has-gradient" style="${this._sectionStyle()}">

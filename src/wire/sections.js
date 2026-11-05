@@ -1,6 +1,13 @@
 import { BP, maxWidth } from '../shared/ui.js';
 import { SHEET_BATCH, SHEET_COLS_MAX, SHEET_COLS_MIN } from '../render/sections.js';
 
+const SHELF_KEY = 'arr-shelf-h';
+const SEC_KEY = 'arr-sec-h2';   // arr-sec-h held heights measured with no data
+// A shelf's poster is never taller than this, whatever a measurement says
+const SHELF_POSTER_MAX = 340;
+// …and its category no taller than that poster under its heading
+const SHELF_HEAD_MAX = 60;
+
 // The right column's sections: See More overlays, paging, swipe, repainting one section. Split out of wire/index.js.
 
 class _WireSectionsMethods {
@@ -282,6 +289,38 @@ _wireSheetSize(root) {
   }
 }
 
+// A tablet's shelf height, kept for the next load at the column's width:
+// the pages it is measured from are drawn only once the data is in
+_shelfKept(w, what = 'h') {
+  try {
+    const k = JSON.parse(localStorage.getItem(SHELF_KEY) || 'null');
+    return k && Math.abs(k.w - w) <= 2 ? (k[what] || 0) : 0;
+  } catch { return 0; }
+}
+
+// A category's height as pages and a page's, at the column's width, kept
+// for the next load's first moments
+_secKept(w) {
+  try {
+    const k = JSON.parse(localStorage.getItem(SEC_KEY) || 'null');
+    return k && Math.abs(k.w - w) <= 2 ? k : {};
+  } catch { return {}; }
+}
+
+_secKeep(w, what) {
+  if (!w) return;
+  try {
+    const k = this._secKept(w);
+    localStorage.setItem(SEC_KEY, JSON.stringify({ ...k, ...what, w }));
+  } catch { /* storage off */ }
+}
+
+// The category's height and what of it is not the shelf (o)
+_shelfKeep(w, h, o = this._shelfOver || 0) {
+  if (!w || !h) return;
+  try { localStorage.setItem(SHELF_KEY, JSON.stringify({ w, h, o })); } catch { /* storage off */ }
+}
+
 _syncSecHeights(measure = true) {
   const right = this.shadowRoot?.getElementById('col-right');
   if (!right) return;
@@ -290,8 +329,27 @@ _syncSecHeights(measure = true) {
     right.style.removeProperty('--sec-wrap-h');
     return;
   }
-  if (this._mobFlow && this._flowSecH) {
-    this._secMaxH = this._flowSecH;
+  // From the card's first paint — before the categories are even tracked,
+  // drawn with no data at all — until every one of them is in
+  const loading = !!this._heightsLoading || (!!this._catReady && !this._catAllReady);
+  const kept = loading ? this._secKept(right.clientWidth) : {};
+  if (this._mobFlow) {
+    // Shelves are held to what the categories measure as pages, nothing else:
+    // measured on screen during the first load, a category alone in the column
+    // stood as tall as the column and its posters with it. Until the pages are
+    // measured, last time's height at this width, or the posters' own.
+    this._secMaxH = Math.min(SHELF_POSTER_MAX + SHELF_HEAD_MAX, this._flowSecH || this._shelfKept(right.clientWidth) || 0);
+    if (!this._secMaxH) right.style.removeProperty('--sec-min-h');
+  } else if (loading && kept.sec) {
+    // During the first load the categories are drawn from last time, from
+    // grey shapes or half their data: measured then, one stood twice as tall
+    // and the running maximum held every page to it for good. Last time's
+    // height at this width until everything is in, measured afresh then.
+    this._secMaxH = kept.sec;
+  } else if (loading) {
+    // Nothing kept: no floor at all until the categories have their data
+    this._secMaxH = 0;
+    right.style.removeProperty('--sec-min-h');
   } else if (measure) {
     const cards = [...right.querySelectorAll('.sec-card:not(.sec-search)')];
     if (cards.length) {
@@ -300,18 +358,30 @@ _syncSecHeights(measure = true) {
       const tallest = Math.max(...cards.map(c => c.offsetHeight));
       // A category still loading is short; the running maximum is what survives
       // that, and a ceiling keeps one freak measurement from stretching the card.
+      // While loading, nothing is kept from one measurement to the next.
       this._secMaxH = Math.min(900, Math.max(this._secMaxH || 0, tallest));
+      this._secKeep(right.clientWidth, { sec: this._secMaxH });
     }
   }
   if (this._secMaxH) right.style.setProperty('--sec-min-h', `${this._secMaxH}px`);
   // A shelf's posters take the height its category has left under the
-  // heading; a percentage of a box sized by min-height resolves to nothing
-  const shelf = right.querySelector('.shelf-fill .mgrid.shelf');
-  if (shelf) {
-    const pad = parseFloat(getComputedStyle(shelf).paddingBottom) || 0;
-    const h = Math.round(shelf.clientHeight - pad);
-    if (h > 40) right.style.setProperty('--shelf-h', `${h}px`);
-  } else right.style.removeProperty('--shelf-h');
+  // heading; a percentage of a box sized by min-height resolves to nothing.
+  // Taken from the category's height less what is not the shelf — the shelf's
+  // own height is its posters', so measuring it only gave back the last value
+  // and the category stood a heading taller than the rest, then grew with
+  // every measurement up to the ceiling.
+  // A statistics' row of tiles is a shelf as well. What a category takes
+  // besides its shelf is the most any heading takes (measured with every
+  // category at once, _measureFlowPages), so the posters on every page are
+  // as tall; until then the most of the ones on screen.
+  const rows = [...right.querySelectorAll('.shelf-fill .sec-card :is(.mgrid.shelf, .tl-row)')];
+  if (rows.length && this._secMaxH) {
+    const over = this._shelfOver || this._shelfKept(right.clientWidth, 'o')
+      || Math.max(...rows.map(r => r.closest('.sec-card').offsetHeight - r.offsetHeight));
+    const pad = parseFloat(getComputedStyle(rows[0]).paddingBottom) || 0;
+    const h = Math.round(this._secMaxH - over - pad);
+    if (h > 40) right.style.setProperty('--shelf-h', `${Math.min(SHELF_POSTER_MAX, h)}px`);
+  } else if (!rows.length && !right.querySelector('.shelf-fill')) right.style.removeProperty('--shelf-h');
 
   // The last page often holds fewer categories than the rest, and without a
   // floor of its own the column would end short there. A full page's height is
@@ -326,9 +396,13 @@ _syncSecHeights(measure = true) {
   }
   const perPage = Math.max(2, parseInt(this._cfgGet('discover', 'categoriesCount', 3)) || 3) - 1;
   const shown = wrap.querySelectorAll('.sec-card:not(.sec-search)').length;
-  if (measure && shown >= perPage) {
+  if (loading) {
+    this._secWrapH = kept.wrap || 0;
+    if (!this._secWrapH) right.style.removeProperty('--sec-wrap-h');
+  } else if (measure && shown >= perPage) {
     right.style.removeProperty('--sec-wrap-h');
     this._secWrapH = Math.max(this._secWrapH || 0, wrap.offsetHeight);
+    this._secKeep(right.clientWidth, { wrap: this._secWrapH });
   }
   if (this._secWrapH) right.style.setProperty('--sec-wrap-h', `${this._secWrapH}px`);
 

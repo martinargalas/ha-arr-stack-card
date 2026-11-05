@@ -1,5 +1,6 @@
 import { BP, dayClass, ICONS, maxWidth, tmdbSized } from '../shared/ui.js';
 import { fmtBytes } from '../shared/format.js';
+import { SHELF_MAX } from './sections.js';
 
 // The attributes a service's tile opens its window by (the render/…-tiles.js files)
 const SERVICE_OPEN = ['data-lib-open', 'data-tl-open', 'data-js-open', 'data-tra-open', 'data-act-open', 'data-pw-open', 'data-mt-open'];
@@ -798,7 +799,9 @@ _renderCalendar() {
   } else {
     const cols         = Math.max(2, Math.min(10, parseInt(this._cfgGet('discover', 'itemsPerCategory', 4)) || 4));
     const showMorePage = Math.max(1, parseInt(this._cfgGet('discover', 'showMoreOnPage', 3)) || 3);
-    const itemsBefore  = showMorePage * cols - 1;
+    // A shelf has no pages: the More poster closes its row at SHELF_MAX, as
+    // in every other category, not after showMoreOnPage pages
+    const itemsBefore  = this._mobFlow ? SHELF_MAX - 1 : showMorePage * cols - 1;
     let items = this._calCatItems();
     if (items.length > itemsBefore) {
       const teasers = items.slice(-4);

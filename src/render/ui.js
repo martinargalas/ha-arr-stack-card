@@ -6,6 +6,25 @@
 import { ICONS } from '../shared/ui.js';
 import { STATUS_RGB } from '../styles/tokens.js';
 
+const DOCK_FADE = 64;   // px of the columns' fade above a bottom bar
+
+// Scroll-driven animations, with the mask's line registered as a length so it
+// can be animated (a shadow root's @property does not register it)
+let dockTimeline = null;
+const DOCK_TIMELINE = () => {
+  if (dockTimeline != null) return dockTimeline;
+  dockTimeline = false;
+  try {
+    if (!CSS.supports('animation-timeline: view()')) return false;
+    CSS.registerProperty({ name: '--dock-y', syntax: '<length>', inherits: false, initialValue: '100000px' });
+    dockTimeline = true;
+  } catch (e) {
+    // Registered already by another copy of the card on the page
+    dockTimeline = /already|InvalidModification/i.test(String(e?.name || e));
+  }
+  return dockTimeline;
+};
+
 class _UiMethods {
 
   // The shared toolbar: search, the pickers, then the actions, split by
@@ -201,9 +220,9 @@ class _UiMethods {
   // covers what sits there: the arrow back to the top rises above it, and a
   // window's list ends above it. Looked for when the arrow is about to show,
   // through every shadow root on the page, so not more than once a few seconds.
-  _syncBottomBar() {
+  _syncBottomBar(force = false) {
     const now = Date.now();
-    if (now - (this._bottomBarAt || 0) < 3000) return;
+    if (!force && now - (this._bottomBarAt || 0) < 3000) return;
     this._bottomBarAt = now;
     const found = [];
     const look = root => {
@@ -215,9 +234,55 @@ class _UiMethods {
     const top = Math.min(vh, ...found.map(e => e.getBoundingClientRect())
       .filter(r => r.height > 0 && r.top > vh / 2 && r.top < vh).map(r => r.top));
     const h = Math.max(0, Math.round(vh - top));
+    this._bottomBarTop = h ? Math.round(top) : null;
     // With room between, as the arrow keeps from the screen's own edge
     if (h) this.style.setProperty('--arr-bottom-bar', `${h + 14}px`);
     else this.style.removeProperty('--arr-bottom-bar');
+  }
+
+  // The columns' content fades out just above a bar fixed along the screen's
+  // bottom (Bubble Card's buttons), as a window's list does, rather than run
+  // on under its icons. The mask sits on what each column holds, not on the
+  // column: Chrome draws no mask on a box with its own backdrop-filter, and on
+  // the card it would cut the columns' glass off from what lies behind it.
+  // The floating page nav keeps clear of the bar on its own. Followed as the
+  // page scrolls (_wireStickyNav).
+  _syncDockFade() {
+    const sr = this.shadowRoot;
+    if (!sr) return;
+    const top = this._bottomBarTop;
+    // Where the mask stands is tied to the scroll by the browser itself (a
+    // view() timeline), in the frame the page moves: set from here after a
+    // scroll, it trailed behind and caught up. Only what does not move with
+    // the scroll is given from here: where the bar is, the scroller's box,
+    // the content's height.
+    const timeline = DOCK_TIMELINE();
+    const sc = timeline ? this._findScrollContainer?.() : null;
+    const box = sc?.getBoundingClientRect?.();
+    for (const el of sr.querySelectorAll('.card-body > .col > :not(.rp-nav)')) {
+      const r = el.getBoundingClientRect();
+      if (top == null || !r.height) {
+        if (el.classList.contains('dock-fade')) {
+          el.classList.remove('dock-fade', 'dock-tl');
+          for (const v of ['--dock-y', '--dock-from', '--dock-to']) el.style.removeProperty(v);
+        }
+        continue;
+      }
+      el.classList.add('dock-fade');
+      if (timeline && box && sc !== document.scrollingElement) {
+        // view(): 0 as its top meets the scroller's bottom edge, 1 as its
+        // bottom leaves the top one; the bar's line, in its own coordinates,
+        // runs straight between the two
+        const H = sc.clientHeight;
+        el.classList.add('dock-tl');
+        el.style.setProperty('--dock-from', `${Math.round(top - box.top - H)}px`);
+        el.style.setProperty('--dock-to', `${Math.round(top - box.top + r.height)}px`);
+        el.style.removeProperty('--dock-y');
+      } else {
+        el.classList.remove('dock-tl');
+        el.style.setProperty('--dock-y', `${Math.round(top - r.top)}px`);
+      }
+    }
   }
 
   // A window's arrow sits beside its list rather than in it, out of the
