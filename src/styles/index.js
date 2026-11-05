@@ -1933,6 +1933,16 @@ ${TOKEN_CSS}
       .mob-peek[data-n="1"] > img { left: 17px; transform: none; }
       .mob-peek[data-n="2"] > :nth-child(1) { left: 8px; }
       .mob-peek[data-n="2"] > :nth-child(2) { left: 27px; transform: rotate(6deg); }
+      /* A category whose data is not in yet: grey poster shapes, breathing */
+      .mob-peek > .mob-skel {
+        position: absolute; top: 0; width: 37px; height: 54px; border-radius: 7px;
+        background: rgba(var(--_fill, 255, 255, 255), 0.12);
+        animation: mob-skel 1.1s ease-in-out infinite alternate;
+      }
+      .mob-peek > .mob-skel:nth-child(2) { animation-delay: .15s; }
+      .mob-peek > .mob-skel:nth-child(3) { animation-delay: .3s; }
+      @keyframes mob-skel { from { opacity: .35; } to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .mob-peek > .mob-skel { animation: none; } }
       /* A service: its icon on a glass square, in the posters' room */
       .mob-app {
         position: absolute; left: 9px; top: 0; width: 54px; height: 54px; box-sizing: border-box;

@@ -93,7 +93,7 @@ async _ackTautulliSharing() {
   });
 
   try {
-    await this._hass.callApi('POST', 'arr_stack/tautulli/sharing_ack', { ackedIps: updated });
+    await this._callApi('POST', 'arr_stack/tautulli/sharing_ack', { ackedIps: updated });
     this._tautulli = { ...this._tautulli, sharingAcked: true, ackedIps: updated };
     this._reRenderRight();
   } catch (e) {

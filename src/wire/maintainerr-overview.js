@@ -108,17 +108,17 @@ class _WireMaintainerrOverviewMethods {
     this._mtLoadTab('overview', modal);
     try {
       if (removeAll) {
-        await this._hass.callApi('DELETE', `arr_stack/maintainerr/collections/media?mediaId=${encodeURIComponent(item.id)}`);
+        await this._callApi('DELETE', `arr_stack/maintainerr/collections/media?mediaId=${encodeURIComponent(item.id)}`);
       } else if (dlg.kind === 'exclusion') {
         const body = { mediaId: String(item.id), context, action: parseInt(dlg.action) };
         // Omitting collectionId makes Maintainerr apply it across all collections
         if (colId != null) body.collectionId = colId;
-        const res = await this._hass.callApi('POST', 'arr_stack/maintainerr/rules/exclusion', body);
+        const res = await this._callApi('POST', 'arr_stack/maintainerr/rules/exclusion', body);
         if (res && res.code === 0) throw new Error(res.result || 'failed');
       } else {
         const body = { action: parseInt(dlg.action), mediaId: String(item.id), context };
         if (colId != null) body.collectionId = colId;
-        await this._hass.callApi('POST', 'arr_stack/maintainerr/collections/media/add', body);
+        await this._callApi('POST', 'arr_stack/maintainerr/collections/media/add', body);
       }
       ov.dialog = null;
       this._mtShowStatus(this._t('mtDone'), modal);

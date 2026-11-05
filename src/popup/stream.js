@@ -135,7 +135,7 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle, { bare = 
         }
       } else {
         try {
-          const sr = await this._hass.callApi('POST', 'arr_stack/overseerr/search', { query: lookupName, page: 1 });
+          const sr = await this._callApi('POST', 'arr_stack/overseerr/search', { query: lookupName, page: 1 });
           const want = _normT(lookupName);
           const tv = (sr?.results || []).filter(r => r.mediaType === 'tv');
           // The name has to match. Taking the first result turned "Blue" into
@@ -248,7 +248,7 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle, { bare = 
     // Radarr entry has no TMDB ID — look it up via Overseerr search
     if (!hitTmdbId && this._overseerrConfigured !== false) {
       try {
-        const sr = await this._hass.callApi('POST', 'arr_stack/overseerr/search', { query: titleNoYear, page: 1 });
+        const sr = await this._callApi('POST', 'arr_stack/overseerr/search', { query: titleNoYear, page: 1 });
         const qt = _normT(titleNoYear);
         const oh = (sr?.results || []).find(r => {
           if (r.mediaType !== 'movie') return false;
@@ -267,7 +267,7 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle, { bare = 
     let movieTmdbId = null;
     if (this._overseerrConfigured !== false) {
       try {
-        const sr = await this._hass.callApi('POST', 'arr_stack/overseerr/search', { query: titleNoYear, page: 1 });
+        const sr = await this._callApi('POST', 'arr_stack/overseerr/search', { query: titleNoYear, page: 1 });
         const qt = _normT(titleNoYear);
         const oh = (sr?.results || []).find(r => {
           if (r.mediaType !== 'movie') return false;
@@ -478,7 +478,7 @@ _doSeek(entityId, newPos) {
   }
   const machineId = this._popup?._plexMachineId;
   if (machineId) {
-    this._hass.callApi('POST', 'arr_stack/plex/player', {
+    this._callApi('POST', 'arr_stack/plex/player', {
       action:            'seekTo',
       machineIdentifier: machineId,
       offset:            Math.round(newPos * 1000),

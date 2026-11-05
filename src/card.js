@@ -78,6 +78,8 @@ import { jellystatTilesMixin } from './render/jellystat-tiles.js';
 import { similarFetchMixin } from './fetch/similar.js';
 import { similarRenderMixin } from './render/similar.js';
 import { wireSimilarMixin } from './wire/similar.js';
+import { catCacheMixin } from './render/cat-cache.js';
+import { arrImgMixin } from './render/arr-img.js';
 import { BP, maxWidth, savedDlSort } from './shared/ui.js';
 
 // The presets whose glass follows Home Assistant's appearance and is drawn by render/liquid.js
@@ -585,12 +587,12 @@ class ArrStackCard extends HTMLElement {
   // The polls skip a hidden tab: a dashboard in the background — a wall tablet
   // showing something else — kept calling HA and every service behind the
   // card. Coming back into view catches up at once.
-  _pollFull() { if (!document.hidden) this._fetchAll(); }
+  _pollFull() { if (!document.hidden) this._fetchAll({ poll: true }); }
   _pollFast() { if (!document.hidden) this._fetchDownloadsAndRender(); }
   _wireVisibility() {
     if (this._visibilityHandler) return;
     this._visibilityHandler = () => {
-      if (!document.hidden && this.isConnected) { this._fetchAll(); this._fetchDownloadsAndRender(); }
+      if (!document.hidden && this.isConnected) { this._fetchAll({ poll: true }); this._fetchDownloadsAndRender(); }
     };
     document.addEventListener('visibilitychange', this._visibilityHandler);
   }
@@ -1340,6 +1342,8 @@ applyMixin(ArrStackCard.prototype, jellystatTilesMixin);
 applyMixin(ArrStackCard.prototype, similarFetchMixin);
 applyMixin(ArrStackCard.prototype, similarRenderMixin);
 applyMixin(ArrStackCard.prototype, wireSimilarMixin);
+applyMixin(ArrStackCard.prototype, catCacheMixin);
+applyMixin(ArrStackCard.prototype, arrImgMixin);
 
 // Tracearr, Tautulli, Jellystat, Prowlarr and Maintainerr are fetched the first
 // time one of their modals opens, not with the card (#36): together they are

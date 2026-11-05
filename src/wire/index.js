@@ -11,7 +11,7 @@ async _qbitAction(hash, action, deleteFiles = false) {
   }
   this._reRenderLeft();
   try {
-    await this._hass.callApi('POST', 'arr_stack/qbit/action', { action, hash, deleteFiles });
+    await this._callApi('POST', 'arr_stack/qbit/action', { action, hash, deleteFiles });
   } catch (e) {
     console.error('[arr-card] qBit action error:', e);
   } finally {
@@ -38,7 +38,7 @@ async _delugeAction(hash, action, deleteFiles = false) {
   }
   this._reRenderLeft();
   try {
-    await this._hass.callApi('POST', 'arr_stack/deluge/action', { action, hash, deleteFiles });
+    await this._callApi('POST', 'arr_stack/deluge/action', { action, hash, deleteFiles });
   } catch (e) {
     console.error('[arr-card] Deluge action error:', e);
   } finally {
@@ -65,7 +65,7 @@ async _rtorrentAction(hash, action, deleteFiles = false) {
                : deleteFiles ? 'delete_files'
                : action === 'delete' ? 'delete'
                : action;
-    await this._hass.callApi('POST', 'arr_stack/rtorrent/action', { action: mode, id: hash });
+    await this._callApi('POST', 'arr_stack/rtorrent/action', { action: mode, id: hash });
   } catch (e) {
     console.error('[arr-card] rTorrent action error:', e);
   } finally {
@@ -94,7 +94,7 @@ async _transmissionAction(hash, action, deleteFiles = false) {
                : action;
     // Transmission knows a torrent by the id it gave it, not by its hash
     const row = (this._transmissionQueue || []).find(t => t.hash === hash);
-    await this._hass.callApi('POST', 'arr_stack/transmission/action', { action: mode, id: row?.id ?? hash });
+    await this._callApi('POST', 'arr_stack/transmission/action', { action: mode, id: row?.id ?? hash });
   } catch (e) {
     console.error('[arr-card] Transmission action error:', e);
   } finally {
@@ -116,7 +116,7 @@ async _sabAction(mode) {
   this._sabBusy = true;
   this._reRenderLeft();
   try {
-    await this._hass.callApi('POST', 'arr_stack/sabnzbd/action', { mode });
+    await this._callApi('POST', 'arr_stack/sabnzbd/action', { mode });
   } catch (e) {
     console.error('[arr-card] SAB action error:', e);
   } finally {

@@ -87,19 +87,19 @@ async _removeFromLibrary(deleteFiles = false, addExclusion = false) {
       : d._sonarrSeries?.id ? 'sonarr' : 'sonarr2');
   try {
     if (inst === 'radarr2' && d._radarr2Id) {
-      await this._hass.callApi('DELETE', `arr_stack/radarr2/movie/${d._radarr2Id}?deleteFiles=${df}&addExclusion=${ex}`);
+      await this._callApi('DELETE', `arr_stack/radarr2/movie/${d._radarr2Id}?deleteFiles=${df}&addExclusion=${ex}`);
       this._radarr2 = (this._radarr2 || []).filter(m => m.id !== d._radarr2Id);
       const map = new Map(); for (const m of (this._radarr2 || [])) if (m.tmdbId) map.set(String(m.tmdbId), m);
       this._radarr2ByTmdb = map;
     } else if ((inst === 'radarr' || !inst.startsWith('sonarr')) && d._radarrId) {
-      await this._hass.callApi('DELETE', `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}&addExclusion=${ex}`);
+      await this._callApi('DELETE', `arr_stack/radarr/movie/${d._radarrId}?deleteFiles=${df}&addExclusion=${ex}`);
       this._radarr = (this._radarr || []).filter(m => m.id !== d._radarrId);
     } else if (inst === 'sonarr2' && d._sonarr2Series?.id) {
-      await this._hass.callApi('DELETE', `arr_stack/sonarr2/series/${d._sonarr2Series.id}?deleteFiles=${df}&addExclusion=${ex}`);
+      await this._callApi('DELETE', `arr_stack/sonarr2/series/${d._sonarr2Series.id}?deleteFiles=${df}&addExclusion=${ex}`);
       this._sonarr2 = (this._sonarr2 || []).filter(s => s.id !== d._sonarr2Series.id);
       if (this._sonarr2All) this._sonarr2All = this._sonarr2All.filter(s => s.id !== d._sonarr2Series.id);
     } else if (d._sonarrSeries?.id) {
-      await this._hass.callApi('DELETE', `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}&addExclusion=${ex}`);
+      await this._callApi('DELETE', `arr_stack/sonarr/series/${d._sonarrSeries.id}?deleteFiles=${df}&addExclusion=${ex}`);
       this._sonarr = (this._sonarr || []).filter(s => s.id !== d._sonarrSeries.id);
       if (this._sonarrAll) this._sonarrAll = this._sonarrAll.filter(s => s.id !== d._sonarrSeries.id);
     }

@@ -583,7 +583,7 @@ _ppActStreamPlaypause(t, e, { root, overlay } = {}) {
     try { this._hass.callService('media_player', svc, { entity_id: entityId }); } catch (_) {}
   }
   if (!svc && this._popup?._plexMachineId) {
-    this._hass.callApi('POST', 'arr_stack/plex/player', {
+    this._callApi('POST', 'arr_stack/plex/player', {
       action: plexAction,
       machineIdentifier: this._popup._plexMachineId,
       playerUrl: this._popup._plexPlayerUrl || null,
@@ -618,7 +618,7 @@ _ppActStreamPlaypause(t, e, { root, overlay } = {}) {
 }
 
 _ppActStreamPrev(t, e, { root, overlay } = {}) {
-  const _plexPrev = () => this._popup?._plexMachineId && this._hass.callApi('POST', 'arr_stack/plex/player', {
+  const _plexPrev = () => this._popup?._plexMachineId && this._callApi('POST', 'arr_stack/plex/player', {
     action: 'skipPrevious', machineIdentifier: this._popup._plexMachineId, playerUrl: this._popup._plexPlayerUrl || null,
   }).catch(() => {});
   const eid = t.dataset.entity || this._popup?._streamEntity || '';
@@ -638,7 +638,7 @@ _ppActStreamPrev(t, e, { root, overlay } = {}) {
 }
 
 _ppActStreamNext(t, e, { root, overlay } = {}) {
-  const _plexNext = () => this._popup?._plexMachineId && this._hass.callApi('POST', 'arr_stack/plex/player', {
+  const _plexNext = () => this._popup?._plexMachineId && this._callApi('POST', 'arr_stack/plex/player', {
     action: 'skipNext', machineIdentifier: this._popup._plexMachineId, playerUrl: this._popup._plexPlayerUrl || null,
   }).catch(() => {});
   const eid = t.dataset.entity || this._popup?._streamEntity || '';

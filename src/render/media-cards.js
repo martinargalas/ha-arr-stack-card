@@ -1,3 +1,4 @@
+import { tmdbSized } from '../shared/ui.js';
 import { POPUP_TYPE } from '../constants.js';
 
 // Emoji flags render as native art on Apple and Samsung, as flat rectangles on
@@ -43,14 +44,10 @@ _statusBadge(html) {
 _getRadarrPoster(m) {
   if (!m.images) return null;
   const img = m.images.find(i => i.coverType === 'poster');
-  return img ? img.remoteUrl : null;
+  return img ? tmdbSized(img.remoteUrl) : null;
 }
 
-_getSonarrPoster(s) {
-  if (!s.images) return null;
-  const img = s.images.find(i => i.coverType === 'poster');
-  return img ? img.remoteUrl : null;
-}
+// _getSonarrPoster: render/arr-img.js — Sonarr's own smaller copy
 
 _renderRadarrCard(m) {
   const pc = this._posterCfg();

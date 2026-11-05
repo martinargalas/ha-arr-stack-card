@@ -124,7 +124,7 @@ class _PendingMethods {
         body.rootFolder = seerr.rootFolder;
         if (!isMovie && req?.seasons) body.seasons = req.seasons.map(s => s.seasonNumber);
       }
-      await this._hass.callApi('POST', 'arr_stack/overseerr/approve', body);
+      await this._callApi('POST', 'arr_stack/overseerr/approve', body);
       await Promise.all([
         this._fetchPendingRequests(),
         this._fetchRadarr(),
@@ -141,7 +141,7 @@ class _PendingMethods {
   async _declinePendingRequest(requestId) {
     this._optimisticRemovePending(requestId);
     try {
-      await this._hass.callApi('POST', 'arr_stack/overseerr/decline', { requestId });
+      await this._callApi('POST', 'arr_stack/overseerr/decline', { requestId });
       this._fetchPendingRequests().then(() => this._reRenderRight());
     } catch (e) {
       await this._fetchPendingRequests();
@@ -159,7 +159,7 @@ class _PendingMethods {
     this._withdrawnIds.add(mediaId);
     this._reRenderRight();
     try {
-      await this._hass.callApi('POST', 'arr_stack/overseerr/request_delete', { requestId });
+      await this._callApi('POST', 'arr_stack/overseerr/request_delete', { requestId });
       // Po úspěchu sync reálný stav
       await this._fetchOverseerr();
       await this._fetchTvUpcoming();

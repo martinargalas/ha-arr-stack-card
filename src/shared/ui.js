@@ -107,3 +107,16 @@ export function statusTok(rgb) {
   const k = String(rgb).replace(/\s+/g, '');
   return STATUS_RGB[k] ? `var(--arr-${STATUS_RGB[k]}-rgb, ${k})` : rgb;
 }
+
+// A TMDB picture at a width that fits where it is shown. Radarr hands out its
+// posters as TMDB's `original` — a megabyte or two each, on a phone, for a
+// card 120 px wide. Only ever smaller: a w92 stays a w92. Other hosts as they are.
+const TMDB_W = /(image\.tmdb\.org\/t\/p\/)(original|w(\d+))\//;
+export function tmdbSized(url, size = 'w342') {
+  if (typeof url !== 'string') return url;
+  const m = url.match(TMDB_W);
+  if (!m) return url;
+  const want = parseInt(size.slice(1), 10);
+  if (m[3] && parseInt(m[3], 10) <= want) return url;
+  return url.replace(TMDB_W, `$1${size}/`);
+}

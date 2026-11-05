@@ -10,7 +10,7 @@ class _WireMaintainerrCollectionsMethods {
     m.handlingId = id;
     this._mtLoadTab(m.tab, modal);
     try {
-      await this._hass.callApi('POST', `arr_stack/maintainerr/collections/${id}/handle`);
+      await this._callApi('POST', `arr_stack/maintainerr/collections/${id}/handle`);
       this._mtShowStatus(`${this._t('mtFinishedHandle')} '${colName}'`, modal);
     } catch (e) { console.warn('[arr-card] Maintainerr handle:', e); }
     m.handlingId = null;
@@ -22,7 +22,7 @@ class _WireMaintainerrCollectionsMethods {
     const m = this._maintainerrModal;
     if (!m) return;
     try {
-      await this._hass.callApi('POST', 'arr_stack/maintainerr/collections/handle');
+      await this._callApi('POST', 'arr_stack/maintainerr/collections/handle');
       m.execStatus = 'running';
       this._mtShowStatus(this._t('mtRunning'), modal, 0, { spin: true });
       this._mtLoadTab(m.tab, modal);
@@ -236,7 +236,7 @@ class _WireMaintainerrCollectionsMethods {
     if (!m?.colDetail) return;
     const cd = m.colDetail;
     try {
-      await this._hass.callApi('POST', 'arr_stack/maintainerr/rules/exclusion', {
+      await this._callApi('POST', 'arr_stack/maintainerr/rules/exclusion', {
         mediaId: parseInt(mediaServerId),
         mediaServerId: String(mediaServerId),
         ruleGroupId: cd.ruleGroupId,
@@ -258,7 +258,7 @@ class _WireMaintainerrCollectionsMethods {
     if (!m?.colDetail) return;
     const cd = m.colDetail;
     try {
-      await this._hass.callApi('DELETE', `arr_stack/maintainerr/rules/exclusion/${exclId}`);
+      await this._callApi('DELETE', `arr_stack/maintainerr/rules/exclusion/${exclId}`);
       cd.exclusionItems = (cd.exclusionItems || []).filter(e => e.id !== exclId);
       const removed = cd.exclusionItems.find(e => e.id === exclId);
       if (removed?.mediaServerId) cd.excludedIds?.delete?.(String(removed.mediaServerId));

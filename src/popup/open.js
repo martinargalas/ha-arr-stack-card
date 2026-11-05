@@ -1,4 +1,5 @@
 import { POPUP_TYPE } from '../constants.js';
+import { tmdbSized } from '../shared/ui.js';
 
 // Opening the detail: finding the title in each library, fetching it, what to show when that fails, and going back to where it was opened from.
 
@@ -393,7 +394,7 @@ _localFallbackData(type, tmdbId, tvdbId, title) {
   if (type === POPUP_TYPE.RADARR) {
     const movie = this._radarr.find(m => tmdbId && String(m.tmdbId) === String(tmdbId));
     if (movie) {
-      const fanart = movie.images?.find(i => i.coverType === 'fanart')?.remoteUrl || null;
+      const fanart = tmdbSized(movie.images?.find(i => i.coverType === 'fanart')?.remoteUrl || null, 'w1280');
       return {
         _type: POPUP_TYPE.RADARR, _localData: true,
         title: movie.title,

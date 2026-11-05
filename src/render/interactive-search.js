@@ -446,7 +446,7 @@ _renderIsPanel() {
         const rootFolder = seerr?.rootFolder ?? rootFolders?.[0]?.path ?? '/movies';
         let addedMovie;
         try {
-          addedMovie = await this._hass.callApi('POST', `arr_stack/${svc}/movie`, {
+          addedMovie = await this._callApi('POST', `arr_stack/${svc}/movie`, {
             tmdbId: parseInt(tmdbId),
             title,
             qualityProfileId: parseInt(profileId),
@@ -523,7 +523,7 @@ _renderIsPanel() {
       const svc = this._isInstance === 'radarr2' ? 'radarr2' : 'radarr';
       const release = this._isResults.find(r => r.guid === guid) || { guid, indexerId };
       release.movieId = this._isInstance === 'radarr2' ? this._popup._radarr2Id : this._popup._radarrId;
-      await this._hass.callApi('POST', `arr_stack/${svc}/release`, release);
+      await this._callApi('POST', `arr_stack/${svc}/release`, release);
       this._isGrabbed.add(guid);
       // The queue takes a moment to pick a grab up, so the instance chip spins
       // until its progress bar appears rather than looking like nothing happened.
@@ -537,7 +537,7 @@ _renderIsPanel() {
       const cache = svc === 'radarr2' ? (this._radarr2 || []) : (this._radarr || []);
       const movie = cache.find(m => m.id === radarrId);
       if (movie && !movie.monitored) {
-        this._hass.callApi('PUT', `arr_stack/${svc}/movie/${radarrId}`, { ...movie, monitored: true }).catch(() => {});
+        this._callApi('PUT', `arr_stack/${svc}/movie/${radarrId}`, { ...movie, monitored: true }).catch(() => {});
         if (svc === 'radarr2') this._radarr2 = cache.map(m => m.id === radarrId ? { ...m, monitored: true } : m);
         else this._radarr = cache.map(m => m.id === radarrId ? { ...m, monitored: true } : m);
       }

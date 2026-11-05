@@ -40,7 +40,7 @@ class _WireMaintainerrRulesMethods {
     m.runningId = id;
     this._mtLoadTab(m.tab, modal);
     try {
-      await this._hass.callApi('POST', `arr_stack/maintainerr/rules/${id}/execute`);
+      await this._callApi('POST', `arr_stack/maintainerr/rules/${id}/execute`);
       // No per-rule progress is exposed, so the bar only says "still working"
       this._mtShowStatus(`${this._t('mtProcessing')}: ${ruleName}`, modal, 0, { prog: true });
       // The POST only queues the group — hold the spinner until it clears
@@ -62,7 +62,7 @@ class _WireMaintainerrRulesMethods {
     const m = this._maintainerrModal;
     if (!m) return;
     try {
-      await this._hass.callApi('POST', 'arr_stack/maintainerr/rules/execute');
+      await this._callApi('POST', 'arr_stack/maintainerr/rules/execute');
       m.execStatus = 'running';
       this._mtShowStatus(this._t('mtRunning'), modal, 0, { spin: true, prog: true });
       this._mtLoadTab(m.tab, modal);
@@ -99,7 +99,7 @@ class _WireMaintainerrRulesMethods {
 
   async _mtDeleteRule(id, modal) {
     try {
-      await this._hass.callApi('DELETE', `arr_stack/maintainerr/rules/${id}`);
+      await this._callApi('DELETE', `arr_stack/maintainerr/rules/${id}`);
       await this._fetchMaintainerr();
       if (this._maintainerrModal) this._mtLoadTab('rules', modal);
     } catch (e) { console.warn('[arr-card] Maintainerr delete:', e); }
@@ -475,9 +475,9 @@ class _WireMaintainerrRulesMethods {
       let res;
       if (ed.id) {
         payload.id = ed.id;
-        res = await this._hass.callApi('PUT', 'arr_stack/maintainerr/rules', payload);
+        res = await this._callApi('PUT', 'arr_stack/maintainerr/rules', payload);
       } else {
-        res = await this._hass.callApi('POST', 'arr_stack/maintainerr/rules', payload);
+        res = await this._callApi('POST', 'arr_stack/maintainerr/rules', payload);
       }
       // Maintainerr answers 200 even on validation failures: { code: 0, result }
       if (res && res.code === 0) {

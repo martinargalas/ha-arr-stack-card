@@ -293,6 +293,9 @@ async _fetchDlHistory() {
         `arr_stack/${svc}/activity/history?page=1&pageSize=100&sortKey=date&sortDir=desc`,
       );
       const recs = Array.isArray(data) ? data : (data?.records || []);
+      // The newest event: when it changes, something happened in that
+      // instance and the polls take its library (_arrQueueSig)
+      (this._dlHistTop ||= {})[svc] = recs[0]?.id ?? null;
       const map  = new Map();
       for (const h of recs) {
         const arrId = h?.[idField];

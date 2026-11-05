@@ -1,4 +1,4 @@
-import { BP, dayClass, ICONS, maxWidth } from '../shared/ui.js';
+import { BP, dayClass, ICONS, maxWidth, tmdbSized } from '../shared/ui.js';
 import { fmtBytes } from '../shared/format.js';
 
 // The attributes a service's tile opens its window by (the render/…-tiles.js files)
@@ -72,7 +72,8 @@ _renderRight() {
     ...catConfig
       .filter(c => c.enabled !== false && CAT_FN[c.id])
       .map(c => ({ id: c.id, fn: CAT_FN[c.id] })),
-  ];
+  ].map(r => ({ id: r.id, fn: this._catFn(r.id, r.fn) }));
+  this._catOrder = regular.map(r => r.id);
   const regularCategories = regular.map(r => r.fn);
 
   // Search is on every page as the first slot; regular cats fill remaining slots
@@ -160,7 +161,10 @@ _mobListHtml(regular, from = 0, to = regular.length) {
     const imgs = [...(grid?.children || [])]
       .filter(it => !it.matches('.smp-card'))
       .map(it => [...it.querySelectorAll('img[src]')].find(i => !i.closest('.app-ico')))
-      .filter(Boolean).slice(0, 3).map(i => i.getAttribute('src'));
+      .filter(Boolean).slice(0, 3).map(i => tmdbSized(i.getAttribute('src'), 'w185'));
+    // Not in yet: what it showed last time, or grey poster shapes
+    const peekImgs = this._catPeek(r.id, title, imgs);
+    const loading = !peekImgs;
     const ico = doc.querySelector('.col-hdr :is(.app-icon-row, .app-ico)');
     // As many posters as the category has, up to three: one film playing
     // shows one, not two blanks beside it. A service shows what it is.
@@ -169,8 +173,10 @@ _mobListHtml(regular, from = 0, to = regular.length) {
       // The app icons the headers wear, even with them off there: the tile
       // has no other picture, and the header's setting is about headers
       ? `<span class="mob-app">${svcTile.apps.length > 1 ? this._appIconRow(svcTile.apps, 18) : this._appIcon(svcTile.apps[0], 30)}</span>`
-      : imgs.length
-      ? imgs.map(src => `<img src="${this._escHtml(src)}" alt="" loading="lazy">`).join('')
+      : loading
+      ? '<i class="mob-skel"></i>'.repeat(3)
+      : peekImgs.length
+      ? peekImgs.map(src => `<img src="${this._escHtml(src)}" alt="">`).join('')
       : ico ? `<span class="mob-app">${ico.outerHTML}</span>` : '';
     if (this._mobSheet === r.id) {
       sheet = `
@@ -192,7 +198,7 @@ _mobListHtml(regular, from = 0, to = regular.length) {
       : `data-mob-open="${r.id}"`;
     if (i < from || i >= to) return '';
     return `<button class="mob-row" ${open}>
-      <span class="mob-peek" data-n="${svcTile ? 'app' : imgs.length}">${peek}</span>
+      <span class="mob-peek" data-n="${svcTile ? 'app' : loading ? 3 : peekImgs.length}">${peek}</span>
       <span class="mob-row-t"><b>${this._escHtml(title)}</b></span>
       <svg class="mob-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m9 6 6 6-6 6"/></svg>
     </button>`;

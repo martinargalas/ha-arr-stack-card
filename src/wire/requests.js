@@ -504,7 +504,7 @@ _wireTvAbsOverlay(el, tvp) {
       }
       if (tagId) body.tags = [parseInt(tagId)];
       { const _acct = this._seerrAccountForUser(); if (_acct !== 'admin') body.userMode = _acct; }
-      await this._hass.callApi('POST', 'arr_stack/overseerr/request', body);
+      await this._callApi('POST', 'arr_stack/overseerr/request', body);
     } catch (err) {
       console.error('[arr-card] overlay TV request error:', err);
       this._optimisticRequested.delete(show.id);
