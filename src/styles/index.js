@@ -1780,6 +1780,13 @@ ${TOKEN_CSS}
         background: var(--arr-sheet-base, var(--primary-background-color, rgb(var(--_shade, 0, 0, 0))));
         opacity: .86;
       }
+      /* At the card's night (the sun, or a glass look's appearance) the
+         dashboard's background is no ground for it: a light Home Assistant
+         turned the window pale under the card's dark glass. Night is dark,
+         as the modals are; the day keeps the dashboard's background. */
+      .to-sheet:not(.sheet-day)::before {
+        background: var(--arr-sheet-night, rgb(var(--arr-sheet-night-rgb, 20, 20, 26)));
+      }
       .col-right.flow-held { overflow: hidden; }
       /* A window's posters fade out at its edges where the list runs on
          (_syncEdgeFade); its arrow to the top sits over the list, not in it */

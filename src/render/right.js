@@ -193,7 +193,7 @@ _mobListHtml(regular, from = 0, to = regular.length) {
     if (this._mobSheet === r.id) {
       sheet = `
         <div class="to-sheet-veil"></div>
-        <div class="to-sheet mob-sheet"${this._sheetColsStyle()}>
+        <div class="to-sheet mob-sheet${this._isDay ? ' sheet-day' : ''}"${this._sheetColsStyle()}>
           ${this._sheetHdr(title, '', 'data-mob-sheet-close')}
           <div class="to-sheet-body vscroll mob-cat" data-mob-cat="${r.id}">${html}</div>
           ${this._toTopHtml()}

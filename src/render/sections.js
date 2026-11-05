@@ -566,7 +566,7 @@ _renderSectionSheet(section, cfg, items) {
   const [gposL = 15, gposR = 85] = cfg.gradPos || [];
   return `
     <div class="to-sheet-veil"></div>
-    <div class="trending-overlay to-sheet"${this._sheetColsStyle()}>
+    <div class="trending-overlay to-sheet${this._isDay ? ' sheet-day' : ''}"${this._sheetColsStyle()}>
       ${cfg.appKey ? this._modalTint(cfg.appKey, gposL, gposR) : ''}
       ${this._sheetHdr(this._t(cfg.titleKey), this._sheetTypeNav(section), 'data-action="overlay-close"')}
       <div class="to-sheet-body vscroll">
