@@ -4342,9 +4342,10 @@ ${TOKEN_CSS}
         /* A mask clips to its box: the categories' cards stand out past it
            and the shelves' rows run on into their padding, so they lost
            their edges, corners and shadows. The box takes all that in, out
-           to the column's edge; the layout stays where it was. */
-        margin-inline: -32px;
-        padding-inline: 32px;
+           just past the column's edge \u2014 no further, or a full-width card would
+           run off the screen; the layout stays where it was. */
+        margin-inline: calc(-1 * (var(--_pad, 12px) + 8px));
+        padding-inline: calc(var(--_pad, 12px) + 8px);
         -webkit-mask-image: linear-gradient(to bottom, black calc(var(--dock-y, 100%) - 64px), rgba(var(--_shade, 0, 0, 0), 0.08) var(--dock-y, 100%), rgba(var(--_shade, 0, 0, 0), 0.08) 100%);
         mask-image: linear-gradient(to bottom, black calc(var(--dock-y, 100%) - 64px), rgba(var(--_shade, 0, 0, 0), 0.08) var(--dock-y, 100%), rgba(var(--_shade, 0, 0, 0), 0.08) 100%);
       }
@@ -4593,7 +4594,10 @@ ${TOKEN_CSS}
 
       /* Tablet portrait: stack columns */
       @media (max-width: 900px) {
-        .card-body { grid-template-columns: 1fr; }
+        /* Stacked, the columns take the whole width as the cards beside the
+           card do: inset by 12 px, in a Bubble Card pop-up the card stood
+           narrower than every other one */
+        .card-body { grid-template-columns: 1fr; padding: var(--arr-card-padding, 0 0 8px); }
 
         /* Floating sticky nav \u2014 glass pill, fade-in po nascrollov\xE1n\xED */
         .rp-nav {
@@ -4679,7 +4683,7 @@ ${TOKEN_CSS}
         .disk-chip   { min-width: calc(50% - 3px); }
         .col         { border-radius: var(--_radius, 24px); padding: var(--_pad, 12px); }
         .col::before { border-radius: var(--_radius, 24px); }
-        .card-body   { gap: var(--arr-gap, 8px); padding: var(--arr-card-padding, 0 8px 8px); }
+        .card-body   { gap: var(--arr-gap, 8px); padding: var(--arr-card-padding, 0 0 8px); }
         /* even smaller badges in 2-col grid */
         .badge { font-size: 8px; padding: 0 2px; }
         .badge ha-icon { --mdc-icon-size: 8px !important; }
