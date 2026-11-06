@@ -22,6 +22,7 @@ swap_sides: false            # swap left and right panels  (default: false)
 sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (default: 100)
 search_in_header: false      # the search field lives in a pop-up's header — an arr-stack-search card, see below  (default: false)
 search_link: ""              # only with several such cards on one page: pairs this card with the header that has the same link
+phone_header: false          # on a phone, the search field becomes a header held at the top that the card's windows take over — for a card without a pop-up header  (default: false)
 
 # Download managers (left panel)
 downloads:
@@ -161,6 +162,8 @@ styles: {}                   # optional: the card's style keys, over the look it
 ```
 
 On a phone, a header with `header: true` also serves the card's windows. A category opened full screen, the calendar, the Library, a service's window, Now Playing or an artist moves its switches and tabs up into the header, where the close turns into a back arrow. The window then starts just under the header. A title's details and an artist put their Search, Remove and Actions buttons there. Dialogs keep their own header.
+
+Without a pop-up and its header (no Bubble Card), set `phone_header: true` on the card instead. On a phone its search field becomes a header held at the top of the screen, and the card's windows take it over in the same way. The back arrow shows only while a window is open. Windows then run to the bottom of the screen.
 
 ## Category IDs
 

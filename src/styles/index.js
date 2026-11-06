@@ -30,6 +30,14 @@ export const STYLES = `
          OUTER CARD
       ════════════════════════════════════ */
       .card { width: 100%; background: transparent; margin: 0; }
+      /* The card's own header on a phone (phone_header): held at the top of
+         the screen as the page scrolls, over the columns; over the windows
+         too while one has it */
+      .card > arr-stack-search[own] { display: block; position: sticky; top: var(--arr-own-hdr-top, 0px); z-index: 6; }
+      /* The gap under it is the columns': the shared sheet holds every host's
+         margin at 0 (!important), the header's own too */
+      .card > arr-stack-search[own] + .card-body { margin-top: 10px; }
+      .card > arr-stack-search[own][taking] { z-index: 1001; }
 ${TOKEN_CSS}
       /* ── Column header ── */
       .col-hdr {
@@ -1910,6 +1918,26 @@ ${TOKEN_CSS}
         :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass:has(> .is-panel-hdr) > .popup-body { padding-top: 12px; }
         /* The calendar runs on to the screen's bottom, as the categories'
            windows: its paging just above a bar there, not a gap away */
+        /* One long list (the Library, Maintainerr): to the screen's bottom,
+           under a bar there, as a category's window; the list fades at its
+           edges and its end scrolls up above the bar */
+        :host([hdr-take]) .popup-overlay.hdr-taken.hdr-full { bottom: 0; padding-bottom: 0; }
+        :host([hdr-take]) .popup-overlay.hdr-taken.hdr-full > .popup-glass {
+          border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
+        }
+        :host([hdr-take]) .hdr-full .lib-scroll.vscroll {
+          padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px + var(--arr-bottom-bar, 0px));
+          --fe: color-mix(in srgb, black 35%, transparent);
+          --fbar: var(--arr-bottom-bar, 0px);
+          -webkit-mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
+          mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
+        }
+        /* The list's own padding already keeps clear of the bar: the arrow
+           back to the top counted it twice and stood a bar too high. Where a
+           category's window has it, 14 px over the bar. */
+        :host([hdr-take]) .hdr-full .lib-scroll.vscroll > .to-top-wrap { bottom: -10px; }
+        :host([hdr-take]) .hdr-full .lib-scroll.vscroll.fade-t { --ft: 28px; --fe-t: var(--fe); }
+        :host([hdr-take]) .hdr-full .lib-scroll.vscroll.fade-b { --fb: 40px; --fe-b: var(--fe); }
         :host([hdr-take]) #cal-overlay.hdr-taken { padding-bottom: 0; border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0; }
         :host([hdr-take]) #cal-overlay.hdr-taken > .cal-modal-glass {
           border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
@@ -4356,6 +4384,9 @@ ${TOKEN_CSS}
           height: var(--phone-win-h) !important;
           max-height: var(--phone-win-h) !important;
         }
+        /* No window line on a phone: a look's dark one (Apple Home by day)
+           drew a black ring round every window */
+        .popup-overlay > .popup-glass, .to-sheet { border-color: transparent !important; }
       }
       @media (max-width: 700px) {
         /* Over Bubble Card's bottom bar it ends above it, as the windows do */

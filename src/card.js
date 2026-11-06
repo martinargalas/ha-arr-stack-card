@@ -482,7 +482,7 @@ class ArrStackCard extends HTMLElement {
 
       // ResizeObserver — badge compact při změně velikosti karty
       this._resizeObserver = new ResizeObserver(() => {
-        requestAnimationFrame(() => this._checkBadgeOverflow());
+        requestAnimationFrame(() => { this._checkBadgeOverflow(); this._ownBarSync(); });
       });
       this._resizeObserver.observe(this);
       this._wireVisibility();
@@ -674,7 +674,7 @@ class ArrStackCard extends HTMLElement {
     }
     if (!this._resizeObserver) {
       this._resizeObserver = new ResizeObserver(() => {
-        requestAnimationFrame(() => this._checkBadgeOverflow());
+        requestAnimationFrame(() => { this._checkBadgeOverflow(); this._ownBarSync(); });
       });
       this._resizeObserver.observe(this);
     }
@@ -948,6 +948,7 @@ class ArrStackCard extends HTMLElement {
     if (!left || !right) return;
     this._measureFlagRatio();
     this._watchOverlays();
+    this._ownBarSync();
     const layout = this._cfg?.layout || 'both';
     if (layout !== 'right') {
       const leftContent = this._renderLeft();

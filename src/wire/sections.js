@@ -410,6 +410,7 @@ _syncSecHeights(measure = true) {
 
 // Rerenderuj jen sloupec kde sekce leží (nezpůsobuje scroll reset stránky)
 _reRenderSection(section) {
+  this._holdScroll?.();
   const leftSections = new Set(['qbit', 'sab']);
   if (leftSections.has(section)) {
     this._reRenderLeft();

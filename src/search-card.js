@@ -64,7 +64,22 @@ const BAR_CSS = `
     color: rgba(var(--_fg2, 255, 255, 255), var(--ash-fg-a, 0.85));
     -webkit-tap-highlight-color: transparent;
   }
-  .ash-close svg { width: 18px; height: 18px; display: block; position: relative; z-index: 1; }
+  /* Its cross is two bars that fold into the back chevron while a window of
+     the card has the header, and back: the same strokes as the icons were
+     (3 of 24 at 18 px), so it looks the same at rest */
+  .ash-glyph { width: 18px; height: 18px; display: block; position: relative; z-index: 1; }
+  .ash-bar {
+    position: absolute; left: 50%; top: 50%; width: 15px; height: 2.25px; border-radius: 2px;
+    background: currentColor;
+    transform: translate(-50%, -50%) translateY(0) rotate(var(--ash-rot));
+    transition: width .32s cubic-bezier(.3, .7, .2, 1), transform .32s cubic-bezier(.3, .7, .2, 1);
+  }
+  .ash-bar-a { --ash-rot: 45deg; }
+  .ash-bar-b { --ash-rot: -45deg; }
+  :host([taking]) .ash-bar { width: 8.6px; }
+  :host([taking]) .ash-bar-a { transform: translate(-50%, -50%) translateY(2.25px) rotate(var(--ash-rot)); }
+  :host([taking]) .ash-bar-b { transform: translate(-50%, -50%) translateY(-2.25px) rotate(var(--ash-rot)); }
+  @media (prefers-reduced-motion: reduce) { .ash-bar { transition: none; } }
   .ash-hint { flex: 1; font-size: 12px; color: rgba(var(--_fg3, 255, 255, 255), 0.65); padding: 0 4px; }
   /* Stacked columns: the field is the bar's own width, and while there is a
      search the icon gives it its room too */
@@ -125,7 +140,6 @@ const BAR_CSS = `
   /* The calendar's dates centred in the room between its switch and the bar's end */
   .ash-take > .sh-side > .cal-week-label { flex: 1; min-width: 0; margin: 0; text-align: center; }
   .ash-take .mt-seg-half { font-size: 11px; }
-  .ash-close .ash-back { display: none; }
   /* Over the card's windows, so a menu dropped from here shows over them */
   :host([taking]) { position: relative; z-index: 1001; }
   .ash-take { position: relative; gap: 8px; }
@@ -156,8 +170,9 @@ const BAR_CSS = `
   }
   .ash-take-title.ash-hide { display: none; }
   .ash-take-title { flex: 1; min-width: 0; text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgba(var(--_fg, 255, 255, 255), 0.9); }
-  :host([taking]) .ash-close .ash-x { display: none; }
-  :host([taking]) .ash-close .ash-back { display: block; }
+  /* A card's own header (phone_header): nothing to close, the button is
+     there only as the way back from a window */
+  :host([own]:not([taking])) .ash-close { display: none; }
   /* A phone: the field has the whole bar, searching or not */
   @media (max-width: 600px) {
     .ash-ico { display: none; }
@@ -165,8 +180,7 @@ const BAR_CSS = `
   }
 `;
 
-const CLOSE_SVG = '<svg class="ash-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
-  + '<svg class="ash-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+const CLOSE_SVG = '<span class="ash-glyph" aria-hidden="true"><span class="ash-bar ash-bar-a"></span><span class="ash-bar ash-bar-b"></span></span>';
 
 class ArrStackSearch extends HTMLElement {
   constructor() {
@@ -360,7 +374,7 @@ class ArrStackSearch extends HTMLElement {
     sr.addEventListener('click', e => {
       if (e.target.closest('[data-ash-close]')) {
         if (this.hasAttribute('taking') && this._card) this._card._hdrTakeBack();
-        else this._closePopup();
+        else if (!this._ownCard) this._closePopup();
         return;
       }
       if (e.target.closest('[data-ash-more]')) {

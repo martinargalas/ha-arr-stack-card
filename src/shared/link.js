@@ -7,6 +7,8 @@ export const ARR_LINK = { cards: new Set(), bars: new Set() };
 export const linkOf = cfg => String(cfg?.link ?? cfg?.search_link ?? '');
 
 export function cardForBar(bar) {
+  // A card's own header (phone_header) belongs to it alone
+  if (bar._ownCard) return bar._ownCard.isConnected ? bar._ownCard : null;
   const key = linkOf(bar._config);
   for (const c of ARR_LINK.cards) {
     if (c.isConnected && c._config?.search_in_header && linkOf(c._config) === key) return c;
@@ -15,6 +17,7 @@ export function cardForBar(bar) {
 }
 
 export function barForCard(card) {
+  if (card._ownBar?.isConnected) return card._ownBar;
   if (!card._config?.search_in_header) return null;
   for (const b of ARR_LINK.bars) {
     if (b.isConnected && b._card === card) return b;

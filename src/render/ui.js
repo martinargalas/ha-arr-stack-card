@@ -205,7 +205,7 @@ class _UiMethods {
       const on = box.scrollTop > box.clientHeight * 1.5;
       if (on && wrap && !wrap.classList.contains('on')) this._syncBottomBar();
       wrap?.classList.toggle('on', on);
-      if (box.classList.contains('to-sheet-body')) this._syncEdgeFade(box);
+      if (box.classList.contains('to-sheet-body') || box.closest('.hdr-full')) this._syncEdgeFade(box);
     }, { capture: true, passive: true });
     sr.addEventListener('click', e => {
       const btn = e.target.closest?.('[data-to-top]');
@@ -259,7 +259,9 @@ class _UiMethods {
     const timeline = DOCK_TIMELINE();
     const sc = timeline ? this._findScrollContainer?.() : null;
     const box = sc?.getBoundingClientRect?.();
-    for (const el of sr.querySelectorAll('.card-body > .col > :not(.rp-nav)')) {
+    // Not the round minimise / restore button pinned in the corner: the box's
+    // reach past the column's edge pushed it half out of the column
+    for (const el of sr.querySelectorAll('.card-body > .col > :not(.rp-nav):not([data-min-btn]):not([data-min-restore])')) {
       const r = el.getBoundingClientRect();
       if (top == null || !r.height) {
         if (el.classList.contains('dock-fade')) {

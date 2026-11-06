@@ -228,7 +228,8 @@ class _LiquidMethods {
     const right = groups?.find(g => g.sel.includes('col-right'));
     const barGroups = right ? [{ sel: BAR_SEL, p: right.p }] : null;
     if (barRoot) {
-      bar.style.position = 'relative';
+      // The card's own header is held at the top (sticky), a box for them too
+      if (!bar.hasAttribute('own')) bar.style.position = 'relative';
       this._liquidOn(barRoot, barRoot.querySelector('.ash-layer') || this._liquidHost(barRoot), barGroups);
     }
     for (const [root, layer] of this._lqLayers) {

@@ -439,6 +439,11 @@ ${EDITOR_CSS}
             <input type="text" data-text-key="search_link" value="${String(this._config.search_link || '').replace(/"/g, '&quot;')}" placeholder="optional" style="width:140px"/>
           </div>
           <div class="hint">Only with several of these cards on one page: give this card and its search card the same name.</div>` : ''}
+          ${this._config.search_in_header ? '' : `<div class="row">
+            <span class="row-label">Header on a phone</span>
+            <label class="toggle"><input type="checkbox" data-key="phone_header" ${this._config.phone_header ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="hint">On a phone the search field becomes a header held at the top of the screen. A window opened from the card takes it over: its tabs and buttons go up into it, a back arrow closes it, and the window gets the height of its own header row. For a card not in a pop-up with an Arr Stack Search header.</div>`}
           <div class="hint">Number of poster columns per category row, search results and More overlay. Default: 4.</div>
           <div class="row">
             <span class="row-label">Show More card on page</span>

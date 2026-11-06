@@ -538,6 +538,7 @@ class _LayoutMethods {
   _reRenderRight(force = false) {
     const right = this.shadowRoot.getElementById('col-right');
     if (!right) return;
+    this._holdScroll();
     if (!force && (this._requestPending || this._searchActive)) return;
     const enteringSearchLayout = this._searchActive && !this._searchOnlyLayout;
     this._searchOnlyLayout = this._searchActive;
@@ -864,6 +865,22 @@ class _LayoutMethods {
     if (open !== !!this._scrollLocked) this._applyScrollLock(open);
   }
 
+  // Where the page stood just before a redraw that may open a window: the
+  // list's category opening over the screen swaps the column for the window
+  // first, and the page, a screen tall for that moment, was clamped to its
+  // top before the lock (called from the overlay watcher right after) could
+  // note the place — back closed the window onto the top of the page. Kept
+  // only for this task; the lock takes it over, anything later is fresh.
+  _holdScroll() {
+    if (!this._isMob || this._scrollLocked || this._scrollHeld) return;
+    try {
+      const el = this._findScrollContainer?.();
+      const html = document.documentElement;
+      this._scrollHeld = { el, top: el ? el.scrollTop : 0, win: window.scrollY || window.pageYOffset || html.scrollTop || 0 };
+    } catch (_) { return; }
+    setTimeout(() => { this._scrollHeld = null; }, 0);
+  }
+
   _applyScrollLock(on) {
     this._scrollLocked = on;
     const html = document.documentElement;
@@ -872,21 +889,37 @@ class _LayoutMethods {
       // overflow:hidden makes the scroller non-scrollable and the browser clamps
       // its offset to zero, so closing the modal would otherwise dump the user
       // back at the top of the page. Remember where they were.
-      const el = this._findScrollContainer();
+      // The box noted before the redraw: a screen tall for now, it no longer
+      // passes for the one that scrolls
+      const held = this._scrollHeld;
+      this._scrollHeld = null;
+      const el = held?.el || this._findScrollContainer();
       this._scrollRestore = {
         el:  el && el !== html ? el : null,
-        top: el ? el.scrollTop : 0,
-        win: window.scrollY || window.pageYOffset || html.scrollTop || 0,
+        top: Math.max(el ? el.scrollTop : 0, held?.top || 0),
+        win: Math.max(window.scrollY || window.pageYOffset || html.scrollTop || 0, held?.win || 0),
       };
       this._prevHtmlOverflow = html.style.overflow;
       this._prevBodyOverflow = body.style.overflow;
       html.style.overflow = 'hidden';
       body.style.overflow = 'hidden';
       body.style.overscrollBehavior = 'none';
+      // A box of its own that scrolls the card (Bubble Card's pop-up) is held
+      // too: a wheel or a finger beside the window, or in the gap above it,
+      // scrolled the pop-up behind
+      if (el && el !== html && el !== body) {
+        this._lockedScroller = el;
+        this._prevScrollerOverflow = el.style.overflowY;
+        el.style.overflowY = 'hidden';
+      }
     } else {
       html.style.overflow = this._prevHtmlOverflow || '';
       body.style.overflow = this._prevBodyOverflow || '';
       body.style.overscrollBehavior = '';
+      if (this._lockedScroller) {
+        this._lockedScroller.style.overflowY = this._prevScrollerOverflow || '';
+        this._lockedScroller = null;
+      }
 
       const saved = this._scrollRestore;
       this._scrollRestore = null;

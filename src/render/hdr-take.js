@@ -68,6 +68,36 @@ class _HdrTakeMethods {
     return !!bar && !!bar._config?.header && maxWidth(BP.PHONE);
   }
 
+  // A phone with no pop-up header of its own to lend (phone_header): the card
+  // puts one of its own over its columns, the search field in it, held at
+  // the top of the screen as the page scrolls. A window opened takes it over
+  // as it would a pop-up's, its back chevron the way out. Wider screens, and
+  // a card that pairs with a header elsewhere (search_in_header), go without.
+  _ownBarSync() {
+    const want = !!this._config?.phone_header && !this._config?.search_in_header
+      && maxWidth(BP.PHONE) && !!customElements.get('arr-stack-search');
+    const body = this.shadowRoot?.querySelector('.card > .card-body');
+    let bar = this._ownBar;
+    if (!want || !body) {
+      if (bar) { this._ownBar = null; bar.remove(); }
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement('arr-stack-search');
+      bar._ownCard = this;
+      bar.setAttribute('own', '');
+      bar.setConfig({ header: true });
+      this._ownBar = bar;
+    }
+    // Under Home Assistant's own bar when the page itself scrolls; at the top
+    // of a box that scrolls the card (a pop-up), which has no bar over it
+    const sc = this._findScrollContainer?.();
+    const page = !sc || sc === document.documentElement || sc === document.body;
+    bar.style.setProperty('--arr-own-hdr-top', page ? 'calc(var(--header-height, 56px) + env(safe-area-inset-top, 0px))' : '0px');
+    if (bar.parentNode !== body.parentNode || bar.nextSibling !== body) body.before(bar);
+    if (this._hass) bar.hass = this._hass;
+  }
+
   // The topmost window that hands its controls over, with its header
   _hdrTakeSource() {
     // The highest window that is one of these: a dialog over it (a form, a
@@ -96,7 +126,21 @@ class _HdrTakeMethods {
     const bar = this._searchExt;
     // Every such window open is marked, for its frame (styles): one under
     // another (a category under an artist opened from it) keeps its place
-    for (const o of this._backOpen?.() || []) o.classList.toggle('hdr-taken', on && TAKERS.some(k => k.is(o)));
+    for (const o of this._backOpen?.() || []) {
+      const taken = on && TAKERS.some(k => k.is(o));
+      o.classList.toggle('hdr-taken', taken);
+      // A window that is one long list (the Library, Maintainerr's overview)
+      // runs on under a bar along the bottom as a category's window does, the
+      // list fading out at its top and bottom edges. Known by the window and
+      // its tab, not by the list being there: Maintainerr swaps its list while
+      // it loads and lays it out by the window's height, and the window
+      // jumping between the two heights redrew it without end.
+      const full = taken && (o.matches('[data-lib-modal]')
+        || (o.matches('[data-mt-modal]') && !!o.querySelector('#mt-nav .mt-nav-btn.is-on[data-mt-tab="overview"]')));
+      o.classList.toggle('hdr-full', full);
+      const list = full ? o.querySelector('.popup-glass .lib-scroll.vscroll') : null;
+      if (list) this._syncEdgeFade?.(list);
+    }
     if (src?.hdr !== this._hdrTakeHdr) {
       this._hdrTakeObs?.disconnect();
       this._hdrTakeHdr = src?.hdr || null;
@@ -166,7 +210,9 @@ class _HdrTakeMethods {
   _hdrTakeReveal() {
     const r = this._searchExt?.getBoundingClientRect?.();
     if (!r || r.top >= 0) return;
-    const sc = this._findScrollContainer?.();
+    // Held while the window is open (_applyScrollLock), and no longer found as
+    // a scroller then
+    const sc = this._lockedScroller || this._findScrollContainer?.();
     if (!sc) return;
     const top = sc === document.documentElement || sc === document.body ? 0 : sc.getBoundingClientRect().top;
     sc.scrollTop = Math.max(0, sc.scrollTop + r.top - top - 18);

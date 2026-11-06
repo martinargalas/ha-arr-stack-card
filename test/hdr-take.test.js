@@ -201,3 +201,16 @@ test('a detail opened over a window takes the header back from it, and gives it 
     assert.match(bar.taken, /data-ra-type/);
   } finally { setViewport(1400); }
 });
+
+// A card with no pop-up header to lend (phone_header) is paired with its own,
+// and nothing else: a header elsewhere with no link would otherwise find it
+test('a card\'s own header pairs with that card alone', async () => {
+  const { barForCard, cardForBar } = await import('../src/shared/link.js');
+  const card = { isConnected: true, _config: { phone_header: true } };
+  const own = { isConnected: true, _ownCard: card, _config: { header: true } };
+  card._ownBar = own;
+  assert.strictEqual(barForCard(card), own);
+  assert.strictEqual(cardForBar(own), card);
+  own.isConnected = false;
+  assert.strictEqual(barForCard(card), null, 'gone from the page, the column draws the field again');
+});
