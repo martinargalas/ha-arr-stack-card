@@ -16,7 +16,7 @@ Back to the [README](README.md) · Colours and looks: [STYLING.md](STYLING.md)
 - [Right panel — media](#right-panel--media)
 - [Users](#users)
 - [Appearance](#appearance)
-- [The search header card](#the-search-header-card--arr-stack-search)
+- [Search header — with Bubble Card or on its own](#search-header--with-bubble-card-or-on-its-own)
 - [Categories you can show](#categories-you-can-show)
 - [Settings only in YAML](#settings-only-in-yaml)
 - [Everything at once](#everything-at-once)
@@ -27,25 +27,31 @@ Back to the [README](README.md) · Colours and looks: [STYLING.md](STYLING.md)
 
 ### A phone with Bubble Card
 
-The card sits in a Bubble Card pop-up and the search moves up into the
-pop-up's header. Windows you open (a category, the Library, a title's details)
-take over that header: their buttons go up there and a back arrow closes them.
-The categories are folded into a list you tap through.
+The card sits in a [Bubble Card](https://github.com/Clooos/Bubble-Card) pop-up
+and the search moves up into the pop-up's header. Windows you open (a category,
+the Library, a title's details) take over that header: their buttons go up there
+and a back arrow closes them. The categories are folded into a list you tap
+through. Step by step, with the dock: [Search header](#search-header--with-bubble-card-or-on-its-own).
 
 ```yaml
-# In the pop-up, with Bubble Card's own header hidden (show_header: false)
-- type: custom:arr-stack-search
-  header: true
-- type: custom:arr-stack-card
-  search_in_header: true
-  discover:
-    mobileLayout: list
+- type: custom:bubble-card
+  card_type: pop-up
+  hash: "#movies"
+  show_header: false
+  cards:
+    - type: custom:arr-stack-search
+      header: true
+    - type: custom:arr-stack-card
+      search_in_header: true
+      discover:
+        mobileLayout: list
 ```
 
 ### A phone without Bubble Card
 
 The same header, kept at the top of the screen as you scroll, but provided by the
-card itself.
+card itself. Search, the windows' tabs and switches and a back arrow, all on a
+phone, with no extra cards. [More](#without-bubble-card--the-header-on-a-phone).
 
 ```yaml
 type: custom:arr-stack-card
@@ -200,9 +206,9 @@ discover:
 | In the editor | What it does | Key | Values | Default |
 |---|---|---|---|---|
 | **Show search field** | Off gives its place to one more category. Handy for a display nobody types on. | `discover:` → `showSearch` | `true` · `false` | `true` |
-| **Search in a pop-up header** | Moves the search into the header of the pop-up the card is in. Add an **Arr Stack Search** card to that header (see [below](#the-search-header-card--arr-stack-search)). Until it's there, the search stays in the card. | `search_in_header` | `true` · `false` | `false` |
+| **Search in a pop-up header** | Moves the search into the header of the pop-up the card is in. Add an **Arr Stack Search** card to that header (step by step in [Search header](#search-header--with-bubble-card-or-on-its-own)). Until it's there, the search stays in the card. | `search_in_header` | `true` · `false` | `false` |
 | **Link name** | Only needed with two or more such cards on one page, say a Movies and a Kids pop-up. Type the same word here and in the matching Arr Stack Search card. | `search_link` | any word, e.g. `kids` | empty |
-| **Header on a phone** | For a card without a pop-up. On a phone the search becomes a header that stays at the top of the screen. Windows you open take it over, and a back arrow closes them. | `phone_header` | `true` · `false` | `false` |
+| **Header on a phone** | For a card without Bubble Card. On a phone the search becomes a header that stays at the top of the screen; windows you open put their controls in it, and a back arrow closes them. See [Search header](#search-header--with-bubble-card-or-on-its-own). | `phone_header` | `true` · `false` | `false` |
 
 ### Recommendations
 
@@ -305,34 +311,135 @@ styles:
 
 ---
 
-## The search header card — `arr-stack-search`
+## Search header — with Bubble Card or on its own
 
-A small extra card that holds the search field, for the header of a pop-up
-(Bubble Card, for example). Turn on **Search in a pop-up header** on the main
-card, then add this card above it in the same pop-up.
+The card can put its search field in a header at the top of the screen,
+instead of inside the card. On a phone that header does more than search.
+Whatever you open from the card (a category, the calendar, the Library, a
+service's window, a title's details) moves its controls up into the header,
+such as the Movies / TV / Music switch, its tabs, or Search, Remove and
+Actions. The close button turns into a back arrow, and the window gets the
+whole screen below the header.
+
+There are two ways to get this header:
+
+| | With Bubble Card | Without Bubble Card |
+|---|---|---|
+| Where the card lives | In a [Bubble Card](https://github.com/Clooos/Bubble-Card) pop-up (by Clooos) | Anywhere on a dashboard |
+| What you add | The **Arr Stack Search** card in the pop-up, and **Search in a pop-up header** on the main card | Only **Header on a phone** on the main card |
+| On a phone | Search, the windows' controls and a back arrow in the pop-up's header | The same, in a header the card keeps at the top of the screen |
+| On a tablet | The search in the pop-up's header. Windows keep their controls inside them. | Nothing changes. The search stays in the card. |
+| Bubble Card's dock | The card makes room for it and fades its content out above it | — |
+
+### With Bubble Card — step by step
+
+[Bubble Card](https://github.com/Clooos/Bubble-Card) is a separate card by
+Clooos, installed from HACS. Its pop-ups slide up over the dashboard and its
+dock (a row of round buttons along the bottom) opens them.
+
+1. **Install Bubble Card** from HACS, if you haven't yet.
+2. **Make a pop-up for the card.** Give it a hash, e.g. `#movies`, and turn off
+   Bubble Card's own header (`show_header: false`). The Arr Stack Search card
+   becomes the header instead, so there would be two.
+3. **Put two cards in the pop-up, in this order:**
+   1. **Arr Stack Search** with **Pop-up header** on. This is the header: an
+      icon, the search field and a close button.
+   2. **Arr Stack Card** with **Search in a pop-up header** on (Right panel →
+      Search). Its own search field disappears; typing in the header searches
+      in the card and the results appear in the card.
+4. **Optional: a dock.** Add Bubble Card's *horizontal buttons stack* with a
+   button that opens `#movies`. You don't need to set anything in the card:
+   it notices the dock and keeps clear of it, on a phone and on a tablet.
+   Lists fade out above it and windows end above it.
+5. **On a phone, choose List** (Right panel → Phone and tablet → Layout on a
+   phone). You tap a category, it opens under the header, and the back arrow
+   returns you to where you were in the list.
+
+```yaml
+# A section or a vertical stack on your dashboard
+- type: custom:bubble-card
+  card_type: pop-up
+  hash: "#movies"
+  show_header: false          # the Arr Stack Search card is the header
+  cards:
+    - type: custom:arr-stack-search
+      header: true
+      icon: mdi:movie-play-outline
+    - type: custom:arr-stack-card
+      search_in_header: true
+      discover:
+        mobileLayout: list    # tap through the categories on a phone
+
+# Optional: the dock that opens it
+- type: custom:bubble-card
+  card_type: horizontal-buttons-stack
+  1_link: "#movies"
+  1_name: Movies
+  1_icon: mdi:movie-play-outline
+```
+
+**On a tablet** the same pop-up works as it is. The search sits in the
+header and the windows keep their tabs and buttons inside them, where
+there's room for them. Everything ends above the dock.
+
+**Something not right?**
+
+- *The search is still in the card.* The Arr Stack Search card isn't on the
+  page yet, or it's in another pop-up. Until it appears, the card keeps its
+  own field so search never goes missing.
+- *Two headers on top of each other.* Bubble Card's own header is still on:
+  set `show_header: false` on the pop-up.
+- *Several Arr Stack cards on one page* (say a Movies and a Kids pop-up):
+  give each pair the same **Link name**, see the example below.
+
+### Without Bubble Card — the header on a phone
+
+If you don't use Bubble Card, turn on **Header on a phone** (Right panel →
+Search). On a phone the search field becomes a header that stays at the top
+of the screen as you scroll. Windows you open take it over the same way: the
+Movies / TV / Music switch, the tabs and the buttons go up into it, and a back
+arrow closes the window. With no window open there's just the search. On a
+tablet nothing changes.
+
+```yaml
+type: custom:arr-stack-card
+phone_header: true
+discover:
+  mobileLayout: list
+```
+
+You don't need the Arr Stack Search card for this. **Header on a phone** is
+hidden in the editor while **Search in a pop-up header** is on, because the
+pop-up's header already does the job.
+
+### What moves into the header on a phone
+
+| You open | The header shows |
+|---|---|
+| A category (from the list, a shelf or See More) | Its Movies / TV / Music switch, if it has one |
+| The calendar | Its Movies / TV / Music switch |
+| The Library | Its type switch and filters |
+| Activity, Tautulli, Jellystat, Prowlarr, Maintainerr | Their tabs: the open one with its name, the others as icons |
+| A movie's or show's details | Search, Remove and Actions |
+| An artist | The artist's buttons |
+| Now Playing, Similar titles | Their own controls |
+| A confirmation or a small dialog | Nothing. It keeps its own buttons. |
+
+When there isn't room for every button, the extra ones fold under **…**.
+
+### The Arr Stack Search card's settings
+
+The card searches only together with an Arr Stack Card on the same page that
+has **Search in a pop-up header** on. It takes that card's look by default; its
+own **Appearance** tab changes only the header.
 
 | In the editor | What it does | Key | Values | Default |
 |---|---|---|---|---|
-| **Pop-up header** | A whole header: an icon, the search field and a close button, sized like Bubble Card's. Off: just the field, for a header that has its own. | `header` | `true` · `false` | `false` |
+| **Pop-up header** | A whole header: an icon, the search field and a close button, sized like Bubble Card's. Off: just the search field, for a header that has its own buttons. On a phone only the whole header takes the windows' controls. | `header` | `true` · `false` | `false` |
 | **Icon** | The icon at the left of the header. A phone leaves it out to give the field room. | `icon` | any `mdi:` icon | `mdi:movie-play-outline` |
-| **Close button** | Closes the pop-up. | `close` | `true` · `false` | `true` |
+| **Close button** | Closes the pop-up. On a phone it turns into a back arrow while a window is open. | `close` | `true` · `false` | `true` |
 | **No background** | Only the field and buttons, for a header that draws its own background. | `background` | `none`, or leave it out | left out |
-| **Link name** | Only with several such cards on one page: the same word as in the main card's Link name. | `link` | any word, e.g. `kids` | empty |
-
-It takes the main card's look by default. Its **Appearance** tab changes only
-the header.
-
-On a phone, windows you open take over this header: their buttons go up
-into it and the close button turns into a back arrow. A title's details put
-their Search, Remove and Actions buttons there.
-
-```yaml
-- type: custom:arr-stack-search
-  header: true
-  icon: mdi:movie-play-outline
-- type: custom:arr-stack-card
-  search_in_header: true
-```
+| **Link name** | Only with several Arr Stack cards on one page: the same word as in that card's Link name. | `link` | any word, e.g. `kids` | empty |
 
 Two pop-ups on one page, each with its own card:
 

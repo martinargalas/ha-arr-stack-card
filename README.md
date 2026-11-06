@@ -315,7 +315,7 @@ Anything added by hand, outside Radarr and Sonarr, has nothing to open. Clicking
 
 #### Search in a pop-up header
 
-If the card lives in a pop-up — Bubble Card, for example — its search field can move up into the pop-up's header, next to the close button. The card gets a little shorter, and the search is always in reach.
+The card works with [Bubble Card](https://github.com/Clooos/Bubble-Card) by Clooos. In a Bubble Card pop-up its search field can move up into the pop-up's header, next to the close button. On a phone the header then holds whatever you open from the card too — its tabs and switches, a title's Search, Remove and Actions — with a back arrow, and the card keeps clear of Bubble Card's dock. Step by step, for a phone and a tablet: [Search header in CONFIGURATION.md](CONFIGURATION.md#search-header--with-bubble-card-or-on-its-own).
 
 1. In the card's editor, turn on **Search in a pop-up header**.
 2. Add the **Arr Stack Search** card to the pop-up, above the Arr Stack Card. Turn on **Pop-up header** in its editor to get a whole header — an icon, the search field and a close button — sized like Bubble Card's own. On a phone the icon steps aside so the field has the room, and the results' type switch sits on the results themselves.
@@ -343,7 +343,7 @@ A category opened from a shelf or the list fills the phone's screen — on a tab
 
 On a phone the search results, Library, Maintainerr and a film's or show's Interactive Search all scroll instead of paging, with an arrow back to the top. A tablet counts as one up to an iPad held sideways or a Nest Hub.
 
-No Bubble Card? Turn on **Header on a phone** and the card puts its own search header at the top of a phone's screen, which the windows take over in the same way.
+No Bubble Card? Turn on **Header on a phone** and the card puts its own search header at the top of a phone's screen, which the windows take over in the same way ([how](CONFIGURATION.md#without-bubble-card--the-header-on-a-phone)).
 
 ### Poster display settings
 
