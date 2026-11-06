@@ -5,8 +5,8 @@ almost everything below can be changed in the visual editor: open your
 dashboard's edit mode and click the pencil on the card.
 
 This page explains what each setting does, in the order the editor shows them,
-and gives a few ready-made setups to start from. If you prefer YAML, each
-setting also shows the line to write. A complete example is at the end.
+and gives a few ready-made setups to start from. Each setting lists its YAML
+key, every value it takes and its default. A complete example is at the end.
 
 Back to the [README](README.md) · Colours and looks: [STYLING.md](STYLING.md)
 
@@ -95,12 +95,12 @@ discover:
 
 ## General
 
-| In the editor | What it does | YAML |
-|---|---|---|
-| **Language** | English, Czech or French. | `localisation: en` · `cs` · `fr` |
-| **Layout** | **Both panels**, **Downloads only** or **Media only**. | `layout: both` · `left` · `right` |
-| **Swap sides** | Puts the media on the left and the downloads on the right. On a phone the media then comes first. | `swap_sides: true` |
-| **Sticky nav offset** | On a phone, the media's page buttons float at the bottom of the screen once you scroll down to the media. This sets how early they appear, in pixels. With **Swap sides** on, about 2000 shows them straight away. | `sticky_nav_offset: 100` |
+| In the editor | What it does | Key | Values | Default |
+|---|---|---|---|---|
+| **Language** | The card's language. | `localisation` | `en` English · `cs` Czech · `fr` French | `en` |
+| **Layout** | Which panels the card shows. | `layout` | `both` Both panels · `left` Downloads only · `right` Media only | `both` |
+| **Swap sides** | Puts the media on the left and the downloads on the right. On a phone the media then comes first. | `swap_sides` | `true` · `false` | `false` |
+| **Sticky nav offset** | On a phone, the media's page buttons float at the bottom of the screen once you scroll down to the media. This sets how early they appear. With **Swap sides** on, about 2000 shows them straight away. | `sticky_nav_offset` | a number of pixels, 0 or more (the editor offers 0–500) | `100` |
 
 ---
 
@@ -108,40 +108,44 @@ discover:
 
 ### Downloads
 
-| In the editor | What it does | YAML (under `downloads:`) |
-|---|---|---|
-| **Torrent items per page** | How many torrents are shown at once (qBittorrent, Deluge, rTorrent, Transmission). | `torrentItems: 3` |
-| **Usenet items per page** | The same for SABnzbd and NZBGet. | `usenetItems: 3` |
-| **Allow download controls** | Off hides the pause, resume and delete buttons, for a dashboard others use. The category filters stay. | `allowControls: true` |
+| In the editor | What it does | Key (under `downloads:`) | Values | Default |
+|---|---|---|---|---|
+| **Torrent items per page** | How many torrents are shown at once (qBittorrent, Deluge, rTorrent, Transmission). | `torrentItems` | 1–20 | `3` |
+| **Usenet items per page** | The same for SABnzbd and NZBGet. | `usenetItems` | 1–20 | `3` |
+| **Allow download controls** | Off hides the pause, resume and delete buttons, for a dashboard others use. The category filters stay. | `allowControls` | `true` · `false` | `true` |
 
 ### Cards
 
 The small cards above the downloads.
 
-| In the editor | What it does | YAML (under `downloads:`) |
-|---|---|---|
-| **Show storage card** | Free space on your disks. | `showStorage: true` |
-| **Show total speed card** | Download and upload speed, all clients together. | `showTotalSpeed: true` |
-| **Show VPN card** | Whether the VPN is up, its country and IP (needs Gluetun). | `showVpnCard: true` |
+| In the editor | What it does | Key (under `downloads:`) | Values | Default |
+|---|---|---|---|---|
+| **Show storage card** | Free space on your disks. | `showStorage` | `true` · `false` | `true` |
+| **Show total speed card** | Download and upload speed, all clients together. | `showTotalSpeed` | `true` · `false` | `true` |
+| **Show VPN card** | Whether the VPN is up, its country and IP (needs Gluetun). | `showVpnCard` | `true` · `false` | `true` |
 
 ### Download row
 
 What each download shows under its name. Its status (Downloading, Paused,
 Stalled, an error…) is always shown.
 
-| In the editor | YAML (under `downloads:`) |
-|---|---|
-| **Upload speed** (torrents only) | `rowUpload: true` |
-| **Time left** | `rowEta: true` |
-| **Size** | `rowSize: true` |
-| **Peers** (torrents only) | `rowPeers: true` |
-| **Percentage** | `rowPercent: true` |
-| **Progress bar** | `rowProgress: true` |
+| In the editor | What it does | Key (under `downloads:`) | Values | Default |
+|---|---|---|---|---|
+| **Upload speed** | Upload speed (torrents only). | `rowUpload` | `true` · `false` | `true` |
+| **Time left** | Time until it finishes. | `rowEta` | `true` · `false` | `true` |
+| **Size** | Downloaded and total size. | `rowSize` | `true` · `false` | `true` |
+| **Peers** | Seeds and peers (torrents only). | `rowPeers` | `true` · `false` | `true` |
+| **Percentage** | How far along it is. | `rowPercent` | `true` · `false` | `true` |
+| **Progress bar** | The bar under the row. | `rowProgress` | `true` · `false` | `true` |
 
 ### Download clients
 
 Drag the clients into the order you want and switch off any you don't want to
 see. Only clients set up in the integration are listed.
+
+Client ids: `qbit` qBittorrent · `deluge` Deluge · `rtorrent` rTorrent ·
+`transmission` Transmission · `sab` SABnzbd · `nzbget` NZBGet. `enabled` is
+`true` or `false`; clients you leave out keep their place and stay on.
 
 ```yaml
 downloadClients:
@@ -153,9 +157,9 @@ downloadClients:
 
 ### Storage
 
-| In the editor | What it does | YAML (under `styles:`) |
-|---|---|---|
-| **Disk space source** | Where the storage card gets its numbers. **Auto** usually gets it right. Pick Radarr or Sonarr if your download client reports a different drive (a cache drive instead of the array, for example). | `storageSource: auto` · `radarr` · `radarr2` · `sonarr` · `sonarr2` |
+| In the editor | What it does | Key (under `styles:`) | Values | Default |
+|---|---|---|---|---|
+| **Disk space source** | Where the storage card gets its numbers. **Auto** usually gets it right. Pick Radarr or Sonarr if your download client reports a different drive (a cache drive instead of the array, for example). | `storageSource` | `auto` · `radarr` · `radarr2` · `sonarr` · `sonarr2` (the second instances only when you have them) | `auto` |
 
 ---
 
@@ -163,11 +167,11 @@ downloadClients:
 
 ### Layout
 
-| In the editor | What it does | YAML (under `discover:`) |
-|---|---|---|
-| **Rows on a page** | How many categories are shown at once. The search field counts as one of them. On a phone set to Shelves or List the page scrolls instead, so this doesn't apply there. | `categoriesCount: 3` |
-| **Posters in a row** | How many posters each category shows side by side. Also used for the search results and See More. Pages layout only. | `itemsPerCategory: 4` |
-| **See More on page** | On this page of a category, the last poster becomes **See More**, which opens the whole category. Pages layout only. | `showMoreOnPage: 3` |
+| In the editor | What it does | Key (under `discover:`) | Values | Default |
+|---|---|---|---|---|
+| **Rows on a page** | How many categories are shown at once. The search field counts as one of them. On a phone set to Shelves or List the page scrolls instead, so this doesn't apply there. | `categoriesCount` | 2–10 | `3` |
+| **Posters in a row** | How many posters each category shows side by side. Also used for the search results and See More. Pages layout only. | `itemsPerCategory` | 2–10 | `4` |
+| **See More on page** | On this page of a category, the last poster becomes **See More**, which opens the whole category. Pages layout only. | `showMoreOnPage` | 1–50 | `3` |
 
 ### Phone and tablet
 
@@ -177,12 +181,12 @@ A phone and a tablet each get their own layout:
 - **Shelves**: every category one under another, each a row of posters you swipe sideways.
 - **List**: every category folded to its name with a peek at its posters. Tap one to open it.
 
-| In the editor | YAML (under `discover:`) |
-|---|---|
-| **Layout on a phone** | `mobileLayout: pages` · `shelves` · `list` |
-| **Layout on a tablet** | `tabletLayout: pages` · `shelves` · `list` |
-| **Posters per row on a phone**: 2 or 3, for the lists that fill the screen (a category you opened, See More, the search, Library, Maintainerr) | `mobileColumns: 3` |
-| **Posters per row on a tablet**: Auto fits as many as the screen takes; a slider in the window changes it too | `tabletColumns: 0` (Auto) · `3`–`6` |
+| In the editor | What it does | Key (under `discover:`) | Values | Default |
+|---|---|---|---|---|
+| **Layout on a phone** | How the categories sit on a phone. | `mobileLayout` | `pages` Pages · `shelves` Shelves · `list` List | `pages` |
+| **Layout on a tablet** | The same on a tablet. | `tabletLayout` | `pages` · `shelves` · `list` | `pages` |
+| **Posters per row on a phone** | Posters side by side in the lists that fill the screen: a category you opened, See More, the search, Library, Maintainerr. | `mobileColumns` | `2` · `3` | `3` |
+| **Posters per row on a tablet** | The same on a tablet. A slider in the window changes it too. | `tabletColumns` | `0` Auto (as many as fit) · `3` · `4` · `5` · `6` | `0` |
 
 ```yaml
 discover:
@@ -193,56 +197,57 @@ discover:
 
 ### Search
 
-| In the editor | What it does | YAML |
-|---|---|---|
-| **Show search field** | Off gives its place to one more category. Handy for a display nobody types on. | `discover:` → `showSearch: true` |
-| **Search in a pop-up header** | Moves the search into the header of the pop-up the card is in. Add an **Arr Stack Search** card to that header (see [below](#the-search-header-card--arr-stack-search)). Until it's there, the search stays in the card. | `search_in_header: true` |
-| **Link name** | Only needed with two or more such cards on one page, say a Movies and a Kids pop-up. Type the same word here and in the matching Arr Stack Search card, e.g. `kids`. | `search_link: kids` |
-| **Header on a phone** | For a card without a pop-up. On a phone the search becomes a header that stays at the top of the screen. Windows you open take it over, and a back arrow closes them. | `phone_header: true` |
+| In the editor | What it does | Key | Values | Default |
+|---|---|---|---|---|
+| **Show search field** | Off gives its place to one more category. Handy for a display nobody types on. | `discover:` → `showSearch` | `true` · `false` | `true` |
+| **Search in a pop-up header** | Moves the search into the header of the pop-up the card is in. Add an **Arr Stack Search** card to that header (see [below](#the-search-header-card--arr-stack-search)). Until it's there, the search stays in the card. | `search_in_header` | `true` · `false` | `false` |
+| **Link name** | Only needed with two or more such cards on one page, say a Movies and a Kids pop-up. Type the same word here and in the matching Arr Stack Search card. | `search_link` | any word, e.g. `kids` | empty |
+| **Header on a phone** | For a card without a pop-up. On a phone the search becomes a header that stays at the top of the screen. Windows you open take it over, and a back arrow closes them. | `phone_header` | `true` · `false` | `false` |
 
 ### Recommendations
 
 Shown only when Trakt or SuggestArr is set up in the integration.
 
-| In the editor | What it does | YAML (under `discover:`) |
-|---|---|---|
-| **Trakt** | Use Trakt's suggestions in the Recommendations row. | `recTrakt: true` |
-| **SuggestArr** | Use SuggestArr's suggestions too. With both on, they take turns. | `recSuggestarr: true` |
+| In the editor | What it does | Key (under `discover:`) | Values | Default |
+|---|---|---|---|---|
+| **Trakt** | Use Trakt's suggestions in the Recommendations row. | `recTrakt` | `true` · `false` | `true` |
+| **SuggestArr** | Use SuggestArr's suggestions too. With both on, they take turns. | `recSuggestarr` | `true` · `false` | `true` |
 
 Music from Last.fm joins the row on its own when Lidarr is set up. Switch it off
 with the filter in the row itself.
 
 ### Requests
 
-| In the editor | What it does | YAML (under `discover:`) |
-|---|---|---|
-| **Recently Requested shows** | **Seerr + card**: your Seerr requests, what you asked for through the card, and anything downloading now. **Seerr only**: exactly your Seerr list. **Library**: every monitored title that isn't downloaded yet. | `requestedSource: both` · `seerr` · `library` |
-| **One-click request** | One tap requests a movie or show, with no questions about quality or seasons. | `oneClickRequest: true` |
-| **Only for non-admins** | Admins still get the choice; everyone else gets one tap. | `oneClickNonAdminOnly: true` |
-| **Seasons of a show** | What one tap requests for a show: the first season, the latest, or all of them. | `oneClickTvSeasonMode: first` · `latest` · `all` |
-| **Movie profile** / **Show profile** | The quality profile to use, by its name as Radarr and Sonarr show it (Settings → Profiles). Leave empty for their default. | `oneClickDefaultMovieProfile: HD-1080p`<br>`oneClickDefaultShowProfile: HD-1080p` |
+| In the editor | What it does | Key (under `discover:`) | Values | Default |
+|---|---|---|---|---|
+| **Recently Requested shows** | **Seerr + card**: your Seerr requests, what you asked for through the card, and anything downloading now. **Seerr only**: exactly your Seerr list. **Library**: every monitored title that isn't downloaded yet. | `requestedSource` | `both` Seerr + card · `seerr` Seerr only · `library` Library | `both` |
+| **One-click request** | One tap requests a movie or show, with no questions about quality or seasons. | `oneClickRequest` | `true` · `false` | `false` |
+| **Only for non-admins** | Admins still get the choice; everyone else gets one tap. | `oneClickNonAdminOnly` | `true` · `false` | `false` |
+| **Seasons of a show** | What one tap requests for a show. | `oneClickTvSeasonMode` | `first` First season · `latest` Latest season · `all` All seasons | `first` |
+| **Movie profile** | The quality profile for movies, by its name as Radarr shows it (Settings → Profiles). | `oneClickDefaultMovieProfile` | a profile name, e.g. `HD-1080p` | empty (Radarr's default) |
+| **Show profile** | The same for shows, as Sonarr names it. | `oneClickDefaultShowProfile` | a profile name | empty (Sonarr's default) |
 
 The last four appear in the editor once **One-click request** is on.
 
 ### Posters
 
-| In the editor | What it does | YAML (under `posters:`) |
-|---|---|---|
-| **Show title** | The title under each poster. | `showTitle: true` |
-| **Show media type tag** | A Movie or TV label in the corner. | `showMediaType: true` |
-| **Show rating** | The rating badge. | `showRating: true` |
-| **Rating provider** | Whose rating to show. When IMDb has none, TMDB's or TheTVDB's stands in. | `ratingProvider: imdb` · `tmdb` |
-| **Show audio languages** | Flags of the audio languages (on the right). | `showAudio: true` |
-| **Show subtitles** | Flags of the subtitle languages (on the left). | `showSubtitles: true` |
-| **Language display** | **Combined**: flags and the rating in one strip. **Separate tags**: rating, audio and subtitles as their own tags. | `langDisplay: flags` · `tags` |
-| **Status display** | **Tags**: status badges. **Stripes**: a coloured bar along the bottom with the download progress. **Both**. | `statusDisplay: tags` · `stripes` · `both` |
-| **Deletion tag** | A "Gone in…" tag on titles Maintainerr is about to delete: everywhere, only in Maintainerr, or never. | `goneTag: all` · `maintainerr` · `off` |
+| In the editor | What it does | Key (under `posters:`) | Values | Default |
+|---|---|---|---|---|
+| **Show title** | The title under each poster. | `showTitle` | `true` · `false` | `true` |
+| **Show media type tag** | A Movie or TV label in the corner. | `showMediaType` | `true` · `false` | `true` |
+| **Show rating** | The rating badge. | `showRating` | `true` · `false` | `true` |
+| **Rating provider** | Whose rating to show. When IMDb has none, TMDB's or TheTVDB's stands in. | `ratingProvider` | `imdb` IMDb · `tmdb` TMDB | `imdb` |
+| **Show audio languages** | Flags of the audio languages (on the right). | `showAudio` | `true` · `false` | `true` |
+| **Show subtitles** | Flags of the subtitle languages (on the left). | `showSubtitles` | `true` · `false` | `true` |
+| **Language display** | How languages and the rating are shown. | `langDisplay` | `flags` Combined: flags and the rating in one strip · `tags` Separate tags | `flags` |
+| **Status display** | How a title's status is shown. | `statusDisplay` | `tags` status badges · `stripes` a coloured bar along the bottom with the download progress · `both` | `tags` |
+| **Deletion tag** | A "Gone in…" tag on titles Maintainerr is about to delete. | `goneTag` | `all` in every category · `maintainerr` only in Maintainerr · `off` never | `all` |
 
 ### Now Playing
 
-| In the editor | What it does | YAML (under `streams:`) |
-|---|---|---|
-| **Show playback details** | Adds a line to each stream: Direct Play or Transcode, the quality and the bitrate, e.g. *1080p › Transcode › 720p · 4.0 Mbps*. Plex, Jellyfin and Emby. | `showTechInfo: true` |
+| In the editor | What it does | Key (under `streams:`) | Values | Default |
+|---|---|---|---|---|
+| **Show playback details** | Adds a line to each stream: Direct Play or Transcode, the quality and the bitrate, e.g. *1080p › Transcode › 720p · 4.0 Mbps*. Plex, Jellyfin and Emby. | `showTechInfo` | `true` · `false` | `false` |
 
 ### Categories
 
@@ -274,16 +279,19 @@ A preset gives the whole card a look in one click: **Glass** (the default),
 **Apple Home**. Below it you can change any colour, panel by panel. Every one of
 those settings is described in [STYLING.md](STYLING.md).
 
-| In the editor | What it does | YAML (under `styles:`) |
-|---|---|---|
-| **Preset** | The look of the whole card. | `preset: apple-home` |
-| **Performance mode** | Turns off the blur behind the glass. Smoother on older tablets. You then choose a plain background colour and how see-through it is. | `performanceMode: true`<br>`cardBackground: "#121216"`<br>`cardBackgroundOpacity: 90` |
-| **Day / night modal colours** | Windows turn light while the sun is up and dark after sunset. Turn it off if you set your own window colours. | `dayNightMode: true` |
-| **Category colour overlays** | A soft tint in each app's colour behind its category. | `categoryOverlays: true` |
-| **Window colour overlays** | The same tint at the top of windows. | `modalOverlays: true` |
-| **UI scale** | Makes everything bigger or smaller. Try 1.1–1.3 on a TV or a wall display. | `uiScale: 1` |
-| **Left panel width** | How wide the downloads panel is, as a share of the card. | `leftPanelWidth: 40` |
-| **App icons** | Real app logos, simple icons, or none, next to the section titles. | `applicationIcons: real` · `mdi` · `none` |
+| In the editor | What it does | Key (under `styles:`) | Values | Default |
+|---|---|---|---|---|
+| **Preset** | The look of the whole card. | `preset` | `glass` Glass · `ha` Home Assistant theme · `solid` Solid · `nord` Nord · `catppuccin` Catppuccin · `cinema` Cinema · `apple-home` Apple Home | `glass` |
+| *(Apple Home only)* | When the card is light and when dark. | `appearance` | `auto` with Home Assistant's dark mode · `sun` light while the sun is up · `light` always · `dark` always | `auto` |
+| **Performance mode** | Turns off the blur behind the glass. Smoother on older tablets. | `performanceMode` | `true` · `false` | `false` |
+| **Card background** | The card's colour in performance mode. | `cardBackground` | a colour, e.g. `"#121216"` | `#121216` |
+| **Card background transparency** | How see-through that colour is, in performance mode. | `cardBackgroundOpacity` | 0–100 (%) | `90` |
+| **Day / night modal colours** | Windows turn light while the sun is up and dark after sunset. Turn it off if you set your own window colours. | `dayNightMode` | `true` · `false` | `true` |
+| **Category colour overlays** | A soft tint in each app's colour behind its category. | `categoryOverlays` | `true` · `false` | `true` |
+| **Window colour overlays** | The same tint at the top of windows. | `modalOverlays` | `true` · `false` | `true` |
+| **UI scale** | Makes everything bigger or smaller. Try 1.1–1.3 on a TV or a wall display. Not used on a phone. | `uiScale` | 0.5–3 | `1` |
+| **Left panel width** | How wide the downloads panel is, as a share of the card. | `leftPanelWidth` | 10–90 (%) | `40` |
+| **App icons** | What sits next to the section titles. | `applicationIcons` | `real` the apps' logos · `mdi` simple icons · `none` | `real` |
 
 With **Apple Home**, the card is light by day and dark at night. By default it
 follows Home Assistant's dark mode. To follow the sun instead, or to stay always
@@ -303,13 +311,13 @@ A small extra card that holds the search field, for the header of a pop-up
 (Bubble Card, for example). Turn on **Search in a pop-up header** on the main
 card, then add this card above it in the same pop-up.
 
-| In the editor | What it does | YAML |
-|---|---|---|
-| **Pop-up header** | A whole header: an icon, the search field and a close button, sized like Bubble Card's. Off: just the field, for a header that has its own. | `header: true` |
-| **Icon** | The icon at the left of the header. A phone leaves it out to give the field room. | `icon: mdi:movie-play-outline` |
-| **Close button** | Closes the pop-up. | `close: true` |
-| **No background** | Only the field and buttons, for a header that draws its own background. | `background: none` |
-| **Link name** | Only with several such cards on one page: the same word as in the main card's Link name. | `link: kids` |
+| In the editor | What it does | Key | Values | Default |
+|---|---|---|---|---|
+| **Pop-up header** | A whole header: an icon, the search field and a close button, sized like Bubble Card's. Off: just the field, for a header that has its own. | `header` | `true` · `false` | `false` |
+| **Icon** | The icon at the left of the header. A phone leaves it out to give the field room. | `icon` | any `mdi:` icon | `mdi:movie-play-outline` |
+| **Close button** | Closes the pop-up. | `close` | `true` · `false` | `true` |
+| **No background** | Only the field and buttons, for a header that draws its own background. | `background` | `none`, or leave it out | left out |
+| **Link name** | Only with several such cards on one page: the same word as in the main card's Link name. | `link` | any word, e.g. `kids` | empty |
 
 It takes the main card's look by default. Its **Appearance** tab changes only
 the header.
