@@ -161,9 +161,10 @@ class _ThemeMethods {
       // season or an episode, grabbing a release or an album, the windows'
       // round actions in any tone (run, delete, import…), and the AS and IS
       // entries of a detail's Search menu. One that is on turns white. A
-      // release's grabbed or failed state keeps its colour.
+      // release's grabbed or failed state keeps its colour. Not a panel's
+      // grabber (.pp-grab): with the glass it read as a broken band.
       {
-        const mini = '.popup-overlay :is([data-mt-round], .btn-person, .is-grab-btn:not(.is-grab-done):not(.is-grab-failed):not(.force), .pp-grab)';
+        const mini = '.popup-overlay :is([data-mt-round], .btn-person, .is-grab-btn:not(.is-grab-done):not(.is-grab-failed):not(.force))';
         rules.push(`${mini} { background: ${bg} !important; background-origin: border-box; box-shadow: ${sh}; border-color: transparent !important; color: rgba(${fg}) !important; backdrop-filter: none; -webkit-backdrop-filter: none; }`);
         rules.push('.popup-overlay .btn-person { border-radius: 999px; }');
         rules.push('.popup-overlay .btn-person.active { background: rgba(255, 255, 255, 0.92) !important; color: rgb(28, 28, 30) !important; }');

@@ -203,7 +203,12 @@ class _WireMusicActionsMethods {
     const menu = el?.querySelector('.mus-menu');
     if (!menu) return;
     const glass = menu.closest('.popup-glass');
-    const trigger = el.querySelector(`[data-mus-menu="${this._musicModal?.menu}"]`);
+    const sel = `[data-mus-menu="${this._musicModal?.menu}"]`;
+    // The buttons gone up into a pop-up header (render/hdr-take.js): the menu
+    // hangs from the copy there, at the window's top edge
+    const taken = glass?.closest('.hdr-taken') && this._searchExt?.hasAttribute?.('taking')
+      ? this._searchExt.shadowRoot?.querySelector(`.ash-take ${sel}`) : null;
+    const trigger = taken || el.querySelector(sel);
     if (!glass || !trigger) return;
     const g = glass.getBoundingClientRect();
     const b = trigger.getBoundingClientRect();
@@ -212,7 +217,7 @@ class _WireMusicActionsMethods {
     const left = Math.max(PAD, Math.min(b.left - g.left, g.width - w - PAD));
     menu.style.left = `${Math.round(left)}px`;
     menu.style.right = 'auto';
-    menu.style.top = `${Math.round(b.bottom - g.top + 6)}px`;
+    menu.style.top = `${Math.round(Math.max(taken ? 8 : 0, b.bottom - g.top + 6))}px`;
   }
 
   async _musAction(act) {

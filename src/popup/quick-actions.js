@@ -381,9 +381,12 @@ _qaPositionMenu() {
   const menu = root?.querySelector('.qa-menu');
   if (!menu) return;
   const glass = menu.closest('.popup-glass');
-  const trigger = this._searchExpand ? root.querySelector('.is-search-btn')
-                : this._removeConfirm ? root.querySelector('.remove-lib-btn')
-                : root.querySelector('.qa-opt-btn');
+  const sel = this._searchExpand ? '.is-search-btn' : this._removeConfirm ? '.remove-lib-btn' : '.qa-opt-btn';
+  // The buttons gone up into a pop-up header (render/hdr-take.js): the menu
+  // hangs from the copy there, at the window's top edge
+  const taken = glass?.closest('.hdr-taken') && this._searchExt?.hasAttribute?.('taking')
+    ? this._searchExt.shadowRoot?.querySelector(`.ash-take ${sel}`) : null;
+  const trigger = taken || root.querySelector(sel);
   if (!glass || !trigger) return;
   const g = glass.getBoundingClientRect();
   const b = trigger.getBoundingClientRect();
@@ -395,7 +398,7 @@ _qaPositionMenu() {
   menu.style.right = 'auto';
   // Sits just under its own button, not at a fixed offset from the top: the
   // capsule's height and position differ between phone and desktop.
-  menu.style.top = `${Math.round(b.bottom - g.top + 6)}px`;
+  menu.style.top = `${Math.round(Math.max(taken ? 8 : 0, b.bottom - g.top + 6))}px`;
 }
 
 }

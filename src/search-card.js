@@ -87,6 +87,36 @@ const BAR_CSS = `
     background: var(--_nav-on, rgba(var(--arr-accent-rgb, 0, 122, 255), 0.85)) !important; box-shadow: none !important; border-color: transparent !important;
   }
   .ash-take .mt-nav-btn.is-on { color: var(--_nav-on-fg, rgb(var(--_fg, 255, 255, 255))) !important; }
+  /* A detail's Search, Remove and Actions: pills of the bar's own height,
+     the one whose menu is open in the accent */
+  /* Each in the bar's middle, 8 px from its top and bottom as the first is
+     from its end: the detail's rows carry a top margin and a 28 px height of
+     their own, and Search a fixed width */
+  .ash-take > .sh-side > .is-btn-row { display: flex; align-items: center; margin: 0; height: 40px; gap: 0; }
+  .ash-take .is-btn-row > :is(.is-open-btn, .remove-lib-btn) { width: auto !important; height: 40px !important; margin: 0 !important; }
+  .ash-take :is(.is-open-btn, .remove-lib-btn) {
+    height: 40px; margin: 0; padding: 0 14px; gap: 6px; border: none; border-radius: 999px; min-width: 0; width: auto;
+    display: inline-flex; flex-direction: row; flex-wrap: nowrap; white-space: nowrap; flex-shrink: 0;
+    align-items: center; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+    background: rgba(var(--_fill, 255, 255, 255), 0.1); color: rgba(var(--_fg, 255, 255, 255), 0.92);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  .ash-take :is(.is-open-btn, .remove-lib-btn).active {
+    background: rgba(var(--arr-accent-rgb, 0, 122, 255), 0.85); color: rgb(var(--_fg, 255, 255, 255));
+  }
+  .ash-take :is(.is-open-btn, .remove-lib-btn) :is(svg, span) { flex: none; display: block; }
+  .ash-take :is(.is-open-btn, .remove-lib-btn) .pp-lbl { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  /* The three share the row evenly, each named; where the names do not fit
+     (a narrow phone: _fitTake) the open one keeps its name and the others
+     are their icon and the arrow of their menu */
+  .ash-take > .sh-side > :is(.is-btn-row, .is-open-btn, .remove-lib-btn) { flex: 1 1 0; min-width: 0; }
+  .ash-take > .sh-side > .is-btn-row > :is(.is-open-btn, .remove-lib-btn) { flex: 1 1 auto; }
+  /* Their width is their share alone: a padding of their own came on top of
+     a button standing in the row, and Remove grew wider than the other two */
+  .ash-take :is(.is-open-btn, .remove-lib-btn) { justify-content: center; padding: 0 !important; box-sizing: border-box; }
+  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn):not(.active) { padding: 0 12px; }
+  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn):not(.active) .pp-lbl { font-size: 0; gap: 0; }
+  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn):not(.active) .pp-lbl svg { margin-left: 4px; }
   .ash-take .mt-nav-btn { height: 32px; padding: 0 12px; }
   /* Logos alone: as tall as the pill under them, so it is a circle */
   .ash-take .tra-srv-nav .mt-nav-btn { height: 30px; }
@@ -161,7 +191,7 @@ class ArrStackSearch extends HTMLElement {
     ARR_LINK.bars.add(this);
     this._bind(true);
     // The card's side inset changes with the screen's width
-    this._onResize = this._onResize || (() => this._applyLook());
+    this._onResize = this._onResize || (() => { this._applyLook(); if (this.hasAttribute('taking')) this._fitTake(); });
     window.addEventListener('resize', this._onResize, { passive: true });
   }
 
@@ -268,6 +298,13 @@ class ArrStackSearch extends HTMLElement {
     if (!side) return;
     const acts = [...side.children].filter(c => /-hdr-(act|actions|save)$/.test(c.id) && c.querySelector('button'));
     acts.forEach(a => a.classList.add('ash-acts'));
+    // A detail's buttons named while each name fits in its share of the row
+    take.classList.remove('ash-compact');
+    const named = [...side.querySelectorAll(':scope > :is(.is-btn-row, .is-open-btn, .remove-lib-btn)')];
+    if (named.length) {
+      const btns = named.map(n => n.matches('button') ? n : n.querySelector('button')).filter(Boolean);
+      if (btns.some(b => b.scrollWidth > b.clientWidth + 1)) take.classList.add('ash-compact');
+    }
     take.classList.remove('ash-tight');
     let more = [...take.children].find(c => c.classList.contains('ash-more'));
     // What the row asks for, each part at its full width: a tab bar that may

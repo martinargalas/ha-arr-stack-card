@@ -1892,7 +1892,10 @@ ${TOKEN_CSS}
           top: calc(var(--arr-top-bar, 0px) + 8px); bottom: 0;
           left: var(--arr-take-l, 0px); right: auto; width: var(--arr-take-w, 100%);
           align-items: stretch;
-          background: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+          /* The veil stays, only the window's size: what lies behind showed
+             through a light glass by day. Rounded as the window, so no square
+             blurred corners stand out round it. */
+          border-radius: var(--arr-modal-radius, 28px);
         }
         :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass {
           width: 100% !important; max-width: 100% !important;
@@ -1901,10 +1904,13 @@ ${TOKEN_CSS}
         }
         :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass::before { border-radius: inherit; }
         :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass > :is(.is-panel-hdr, .cal-modal-hdr, .popup-close) { display: none; }
+        /* A detail's buttons are in the header: the picture keeps its third
+           of the window, bare */
+        :host([hdr-take]) .popup-overlay.hdr-taken .pp-hero-bar { display: none; }
         :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass:has(> .is-panel-hdr) > .popup-body { padding-top: 12px; }
         /* The calendar runs on to the screen's bottom, as the categories'
            windows: its paging just above a bar there, not a gap away */
-        :host([hdr-take]) #cal-overlay.hdr-taken { padding-bottom: 0; }
+        :host([hdr-take]) #cal-overlay.hdr-taken { padding-bottom: 0; border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0; }
         :host([hdr-take]) #cal-overlay.hdr-taken > .cal-modal-glass {
           border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
         }

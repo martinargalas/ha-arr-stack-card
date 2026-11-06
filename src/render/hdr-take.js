@@ -26,6 +26,7 @@ const svcHdr = w => (w.matches(SVC) ? kid(kid(w, '.popup-glass'), '.is-panel-hdr
 // header row: Now Playing, an artist, an album. Their name goes up, their
 // controls stay with the picture.
 const PIC = '[data-modal="stream"], [data-music-modal], [data-album-modal]';
+const heroPill = w => kid(w, '.popup-glass')?.querySelector('.pp-hero-bar .pp-hero-pill') || null;
 // Everything in it but the close; a box that holds the close beside other
 // things gives up those things. Elements only: the copy is matched to them in
 // order, and text between them would merge and shift that order.
@@ -51,6 +52,11 @@ const TAKERS = [
       const key = SVC_KEY.find(([sel]) => w.matches(sel))?.[1];
       return key && (card._catCache?.[key]?.t || card.shadowRoot?.querySelector(`.mob-row[data-key="${key}"] .mob-row-t b`)?.textContent);
     } },
+  // A title's detail: its buttons over the picture (Search, Remove, Actions)
+  // go up, their menus drop under the header; no name, the title is right
+  // under it in the window
+  { is: w => w.matches('[data-modal="detail"], [data-music-modal]') && !!heroPill(w), hdr: heroPill,
+    parts: h => [...h.children], title: () => '' },
   { is: w => w.matches(PIC), hdr: w => kid(kid(w, '.popup-glass'), '.popup-close'), parts: () => [],
     title: w => w.querySelector('.popup-title')?.textContent },
 ];
@@ -112,6 +118,12 @@ class _HdrTakeMethods {
     const copy = n => {
       const c = n.cloneNode(true);
       c.querySelectorAll('.mt-nav-ind').forEach(i => i.removeAttribute('style'));
+      // The lens a detail's buttons bend the picture with is the card's own
+      // filter; named from the header it is nothing and drops the blur too
+      [c, ...c.querySelectorAll('[style*="arr-liquid"]')].forEach(e => {
+        if (e.style?.backdropFilter?.includes('arr-liquid')) { e.style.removeProperty('backdrop-filter'); e.style.removeProperty('-webkit-backdrop-filter'); }
+        if (e.getAttribute?.('style') === '') e.removeAttribute('style');
+      });
       return c.outerHTML;
     };
     const own = src ? src.parts.map(copy).join('') : '';
@@ -121,6 +133,8 @@ class _HdrTakeMethods {
     if (html === this._hdrTakeHtml) return;
     this._hdrTakeHtml = html;
     bar?._take?.(html);
+    // A detail's menu under its button, now in the header
+    if (src?.win.matches('[data-modal="detail"]')) this._qaPositionMenu?.();
   }
 
   // The pop-up's header, close included: the window starts just under it and
