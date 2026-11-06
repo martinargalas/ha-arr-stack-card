@@ -228,6 +228,17 @@ function findBackdrop() {
   return { url: m[1], rect: { x, y, w, h } };
 }
 
+// Started before the card's first paint: the wallpaper fetched and the
+// renderer set up while the card loads, so the glass is drawn with the first
+// paint instead of seconds after it, the panels flat grey until then
+export function warmBackdrop() {
+  try {
+    getRenderer();
+    const bd = findBackdrop();
+    if (bd) loadImage(bd.url);
+  } catch (_) { /* drawn later as before */ }
+}
+
 let cachedBg = null;
 function deepFind(root, tag) {
   if (cachedBg?.isConnected) return cachedBg;
@@ -246,7 +257,13 @@ function loadImage(url) {
   let entry = images.get(url);
   if (!entry) {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    // Only for a wallpaper from elsewhere: Home Assistant's own (/local,
+    // /hacsfiles) draws into the canvas as it is, and asked for apart from the
+    // copy the page's background already holds it queued behind the card's
+    // posters and requests while the card loaded — the glass came seconds late
+    let other = true;
+    try { other = new URL(url, location.href).origin !== location.origin; } catch (_) {}
+    if (other) img.crossOrigin = "anonymous";
     const ready = new Promise((res, rej) => {
       img.onload = () => res();
       img.onerror = rej;

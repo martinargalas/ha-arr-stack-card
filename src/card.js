@@ -452,6 +452,9 @@ class ArrStackCard extends HTMLElement {
       };
     }
     this._config = config;
+    // The glass's code and wallpaper fetched now, not after the first paint:
+    // the downloads panel stood flat grey for seconds before its glass came
+    if (LIQUID_LOOKS.has(config?.styles?.preset)) ArrStackCard._lazy?.load('liquid')?.catch?.(() => {});
     this._debug = !!config.debug;
     // A header that searches for this card may have been waiting for it
     ARR_LINK.cards.add(this);
