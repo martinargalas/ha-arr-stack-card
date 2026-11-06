@@ -335,13 +335,15 @@ The header wears the card's look, whichever preset or colours you use. Typing in
 
 The right panel can be laid out three ways, chosen apart for a phone and for a tablet (**Layout on a phone** and **Layout on a tablet** in the editor):
 
-- **Pages** — a few categories at a time, turned with the page bar, as on a desktop (the default)
+- **Pages** — a few categories at a time, turned with the page bar (the default)
 - **Shelves** — every category one under another, each a row of posters you swipe sideways; its edges fade where the row goes on
 - **List** — every category folded to its name and a peek at its first posters; tap one to open it
 
-A category opened from a shelf or the list fills the phone's screen — on a tablet it is a window the size of the card's others — and scrolls down, loading more as you near the end. Choose how many posters a row (**Posters a row** in the editor); on a tablet a slider in the window's header changes it on the spot and remembers it. On a tablet, shelves and the list keep to the height the panel has as pages and page through what does not fit.
+A category opened from a shelf or the list fills the phone's screen — on a tablet it is a window the size of the card's others — and scrolls down, loading more as you near the end. Choose how many posters a row (**Posters per row** in the editor); on a tablet a slider in the window's header changes it on the spot and remembers it. On a tablet, shelves and the list stay as tall as the downloads beside them and page through what does not fit.
 
-On a phone the search results, Library, Maintainerr and a film's or show's Interactive Search all scroll instead of paging, with an arrow back to the top. A tablet here is anything up to 900 px wide, or a touch screen up to 1400 px — an iPad held sideways, a Nest Hub.
+On a phone the search results, Library, Maintainerr and a film's or show's Interactive Search all scroll instead of paging, with an arrow back to the top. A tablet counts as one up to an iPad held sideways or a Nest Hub.
+
+No Bubble Card? Turn on **Header on a phone** and the card puts its own search header at the top of a phone's screen, which the windows take over in the same way.
 
 ### Poster display settings
 
@@ -423,7 +425,8 @@ The card works with no YAML at all — it shows whatever the integration has con
 When you do want to change something, the visual editor covers nearly everything:
 open the dashboard editor and click the pencil on the card.
 
-Every key, its default and the list of category ids live in
+What each setting does, ready-made setups (a phone with Bubble Card, a wall tablet,
+one-tap requests for the family) and every key for YAML are in
 **[CONFIGURATION.md](CONFIGURATION.md)**.
 
 ---
@@ -449,12 +452,13 @@ If you have visitors or temporary users who should use a separate Seerr account,
 
 ### One-click requests
 
-By default, requesting a movie or show opens a profile selection overlay. Enable **One-click Request** in the card editor to skip the overlay and use your configured defaults instead — one tap to request.
+By default, requesting a movie or show opens a profile selection overlay. Enable **One-click request** in the card editor (Right Panel → Requests) to skip the overlay and use your configured defaults instead — one tap to request.
 
-Available settings (card editor → One-click Request):
+With it on, the editor shows its own settings:
 
-- **Season mode** — which seasons to request for shows: first season only, latest season, or all seasons
-- **Non-admin only** — restrict one-click to non-admin users while admins keep the full profile picker
+- **Seasons of a show** — which seasons to request for shows: first season only, latest season, or all seasons
+- **Only for non-admins** — restrict one-click to non-admin users while admins keep the full profile picker
+- **Movie profile** / **Show profile** — a quality profile's name as Radarr and Sonarr show it; empty uses their default
 
 ---
 

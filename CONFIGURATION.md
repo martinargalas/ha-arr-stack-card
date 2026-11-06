@@ -1,187 +1,490 @@
-# Arr Stack Card — configuration reference
+# Arr Stack Card — settings
 
-Every option the card understands. Most of them are also in the visual editor —
-open the dashboard editor and click the pencil on the card. Only the `security.*`
-keys have to be written by hand; colours, surfaces and presets are in the
-editor's Appearance tab, and every styling key is in [STYLING.md](STYLING.md).
+You don't have to write any YAML. The card works as soon as you add it, and
+almost everything below can be changed in the visual editor: open your
+dashboard's edit mode and click the pencil on the card.
 
-Back to the [README](README.md).
+This page explains what each setting does, in the order the editor shows them,
+and gives a few ready-made setups to start from. If you prefer YAML, each
+setting also shows the line to write. A complete example is at the end.
+
+Back to the [README](README.md) · Colours and looks: [STYLING.md](STYLING.md)
+
+- [Ready-made setups](#ready-made-setups)
+- [General](#general)
+- [Left panel — downloads](#left-panel--downloads)
+- [Right panel — media](#right-panel--media)
+- [Users](#users)
+- [Appearance](#appearance)
+- [The search header card](#the-search-header-card--arr-stack-search)
+- [Categories you can show](#categories-you-can-show)
+- [Settings only in YAML](#settings-only-in-yaml)
+- [Everything at once](#everything-at-once)
 
 ---
 
-## Card options
+## Ready-made setups
+
+### A phone with Bubble Card
+
+The card sits in a Bubble Card pop-up and the search moves up into the
+pop-up's header. Windows you open (a category, the Library, a title's details)
+take over that header: their buttons go up there and a back arrow closes them.
+The categories are folded into a list you tap through.
+
+```yaml
+# In the pop-up, with Bubble Card's own header hidden (show_header: false)
+- type: custom:arr-stack-search
+  header: true
+- type: custom:arr-stack-card
+  search_in_header: true
+  discover:
+    mobileLayout: list
+```
+
+### A phone without Bubble Card
+
+The same header, kept at the top of the screen as you scroll, but provided by the
+card itself.
 
 ```yaml
 type: custom:arr-stack-card
-
-# General
-localisation: en             # en | cs  (default: en)
-layout: both                 # both | left | right  (default: both)
-swap_sides: false            # swap left and right panels  (default: false)
-                             # Note: on mobile, right panel moves above left. Set sticky_nav_offset ~2000 for nav to appear immediately.
-sticky_nav_offset: 100       # px — when sticky nav bar appears on mobile  (default: 100)
-search_in_header: false      # the search field lives in a pop-up's header — an arr-stack-search card, see below  (default: false)
-search_link: ""              # only with several such cards on one page: pairs this card with the header that has the same link
-phone_header: false          # on a phone, the search field becomes a header held at the top that the card's windows take over — for a card without a pop-up header  (default: false)
-
-# Download managers (left panel)
-downloads:
-  torrentItems: 3            # qBittorrent / Deluge / rTorrent / Transmission items per page  (default: 3)
-  usenetItems: 3             # SABnzbd / NZBGet items per page  (default: 3)
-
-# Download client order & visibility (left panel)
-downloadClients:
-  - id: qbit
-    enabled: true
-  - id: deluge
-    enabled: true
-  - id: rtorrent
-    enabled: true
-  - id: sab
-    enabled: true
-  - id: nzbget
-    enabled: true
-
-# Discovery (right panel)
+phone_header: true
 discover:
-  categoriesCount: 3         # media categories shown per right-panel page  (default: 3)
-  itemsPerCategory: 4        # columns per category grid  (default: 4)
-  showSearch: true           # search bar at the top of the right panel; false gives its slot to one more category  (default: true)
-  mobileLayout: pages        # pages | shelves | list — the right panel on a phone (up to 600 px)  (default: pages)
-  mobileColumns: 3           # 2 | 3 — posters a row in a phone's full-screen windows  (default: 3)
-  tabletLayout: pages        # pages | shelves | list — the same on a tablet: up to 900 px, or a touch screen up to 1400 px  (default: pages)
-  tabletColumns: 0           # 0 (as many as fit) | 3–6 — posters a row in a tablet's windows; the slider in a window's header overrides it  (default: 0)
-  showMoreOnPage: 3          # page on which the "See More" overlay card appears  (default: 3)
-  oneClickRequest: false     # skip request overlay — uses defaults below  (default: false)
-  oneClickNonAdminOnly: false         # one-click only for non-admin users  (default: false)
-  oneClickTvSeasonMode: first         # first | latest | all — which seasons to request  (default: first)
-  oneClickDefaultMovieProfile: ""     # quality profile name for one-click movie requests
-  oneClickDefaultMovieTag: ""         # Radarr tag for one-click movie requests  (optional)
-  oneClickDefaultMovieRootFolder: ""  # Radarr root folder for one-click movie requests  (optional)
-  oneClickDefaultShowProfile: ""      # quality profile name for one-click TV requests
-  oneClickDefaultShowTag: ""          # Sonarr tag for one-click TV requests  (optional)
-  oneClickDefaultShowRootFolder: ""   # Sonarr root folder for one-click TV requests  (optional)
-  ratingProvider: imdb         # imdb | tmdb — rating badge shown on poster cards  (default: imdb)
-  recTrakt: true               # use Trakt in the Recommendations row  (default: true)
-  recSuggestarr: true          # use SuggestArr in the Recommendations row  (default: true)
-                               # Last.fm joins the row whenever Lidarr and a Last.fm key are set up;
-                               # the filter in the row's header is where music is switched off.
-
-# Poster display
-posters:
-  showTitle: true              # show title on poster cards  (default: true)
-  showAudio: true              # show audio language badges  (default: true)
-  showSubtitles: true          # show subtitle badges  (default: true)
-  showRating: true             # show rating badge  (default: true)
-  showMediaType: true          # show Movie/TV tag  (default: true)
-  ratingProvider: imdb         # imdb | tmdb  (default: imdb)
-  statusDisplay: tags          # tags | stripes | both  (default: tags)
-  langDisplay: flags           # flags | tags  (default: flags)
-  goneTag: all                 # all | maintainerr | off  (default: all)
-
-# Now Playing
-streams:
-  showTechInfo: false          # a tag under the viewer: Direct Play / Direct Stream / Transcode,
-                               # then resolution (4K→720p when it changes) · bitrate
-                               # (Plex, Jellyfin, Emby)  (default: false)
-
-# Category order & visibility
-categories:
-  - id: recentlyAdded
-    enabled: true
-  - id: recentlyRequested
-    enabled: true
-  - id: upcoming
-    enabled: true
-  - id: tvUpcoming
-    enabled: true
-  - id: trending
-    enabled: true
-  - id: popular
-    enabled: true
-  - id: recommendations
-    enabled: false
-  - id: calendar
-    enabled: true
-  - id: streams
-    enabled: false
-  - id: tautulli
-    enabled: false
-  - id: jellystat
-    enabled: false
-  - id: activity
-    enabled: false
-  - id: library
-    enabled: true
-  - id: prowlarr
-    enabled: false
-
-# Security
-security:
-  ip_sharing_threshold: 2    # unique IPs per user before sharing warning appears  (default: 2)
-  ip_history_depth: 200      # history records scanned for IP detection  (default: 200)
-
-# Appearance
-styles:
-  performanceMode: false          # disable backdrop blur
-  cardBackground: "#121216"       # card background colour (performance mode only)
-  cardBackgroundOpacity: 90       # card background opacity 0–100 (performance mode only)
-  dayNightMode: true              # auto switch popup colours based on sun.sun
-  categoryOverlays: true          # colour-tinted overlays on category poster grids  (default: true)
-  modalOverlays: true             # the app's colours at the top of its windows and the full-screen category windows  (default: true)
-  applicationIcons: real          # real | mdi | none — real app logos, MDI icons, or no icons next to the section titles  (default: real)
-  uiScale: 1                      # scale all card content — use >1 on large screens/TVs  (default: 1)
-  leftPanelWidth: 40              # downloads panel width as % of card width  (default: 40)
-  preset: glass                   # glass | ha | solid | nord | catppuccin | cinema | apple-home — see STYLING.md
-  appearance: auto                # Apple Home only: auto (with Home Assistant's dark mode) | sun | light | dark  (default: auto)
-  sectionGap: 8                   # px — room between the right panel's categories  (default: 8)
-  text: "#ffffff"                 # every colour, surface and opacity key, and the
-  radius: 34                      #   left:/right:/modal:/modalDay: groups: STYLING.md
-  iconStyle: brand                # brand | mono — real logos in their own colours or the icon colour
-  modalCloseButtonIconColor: "#ffffff"
-  modalCloseButtonBackgroundColor: "#333344"
-  modalButtonTextColor: "#ffffff"
-  modalButtonBackgroundColor: "#1e1e2e"
-  modalRemoveButtonBackgroundColor: "#ff6030"
+  mobileLayout: list
 ```
 
-The older colour keys (`headingTextColor`, `primaryTextColor`, `modalBackgroundColor` …) keep working — [STYLING.md](STYLING.md#the-older-keys) lists what each one sets now.
+### A wall tablet or a Nest Hub
 
-## Search header — `arr-stack-search`
-
-A second card that holds the Arr Stack Card's search field, for the header of a pop-up. Pair it with a card that has `search_in_header: true`.
+Downloads on the left, a few categories at a time on the right, slightly larger
+so it reads from across the room.
 
 ```yaml
-type: custom:arr-stack-search
-header: true                 # a whole pop-up header: an icon, the search field and a close button  (default: false)
-icon: mdi:movie-play-outline # with header; left out on a phone, where the field needs the room
-close: true                  # with header: the close button, which closes the pop-up  (default: true)
-background: none             # optional: no surface of its own, for a header that draws one
-link: ""                     # only with several search headers on one page: the card with the same search_link
-styles: {}                   # optional: the card's style keys, over the look it takes from the card
+type: custom:arr-stack-card
+discover:
+  tabletLayout: pages
+  categoriesCount: 3
+styles:
+  preset: apple-home
+  uiScale: 1.1
 ```
 
-On a phone, a header with `header: true` also serves the card's windows. A category opened full screen, the calendar, the Library, a service's window, Now Playing or an artist moves its switches and tabs up into the header, where the close turns into a back arrow. The window then starts just under the header. A title's details and an artist put their Search, Remove and Actions buttons there. Dialogs keep their own header.
+### Only the media, or only the downloads
 
-Without a pop-up and its header (no Bubble Card), set `phone_header: true` on the card instead. On a phone its search field becomes a header held at the top of the screen, and the card's windows take it over in the same way. The back arrow shows only while a window is open. Windows then run to the bottom of the screen.
+```yaml
+type: custom:arr-stack-card
+layout: right      # media only; "left" shows only the downloads
+```
 
-## Category IDs
+### Requests for the family in one tap
 
-| id | Section |
+Everyone except admins requests with a single tap, no questions asked. Admins
+still pick the quality.
+
+```yaml
+type: custom:arr-stack-card
+discover:
+  oneClickRequest: true
+  oneClickNonAdminOnly: true
+  oneClickTvSeasonMode: first
+  oneClickDefaultMovieProfile: HD-1080p
+  oneClickDefaultShowProfile: HD-1080p
+```
+
+---
+
+## General
+
+| In the editor | What it does | YAML |
+|---|---|---|
+| **Language** | English, Czech or French. | `localisation: en` · `cs` · `fr` |
+| **Layout** | **Both panels**, **Downloads only** or **Media only**. | `layout: both` · `left` · `right` |
+| **Swap sides** | Puts the media on the left and the downloads on the right. On a phone the media then comes first. | `swap_sides: true` |
+| **Sticky nav offset** | On a phone, the media's page buttons float at the bottom of the screen once you scroll down to the media. This sets how early they appear, in pixels. With **Swap sides** on, about 2000 shows them straight away. | `sticky_nav_offset: 100` |
+
+---
+
+## Left panel — downloads
+
+### Downloads
+
+| In the editor | What it does | YAML (under `downloads:`) |
+|---|---|---|
+| **Torrent items per page** | How many torrents are shown at once (qBittorrent, Deluge, rTorrent, Transmission). | `torrentItems: 3` |
+| **Usenet items per page** | The same for SABnzbd and NZBGet. | `usenetItems: 3` |
+| **Allow download controls** | Off hides the pause, resume and delete buttons, for a dashboard others use. The category filters stay. | `allowControls: true` |
+
+### Cards
+
+The small cards above the downloads.
+
+| In the editor | What it does | YAML (under `downloads:`) |
+|---|---|---|
+| **Show storage card** | Free space on your disks. | `showStorage: true` |
+| **Show total speed card** | Download and upload speed, all clients together. | `showTotalSpeed: true` |
+| **Show VPN card** | Whether the VPN is up, its country and IP (needs Gluetun). | `showVpnCard: true` |
+
+### Download row
+
+What each download shows under its name. Its status (Downloading, Paused,
+Stalled, an error…) is always shown.
+
+| In the editor | YAML (under `downloads:`) |
+|---|---|
+| **Upload speed** (torrents only) | `rowUpload: true` |
+| **Time left** | `rowEta: true` |
+| **Size** | `rowSize: true` |
+| **Peers** (torrents only) | `rowPeers: true` |
+| **Percentage** | `rowPercent: true` |
+| **Progress bar** | `rowProgress: true` |
+
+### Download clients
+
+Drag the clients into the order you want and switch off any you don't want to
+see. Only clients set up in the integration are listed.
+
+```yaml
+downloadClients:
+  - { id: sab, enabled: true }
+  - { id: qbit, enabled: true }
+  - { id: deluge, enabled: false }
+  # also: rtorrent, transmission, nzbget
+```
+
+### Storage
+
+| In the editor | What it does | YAML (under `styles:`) |
+|---|---|---|
+| **Disk space source** | Where the storage card gets its numbers. **Auto** usually gets it right. Pick Radarr or Sonarr if your download client reports a different drive (a cache drive instead of the array, for example). | `storageSource: auto` · `radarr` · `radarr2` · `sonarr` · `sonarr2` |
+
+---
+
+## Right panel — media
+
+### Layout
+
+| In the editor | What it does | YAML (under `discover:`) |
+|---|---|---|
+| **Rows on a page** | How many categories are shown at once. The search field counts as one of them. On a phone set to Shelves or List the page scrolls instead, so this doesn't apply there. | `categoriesCount: 3` |
+| **Posters in a row** | How many posters each category shows side by side. Also used for the search results and See More. Pages layout only. | `itemsPerCategory: 4` |
+| **See More on page** | On this page of a category, the last poster becomes **See More**, which opens the whole category. Pages layout only. | `showMoreOnPage: 3` |
+
+### Phone and tablet
+
+A phone and a tablet each get their own layout:
+
+- **Pages**: a few categories at a time, turned page by page.
+- **Shelves**: every category one under another, each a row of posters you swipe sideways.
+- **List**: every category folded to its name with a peek at its posters. Tap one to open it.
+
+| In the editor | YAML (under `discover:`) |
+|---|---|
+| **Layout on a phone** | `mobileLayout: pages` · `shelves` · `list` |
+| **Layout on a tablet** | `tabletLayout: pages` · `shelves` · `list` |
+| **Posters per row on a phone**: 2 or 3, for the lists that fill the screen (a category you opened, See More, the search, Library, Maintainerr) | `mobileColumns: 3` |
+| **Posters per row on a tablet**: Auto fits as many as the screen takes; a slider in the window changes it too | `tabletColumns: 0` (Auto) · `3`–`6` |
+
+```yaml
+discover:
+  mobileLayout: list       # tap through the categories on a phone
+  tabletLayout: shelves    # swipe through rows on a tablet
+  mobileColumns: 2         # bigger posters on a phone
+```
+
+### Search
+
+| In the editor | What it does | YAML |
+|---|---|---|
+| **Show search field** | Off gives its place to one more category. Handy for a display nobody types on. | `discover:` → `showSearch: true` |
+| **Search in a pop-up header** | Moves the search into the header of the pop-up the card is in. Add an **Arr Stack Search** card to that header (see [below](#the-search-header-card--arr-stack-search)). Until it's there, the search stays in the card. | `search_in_header: true` |
+| **Link name** | Only needed with two or more such cards on one page, say a Movies and a Kids pop-up. Type the same word here and in the matching Arr Stack Search card, e.g. `kids`. | `search_link: kids` |
+| **Header on a phone** | For a card without a pop-up. On a phone the search becomes a header that stays at the top of the screen. Windows you open take it over, and a back arrow closes them. | `phone_header: true` |
+
+### Recommendations
+
+Shown only when Trakt or SuggestArr is set up in the integration.
+
+| In the editor | What it does | YAML (under `discover:`) |
+|---|---|---|
+| **Trakt** | Use Trakt's suggestions in the Recommendations row. | `recTrakt: true` |
+| **SuggestArr** | Use SuggestArr's suggestions too. With both on, they take turns. | `recSuggestarr: true` |
+
+Music from Last.fm joins the row on its own when Lidarr is set up. Switch it off
+with the filter in the row itself.
+
+### Requests
+
+| In the editor | What it does | YAML (under `discover:`) |
+|---|---|---|
+| **Recently Requested shows** | **Seerr + card**: your Seerr requests, what you asked for through the card, and anything downloading now. **Seerr only**: exactly your Seerr list. **Library**: every monitored title that isn't downloaded yet. | `requestedSource: both` · `seerr` · `library` |
+| **One-click request** | One tap requests a movie or show, with no questions about quality or seasons. | `oneClickRequest: true` |
+| **Only for non-admins** | Admins still get the choice; everyone else gets one tap. | `oneClickNonAdminOnly: true` |
+| **Seasons of a show** | What one tap requests for a show: the first season, the latest, or all of them. | `oneClickTvSeasonMode: first` · `latest` · `all` |
+| **Movie profile** / **Show profile** | The quality profile to use, by its name as Radarr and Sonarr show it (Settings → Profiles). Leave empty for their default. | `oneClickDefaultMovieProfile: HD-1080p`<br>`oneClickDefaultShowProfile: HD-1080p` |
+
+The last four appear in the editor once **One-click request** is on.
+
+### Posters
+
+| In the editor | What it does | YAML (under `posters:`) |
+|---|---|---|
+| **Show title** | The title under each poster. | `showTitle: true` |
+| **Show media type tag** | A Movie or TV label in the corner. | `showMediaType: true` |
+| **Show rating** | The rating badge. | `showRating: true` |
+| **Rating provider** | Whose rating to show. When IMDb has none, TMDB's or TheTVDB's stands in. | `ratingProvider: imdb` · `tmdb` |
+| **Show audio languages** | Flags of the audio languages (on the right). | `showAudio: true` |
+| **Show subtitles** | Flags of the subtitle languages (on the left). | `showSubtitles: true` |
+| **Language display** | **Combined**: flags and the rating in one strip. **Separate tags**: rating, audio and subtitles as their own tags. | `langDisplay: flags` · `tags` |
+| **Status display** | **Tags**: status badges. **Stripes**: a coloured bar along the bottom with the download progress. **Both**. | `statusDisplay: tags` · `stripes` · `both` |
+| **Deletion tag** | A "Gone in…" tag on titles Maintainerr is about to delete: everywhere, only in Maintainerr, or never. | `goneTag: all` · `maintainerr` · `off` |
+
+### Now Playing
+
+| In the editor | What it does | YAML (under `streams:`) |
+|---|---|---|
+| **Show playback details** | Adds a line to each stream: Direct Play or Transcode, the quality and the bitrate, e.g. *1080p › Transcode › 720p · 4.0 Mbps*. Plex, Jellyfin and Emby. | `showTechInfo: true` |
+
+### Categories
+
+Drag the categories into the order you want and switch off the ones you don't
+need. The ids for YAML are in [Categories you can show](#categories-you-can-show).
+
+```yaml
+categories:
+  - { id: streams, enabled: true }
+  - { id: calendar, enabled: true }
+  - { id: recentlyAdded, enabled: true }
+  - { id: trending, enabled: false }
+```
+
+---
+
+## Users
+
+Shown when you have more than one Seerr account set up in the integration.
+Choose which Home Assistant user requests under which Seerr account. See
+[Multi-user setup](README.md#multi-user-setup-seerr--optional) in the README.
+
+---
+
+## Appearance
+
+A preset gives the whole card a look in one click: **Glass** (the default),
+**Home Assistant theme**, **Solid**, **Nord**, **Catppuccin**, **Cinema** or
+**Apple Home**. Below it you can change any colour, panel by panel. Every one of
+those settings is described in [STYLING.md](STYLING.md).
+
+| In the editor | What it does | YAML (under `styles:`) |
+|---|---|---|
+| **Preset** | The look of the whole card. | `preset: apple-home` |
+| **Performance mode** | Turns off the blur behind the glass. Smoother on older tablets. You then choose a plain background colour and how see-through it is. | `performanceMode: true`<br>`cardBackground: "#121216"`<br>`cardBackgroundOpacity: 90` |
+| **Day / night modal colours** | Windows turn light while the sun is up and dark after sunset. Turn it off if you set your own window colours. | `dayNightMode: true` |
+| **Category colour overlays** | A soft tint in each app's colour behind its category. | `categoryOverlays: true` |
+| **Window colour overlays** | The same tint at the top of windows. | `modalOverlays: true` |
+| **UI scale** | Makes everything bigger or smaller. Try 1.1–1.3 on a TV or a wall display. | `uiScale: 1` |
+| **Left panel width** | How wide the downloads panel is, as a share of the card. | `leftPanelWidth: 40` |
+| **App icons** | Real app logos, simple icons, or none, next to the section titles. | `applicationIcons: real` · `mdi` · `none` |
+
+With **Apple Home**, the card is light by day and dark at night. By default it
+follows Home Assistant's dark mode. To follow the sun instead, or to stay always
+light or always dark:
+
+```yaml
+styles:
+  preset: apple-home
+  appearance: sun     # auto · sun · light · dark
+```
+
+---
+
+## The search header card — `arr-stack-search`
+
+A small extra card that holds the search field, for the header of a pop-up
+(Bubble Card, for example). Turn on **Search in a pop-up header** on the main
+card, then add this card above it in the same pop-up.
+
+| In the editor | What it does | YAML |
+|---|---|---|
+| **Pop-up header** | A whole header: an icon, the search field and a close button, sized like Bubble Card's. Off: just the field, for a header that has its own. | `header: true` |
+| **Icon** | The icon at the left of the header. A phone leaves it out to give the field room. | `icon: mdi:movie-play-outline` |
+| **Close button** | Closes the pop-up. | `close: true` |
+| **No background** | Only the field and buttons, for a header that draws its own background. | `background: none` |
+| **Link name** | Only with several such cards on one page: the same word as in the main card's Link name. | `link: kids` |
+
+It takes the main card's look by default. Its **Appearance** tab changes only
+the header.
+
+On a phone, windows you open take over this header: their buttons go up
+into it and the close button turns into a back arrow. A title's details put
+their Search, Remove and Actions buttons there.
+
+```yaml
+- type: custom:arr-stack-search
+  header: true
+  icon: mdi:movie-play-outline
+- type: custom:arr-stack-card
+  search_in_header: true
+```
+
+Two pop-ups on one page, each with its own card:
+
+```yaml
+# Movies pop-up
+- type: custom:arr-stack-search
+  header: true
+  link: movies
+- type: custom:arr-stack-card
+  search_in_header: true
+  search_link: movies
+
+# Kids pop-up
+- type: custom:arr-stack-search
+  header: true
+  link: kids
+- type: custom:arr-stack-card
+  search_in_header: true
+  search_link: kids
+```
+
+---
+
+## Categories you can show
+
+| id | Category |
 |----|---------|
+| `streams` | Now Playing (Plex, Jellyfin, Emby, Kodi). Hidden while nothing plays. |
+| `calendar` | Calendar: upcoming movies, episodes and albums |
 | `recentlyAdded` | Recently Added |
+| `music` | Recently Added Music (Lidarr) |
 | `recentlyRequested` | Recently Requested |
 | `upcoming` | Upcoming Movies |
 | `tvUpcoming` | New Shows |
 | `trending` | Trending |
 | `popular` | Popular Movies |
-| `recommendations` | Recommendations — Trakt, SuggestArr and Last.fm in one row |
-| `calendar` | Calendar — upcoming movies, episodes and albums (Radarr + Sonarr + Lidarr), week and month views |
-| `streams` | Now Playing (Plex / Jellyfin / Emby / Kodi) — auto-hidden when nothing plays |
-| `tautulli` | Statistics (Tautulli) |
-| `jellystat` | Statistics (Jellystat) |
-| `tracearr` | Statistics (Tracearr) *(beta)* |
-| `library` | Library browser (Radarr / Sonarr / Lidarr — bulk edit, sort, filter) |
-| `activity` | Activity Queue (admin only) |
+| `recommendations` | Recommendations: Trakt, SuggestArr and Last.fm in one row |
+| `library` | Library: browse, sort, filter and edit your movies, shows and music |
+| `activity` | Activity: queue, history, blocklist, missing (admins only) |
+| `tautulli` | Statistics from Tautulli (Plex) |
+| `jellystat` | Statistics from Jellystat (Jellyfin) |
+| `tracearr` | Streaming statistics from Tracearr *(beta)* |
 | `prowlarr` | Indexers (Prowlarr) |
-| `maintainerr` | Maintainerr — rules, collections, deletion calendar, storage |
+| `maintainerr` | Maintainerr: rules, collections, deletion calendar |
+
+The statistics, Activity, Prowlarr and Maintainerr are shown to admins only.
+
+---
+
+## Settings only in YAML
+
+When several people share one Plex or Jellyfin account, the Tautulli user window
+warns about one account seen from many places. Two settings tune the warning:
+
+```yaml
+security:
+  ip_sharing_threshold: 2    # how many different places before the warning shows
+  ip_history_depth: 200      # how much play history to look through
+```
+
+---
+
+## Everything at once
+
+Every setting with its default value. You never need all of this: write only
+what you want to change.
+
+```yaml
+type: custom:arr-stack-card
+
+localisation: en                # en | cs | fr
+layout: both                    # both | left | right
+swap_sides: false
+sticky_nav_offset: 100
+search_in_header: false
+search_link: ""
+phone_header: false
+
+downloads:
+  torrentItems: 3
+  usenetItems: 3
+  allowControls: true
+  showStorage: true
+  showTotalSpeed: true
+  showVpnCard: true
+  rowUpload: true
+  rowEta: true
+  rowSize: true
+  rowPeers: true
+  rowPercent: true
+  rowProgress: true
+
+downloadClients:                # order and visibility
+  - { id: qbit, enabled: true }
+  - { id: deluge, enabled: true }
+  - { id: rtorrent, enabled: true }
+  - { id: transmission, enabled: true }
+  - { id: sab, enabled: true }
+  - { id: nzbget, enabled: true }
+
+discover:
+  categoriesCount: 3
+  itemsPerCategory: 4
+  showMoreOnPage: 3
+  showSearch: true
+  mobileLayout: pages           # pages | shelves | list
+  mobileColumns: 3              # 2 | 3
+  tabletLayout: pages           # pages | shelves | list
+  tabletColumns: 0              # 0 = Auto, or 3–6
+  recTrakt: true
+  recSuggestarr: true
+  requestedSource: both         # both | seerr | library
+  oneClickRequest: false
+  oneClickNonAdminOnly: false
+  oneClickTvSeasonMode: first   # first | latest | all
+  oneClickDefaultMovieProfile: ""
+  oneClickDefaultShowProfile: ""
+  oneClickDefaultMovieTag: ""         # a Radarr tag for one-click requests
+  oneClickDefaultMovieRootFolder: ""  # a Radarr root folder
+  oneClickDefaultShowTag: ""          # a Sonarr tag
+  oneClickDefaultShowRootFolder: ""   # a Sonarr root folder
+
+posters:
+  showTitle: true
+  showMediaType: true
+  showRating: true
+  ratingProvider: imdb          # imdb | tmdb
+  showAudio: true
+  showSubtitles: true
+  langDisplay: flags            # flags | tags
+  statusDisplay: tags           # tags | stripes | both
+  goneTag: all                  # all | maintainerr | off
+
+streams:
+  showTechInfo: false
+
+categories:                     # order and visibility, ids above
+  - { id: streams, enabled: true }
+  - { id: calendar, enabled: true }
+  - { id: recentlyAdded, enabled: true }
+
+security:
+  ip_sharing_threshold: 2
+  ip_history_depth: 200
+
+styles:
+  preset: glass                 # glass | ha | solid | nord | catppuccin | cinema | apple-home
+  appearance: auto              # Apple Home only: auto | sun | light | dark
+  performanceMode: false
+  cardBackground: "#121216"     # with performanceMode
+  cardBackgroundOpacity: 90     # with performanceMode
+  dayNightMode: true
+  categoryOverlays: true
+  modalOverlays: true
+  uiScale: 1
+  leftPanelWidth: 40
+  applicationIcons: real        # real | mdi | none
+  storageSource: auto           # auto | radarr | radarr2 | sonarr | sonarr2
+  # every colour and surface: STYLING.md
+```
+
+Older colour names (`headingTextColor`, `primaryTextColor`, `modalBackgroundColor` …)
+still work. [STYLING.md](STYLING.md#the-older-keys) says what each one sets now.
