@@ -145,7 +145,7 @@ see. Only clients set up in the integration are listed.
 
 Client ids: `qbit` qBittorrent · `deluge` Deluge · `rtorrent` rTorrent ·
 `transmission` Transmission · `sab` SABnzbd · `nzbget` NZBGet. `enabled` is
-`true` or `false`; clients you leave out keep their place and stay on.
+`true` or `false`; clients you leave out come after the listed ones and stay on.
 
 ```yaml
 downloadClients:
