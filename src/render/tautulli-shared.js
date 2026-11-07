@@ -99,6 +99,9 @@ class _TautulliSharedMethods {
   // hasFilter: true pro history (filter bar +44px)
   _tlCalcPerPage(opts) {
     const isMob  = this._isMob;
+    // A phone scrolls the window's list (.mob-scroll) instead of paging it by
+    // what fits: a hundred rows a page, the pages only past that
+    if (isMob) return 100;
     const modalH = window.innerHeight * 0.88;
     const hdr    = isMob ? 90  : 68;
     const pad    = 34;

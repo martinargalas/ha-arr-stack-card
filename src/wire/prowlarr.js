@@ -194,6 +194,11 @@ class _WireProwlarrMethods {
     // Reset flex styles set by stats tab
     body.style.display = '';
     body.style.flexDirection = '';
+    // A phone scrolls a list tab's whole length (.mob-scroll); the charts of
+    // Stats keep to the window
+    const scrolls = this._isMob && tab !== 'stats';
+    body.classList.toggle('mob-scroll', scrolls);
+    body.classList.toggle('vscroll', scrolls);
     body.innerHTML = '<div class="is-loading"><span>' + this._t('loading') + '</span></div>';
 
     if (tab === 'indexers') {

@@ -1815,9 +1815,11 @@ ${TOKEN_CSS}
         -webkit-mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
         mask-image: linear-gradient(to bottom, var(--fe-t, black) 0, black var(--ft, 0px), black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
       }
-      /* A soft fade: the edge keeps a third of the poster, over a short run */
-      .to-sheet-body.fade-t { --ft: 28px; --fe-t: var(--fe); }
-      .to-sheet-body.fade-b { --fb: 40px; --fe-b: var(--fe); }
+      /* A soft fade, the edge keeping a third of the poster over a short run,
+         only where a dock covers the list's end: elsewhere the posters stay
+         whole to the list's edges — faded, the page behind showed through
+         them under the window's header */
+      :host([style*="--arr-bottom-bar"]) .to-sheet-body:not(.end-b) { --fb: 40px; --fe-b: var(--fe); }
       .to-sheet > .to-top-wrap {
         position: absolute; right: max(16px, env(safe-area-inset-right, 0px));
         bottom: calc(env(safe-area-inset-bottom, 0px) + 14px + var(--arr-bottom-bar, 0px)); z-index: 2;
@@ -1943,8 +1945,33 @@ ${TOKEN_CSS}
            back to the top counted it twice and stood a bar too high. Where a
            category's window has it, 14 px over the bar. */
         :host([hdr-take]) .hdr-full .lib-scroll.vscroll > .to-top-wrap { bottom: -10px; }
-        :host([hdr-take]) .hdr-full .lib-scroll.vscroll.fade-t { --ft: 28px; --fe-t: var(--fe); }
-        :host([hdr-take]) .hdr-full .lib-scroll.vscroll.fade-b { --fb: 40px; --fe-b: var(--fe); }
+        :host([hdr-take][style*="--arr-bottom-bar"]) .hdr-full .lib-scroll.vscroll:not(.end-b) { --fb: 40px; --fe-b: var(--fe); }
+        /* A service window's list on a phone is scrolled, not paged
+           (.mob-scroll: Activity): its whole length, the tables' own clipping
+           let go. Under the header it runs on under a bar along the bottom,
+           as the Library does, its end scrolling up above the bar and the
+           rows fading out only where the bar covers them */
+        .popup-body.mob-scroll {
+          overflow-y: auto !important; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        }
+        .mob-scroll .u-col-fill { flex: none; min-height: 100%; }
+        .mob-scroll [data-act-clip] { flex: none; overflow: visible !important; }
+        /* Prowlarr's lists: their own scrolling box and clip let go too */
+        .mob-scroll .u-flex-ovh,
+        .mob-scroll > [style*="overflow-y:auto"],
+        .mob-scroll > [style*="display:contents"] > [style*="overflow-y:auto"] {
+          flex: none !important; overflow: visible !important;
+        }
+        :host([hdr-take]) .hdr-full .popup-body.mob-scroll {
+          padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px + var(--arr-bottom-bar, 0px)) !important;
+          --fe: color-mix(in srgb, black 35%, transparent);
+          --fbar: var(--arr-bottom-bar, 0px);
+          -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
+          mask-image: linear-gradient(to bottom, black 0, black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
+        }
+        :host([hdr-take][style*="--arr-bottom-bar"]) .hdr-full .popup-body.mob-scroll:not(.end-b) { --fb: 40px; --fe-b: var(--fe); }
+        /* Its own padding keeps clear of the bar already, as the Library's */
+        :host([hdr-take]) .hdr-full .popup-body.mob-scroll > .to-top-wrap { bottom: -10px; }
         :host([hdr-take]) #cal-overlay.hdr-taken { padding-bottom: 0; border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0; }
         :host([hdr-take]) #cal-overlay.hdr-taken > .cal-modal-glass {
           border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;

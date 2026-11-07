@@ -4,6 +4,9 @@
 // Note: innerHTML usage mirrors the established pattern in tautulli.js/jellystat.js.
 // All dynamic content originates from the arr-stack proxy (same-origin HA API).
 
+// A phone shows a tab's whole list, scrolled, with no pages
+const MOB_ALL = 100000;
+
 class _WireActivityMethods {
 
   async _openActivityModal(tab) {
@@ -94,6 +97,11 @@ class _WireActivityMethods {
       this._activityModal.queuePerPage   = perPageQueue;
       this._activityModal.missingPerPage     = perPageMissing;
       this._activityModal.missingPerPageBase = perPageMissing;
+      // A phone scrolls the whole list instead of paging it (.mob-scroll)
+      if (mobile) {
+        const m = this._activityModal;
+        m.histPerPage = m.blPerPage = m.queuePerPage = m.missingPerPage = m.missingPerPageBase = MOB_ALL;
+      }
     }
 
     this._wireActivityModal(el);
@@ -301,7 +309,7 @@ class _WireActivityMethods {
     body.innerHTML = this._actQueueTabHtml(m.queueData?.radarr || [], m.queueData?.sonarr || [], m.queuePage, m.queuePerPage, m.queueCols);
     requestAnimationFrame(() => {
       if (!this._activityModal) return;
-      const clip = body.querySelector('[data-act-clip]');
+      const clip = this._isMob ? null : body.querySelector('[data-act-clip]');
       if (clip) {
         const m2 = this._activityModal;
         // Reserve space for pagination controls even if not yet rendered (totPages may flip to >1).
@@ -336,7 +344,7 @@ class _WireActivityMethods {
     body.innerHTML = this._actMissingTabHtml(c?.rRecs||[], c?.sRecs||[], m.missingPage, m.missingPerPage, m.missingCols);
     requestAnimationFrame(() => {
       if (!this._activityModal) return;
-      const clip = body.querySelector('[data-act-clip]');
+      const clip = this._isMob ? null : body.querySelector('[data-act-clip]');
       if (clip) {
         const m2 = this._activityModal;
         const clipB = clip.getBoundingClientRect().bottom;

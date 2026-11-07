@@ -112,7 +112,7 @@ class _TautulliMethods {
       <div class="popup-glass tl-wide">
         ${this._modalTint('tautulli')}
         <div class="is-panel-hdr" style="${hdrStyle}">${hdrInner}</div>
-        <div class="popup-body" id="tl-body" style="padding:${isMobile ? '12px 14px 16px' : '14px 22px 20px'}">
+        <div class="popup-body${isMobile ? ' mob-scroll vscroll' : ''}" id="tl-body" style="padding:${isMobile ? '12px 14px 16px' : '14px 22px 20px'}">
           <div class="is-loading"><span>${this._t('loading')}</span></div>
         </div>
       </div>

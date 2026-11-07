@@ -320,15 +320,22 @@ class _UiMethods {
   // A window's arrow sits beside its list rather than in it, out of the
   // list's faded edge; elsewhere it rides in the scrolled box
   _toTopWrap(box) {
-    return box.querySelector(':scope > .to-top-wrap')
+    const own = box.querySelector(':scope > .to-top-wrap')
       || (box.classList.contains('to-sheet-body') ? box.parentElement?.querySelector(':scope > .to-top-wrap') : null);
+    if (own || !box.classList.contains('mob-scroll')) return own;
+    // A service window's scrolled list (.mob-scroll) is drawn anew with each
+    // tab and page of data: the arrow is put back at its end when it is due
+    box.insertAdjacentHTML('beforeend', this._toTopHtml());
+    return box.lastElementChild;
   }
 
   // Posters cut by a window's edge fade out there: at the bottom while there
   // is more below, at the top once the list has moved
   _syncEdgeFade(box) {
     box.classList.toggle('fade-t', box.scrollTop > 2);
-    box.classList.toggle('fade-b', box.scrollHeight - box.clientHeight - box.scrollTop > 2);
+    // The fade under a dock is there from the first look, before any
+    // scrolling: only a list scrolled to its end lets it go (.end-b)
+    box.classList.toggle('end-b', box.scrollHeight - box.clientHeight - box.scrollTop <= 2);
   }
 
   // A shelf's edges fade where it runs on past them: the right while there

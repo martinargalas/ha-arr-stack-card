@@ -20,7 +20,8 @@ class _WireProwlarrHistoryMethods {
       m.histTotal = 0;
     }
     m.histPage    = 0;
-    m.histPerPage = 20;
+    // A phone scrolls the whole history instead of paging it (.mob-scroll)
+    m.histPerPage = this._isMob ? 100000 : 20;
     m.histSortDir = 'desc';
     body.innerHTML = this._pwHistoryTabHtml(m);
     this._pwWireHistory(body, el);
@@ -178,7 +179,7 @@ class _WireProwlarrHistoryMethods {
     // actually fits and page by that instead.
     requestAnimationFrame(() => {
       const m = this._prowlarrModal;
-      if (!m) return;
+      if (!m || this._isMob) return;
       const wrap = body.querySelector('.u-flex-ovh');
       const row  = wrap?.querySelector('tbody tr') || wrap?.firstElementChild;
       if (!wrap || !row) return;

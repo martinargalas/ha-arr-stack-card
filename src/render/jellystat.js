@@ -66,7 +66,7 @@ class _JellystatMethods {
       + '<div class="popup-glass tl-wide">'
       + this._modalTint('jellystat')
       + '<div class="is-panel-hdr" style="' + hdrStyle + '">' + hdrInner + '</div>'
-      + '<div class="popup-body" id="js-body" style="padding:' + (isMobile ? '12px 14px 16px' : '14px 22px 20px') + '"><div class="is-loading"><span>' + this._t('loading') + '</span></div></div>'
+      + '<div class="popup-body' + (isMobile ? ' mob-scroll vscroll' : '') + '" id="js-body" style="padding:' + (isMobile ? '12px 14px 16px' : '14px 22px 20px') + '"><div class="is-loading"><span>' + this._t('loading') + '</span></div></div>'
       + '</div></div>';
   }
 

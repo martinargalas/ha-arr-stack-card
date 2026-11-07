@@ -424,7 +424,7 @@ class _TraceaRrMethods {
             <div style="flex:1"></div>
             <button class="popup-close" id="tra-close" style="position:relative;top:0;right:0;flex-shrink:0;align-self:center">${ICONS.close}</button>
           </div>
-          <div class="popup-body" id="tra-body" style="padding:10px 12px 16px;flex:1;min-height:0;overflow-y:auto">
+          <div class="popup-body mob-scroll vscroll" id="tra-body" style="padding:10px 12px 16px;flex:1;min-height:0;overflow-y:auto">
             <div class="is-loading"><span>${this._t('loading')}</span></div>
           </div>
           ${this._traMobileNavHtml(tab, navGroup)}
