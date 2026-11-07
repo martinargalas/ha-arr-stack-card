@@ -391,7 +391,7 @@ _renderIsPanel() {
     this.shadowRoot.querySelector('[data-is-sheet]')?.remove();
     const wrap = document.createElement('div');
     const reasons = rej ? rej.split('\n').filter(Boolean) : [];
-    wrap.innerHTML = `<div class="popup-overlay is-sheet-overlay${this._isDay ? ' popup-day' : ''}" data-is-sheet>
+    wrap.innerHTML = `<div class="popup-overlay is-sheet-overlay${this._isDay && !this._detailOpen() ? ' popup-day' : ''}" data-is-sheet>
       <div class="is-sheet">
         <div class="is-sheet-hdr">
           <div class="is-sheet-title">${this._escHtml(title)}</div>

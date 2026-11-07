@@ -85,7 +85,7 @@ class _DropdownMethods {
       : `<button class="arr-dd-opt${x.value === cur ? ' is-sel' : ''}" data-dd-v="${esc(x.value)}"${x.disabled ? ' disabled' : ''} title="${esc(x.label)}"><span class="arr-dd-lbl">${esc(x.label)}</span></button>`;
 
     const wrap = document.createElement('div');
-    wrap.innerHTML = `<div class="popup-overlay arr-dd-overlay${this._isDay ? ' popup-day' : ''}" data-arr-dd>
+    wrap.innerHTML = `<div class="popup-overlay arr-dd-overlay${this._isDay && !this._detailOpen() ? ' popup-day' : ''}" data-arr-dd>
       <div class="arr-dd" role="listbox">
         ${long ? `<input class="arr-dd-find" type="search" autocomplete="off" placeholder="${esc(this._t('ddFilter'))}">` : ''}
         <div class="arr-dd-list">${items.map(chip).join('')}</div>

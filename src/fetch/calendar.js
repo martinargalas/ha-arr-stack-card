@@ -2,10 +2,20 @@
 
 class _FetchCalendarMethods {
 
+// The category's first look asks for its first page alone — a week, or a
+// month where the calendar is set to months — so it shows without waiting on
+// two months from every service. The rest follows once the card is quiet, or
+// at once when the category is paged or opened (_calLoadRest).
 async _fetchCalendar() {
   try {
+    if (!this._calFull && !this._calRestTimer) {
+      const later = () => { this._calRestTimer = null; this._calLoadRest(); };
+      this._calRestTimer = setTimeout(() => (window.requestIdleCallback
+        ? window.requestIdleCallback(later, { timeout: 4000 }) : later()), 3000);
+    }
+    const days = this._calFull ? 60 : (this._calendarView === 'month' ? 31 : 7);
     const today = new Date().toISOString().split('T')[0];
-    const end = new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0];
+    const end = new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
     const [sonarrRaw, radarrRaw, sonarr2Raw, radarr2Raw, lidarrRaw] = await Promise.all([
       this._callApi('GET', `arr_stack/sonarr/calendar?start=${today}&end=${end}`).catch(() => []),
       this._callApi('GET', `arr_stack/radarr/calendar?start=${today}&end=${end}`).catch(() => []),
@@ -62,6 +72,16 @@ async _fetchCalendar() {
   } catch (e) {
     console.error('[arr-card] Calendar fetch error:', e);
   }
+}
+
+_calLoadRest() {
+  if (this._calFull) return this._calRestP;
+  this._calFull = true;
+  clearTimeout(this._calRestTimer);
+  this._calRestTimer = null;
+  this._calRestP = this._fetchCalendar()
+    .then(() => { try { this._reRenderSection('calendar'); } catch (_) { /* not on the page */ } });
+  return this._calRestP;
 }
 
 _calMusicItems(raw) {

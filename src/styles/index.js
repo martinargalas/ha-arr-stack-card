@@ -1801,6 +1801,10 @@ ${TOKEN_CSS}
         background: var(--arr-sheet-night, rgb(var(--arr-sheet-night-rgb, 20, 20, 26)));
       }
       .col-right.flow-held { overflow: hidden; }
+      /* A window light by day scrolls with a light scrollbar: the page's own
+         (dark under a dark Home Assistant, or a dark page around the card)
+         drew a black bar down a white window */
+      :is(.to-sheet.sheet-day, .popup-overlay.popup-day) { color-scheme: light; }
       /* A window's posters fade out at its edges where the list runs on
          (_syncEdgeFade); its arrow to the top sits over the list, not in it */
       .to-sheet-body {
@@ -1897,7 +1901,7 @@ ${TOKEN_CSS}
            under the header and as wide, ending above a bar along the
            bottom; the header stays sharp, no veil */
         :host([hdr-take]) .popup-overlay.hdr-taken {
-          top: calc(var(--arr-top-bar, 0px) + 8px); bottom: 0;
+          top: calc(var(--arr-top-bar, 0px) + 8px); bottom: var(--arr-frame-b, 0px);
           left: var(--arr-take-l, 0px); right: auto; width: var(--arr-take-w, 100%);
           align-items: stretch;
           /* The veil stays, only the window's size: what lies behind showed
@@ -1921,7 +1925,10 @@ ${TOKEN_CSS}
         /* One long list (the Library, Maintainerr): to the screen's bottom,
            under a bar there, as a category's window; the list fades at its
            edges and its end scrolls up above the bar */
-        :host([hdr-take]) .popup-overlay.hdr-taken.hdr-full { bottom: 0; padding-bottom: 0; }
+        :host([hdr-take]) .popup-overlay.hdr-taken.hdr-full { bottom: var(--arr-frame-b, 0px); padding-bottom: 0; }
+        :host([hdr-take]) .popup-overlay.hdr-taken[data-modal="detail"] > .popup-glass {
+          border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
+        }
         :host([hdr-take]) .popup-overlay.hdr-taken.hdr-full > .popup-glass {
           border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
         }
@@ -3650,7 +3657,30 @@ ${TOKEN_CSS}
         .popup-body--search .popup-content,
         .popup-body--sn-is .popup-content,
         .popup-body--panel .popup-content { flex: 0 1 auto; }
-        .popup-yt-thumb { margin-top: auto; }
+        /* The trailer takes the room the details leave, up to two fifths
+           of the screen, instead of a strip with a gap above it */
+        .popup-yt-thumb {
+          margin-top: auto; flex: 1 1 auto; height: auto;
+          min-height: clamp(140px, 28vh, 210px); max-height: 40vh;
+        }
+        /* A question before acting (added unmonitored first, run a search
+           now…) stands as a card in the middle of the window, in reach of a
+           thumb, not along its bottom edge by the dock */
+        .popup-body > .is-panel:has(> .is-confirm-wrap > .is-confirm-msg) {
+          top: 50%; bottom: auto; left: 16px; right: 16px;
+          transform: translateY(-50%);
+          height: auto !important; padding: 22px 16px;
+          border: 1px solid var(--is-divider); border-radius: 22px;
+          box-shadow: 0 12px 40px rgba(var(--_shadow, 0, 0, 0), 0.35);
+        }
+        /* Over the dashboard's own colour, as a category's window: the glass
+           alone let the description read through the question */
+        .popup-body > .is-panel:has(> .is-confirm-wrap > .is-confirm-msg)::before {
+          content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+          border-radius: inherit;
+          background: var(--arr-sheet-base, var(--primary-background-color, rgb(var(--_shade, 0, 0, 0))));
+          opacity: .94;
+        }
         /* Meta is the column: everything keeps its size, the description gives
            way, and the actions sit on the bottom edge of the middle section. */
         .popup-meta { display: flex; flex-direction: column; min-height: 0; }
@@ -3683,11 +3713,15 @@ ${TOKEN_CSS}
         overflow: hidden;
       }
 
+      /* YouTube's hqdefault is 4:3 with the 16:9 picture between black bars
+         an eighth of its height each: only that picture covers the box,
+         however tall the box (a phone's trailer fills the window down) */
+      .popup-yt-thumb { container-type: size; }
       .popup-yt-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center 30%;
+        position: absolute; left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        width: max(100cqw, 177.78cqh); height: auto; aspect-ratio: 4 / 3;
+        max-width: none;
         display: block;
       }
 
@@ -3796,7 +3830,8 @@ ${TOKEN_CSS}
         padding: 5px 0; border-radius: 10px 10px 0 0;
         border: none;
         background: rgba(var(--_shade, 0, 0, 0), 0.45);
-        color: rgb(var(--_fg, 255, 255, 255)); font-size: 11px; font-weight: 700; cursor: pointer;
+        /* Light text on its dark glass, by day too (the window's text is dark then) */
+        color: rgb(var(--_ptx, 255, 255, 255)); font-size: 11px; font-weight: 700; cursor: pointer;
         backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
         transition: background 0.12s;
       }
@@ -4372,6 +4407,11 @@ ${TOKEN_CSS}
          and the notch's inset kept clear. Over the inline heights the
          windows set for wider screens, hence !important. */
       @media (max-width: 600px) {
+        /* To the screen's edges, not the frame's: in Bubble Card's pop-up
+           the frame runs on under the screen (_syncFixedFrame) */
+        .popup-overlay, .to-sheet {
+          top: var(--arr-frame-t, 0px); bottom: var(--arr-frame-b, 0px);
+        }
         /* A bar fixed along the screen's bottom (Bubble Card's buttons,
            _syncBottomBar) is kept clear: the window ends above it */
         .popup-overlay {
@@ -4384,9 +4424,58 @@ ${TOKEN_CSS}
           height: var(--phone-win-h) !important;
           max-height: var(--phone-win-h) !important;
         }
+        /* A title's detail runs on to the screen's bottom, under a dock
+           there, as a category's window does: the trailer fills down to the
+           edge, its play button in the part above the dock */
+        .popup-overlay[data-modal="detail"] { padding-bottom: 0; align-items: flex-end; }
+        .popup-overlay[data-modal="detail"] > .popup-glass:not(.info-modal) {
+          height: calc(var(--phone-win-h) + 12px + env(safe-area-inset-bottom, 0px) + var(--arr-bottom-bar, 0px)) !important;
+          max-height: calc(var(--phone-win-h) + 12px + env(safe-area-inset-bottom, 0px) + var(--arr-bottom-bar, 0px)) !important;
+          border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important;
+        }
+        .popup-overlay[data-modal="detail"] > .popup-glass::before { border-radius: inherit; }
+        .popup-overlay[data-modal="detail"] .popup-yt-thumb {
+          min-height: calc(clamp(140px, 28vh, 210px) + var(--arr-bottom-bar, 0px));
+          max-height: none;
+        }
+        .popup-overlay[data-modal="detail"] .popup-yt-overlay {
+          box-sizing: border-box; padding-bottom: var(--arr-bottom-bar, 0px);
+        }
+        /* Under a dock the trailer fades back, as a category's list does:
+           the dock's icons stood dark on a dark picture. Not out altogether
+           (the mask's alpha only): a bare white band stood under the dock */
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-yt-thumb {
+          -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--arr-bottom-bar, 0px) - 34px), rgba(var(--_shade, 0, 0, 0), 0.3) calc(100% - var(--arr-bottom-bar, 0px) + 14px));
+          mask-image: linear-gradient(to bottom, black calc(100% - var(--arr-bottom-bar, 0px) - 34px), rgba(var(--_shade, 0, 0, 0), 0.3) calc(100% - var(--arr-bottom-bar, 0px) + 14px));
+        }
+        /* The window is at night always, but by day the band under a dock
+           stays light, as the day's windows end there: the trailer fades
+           into it */
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"].detail-day > .popup-glass {
+          background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 34px), var(--primary-background-color) calc(100% - var(--arr-bottom-bar, 0px) + 14px)), var(--is-glass-bg);
+        }
+        /* The question stays in the middle of what shows above the dock */
+        .popup-overlay[data-modal="detail"] .popup-body > .is-panel:has(> .is-confirm-wrap > .is-confirm-msg) {
+          top: calc(50% - var(--arr-bottom-bar, 0px) / 2);
+        }
+        /* A sources sheet along the bottom keeps its last rows above the dock */
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > :is(.is-panel, .sn-is-panel, .sn-is-section):not(:has(> .is-confirm-wrap > .is-confirm-msg)) {
+          padding-bottom: var(--arr-bottom-bar, 0px);
+        }
         /* No window line on a phone: a look's dark one (Apple Home by day)
            drew a black ring round every window */
         .popup-overlay > .popup-glass, .to-sheet { border-color: transparent !important; }
+      }
+      /* A small phone: the picture, the poster and the trailer give up some
+         of their height, so the description still shows a few lines between
+         them (it was squeezed to nothing under the trailer) */
+      @media (max-width: 600px) and (max-height: 760px) {
+        .popup-glass > .popup-backdrop { height: 24vh; min-height: 120px; }
+        .popup-body .popup-poster:not(.mus-poster) { width: 72px; height: 108px; margin-top: -24px; }
+        .popup-overlay[data-modal="detail"] .popup-yt-thumb {
+          min-height: calc(clamp(96px, 16vh, 140px) + var(--arr-bottom-bar, 0px));
+          max-height: calc(30vh + var(--arr-bottom-bar, 0px));
+        }
       }
       @media (max-width: 700px) {
         /* Over Bubble Card's bottom bar it ends above it, as the windows do */

@@ -180,7 +180,16 @@ test("the start uses last time's answer on what is set up, and asks again behind
   assert.equal(waited, true, 'asked again behind');
 });
 
+test('the first load notes nothing unless asked to', () => {
+  const card = makeCard();
+  card._loadLogStart();
+  card._loadLogCall('arr_stack/radarr/movies', 5);
+  assert.equal(card._loadLog, undefined);
+  card._loadLogPrint();
+});
+
 test('the first load notes each answer, slowest kept per call', () => {
+  localStorage.setItem('arr-debug-load', '1');
   const card = makeCard();
   card._loadLogStart();
   card._loadLogCall('arr_stack/sonarr/episodefiles?seriesId=1', 120);

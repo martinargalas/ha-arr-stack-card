@@ -1,5 +1,4 @@
 import { POPUP_TYPE } from '../constants.js';
-import { dayClass } from '../shared/ui.js';
 
 class _PopupMethods {
 
@@ -607,7 +606,7 @@ _renderPopup() {
     : '';
 
   return `
-    <div class="popup-overlay${dayClass(this)}" data-modal="detail">
+    <div class="popup-overlay${this._isDay ? ' detail-day' : ''}" data-modal="detail">
       <div class="popup-glass${wideClass}"${glassStyle}>
         <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 

@@ -141,7 +141,7 @@ var COLOR_ROLES=[["fg","text",null],["fg2","text-secondary","fg"],["fg3","text-m
         .row-label { flex: 1; font-size: 13px; }
         /* Same width as the fields in the Styles tab: its control column less
            the suffix and reset slots. They end at the edge, with the toggles. */
-        .row select, .row input[type="number"] {
+        .row select, .row input[type="number"], .row > input[type="text"] {
           width: calc(var(--st-ctl-w) - 62px); flex-shrink: 0;
           height: 30px; box-sizing: border-box; padding: 0 8px; border-radius: 6px; font: inherit; font-size: 12px;
           border: 1px solid var(--divider-color, #e0e0e0);
@@ -181,7 +181,7 @@ var COLOR_ROLES=[["fg","text",null],["fg2","text-secondary","fg"],["fg3","text-m
         .cat-item.dragging { opacity: 0.4; }
         .cat-label { flex: 1; font-size: 13px; }
         .cat-disabled .cat-label { opacity: 0.45; }
-`,ArrStackCardEditor=class extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"}),this._config={},this._caps=null,this._activeTab="general"}set hass(hass){let wasAdmin=this._hass?.user?.is_admin;this._hass=hass,this._caps||this._loadCaps(),wasAdmin!==hass?.user?.is_admin&&this._render()}async _loadCaps(){try{if(this._caps=await this._hass.callApi("GET","arr_stack/capabilities/info"),!(this._caps.qbit||this._caps.sabnzbd||this._caps.nzbget||this._caps.deluge||this._caps.rtorrent||this._caps.transmission)&&this._config.layout!=="right"&&(this._config={...this._config,layout:"right"},this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:!0,composed:!0}))),this._caps.overseerr)try{let accts=await this._hass.callApi("GET","arr_stack/overseerr/seerr_accounts");this._seerrAccounts=accts||[]}catch{this._seerrAccounts=[]}this._render()}catch{this._caps={}}}setConfig(config){if(config=config||{},Array.isArray(config.categories)){let CAT_MAP={radarr:"recentlyAdded",sonarr:"recentlyRequested"},seen=new Set;config={...config,categories:config.categories.map(c=>CAT_MAP[c.id]?{...c,id:CAT_MAP[c.id]}:c).filter(c=>seen.has(c.id)?!1:seen.add(c.id))}}if(this._sent&&JSON.stringify(config)===this._sent){this._config=config;return}this._config=config,this._render()}connectedCallback(){this._render()}_cfg(group2,key,fallback){let v=this._config?.[group2]?.[key];if(v!==void 0)return v;let flat=this._config?.[key];return flat!==void 0?flat:fallback}_val(key,fallback){let v=this._config?.[key];return v!==void 0?v:fallback}_styleVal(key,fallback){let v=this._config?.styles?.[key];return v!==void 0?v:fallback}_toHex(val,fallback){if(!val)return fallback;if(/^#/.test(val))return val;let m=val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);return m?"#"+[m[1],m[2],m[3]].map(n=>parseInt(n).toString(16).padStart(2,"0")).join(""):fallback}_render(){let perfMode=!!this._styleVal("performanceMode",!1);this._activeTab==="styles"&&(this._activeTab="appearance");let tab=this._activeTab;this.shadowRoot.innerHTML=`
+`,ArrStackCardEditor=class extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"}),this._config={},this._caps=null,this._activeTab="general"}set hass(hass){let wasAdmin=this._hass?.user?.is_admin;this._hass=hass,this._caps||this._loadCaps(),wasAdmin!==hass?.user?.is_admin&&this._render()}async _loadCaps(){try{if(this._caps=await this._hass.callApi("GET","arr_stack/capabilities/info"),!(this._caps.qbit||this._caps.sabnzbd||this._caps.nzbget||this._caps.deluge||this._caps.rtorrent||this._caps.transmission)&&this._config.layout!=="right"&&(this._config={...this._config,layout:"right"},this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:!0,composed:!0}))),this._caps.overseerr)try{let accts=await this._hass.callApi("GET","arr_stack/overseerr/seerr_accounts");this._seerrAccounts=accts||[]}catch{this._seerrAccounts=[]}this._render()}catch{this._caps={}}}setConfig(config){if(config=config||{},Array.isArray(config.categories)){let CAT_MAP={radarr:"recentlyAdded",sonarr:"recentlyRequested"},seen=new Set;config={...config,categories:config.categories.map(c=>CAT_MAP[c.id]?{...c,id:CAT_MAP[c.id]}:c).filter(c=>seen.has(c.id)?!1:seen.add(c.id))}}if(this._sent&&JSON.stringify(config)===this._sent){this._config=config;return}this._config=config,this._render()}connectedCallback(){this._render()}_cfg(group2,key,fallback){let v=this._config?.[group2]?.[key];if(v!==void 0)return v;let flat=this._config?.[key];return flat!==void 0?flat:fallback}_val(key,fallback){let v=this._config?.[key];return v!==void 0?v:fallback}_styleVal(key,fallback){let v=this._config?.styles?.[key];return v!==void 0?v:fallback}_toHex(val,fallback){if(!val)return fallback;if(/^#/.test(val))return val;let m=val.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);return m?"#"+[m[1],m[2],m[3]].map(n=>parseInt(n).toString(16).padStart(2,"0")).join(""):fallback}_render(){let perfMode=!!this._styleVal("performanceMode",!1);this._activeTab==="styles"&&(this._activeTab="appearance");let tab=this._activeTab;this._rpOpen=this._rpOpen||new Set(["rp.layout","lp.downloads"]);let oneClick=!!(this._cfg("discover","oneClickRequest",!1)||this._cfg("discover","oneClickMovieRequest",!1));this.shadowRoot.innerHTML=`
       <style>
 ${EDITOR_CSS}
         ${STYLES_TAB_CSS}
@@ -237,6 +237,7 @@ ${EDITOR_CSS}
             <span class="row-label">Sticky nav offset (px)</span>
             <input type="number" data-key="sticky_nav_offset" value="${this._val("sticky_nav_offset",100)}" min="0" max="500" step="10"/>
           </div>
+          <div class="hint">On a phone, how early the media's page buttons float in as you scroll down to them. Pages layout only.</div>
         </div>
       </div>
 
@@ -244,8 +245,8 @@ ${EDITOR_CSS}
       <div class="tab-content${tab==="left"?" active":""}" data-tab-content="left">
 
         <!-- Downloads -->
-        <div class="section">
-          <div class="section-title">Downloads</div>
+        <details class="st-group" data-st-group="lp.downloads"${this._rpOpen.has("lp.downloads")?" open":""}>
+          <summary>Downloads</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Torrent items per page</span>
             <input type="number" data-group="downloads" data-key="torrentItems" value="${this._cfg("downloads","torrentItems",3)}" min="1" max="20"/>
@@ -259,8 +260,10 @@ ${EDITOR_CSS}
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="allowControls" ${this._cfg("downloads","allowControls",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
           </div>
           <div class="hint">When disabled, play/pause and delete buttons are hidden. Category filters remain accessible.</div>
-          <div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 6px">Cards</div>
-          <div class="sub-group">
+        </div></details>
+
+        <details class="st-group" data-st-group="lp.cards"${this._rpOpen.has("lp.cards")?" open":""}>
+          <summary>Cards</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Show storage card</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showStorage" ${this._cfg("downloads","showStorage",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
@@ -272,9 +275,12 @@ ${EDITOR_CSS}
           <div class="row">
             <span class="row-label">Show VPN card</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showVpnCard" ${this._cfg("downloads","showVpnCard",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
-          </div></div>
-<div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 6px">Download row</div>
-          <div class="sub-group">
+          </div>
+          <div class="hint">The summary cards above the downloads.</div>
+        </div></details>
+
+        <details class="st-group" data-st-group="lp.row"${this._rpOpen.has("lp.row")?" open":""}>
+          <summary>Download row</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Upload speed</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowUpload" ${this._cfg("downloads","rowUpload",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
@@ -298,9 +304,9 @@ ${EDITOR_CSS}
           <div class="row">
             <span class="row-label">Progress bar</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowProgress" ${this._cfg("downloads","rowProgress",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
-          </div></div>
+          </div>
           <div class="hint">What each download row shows. The first pill always stays \u2014 it carries the state, so Stalled, Paused, Complete and errors remain visible. Upload speed and Peers apply to torrent clients only.</div>
-        </div>
+        </div></details>
 
         <!-- Download Clients -->
         ${(()=>{let caps=this._caps,allClients=this._getClients().filter(c=>caps===null?!0:!(c.id==="qbit"&&!caps?.qbit||c.id==="deluge"&&!caps?.deluge||c.id==="rtorrent"&&!caps?.rtorrent||c.id==="transmission"&&!caps?.transmission||c.id==="sab"&&!caps?.sabnzbd||c.id==="nzbget"&&!caps?.nzbget)),torrentIds=["qbit","deluge","rtorrent","transmission"],usenetIds=["sab","nzbget"],torrentClients=allClients.filter(c=>torrentIds.includes(c.id)),usenetClients=allClients.filter(c=>usenetIds.includes(c.id));if(allClients.length===0)return"";let renderGroup=(title,clients)=>clients.length===0?"":`
@@ -317,16 +323,16 @@ ${EDITOR_CSS}
               </div>
             `).join("")}
           </div>`;return`
-        <div class="section">
-          <div class="section-title">Download Clients</div>
+        <details class="st-group" data-st-group="lp.clients"${this._rpOpen.has("lp.clients")?" open":""}>
+          <summary>Download clients</summary><div class="st-body">
           <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide. Only configured clients are shown.</div>
           ${renderGroup("Torrent",torrentClients)}
           ${renderGroup("Usenet",usenetClients)}
-        </div>`})()}
+        </div></details>`})()}
 
         <!-- Storage -->
-        <div class="section">
-          <div class="section-title">Storage</div>
+        <details class="st-group" data-st-group="lp.storage"${this._rpOpen.has("lp.storage")?" open":""}>
+          <summary>Storage</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Disk space source</span>
             <select data-style-key="storageSource">
@@ -338,47 +344,63 @@ ${EDITOR_CSS}
             </select>
           </div>
           <div class="hint">Which service to use for the disk space widget. Use Radarr or Sonarr if SABnzbd reports a different volume (e.g. cache drive instead of array).</div>
-        </div>
+        </div></details>
       </div>
 
       <!-- \u2550\u2550\u2550 TAB: Right Panel \u2550\u2550\u2550 -->
       <div class="tab-content${tab==="right"?" active":""}" data-tab-content="right">
 
-        <div class="section">
+        <!-- Layout: the page of categories. The three numbers count for the
+             Pages layout; Shelves and List flow the categories instead -->
+        <details class="st-group" data-st-group="rp.layout"${this._rpOpen.has("rp.layout")?" open":""}>
+          <summary>Layout</summary><div class="st-body">
           <div class="row">
-            <span class="row-label">Categories per page</span>
-            <input type="number" data-group="discover" data-key="categoriesCount" value="${this._cfg("discover","categoriesCount",3)}" min="1" max="10"/>
+            <span class="row-label">Rows on a page</span>
+            <input type="number" data-group="discover" data-key="categoriesCount" value="${this._cfg("discover","categoriesCount",3)}" min="2" max="10"/>
           </div>
+          <div class="hint">Categories shown at once, the search field counting as one of them. A phone set to Shelves or List scrolls instead and leaves this aside.</div>
           <div class="row">
-            <span class="row-label">Items per category</span>
+            <span class="row-label">Posters in a row</span>
             <input type="number" data-group="discover" data-key="itemsPerCategory" value="${this._cfg("discover","itemsPerCategory",4)}" min="2" max="10"/>
           </div>
+          <div class="hint">Also the columns of the search results and of See More, except on a phone. Pages layout only: a shelf holds up to 20 posters you swipe through.</div>
+          <div class="row">
+            <span class="row-label">See More on page</span>
+            <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg("discover","showMoreOnPage",3)}" min="1" max="50"/>
+          </div>
+          <div class="hint">On this page of a category its last poster becomes See More, which opens the whole category. Pages layout only: a shelf always ends with it.</div>
+        </div></details>
+
+        <!-- Phone and tablet -->
+        <details class="st-group" data-st-group="rp.devices"${this._rpOpen.has("rp.devices")?" open":""}>
+          <summary>Phone and tablet</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Layout on a phone</span>
-            <select data-group="discover" data-key="mobileLayout" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <select data-group="discover" data-key="mobileLayout">
               <option value="pages" ${this._cfg("discover","mobileLayout","pages")==="pages"?"selected":""}>Pages</option>
               <option value="shelves" ${this._cfg("discover","mobileLayout","pages")==="shelves"?"selected":""}>Shelves</option>
               <option value="list" ${this._cfg("discover","mobileLayout","pages")==="list"?"selected":""}>List</option>
             </select>
           </div>
           <div class="row">
-            <span class="row-label">Posters a row on a phone</span>
-            <select data-group="discover" data-key="mobileColumns" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="3" ${String(this._cfg("discover","mobileColumns","3"))==="3"?"selected":""}>3</option>
-              <option value="2" ${String(this._cfg("discover","mobileColumns","3"))==="2"?"selected":""}>2</option>
-            </select>
-          </div>
-          <div class="row">
             <span class="row-label">Layout on a tablet</span>
-            <select data-group="discover" data-key="tabletLayout" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <select data-group="discover" data-key="tabletLayout">
               <option value="pages" ${this._cfg("discover","tabletLayout","pages")==="pages"?"selected":""}>Pages</option>
               <option value="shelves" ${this._cfg("discover","tabletLayout","pages")==="shelves"?"selected":""}>Shelves</option>
               <option value="list" ${this._cfg("discover","tabletLayout","pages")==="list"?"selected":""}>List</option>
             </select>
           </div>
+          <div class="hint">Pages turns a few categories at a time. Shelves shows every category, each a row you swipe sideways. List folds them to their titles; tap one to open it.</div>
           <div class="row">
-            <span class="row-label">Posters a row on a tablet</span>
-            <select data-group="discover" data-key="tabletColumns" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <span class="row-label">Posters per row on a phone</span>
+            <select data-group="discover" data-key="mobileColumns">
+              <option value="3" ${String(this._cfg("discover","mobileColumns","3"))==="3"?"selected":""}>3</option>
+              <option value="2" ${String(this._cfg("discover","mobileColumns","3"))==="2"?"selected":""}>2</option>
+            </select>
+          </div>
+          <div class="row">
+            <span class="row-label">Posters per row on a tablet</span>
+            <select data-group="discover" data-key="tabletColumns">
               <option value="0" ${String(this._cfg("discover","tabletColumns","0"))==="0"?"selected":""}>Auto</option>
               <option value="3" ${String(this._cfg("discover","tabletColumns","0"))==="3"?"selected":""}>3</option>
               <option value="4" ${String(this._cfg("discover","tabletColumns","0"))==="4"?"selected":""}>4</option>
@@ -386,35 +408,37 @@ ${EDITOR_CSS}
               <option value="6" ${String(this._cfg("discover","tabletColumns","0"))==="6"?"selected":""}>6</option>
             </select>
           </div>
-          <div class="hint">Pages turns a few categories at a time, as on a wider screen. Shelves shows every category, one under another, each a row you swipe sideways. List folds them to their titles; tap one to open it. A phone is up to 600 px wide; a tablet is up to 900 px, or a touch screen up to 1400 px (an iPad held sideways, a Nest Hub); a desktop worked by a mouse always uses pages. Posters a row counts for the lists that fill the screen: See More, a category opened from the list and, on a phone, the search, Library and Maintainerr. Auto fits as many as the tablet's width takes.</div>
+          <div class="hint">For the lists that fill the screen, in every layout: See More, a category opened from List and, on a phone, the search, Library and Maintainerr. Auto fits as many as the tablet's width takes.</div>
+        </div></details>
+
+        <!-- Search -->
+        <details class="st-group" data-st-group="rp.search"${this._rpOpen.has("rp.search")?" open":""}>
+          <summary>Search</summary><div class="st-body">
           <div class="row">
-            <span class="row-label">Search bar</span>
+            <span class="row-label">Show search field</span>
             <label class="toggle"><input type="checkbox" data-group="discover" data-key="showSearch" ${this._cfg("discover","showSearch",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">Off gives its slot to one more category \u2014 for a static or e-ink dashboard.</div>
+          <div class="hint">Off gives its place to one more category, for a static or e-ink dashboard.</div>
           <div class="row">
             <span class="row-label">Search in a pop-up header</span>
             <label class="toggle"><input type="checkbox" data-key="search_in_header" ${this._config.search_in_header?"checked":""}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">Put an <b>Arr Stack Search</b> card in the header of the pop-up this card is in (Bubble Card with its header hidden, or any header that takes cards) and the field moves there \u2014 the card is a field shorter. Until one is on the page, the field stays here.</div>
+          <div class="hint">For a card in a pop-up (Bubble Card with its header hidden, or any header that takes cards): put an <b>Arr Stack Search</b> card in that header and the field moves there. Until one is on the page, the field stays in the card.</div>
           ${this._config.search_in_header?`<div class="row">
-            <span class="row-label">Link</span>
-            <input type="text" data-text-key="search_link" value="${String(this._config.search_link||"").replace(/"/g,"&quot;")}" placeholder="optional" style="width:140px"/>
+            <span class="row-label">Link name</span>
+            <input type="text" data-text-key="search_link" value="${String(this._config.search_link||"").replace(/"/g,"&quot;")}" placeholder="optional"/>
           </div>
-          <div class="hint">Only with several of these cards on one page: give this card and its search card the same name.</div>`:""}
-          ${this._config.search_in_header?"":`<div class="row">
+          <div class="hint">Leave empty with one such card on the page. With two or more (say a Movies and a Kids pop-up, each with its own header), type any word here, e.g. <code>kids</code>, and the same word in <b>Link name</b> of the Arr Stack Search card in that pop-up. Without it, every header searches the first card.</div>`:`<div class="row">
             <span class="row-label">Header on a phone</span>
             <label class="toggle"><input type="checkbox" data-key="phone_header" ${this._config.phone_header?"checked":""}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">On a phone the search field becomes a header held at the top of the screen. A window opened from the card takes it over: its tabs and buttons go up into it, a back arrow closes it, and the window gets the height of its own header row. For a card not in a pop-up with an Arr Stack Search header.</div>`}
-          <div class="hint">Number of poster columns per category row, search results and More overlay. Default: 4.</div>
-          <div class="row">
-            <span class="row-label">Show More card on page</span>
-            <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg("discover","showMoreOnPage",3)}" min="1" max="50"/>
-          </div>
-          <div class="hint">Insert a "See More" card as the last slot on this page. Opens full-section overlay. Default: 3.</div>
-          ${this._caps?.trakt||this._caps?.suggestarr?`
-          <div class="section-title" style="margin-top:16px">Recommendations</div>
+          <div class="hint">Phone only. The search field becomes a header held at the top of the screen. A window opened from the card takes it over: its tabs and buttons go up into it and a back arrow closes it.</div>`}
+        </div></details>
+
+        ${this._caps?.trakt||this._caps?.suggestarr?`
+        <!-- Recommendations -->
+        <details class="st-group" data-st-group="rp.recs"${this._rpOpen.has("rp.recs")?" open":""}>
+          <summary>Recommendations</summary><div class="st-body">
           ${this._caps?.trakt?`
           <div class="row">
             <span class="row-label">Trakt</span>
@@ -431,63 +455,84 @@ ${EDITOR_CSS}
               <span class="toggle-slider"></span>
             </label>
           </div>`:""}
-          <div class="hint">What the Recommendations row draws on. With both on, the two are dealt out one after the other so neither fills the row. Music from Last.fm joins it whenever Lidarr is set up \u2014 the row's own filter is where it gets switched off.</div>`:""}
+          <div class="hint">What the Recommendations row draws on. With both on, they take turns so neither fills the row. Music from Last.fm joins in whenever Lidarr is set up; the row's own filter switches it off.</div>
+        </div></details>`:""}
+
+        <!-- Requests -->
+        <details class="st-group" data-st-group="rp.requests"${this._rpOpen.has("rp.requests")?" open":""}>
+          <summary>Requests</summary><div class="st-body">
           ${this._caps?.overseerr?`
-          <div class="section-title" style="margin-top:16px">Recently Requested</div>
           <div class="row">
-            <span class="row-label">Source</span>
-            <select data-group="discover" data-key="requestedSource" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <span class="row-label">Recently Requested shows</span>
+            <select data-group="discover" data-key="requestedSource">
               <option value="both" ${this._cfg("discover","requestedSource","both")==="both"?"selected":""}>Seerr + card</option>
               <option value="seerr" ${this._cfg("discover","requestedSource","both")==="seerr"?"selected":""}>Seerr only</option>
               <option value="library" ${this._cfg("discover","requestedSource","both")==="library"?"selected":""}>Library</option>
             </select>
           </div>
-          <div class="hint">Seerr + card adds what you requested through the card and anything downloading right now. Seerr only mirrors your Seerr request list exactly. Library is the old behaviour: every monitored title without a file, whatever put it there.</div>`:""}
-          <div class="section-title" style="margin-top:16px">One-click Request</div>
+          <div class="hint">Seerr + card: your Seerr requests, what you asked for through the card and anything downloading now. Seerr only: exactly your Seerr request list. Library: every monitored title without a file, whatever added it.</div>`:""}
           <div class="row">
-            <span class="row-label">Enabled</span>
+            <span class="row-label">One-click request</span>
             <label class="toggle">
-              <input type="checkbox" data-group="discover" data-key="oneClickRequest" ${this._cfg("discover","oneClickRequest",!1)||this._cfg("discover","oneClickMovieRequest",!1)?"checked":""}>
+              <input type="checkbox" data-group="discover" data-key="oneClickRequest" ${oneClick?"checked":""}>
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <div class="hint">Skip profile dialog for movies and TV shows.</div>
-          <div class="row">
-            <span class="row-label">Non-admin only</span>
-            <label class="toggle">
-              <input type="checkbox" data-group="discover" data-key="oneClickNonAdminOnly" ${this._cfg("discover","oneClickNonAdminOnly",!1)?"checked":""}>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="hint">Admin keeps the profile selection dialog, non-admin users get one-click.</div>
-          <div class="row">
-            <span class="row-label">Season mode</span>
-            <select data-group="discover" data-key="oneClickTvSeasonMode" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="first" ${this._cfg("discover","oneClickTvSeasonMode","first")==="first"?"selected":""}>First season</option>
-              <option value="latest" ${this._cfg("discover","oneClickTvSeasonMode","first")==="latest"?"selected":""}>Latest season</option>
-              <option value="all" ${this._cfg("discover","oneClickTvSeasonMode","first")==="all"?"selected":""}>All seasons</option>
-            </select>
-          </div>
-          <div class="hint">Which seasons to request when using one-click for shows.</div>
-          <div class="row">
-            <span class="row-label">Default movie profile</span>
-            <input type="text" data-group="discover" data-key="oneClickDefaultMovieProfile" value="${this._cfg("discover","oneClickDefaultMovieProfile","")}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
-          </div>
-          <div class="hint">Quality profile name from Radarr (Settings \u2192 Profiles \u2192 Name). Leave empty to use Radarr default.</div>
-          <div class="row">
-            <span class="row-label">Default show profile</span>
-            <input type="text" data-group="discover" data-key="oneClickDefaultShowProfile" value="${this._cfg("discover","oneClickDefaultShowProfile","")}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
-          </div>
-          <div class="hint">Quality profile name from Sonarr (Settings \u2192 Profiles \u2192 Name). Leave empty to use Sonarr default.</div>
-        </div>
+          <div class="hint">Requests a movie or show at once, without the profile dialog.</div>
+          ${oneClick?`
+          <div class="sub-group">
+            <div class="row">
+              <span class="row-label">Only for non-admins</span>
+              <label class="toggle">
+                <input type="checkbox" data-group="discover" data-key="oneClickNonAdminOnly" ${this._cfg("discover","oneClickNonAdminOnly",!1)?"checked":""}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="hint">Admins keep the dialog.</div>
+            <div class="row">
+              <span class="row-label">Seasons of a show</span>
+              <select data-group="discover" data-key="oneClickTvSeasonMode">
+                <option value="first" ${this._cfg("discover","oneClickTvSeasonMode","first")==="first"?"selected":""}>First season</option>
+                <option value="latest" ${this._cfg("discover","oneClickTvSeasonMode","first")==="latest"?"selected":""}>Latest season</option>
+                <option value="all" ${this._cfg("discover","oneClickTvSeasonMode","first")==="all"?"selected":""}>All seasons</option>
+              </select>
+            </div>
+            <div class="row">
+              <span class="row-label">Movie profile</span>
+              <input type="text" data-group="discover" data-key="oneClickDefaultMovieProfile" value="${this._cfg("discover","oneClickDefaultMovieProfile","")}" placeholder="e.g. HD-1080p"/>
+            </div>
+            <div class="row">
+              <span class="row-label">Show profile</span>
+              <input type="text" data-group="discover" data-key="oneClickDefaultShowProfile" value="${this._cfg("discover","oneClickDefaultShowProfile","")}" placeholder="e.g. HD-1080p"/>
+            </div>
+            <div class="hint">A quality profile's name as Radarr and Sonarr show it (Settings \u2192 Profiles). Empty uses their default.</div>
+          </div>`:""}
+        </div></details>
 
         <!-- Posters -->
-        <div class="section">
-          <div class="section-title">Posters</div>
+        <details class="st-group" data-st-group="rp.posters"${this._rpOpen.has("rp.posters")?" open":""}>
+          <summary>Posters</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Show title</span>
             <label class="toggle"><input type="checkbox" data-group="posters" data-key="showTitle" ${this._cfg("posters","showTitle",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
           </div>
+          <div class="row">
+            <span class="row-label">Show media type tag</span>
+            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showMediaType" ${this._cfg("posters","showMediaType",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="hint">A Movie or TV label in the top-left corner.</div>
+          <div class="row">
+            <span class="row-label">Show rating</span>
+            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showRating" ${this._cfg("posters","showRating",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="row">
+            <span class="row-label">Rating provider</span>
+            <select data-group="posters" data-key="ratingProvider">
+              <option value="imdb" ${this._cfg("posters","ratingProvider",this._cfg("discover","ratingProvider","imdb"))==="imdb"?"selected":""}>IMDb</option>
+              <option value="tmdb" ${this._cfg("posters","ratingProvider",this._cfg("discover","ratingProvider","imdb"))==="tmdb"?"selected":""}>TMDB</option>
+            </select>
+          </div>
+          <div class="hint">A title IMDb has no score for shows TMDB's, then TheTVDB's.</div>
           <div class="row">
             <span class="row-label">Show audio languages</span>
             <label class="toggle"><input type="checkbox" data-group="posters" data-key="showAudio" ${this._cfg("posters","showAudio",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
@@ -497,40 +542,13 @@ ${EDITOR_CSS}
             <label class="toggle"><input type="checkbox" data-group="posters" data-key="showSubtitles" ${this._cfg("posters","showSubtitles",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
           </div>
           <div class="row">
-            <span class="row-label">Show rating</span>
-            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showRating" ${this._cfg("posters","showRating",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
-          </div>
-          <div class="row">
-            <span class="row-label">Show media type tag</span>
-            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showMediaType" ${this._cfg("posters","showMediaType",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
-          </div>
-          <div class="hint">Show a Movie or TV label in the top-left corner of each poster.</div>
-          <div class="row">
             <span class="row-label">Language display</span>
-            <select data-group="posters" data-key="langDisplay" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <select data-group="posters" data-key="langDisplay">
               <option value="flags" ${this._cfg("posters","langDisplay","flags")==="flags"?"selected":""}>Combined \u2014 flags</option>
               <option value="tags" ${this._cfg("posters","langDisplay","flags")==="tags"?"selected":""}>Separate tags</option>
             </select>
           </div>
-          <div class="hint">Combined puts subtitle flags, the rating and audio flags in one strip. Separate keeps the original rating, audio and subtitle tags. The two toggles above switch the left and right flags off in either mode.</div>
-          ${this._caps===null||this._caps?.maintainerr?`
-          <div class="row">
-            <span class="row-label">Show deletion tag</span>
-            <select data-group="posters" data-key="goneTag" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="all" ${this._cfg("posters","goneTag","all")==="all"?"selected":""}>All categories</option>
-              <option value="maintainerr" ${this._cfg("posters","goneTag","all")==="maintainerr"?"selected":""}>Maintainerr only</option>
-              <option value="off" ${this._cfg("posters","goneTag","all")==="off"?"selected":""}>Never</option>
-            </select>
-          </div>
-          <div class="hint">Marks titles Maintainerr has queued for deletion with a "Gone in\u2026" tag.</div>`:""}
-          <div class="row">
-            <span class="row-label">Rating provider</span>
-            <select data-group="posters" data-key="ratingProvider" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="imdb" ${this._cfg("posters","ratingProvider",this._cfg("discover","ratingProvider","imdb"))==="imdb"?"selected":""}>IMDb</option>
-              <option value="tmdb" ${this._cfg("posters","ratingProvider",this._cfg("discover","ratingProvider","imdb"))==="tmdb"?"selected":""}>TMDB</option>
-            </select>
-          </div>
-          <div class="hint">Falls back to TMDB \u2192 TheTVDB if IMDb score is unavailable.</div>
+          <div class="hint">Combined puts subtitle flags (left), the rating and audio flags (right) in one strip. Separate keeps rating, audio and subtitles as tags of their own. The two switches above hide audio or subtitles in either mode.</div>
           <div class="row">
             <span class="row-label">Status display</span>
             <select data-group="posters" data-key="statusDisplay">
@@ -539,22 +557,32 @@ ${EDITOR_CSS}
               <option value="both" ${this._cfg("posters","statusDisplay","tags")==="both"?"selected":""}>Both</option>
             </select>
           </div>
-          <div class="hint">Tags show status badges on posters. Stripes show a coloured bar at the bottom with download progress. Both combines them.</div>
-        </div>
+          <div class="hint">Tags are status badges on the poster. Stripes are a coloured bar along its bottom with the download progress.</div>
+          ${this._caps===null||this._caps?.maintainerr?`
+          <div class="row">
+            <span class="row-label">Deletion tag</span>
+            <select data-group="posters" data-key="goneTag">
+              <option value="all" ${this._cfg("posters","goneTag","all")==="all"?"selected":""}>All categories</option>
+              <option value="maintainerr" ${this._cfg("posters","goneTag","all")==="maintainerr"?"selected":""}>Maintainerr only</option>
+              <option value="off" ${this._cfg("posters","goneTag","all")==="off"?"selected":""}>Never</option>
+            </select>
+          </div>
+          <div class="hint">A "Gone in\u2026" tag on titles Maintainerr has queued for deletion.</div>`:""}
+        </div></details>
 
         <!-- Now Playing -->
-        <div class="section">
-          <div class="section-title">Now Playing</div>
+        <details class="st-group" data-st-group="rp.streams"${this._rpOpen.has("rp.streams")?" open":""}>
+          <summary>Now Playing</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Show playback details</span>
             <label class="toggle"><input type="checkbox" data-group="streams" data-key="showTechInfo" ${this._cfg("streams","showTechInfo",!1)?"checked":""}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">Adds a line to each stream: the source, Direct Play / Direct Stream / Transcode, what reaches the player, and the bitrate \u2014 e.g. 1080p \u203A Transcode \u203A 720p \xB7 4.0 Mbps. Plex, Jellyfin and Emby only.</div>
-        </div>
+          <div class="hint">Adds a line to each stream: the source, Direct Play / Direct Stream / Transcode, what reaches the player and the bitrate, e.g. 1080p \u203A Transcode \u203A 720p \xB7 4.0 Mbps. Plex, Jellyfin and Emby only.</div>
+        </div></details>
 
         <!-- Categories -->
-        <div class="section">
-          <div class="section-title">Categories</div>
+        <details class="st-group" data-st-group="rp.categories"${this._rpOpen.has("rp.categories")?" open":""}>
+          <summary>Categories</summary><div class="st-body">
           <div class="hint" style="margin-bottom:8px">Drag to reorder \xB7 toggle to show/hide.</div>
           <div class="cat-list">
             ${this._getCats().filter(c=>!(!this._hass?.user?.is_admin&&["tautulli","jellystat","tracearr","activity","prowlarr","maintainerr"].includes(c.id)||c.id==="prowlarr"&&this._caps!==null&&!this._caps?.prowlarr||c.id==="tracearr"&&this._caps!==null&&!this._caps?.tracearr||c.id==="maintainerr"&&this._caps!==null&&!this._caps?.maintainerr)).map(c=>`
@@ -568,7 +596,7 @@ ${EDITOR_CSS}
               </div>
             `).join("")}
           </div>
-        </div>
+        </div></details>
       </div>
 
       <!-- \u2550\u2550\u2550 TAB: Users \u2550\u2550\u2550 -->
@@ -632,7 +660,7 @@ ${EDITOR_CSS}
           <div class="hint">Width of the downloads panel as a percentage of the card. Default is 40 %. Has no effect when the downloads panel is hidden or on mobile.</div>
 `)}
       </div>
-    `,this._wireEvents(),wireStylesTab(this,this.shadowRoot.querySelector('[data-tab-content="appearance"]'));let tabs=this.shadowRoot.querySelector(".tabs");tabs&&(tabs.scrollLeft=this._tabsScroll||0,tabs.addEventListener("scroll",()=>{this._tabsScroll=tabs.scrollLeft},{passive:!0})),this._wireUserMap(),this._activeTab==="users"&&!this._haUsers&&this._loadUserMapData()}_defaultCats(){return[{id:"recentlyAdded",enabled:!0},{id:"recentlyRequested",enabled:!0},{id:"upcoming",enabled:!0},{id:"tvUpcoming",enabled:!0},{id:"trending",enabled:!0},{id:"popular",enabled:!0},{id:"recommendations",enabled:!1},{id:"calendar",enabled:!0},{id:"streams",enabled:!1},{id:"tautulli",enabled:!1},{id:"jellystat",enabled:!1},{id:"tracearr",enabled:!1},{id:"activity",enabled:!1},{id:"prowlarr",enabled:!1},{id:"maintainerr",enabled:!1},{id:"library",enabled:!0}]}_mergeRecCats(cats){let REC=["trakt","suggestarr","lastfm"];if(!cats.some(c=>REC.includes(c.id)))return cats;if(cats.some(c=>c.id==="recommendations"))return cats.filter(c=>!REC.includes(c.id));let slot=cats.findIndex(c=>c.id==="trakt")>=0?cats.findIndex(c=>c.id==="trakt"):cats.findIndex(c=>REC.includes(c.id)),enabled=cats.some(c=>REC.includes(c.id)&&c.enabled!==!1),out=cats.filter(c=>!REC.includes(c.id));return out.splice(Math.min(slot,out.length),0,{id:"recommendations",enabled}),out}_getCats(){if(!this._config?.categories)return this._defaultCats();let saved=this._mergeRecCats(this._config.categories.filter(c=>c.id!=="music")),savedIds=new Set(saved.map(c=>c.id)),missing=this._defaultCats().filter(c=>!savedIds.has(c.id));return[...saved,...missing]}_catLabel(id){return{radarr:"Recently Added",sonarr:"Recently Requested",recentlyAdded:"Recently Added",recentlyRequested:"Recently Requested",music:"Recently Added Music (Lidarr)",upcoming:"Upcoming Movies",tvUpcoming:"New Shows",trending:"Trending",popular:"Popular Movies",recommendations:"Recommendations (Trakt / SuggestArr / Last.fm)",calendar:"Calendar",streams:"Now Playing (Plex / Jellyfin / Kodi / Emby) \u2014 auto-hidden when nothing plays",tautulli:"Statistics (Plex)",jellystat:"Statistics (Jellyfin)",tracearr:"Streaming Statistics (Tracearr)",activity:"Activity (Queue / History / Blocklist)",prowlarr:"Prowlarr (Indexers / Stats / History)",maintainerr:"Maintainerr (Rules / Collections / Storage)",library:"Library (Movies & TV Shows)"}[id]||id}_defaultClients(){return[{id:"qbit",enabled:!0},{id:"deluge",enabled:!0},{id:"rtorrent",enabled:!0},{id:"transmission",enabled:!0},{id:"sab",enabled:!0},{id:"nzbget",enabled:!0}]}_getClients(){let saved=this._config?.downloadClients;if(!Array.isArray(saved))return this._defaultClients();let savedIds=new Set(saved.map(c=>c.id)),missing=this._defaultClients().filter(c=>!savedIds.has(c.id));return[...saved,...missing]}_clientLabel(id){return{qbit:"qBittorrent",sab:"SABnzbd",nzbget:"NZBGet",deluge:"Deluge",rtorrent:"rTorrent",transmission:"Transmission"}[id]||id}_numberRow(label,key,defaultVal,min,max,step,hint){let stored=this._styleVal(key,null),val=stored??defaultVal;return`
+    `,this._wireEvents(),wireStylesTab(this,this.shadowRoot.querySelector('[data-tab-content="appearance"]')),this.shadowRoot.querySelectorAll('[data-tab-content="left"] details[data-st-group], [data-tab-content="right"] details[data-st-group]').forEach(d=>d.addEventListener("toggle",()=>{d.open?this._rpOpen.add(d.dataset.stGroup):this._rpOpen.delete(d.dataset.stGroup)}));let tabs=this.shadowRoot.querySelector(".tabs");tabs&&(tabs.scrollLeft=this._tabsScroll||0,tabs.addEventListener("scroll",()=>{this._tabsScroll=tabs.scrollLeft},{passive:!0})),this._wireUserMap(),this._activeTab==="users"&&!this._haUsers&&this._loadUserMapData()}_defaultCats(){return[{id:"recentlyAdded",enabled:!0},{id:"recentlyRequested",enabled:!0},{id:"upcoming",enabled:!0},{id:"tvUpcoming",enabled:!0},{id:"trending",enabled:!0},{id:"popular",enabled:!0},{id:"recommendations",enabled:!1},{id:"calendar",enabled:!0},{id:"streams",enabled:!1},{id:"tautulli",enabled:!1},{id:"jellystat",enabled:!1},{id:"tracearr",enabled:!1},{id:"activity",enabled:!1},{id:"prowlarr",enabled:!1},{id:"maintainerr",enabled:!1},{id:"library",enabled:!0}]}_mergeRecCats(cats){let REC=["trakt","suggestarr","lastfm"];if(!cats.some(c=>REC.includes(c.id)))return cats;if(cats.some(c=>c.id==="recommendations"))return cats.filter(c=>!REC.includes(c.id));let slot=cats.findIndex(c=>c.id==="trakt")>=0?cats.findIndex(c=>c.id==="trakt"):cats.findIndex(c=>REC.includes(c.id)),enabled=cats.some(c=>REC.includes(c.id)&&c.enabled!==!1),out=cats.filter(c=>!REC.includes(c.id));return out.splice(Math.min(slot,out.length),0,{id:"recommendations",enabled}),out}_getCats(){if(!this._config?.categories)return this._defaultCats();let saved=this._mergeRecCats(this._config.categories.filter(c=>c.id!=="music")),savedIds=new Set(saved.map(c=>c.id)),missing=this._defaultCats().filter(c=>!savedIds.has(c.id));return[...saved,...missing]}_catLabel(id){return{radarr:"Recently Added",sonarr:"Recently Requested",recentlyAdded:"Recently Added",recentlyRequested:"Recently Requested",music:"Recently Added Music (Lidarr)",upcoming:"Upcoming Movies",tvUpcoming:"New Shows",trending:"Trending",popular:"Popular Movies",recommendations:"Recommendations (Trakt / SuggestArr / Last.fm)",calendar:"Calendar",streams:"Now Playing (Plex / Jellyfin / Kodi / Emby) \u2014 auto-hidden when nothing plays",tautulli:"Statistics (Plex)",jellystat:"Statistics (Jellyfin)",tracearr:"Streaming Statistics (Tracearr)",activity:"Activity (Queue / History / Blocklist)",prowlarr:"Prowlarr (Indexers / Stats / History)",maintainerr:"Maintainerr (Rules / Collections / Storage)",library:"Library (Movies & TV Shows)"}[id]||id}_defaultClients(){return[{id:"qbit",enabled:!0},{id:"deluge",enabled:!0},{id:"rtorrent",enabled:!0},{id:"transmission",enabled:!0},{id:"sab",enabled:!0},{id:"nzbget",enabled:!0}]}_getClients(){let saved=this._config?.downloadClients;if(!Array.isArray(saved))return this._defaultClients();let savedIds=new Set(saved.map(c=>c.id)),missing=this._defaultClients().filter(c=>!savedIds.has(c.id));return[...saved,...missing]}_clientLabel(id){return{qbit:"qBittorrent",sab:"SABnzbd",nzbget:"NZBGet",deluge:"Deluge",rtorrent:"rTorrent",transmission:"Transmission"}[id]||id}_numberRow(label,key,defaultVal,min,max,step,hint){let stored=this._styleVal(key,null),val=stored??defaultVal;return`
       <div class="row">
         <span class="row-label">${label}</span>
         ${hint?`<span class="color-alpha">${hint}</span>`:""}
@@ -648,7 +676,7 @@ ${EDITOR_CSS}
         <span class="row-label">${label}</span>
         ${alphaHint?`<span class="color-alpha">${alphaHint}</span>`:""}
         <input type="color" data-style-key="${key}" value="${hex}"/>
-      </div>`}_wireEvents(){this.shadowRoot.querySelectorAll(".tab").forEach(btn=>{btn.addEventListener("click",()=>{this._activeTab=btn.dataset.tab;let strip=btn.parentElement,left=btn.offsetLeft-(strip.clientWidth-btn.offsetWidth)/2;strip.scrollTo?.({left:Math.max(0,left),behavior:"smooth"}),this.shadowRoot.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===this._activeTab)),this.shadowRoot.querySelectorAll(".tab-content").forEach(c=>c.classList.toggle("active",c.dataset.tabContent===this._activeTab)),this._activeTab==="users"&&this._loadUserMapData()})}),this.shadowRoot.querySelectorAll("select[data-key]:not([data-group])").forEach(el=>{el.addEventListener("change",()=>this._update({[el.dataset.key]:el.value}))}),this.shadowRoot.querySelectorAll('input[type="number"][data-key]').forEach(el=>{el.addEventListener("change",()=>this._update({[el.dataset.key]:parseInt(el.value)}))}),this.shadowRoot.querySelectorAll('input[type="number"][data-group]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:parseInt(el.value)}})})}),this.shadowRoot.querySelectorAll('input[type="text"][data-group]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:el.value}})})}),this.shadowRoot.querySelectorAll('input[type="checkbox"][data-key]').forEach(el=>{el.addEventListener("change",()=>this._update({[el.dataset.key]:el.checked}))}),this.shadowRoot.querySelector('input[data-key="search_in_header"]')?.addEventListener("change",()=>this._render()),this.shadowRoot.querySelectorAll('input[type="text"][data-text-key]').forEach(el=>{el.addEventListener("change",()=>{let v=el.value.trim(),next={...this._config};v?next[el.dataset.textKey]=v:delete next[el.dataset.textKey],this._config=next,this._update({})})}),this.shadowRoot.querySelectorAll('input[type="checkbox"][data-group]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:el.checked}})})}),this.shadowRoot.querySelectorAll("select[data-group]").forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:el.value}})})}),this.shadowRoot.querySelectorAll("select[data-style-key]").forEach(el=>{el.addEventListener("change",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:el.value}})})}),this.shadowRoot.querySelectorAll('input[type="checkbox"][data-style-key]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:el.checked}}),this._render()})}),this.shadowRoot.querySelectorAll('input[type="number"][data-style-key]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:parseFloat(el.value)}})})}),this.shadowRoot.querySelectorAll('input[type="range"][data-style-key]').forEach(el=>{let key=el.dataset.styleKey,unit=el.dataset.unit||"",label=this.shadowRoot.querySelector(`[data-val-for="${key}"]`);el.addEventListener("pointerdown",e=>e.stopPropagation()),el.addEventListener("mousedown",e=>e.stopPropagation()),el.addEventListener("input",()=>{label&&(label.textContent=el.value+unit);let existing=this._config.styles||{};this._update({styles:{...existing,[key]:parseFloat(el.value)}})})}),this.shadowRoot.querySelectorAll('input[type="color"][data-style-key]').forEach(el=>{el.addEventListener("input",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:el.value}})})}),this.shadowRoot.querySelectorAll("input[data-client-toggle]").forEach(el=>{el.addEventListener("change",()=>{let clients=this._getClients().map(c=>c.id===el.dataset.clientToggle?{...c,enabled:el.checked}:c);this._update({downloadClients:clients})})});let dragClientId=null;this.shadowRoot.querySelectorAll("[data-client-id]").forEach(el=>{el.addEventListener("dragstart",e=>{dragClientId=el.dataset.clientId,el.classList.add("dragging"),e.dataTransfer.effectAllowed="move"}),el.addEventListener("dragend",()=>{el.classList.remove("dragging"),dragClientId=null}),el.addEventListener("dragover",e=>{e.preventDefault(),e.dataTransfer.dropEffect="move",el.classList.add("drag-over")}),el.addEventListener("dragleave",()=>el.classList.remove("drag-over")),el.addEventListener("drop",e=>{e.preventDefault(),el.classList.remove("drag-over");let toId=el.dataset.clientId;if(!dragClientId||dragClientId===toId)return;let clients=[...this._getClients()],from=clients.findIndex(c=>c.id===dragClientId),to=clients.findIndex(c=>c.id===toId);if(from<0||to<0)return;let[item]=clients.splice(from,1);clients.splice(to,0,item),this._update({downloadClients:clients}),this._render()})}),this.shadowRoot.querySelectorAll("input[data-cat-toggle]").forEach(el=>{el.addEventListener("change",()=>{let cats=this._getCats().map(c=>c.id===el.dataset.catToggle?{...c,enabled:el.checked}:c);this._update({categories:cats})})});let dragId=null;this.shadowRoot.querySelectorAll(".cat-item").forEach(el=>{el.addEventListener("dragstart",e=>{dragId=el.dataset.catId,el.classList.add("dragging"),e.dataTransfer.effectAllowed="move"}),el.addEventListener("dragend",()=>{el.classList.remove("dragging"),dragId=null}),el.addEventListener("dragover",e=>{e.preventDefault(),e.dataTransfer.dropEffect="move",el.classList.add("drag-over")}),el.addEventListener("dragleave",()=>el.classList.remove("drag-over")),el.addEventListener("drop",e=>{e.preventDefault(),el.classList.remove("drag-over");let toId=el.dataset.catId;if(!dragId||dragId===toId)return;let cats=[...this._getCats()],from=cats.findIndex(c=>c.id===dragId),to=cats.findIndex(c=>c.id===toId);if(from<0||to<0)return;let[item]=cats.splice(from,1);cats.splice(to,0,item),this._update({categories:cats}),this._render()})})}_renderUserMapRows(){let map=this._config.seerr_user_map||[{ha:"all_non_admin",seerr:"family"}],haUsers=this._haUsers||[],seerrAccounts=this._seerrAccounts||[],usedHaIds=new Set(map.filter(m=>m.ha!=="all_non_admin").map(m=>m.ha));return map.map((m,i)=>{let isDefault=m.ha==="all_non_admin",haOptions=isDefault?'<option value="all_non_admin" selected>All non-admin users</option>':haUsers.filter(u=>!u.is_admin&&(u.id===m.ha||!usedHaIds.has(u.id)||m.ha===u.id)).map(u=>`<option value="${u.id}" ${u.id===m.ha?"selected":""}>${u.name||u.id}</option>`).join(""),seerrOptions=seerrAccounts.map(a=>`<option value="${a.id}" ${a.id===m.seerr?"selected":""}>${a.id==="family"?"Family":"Guest"} (${a.email})</option>`).join("");return`
+      </div>`}_wireEvents(){this.shadowRoot.querySelectorAll(".tab").forEach(btn=>{btn.addEventListener("click",()=>{this._activeTab=btn.dataset.tab;let strip=btn.parentElement,left=btn.offsetLeft-(strip.clientWidth-btn.offsetWidth)/2;strip.scrollTo?.({left:Math.max(0,left),behavior:"smooth"}),this.shadowRoot.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===this._activeTab)),this.shadowRoot.querySelectorAll(".tab-content").forEach(c=>c.classList.toggle("active",c.dataset.tabContent===this._activeTab)),this._activeTab==="users"&&this._loadUserMapData()})}),this.shadowRoot.querySelectorAll("select[data-key]:not([data-group])").forEach(el=>{el.addEventListener("change",()=>this._update({[el.dataset.key]:el.value}))}),this.shadowRoot.querySelectorAll('input[type="number"][data-key]').forEach(el=>{el.addEventListener("change",()=>this._update({[el.dataset.key]:parseInt(el.value)}))}),this.shadowRoot.querySelectorAll('input[type="number"][data-group]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:parseInt(el.value)}})})}),this.shadowRoot.querySelectorAll('input[type="text"][data-group]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:el.value}})})}),this.shadowRoot.querySelectorAll('input[type="checkbox"][data-key]').forEach(el=>{el.addEventListener("change",()=>this._update({[el.dataset.key]:el.checked}))}),this.shadowRoot.querySelector('input[data-key="search_in_header"]')?.addEventListener("change",()=>this._render()),this.shadowRoot.querySelector('input[data-key="oneClickRequest"]')?.addEventListener("change",()=>queueMicrotask(()=>this._render())),this.shadowRoot.querySelectorAll('input[type="text"][data-text-key]').forEach(el=>{el.addEventListener("change",()=>{let v=el.value.trim(),next={...this._config};v?next[el.dataset.textKey]=v:delete next[el.dataset.textKey],this._config=next,this._update({})})}),this.shadowRoot.querySelectorAll('input[type="checkbox"][data-group]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:el.checked}})})}),this.shadowRoot.querySelectorAll("select[data-group]").forEach(el=>{el.addEventListener("change",()=>{let existing=this._config[el.dataset.group]||{};this._update({[el.dataset.group]:{...existing,[el.dataset.key]:el.value}})})}),this.shadowRoot.querySelectorAll("select[data-style-key]").forEach(el=>{el.addEventListener("change",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:el.value}})})}),this.shadowRoot.querySelectorAll('input[type="checkbox"][data-style-key]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:el.checked}}),this._render()})}),this.shadowRoot.querySelectorAll('input[type="number"][data-style-key]').forEach(el=>{el.addEventListener("change",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:parseFloat(el.value)}})})}),this.shadowRoot.querySelectorAll('input[type="range"][data-style-key]').forEach(el=>{let key=el.dataset.styleKey,unit=el.dataset.unit||"",label=this.shadowRoot.querySelector(`[data-val-for="${key}"]`);el.addEventListener("pointerdown",e=>e.stopPropagation()),el.addEventListener("mousedown",e=>e.stopPropagation()),el.addEventListener("input",()=>{label&&(label.textContent=el.value+unit);let existing=this._config.styles||{};this._update({styles:{...existing,[key]:parseFloat(el.value)}})})}),this.shadowRoot.querySelectorAll('input[type="color"][data-style-key]').forEach(el=>{el.addEventListener("input",()=>{let existing=this._config.styles||{};this._update({styles:{...existing,[el.dataset.styleKey]:el.value}})})}),this.shadowRoot.querySelectorAll("input[data-client-toggle]").forEach(el=>{el.addEventListener("change",()=>{let clients=this._getClients().map(c=>c.id===el.dataset.clientToggle?{...c,enabled:el.checked}:c);this._update({downloadClients:clients})})});let dragClientId=null;this.shadowRoot.querySelectorAll("[data-client-id]").forEach(el=>{el.addEventListener("dragstart",e=>{dragClientId=el.dataset.clientId,el.classList.add("dragging"),e.dataTransfer.effectAllowed="move"}),el.addEventListener("dragend",()=>{el.classList.remove("dragging"),dragClientId=null}),el.addEventListener("dragover",e=>{e.preventDefault(),e.dataTransfer.dropEffect="move",el.classList.add("drag-over")}),el.addEventListener("dragleave",()=>el.classList.remove("drag-over")),el.addEventListener("drop",e=>{e.preventDefault(),el.classList.remove("drag-over");let toId=el.dataset.clientId;if(!dragClientId||dragClientId===toId)return;let clients=[...this._getClients()],from=clients.findIndex(c=>c.id===dragClientId),to=clients.findIndex(c=>c.id===toId);if(from<0||to<0)return;let[item]=clients.splice(from,1);clients.splice(to,0,item),this._update({downloadClients:clients}),this._render()})}),this.shadowRoot.querySelectorAll("input[data-cat-toggle]").forEach(el=>{el.addEventListener("change",()=>{let cats=this._getCats().map(c=>c.id===el.dataset.catToggle?{...c,enabled:el.checked}:c);this._update({categories:cats})})});let dragId=null;this.shadowRoot.querySelectorAll(".cat-item").forEach(el=>{el.addEventListener("dragstart",e=>{dragId=el.dataset.catId,el.classList.add("dragging"),e.dataTransfer.effectAllowed="move"}),el.addEventListener("dragend",()=>{el.classList.remove("dragging"),dragId=null}),el.addEventListener("dragover",e=>{e.preventDefault(),e.dataTransfer.dropEffect="move",el.classList.add("drag-over")}),el.addEventListener("dragleave",()=>el.classList.remove("drag-over")),el.addEventListener("drop",e=>{e.preventDefault(),el.classList.remove("drag-over");let toId=el.dataset.catId;if(!dragId||dragId===toId)return;let cats=[...this._getCats()],from=cats.findIndex(c=>c.id===dragId),to=cats.findIndex(c=>c.id===toId);if(from<0||to<0)return;let[item]=cats.splice(from,1);cats.splice(to,0,item),this._update({categories:cats}),this._render()})})}_renderUserMapRows(){let map=this._config.seerr_user_map||[{ha:"all_non_admin",seerr:"family"}],haUsers=this._haUsers||[],seerrAccounts=this._seerrAccounts||[],usedHaIds=new Set(map.filter(m=>m.ha!=="all_non_admin").map(m=>m.ha));return map.map((m,i)=>{let isDefault=m.ha==="all_non_admin",haOptions=isDefault?'<option value="all_non_admin" selected>All non-admin users</option>':haUsers.filter(u=>!u.is_admin&&(u.id===m.ha||!usedHaIds.has(u.id)||m.ha===u.id)).map(u=>`<option value="${u.id}" ${u.id===m.ha?"selected":""}>${u.name||u.id}</option>`).join(""),seerrOptions=seerrAccounts.map(a=>`<option value="${a.id}" ${a.id===m.seerr?"selected":""}>${a.id==="family"?"Family":"Guest"} (${a.email})</option>`).join("");return`
         <div class="row" data-map-idx="${i}">
           <select data-map-ha="${i}" style="flex:1;min-width:0;padding:6px 8px;border-radius:6px;font-size:12px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color)"${isDefault?" disabled":""}>
             ${haOptions}
@@ -667,8 +695,8 @@ ${EDITOR_CSS}
         ${c.header?text("icon","Icon","mdi:movie-play-outline")+toggle("close","Close button",c.close!==!1)+'<div class="hint">Closes the pop-up, as its own header did.</div>':""}
         ${toggle("bare","No background",c.background==="none")}
         <div class="hint">For a header that draws its own surface: only the field and buttons are left.</div>
-        ${text("link","Link","optional")}
-        <div class="hint">Searches for the Arr Stack Card that has <b>Search in a pop-up header</b> on. Only with several of those on one page: give the card the same Link.</div>
+        ${text("link","Link name","optional")}
+        <div class="hint">Searches for the Arr Stack Card on the page that has <b>Search in a pop-up header</b> on. Leave empty with one such card. With two or more, type the same word here and in that card's <b>Link name</b> (Right Panel \u2192 Search), e.g. <code>kids</code>.</div>
       </div>`;this.shadowRoot.innerHTML=`
       <style>
 ${EDITOR_CSS}

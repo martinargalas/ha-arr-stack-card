@@ -464,7 +464,8 @@ class _LayoutMethods {
     // A tablet's shelves and list are held to the pages' height from their
     // first paint: until their own pages are measured they would show every
     // tile at once
-    const hold = this._flowFits && this._rightMaxH ? this._rightMaxH + 'px' : '';
+    // never shorter than the downloads beside it, as pages are not
+    const hold = this._flowFits && this._rightMaxH ? Math.max(this._rightMaxH, this._leftNaturalH()) + 'px' : '';
     right.style.maxHeight = hold;
     right.classList.toggle('flow-held', !!hold);
     if (hold) right.style.minHeight = hold;
@@ -711,7 +712,8 @@ class _LayoutMethods {
   // pages that keep to it — each a run of tiles or shelves, a list's broken
   // where a row of tiles ends.
   _measureFlowPages(right) {
-    const key = this._rightMaxHKey() + '|' + this._mobLayout + '|' + this._cfgGet('discover', 'categoriesCount', 3);
+    const leftH = this._leftNaturalH();
+    const key = this._rightMaxHKey() + '|' + this._mobLayout + '|' + this._cfgGet('discover', 'categoriesCount', 3) + '|' + Math.round(leftH / 8);
     if (this._rightMaxHFor === key && this._rightMaxHCfg === this._config) {
       right.style.minHeight = this._rightMaxH + 'px';
       return;
@@ -759,6 +761,9 @@ class _LayoutMethods {
     }
     maxH = 0;
     eachPage(() => { maxH = Math.max(maxH, probe.scrollHeight); });
+    // Beside the downloads the column is as tall as they are, when they are
+    // the taller: a list's pages fill that height rather than end above it
+    maxH = Math.max(maxH, leftH);
     this._measuringPages = false;
     probe.style.removeProperty('--sec-wrap-h');
     // Everything at once, with a pager under it, to see where each part ends
@@ -834,6 +839,22 @@ class _LayoutMethods {
   // categories with no data yet, it came out several times too tall and held
   // both columns there: last time's at this width until everything is in, or
   // nothing held. Measured with everything in, it is kept for the next load.
+  // How tall the downloads column is of itself, beside the media column:
+  // the row stretches its box to the taller column, which may be the media
+  // column held to last time's height, so it is let go of the stretch for the
+  // measurement. 0 when the columns stack or only one is shown.
+  _leftNaturalH() {
+    if (maxWidth(BP.STACKED)) return 0;
+    const left = this.shadowRoot?.getElementById('col-left');
+    const right = this.shadowRoot?.getElementById('col-right');
+    if (!left || !right || !left.offsetParent || left.parentElement !== right.parentElement) return 0;
+    const was = left.style.alignSelf;
+    left.style.alignSelf = 'flex-start';
+    const h = left.offsetHeight;
+    left.style.alignSelf = was;
+    return h;
+  }
+
   _colLockH(right, maxH) {
     const what = `col_${this._mobLayout}`;
     if (this._heightsLoading) return this._secKept(right.clientWidth)[what] || 0;
@@ -945,7 +966,7 @@ class _LayoutMethods {
       this._syncScrollLock(); this._backSync(); this._hdrTakeSync(); this._liquidHeroMaybe();
       // A window opening on a phone looks for a bar along the screen's bottom
       // (Bubble Card's buttons) to end above it
-      const n = this.shadowRoot.querySelectorAll('.popup-overlay').length;
+      const n = this.shadowRoot.querySelectorAll('.popup-overlay, .to-sheet').length;
       if (n > (this._overlayCount || 0) && this._isMob) this._syncBottomBar(true);
       this._overlayCount = n;
     });

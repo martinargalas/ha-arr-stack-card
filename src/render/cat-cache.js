@@ -176,13 +176,17 @@ _catDone() {
   this._loadLogPrint();
 }
 
-// ── What the first load spent its time on ─────────────────────────────────
-// One collapsed line in the browser's console per page load: how long until
-// the first category stood on the screen, until everything did, and each
-// service's answer, slowest first. For telling which one holds a phone up.
+// ── What the first load spent its time on (debug, off unless asked for) ───
+// localStorage.setItem('arr-debug-load', '1') and reload: one collapsed line
+// in the browser's console per page load — how long until the first category
+// stood on the screen, until everything did, and each service's answer,
+// slowest first. For telling which one holds a phone up.
 
 _loadLogStart() {
   if (this._loadLog) return;
+  let on = false;
+  try { on = localStorage.getItem('arr-debug-load') === '1'; } catch { /* storage off */ }
+  if (!on) return;
   const at = typeof performance !== 'undefined' ? performance.now() : Date.now();
   this._loadLog = { at, calls: new Map(), done: false };
 }

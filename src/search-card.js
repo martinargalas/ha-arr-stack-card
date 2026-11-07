@@ -122,16 +122,16 @@ const BAR_CSS = `
   .ash-take :is(.is-open-btn, .remove-lib-btn) :is(svg, span) { flex: none; display: block; }
   .ash-take :is(.is-open-btn, .remove-lib-btn) .pp-lbl { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
   /* The three share the row evenly, each named; where the names do not fit
-     (a narrow phone: _fitTake) the open one keeps its name and the others
-     are their icon and the arrow of their menu */
+     (a small phone: _fitTake) each is its icon and the arrow of its menu,
+     the open one too, in the accent */
   .ash-take > .sh-side > :is(.is-btn-row, .is-open-btn, .remove-lib-btn) { flex: 1 1 0; min-width: 0; }
   .ash-take > .sh-side > .is-btn-row > :is(.is-open-btn, .remove-lib-btn) { flex: 1 1 auto; }
   /* Their width is their share alone: a padding of their own came on top of
      a button standing in the row, and Remove grew wider than the other two */
   .ash-take :is(.is-open-btn, .remove-lib-btn) { justify-content: center; padding: 0 !important; box-sizing: border-box; }
-  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn):not(.active) { padding: 0 12px; }
-  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn):not(.active) .pp-lbl { font-size: 0; gap: 0; }
-  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn):not(.active) .pp-lbl svg { margin-left: 4px; }
+  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn) { padding: 0 12px; }
+  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn) .pp-lbl { font-size: 0; gap: 0; }
+  .ash-take.ash-compact :is(.is-open-btn, .remove-lib-btn) .pp-lbl svg { margin-left: 4px; }
   .ash-take .mt-nav-btn { height: 32px; padding: 0 12px; }
   /* Logos alone: as tall as the pill under them, so it is a circle */
   .ash-take .tra-srv-nav .mt-nav-btn { height: 30px; }
@@ -313,11 +313,19 @@ class ArrStackSearch extends HTMLElement {
     const acts = [...side.children].filter(c => /-hdr-(act|actions|save)$/.test(c.id) && c.querySelector('button'));
     acts.forEach(a => a.classList.add('ash-acts'));
     // A detail's buttons named while each name fits in its share of the row
+    // with room round it, 14 px a side: names that only just fit stood edge
+    // to edge, button against button, on a small phone
     take.classList.remove('ash-compact');
     const named = [...side.querySelectorAll(':scope > :is(.is-btn-row, .is-open-btn, .remove-lib-btn)')];
     if (named.length) {
       const btns = named.map(n => n.matches('button') ? n : n.querySelector('button')).filter(Boolean);
-      if (btns.some(b => b.scrollWidth > b.clientWidth + 1)) take.classList.add('ash-compact');
+      const need = b => {
+        const kids = [...b.children];
+        const gap = parseFloat(getComputedStyle(b).columnGap) || 0;
+        // getBoundingClientRect: an icon is an <svg>, which has no offsetWidth
+        return kids.reduce((w, k) => w + k.getBoundingClientRect().width, 0) + gap * Math.max(0, kids.length - 1) + 28;
+      };
+      if (btns.some(b => b.scrollWidth > b.clientWidth + 1 || need(b) > b.clientWidth + 1)) take.classList.add('ash-compact');
     }
     take.classList.remove('ash-tight');
     let more = [...take.children].find(c => c.classList.contains('ash-more'));

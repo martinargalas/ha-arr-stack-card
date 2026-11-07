@@ -49,6 +49,7 @@ _wireSectionOverlay() {
       this._overlay = { section: sec, page: startPage, tvPending: null, shown: SHEET_BATCH };
       this._sheetFetchFailed = null;
       this._reRenderSection(sec);
+      if (sec === 'calendar') this._calLoadRest?.();
       // Proaktivně načti data na pozadí, pokud máme málo položek
       const cfg = this._getSectionOverlayConfig(sec);
       if (cfg?.apiEndpoint) this._proactiveSectionLoad(sec);
@@ -635,6 +636,7 @@ _wirePageButtons(scope = this.shadowRoot) {
       const count   = this._hasSeeMore(section) ? this._smpPageCount(data, section) : data.length;
       const total   = Math.ceil(count / perPage);
       const cur     = this._pages[section] || 0;
+      if (section === 'calendar') this._calLoadRest?.();
       if (dir === 'next' && cur < total - 1) {
         this._pages[section]   = cur + 1;
         this._pageDir[section] = 'next';
@@ -711,6 +713,7 @@ _wireSwipe(sig) {
       const perPage = this._perPage(section);
       const total   = Math.ceil(this._smpPageCount(data, section) / perPage);
       const cur     = this._pages[section] || 0;
+      if (section === 'calendar') this._calLoadRest?.();
 
       if (dir === 'next' && cur < total - 1) {
         this._pages[section]   = cur + 1;

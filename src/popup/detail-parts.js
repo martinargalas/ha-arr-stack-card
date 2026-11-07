@@ -1,5 +1,5 @@
 import { POPUP_TYPE } from '../constants.js';
-import { ICONS, dayClass } from '../shared/ui.js';
+import { ICONS } from '../shared/ui.js';
 
 // Parts of the film and series detail, each drawn from what the template
 // has already worked out and handing back only what it goes on to use.
@@ -274,7 +274,7 @@ _ppStateHtml({ d }) {
     const _trailerHtml = _trailer ? `<a class="popup-yt-thumb" href="https://www.youtube.com/watch?v=${encodeURIComponent(_trailer.key)}" target="_blank" rel="noopener noreferrer"><img src="https://img.youtube.com/vi/${encodeURIComponent(_trailer.key)}/hqdefault.jpg" loading="lazy" onerror="this.style.display='none'"/><div class="popup-yt-overlay"><div class="popup-yt-btn">▶ ${this._t('watchTrailer')}</div></div></a>` : '';
     const _hdrStyle = _backdropUrl ? `background-image:url('${_backdropUrl}');background-size:cover;background-position:center top` : (_posterUrl ? `background-image:url('${_posterUrl}');background-size:cover;background-position:center;filter:blur(6px) brightness(0.4)` : 'background:linear-gradient(135deg,rgba(20,20,40,1),rgba(40,20,60,1))');
     return `
-      <div class="popup-overlay${dayClass(this)}">
+      <div class="popup-overlay">
         <div class="popup-glass" style="max-width:600px;width:calc(100vw - 32px);padding:0;gap:0;max-height:calc(100vh - 60px);overflow-y:auto;position:relative">
           <button class="popup-close" style="position:absolute;top:10px;right:10px;z-index:2">${ICONS.close}</button>
           <div style="height:160px;${_hdrStyle};position:relative;flex-shrink:0">
@@ -296,7 +296,7 @@ _ppStateHtml({ d }) {
     const isPanel  = this._isState  ? this._renderIsPanel()           : '';
     const snPanel  = this._snIsOpen ? this._renderSonarrIsSection()   : '';
     return `
-      <div class="popup-overlay${dayClass(this)}">
+      <div class="popup-overlay">
         <div class="popup-glass" style="width:min(900px, 94vw);padding:0;gap:0;max-height:calc(100vh - 80px);overflow-y:auto;overflow-x:hidden;position:relative">
           <button class="popup-close" style="position:absolute;top:12px;right:12px">${ICONS.close}</button>
           <div style="font-size:14px;font-weight:600;color:var(--is-text);margin-bottom:12px;padding:16px 48px 0 16px">${actTitle}</div>

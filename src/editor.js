@@ -63,7 +63,7 @@ const EDITOR_CSS = `
         .row-label { flex: 1; font-size: 13px; }
         /* Same width as the fields in the Styles tab: its control column less
            the suffix and reset slots. They end at the edge, with the toggles. */
-        .row select, .row input[type="number"] {
+        .row select, .row input[type="number"], .row > input[type="text"] {
           width: calc(var(--st-ctl-w) - 62px); flex-shrink: 0;
           height: 30px; box-sizing: border-box; padding: 0 8px; border-radius: 6px; font: inherit; font-size: 12px;
           border: 1px solid var(--divider-color, #e0e0e0);
@@ -198,6 +198,10 @@ class ArrStackCardEditor extends HTMLElement {
     // Styles had a tab of its own for a while
     if (this._activeTab === 'styles') this._activeTab = 'appearance';
     const tab = this._activeTab;
+    // One-click's own settings show while it is on (the old movie-only key counts)
+    // The panels' groups fold like the Appearance tab's; the first of each starts open
+    this._rpOpen = this._rpOpen || new Set(['rp.layout', 'lp.downloads']);
+    const oneClick = !!(this._cfg('discover','oneClickRequest',false) || this._cfg('discover','oneClickMovieRequest',false));
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -255,6 +259,7 @@ ${EDITOR_CSS}
             <span class="row-label">Sticky nav offset (px)</span>
             <input type="number" data-key="sticky_nav_offset" value="${this._val('sticky_nav_offset', 100)}" min="0" max="500" step="10"/>
           </div>
+          <div class="hint">On a phone, how early the media's page buttons float in as you scroll down to them. Pages layout only.</div>
         </div>
       </div>
 
@@ -262,8 +267,8 @@ ${EDITOR_CSS}
       <div class="tab-content${tab === 'left' ? ' active' : ''}" data-tab-content="left">
 
         <!-- Downloads -->
-        <div class="section">
-          <div class="section-title">Downloads</div>
+        <details class="st-group" data-st-group="lp.downloads"${this._rpOpen.has('lp.downloads') ? ' open' : ''}>
+          <summary>Downloads</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Torrent items per page</span>
             <input type="number" data-group="downloads" data-key="torrentItems" value="${this._cfg('downloads','torrentItems',3)}" min="1" max="20"/>
@@ -277,8 +282,10 @@ ${EDITOR_CSS}
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="allowControls" ${this._cfg('downloads','allowControls',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
           <div class="hint">When disabled, play/pause and delete buttons are hidden. Category filters remain accessible.</div>
-          <div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 6px">Cards</div>
-          <div class="sub-group">
+        </div></details>
+
+        <details class="st-group" data-st-group="lp.cards"${this._rpOpen.has('lp.cards') ? ' open' : ''}>
+          <summary>Cards</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Show storage card</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showStorage" ${this._cfg('downloads','showStorage',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
@@ -290,9 +297,12 @@ ${EDITOR_CSS}
           <div class="row">
             <span class="row-label">Show VPN card</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="showVpnCard" ${this._cfg('downloads','showVpnCard',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
-          </div></div>
-<div class="section-subtitle" style="font-size:11px;font-weight:600;color:var(--secondary-text-color,#9e9e9e);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 6px">Download row</div>
-          <div class="sub-group">
+          </div>
+          <div class="hint">The summary cards above the downloads.</div>
+        </div></details>
+
+        <details class="st-group" data-st-group="lp.row"${this._rpOpen.has('lp.row') ? ' open' : ''}>
+          <summary>Download row</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Upload speed</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowUpload" ${this._cfg('downloads','rowUpload',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
@@ -316,9 +326,9 @@ ${EDITOR_CSS}
           <div class="row">
             <span class="row-label">Progress bar</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowProgress" ${this._cfg('downloads','rowProgress',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
-          </div></div>
+          </div>
           <div class="hint">What each download row shows. The first pill always stays — it carries the state, so Stalled, Paused, Complete and errors remain visible. Upload speed and Peers apply to torrent clients only.</div>
-        </div>
+        </div></details>
 
         <!-- Download Clients -->
         ${(() => {
@@ -353,17 +363,17 @@ ${EDITOR_CSS}
             `).join('')}
           </div>`;
           return `
-        <div class="section">
-          <div class="section-title">Download Clients</div>
+        <details class="st-group" data-st-group="lp.clients"${this._rpOpen.has('lp.clients') ? ' open' : ''}>
+          <summary>Download clients</summary><div class="st-body">
           <div class="hint" style="margin-bottom:8px">Drag to reorder · toggle to show/hide. Only configured clients are shown.</div>
           ${renderGroup('Torrent', torrentClients)}
           ${renderGroup('Usenet', usenetClients)}
-        </div>`;
+        </div></details>`;
         })()}
 
         <!-- Storage -->
-        <div class="section">
-          <div class="section-title">Storage</div>
+        <details class="st-group" data-st-group="lp.storage"${this._rpOpen.has('lp.storage') ? ' open' : ''}>
+          <summary>Storage</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Disk space source</span>
             <select data-style-key="storageSource">
@@ -375,47 +385,63 @@ ${EDITOR_CSS}
             </select>
           </div>
           <div class="hint">Which service to use for the disk space widget. Use Radarr or Sonarr if SABnzbd reports a different volume (e.g. cache drive instead of array).</div>
-        </div>
+        </div></details>
       </div>
 
       <!-- ═══ TAB: Right Panel ═══ -->
       <div class="tab-content${tab === 'right' ? ' active' : ''}" data-tab-content="right">
 
-        <div class="section">
+        <!-- Layout: the page of categories. The three numbers count for the
+             Pages layout; Shelves and List flow the categories instead -->
+        <details class="st-group" data-st-group="rp.layout"${this._rpOpen.has('rp.layout') ? ' open' : ''}>
+          <summary>Layout</summary><div class="st-body">
           <div class="row">
-            <span class="row-label">Categories per page</span>
-            <input type="number" data-group="discover" data-key="categoriesCount" value="${this._cfg('discover','categoriesCount',3)}" min="1" max="10"/>
+            <span class="row-label">Rows on a page</span>
+            <input type="number" data-group="discover" data-key="categoriesCount" value="${this._cfg('discover','categoriesCount',3)}" min="2" max="10"/>
           </div>
+          <div class="hint">Categories shown at once, the search field counting as one of them. A phone set to Shelves or List scrolls instead and leaves this aside.</div>
           <div class="row">
-            <span class="row-label">Items per category</span>
+            <span class="row-label">Posters in a row</span>
             <input type="number" data-group="discover" data-key="itemsPerCategory" value="${this._cfg('discover','itemsPerCategory',4)}" min="2" max="10"/>
           </div>
+          <div class="hint">Also the columns of the search results and of See More, except on a phone. Pages layout only: a shelf holds up to 20 posters you swipe through.</div>
+          <div class="row">
+            <span class="row-label">See More on page</span>
+            <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg('discover','showMoreOnPage',3)}" min="1" max="50"/>
+          </div>
+          <div class="hint">On this page of a category its last poster becomes See More, which opens the whole category. Pages layout only: a shelf always ends with it.</div>
+        </div></details>
+
+        <!-- Phone and tablet -->
+        <details class="st-group" data-st-group="rp.devices"${this._rpOpen.has('rp.devices') ? ' open' : ''}>
+          <summary>Phone and tablet</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Layout on a phone</span>
-            <select data-group="discover" data-key="mobileLayout" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <select data-group="discover" data-key="mobileLayout">
               <option value="pages" ${this._cfg('discover','mobileLayout','pages')==='pages'?'selected':''}>Pages</option>
               <option value="shelves" ${this._cfg('discover','mobileLayout','pages')==='shelves'?'selected':''}>Shelves</option>
               <option value="list" ${this._cfg('discover','mobileLayout','pages')==='list'?'selected':''}>List</option>
             </select>
           </div>
           <div class="row">
-            <span class="row-label">Posters a row on a phone</span>
-            <select data-group="discover" data-key="mobileColumns" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="3" ${String(this._cfg('discover','mobileColumns','3'))==='3'?'selected':''}>3</option>
-              <option value="2" ${String(this._cfg('discover','mobileColumns','3'))==='2'?'selected':''}>2</option>
-            </select>
-          </div>
-          <div class="row">
             <span class="row-label">Layout on a tablet</span>
-            <select data-group="discover" data-key="tabletLayout" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <select data-group="discover" data-key="tabletLayout">
               <option value="pages" ${this._cfg('discover','tabletLayout','pages')==='pages'?'selected':''}>Pages</option>
               <option value="shelves" ${this._cfg('discover','tabletLayout','pages')==='shelves'?'selected':''}>Shelves</option>
               <option value="list" ${this._cfg('discover','tabletLayout','pages')==='list'?'selected':''}>List</option>
             </select>
           </div>
+          <div class="hint">Pages turns a few categories at a time. Shelves shows every category, each a row you swipe sideways. List folds them to their titles; tap one to open it.</div>
           <div class="row">
-            <span class="row-label">Posters a row on a tablet</span>
-            <select data-group="discover" data-key="tabletColumns" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <span class="row-label">Posters per row on a phone</span>
+            <select data-group="discover" data-key="mobileColumns">
+              <option value="3" ${String(this._cfg('discover','mobileColumns','3'))==='3'?'selected':''}>3</option>
+              <option value="2" ${String(this._cfg('discover','mobileColumns','3'))==='2'?'selected':''}>2</option>
+            </select>
+          </div>
+          <div class="row">
+            <span class="row-label">Posters per row on a tablet</span>
+            <select data-group="discover" data-key="tabletColumns">
               <option value="0" ${String(this._cfg('discover','tabletColumns','0'))==='0'?'selected':''}>Auto</option>
               <option value="3" ${String(this._cfg('discover','tabletColumns','0'))==='3'?'selected':''}>3</option>
               <option value="4" ${String(this._cfg('discover','tabletColumns','0'))==='4'?'selected':''}>4</option>
@@ -423,35 +449,37 @@ ${EDITOR_CSS}
               <option value="6" ${String(this._cfg('discover','tabletColumns','0'))==='6'?'selected':''}>6</option>
             </select>
           </div>
-          <div class="hint">Pages turns a few categories at a time, as on a wider screen. Shelves shows every category, one under another, each a row you swipe sideways. List folds them to their titles; tap one to open it. A phone is up to 600 px wide; a tablet is up to 900 px, or a touch screen up to 1400 px (an iPad held sideways, a Nest Hub); a desktop worked by a mouse always uses pages. Posters a row counts for the lists that fill the screen: See More, a category opened from the list and, on a phone, the search, Library and Maintainerr. Auto fits as many as the tablet's width takes.</div>
+          <div class="hint">For the lists that fill the screen, in every layout: See More, a category opened from List and, on a phone, the search, Library and Maintainerr. Auto fits as many as the tablet's width takes.</div>
+        </div></details>
+
+        <!-- Search -->
+        <details class="st-group" data-st-group="rp.search"${this._rpOpen.has('rp.search') ? ' open' : ''}>
+          <summary>Search</summary><div class="st-body">
           <div class="row">
-            <span class="row-label">Search bar</span>
+            <span class="row-label">Show search field</span>
             <label class="toggle"><input type="checkbox" data-group="discover" data-key="showSearch" ${this._cfg('discover','showSearch',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">Off gives its slot to one more category — for a static or e-ink dashboard.</div>
+          <div class="hint">Off gives its place to one more category, for a static or e-ink dashboard.</div>
           <div class="row">
             <span class="row-label">Search in a pop-up header</span>
             <label class="toggle"><input type="checkbox" data-key="search_in_header" ${this._config.search_in_header ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">Put an <b>Arr Stack Search</b> card in the header of the pop-up this card is in (Bubble Card with its header hidden, or any header that takes cards) and the field moves there — the card is a field shorter. Until one is on the page, the field stays here.</div>
+          <div class="hint">For a card in a pop-up (Bubble Card with its header hidden, or any header that takes cards): put an <b>Arr Stack Search</b> card in that header and the field moves there. Until one is on the page, the field stays in the card.</div>
           ${this._config.search_in_header ? `<div class="row">
-            <span class="row-label">Link</span>
-            <input type="text" data-text-key="search_link" value="${String(this._config.search_link || '').replace(/"/g, '&quot;')}" placeholder="optional" style="width:140px"/>
+            <span class="row-label">Link name</span>
+            <input type="text" data-text-key="search_link" value="${String(this._config.search_link || '').replace(/"/g, '&quot;')}" placeholder="optional"/>
           </div>
-          <div class="hint">Only with several of these cards on one page: give this card and its search card the same name.</div>` : ''}
-          ${this._config.search_in_header ? '' : `<div class="row">
+          <div class="hint">Leave empty with one such card on the page. With two or more (say a Movies and a Kids pop-up, each with its own header), type any word here, e.g. <code>kids</code>, and the same word in <b>Link name</b> of the Arr Stack Search card in that pop-up. Without it, every header searches the first card.</div>` : `<div class="row">
             <span class="row-label">Header on a phone</span>
             <label class="toggle"><input type="checkbox" data-key="phone_header" ${this._config.phone_header ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">On a phone the search field becomes a header held at the top of the screen. A window opened from the card takes it over: its tabs and buttons go up into it, a back arrow closes it, and the window gets the height of its own header row. For a card not in a pop-up with an Arr Stack Search header.</div>`}
-          <div class="hint">Number of poster columns per category row, search results and More overlay. Default: 4.</div>
-          <div class="row">
-            <span class="row-label">Show More card on page</span>
-            <input type="number" data-group="discover" data-key="showMoreOnPage" value="${this._cfg('discover','showMoreOnPage',3)}" min="1" max="50"/>
-          </div>
-          <div class="hint">Insert a "See More" card as the last slot on this page. Opens full-section overlay. Default: 3.</div>
-          ${(this._caps?.trakt || this._caps?.suggestarr) ? `
-          <div class="section-title" style="margin-top:16px">Recommendations</div>
+          <div class="hint">Phone only. The search field becomes a header held at the top of the screen. A window opened from the card takes it over: its tabs and buttons go up into it and a back arrow closes it.</div>`}
+        </div></details>
+
+        ${(this._caps?.trakt || this._caps?.suggestarr) ? `
+        <!-- Recommendations -->
+        <details class="st-group" data-st-group="rp.recs"${this._rpOpen.has('rp.recs') ? ' open' : ''}>
+          <summary>Recommendations</summary><div class="st-body">
           ${this._caps?.trakt ? `
           <div class="row">
             <span class="row-label">Trakt</span>
@@ -468,63 +496,84 @@ ${EDITOR_CSS}
               <span class="toggle-slider"></span>
             </label>
           </div>` : ''}
-          <div class="hint">What the Recommendations row draws on. With both on, the two are dealt out one after the other so neither fills the row. Music from Last.fm joins it whenever Lidarr is set up — the row's own filter is where it gets switched off.</div>` : ''}
+          <div class="hint">What the Recommendations row draws on. With both on, they take turns so neither fills the row. Music from Last.fm joins in whenever Lidarr is set up; the row's own filter switches it off.</div>
+        </div></details>` : ''}
+
+        <!-- Requests -->
+        <details class="st-group" data-st-group="rp.requests"${this._rpOpen.has('rp.requests') ? ' open' : ''}>
+          <summary>Requests</summary><div class="st-body">
           ${this._caps?.overseerr ? `
-          <div class="section-title" style="margin-top:16px">Recently Requested</div>
           <div class="row">
-            <span class="row-label">Source</span>
-            <select data-group="discover" data-key="requestedSource" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <span class="row-label">Recently Requested shows</span>
+            <select data-group="discover" data-key="requestedSource">
               <option value="both" ${this._cfg('discover','requestedSource','both')==='both'?'selected':''}>Seerr + card</option>
               <option value="seerr" ${this._cfg('discover','requestedSource','both')==='seerr'?'selected':''}>Seerr only</option>
               <option value="library" ${this._cfg('discover','requestedSource','both')==='library'?'selected':''}>Library</option>
             </select>
           </div>
-          <div class="hint">Seerr + card adds what you requested through the card and anything downloading right now. Seerr only mirrors your Seerr request list exactly. Library is the old behaviour: every monitored title without a file, whatever put it there.</div>` : ''}
-          <div class="section-title" style="margin-top:16px">One-click Request</div>
+          <div class="hint">Seerr + card: your Seerr requests, what you asked for through the card and anything downloading now. Seerr only: exactly your Seerr request list. Library: every monitored title without a file, whatever added it.</div>` : ''}
           <div class="row">
-            <span class="row-label">Enabled</span>
+            <span class="row-label">One-click request</span>
             <label class="toggle">
-              <input type="checkbox" data-group="discover" data-key="oneClickRequest" ${(this._cfg('discover','oneClickRequest',false)||this._cfg('discover','oneClickMovieRequest',false))?'checked':''}>
+              <input type="checkbox" data-group="discover" data-key="oneClickRequest" ${oneClick?'checked':''}>
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <div class="hint">Skip profile dialog for movies and TV shows.</div>
-          <div class="row">
-            <span class="row-label">Non-admin only</span>
-            <label class="toggle">
-              <input type="checkbox" data-group="discover" data-key="oneClickNonAdminOnly" ${this._cfg('discover','oneClickNonAdminOnly',false)?'checked':''}>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="hint">Admin keeps the profile selection dialog, non-admin users get one-click.</div>
-          <div class="row">
-            <span class="row-label">Season mode</span>
-            <select data-group="discover" data-key="oneClickTvSeasonMode" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="first" ${this._cfg('discover','oneClickTvSeasonMode','first') === 'first' ? 'selected' : ''}>First season</option>
-              <option value="latest" ${this._cfg('discover','oneClickTvSeasonMode','first') === 'latest' ? 'selected' : ''}>Latest season</option>
-              <option value="all" ${this._cfg('discover','oneClickTvSeasonMode','first') === 'all' ? 'selected' : ''}>All seasons</option>
-            </select>
-          </div>
-          <div class="hint">Which seasons to request when using one-click for shows.</div>
-          <div class="row">
-            <span class="row-label">Default movie profile</span>
-            <input type="text" data-group="discover" data-key="oneClickDefaultMovieProfile" value="${this._cfg('discover','oneClickDefaultMovieProfile','')}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
-          </div>
-          <div class="hint">Quality profile name from Radarr (Settings → Profiles → Name). Leave empty to use Radarr default.</div>
-          <div class="row">
-            <span class="row-label">Default show profile</span>
-            <input type="text" data-group="discover" data-key="oneClickDefaultShowProfile" value="${this._cfg('discover','oneClickDefaultShowProfile','')}" placeholder="e.g. HD-1080p" style="width:160px;padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)"/>
-          </div>
-          <div class="hint">Quality profile name from Sonarr (Settings → Profiles → Name). Leave empty to use Sonarr default.</div>
-        </div>
+          <div class="hint">Requests a movie or show at once, without the profile dialog.</div>
+          ${oneClick ? `
+          <div class="sub-group">
+            <div class="row">
+              <span class="row-label">Only for non-admins</span>
+              <label class="toggle">
+                <input type="checkbox" data-group="discover" data-key="oneClickNonAdminOnly" ${this._cfg('discover','oneClickNonAdminOnly',false)?'checked':''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="hint">Admins keep the dialog.</div>
+            <div class="row">
+              <span class="row-label">Seasons of a show</span>
+              <select data-group="discover" data-key="oneClickTvSeasonMode">
+                <option value="first" ${this._cfg('discover','oneClickTvSeasonMode','first') === 'first' ? 'selected' : ''}>First season</option>
+                <option value="latest" ${this._cfg('discover','oneClickTvSeasonMode','first') === 'latest' ? 'selected' : ''}>Latest season</option>
+                <option value="all" ${this._cfg('discover','oneClickTvSeasonMode','first') === 'all' ? 'selected' : ''}>All seasons</option>
+              </select>
+            </div>
+            <div class="row">
+              <span class="row-label">Movie profile</span>
+              <input type="text" data-group="discover" data-key="oneClickDefaultMovieProfile" value="${this._cfg('discover','oneClickDefaultMovieProfile','')}" placeholder="e.g. HD-1080p"/>
+            </div>
+            <div class="row">
+              <span class="row-label">Show profile</span>
+              <input type="text" data-group="discover" data-key="oneClickDefaultShowProfile" value="${this._cfg('discover','oneClickDefaultShowProfile','')}" placeholder="e.g. HD-1080p"/>
+            </div>
+            <div class="hint">A quality profile's name as Radarr and Sonarr show it (Settings → Profiles). Empty uses their default.</div>
+          </div>` : ''}
+        </div></details>
 
         <!-- Posters -->
-        <div class="section">
-          <div class="section-title">Posters</div>
+        <details class="st-group" data-st-group="rp.posters"${this._rpOpen.has('rp.posters') ? ' open' : ''}>
+          <summary>Posters</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Show title</span>
             <label class="toggle"><input type="checkbox" data-group="posters" data-key="showTitle" ${this._cfg('posters','showTitle',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
+          <div class="row">
+            <span class="row-label">Show media type tag</span>
+            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showMediaType" ${this._cfg('posters','showMediaType',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="hint">A Movie or TV label in the top-left corner.</div>
+          <div class="row">
+            <span class="row-label">Show rating</span>
+            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showRating" ${this._cfg('posters','showRating',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="row">
+            <span class="row-label">Rating provider</span>
+            <select data-group="posters" data-key="ratingProvider">
+              <option value="imdb" ${this._cfg('posters','ratingProvider',this._cfg('discover','ratingProvider','imdb'))==='imdb'?'selected':''}>IMDb</option>
+              <option value="tmdb" ${this._cfg('posters','ratingProvider',this._cfg('discover','ratingProvider','imdb'))==='tmdb'?'selected':''}>TMDB</option>
+            </select>
+          </div>
+          <div class="hint">A title IMDb has no score for shows TMDB's, then TheTVDB's.</div>
           <div class="row">
             <span class="row-label">Show audio languages</span>
             <label class="toggle"><input type="checkbox" data-group="posters" data-key="showAudio" ${this._cfg('posters','showAudio',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
@@ -534,40 +583,13 @@ ${EDITOR_CSS}
             <label class="toggle"><input type="checkbox" data-group="posters" data-key="showSubtitles" ${this._cfg('posters','showSubtitles',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
           <div class="row">
-            <span class="row-label">Show rating</span>
-            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showRating" ${this._cfg('posters','showRating',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
-          </div>
-          <div class="row">
-            <span class="row-label">Show media type tag</span>
-            <label class="toggle"><input type="checkbox" data-group="posters" data-key="showMediaType" ${this._cfg('posters','showMediaType',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
-          </div>
-          <div class="hint">Show a Movie or TV label in the top-left corner of each poster.</div>
-          <div class="row">
             <span class="row-label">Language display</span>
-            <select data-group="posters" data-key="langDisplay" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
+            <select data-group="posters" data-key="langDisplay">
               <option value="flags" ${this._cfg('posters','langDisplay','flags')==='flags'?'selected':''}>Combined — flags</option>
               <option value="tags" ${this._cfg('posters','langDisplay','flags')==='tags'?'selected':''}>Separate tags</option>
             </select>
           </div>
-          <div class="hint">Combined puts subtitle flags, the rating and audio flags in one strip. Separate keeps the original rating, audio and subtitle tags. The two toggles above switch the left and right flags off in either mode.</div>
-          ${(this._caps === null || this._caps?.maintainerr) ? `
-          <div class="row">
-            <span class="row-label">Show deletion tag</span>
-            <select data-group="posters" data-key="goneTag" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="all" ${this._cfg('posters','goneTag','all')==='all'?'selected':''}>All categories</option>
-              <option value="maintainerr" ${this._cfg('posters','goneTag','all')==='maintainerr'?'selected':''}>Maintainerr only</option>
-              <option value="off" ${this._cfg('posters','goneTag','all')==='off'?'selected':''}>Never</option>
-            </select>
-          </div>
-          <div class="hint">Marks titles Maintainerr has queued for deletion with a "Gone in…" tag.</div>` : ''}
-          <div class="row">
-            <span class="row-label">Rating provider</span>
-            <select data-group="posters" data-key="ratingProvider" style="padding:6px 8px;border-radius:6px;font-size:13px;border:1px solid var(--divider-color,#e0e0e0);background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121)">
-              <option value="imdb" ${this._cfg('posters','ratingProvider',this._cfg('discover','ratingProvider','imdb'))==='imdb'?'selected':''}>IMDb</option>
-              <option value="tmdb" ${this._cfg('posters','ratingProvider',this._cfg('discover','ratingProvider','imdb'))==='tmdb'?'selected':''}>TMDB</option>
-            </select>
-          </div>
-          <div class="hint">Falls back to TMDB → TheTVDB if IMDb score is unavailable.</div>
+          <div class="hint">Combined puts subtitle flags (left), the rating and audio flags (right) in one strip. Separate keeps rating, audio and subtitles as tags of their own. The two switches above hide audio or subtitles in either mode.</div>
           <div class="row">
             <span class="row-label">Status display</span>
             <select data-group="posters" data-key="statusDisplay">
@@ -576,22 +598,32 @@ ${EDITOR_CSS}
               <option value="both" ${this._cfg('posters','statusDisplay','tags')==='both'?'selected':''}>Both</option>
             </select>
           </div>
-          <div class="hint">Tags show status badges on posters. Stripes show a coloured bar at the bottom with download progress. Both combines them.</div>
-        </div>
+          <div class="hint">Tags are status badges on the poster. Stripes are a coloured bar along its bottom with the download progress.</div>
+          ${(this._caps === null || this._caps?.maintainerr) ? `
+          <div class="row">
+            <span class="row-label">Deletion tag</span>
+            <select data-group="posters" data-key="goneTag">
+              <option value="all" ${this._cfg('posters','goneTag','all')==='all'?'selected':''}>All categories</option>
+              <option value="maintainerr" ${this._cfg('posters','goneTag','all')==='maintainerr'?'selected':''}>Maintainerr only</option>
+              <option value="off" ${this._cfg('posters','goneTag','all')==='off'?'selected':''}>Never</option>
+            </select>
+          </div>
+          <div class="hint">A "Gone in…" tag on titles Maintainerr has queued for deletion.</div>` : ''}
+        </div></details>
 
         <!-- Now Playing -->
-        <div class="section">
-          <div class="section-title">Now Playing</div>
+        <details class="st-group" data-st-group="rp.streams"${this._rpOpen.has('rp.streams') ? ' open' : ''}>
+          <summary>Now Playing</summary><div class="st-body">
           <div class="row">
             <span class="row-label">Show playback details</span>
             <label class="toggle"><input type="checkbox" data-group="streams" data-key="showTechInfo" ${this._cfg('streams','showTechInfo',false) ? 'checked' : ''}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">Adds a line to each stream: the source, Direct Play / Direct Stream / Transcode, what reaches the player, and the bitrate — e.g. 1080p › Transcode › 720p · 4.0 Mbps. Plex, Jellyfin and Emby only.</div>
-        </div>
+          <div class="hint">Adds a line to each stream: the source, Direct Play / Direct Stream / Transcode, what reaches the player and the bitrate, e.g. 1080p › Transcode › 720p · 4.0 Mbps. Plex, Jellyfin and Emby only.</div>
+        </div></details>
 
         <!-- Categories -->
-        <div class="section">
-          <div class="section-title">Categories</div>
+        <details class="st-group" data-st-group="rp.categories"${this._rpOpen.has('rp.categories') ? ' open' : ''}>
+          <summary>Categories</summary><div class="st-body">
           <div class="hint" style="margin-bottom:8px">Drag to reorder · toggle to show/hide.</div>
           <div class="cat-list">
             ${this._getCats().filter(c => {
@@ -611,7 +643,7 @@ ${EDITOR_CSS}
               </div>
             `).join('')}
           </div>
-        </div>
+        </div></details>
       </div>
 
       <!-- ═══ TAB: Users ═══ -->
@@ -679,6 +711,9 @@ ${EDITOR_CSS}
 
     this._wireEvents();
     wireStylesTab(this, this.shadowRoot.querySelector('[data-tab-content="appearance"]'));
+    this.shadowRoot.querySelectorAll('[data-tab-content="left"] details[data-st-group], [data-tab-content="right"] details[data-st-group]').forEach(d => d.addEventListener('toggle', () => {
+      if (d.open) this._rpOpen.add(d.dataset.stGroup); else this._rpOpen.delete(d.dataset.stGroup);
+    }));
     // A redraw would start the tab strip from the left again; only ever
     // scroll it sideways — scrollIntoView would move the dialog too.
     const tabs = this.shadowRoot.querySelector('.tabs');
@@ -869,6 +904,9 @@ ${EDITOR_CSS}
 
     // The search header's switch shows or hides its Link field
     this.shadowRoot.querySelector('input[data-key="search_in_header"]')?.addEventListener('change', () => this._render());
+    // One-click shows or hides its own settings — after the grouped handler
+    // further down has saved the switch
+    this.shadowRoot.querySelector('input[data-key="oneClickRequest"]')?.addEventListener('change', () => queueMicrotask(() => this._render()));
     // Top-level text fields; an emptied one leaves the config
     this.shadowRoot.querySelectorAll('input[type="text"][data-text-key]').forEach(el => {
       el.addEventListener('change', () => {
@@ -1178,8 +1216,8 @@ class ArrStackSearchEditor extends HTMLElement {
           + '<div class="hint">Closes the pop-up, as its own header did.</div>' : ''}
         ${toggle('bare', 'No background', c.background === 'none')}
         <div class="hint">For a header that draws its own surface: only the field and buttons are left.</div>
-        ${text('link', 'Link', 'optional')}
-        <div class="hint">Searches for the Arr Stack Card that has <b>Search in a pop-up header</b> on. Only with several of those on one page: give the card the same Link.</div>
+        ${text('link', 'Link name', 'optional')}
+        <div class="hint">Searches for the Arr Stack Card on the page that has <b>Search in a pop-up header</b> on. Leave empty with one such card. With two or more, type the same word here and in that card's <b>Link name</b> (Right Panel → Search), e.g. <code>kids</code>.</div>
       </div>`;
     this.shadowRoot.innerHTML = `
       <style>

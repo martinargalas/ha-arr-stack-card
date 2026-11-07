@@ -238,6 +238,36 @@ class _UiMethods {
     // With room between, as the arrow keeps from the screen's own edge
     if (h) this.style.setProperty('--arr-bottom-bar', `${h + 14}px`);
     else this.style.removeProperty('--arr-bottom-bar');
+    this._syncFixedFrame();
+  }
+
+  // Where a window fixed to the screen really stands. In Bubble Card's pop-up
+  // the frame is the pop-up's list (it has a transform), and that list runs on
+  // well under the screen's bottom edge: a window ending at its bottom ended
+  // under the dock, or off the screen — a detail's trailer drowned, the
+  // question before adding a film out of reach. How far the frame's edges
+  // stand off the screen's is given, for a window to take back on a phone.
+  // A title's detail is always at night (popup/index.js): a menu or sheet
+  // opened over it takes the night too, not the day's light glass
+  _detailOpen() {
+    return !!this.shadowRoot?.querySelector('.popup-overlay[data-modal="detail"]');
+  }
+
+  _syncFixedFrame(win) {
+    const sr = this.shadowRoot;
+    if (!sr) return;
+    win = win?.isConnected ? win : (sr.querySelector('.popup-overlay') || sr.querySelector('.to-sheet'));
+    if (!win) return;
+    try {
+      const r = win.getBoundingClientRect(), cs = getComputedStyle(win);
+      const t = parseFloat(cs.top), b = parseFloat(cs.bottom);
+      if (!Number.isFinite(t) || !Number.isFinite(b) || !(r.height > 0)) return;
+      const off = { '--arr-frame-t': Math.round(t - r.top), '--arr-frame-b': Math.round(r.bottom + b - window.innerHeight) };
+      for (const [k, v] of Object.entries(off)) {
+        if (Math.abs(v) >= 1) this.style.setProperty(k, `${v}px`);
+        else this.style.removeProperty(k);
+      }
+    } catch (_) { /* not on a page */ }
   }
 
   // The columns' content fades out just above a bar fixed along the screen's

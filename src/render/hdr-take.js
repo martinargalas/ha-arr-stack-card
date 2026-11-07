@@ -200,6 +200,7 @@ class _HdrTakeMethods {
       this.style.setProperty('--arr-top-bar', `${Math.round(r.bottom - dy)}px`);
       this.style.setProperty('--arr-take-l', `${Math.round(r.left - dx)}px`);
       this.style.setProperty('--arr-take-w', `${Math.round(r.width)}px`);
+      this._syncFixedFrame?.(win);
     } catch (_) {}
   }
 
