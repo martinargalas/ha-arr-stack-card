@@ -18,9 +18,9 @@ class _WireMusicMethods {
     this._musDescH = null;
     this._musAlbH = null;   // measured on the first paint of this artist
     this._musAlbMobH = null;
-    this._musAlbUp = false;
+    this._musSheetUp = false;   // the covers and the sources, raised or lowered together
+    this._musSheetH = null;
     this._musAlbPhoneH = null;
-    this._musPanelUp = false;
     this._musGlassH = null;
     this._musAlbCols = null;
     this._musQueueSigLast = null;
@@ -227,6 +227,7 @@ class _WireMusicMethods {
     });
     this._wireMusPanelDrag(el);
     this._wireMusAlbDrag(el);
+    if (this._isMob) { this._wireMusSheetDrag(el, 'alb'); this._wireMusSheetDrag(el, 'search'); }
     this._wireMusSwipe(el);
     // The same seek bar the popups use, so it is dragged the same way: the
     // artist window only ever had the click, and a finger on the bar moved
@@ -237,6 +238,7 @@ class _WireMusicMethods {
       const tog = e.target.closest('[data-mus-sheet-toggle]');
       if (tog) {
         e.stopPropagation();
+        if (tog._dragged) return;   // the end of a drag, not a tap
         this._musSheetToggle(el, tog.dataset.musSheetToggle);
         return;
       }
@@ -396,7 +398,6 @@ class _WireMusicMethods {
     const done = () => {
       if (!this._musicModal) return;
       this._musicModal.search = null;
-      this._musPanelUp = false;   // the next sources sheet opens where it always does
       this._renderMusicModalEl();
     };
     if (!panel) { done(); return; }

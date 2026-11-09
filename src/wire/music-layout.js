@@ -1,4 +1,4 @@
-import { sheetMoving } from '../shared/ui.js';
+import { sheetMoving, wireSheetPill } from '../shared/ui.js';
 // Music, the artist modal's layout: swipe, the panel and album grabbers, fitting the albums. Split out of wire/music.js.
 
 class _WireMusicLayoutMethods {
@@ -65,11 +65,17 @@ class _WireMusicLayoutMethods {
     // A phone: under the header, or raised by its chevron to the window's top
     if (this._isMob) {
       const bottom = body.getBoundingClientRect().bottom;
-      const top = this._musPanelUp
+      const top = this._musSheetUp
         ? el.querySelector('.popup-glass')?.getBoundingClientRect().top
         : head?.getBoundingClientRect().bottom + 8;
-      const h = Math.round(bottom - (top ?? 0));
-      if (h > 80) { panel.style.height = `${h}px`; this._musPanelH = h; }
+      // A height dragged to (_wireMusSheetDrag) holds for both sheets
+      const h = (!this._musSheetUp && this._musSheetH) || Math.round(bottom - (top ?? 0));
+      if (h > 80) {
+        panel.style.height = `${h}px`;
+        this._musPanelH = h;
+        // The covers come back at the same place when the sources close
+        this._musAlbPhoneH = this._musSheetUp ? h : h - 7;
+      }
       return;
     }
     const h = this._musPanelH || Math.round(
@@ -157,7 +163,7 @@ class _WireMusicLayoutMethods {
       }
       const headR = el.querySelector('.mus-content')?.getBoundingClientRect();
       if (!headR) return;
-      const h = this._musAlbUp ? this._musAlbMax(el) : Math.round(bodyR.bottom - headR.bottom - 15);
+      const h = this._musSheetUp ? this._musAlbMax(el) : (this._musSheetH || Math.round(bodyR.bottom - headR.bottom - 15));
       if (h > 120) {
         this._musAlbPhoneH = Math.min(h, this._musAlbMax(el));
         albums.style.height = `${this._musAlbPhoneH}px`;
@@ -237,11 +243,42 @@ class _WireMusicLayoutMethods {
   // In place, the height easing over (styles), nothing redrawn.
   _musSheetToggle(el, which) {
     sheetMoving(el.querySelector(which === 'alb' ? '.mus-albums' : '.mus-search'));
-    if (which === 'alb') { this._musAlbUp = !this._musAlbUp; this._musFitAlbums(el); }
-    else { this._musPanelUp = !this._musPanelUp; this._musSizePanel(el); }
-    const up = which === 'alb' ? this._musAlbUp : this._musPanelUp;
+    // One state for both sheets: the covers raised stay raised for an
+    // album's sources opened from them, and the other way round
+    this._musSheetUp = !this._musSheetUp;
+    this._musSheetH = null;   // the chevron goes to the top, or back where the sheet opened
+    if (which === 'alb') this._musFitAlbums(el); else this._musSizePanel(el);
+    const up = this._musSheetUp;
     const btn = el.querySelector(`[data-mus-sheet-toggle="${which}"]`);
     if (btn) { btn.innerHTML = this._musChevSvg(up); btn.setAttribute('aria-label', up ? 'Down' : 'Up'); }
+  }
+
+  // A phone's sheet (the covers, or an album's sources) dragged by its pill a
+  // row at a time while held, to no less than one row; the height holds for
+  // the other sheet too. A tap on the pill goes to the top and back.
+  _wireMusSheetDrag(el, which) {
+    const sheet = el.querySelector(which === 'alb' ? '.mus-albums' : '.mus-search');
+    const list = sheet?.querySelector(which === 'alb' ? '.mus-alb-scroll' : '.sn-seasons-rows');
+    const pill = sheet?.querySelector('[data-mus-sheet-toggle]');
+    if (!sheet || !pill) return;
+    wireSheetPill(pill, {
+      getH: () => sheet.getBoundingClientRect().height,
+      setH: (h, ease) => { if (ease) sheetMoving(sheet); sheet.style.height = `${h}px`; },
+      metrics: () => {
+        const item = list?.querySelector(which === 'alb' ? '.mus-alb' : '.sn-season-row');
+        const itemH = item?.getBoundingClientRect().height || 120;
+        const pad = list ? parseFloat(getComputedStyle(list).paddingBottom) || 0 : 0;
+        const chrome = sheet.getBoundingClientRect().height - (list?.clientHeight || 0);
+        return { step: itemH + (which === 'alb' ? 8 : 4), min: Math.round(chrome + itemH + pad), max: this._musAlbMax(el) };
+      },
+      done: (h, m) => {
+        this._musSheetUp = h >= m.max - 1;
+        this._musSheetH = this._musSheetUp ? null : h;
+        this._musAlbPhoneH = h;
+        if (which === 'search') this._musPanelH = h;
+        pill.setAttribute('aria-label', this._musSheetUp ? 'Down' : 'Up');
+      },
+    });
   }
 
   // As far up as the backdrop, which is where the sources panel stops too.

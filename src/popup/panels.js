@@ -1,4 +1,4 @@
-import { sheetChevSvg, sheetMoving } from '../shared/ui.js';
+import { sheetChevSvg, sheetMoving, wireSheetPill } from '../shared/ui.js';
 // The detail's sliding panels: the grabber and the Interactive Search panel.
 
 class _PopupPanelsMethods {
@@ -54,7 +54,7 @@ _ppWirePanelGrab(root) {
   const panel = root.querySelector('.popup-body .is-panel, .popup-body .sn-is-panel, .popup-body .sn-is-section');
   // The confirm-add dialog reuses .is-panel but is a prompt, not a sources
   // sheet — nothing there to resize.
-  if (!panel || panel.querySelector('.is-confirm-wrap')) { this._ppPanelWasOpen = false; this._ppPanelUp = false; return; }
+  if (!panel || panel.querySelector('.is-confirm-wrap')) { this._ppPanelWasOpen = false; this._ppPanelUp = false; this._ppPanelDragH = null; return; }
 
   // Slides up from the bottom edge on opening — it advertises that the panel is
   // a draggable sheet. The window matters: the panel first renders as a loading
@@ -132,30 +132,18 @@ _ppWirePanelGrab(root) {
       const bodyR = bodyEl?.getBoundingClientRect();
       return poster && bodyR ? clampH(bodyR.bottom - poster.getBoundingClientRect().bottom - 18) : clampH(320);
     };
-    panel.classList.toggle('pp-up', !!this._ppPanelUp);
-    if (this._ppPanelUp) { this._ppPanelH = upH(); applyH(this._ppPanelH); }
-    panel.querySelector(':scope > .pp-grab')?.remove();
-    let chev = panel.querySelector(':scope > .sheet-chev');
-    if (!chev) {
-      chev = document.createElement('button');
-      chev.className = 'sheet-chev';
-      panel.insertBefore(chev, panel.firstChild);
-    }
-    chev.innerHTML = sheetChevSvg(!!this._ppPanelUp);
-    chev.setAttribute('aria-label', this._ppPanelUp ? 'Down' : 'Up');
-    chev.onclick = e => {
-      e.stopPropagation();
-      this._ppPanelUp = !this._ppPanelUp;
-      // Up, the body lets it run on over the picture; down, only once it is
-      // back, or the body would clip it mid-way
-      if (this._ppPanelUp) panel.classList.add('pp-up');
-      else setTimeout(() => { if (!this._ppPanelUp) panel.classList.remove('pp-up'); }, 340);
-      const h = this._ppPanelUp ? upH() : downH();
+    // Taller than the body, the body lets the sheet run on over the picture;
+    // back within it, only once it has eased back, or it would clip it mid-way
+    const bodyH = () => Math.round(bodyEl?.getBoundingClientRect().height || 0);
+    const setH = (h, ease) => {
+      if (ease) sheetMoving(panel);
+      if (h > bodyH() + 1) panel.classList.add('pp-up');
+      else setTimeout(() => { if ((this._ppPanelH || 0) <= bodyH() + 1) panel.classList.remove('pp-up'); }, ease ? 340 : 0);
       this._ppPanelH = h;
-      sheetMoving(panel);
       applyH(h);
-      chev.innerHTML = sheetChevSvg(this._ppPanelUp);
-      // The rows a page holds follow the new height, once it has eased over
+    };
+    // The rows a page holds follow the new height, once it has eased over
+    const repage = h => {
       clearTimeout(this._ppChevT);
       this._ppChevT = setTimeout(() => {
         this._ppRenderedH = h;
@@ -164,6 +152,45 @@ _ppWirePanelGrab(root) {
         if (this._popup) this._renderPopupEl();
       }, 360);
     };
+    if (this._ppPanelUp) setH(upH());
+    else if (this._ppPanelDragH) setH(Math.min(this._ppPanelDragH, upH()));
+    panel.querySelector(':scope > .pp-grab')?.remove();
+    let chev = panel.querySelector(':scope > .sheet-chev');
+    if (!chev) {
+      chev = document.createElement('button');
+      chev.className = 'sheet-chev';
+      panel.insertBefore(chev, panel.firstChild);
+    }
+    chev.innerHTML = sheetChevSvg();
+    chev.setAttribute('aria-label', this._ppPanelUp ? 'Down' : 'Up');
+    chev.onclick = e => {
+      e.stopPropagation();
+      if (chev._dragged) return;   // the end of a drag, not a tap
+      this._ppPanelUp = !this._ppPanelUp;
+      this._ppPanelDragH = null;
+      const h = this._ppPanelUp ? upH() : downH();
+      setH(h, true);
+      chev.setAttribute('aria-label', this._ppPanelUp ? 'Down' : 'Up');
+      repage(h);
+    };
+    // Dragged by its pill a row at a time while held, to no less than one row
+    wireSheetPill(chev, {
+      getH: () => panel.getBoundingClientRect().height,
+      setH: (h, ease) => setH(h, ease),
+      metrics: () => {
+        const row = panel.querySelector('.is-card, .sn-season-row, tbody tr');
+        const pr = panel.getBoundingClientRect();
+        const rr = row?.getBoundingClientRect();
+        const rowH = rr?.height || 56;
+        return { step: rowH + 6, min: Math.round(Math.max(140, (rr ? rr.top - pr.top : 60) + rowH + 44)), max: upH() };
+      },
+      done: (h, m) => {
+        this._ppPanelUp = h >= m.max - 1;
+        this._ppPanelDragH = this._ppPanelUp ? null : h;
+        chev.setAttribute('aria-label', this._ppPanelUp ? 'Down' : 'Up');
+        repage(h);
+      },
+    });
     return;
   }
   // A panel kept from the last paint still has its grabber; its listeners

@@ -1673,6 +1673,14 @@ ${TOKEN_CSS}
         /* Raised over the picture (.pp-up), a detail's sheet is not clipped
            by the body it sits in */
         .popup-body:has(> .pp-up) { overflow: visible !important; }
+        .sheet-pill {
+          display: block; width: 36px; height: 5px; border-radius: 3px;
+          background: rgba(var(--_fg, 255, 255, 255), 0.32);
+          transition: width .15s ease, background .15s ease, transform .15s ease;
+        }
+        /* Held (wireSheetPill): pressed in, the sheet follows it */
+        .is-pressed > .sheet-pill { width: 44px; transform: scaleY(1.25); background: rgba(var(--_fg, 255, 255, 255), 0.62); }
+        .sheet-chev, .mus-sheet-chev { touch-action: none; }
         .sheet-chev, .mus-sheet-chev {
           flex: 0 0 auto; align-self: center; display: flex; align-items: center; justify-content: center;
           width: 48px; height: 24px; margin: 2px auto 4px; padding: 0; border: none; background: none;
@@ -5106,10 +5114,12 @@ ${TOKEN_CSS}
          search button lit in the accent, so it reads as the way to roll them
          back up — the faint active state left the row's chevron, which opens
          the tracks, to be tried instead */
-      .mus-search .btn-person.active {
-        background: rgba(var(--arr-accent-rgb, 10, 132, 255), 0.9);
-        border-color: transparent;
-        color: rgb(var(--_ptx, 255, 255, 255));
+      /* Over a look's own round buttons too (glass looks, !important, whose
+         selector weighs five classes) */
+      .popup-overlay .mus-search .mus-alb-header .btn-person.active[data-mus-album] {
+        background: rgba(var(--arr-accent-rgb, 10, 132, 255), 0.9) !important;
+        border-color: transparent !important;
+        color: rgb(var(--_ptx, 255, 255, 255)) !important;
       }
       /* ── Season / episode row buttons in the new round style ──
          Sized to the row they sit in: 26px in the season header (min-height 36)

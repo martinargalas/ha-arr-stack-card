@@ -315,7 +315,7 @@ class _MusicRenderMethods {
   // chevron rather than dragged: up, the sheet goes to the window's top over
   // the picture; down, back where it opened
   _musSheetChev(which) {
-    const up = which === 'alb' ? this._musAlbUp : this._musPanelUp;
+    const up = this._musSheetUp;
     return `<button class="mus-sheet-chev sheet-chev${which === 'alb' ? ' mus-alb-grab' : ''}" data-mus-sheet-toggle="${which}" aria-label="${up ? 'Down' : 'Up'}">${this._musChevSvg(up)}</button>`;
   }
 

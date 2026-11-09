@@ -121,12 +121,12 @@ export function tmdbSized(url, size = 'w342') {
   return url.replace(TMDB_W, `$1${size}/`);
 }
 
-// The chevron that raises a phone's sheet to the window's top or lowers it
-// back: flat, so it reads as a handle more than as an arrow
-export function sheetChevSvg(up) {
-  // Drawn at its own size (1 unit = 1 px), its two arms the same length about
-  // a whole-pixel centre, so neither renders thicker than the other
-  return `<svg viewBox="0 0 20 9" width="20" height="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="${up ? '3 2.5 10 6.5 17 2.5' : '3 6.5 10 2.5 17 6.5'}"/></svg>`;
+// The grabber on a phone's sheet: the short pill sheets have, which reads as
+// "pull me". The sheet is dragged by itself a row at a time; a tap on the pill
+// takes it to the window's top, or back where it opened. Up or down, it looks
+// the same — where the sheet stands says which.
+export function sheetChevSvg() {
+  return '<span class="sheet-pill"></span>';
 }
 
 // A sheet eased to its new height by its chevron, and only then
@@ -135,4 +135,48 @@ export function sheetMoving(el) {
   el.classList.add('sheet-moving');
   clearTimeout(el._sheetMoveT);
   el._sheetMoveT = setTimeout(() => el.classList.remove('sheet-moving'), 380);
+}
+
+// Dragging a phone's sheet by its pill: pressed, the pill shows it is held,
+// and the sheet follows the finger a row at a time from where it stood (the
+// window's top once within half a row of it, never below `min`). A tap with
+// no drag stays a click (the pill's own: to the top and back); a drag sets
+// pill._dragged for a moment, so the click that follows it is let go.
+// getH/setH(h, ease) read and set the sheet's height; metrics() gives
+// { step, min, max } as the drag starts; done(h, m) once it is let go.
+export function wireSheetPill(pill, { getH, setH, metrics, done }) {
+  if (!pill || pill._pillWired) return;
+  pill._pillWired = true;
+  let y0 = 0, h0 = 0, m = null, shown = null, drag = false;
+  const snap = raw => {
+    const h = h0 + Math.round((raw - h0) / m.step) * m.step;
+    if (h >= m.max - m.step / 2) return Math.round(m.max);
+    return Math.round(Math.max(m.min, h));
+  };
+  pill.addEventListener('touchstart', e => {
+    e.stopPropagation();
+    y0 = e.touches[0].clientY;
+    h0 = getH();
+    m = metrics();
+    shown = null; drag = false;
+    pill.classList.add('is-pressed');
+  }, { passive: true });
+  pill.addEventListener('touchmove', e => {
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
+    const dy = e.touches[0].clientY - y0;
+    if (!drag && Math.abs(dy) < 6) return;
+    drag = true;
+    const h = snap(h0 - dy);
+    if (h !== shown) { shown = h; setH(h, true); }
+  }, { passive: false });
+  const end = () => {
+    pill.classList.remove('is-pressed');
+    if (!drag) return;
+    pill._dragged = true;
+    setTimeout(() => { pill._dragged = false; }, 400);
+    if (shown != null) done(shown, m);
+  };
+  pill.addEventListener('touchend', end);
+  pill.addEventListener('touchcancel', end);
 }
