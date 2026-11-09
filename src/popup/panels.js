@@ -1,3 +1,4 @@
+import { sheetChevSvg, sheetMoving } from '../shared/ui.js';
 // The detail's sliding panels: the grabber and the Interactive Search panel.
 
 class _PopupPanelsMethods {
@@ -53,7 +54,7 @@ _ppWirePanelGrab(root) {
   const panel = root.querySelector('.popup-body .is-panel, .popup-body .sn-is-panel, .popup-body .sn-is-section');
   // The confirm-add dialog reuses .is-panel but is a prompt, not a sources
   // sheet — nothing there to resize.
-  if (!panel || panel.querySelector('.is-confirm-wrap')) { this._ppPanelWasOpen = false; return; }
+  if (!panel || panel.querySelector('.is-confirm-wrap')) { this._ppPanelWasOpen = false; this._ppPanelUp = false; return; }
 
   // Slides up from the bottom edge on opening — it advertises that the panel is
   // a draggable sheet. The window matters: the panel first renders as a loading
@@ -114,6 +115,56 @@ _ppWirePanelGrab(root) {
       this._ppPanelH = h;
       applyH(h);
     });
+  }
+  // A phone raises the sheet by a chevron instead of a grabber: up, to the
+  // window's top over the picture (short of the action capsule while it is
+  // on the picture); down, back under the poster
+  if (this._isMob) {
+    const upH = () => {
+      const bodyR = bodyEl?.getBoundingClientRect();
+      const g = root.querySelector('.popup-glass')?.getBoundingClientRect();
+      const barR = root.querySelector('.pp-hero-bar')?.getBoundingClientRect();
+      const top = barR?.height ? barR.bottom + 10 : (g?.top ?? 0);
+      return Math.round((bodyR?.bottom ?? 0) - top);
+    };
+    const downH = () => {
+      const poster = root.querySelector('.popup-poster');
+      const bodyR = bodyEl?.getBoundingClientRect();
+      return poster && bodyR ? clampH(bodyR.bottom - poster.getBoundingClientRect().bottom - 18) : clampH(320);
+    };
+    panel.classList.toggle('pp-up', !!this._ppPanelUp);
+    if (this._ppPanelUp) { this._ppPanelH = upH(); applyH(this._ppPanelH); }
+    panel.querySelector(':scope > .pp-grab')?.remove();
+    let chev = panel.querySelector(':scope > .sheet-chev');
+    if (!chev) {
+      chev = document.createElement('button');
+      chev.className = 'sheet-chev';
+      panel.insertBefore(chev, panel.firstChild);
+    }
+    chev.innerHTML = sheetChevSvg(!!this._ppPanelUp);
+    chev.setAttribute('aria-label', this._ppPanelUp ? 'Down' : 'Up');
+    chev.onclick = e => {
+      e.stopPropagation();
+      this._ppPanelUp = !this._ppPanelUp;
+      // Up, the body lets it run on over the picture; down, only once it is
+      // back, or the body would clip it mid-way
+      if (this._ppPanelUp) panel.classList.add('pp-up');
+      else setTimeout(() => { if (!this._ppPanelUp) panel.classList.remove('pp-up'); }, 340);
+      const h = this._ppPanelUp ? upH() : downH();
+      this._ppPanelH = h;
+      sheetMoving(panel);
+      applyH(h);
+      chev.innerHTML = sheetChevSvg(this._ppPanelUp);
+      // The rows a page holds follow the new height, once it has eased over
+      clearTimeout(this._ppChevT);
+      this._ppChevT = setTimeout(() => {
+        this._ppRenderedH = h;
+        this._snSeasonsPerPage = null;
+        this._isPerPage = null;
+        if (this._popup) this._renderPopupEl();
+      }, 360);
+    };
+    return;
   }
   // A panel kept from the last paint still has its grabber; its listeners
   // went with that paint, so they are added again below.

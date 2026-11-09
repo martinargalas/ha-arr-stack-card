@@ -1089,6 +1089,21 @@ ${TOKEN_CSS}
         animation: btn-spin 0.65s linear infinite;
       }
 
+      /* A List row tapped whose window is on its way (_busyRow) */
+      .mob-row.is-opening { opacity: .55; pointer-events: none; transition: opacity .15s; }
+      /* A card tapped whose window is on its way (_busyCard) */
+      .mc.is-opening::after {
+        content: ""; position: absolute; inset: 0; z-index: 20; border-radius: inherit;
+        background: rgba(var(--_shade, 0, 0, 0), 0.45);
+        pointer-events: none; animation: fade-in .15s ease-out both;
+      }
+      .mc.is-opening::before {
+        content: ""; position: absolute; z-index: 21; left: 50%; top: 50%;
+        width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+        border: 2.5px solid rgba(var(--_ptx, 255, 255, 255), 0.95); border-top-color: transparent;
+        animation: btn-spin 0.65s linear infinite; pointer-events: none;
+      }
+
       /* ── Per-torrent tiny action buttons ── */
       .tb-group {
         display: flex; gap: 3px; flex-shrink: 0; margin-left: 24px; min-width: 53px; justify-content: flex-end;
@@ -1552,6 +1567,11 @@ ${TOKEN_CSS}
       .popup-content.mus-content {
         padding-top: 0; overflow: visible !important; flex: 0 0 auto;
       }
+      /* A phone: the transport and the description under the portrait,
+         across the window */
+      .popup-content.mus-content:has(> .mus-full) { flex-wrap: wrap; row-gap: 8px; }
+      .mus-full { flex: 0 0 100%; min-width: 0; }
+      .mus-full > .mus-overview { margin-top: 6px; }
       .popup-poster.mus-poster {
         align-self: flex-start; width: 135px; height: 135px;
         margin-top: -62px;   /* rides up over the wide backdrop */
@@ -1639,6 +1659,30 @@ ${TOKEN_CSS}
         .mus-pg { flex: 0 0 26px; width: 26px; font-size: 26px; }
         .popup-body > .mus-albums { padding: 0 12px 12px; }
         .mus-alb-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        /* The chevron that raises and lowers a sheet (_musSheetChev), the
+           height easing over */
+        /* Eased only while a chevron moves it (.sheet-moving): a sheet sized as
+           the window opens or repaints is set at once */
+        .popup-body > .sheet-moving { transition: height .32s cubic-bezier(.2, .8, .2, 1), flex-basis .32s cubic-bezier(.2, .8, .2, 1); }
+        /* A phone's sheets: no hairline along the top (it stood white on the
+           night glass), rounded corners and a soft shadow over what is under */
+        .popup-body > :is(.mus-albums, .mus-search, .is-panel, .sn-is-panel, .sn-is-section):not(:has(> .is-confirm-wrap)) {
+          border-top: none; border-radius: 18px 18px 0 0;
+          box-shadow: 0 -8px 22px rgba(var(--_shadow, 0, 0, 0), 0.32);
+        }
+        /* Raised over the picture (.pp-up), a detail's sheet is not clipped
+           by the body it sits in */
+        .popup-body:has(> .pp-up) { overflow: visible !important; }
+        .sheet-chev, .mus-sheet-chev {
+          flex: 0 0 auto; align-self: center; display: flex; align-items: center; justify-content: center;
+          width: 48px; height: 24px; margin: 2px auto 4px; padding: 0; border: none; background: none;
+          color: rgba(var(--_fg, 255, 255, 255), 0.6); cursor: pointer; position: relative; z-index: 2;
+        }
+        /* The discography scrolled down, every cover, instead of paged */
+        .popup-body > .mus-albums .mus-alb-wrap.mus-alb-scroll {
+          display: block; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+          margin: 0 -12px -12px; padding: 0 12px 12px;
+        }
       }
       .mus-alb-grid {
         flex: 1; min-width: 0;
@@ -1652,6 +1696,15 @@ ${TOKEN_CSS}
         .popup-glass.is-wide:has(.mus-modal-body) { width: min(800px, 90vw); }
         .popup-body .mus-alb-grid { grid-template-columns: repeat(var(--mus-alb-cols, 4), 1fr); }
       }
+      /* The fade under a bar along the screen's bottom turned off (dockFade:
+         false, an opaque dock): lists, the covers and the trailer run under it
+         as they are, and no light band is laid there by day */
+      :host([no-dock-fade]) :is(.dock-fade, .to-sheet-body, .lib-scroll.vscroll, .mob-scroll, .mus-alb-scroll, .popup-yt-thumb) {
+        -webkit-mask-image: none !important; mask-image: none !important;
+      }
+      :host([no-dock-fade]) * { --band: transparent !important; }
+      /* A capsule's button with nothing to do here, kept in its place */
+      .is-open-btn.is-off { opacity: 0.38; cursor: default; pointer-events: none; }
       .mus-alb { min-width: 0; cursor: pointer; }
       .mus-alb-art {
         position: relative; width: 100%; aspect-ratio: 1; border-radius: 7px;
@@ -1892,7 +1945,7 @@ ${TOKEN_CSS}
       @media (max-width: 600px) {
         :host([hdr-take]) .to-sheet > .to-sheet-hdr { display: none; }
         :host([hdr-take]) .to-sheet {
-          top: calc(var(--arr-top-bar, 0px) + 8px);
+          top: calc(var(--arr-top-bar, 0px) + 6px);
           /* As wide as the header with its close, no wider */
           left: var(--arr-take-l, 0px); right: auto; width: var(--arr-take-w, 100%);
           border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
@@ -1903,7 +1956,7 @@ ${TOKEN_CSS}
            under the header and as wide, ending above a bar along the
            bottom; the header stays sharp, no veil */
         :host([hdr-take]) .popup-overlay.hdr-taken {
-          top: calc(var(--arr-top-bar, 0px) + 8px); bottom: var(--arr-frame-b, 0px);
+          top: calc(var(--arr-top-bar, 0px) + 6px); bottom: var(--arr-frame-b, 0px);
           left: var(--arr-take-l, 0px); right: auto; width: var(--arr-take-w, 100%);
           align-items: stretch;
           /* The veil stays, only the window's size: what lies behind showed
@@ -1912,6 +1965,10 @@ ${TOKEN_CSS}
           border-radius: var(--arr-modal-radius, 28px);
         }
         :host([hdr-take]) .popup-overlay.hdr-taken > .popup-glass {
+          /* Taken a frame after it is drawn: the glass's width transition
+             (made for a wider screen's panels) grew it, and its picture
+             with it, as if zooming in */
+          transition: none !important;
           width: 100% !important; max-width: 100% !important;
           height: 100% !important; max-height: 100% !important;
           border-radius: var(--arr-modal-radius, 28px);
@@ -3711,6 +3768,11 @@ ${TOKEN_CSS}
           background: var(--arr-sheet-base, var(--primary-background-color, rgb(var(--_shade, 0, 0, 0))));
           opacity: .94;
         }
+        /* A title's detail is at night by day too (.detail-day): its card is
+           the night's ground, not the day's light one under white text */
+        .popup-overlay.detail-day .popup-body > .is-panel:has(> .is-confirm-wrap > .is-confirm-msg)::before {
+          background: var(--arr-sheet-night, rgb(var(--arr-sheet-night-rgb, 20, 20, 26)));
+        }
         /* Meta is the column: everything keeps its size, the description gives
            way, and the actions sit on the bottom edge of the middle section. */
         .popup-meta { display: flex; flex-direction: column; min-height: 0; }
@@ -3822,6 +3884,12 @@ ${TOKEN_CSS}
       }
       .popup-day .pp-fi-chip { color: rgba(var(--_fg2, 0, 0, 0), 0.65); border-color: rgba(var(--_line, 0, 0, 0), 0.14); background: rgba(var(--_fill, 0, 0, 0), 0.04); }
       .pp-fi-chip ha-icon { opacity: 0.75; flex-shrink: 0; }
+      /* A stream's facts among the chips (_streamInfoHtml): who, on what, how */
+      .pp-stream-info .pp-fi-txt { white-space: nowrap; }
+      .pp-st-ava { width: 12px; height: 12px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-left: -3px; }
+      .pp-st-tech.stream-tech-direct    .stream-tech-m { color: rgb(var(--arr-success-rgb, 48, 209, 88)); }
+      .pp-st-tech.stream-tech-stream    .stream-tech-m { color: rgb(var(--arr-info-rgb, 90, 200, 250)); }
+      .pp-st-tech.stream-tech-transcode .stream-tech-m { color: rgb(var(--arr-warning-rgb, 255, 159, 10)); }
       /* A mark sitting among the file chips keeps their height and outline,
          and only Dolby Vision brings its own colour. */
       /* Among the file chips the mark keeps their height, so it is centred in
@@ -4478,11 +4546,32 @@ ${TOKEN_CSS}
           -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--arr-bottom-bar, 0px) - 34px), rgba(var(--_shade, 0, 0, 0), 0.3) calc(100% - var(--arr-bottom-bar, 0px) + 14px));
           mask-image: linear-gradient(to bottom, black calc(100% - var(--arr-bottom-bar, 0px) - 34px), rgba(var(--_shade, 0, 0, 0), 0.3) calc(100% - var(--arr-bottom-bar, 0px) + 14px));
         }
-        /* The window is at night always, but by day the band under a dock
-           stays light, as the day's windows end there: the trailer fades
-           into it */
-        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"].detail-day > .popup-glass {
-          background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 34px), var(--primary-background-color) calc(100% - var(--arr-bottom-bar, 0px) + 14px)), var(--is-glass-bg);
+        /* A band under a dock, behind what fades out there, so the dock's
+           icons stand on a colour of their own. Soft: from just above the
+           dock's top, eased in over its upper part (no edge where it starts),
+           a third of the colour a little down the dock and half at the
+           screen's bottom, close to how the main page fades into its ground
+           (styles: modal.dockBand by
+           night, modalDay.dockBand by day). The windows with a picture are at
+           night always, but by day their band stays light, as the day's
+           windows end there: the trailer fades into it. At night, and in the
+           other windows, none unless a colour is set. */
+        :host([style*="--arr-bottom-bar"]) .popup-overlay { --band: var(--arr-modal-dock-band, transparent); }
+        :host([style*="--arr-bottom-bar"]) .popup-overlay.popup-day { --band: var(--arr-modal-day-dock-band, transparent); }
+        :host([style*="--arr-bottom-bar"]) .popup-overlay:is([data-modal="detail"], [data-modal="stream"], [data-music-modal], [data-album-modal]).detail-day {
+          --band: var(--arr-modal-day-dock-band, var(--primary-background-color));
+        }
+        :host([style*="--arr-bottom-bar"]) .to-sheet { --band: var(--arr-modal-dock-band, transparent); }
+        :host([style*="--arr-bottom-bar"]) .to-sheet.sheet-day { --band: var(--arr-modal-day-dock-band, transparent); }
+        /* Dark by day (Now Playing in Apple Home): the light band, as under a title's detail */
+        :host([style*="--arr-bottom-bar"]) .to-sheet.detail-day { --band: var(--arr-modal-day-dock-band, var(--primary-background-color)); }
+        :host([style*="--arr-bottom-bar"]) .popup-overlay:is([data-modal="detail"], [data-modal="stream"], [data-music-modal], [data-album-modal], .hdr-full) > .popup-glass {
+          background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 8px), color-mix(in srgb, var(--band, transparent) 3%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 2px), color-mix(in srgb, var(--band, transparent) 8%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 10px), color-mix(in srgb, var(--band, transparent) 15%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 18px), color-mix(in srgb, var(--band, transparent) 23%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 27px), color-mix(in srgb, var(--band, transparent) 32%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 38px), color-mix(in srgb, var(--band, transparent) 50%, transparent) 100%), var(--is-glass-bg);
+        }
+        /* Over the sheet's own ground (::before), under its posters */
+        :host([style*="--arr-bottom-bar"]) .to-sheet::after {
+          content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+          background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 8px), color-mix(in srgb, var(--band, transparent) 3%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 2px), color-mix(in srgb, var(--band, transparent) 8%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 10px), color-mix(in srgb, var(--band, transparent) 15%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 18px), color-mix(in srgb, var(--band, transparent) 23%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 27px), color-mix(in srgb, var(--band, transparent) 32%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 38px), color-mix(in srgb, var(--band, transparent) 50%, transparent) 100%);
         }
         /* The question stays in the middle of what shows above the dock */
         .popup-overlay[data-modal="detail"] .popup-body > .is-panel:has(> .is-confirm-wrap > .is-confirm-msg) {
@@ -4491,6 +4580,29 @@ ${TOKEN_CSS}
         /* A sources sheet along the bottom keeps its last rows above the dock */
         :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > :is(.is-panel, .sn-is-panel, .sn-is-section):not(:has(> .is-confirm-wrap > .is-confirm-msg)) {
           padding-bottom: var(--arr-bottom-bar, 0px);
+        }
+        /* An artist's and an album's window run on under a dock too
+           (hdr-full): the covers, the sources and the tracks end above it */
+        :host([hdr-take][style*="--arr-bottom-bar"]) .popup-overlay.hdr-taken .popup-body > :is(.mus-albums, .mus-search) {
+          padding-bottom: calc(12px + var(--arr-bottom-bar, 0px));
+        }
+        /* The scrolled covers run on under the dock, fading there until the
+           last row has come up above it */
+        :host([hdr-take][style*="--arr-bottom-bar"]) .popup-overlay.hdr-taken .popup-body > .mus-albums:has(> .mus-alb-scroll) { padding-bottom: 0; }
+        :host([hdr-take][style*="--arr-bottom-bar"]) .popup-overlay.hdr-taken .mus-albums .mus-alb-wrap.mus-alb-scroll {
+          margin-bottom: 0; padding-bottom: calc(12px + var(--arr-bottom-bar, 0px));
+          --fbar: var(--arr-bottom-bar, 0px); --fe: color-mix(in srgb, black 35%, transparent);
+          -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
+          mask-image: linear-gradient(to bottom, black 0, black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
+        }
+        :host([hdr-take][style*="--arr-bottom-bar"]) .popup-overlay.hdr-taken .mus-alb-scroll:not(.end-b) { --fb: 40px; --fe-b: var(--fe); }
+        /* The band under the dock on the sheets too: they have a background
+           of their own over the glass's */
+        :host([hdr-take][style*="--arr-bottom-bar"]) .popup-overlay.hdr-taken .popup-body > :is(.mus-albums, .mus-search) {
+          background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 8px), color-mix(in srgb, var(--band, transparent) 3%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 2px), color-mix(in srgb, var(--band, transparent) 8%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 10px), color-mix(in srgb, var(--band, transparent) 15%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 18px), color-mix(in srgb, var(--band, transparent) 23%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 27px), color-mix(in srgb, var(--band, transparent) 32%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 38px), color-mix(in srgb, var(--band, transparent) 50%, transparent) 100%), var(--is-glass-bg);
+        }
+        :host([hdr-take][style*="--arr-bottom-bar"]) .popup-overlay.hdr-taken .alb-tracks {
+          padding-bottom: calc(4px + var(--arr-bottom-bar, 0px));
         }
         /* No window line on a phone: a look's dark one (Apple Home by day)
            drew a black ring round every window */
@@ -4989,6 +5101,15 @@ ${TOKEN_CSS}
       }
       .btn-person-sm {
         padding: 3px 5px;
+      }
+      /* An album's sources open in an artist's window (a cover tapped): its
+         search button lit in the accent, so it reads as the way to roll them
+         back up — the faint active state left the row's chevron, which opens
+         the tracks, to be tried instead */
+      .mus-search .btn-person.active {
+        background: rgba(var(--arr-accent-rgb, 10, 132, 255), 0.9);
+        border-color: transparent;
+        color: rgb(var(--_ptx, 255, 255, 255));
       }
       /* ── Season / episode row buttons in the new round style ──
          Sized to the row they sit in: 26px in the season header (min-height 36)

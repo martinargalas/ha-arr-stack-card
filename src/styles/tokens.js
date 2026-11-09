@@ -137,6 +137,9 @@ export const MODAL_TOKENS = [
   ['menu',               'value'],
   ['blur',               'value'],
   ['shine',              'value'],
+  // The band under a bar along the screen's bottom (Bubble Card's dock), in a
+  // window running on under it
+  ['dock-band',          'value'],
   // The menu across the top of a modal (Tracearr's bar at the bottom on a
   // phone), and the items nested under one of its tabs
   ['nav-background',     'value'],

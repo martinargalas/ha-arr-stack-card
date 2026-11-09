@@ -286,7 +286,15 @@ async _fetchAll(opts = {}) {
     this._fetchRadarr2Diskspace(),
     this._fetchSonarr2Diskspace(),
     // ── Sessions — always fetch (needed to detect hasActiveStreams for category visibility) ──
-    T(['streams'], this._fetchPlexSessions(), this._fetchJellyfinSessions(), this._fetchEmbySessions(), this._fetchKodiSessions()),
+    // Ready with the sessions alone: waiting on the libraries too (for the
+    // library's own poster) held the list's peek of Now Playing a second or
+    // more after its posters were on screen in the window
+    // and ready with the first source that has something playing, not the
+    // slowest of the four: a Plex session waited a second more on Jellyfin
+    T(['streams'], ...[
+      [this._fetchPlexSessions(), '_plexSessions'], [this._fetchJellyfinSessions(), '_jellyfinSessions'],
+      [this._fetchEmbySessions(), '_embySessions'], [this._fetchKodiSessions(), '_kodiSessions'],
+    ].map(([p, key]) => p.then(() => { if (first && this[key]?.length) this._catLoaded(['streams']); }))),
     // ── Category-specific — skip when category not on current page ──────
     T(['calendar'], (see('upcoming') || see('calendar')) ? this._fetchCalendar() : none),
     T(['tvUpcoming'], see('tvUpcoming') ? this._fetchTvUpcoming() : none, ...libs),
@@ -327,7 +335,16 @@ async _fetchAll(opts = {}) {
   const fp = this._dataFingerprint();
   if (!first && fp === this._lastFingerprint) return;
   this._lastFingerprint = fp;
-  if (first) this._catDone();
+  if (first) {
+    this._catDone();
+    // The artist and album windows' code is fetched while the card is idle,
+    // with Lidarr there: the first tap on a track playing or an artist waited
+    // seconds on it on a phone
+    if (this._lidarrConfigured !== false) {
+      const idle = window.requestIdleCallback || (f => setTimeout(f, 1));
+      setTimeout(() => idle(() => this.constructor._lazy?.load('music').catch(() => {})), 2000);
+    }
+  }
   this._render();
   this._catCacheSaveSoon(first);
 }

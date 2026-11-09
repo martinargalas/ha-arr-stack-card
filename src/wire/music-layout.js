@@ -1,3 +1,4 @@
+import { sheetMoving } from '../shared/ui.js';
 // Music, the artist modal's layout: swipe, the panel and album grabbers, fitting the albums. Split out of wire/music.js.
 
 class _WireMusicLayoutMethods {
@@ -6,7 +7,7 @@ class _WireMusicLayoutMethods {
   // like paging anything else in the card.
   _wireMusSwipe(el) {
     const wrap = el?.querySelector('.mus-alb-wrap');
-    if (!wrap) return;
+    if (!wrap || this._isMob) return;   // a phone's covers scroll, not page
     const THRESHOLD = 40;
     let startX = null;
     wrap.addEventListener('touchstart', e => {
@@ -35,7 +36,7 @@ class _WireMusicLayoutMethods {
     const grid = el?.querySelector('.mus-alb-grid');
     const tile = el?.querySelector('.mus-alb');
     const m = this._musicModal;
-    if (!grid || !m) return;
+    if (!grid || !m || this._isMob) return;
     const cols = getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length;
     const tileH = tile?.getBoundingClientRect().height || 0;
     const wrap = el.querySelector('.mus-alb-wrap') || grid;
@@ -61,6 +62,16 @@ class _WireMusicLayoutMethods {
     const body = el?.querySelector('.mus-modal-body');
     const head = el?.querySelector('.mus-content');
     if (!panel || !body) return;
+    // A phone: under the header, or raised by its chevron to the window's top
+    if (this._isMob) {
+      const bottom = body.getBoundingClientRect().bottom;
+      const top = this._musPanelUp
+        ? el.querySelector('.popup-glass')?.getBoundingClientRect().top
+        : head?.getBoundingClientRect().bottom + 8;
+      const h = Math.round(bottom - (top ?? 0));
+      if (h > 80) { panel.style.height = `${h}px`; this._musPanelH = h; }
+      return;
+    }
     const h = this._musPanelH || Math.round(
       body.getBoundingClientRect().bottom - (head?.getBoundingClientRect().bottom ?? 0) - 8
     );
@@ -73,10 +84,18 @@ class _WireMusicLayoutMethods {
   // The grabber trades height between the sources panel and the discography.
   // Applied inline while dragging rather than through a re-render — repainting
   // the release table on every pointer move is what makes that feel sticky.
+  // A drag on a grabber is the grabber's alone: let through, Bubble Card's
+  // pop-up took it for its own swipe and pulled the whole window down with it
+  _musGrabOwnTouch(handle) {
+    handle.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+    handle.addEventListener('touchmove', e => { e.stopPropagation(); if (e.cancelable) e.preventDefault(); }, { passive: false });
+  }
+
   _wireMusPanelDrag(el) {
     const handle = el.querySelector('[data-mus-grab-handle]');
     const panel = el.querySelector('.mus-search');
     if (!handle || !panel) return;
+    this._musGrabOwnTouch(handle);
     const glass = panel.closest('.popup-glass');
     handle.addEventListener('pointerdown', ev => {
       ev.preventDefault();
@@ -113,12 +132,47 @@ class _WireMusicLayoutMethods {
     const tile   = el?.querySelector('.mus-alb');
     const grab   = el?.querySelector('.mus-alb-grab');
     if (!albums || !tile) return;
+    // A phone's sheet holds every cover and scrolls: it takes all the room
+    // under the header, down to the screen's bottom
+    // under the header, down to the screen's bottom — or as high as its
+    // grabber was pulled (_wireMusAlbDrag)
+    if (this._isMob) {
+      const bodyR = el.querySelector('.mus-modal-body')?.getBoundingClientRect();
+      if (!bodyR) return;
+      // The description as long as it is, short of leaving no room for one
+      // row of covers under it (above the dock, where the window runs on
+      // under one); longer, it scrolls in its own box
+      const desc = el.querySelector('.mus-full > .mus-overview');
+      if (desc && !this._musDescH) {
+        const under = el.classList.contains('hdr-full')
+          ? parseFloat(getComputedStyle(this).getPropertyValue('--arr-bottom-bar')) || 0 : 0;
+        const row = (grab?.getBoundingClientRect().height || 0) + 8 + tile.getBoundingClientRect().height + 12 + under;
+        desc.style.maxHeight = 'none';
+        const full = desc.scrollHeight;
+        const room = Math.round(bodyR.bottom - desc.getBoundingClientRect().top - 15 - row);
+        const h = Math.max(34, Math.min(full, room));
+        desc.style.maxHeight = `${h}px`;
+        desc.style.overflowY = full > h ? 'auto' : 'hidden';
+        this._musDescH = h;
+      }
+      const headR = el.querySelector('.mus-content')?.getBoundingClientRect();
+      if (!headR) return;
+      const h = this._musAlbUp ? this._musAlbMax(el) : Math.round(bodyR.bottom - headR.bottom - 15);
+      if (h > 120) {
+        this._musAlbPhoneH = Math.min(h, this._musAlbMax(el));
+        albums.style.height = `${this._musAlbPhoneH}px`;
+      }
+      albums.classList.add('is-sized');
+      return;
+    }
     const rowGap = this._isMob ? 8 : 12;   // .mus-alb-grid
-    const chrome = (grab?.getBoundingClientRect().height || 0) + 8 + 18;   // grabber, its margin, the sheet's own padding
+    const chrome = (grab?.getBoundingClientRect().height || 0) + 8 + this._musSheetPad(albums);   // grabber, its margin, the sheet's own padding
     // Two rows of covers by default. With the transport in the header there is
     // one line more to clear, and the sheet would sit over the buttons — so a
-    // track opened from Now Playing gets a single row.
-    const rows = this._musicModal?.stream ? 1 : 2;
+    // track opened from Now Playing gets a single row. Not on a phone, whose
+    // window is tall enough for two under the transport: the one row left
+    // half of it empty. The cap below keeps the sheet off the buttons anyway.
+    const rows = this._musicModal?.stream && !this._isMob ? 1 : 2;
     const tileH = tile.getBoundingClientRect().height;
     // Desktop: the modal grows to hold the header and the rows under it, so
     // the discography opens beneath the artist instead of over the portrait
@@ -171,12 +225,35 @@ class _WireMusicLayoutMethods {
     albums.style.height = `${this._musAlbH}px`;
   }
 
+  // The sheet's padding above and below its covers, read from the sheet: under
+  // a dock along the bottom of the screen it holds the dock's height too
+  _musSheetPad(sheet) {
+    const cs = sheet ? getComputedStyle(sheet) : null;
+    const pad = cs ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) : 0;
+    return pad || 18;
+  }
+
+  // A phone's chevron: the sheet to the window's top, or back where it opened.
+  // In place, the height easing over (styles), nothing redrawn.
+  _musSheetToggle(el, which) {
+    sheetMoving(el.querySelector(which === 'alb' ? '.mus-albums' : '.mus-search'));
+    if (which === 'alb') { this._musAlbUp = !this._musAlbUp; this._musFitAlbums(el); }
+    else { this._musPanelUp = !this._musPanelUp; this._musSizePanel(el); }
+    const up = which === 'alb' ? this._musAlbUp : this._musPanelUp;
+    const btn = el.querySelector(`[data-mus-sheet-toggle="${which}"]`);
+    if (btn) { btn.innerHTML = this._musChevSvg(up); btn.setAttribute('aria-label', up ? 'Down' : 'Up'); }
+  }
+
   // As far up as the backdrop, which is where the sources panel stops too.
+  // A phone's sheet goes on over the picture to the window's top: its covers
+  // scroll, and pulled up they have the whole window.
   _musAlbMax(el) {
     const body = el?.querySelector('.mus-modal-body');
     const back = el?.querySelector('.mus-backdrop');
     if (!body) return 400;
     const bottom = body.getBoundingClientRect().bottom;
+    const glass = el.querySelector('.popup-glass');
+    if (this._isMob && glass) return Math.max(160, Math.round(bottom - glass.getBoundingClientRect().top));
     const top = back?.getBoundingClientRect().bottom ?? body.getBoundingClientRect().top;
     return Math.max(160, Math.round(bottom - top));
   }
@@ -201,18 +278,46 @@ class _WireMusicLayoutMethods {
   _wireMusAlbDrag(el) {
     const handle = el.querySelector('[data-mus-alb-handle]');
     const panel = el.querySelector('.mus-albums');
+    // A phone's scrolled covers keep their swipes: pulled down at their top,
+    // the pop-up under them closed instead
+    const list = panel?.querySelector('.mus-alb-scroll');
+    if (list) {
+      list.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+      list.addEventListener('touchmove', e => e.stopPropagation(), { passive: true });
+    }
     if (!handle || !panel) return;
+    this._musGrabOwnTouch(handle);
     handle.addEventListener('pointerdown', ev => {
       ev.preventDefault();
       const startY = ev.clientY;
       const startH = panel.getBoundingClientRect().height;
       const max = this._musAlbMax(el);
+      // A phone's covers scroll: the sheet follows the finger freely, up to
+      // the picture, and the list inside it scrolls at whatever height it is
+      if (this._isMob) {
+        handle.classList.add('is-dragging');
+        handle.setPointerCapture(ev.pointerId);
+        const move = e => {
+          const h = Math.round(Math.min(max, Math.max(160, startH - (e.clientY - startY))));
+          panel.style.height = `${h}px`;
+          this._musAlbMobH = h;
+        };
+        const up = () => {
+          handle.classList.remove('is-dragging');
+          try { handle.releasePointerCapture(ev.pointerId); } catch (_) {}
+          handle.removeEventListener('pointermove', move);
+          handle.removeEventListener('pointerup', up);
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', up);
+        return;
+      }
       // Snapped to whole rows while dragging. Free-running, the sheet shrank
       // faster than the covers inside it could be re-laid out, so the grabber
       // slid in behind a row and there was nothing left to take hold of.
       const tileH = el.querySelector('.mus-alb')?.getBoundingClientRect().height || 0;
       const gap = this._isMob ? 8 : 12;
-      const chrome = (handle.getBoundingClientRect().height || 0) + 8 + 18;
+      const chrome = (handle.getBoundingClientRect().height || 0) + 8 + this._musSheetPad(panel);
       const snap = raw => {
         if (!tileH) return Math.max(120, raw);
         const rows = Math.max(1, Math.round((raw - chrome + gap) / (tileH + gap)));

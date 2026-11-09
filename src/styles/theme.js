@@ -32,6 +32,9 @@ class _ThemeMethods {
   // Inject theme CSS custom properties derived from config into shadow DOM
   _applyTheme() {
     if (!this.shadowRoot) return;
+    // A bar along the screen's bottom that hides what runs under it (an
+    // opaque dock) needs no fade or light band there (styles: no-dock-fade)
+    try { this.toggleAttribute('no-dock-fade', this._cfgGet?.('discover', 'dockFade', true) === false); } catch { /* not on a page */ }
     const cfg = (this._config || {}).styles || {};
     const c = k => this._parseColorRgb(cfg[k]);
     const rules = [];

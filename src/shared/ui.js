@@ -120,3 +120,19 @@ export function tmdbSized(url, size = 'w342') {
   if (m[3] && parseInt(m[3], 10) <= want) return url;
   return url.replace(TMDB_W, `$1${size}/`);
 }
+
+// The chevron that raises a phone's sheet to the window's top or lowers it
+// back: flat, so it reads as a handle more than as an arrow
+export function sheetChevSvg(up) {
+  // Drawn at its own size (1 unit = 1 px), its two arms the same length about
+  // a whole-pixel centre, so neither renders thicker than the other
+  return `<svg viewBox="0 0 20 9" width="20" height="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="${up ? '3 2.5 10 6.5 17 2.5' : '3 6.5 10 2.5 17 6.5'}"/></svg>`;
+}
+
+// A sheet eased to its new height by its chevron, and only then
+export function sheetMoving(el) {
+  if (!el) return;
+  el.classList.add('sheet-moving');
+  clearTimeout(el._sheetMoveT);
+  el._sheetMoveT = setTimeout(() => el.classList.remove('sheet-moving'), 380);
+}

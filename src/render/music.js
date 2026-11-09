@@ -6,7 +6,7 @@
 // The backdrop is the artist's fanart, which is 16:9 and exactly what that
 // band wants; the portrait beside the name is the square one.
 // ──────────────────────────────────────────────────────────────────────────
-import { ICONS, dayClass } from '../shared/ui.js';
+import { ICONS, sheetChevSvg } from '../shared/ui.js';
 
 class _MusicRenderMethods {
 
@@ -41,8 +41,17 @@ class _MusicRenderMethods {
       ? `background-image:url('${fan}')`
       : `background:linear-gradient(135deg,rgba(21,158,90,0.35),rgba(10,10,14,0.9))`;
 
+    // The transport and the description: beside the portrait on a wide
+    // screen, under it across the window on a phone, where the column beside
+    // the portrait left them a third of the width
+    // The sheet's height from the last paint, drawn at once: measured a frame
+    // later, it jumped on every repaint (a menu opened, a track moved on)
+    const albH = this._isMob ? this._musAlbPhoneH : this._musAlbH;
+    const musLower = `${this._musStreamBar()}${artist.overview
+      ? `<p class="popup-overview mus-overview"${this._musDescH ? ` style="max-height:${this._musDescH}px;overflow-y:auto"` : ''}>${this._escHtml(artist.overview)}</p>`
+      : ''}`;
     return `
-      <div class="popup-overlay${dayClass(this)}" data-music-modal>
+      <div class="popup-overlay${this._isDay ? ' detail-day' : ''}" data-music-modal>
         <div class="popup-glass is-wide"${this._musGlassH ? ` style="height:${this._musGlassH}px"` : ''}>
           <button class="popup-close" data-music-close>${this._libReturnState
             ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
@@ -62,17 +71,15 @@ class _MusicRenderMethods {
                   <h2 class="popup-title" style="margin:0;flex:1;min-width:0">${name}${this._musMonMark(artist)}</h2>
                 </div>
                 ${(subLine || ratingsRow || originFlag) ? `<div class="popup-subrow">${subLine ? `<div class="popup-sub">${subLine}</div>` : ''}${originFlag}${ratingsRow}</div>` : ''}
-                ${this._musStreamQualChip()}
+                ${this._musicModal?.stream ? this._streamInfoHtml(this._musicModal.stream, this._musStreamQualChip()) : ''}
                 ${this._musInstChip(artist)}
-                ${this._musStreamBar()}
-                ${artist.overview
-                  ? `<p class="popup-overview mus-overview"${this._musDescH ? ` style="max-height:${this._musDescH}px"` : ''}>${this._escHtml(artist.overview)}</p>`
-                  : ''}
+                ${this._isMob ? '' : musLower}
               </div>
+              ${this._isMob && musLower.trim() ? `<div class="mus-full">${musLower}</div>` : ''}
             </div>
             ${this._musSearchPanel()}
-            ${m.search ? '' : `<div class="mus-albums${this._musAlbH ? ' is-sized' : ''}" data-music-albums${this._musAlbH ? ` style="height:${this._musAlbH}px"` : ''}>
-              <div class="pp-grab mus-alb-grab" data-mus-alb-handle><span></span></div>
+            ${m.search ? '' : `<div class="mus-albums${albH ? ' is-sized' : ''}" data-music-albums${albH ? ` style="height:${albH}px"` : ''}>
+              ${this._isMob ? this._musSheetChev('alb') : '<div class="pp-grab mus-alb-grab" data-mus-alb-handle><span></span></div>'}
               ${m.loading
                 ? `<div class="is-loading"><span>${this._t('loading')}</span></div>`
                 : this._musicAlbumsHtml()}
@@ -229,6 +236,7 @@ class _MusicRenderMethods {
     const dotsSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
     const spin = `<span class="is-spin" style="width:12px;height:12px;border-width:1.5px"></span>`;
     // Actions for an artist not in Lidarr: only what needs no library record
+    // (nothing to remove, so no Remove)
     return `
       <div class="pp-hero-bar">
         <div class="pp-hero-pill">
@@ -303,6 +311,16 @@ class _MusicRenderMethods {
   // The Sonarr panel, with albums where it has seasons: a row per album with
   // its progress, a monitor toggle and the search button, and the releases
   // opening underneath the row they belong to.
+  // A phone's sheets (the covers, the sources) are raised and lowered by a
+  // chevron rather than dragged: up, the sheet goes to the window's top over
+  // the picture; down, back where it opened
+  _musSheetChev(which) {
+    const up = which === 'alb' ? this._musAlbUp : this._musPanelUp;
+    return `<button class="mus-sheet-chev sheet-chev${which === 'alb' ? ' mus-alb-grab' : ''}" data-mus-sheet-toggle="${which}" aria-label="${up ? 'Down' : 'Up'}">${this._musChevSvg(up)}</button>`;
+  }
+
+  _musChevSvg(up) { return sheetChevSvg(up); }
+
   _musSearchPanel() {
     const sp = this._musicModal?.search;
     if (!sp) return '';
@@ -325,7 +343,7 @@ class _MusicRenderMethods {
              </div>
            </div>`;
       return `<div class="sn-is-section mus-search${rise}"${h}>
-        <div class="pp-grab" data-mus-grab-handle><span></span></div>
+        ${this._isMob ? this._musSheetChev('search') : '<div class="pp-grab" data-mus-grab-handle><span></span></div>'}
         ${body}
       </div>`;
     }
@@ -337,7 +355,7 @@ class _MusicRenderMethods {
     const rise = sp.entered ? '' : ' mus-rise';
     sp.entered = true;
     return `<div class="sn-is-section mus-search${rise}"${h}>
-      <div class="pp-grab" data-mus-grab-handle><span></span></div>
+      ${this._isMob ? this._musSheetChev('search') : '<div class="pp-grab" data-mus-grab-handle><span></span></div>'}
       <div class="sn-seasons-label">${label}</div>
       <div class="sn-seasons-rows" style="display:flex;flex-direction:column;gap:4px">${rows}</div>
     </div>`;
@@ -534,6 +552,12 @@ class _MusicRenderMethods {
     const albums = [...(m?.albums || [])].sort((a, b) =>
       String(b.releaseDate || '').localeCompare(String(a.releaseDate || '')));
     if (!albums.length) return `<div class="placeholder">${this._t('musicNoAlbums')}</div>`;
+    // A phone scrolls the whole discography down instead of paging it sideways
+    if (this._isMob) {
+      return `<div class="mus-alb-wrap mus-alb-scroll vscroll">
+        <div class="mus-alb-grid">${albums.map(a => this._musicAlbumTile(a)).join('')}</div>
+      </div>`;
+    }
 
     const per   = Math.max(2, (m.cols || 4) * (m.rows || 2));
     const pages = Math.max(1, Math.ceil(albums.length / per));
@@ -652,7 +676,7 @@ class _MusicRenderMethods {
       : '';
 
     return `
-      <div class="popup-overlay${dayClass(this)}" data-album-modal>
+      <div class="popup-overlay${this._isDay ? ' detail-day' : ''}" data-album-modal>
         <div class="popup-glass is-wide"${this._musGlassH ? ` style="height:${this._musGlassH}px"` : ''}>
           <button class="popup-close" data-album-close><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
           <div class="popup-backdrop mus-backdrop" style="${backdropStyle}">

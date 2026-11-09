@@ -193,6 +193,7 @@ A phone and a tablet each get their own layout:
 | **Layout on a tablet** | The same on a tablet. | `tabletLayout` | `pages` · `shelves` · `list` | `pages` |
 | **Posters per row on a phone** | Posters side by side in the lists that fill the screen: a category you opened, See More, the search, Library, Maintainerr. | `mobileColumns` | `2` · `3` | `3` |
 | **Posters per row on a tablet** | The same on a tablet. A slider in the window changes it too. | `tabletColumns` | `0` Auto (as many as fit) · `3` · `4` · `5` · `6` | `0` |
+| **Fade under a bottom bar** | With a bar fixed along the bottom of the screen (Bubble Card's buttons), lists, covers and trailers fade out under it, and by day a light band stays there. Off for an opaque bar, which hides what runs under it anyway. | `dockFade` | `true` · `false` | `true` |
 
 ```yaml
 discover:
@@ -549,6 +550,7 @@ discover:
   mobileColumns: 3              # 2 | 3
   tabletLayout: pages           # pages | shelves | list
   tabletColumns: 0              # 0 = Auto, or 3–6
+  dockFade: true                # false: no fade or light band under a bottom bar
   recTrakt: true
   recSuggestarr: true
   requestedSource: both         # both | seerr | library

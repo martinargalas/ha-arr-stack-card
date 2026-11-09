@@ -152,6 +152,7 @@ Day colours apply while the sun is up, when **Day / night modal colours** is on 
 | `header` · `menu` | The header bar; drop-down menus |
 | `blur` · `shine` | As for the panels |
 | `radius` | The window's corners (`modal` only) |
+| `dockBand` | On a phone, a band behind a bar fixed along the bottom of the screen (Bubble Card's buttons), in a window that runs on under it — so the bar's icons stay readable, e.g. a light one for dark icons at night. By day a film's, an artist's or a stream's window has a light one unless set; otherwise none. `dockFade: false` turns it off |
 | `navBackground` · `navBorder` | The menu across the top of a modal (Tracearr's bar at the bottom on a phone): its background and border line |
 | `navText` · `navActive` · `navActiveText` | A menu item; the fill that slides to the chosen one, and its text |
 | `subText` · `subActive` · `subActiveText` | The same for the items nested under a tab, e.g. in Tracearr or a title's detail |

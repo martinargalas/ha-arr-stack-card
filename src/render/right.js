@@ -191,9 +191,12 @@ _mobListHtml(regular, from = 0, to = regular.length) {
       ? peekImgs.map(src => `<img src="${this._escHtml(src)}" alt="">`).join('')
       : ico ? `<span class="mob-app">${ico.outerHTML}</span>` : '';
     if (this._mobSheet === r.id) {
+      // Now Playing is dark by day too, in every look, as the windows its
+      // cards open (a title's detail, an artist, a stream) are
+      const day = this._isDay && r.id !== 'streams';
       sheet = `
         <div class="to-sheet-veil"></div>
-        <div class="to-sheet mob-sheet${this._isDay ? ' sheet-day' : ''}"${this._sheetColsStyle()}>
+        <div class="to-sheet mob-sheet${day ? ' sheet-day' : this._isDay ? ' detail-day' : ''}"${this._sheetColsStyle()}>
           ${this._sheetHdr(title, '', 'data-mob-sheet-close')}
           <div class="to-sheet-body vscroll mob-cat" data-mob-cat="${r.id}">${html}</div>
           ${this._toTopHtml()}

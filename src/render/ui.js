@@ -186,6 +186,18 @@ class _UiMethods {
   // The way back to the top of a long list scrolled on a phone (#48). It
   // rides at the end of the scrolling box, sticky to its bottom, and shows
   // once the reader is a screen and a half down (_wireToTop).
+  // A card whose window takes a moment to come (its code fetched the first
+  // time, the artist looked up) dims under a spinner until it is there, so a
+  // tap is seen to have been taken
+  _busyCard(card, work) {
+    if (!card || !work?.finally) return work;
+    card.classList.add('is-opening');
+    const done = () => card.classList.remove('is-opening');
+    const t = setTimeout(done, 15000);
+    work.finally(() => { clearTimeout(t); done(); }).catch(() => {});
+    return work;
+  }
+
   _toTopHtml() {
     return `<div class="to-top-wrap"><button class="to-top" data-to-top aria-label="Top">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
@@ -247,10 +259,11 @@ class _UiMethods {
   // under the dock, or off the screen — a detail's trailer drowned, the
   // question before adding a film out of reach. How far the frame's edges
   // stand off the screen's is given, for a window to take back on a phone.
-  // A title's detail is always at night (popup/index.js): a menu or sheet
+  // A title's detail, a stream's, an artist's and an album's window are always
+  // at night (popup/index.js, popup/stream.js, render/music.js): a menu or sheet
   // opened over it takes the night too, not the day's light glass
   _detailOpen() {
-    return !!this.shadowRoot?.querySelector('.popup-overlay[data-modal="detail"]');
+    return !!this.shadowRoot?.querySelector('.popup-overlay:is([data-modal="detail"], [data-modal="stream"], [data-music-modal], [data-album-modal])');
   }
 
   _syncFixedFrame(win) {

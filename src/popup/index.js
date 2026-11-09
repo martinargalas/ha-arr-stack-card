@@ -53,12 +53,12 @@ _wirePopup() {
       // For an install that is mostly Plex, Now Playing is the card — opening
       // an entry is the use, the same as opening any of the other modals.
       this._markActivated();
-      this._openStreamPopup(
+      this._busyCard(card, this._openStreamPopup(
         card.dataset.streamEntity,
         card.dataset.streamType   || '',
         card.dataset.streamTitle  || '',
         card.dataset.streamSeries || '',
-      );
+      ));
     });
   });
 }
@@ -563,15 +563,17 @@ _renderPopup() {
   // takes the backdrop's place — pinned to the same spot on the glass itself.
   // In the capsule, expanding Search keeps Search itself on screen and the
   // choices ride along as sub-chips — the way Collections shows Media.
-  const heroSearchHtml = searchBtnHtml;
-
-  const heroRemoveHtml = removeBtn;
-
   const optionsBtn = this._qaBtnHtml(d);
+  // Search stands greyed out where it has nothing to do, so the capsule keeps
+  // its first place; Remove with nothing to remove is left out, and the
+  // buttons that stay take its room (with their names, in a phone's header)
+  const offBtn = (svg, label) => `<button class="is-open-btn is-off" disabled aria-disabled="true">${svg}<span class="pp-lbl">${label}</span></button>`;
+  const heroSearchHtml = searchBtnHtml || (isAdmin && optionsBtn ? offBtn(searchSvg, this._t('musSearch')) : '');
+  const heroRemoveHtml = removeBtn;
   // Every width gets the capsule. It used to be a narrow-screen layout, so a
   // wide monitor still showed the old button row under the description — the
   // same popup looked like two different designs depending on the display.
-  const heroBar = (searchBtnHtml || removeBtn || optionsBtn)
+  const heroBar = (heroSearchHtml || heroRemoveHtml || optionsBtn)
     ? `<div class="pp-hero-bar">
          <div class="pp-hero-pill">${heroSearchHtml}${heroRemoveHtml}${optionsBtn}</div>
        </div>`
@@ -628,7 +630,7 @@ _renderPopup() {
               ${singleDlTag}
               ${popupTagHtml}
               ${this._isMob ? '' : overviewHtml}
-              ${d._streamEntity ? this._renderPopupStreamControls(d) : ''}
+              ${d._streamEntity ? this._streamInfoHtml(d._streamEntity) + (this._isMob ? '' : this._renderPopupStreamControls(d)) : ''}
               ${heroBar ? '' : `<div class="popup-actions">
                 ${searchBtnHtml}
                 ${removeBtn}
@@ -636,7 +638,7 @@ _renderPopup() {
               </div>`}
             </div>
           </div>
-          ${this._isMob ? `<div class="popup-desc">${overviewHtml}</div>` : ''}
+          ${this._isMob ? `<div class="popup-desc">${d._streamEntity ? this._renderPopupStreamControls(d) : ''}${overviewHtml}</div>` : ''}
           ${(confirmPanelHtml || isActive || snIsActive || asSonarrActive) ? '' : trailerHtml}
           ${confirmPanelHtml}
           ${(asActive && !asConfirmOnly) ? this._renderAsSection() : ''}

@@ -64,7 +64,7 @@ class _MusicRowsMethods {
       const card = e.target.closest('.mc-music[data-artist-id]');
       if (!card) return;
       e.stopPropagation();
-      this._openMusicModal(Number(card.dataset.artistId), { stream: card.dataset.streamEntity || null });
+      this._busyCard(card, this._openMusicModal(Number(card.dataset.artistId), { stream: card.dataset.streamEntity || null }));
     });
   }
 

@@ -20,6 +20,10 @@ async _fetchPlexSessions() {
     this._plexSessions = sessions
       .filter(s => s.Player?.machineIdentifier && (s.Player.state === 'playing' || s.Player.state === 'paused'))
       .map(s => this._normalizePlexSession(s));
+    // On the first load Now Playing is drawn with what Plex says at once; the
+    // titles' ids (a request to Plex each) only pick the library's poster
+    // after, and the list's peek waited a second on them
+    if (this._plexSessions.length && !this._catAllReady) this._catLoaded?.(['streams']);
     await this._resolvePlexSessionIds();
   } catch (_) {
     this._plexConfigured = false;

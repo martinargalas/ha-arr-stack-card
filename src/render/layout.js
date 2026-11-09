@@ -523,6 +523,9 @@ class _LayoutMethods {
       if (!row) return;
       e.stopPropagation();
       const id = row.dataset.mobOpen;
+      // One thing playing: its own window at once — a list of one was only a
+      // tap more on the way to it
+      if (id === 'streams' && this._mobOpenOnlyStream(row)) return;
       const cfg = this._getSectionOverlayConfig(id);
       if (cfg) {
         this._overlay = { section: id, page: 0, tvPending: null, shown: SHEET_BATCH };
@@ -534,6 +537,36 @@ class _LayoutMethods {
       this._mobSheet = id;
       this._reRenderRight(true);
     });
+  }
+
+  // The one stream Now Playing holds, opened the way its card opens it: an
+  // artist the library holds by their window, anything else as its card
+  // would (a title's detail, the artist found by name, a stream's window).
+  // False when there is not exactly one.
+  _mobOpenOnlyStream(row) {
+    // From the streams already read, not by drawing Now Playing anew (that
+    // redraws an open stream's window too)
+    const streams = this._streams || [];
+    if (streams.length !== 1) return false;
+    const tpl = document.createElement('template');
+    tpl.innerHTML = this._renderStreamCard(streams[0]) || '';
+    const card = tpl.content.querySelector('.mc[data-stream-entity]');
+    if (!card) return false;
+    const d = card.dataset;
+    const work = d.artistId
+      ? this._openMusicModal(Number(d.artistId), { stream: d.streamEntity || null })
+      : (this._markActivated(), this._openStreamPopup(d.streamEntity, d.streamType || '', d.streamTitle || '', d.streamSeries || ''));
+    this._busyRow(row, work);
+    return true;
+  }
+
+  // A List row whose window takes a moment dims under a spinner, as a card does
+  _busyRow(row, work) {
+    if (!row || !work?.finally) return;
+    row.classList.add('is-opening');
+    const done = () => row.classList.remove('is-opening');
+    const t = setTimeout(done, 15000);
+    work.finally(() => { clearTimeout(t); done(); }).catch(() => {});
   }
 
   _reRenderRight(force = false) {
@@ -960,10 +993,33 @@ class _LayoutMethods {
     }
   }
 
+  // A window with a picture at its top (a title's detail, a stream, an
+  // artist, an album) opening on a phone: the picture settles in from a touch
+  // closer. Once, as it opens — a window drawn again (its data come in, a
+  // track moves on) puts the same kind back in the same moment it takes the
+  // old one away, and is left still.
+  _pictureZoomIn(recs) {
+    const kind = n => (n?.nodeType === 1 && n.matches('.popup-overlay'))
+      ? (n.dataset.modal || (n.hasAttribute('data-music-modal') ? 'music' : n.hasAttribute('data-album-modal') ? 'album' : '')) : '';
+    const PIC = new Set(['detail', 'stream', 'music', 'album']);
+    const gone = new Set(recs.flatMap(r => [...r.removedNodes].map(kind)).filter(Boolean));
+    const fresh = recs.flatMap(r => [...r.addedNodes]).filter(n => PIC.has(kind(n)) && !gone.has(kind(n)));
+    if (!fresh.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    for (const o of fresh) {
+      o.querySelector('.popup-backdrop')?.animate(
+        // From its bottom edge: it grows up and out, where the glass clips
+        // it, never down over the title under it
+        [{ transform: 'scale(1.07)', transformOrigin: '50% 100%' }, { transform: 'scale(1)', transformOrigin: '50% 100%' }],
+        { duration: 600, easing: 'cubic-bezier(.2, .8, .2, 1)' },
+      );
+    }
+  }
+
   _watchOverlays() {
     if (this._overlayObserver || !this.shadowRoot) return;
-    this._overlayObserver = new MutationObserver(() => {
+    this._overlayObserver = new MutationObserver(recs => {
       this._syncScrollLock(); this._backSync(); this._hdrTakeSync(); this._liquidHeroMaybe();
+      if (this._isMob) this._pictureZoomIn(recs);
       // A window opening on a phone looks for a bar along the screen's bottom
       // (Bubble Card's buttons) to end above it
       const n = this.shadowRoot.querySelectorAll('.popup-overlay, .to-sheet').length;

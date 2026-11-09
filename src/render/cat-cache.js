@@ -131,7 +131,13 @@ _catPeek(id, title, imgs) {
     if (kept?.length) return kept;
     // A category with nothing kept shows its own posters when they are in,
     // as long as none is still waiting for its signature
-    if (!this._catIsReady(id) || this._arrImgBusy) return null;   // null: grey shapes
+    if (!this._catIsReady(id)) return null;   // null: grey shapes
+    // One never kept (Now Playing, pending requests) has nothing of last
+    // time's to show meanwhile: it waited on every other category and every
+    // poster's signature, the longest of all. Its own pictures as soon as
+    // they are in.
+    if (CAT_CACHE_SKIP.has(id)) return imgs;
+    if (this._arrImgBusy) return null;
     return imgs;
   }
   if (imgs.length && this._catAllReady) (this._catPeekNow ||= {})[id] = { t: title, i: imgs };

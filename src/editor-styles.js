@@ -83,6 +83,9 @@ const MODAL_WINDOW = day => [
   ['menu',          'Drop-down menus', 'paint', day ? '#f5f6ff' : '#18182a', 'Filter and column pickers, action menus.'],
   ['blur',          'Blur',            'blur',  day ? '40' : '35'],
   ['shine',         'Glass shine',     'shine', day ? '0.65' : '0.35'],
+  ['dockBand',      'Band under a bottom bar', 'paint', day ? '#ffffff' : '#000000', day
+    ? 'Behind the bar fixed along the bottom of a phone\'s screen (Bubble Card\'s buttons). A film\'s, an artist\'s or a stream\'s window has a light one by day unless set; the rest none.'
+    : 'Behind the bar fixed along the bottom of a phone\'s screen (Bubble Card\'s buttons), so its icons stay readable — e.g. a light one for dark icons. None unless set.'],
   ...(day ? [] : [['radius', 'Corner radius', 'px', '28']]),
 ];
 // The menu across the top of a modal, and the items nested under a tab

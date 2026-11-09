@@ -1,5 +1,4 @@
 import { POPUP_TYPE } from '../constants.js';
-import { dayClass } from '../shared/ui.js';
 import { normName } from '../shared/format.js';
 
 // Now Playing: the popup a playing stream opens, its transport and seek bar,
@@ -28,8 +27,7 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle, { bare = 
     // has no artist to show falls through to the plain popup below.
     if (!bare && this._lidarrConfigured !== false) {
       this._markActivated();
-      this._musOpenForStream(entityId, trackTitle);
-      return;
+      return this._musOpenForStream(entityId, trackTitle);
     }
     const s    = this._hass?.states?.[entityId];
     const attr = s?.attributes || {};
@@ -88,6 +86,15 @@ async _openStreamPopup(entityId, contentType, trackTitle, seriesTitle, { bare = 
           }
         }
       }
+    }
+    // A session read through the proxy (plex:<machine>) has the show's ids
+    // already (_resolvePlexSessionIds). Without them the show was searched by
+    // the name Plex gives it in the viewer's language, and a localised name
+    // ("Smrt pastorovy ženy") found nothing: a window with no picture or text.
+    if (!isLiveTV && entityId.startsWith('plex:')) {
+      const ps = (this._plexSessions || []).find(x => x.id === entityId);
+      if (ps?._tmdbId || ps?._tvdbId) showIds = { tvdbId: ps._tvdbId || null, tmdbId: ps._tmdbId || null };
+      else if (ps?._plexParentKey) showIds = await this._plexIdsForKey(ps._plexParentKey);
     }
     if (!isLiveTV && entityId.startsWith('media_player.plex')) {
       try {
@@ -512,11 +519,32 @@ _streamAttrOf(streamId) {
 // name is all a player gives, which is what the Now Playing tile matches on
 // too — one rule for both, or a tile and its window could disagree.
 _musStreamArtist(streamId) {
+  const wants = this._musStreamNames(streamId).map(normName).filter(Boolean);
+  if (!wants.length) return null;
+  const lib = [...(this._lidarrArtists?.values() || [])];
+  for (const want of wants) {
+    const hit = lib.find(x => normName(x.artistName) === want);
+    if (hit) return hit;
+  }
+  // Found once by MusicBrainz under another name (_musOwnedByMbid)
+  for (const want of wants) {
+    const id = this._musOwnedNames?.get(want);
+    if (id != null && this._lidarrArtists?.get(id)) return this._lidarrArtists.get(id);
+  }
+  return null;
+}
+
+// The names a playing track's artist may go by, the likeliest first: a
+// guest on the track ("Rihanna feat. Drake") is no artist of the library's,
+// so the album's artist and the name with the guests taken off are tried too
+_musStreamNames(streamId) {
   const a = this._streamAttrOf(streamId) || {};
-  const want = normName(a.media_artist || a.media_album_artist);
-  if (!want) return null;
-  return [...(this._lidarrArtists?.values() || [])]
-    .find(x => normName(x.artistName) === want) || null;
+  const track = String(a.media_artist || '').trim();
+  const album = String(a.media_album_artist || '').trim();
+  // Only a guest's mark splits the name: "&" and "," are as often part of
+  // one (Simon & Garfunkel, Earth, Wind & Fire), and AC/DC is one artist
+  const lead = track.split(/\s+\(?(?:feat\.?|ft\.?|featuring|with|vs\.?)\s+/i)[0].trim();
+  return [...new Set([track, album, lead].filter(Boolean))];
 }
 
 // A track that simply ended and handed over to the next one. A skip is
@@ -743,6 +771,45 @@ _renderPopupStreamControls(d) {
 // Music / stream popup renderer
 // ─────────────────────────────────────────────
 
+// Who is playing, on what and how, in the window a stream opens: the same
+// facts its card in Now Playing wears over the poster, as the window's file
+// chips: how it plays (Direct Play) and what it plays at (MP3 · 320 kbps),
+// each a pill of its own, so neither breaks over two lines beside a poster;
+// without them, `fallback` (the track's own format) stands in their place. Read off the stream's card, so the two never disagree.
+_streamInfoHtml(streamId, fallback = '') {
+  // Only that stream's card, from the streams already read: the whole of
+  // Now Playing (_renderStreams) also redraws an open stream's window, which
+  // drew this again, without end
+  const s = streamId && (this._streams || []).find(x => x.id === streamId);
+  if (!s) return fallback;
+  const tpl = document.createElement('template');
+  tpl.innerHTML = this._renderStreamCard(s) || '';
+  const card = tpl.content.querySelector('.mc[data-stream-entity]');
+  if (!card) return fallback;
+  const esc = s => this._escHtml(String(s || '').trim());
+  const chips = [];
+  const dev = card.querySelector('.stream-device-tag');
+  if (dev?.textContent.trim()) {
+    const ico = dev.querySelector('ha-icon')?.getAttribute('icon');
+    chips.push(`<span class="pp-fi-chip">${ico ? `<ha-icon icon="${esc(ico)}" style="--mdc-icon-size:11px"></ha-icon>` : ''}<span class="pp-fi-txt">${esc(dev.textContent)}</span></span>`);
+  }
+  const user = card.querySelector('.stream-user-tag');
+  if (user?.textContent.trim()) {
+    const pic = user.querySelector('img')?.getAttribute('src');
+    chips.push(`<span class="pp-fi-chip">${pic ? `<img class="pp-st-ava" src="${esc(pic)}" alt="" onerror="this.remove()">` : ''}<span class="pp-fi-txt">${esc(user.textContent)}</span></span>`);
+  }
+  const tech = card.querySelector('.stream-tech-tag');
+  if (tech) {
+    const how = [...tech.classList].find(k => /^stream-tech-(direct|stream|transcode)$/.test(k)) || '';
+    const label = tech.querySelector('.stream-tech-m')?.textContent;
+    const rate = tech.querySelector('.stream-tech-rate')?.textContent;
+    chips.push(`<span class="pp-fi-chip pp-st-tech ${how}"><span class="pp-fi-txt stream-tech-m">${esc(label)}</span></span>`);
+    if (rate) chips.push(`<span class="pp-fi-chip"><span class="pp-fi-txt">${esc(rate)}</span></span>`);
+  }
+  const fb = tech ? '' : fallback.replace(/^\s*<div class="popup-fileinfo[^"]*">|<\/div>\s*$/g, '');
+  return (chips.length || fb) ? `<div class="popup-fileinfo pp-stream-info">${fb}${chips.join('')}</div>` : '';
+}
+
 _renderStreamPopup(d) {
   const isPlaying = d._streamState === 'playing';
   const title     = this._escHtml(d.title   || '');
@@ -793,7 +860,7 @@ _renderStreamPopup(d) {
 
 
   return `
-    <div class="popup-overlay${dayClass(this)}" data-modal="stream">
+    <div class="popup-overlay${this._isDay ? ' detail-day' : ''}" data-modal="stream">
       <div class="popup-glass">
         <button class="popup-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <div class="popup-backdrop" style="${backdropStyle}">
@@ -805,10 +872,11 @@ _renderStreamPopup(d) {
             <div class="popup-meta">
               <h2 class="popup-title">${title}</h2>
               ${subLine ? `<div class="popup-sub">${subLine}</div>` : ''}
-              ${seekBar}
-              ${controls}
+              ${this._streamInfoHtml(d._streamEntity)}
+              ${this._isMob ? '' : seekBar + controls}
             </div>
           </div>
+          ${this._isMob ? `<div class="popup-desc">${seekBar}${controls}</div>` : ''}
         </div>
       </div>
     </div>`;

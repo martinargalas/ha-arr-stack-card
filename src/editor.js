@@ -450,6 +450,11 @@ ${EDITOR_CSS}
             </select>
           </div>
           <div class="hint">For the lists that fill the screen, in every layout: See More, a category opened from List and, on a phone, the search, Library and Maintainerr. Auto fits as many as the tablet's width takes.</div>
+          <div class="row">
+            <span class="row-label">Fade under a bottom bar</span>
+            <label class="toggle"><input type="checkbox" data-group="discover" data-key="dockFade" ${this._cfg('discover','dockFade',true) !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+          <div class="hint">With a bar fixed along the bottom of the screen (Bubble Card's buttons), lists, covers and trailers fade out under it, and by day a light band stays there. Turn it off for an opaque bar, which hides what runs under it anyway.</div>
         </div></details>
 
         <!-- Search -->

@@ -17,6 +17,10 @@ class _WireMusicMethods {
     this._musPanelH = null;
     this._musDescH = null;
     this._musAlbH = null;   // measured on the first paint of this artist
+    this._musAlbMobH = null;
+    this._musAlbUp = false;
+    this._musAlbPhoneH = null;
+    this._musPanelUp = false;
     this._musGlassH = null;
     this._musAlbCols = null;
     this._musQueueSigLast = null;
@@ -80,10 +84,11 @@ class _WireMusicMethods {
   // no artist at all still has to open something.
   async _musOpenForStream(streamId, title = '') {
     const hit = this._musStreamArtist(streamId);
-    if (hit) { this._openMusicModal(hit.id, { stream: streamId }); return; }
-    const name = String((this._streamAttrOf(streamId) || {}).media_artist || '').trim();
-    const mbid = name ? await this._musLookupUnowned(name) : null;
-    if (mbid) { this._openMusicPreview(mbid, { stream: streamId }); return; }
+    if (hit) return this._openMusicModal(hit.id, { stream: streamId });
+    const mbid = await this._musLookupStream(streamId);
+    const own = this._musOwnedByMbid(mbid, streamId);
+    if (own) return this._openMusicModal(own.id, { stream: streamId });
+    if (mbid) return this._openMusicPreview(mbid, { stream: streamId });
     this._openStreamPopup(streamId, 'music', title || (this._streamAttrOf(streamId) || {}).media_title || '', '', { bare: true });
   }
 
@@ -100,16 +105,65 @@ class _WireMusicMethods {
     // Nobody in the library by that name. The window stays what it is — the
     // preview every unowned artist gets, with their albums from MusicBrainz
     // and the button that adds them — rather than dropping to a bare stream.
-    const name = String((this._streamAttrOf(streamId) || {}).media_artist || '').trim();
-    const mbid = name ? await this._musLookupUnowned(name) : null;
+    const mbid = await this._musLookupStream(streamId);
     // The track may have moved on again while Lidarr was being asked
     if (this._musicModal?.stream !== streamId) return;
+    const own = this._musOwnedByMbid(mbid, streamId);
+    if (own) {
+      if (own.id !== this._musicModal?.artistId || this._musicModal?.preview) this._openMusicModal(own.id, { stream: streamId });
+      else this._renderMusicModalEl();
+      return;
+    }
     if (mbid) { this._openMusicPreview(mbid, { stream: streamId }); return; }
     this._renderMusicModalEl();
   }
 
   // An artist by name, as Lidarr's own search knows them. Kept where the
   // preview window looks an artist up, since that is what will ask for it.
+  // The library's artist MusicBrainz names by `mbid`: one the library holds
+  // under another name or script than the player sends (Дима Билан for Dima
+  // Bilan) is still the library's, Remove and all, not a preview. Kept for the
+  // stream, so the next look (the card's rating, a skip) finds it at once.
+  _musOwnedByMbid(mbid, streamId) {
+    if (!mbid) return null;
+    const want = String(mbid).toLowerCase();
+    const own = [...(this._lidarrArtists?.values() || [])]
+      .find(a => String(a.foreignArtistId || '').toLowerCase() === want) || null;
+    if (own && streamId) {
+      const name = this._musStreamNames(streamId)[0];
+      if (name) (this._musOwnedNames ||= new Map()).set(normName(name), own.id);
+    }
+    return own;
+  }
+
+  // Lidarr asked for each name the track's artist may go by, until one answers.
+  // Then by the album: MusicBrainz may know the artist in another script than
+  // the player (Dima Bilan, Дима Билан). Of the albums by that title, the one
+  // by an artist the search found for the name is the one playing.
+  async _musLookupStream(streamId) {
+    const names = this._musStreamNames(streamId);
+    for (const name of names) {
+      const mbid = await this._musLookupUnowned(name);
+      if (mbid) return mbid;
+    }
+    const album = String((this._streamAttrOf(streamId) || {}).media_album_name || '').trim();
+    if (!album || !names.length) return null;
+    const ask = term => this._callApi('GET', term).then(r => (Array.isArray(r) ? r : [])).catch(() => []);
+    const [artists, albums] = await Promise.all([
+      ask(`arr_stack/lidarr/lookup?term=${encodeURIComponent(names[names.length - 1])}`),
+      ask(`arr_stack/lidarr/albumlookup?term=${encodeURIComponent(album)}`),
+    ]);
+    const ids = new Set(artists.map(a => String(a.foreignArtistId || '').toLowerCase()).filter(Boolean));
+    const want = normName(album);
+    const hit = albums.find(r => normName(r.title) === want
+      && ids.has(String(r.artist?.foreignArtistId || '').toLowerCase()));
+    if (!hit) return null;
+    const artist = artists.find(a => String(a.foreignArtistId).toLowerCase() === String(hit.artist.foreignArtistId).toLowerCase()) || hit.artist;
+    this._musStreamArtists = this._musStreamArtists || new Map();
+    this._musStreamArtists.set(String(artist.foreignArtistId).toLowerCase(), artist);
+    return artist.foreignArtistId;
+  }
+
   async _musLookupUnowned(name) {
     const ask = async term => {
       const list = await this._callApi('GET', `arr_stack/lidarr/lookup?term=${encodeURIComponent(term)}`)
@@ -148,6 +202,7 @@ class _WireMusicMethods {
     // would jump back to the top — expanding one album should not move the rest.
     const prev = root.querySelector('[data-music-modal]');
     const keepScroll = prev?.querySelector('.sn-seasons-rows')?.scrollTop || 0;
+    const keepAlb = prev?.querySelector('.mus-alb-scroll')?.scrollTop || 0;
     prev?.remove();
     if (!this._musicModal) return;
     const wrap = document.createElement('div');
@@ -166,6 +221,9 @@ class _WireMusicMethods {
       this._musSizePanel(el);
       this._musFitAlbums(el);
       this._musMeasureCols(el);
+      // A repaint (a download's progress) leaves a phone's covers where they were
+      const alb = keepAlb && el.querySelector('.mus-alb-scroll');
+      if (alb) alb.scrollTop = keepAlb;
     });
     this._wireMusPanelDrag(el);
     this._wireMusAlbDrag(el);
@@ -176,6 +234,12 @@ class _WireMusicMethods {
     this._ppWireSeekDrag(el);
 
     el.addEventListener('click', e => {
+      const tog = e.target.closest('[data-mus-sheet-toggle]');
+      if (tog) {
+        e.stopPropagation();
+        this._musSheetToggle(el, tog.dataset.musSheetToggle);
+        return;
+      }
       const menuBtn = e.target.closest('[data-mus-menu]');
       if (menuBtn) {
         e.stopPropagation();
@@ -332,6 +396,7 @@ class _WireMusicMethods {
     const done = () => {
       if (!this._musicModal) return;
       this._musicModal.search = null;
+      this._musPanelUp = false;   // the next sources sheet opens where it always does
       this._renderMusicModalEl();
     };
     if (!panel) { done(); return; }

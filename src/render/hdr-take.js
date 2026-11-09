@@ -135,7 +135,9 @@ class _HdrTakeMethods {
       // its tab, not by the list being there: Maintainerr swaps its list while
       // it loads and lays it out by the window's height, and the window
       // jumping between the two heights redrew it without end.
-      const full = taken && (o.matches('[data-lib-modal], [data-act-modal], [data-pw-modal], [data-tl-modal], [data-js-modal], [data-tra-modal], [data-sim-modal]')
+      // Not Tracearr: its menu is a bar along the window's bottom on a phone,
+      // which a dock would cover; the window ends above the dock instead.
+      const full = taken && (o.matches('[data-lib-modal], [data-act-modal], [data-pw-modal], [data-tl-modal], [data-js-modal], [data-sim-modal], [data-music-modal], [data-album-modal], [data-modal="stream"]')
         || (o.matches('[data-mt-modal]') && !!o.querySelector('#mt-nav .mt-nav-btn.is-on[data-mt-tab="overview"]')));
       o.classList.toggle('hdr-full', full);
       const list = full ? o.querySelector('.popup-glass .lib-scroll.vscroll') : null;
