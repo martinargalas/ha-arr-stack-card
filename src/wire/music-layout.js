@@ -12,7 +12,7 @@ class _WireMusicLayoutMethods {
     let startX = null;
     wrap.addEventListener('touchstart', e => {
       startX = e.touches[0].clientX;
-    }, { passive: true });
+    }, { passive: true, signal: this._musAbort?.signal });
     wrap.addEventListener('touchend', e => {
       if (startX === null) return;
       const dx = e.changedTouches[0].clientX - startX;
@@ -27,7 +27,7 @@ class _WireMusicLayoutMethods {
       if (next < 0 || next > pages - 1) return;
       m.albPage = next;
       this._renderMusicModalEl();
-    }, { passive: true });
+    }, { passive: true, signal: this._musAbort?.signal });
   }
 
   // How many covers fit across is a layout answer, not a guess: read it from the
@@ -93,8 +93,9 @@ class _WireMusicLayoutMethods {
   // A drag on a grabber is the grabber's alone: let through, Bubble Card's
   // pop-up took it for its own swipe and pulled the whole window down with it
   _musGrabOwnTouch(handle) {
-    handle.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
-    handle.addEventListener('touchmove', e => { e.stopPropagation(); if (e.cancelable) e.preventDefault(); }, { passive: false });
+    const signal = this._musAbort?.signal;
+    handle.addEventListener('touchstart', e => e.stopPropagation(), { passive: true, signal });
+    handle.addEventListener('touchmove', e => { e.stopPropagation(); if (e.cancelable) e.preventDefault(); }, { passive: false, signal });
   }
 
   _wireMusPanelDrag(el) {
@@ -123,7 +124,7 @@ class _WireMusicLayoutMethods {
       };
       handle.addEventListener('pointermove', move);
       handle.addEventListener('pointerup', up);
-    });
+    }, { signal: this._musAbort?.signal });
   }
 
   // Two rows of covers is what the sheet opens on: measured once from a real
@@ -319,8 +320,8 @@ class _WireMusicLayoutMethods {
     // the pop-up under them closed instead
     const list = panel?.querySelector('.mus-alb-scroll');
     if (list) {
-      list.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
-      list.addEventListener('touchmove', e => e.stopPropagation(), { passive: true });
+      list.addEventListener('touchstart', e => e.stopPropagation(), { passive: true, signal: this._musAbort?.signal });
+      list.addEventListener('touchmove', e => e.stopPropagation(), { passive: true, signal: this._musAbort?.signal });
     }
     if (!handle || !panel) return;
     this._musGrabOwnTouch(handle);
@@ -393,7 +394,7 @@ class _WireMusicLayoutMethods {
       };
       handle.addEventListener('pointermove', move);
       handle.addEventListener('pointerup', up);
-    });
+    }, { signal: this._musAbort?.signal });
   }
 
 }

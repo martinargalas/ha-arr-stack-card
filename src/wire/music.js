@@ -203,13 +203,21 @@ class _WireMusicMethods {
     const prev = root.querySelector('[data-music-modal]');
     const keepScroll = prev?.querySelector('.sn-seasons-rows')?.scrollTop || 0;
     const keepAlb = prev?.querySelector('.mus-alb-scroll')?.scrollTop || 0;
-    prev?.remove();
-    if (!this._musicModal) return;
-    const wrap = document.createElement('div');
-    wrap.innerHTML = this._musicModalHtml();
-    const el = wrap.firstElementChild;
+    if (!this._musicModal) { prev?.remove(); return; }
+    // Painted like a title's detail: only what changed is replaced, so a tap
+    // (an album's search, a menu's choice) no longer rebuilds the glass, the
+    // pictures and the sheets, each a blink. Its own box, brought to the top
+    // as it opens, over whatever was open before.
+    let host = root.getElementById('mus-root');
+    if (!host) { host = document.createElement('div'); host.id = 'mus-root'; }
+    if (!prev || host.lastElementChild !== prev) { host._arrHtml = null; root.appendChild(host); }
+    // Listeners are tied to this paint; nodes that survive it would otherwise
+    // collect a second copy of each
+    this._musAbort?.abort();
+    this._musAbort = new AbortController();
+    this._paintCol(host, this._musicModalHtml());
+    const el = host.querySelector('[data-music-modal]');
     if (!el) return;
-    root.appendChild(el);
 
     if (keepScroll) {
       const rows = el.querySelector('.sn-seasons-rows');
@@ -232,7 +240,7 @@ class _WireMusicMethods {
     // The same seek bar the popups use, so it is dragged the same way: the
     // artist window only ever had the click, and a finger on the bar moved
     // nothing.
-    this._ppWireSeekDrag(el);
+    this._ppWireSeekDrag(el, this._musAbort.signal);
 
     el.addEventListener('click', e => {
       const tog = e.target.closest('[data-mus-sheet-toggle]');
@@ -388,7 +396,7 @@ class _WireMusicMethods {
           && !e.target.closest('[data-mus-grab-handle]')) {
         this._musCloseSearch();
       }
-    });
+    }, { signal: this._musAbort.signal });
   }
 
   // The sheet drops out of sight before the state changes, so the discography

@@ -154,9 +154,13 @@ _renderPopupEl() {
         // Picking another item changes the markup, but the blurred capsule
         // itself can stay — swapping only its children keeps the surface from
         // being recreated, which is what was blinking.
+        // Only what changed in it, too: an instance picked in a menu redrew
+        // the whole menu, and it dropped open again
         oldPills.forEach((pill, i) => {
           const next = newPills[i];
-          if (pill.innerHTML !== next.innerHTML) pill.innerHTML = next.innerHTML;
+          if (pill.innerHTML === next.innerHTML) return;
+          pill._arrHtml = pill.innerHTML;
+          this._paintCol(pill, next.innerHTML);
         });
         _newBar.replaceWith(_oldBar);
       }
