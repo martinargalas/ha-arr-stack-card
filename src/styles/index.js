@@ -1951,7 +1951,7 @@ ${TOKEN_CSS}
            let go. Under the header it runs on under a bar along the bottom,
            as the Library does, its end scrolling up above the bar and the
            rows fading out only where the bar covers them */
-        .popup-body.mob-scroll {
+        :is(.popup-body, #sim-content).mob-scroll {
           overflow-y: auto !important; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
         }
         .mob-scroll .u-col-fill { flex: none; min-height: 100%; }
@@ -1962,16 +1962,17 @@ ${TOKEN_CSS}
         .mob-scroll > [style*="display:contents"] > [style*="overflow-y:auto"] {
           flex: none !important; overflow: visible !important;
         }
-        :host([hdr-take]) .hdr-full .popup-body.mob-scroll {
+        :host([hdr-take]) .hdr-full #sim-body { padding-bottom: 0 !important; }
+        :host([hdr-take]) .hdr-full :is(.popup-body, #sim-content).mob-scroll {
           padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px + var(--arr-bottom-bar, 0px)) !important;
           --fe: color-mix(in srgb, black 35%, transparent);
           --fbar: var(--arr-bottom-bar, 0px);
           -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
           mask-image: linear-gradient(to bottom, black 0, black calc(100% - var(--fb, 0px) - var(--fbar)), var(--fe-b, black) calc(100% - var(--fbar)), var(--fe-b, black) 100%);
         }
-        :host([hdr-take][style*="--arr-bottom-bar"]) .hdr-full .popup-body.mob-scroll:not(.end-b) { --fb: 40px; --fe-b: var(--fe); }
+        :host([hdr-take][style*="--arr-bottom-bar"]) .hdr-full :is(.popup-body, #sim-content).mob-scroll:not(.end-b) { --fb: 40px; --fe-b: var(--fe); }
         /* Its own padding keeps clear of the bar already, as the Library's */
-        :host([hdr-take]) .hdr-full .popup-body.mob-scroll > .to-top-wrap { bottom: -10px; }
+        :host([hdr-take]) .hdr-full :is(.popup-body, #sim-content).mob-scroll > .to-top-wrap { bottom: -10px; }
         :host([hdr-take]) #cal-overlay.hdr-taken { padding-bottom: 0; border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0; }
         :host([hdr-take]) #cal-overlay.hdr-taken > .cal-modal-glass {
           border-radius: var(--arr-modal-radius, 28px) var(--arr-modal-radius, 28px) 0 0;
@@ -1989,6 +1990,8 @@ ${TOKEN_CSS}
       .to-grid.to-grid-sheet { flex: none; grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)) !important; row-gap: 12px; }
       /* Search results on a phone: scrolled down like See More, as many a row */
       .mgrid.search-scroll { grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)) !important; gap: 12px 8px; }
+      /* Similar titles on a phone the same */
+      .sim-mob-grid { display: grid; grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)); gap: 12px 8px; }
       /* Never the scroll anchor: held in place while posters are added above
          it, it would stay in view and ask for the next batch without end */
       .to-sheet-foot {

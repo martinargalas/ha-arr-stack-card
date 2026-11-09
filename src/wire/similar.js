@@ -1,4 +1,5 @@
 import { POPUP_TYPE } from '../constants.js';
+import { SHEET_BATCH } from '../render/sections.js';
 
 // Similar titles: opening the modal, the search that picks a title, the type,
 // sort and hide-owned filters, paging, the column slider, and the way back
@@ -90,6 +91,7 @@ class _WireSimilarMethods {
   }
 
   _closeSimModal() {
+    this._simIo?.disconnect();
     clearTimeout(this._simTypeT);
     this.shadowRoot.querySelector('[data-sim-modal]')?.remove();
     this._simModal = null;
@@ -136,7 +138,11 @@ class _WireSimilarMethods {
     const inp = el.querySelector('#sim-search');
     if (inp) inp.placeholder = this._simPlaceholder();
     const c = el.querySelector('#sim-content');
-    if (c) c.innerHTML = this._simContentHtml();
+    if (c) {
+      c.innerHTML = this._simContentHtml();
+      // A new list (a filter, another title) starts at its top
+      if (!s.shown) c.scrollTop = 0;
+    }
     this._simAfterRender(el);
   }
 
@@ -227,7 +233,7 @@ class _WireSimilarMethods {
     const s = this._simModal;
     if (!s) return;
     const tags = s.mUsed || [];
-    s.page = 0;
+    s.page = 0; s.shown = 0;
     if (!tags.length) { s.mTagItems = null; this._simRender(el); return; }
     s.mLoading = true;
     this._simRender(el);
@@ -270,6 +276,40 @@ class _WireSimilarMethods {
     el.querySelectorAll('.req-tabs').forEach(nav =>
       requestAnimationFrame(() => this._syncNavInd(nav, nav.querySelector('.req-tab--active'))));
     requestAnimationFrame(() => this._simMeasureGrid(el));
+    this._simWireMore(el);
+  }
+
+  // A phone's results end in a footer; nearing it adds the next batch under
+  // the cards already there. A fresh observer reports at once, so a batch too
+  // short to push the footer away brings the next one too.
+  _simWireMore(el) {
+    this._simIo?.disconnect();
+    const foot = el?.querySelector('[data-sim-more]');
+    if (!foot) return;
+    this._simIo = new IntersectionObserver(en => {
+      if (en.some(x => x.isIntersecting)) this._simMore(el);
+    }, { root: el.querySelector('#sim-content'), rootMargin: '0px 0px 600px 0px' });
+    this._simIo.observe(foot);
+  }
+
+  _simMore(el) {
+    const s = this._simModal;
+    const grid = el?.querySelector('#sim-grid.sim-mob-grid');
+    if (!s || !grid) return;
+    const list = this._simVisible();
+    const from = Math.min(list.length, s.shown || SHEET_BATCH);
+    if (from >= list.length) return;
+    const to = Math.min(list.length, from + SHEET_BATCH);
+    s.shown = to;
+    const picking = s.mode === 'pick';
+    const tpl = document.createElement('template');
+    tpl.innerHTML = list.slice(from, to).map((it, i) => this._simCard(it, from + i, picking)).join('');
+    this._simSealReq(tpl.content);
+    grid.append(tpl.content);
+    if (to >= list.length) {
+      el.querySelector('[data-sim-more]')?.remove();
+      this._simIo?.disconnect();
+    }
   }
 
   // The first paint only estimates the room the grid has. Once it is on screen
@@ -278,7 +318,8 @@ class _WireSimilarMethods {
     const s = this._simModal;
     const grid = el?.querySelector('#sim-grid');
     const body = el?.querySelector('#sim-body');
-    if (!s || !grid || !body) return;
+    // A phone's grid scrolls: its rows are not fitted to the window
+    if (!s || !grid || !body || this._isMob) return;
     const top = grid.getBoundingClientRect().top;
     const pag = el.querySelector('#sim-pag-wrap');
     const bottom = pag ? pag.getBoundingClientRect().top : body.getBoundingClientRect().bottom;
@@ -321,7 +362,7 @@ class _WireSimilarMethods {
         return;
       }
       if (!s || !['sim-sort', 'sim-year-from', 'sim-year-to'].includes(id)) return;
-      s.page = 0;
+      s.page = 0; s.shown = 0;
       if (id === 'sim-year-from' || id === 'sim-year-to') {
         const cy = new Date().getFullYear();
         const v = parseInt(e.target.value);
@@ -381,7 +422,7 @@ class _WireSimilarMethods {
         if (gb) this._simTogglePick(s, 'genres', 'genresEx', view, gb.dataset.simGenre);
         else s[view === 'ex' ? 'genresEx' : 'genres'] = [];
         try { localStorage.setItem('arr-sim-genres-ex', JSON.stringify(s.genresEx || [])); } catch (_) {}
-        s.page = 0;
+        s.page = 0; s.shown = 0;
         this._simRefreshGenre(el);
         this._simRender(el);
         return;
@@ -404,7 +445,7 @@ class _WireSimilarMethods {
         else s[view === 'ex' ? 'countriesEx' : 'countries'] = [];
         s.countries = (s.countries || []).slice(0, 8);
         s.countriesEx = (s.countriesEx || []).slice(0, 8);
-        s.page = 0;
+        s.page = 0; s.shown = 0;
         try {
           localStorage.setItem('arr-sim-countries', JSON.stringify(s.countries));
           localStorage.setItem('arr-sim-countries-ex', JSON.stringify(s.countriesEx));
@@ -433,7 +474,7 @@ class _WireSimilarMethods {
         const order = (s.cast || []).map(c => c.id);
         s.castSel = order.filter(id => (s.castSel || []).includes(id));
         s.castEx = order.filter(id => (s.castEx || []).includes(id));
-        s.page = 0;
+        s.page = 0; s.shown = 0;
         this._simRefreshCast(el);
         clearTimeout(this._simCastT);
         this._simCastT = setTimeout(() => this._simLoadResults(el, s.used), 450);
@@ -446,7 +487,7 @@ class _WireSimilarMethods {
         s.since = parseInt(a) || null;
         s.until = parseInt(b) || null;
         s._yearOpen = false;
-        s.page = 0;
+        s.page = 0; s.shown = 0;
         this._simYearChanged(el);
         return;
       }
@@ -460,7 +501,7 @@ class _WireSimilarMethods {
         s._segAnim = true;
         s.type = v;
         try { localStorage.setItem('arr-sim-type', v); } catch (_) {}
-        s.page = 0;
+        s.page = 0; s.shown = 0;
         this._simRender(el);
         return;
       }
@@ -470,7 +511,7 @@ class _WireSimilarMethods {
         s.hideOwned = !s.hideOwned;
         hide.outerHTML = this._simHideHtml();
         try { localStorage.setItem('arr-sim-hide', s.hideOwned ? '1' : '0'); } catch (_) {}
-        s.page = 0;
+        s.page = 0; s.shown = 0;
         this._simRender(el);
         return;
       }
@@ -721,14 +762,25 @@ class _WireSimilarMethods {
     if (s.mode !== 'pick') s.resultsPage = s.page || 0;
     s.mode = 'pick';
     s.candLoading = true;
-    s.page = 0;
+    s.page = 0; s.shown = 0;
     this._simRender(el);
     const tok = s._candTok = (s._candTok || 0) + 1;
-    const cands = await this._simFetchSeeds(q);
-    if (this._simModal !== s || tok !== s._candTok) return;   // closed, or typed on
+    const live = () => this._simModal === s && tok === s._candTok;   // not closed, nor typed on
+    // Films and series show as they arrive; the music is added when it lands,
+    // the list left where it was scrolled to
+    const cands = await this._simFetchSeeds(q, media => {
+      if (!live() || !media.length) return;
+      s.cands = media;
+      s.candLoading = false;
+      this._simRender(el);
+    });
+    if (!live()) return;
+    const box = el.querySelector('#sim-content');
+    const top = box?.scrollTop || 0;
     s.cands = cands;
     s.candLoading = false;
     this._simRender(el);
+    if (box && top) box.scrollTop = top;
   }
 
   _simSeedOf(it) {
@@ -782,7 +834,7 @@ class _WireSimilarMethods {
     s.castItems = res.castItems || [];
     if (res.cast?.length || !s.cast) s.cast = res.cast || [];
     s.loading = false;
-    s.page = 0;
+    s.page = 0; s.shown = 0;
     if (!s._genreOpen) this._simRefreshGenre(el);
     if (!s._yearOpen) this._simRefreshYear(el);   // hidden for an artist
     if (!s._castOpen) this._simRefreshCast(el);

@@ -1,5 +1,8 @@
 // Fetching for the main search. Split out of fetch/arr.js.
 
+// How long the main search waits for Lidarr's music before it settles without it
+export const MUSIC_WAIT_MS = 4000;
+
 class _FetchSearchMethods {
 
 get _searchType() {
@@ -14,12 +17,15 @@ get _searchMusic() {
   return this._lidarrConfigured !== false && (t === 'all' || t === 'music');
 }
 
-// `any`: asked whatever the main search's type is — Similar titles has its own
-async _fetchSearchMusic(query, any = false) {
+// `any`: asked whatever the main search's type is — Similar titles has its own.
+// Albums are the slowest thing Lidarr is asked (MusicBrainz, often a few
+// seconds, at times a 503): looked up only where music is all that is sought,
+// the search narrowed to music (`albums` says so for Similar titles).
+async _fetchSearchMusic(query, any = false, albums = this._searchType === 'music') {
   if (any ? this._lidarrConfigured === false : !this._searchMusic) return [];
   const [byArtist, byAlbum] = await Promise.all([
     this._callApi('GET', `arr_stack/lidarr/lookup?term=${encodeURIComponent(query)}`).catch(() => []),
-    this._callApi('GET', `arr_stack/lidarr/albumlookup?term=${encodeURIComponent(query)}`).catch(() => []),
+    albums ? this._callApi('GET', `arr_stack/lidarr/albumlookup?term=${encodeURIComponent(query)}`).catch(() => []) : [],
   ]);
   const seen = new Set();
   const out = [];
@@ -48,7 +54,12 @@ async _fetchSearch(query) {
   const tok = this._searchTok = (this._searchTok || 0) + 1;
   const stale = () => tok !== this._searchTok;
   this._searchLoading = true;
-  const musicP = this._fetchSearchMusic(query).catch(() => []);
+  // Beside films and series the music joins them when it lands, but not
+  // after MUSIC_WAIT_MS: Lidarr is allowed twenty seconds, which is no search.
+  // Narrowed to music, it is all there is to wait for.
+  const music0 = this._fetchSearchMusic(query).catch(() => []);
+  const musicP = this._searchType === 'music' ? music0
+    : Promise.race([music0, new Promise(r => setTimeout(() => r([]), MUSIC_WAIT_MS))]);
   // Narrowed to music, there is nothing for the film and series sources to say.
   if (this._searchType === 'music') {
     const only = await musicP;

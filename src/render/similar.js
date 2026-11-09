@@ -1,4 +1,5 @@
 import { isMobile, dayClass, ICONS, statusTok } from '../shared/ui.js';
+import { SHEET_BATCH } from './sections.js';
 import { genreFamily } from '../shared/genres.js';
 import { ORIGIN_COUNTRIES, regionName } from '../shared/countries.js';
 
@@ -65,7 +66,7 @@ class _SimilarRenderMethods {
         <div class="is-panel-hdr" id="sim-hdr" style="flex-direction:row;align-items:center;padding:${mob ? '12px 12px 10px' : '14px 22px 10px'};gap:8px">${this._simHdrHtml()}</div>
         <div class="popup-body" id="sim-body" style="padding:${mob ? '6px 10px 12px' : '8px 20px 16px'};overflow:hidden;display:flex;flex-direction:column">
           <div id="sim-tb" style="flex-shrink:0;display:flex;flex-wrap:${mob ? 'wrap' : 'nowrap'};align-items:center;gap:6px;margin-bottom:10px">${this._simToolbarHtml()}</div>
-          <div id="sim-content" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden">${this._simContentHtml()}</div>
+          <div id="sim-content"${mob ? ' class="mob-scroll vscroll"' : ''} style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden">${this._simContentHtml()}</div>
         </div>
       </div>
     </div>`;
@@ -419,6 +420,14 @@ class _SimilarRenderMethods {
     const list = this._simVisible();
     if (!list.length) return head + msg(picking ? 'simNoCands' : 'simNone');
 
+    // A phone scrolls the results as it does the main search's: a batch at a
+    // time as the end nears, as many a row as the card's phone setting says
+    if (this._isMob) {
+      const shown = Math.min(list.length, s.shown || SHEET_BATCH);
+      const cards = list.slice(0, shown).map((it, i) => this._simCard(it, i, picking)).join('');
+      return `${head}<div id="sim-grid-wrap" style="position:relative;flex:none"><div id="sim-grid" class="sim-mob-grid">${cards}</div>${this._simReqOverlayHtml()}</div>`
+        + (shown < list.length ? '<div class="sheet-more" data-sim-more></div>' : '');
+    }
     const { cols, perPage, gap, gridMaxW } = this._mtGridCalc(s, SIM_TOOLBAR_H, s);
     const totalPages = Math.max(1, Math.ceil(list.length / perPage));
     const page = Math.min(s.page || 0, totalPages - 1);

@@ -1,4 +1,5 @@
 import { genreFamily, TV_COMPARABLE } from '../shared/genres.js';
+import { MUSIC_WAIT_MS } from './search.js';
 
 // Similar titles: what the card's sources say is like one title. Films and
 // series go by what they are about — the TMDB keywords they share, asked of
@@ -15,16 +16,22 @@ class _SimilarFetchMethods {
   // Titles to start from, found the way the main search finds them but kept
   // apart from its results, which the right column is still showing. Every
   // kind is asked; the header's type narrows what is shown, not what is asked.
-  async _simFetchSeeds(query) {
+  // As the main search, films and series are handed to `onMedia` as soon as
+  // they arrive and the music joins them when Lidarr answers, given up after
+  // MUSIC_WAIT_MS unless music is all that is sought.
+  async _simFetchSeeds(query, onMedia) {
     const svc = this._overseerrConfigured === false ? 'tmdb' : 'overseerr';
-    const [media, music] = await Promise.all([
-      this._simMediaOn()
-        ? this._callApi('POST', `arr_stack/${svc}/search`, { query })
-            .then(d => (d?.results || []).filter(r => (r.mediaType === 'movie' || r.mediaType === 'tv') && r.id))
-            .catch(() => [])
-        : [],
-      this._fetchSearchMusic(query, true).catch(() => []),
-    ]);
+    const musicOnly = this._simModal?.type === 'music';
+    const mediaP = (this._simMediaOn()
+      ? this._callApi('POST', `arr_stack/${svc}/search`, { query })
+          .then(d => (d?.results || []).filter(r => (r.mediaType === 'movie' || r.mediaType === 'tv') && r.id))
+          .catch(() => [])
+      : Promise.resolve([]))
+      .then(media => { onMedia?.(media); return media; });
+    const music0 = this._fetchSearchMusic(query, true, musicOnly).catch(() => []);
+    const musicP = musicOnly ? music0
+      : Promise.race([music0, new Promise(r => setTimeout(() => r([]), MUSIC_WAIT_MS))]);
+    const [media, music] = await Promise.all([mediaP, musicP]);
     // Kept where the preview window looks an artist up (_musUnownedArtist)
     this._simKeepArtists(music.map(r => r.artist));
     return [...media, ...music];

@@ -135,7 +135,7 @@ class _HdrTakeMethods {
       // its tab, not by the list being there: Maintainerr swaps its list while
       // it loads and lays it out by the window's height, and the window
       // jumping between the two heights redrew it without end.
-      const full = taken && (o.matches('[data-lib-modal], [data-act-modal], [data-pw-modal], [data-tl-modal], [data-js-modal], [data-tra-modal]')
+      const full = taken && (o.matches('[data-lib-modal], [data-act-modal], [data-pw-modal], [data-tl-modal], [data-js-modal], [data-tra-modal], [data-sim-modal]')
         || (o.matches('[data-mt-modal]') && !!o.querySelector('#mt-nav .mt-nav-btn.is-on[data-mt-tab="overview"]')));
       o.classList.toggle('hdr-full', full);
       const list = full ? o.querySelector('.popup-glass .lib-scroll.vscroll') : null;
