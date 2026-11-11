@@ -156,7 +156,7 @@ async _sonarrGrab(guid, indexerId) {
       this._asMovieSearching = true;
       this._renderPopupEl();
       try {
-        await Promise.all([
+        const [cmd] = await Promise.all([
           this._callApi('POST', `arr_stack/${svc}/command`, { name: 'MoviesSearch', movieIds: [movieId] }),
           _asDelay(1000),
         ]);
@@ -164,7 +164,7 @@ async _sonarrGrab(guid, indexerId) {
         this._grabWatchAdd(svc, movieId, 5 * 60_000);
         this._asMovieSearched = true;
         this._asState = 'done';
-        this._asPollForDownload(`movie:${instance}`, svc, movieId);
+        this._asPollForDownload(`movie:${instance}`, svc, movieId, cmd?.id);
       } catch (e) {
         this._asState = 'error';
         this._asError = e.message || this._t('isLoadError');
@@ -290,6 +290,7 @@ async _sonarrGrab(guid, indexerId) {
     if (!series?.id) return;
     const seriesId = series.id;
     const key = `season:${seasonNumber}`;
+    this._asEpMissed?.delete(key);
     this._dlTriggeredBy = 'as';
     this._asSearchingItems.add(key);
     this._renderPopupEl();
@@ -314,12 +315,12 @@ async _sonarrGrab(guid, indexerId) {
       }
       this._render(); // recentlyRequested refresh — series is now monitored
       // Fire search (min 1s spinner)
-      await Promise.all([
+      const [cmd] = await Promise.all([
         this._callApi('POST', `arr_stack/${svc}/command`, { name: 'SeasonSearch', seriesId, seasonNumber }),
         new Promise(r => setTimeout(r, 1000)),
       ]);
       this._asSearchedItems.add(key);
-      this._asPollForDownload(key, svc, seriesId);
+      this._asPollForDownload(key, svc, seriesId, cmd?.id);
       this._grabWatchAdd(svc, seriesId, 5 * 60_000);
     } catch (e) {
       console.error('[arr-card] Season search error:', e);
@@ -333,15 +334,16 @@ async _sonarrGrab(guid, indexerId) {
     const d      = this._popup;
     const series = instance === 'sonarr2' ? d._sonarr2Series : d._sonarrSeries;
     const key = `ep:${episodeId}`;
+    this._asEpMissed?.delete(key);
     this._asSearchingItems.add(key);
     this._renderPopupEl();
     try {
-      await Promise.all([
+      const [cmd] = await Promise.all([
         this._callApi('POST', `arr_stack/${svc}/command`, { name: 'EpisodeSearch', episodeIds: [episodeId] }),
         new Promise(r => setTimeout(r, 1000)),
       ]);
       this._asSearchedItems.add(key);
-      if (series?.id) this._asPollForDownload(key, svc, series.id);
+      if (series?.id) this._asPollForDownload(key, svc, series.id, cmd?.id);
       if (series?.id) this._grabWatchAdd(svc, series.id, 5 * 60_000);
     } catch (e) {
       console.error('[arr-card] Episode search error:', e);
@@ -355,32 +357,93 @@ async _sonarrGrab(guid, indexerId) {
   // key: 'movie' | 'season:N' | 'ep:ID'
   // movieOrSeriesId: Radarr movieId or Sonarr seriesId
   // ─────────────────────────────────────────────
-  async _asPollForDownload(key, svc, movieOrSeriesId) {
+  // While the AS list shows a download, its progress is asked for every five
+  // seconds: the regular polling rests while a detail is open
+  // Something shows the automatic search's outcome: the AS list, or a season
+  // opened from its poster (its episodes and the season carry AS buttons)
+  _asWatching() {
+    return !!this._popup && (!!this._asOpen || this._snFromTile != null);
+  }
+
+  _asProgressPoll(svc) {
+    if (this._asProgressTimer) return;
+    const tick = async () => {
+      if (!this._asWatching() || !this._asDownloadingItems?.size) {
+        clearInterval(this._asProgressTimer); this._asProgressTimer = null; return;
+      }
+      try { await this._fetchSonarrQueue(svc === 'sonarr2' ? 'sonarr2' : 'sonarr'); } catch (_) { /* next time */ }
+      this._renderPopupEl();
+    };
+    this._asProgressTimer = setInterval(tick, 5000);
+    tick();
+  }
+
+  // A Sonarr or Radarr search command, asked every two seconds until it has run (a
+  // minute at most): true once done, null when it cannot be told
+  // (Lidarr's album search too, with its own window's test of being open)
+  async _asWaitCommand(svc, cmdId, key, alive = () => this._asWatching()) {
+    if (cmdId == null) return null;
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      if (!alive()) return false;
+      try {
+        const c = await this._callApi('GET', `arr_stack/${svc}/command/${cmdId}`);
+        const st = String(c?.status || '').toLowerCase();
+        if (['completed', 'failed', 'aborted', 'cancelled', 'orphaned'].includes(st)) return true;
+      } catch (_) { return null; }
+    }
+    return null;
+  }
+
+  async _asPollForDownload(key, svc, movieOrSeriesId, cmdId = null) {
     const isRadarr = svc === 'radarr' || svc === 'radarr2';
     const endpoint = `arr_stack/${svc}/queue`;
     this._asPolling.add(key);
     this._renderPopupEl();
-    const delays = [1000, 2000, 2000, 2000];
+    // Only what was searched for counts: an episode's own download, a
+    // season's, not any other episode of the series that happens to be in
+    // the queue (an unaired episode's search showed another's download)
+    const epId    = key.startsWith('ep:') ? Number(key.slice(3)) : null;
+    const seasonN = key.startsWith('season:') ? Number(key.slice(7)) : null;
+    const matches = item => {
+      if (isRadarr) return item.movieId === movieOrSeriesId;
+      if (item.seriesId !== movieOrSeriesId) return false;
+      if (epId != null) return (item.episodeId ?? item.episode?.id) === epId;
+      if (seasonN != null) return (item.seasonNumber ?? item.episode?.seasonNumber) === seasonN;
+      return true;
+    };
+    // Sonarr or Radarr says when its search has run: then the queue is looked at twice
+    // more (a grab takes a moment to show) and the answer is known — an
+    // episode yet to air no longer waits forty seconds for nothing. Without
+    // the command's state, an indexer search is given some forty seconds.
+    const done = await this._asWaitCommand(svc, cmdId, key);
+    if (done === false) { this._asPolling.delete(key); this._renderPopupEl(); return; }
+    const delays = done ? [500, 3000] : [2000, 3000, 5000, 5000, 5000, 10000, 10000];
     for (let i = 0; i < delays.length; i++) {
       await new Promise(r => setTimeout(r, delays[i]));
-      if (!this._asOpen) { this._asPolling.delete(key); return; } // popup closed — stop polling
+      if (!this._asWatching()) { this._asPolling.delete(key); this._renderPopupEl(); return; } // closed — stop polling
       try {
         const data    = await this._callApi('GET', endpoint);
         const records = Array.isArray(data) ? data : (data.records || []);
-        const found   = records.some(item => {
-          if (isRadarr) return item.movieId === movieOrSeriesId;
-          return item.seriesId === movieOrSeriesId;
-        });
-        if (found) {
+        if (records.some(matches)) {
           this._asPolling.delete(key);
           this._asDownloadingItems.add(key);
           if (isRadarr) { this._asOpen = false; this._asState = null; }
+          else this._asProgressPoll(svc);
           this._renderPopupEl();
           return;
         }
       } catch (_) { /* ignore */ }
     }
     this._asPolling.delete(key);
+    // An episode's or a season's search that grabbed nothing says so, and
+    // can be run again
+    if (key.startsWith('ep:') || key.startsWith('season:')) {
+      this._asSearchedItems.delete(key);
+      (this._asEpMissed ||= new Set()).add(key);
+    }
+    // A season opened from its poster shows it on its rows
+    this._renderPopupEl();
     // Poll exhausted — nothing found; show pill for 5s then close AS
     if (this._asOpen) {
       this._asNotFound.add(key);

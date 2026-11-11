@@ -3,8 +3,33 @@
 class _PopupClickMethods {
 
 // Every click inside the detail's glass: quick actions, menus, panels, the data-action buttons (popup/actions.js), Interactive Search sort and grab.
+// A sources sheet the IS or AS button opened (not a season opened from its
+// poster on a phone or tablet, which folds instead of closing)
+_ppSourcesOpen() {
+  if (!(this._isState || this._asOpen || this._snIsOpen)) return false;
+  return !(this._snFromTile != null && this._isNarrow);
+}
+
+// Close it as the search button would, sliding down first
+_ppCloseSourcesOut(glass) {
+  const panelEl = glass?.querySelector('.is-panel, .sn-is-panel, .sn-is-section');
+  const finish = () => {
+    this._isState = null; this._isExpanded = false;
+    this._asOpen = false; this._asExpanded = false; this._asState = null;
+    this._snIsOpen = false; this._snIsExpanded = false;
+    this._snIsState = null; this._snActiveIs = null; this._snFromTile = null;
+    this._searchExpand = null;
+    this._renderPopupEl();
+  };
+  if (panelEl) {
+    panelEl.classList.add('pp-panel-out');
+    setTimeout(finish, 220);
+  } else finish();
+}
+
 _ppGlassClick(e, root, d, overlay, glass) {
   e.stopPropagation();
+  this._ppFoldOnOutside(e);
 
   // ── Quick actions menu ──
   if (e.target.closest('[data-qa-toggle]')) {
@@ -131,23 +156,11 @@ _ppGlassClick(e, root, d, overlay, glass) {
   }
 
   // Tapping outside the sources panel closes it — it slides down first, so it
-  // reads as being put away rather than blinking out.
-  const _panelOpen = this._isState || this._asOpen || this._snIsOpen;
-  if (_panelOpen
+  // reads as being put away rather than blinking out. A season opened from
+  // its poster folds instead (_ppFoldOnOutside, above).
+  if (this._ppSourcesOpen()
       && !e.target.closest('.is-panel, .sn-is-panel, .sn-is-section, .pp-hero-bar, .qa-menu')) {
-    const panelEl = glass.querySelector('.is-panel, .sn-is-panel, .sn-is-section');
-    const finish = () => {
-      this._isState = null; this._isExpanded = false;
-      this._asOpen = false; this._asExpanded = false; this._asState = null;
-      this._snIsOpen = false; this._snIsExpanded = false;
-      this._snIsState = null; this._snActiveIs = null;
-      this._searchExpand = null;
-      this._renderPopupEl();
-    };
-    if (panelEl) {
-      panelEl.classList.add('pp-panel-out');
-      setTimeout(finish, 220);
-    } else finish();
+    this._ppCloseSourcesOut(glass);
     return;
   }
 

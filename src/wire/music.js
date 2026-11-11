@@ -19,6 +19,7 @@ class _WireMusicMethods {
     this._musAlbH = null;   // measured on the first paint of this artist
     this._musAlbMobH = null;
     this._musSheetUp = false;   // the covers and the sources, raised or lowered together
+    this._musSheetRows = 0;     // a phone's covers: how many rows they were dragged to
     this._musSheetH = null;
     this._musAlbPhoneH = null;
     this._musGlassH = null;

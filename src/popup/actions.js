@@ -15,6 +15,7 @@ export const POPUP_ACTIONS = {
   'as-confirm-yes': '_ppActAsConfirmYes',
   'as-confirm-no': '_ppActAsConfirmNo',
   'as-season-search': '_ppActAsSeasonSearch',
+  'mv-tile': '_ppActMvTile',
   'as-ep-search': '_ppActAsEpSearch',
   'ep-del-confirm': '_ppActEpDelConfirm',
   'ep-del-no': '_ppActEpDelNo',
@@ -43,6 +44,7 @@ export const POPUP_ACTIONS = {
   'sn-tile':      '_ppActSnTile',
   'sn-ep-is': '_ppActSnEpIs',
   'sn-back': '_ppActSnBack',
+  'sn-tile-view': '_ppActSnTileView',
   'remove-confirm': '_ppActRemoveConfirm',
   'remove-instance': '_ppActRemoveInstance',
   'remove-choose-lib': '_ppActRemoveChoose',
@@ -73,7 +75,7 @@ _ppRunAction(t, e, ctx) {
 // Panels that shut one another: opening one closes the rest.
 _ppCloseAS() {
   this._asOpen = false; this._asExpanded = false; this._asState = null;
-  this._asMovieSearched = false; this._asNotFound = new Set();
+  this._asMovieSearched = false; this._asNotFound = new Set(); this._asEpMissed = new Set();
 }
 _ppCloseIS() {
   this._isState = null; this._isExpanded = false;
@@ -81,6 +83,7 @@ _ppCloseIS() {
 _ppCloseSnIS() {
   this._snIsOpen = false; this._snIsExpanded = false;
   this._snIsState = null; this._snActiveIs = null;
+  this._snFromTile = null;
 }
 _ppCloseRemove() { this._removeConfirm = false; }
 
@@ -144,7 +147,7 @@ _ppActSearchPickAs(t, e, { root, overlay } = {}) {
   } else {
     this._asOpen = true; this._asInstance = inst; this._asState = null;
     this._asMovieSearching = false; this._asMovieSearched = false;
-    this._asSearchingItems = new Set(); this._asSearchedItems = new Set(); this._asError = null;
+    this._asSearchingItems = new Set(); this._asSearchedItems = new Set(); this._asEpMissed = new Set(); this._asError = null;
     if (_isMovT2) {
       const mId = inst === 'radarr2' ? dd2._radarr2Id : dd2._radarrId;
       if (!mId) { this._asState = 'confirm'; this._renderPopupEl(); }
@@ -183,6 +186,9 @@ _ppActSearchPickIs(t, e, { root, overlay } = {}) {
       else { this._fetchInteractiveSearch(radarrId, inst); }
     }
   } else {
+    // The capsule's IS button opens the season list as before, not a
+    // season's tile view
+    this._snFromTile = null;
     if (this._snIsOpen && this._snIsInstance === inst) {
       this._snIsOpen = false; this._snActiveIs = null; this._snIsState = null;
       this._renderPopupEl();
@@ -218,14 +224,15 @@ _ppActAsConfirmNo(t, e, { root, overlay } = {}) {
 
 _ppActAsSeasonSearch(t, e, { root, overlay } = {}) {
   const n = parseInt(t.dataset.season);
-  this._triggerSonarrSeasonSearch(n, this._asInstance);
+  // A season opened from its poster names its own instance
+  this._triggerSonarrSeasonSearch(n, t.dataset.inst || this._asInstance);
   return;
 }
 
 _ppActAsEpSearch(t, e, { root, overlay } = {}) {
   const epId    = parseInt(t.dataset.epid);
   const seasonN = parseInt(t.dataset.season);
-  this._triggerSonarrEpisodeSearch(epId, seasonN, this._asInstance);
+  this._triggerSonarrEpisodeSearch(epId, seasonN, t.dataset.inst || this._asInstance);
   return;
 }
 
@@ -404,6 +411,7 @@ _ppActPopupMonSearchIs(t, e, { root, overlay } = {}) {
     this._fetchInteractiveSearch(radarrId, inst);
   } else {
     this._snIsInstance = inst;
+    this._snFromTile = null;
     this._snIsOpen = true; this._snActiveIs = null; this._snIsState = null; this._snSeasonsPage = 0;
     this._renderPopupEl();
   }
@@ -439,7 +447,33 @@ _ppActSnTile(t, e, ctx = {}) {
   this._ppCloseIS?.();
   this._snIsInstance = d._sonarrSeries ? 'sonarr' : 'sonarr2';
   this._snIsOpen = true; this._snIsState = null; this._snActiveIs = null; this._snSeasonsPage = 0;
-  return this._ppActSnSeasonIs({ dataset: { season: String(n) } }, e, ctx);
+  // Opened from its poster: the season's own view, its episodes one by one
+  // first (the pack a switch away), and back from there to the posters, not
+  // to the season list. Raised to the window's full height on a phone; its
+  // pill folds it down.
+  this._snFromTile = n;
+  this._ppPanelUp = true; this._ppPanelDragH = null;
+  return this._ppActSnTileView({ dataset: { view: 'episodes' } });
+}
+
+// A season opened from its poster: its season pack's sources, or its
+// episodes, each with its own search
+_ppActSnTileView(t) {
+  const n = this._snFromTile;
+  const d = this._popup;
+  if (n == null || !d) return;
+  const view = t.dataset.view === 'episodes' ? 'episodes' : 'pack';
+  this._snTileView = view;
+  const inst = this._snIsInstance || 'sonarr';
+  const sid = (inst === 'sonarr2' ? d._sonarr2Series : d._sonarrSeries)?.id;
+  if (view === 'episodes') {
+    if (sid && !this._snEpisodes.has(n)) this._fetchSonarrEpisodes(sid, n, inst);
+  } else if (!(this._snActiveIs?.type === 'season' && this._snActiveIs.key === n)) {
+    // The pack's sources went when an episode's were searched; asked again
+    this._snActiveIs = { type: 'season', key: n };
+    if (sid) this._fetchSonarrSeasonIS(sid, n, inst);
+  }
+  this._renderPopupEl();
 }
 
 _ppActSnSeasonIs(t, e, { root, overlay } = {}) {
@@ -505,6 +539,19 @@ _ppActSnEpIs(t, e, { root, overlay } = {}) {
 
   // Sonarr back (mobile drill-down)
 _ppActSnBack(t, e, { root, overlay } = {}) {
+  if (this._snFromTile != null) {
+    if (this._snActiveIs?.type === 'episode') {
+      // From an episode's sources, back to the season's episodes
+      this._snActiveIs = null;
+      this._snIsState = null;
+      this._snTileView = 'episodes';
+    } else {
+      // From the season, back to the posters, the sheet where it stood
+      this._ppCloseSnIS();
+    }
+    this._renderPopupEl();
+    return;
+  }
   this._snActiveIs = null;
   this._snIsState = null;
   this._renderPopupEl();

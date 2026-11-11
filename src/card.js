@@ -39,6 +39,7 @@ import { fetchServicesMixin } from './fetch/services.js';
 import { fetchMusicMixin } from './fetch/music.js';
 import { fetchMusicArtMixin } from './fetch/music-art.js';
 import { renderLeftMixin } from './render/left.js';
+import { dlInstMixin } from './render/dl-inst.js';
 import { renderRightMixin } from './render/right.js';
 import { searchRenderMixin } from './render/search.js';
 import { streamsRenderMixin } from './render/streams.js';
@@ -59,6 +60,7 @@ import { wireSectionsMixin } from './wire/sections.js';
 import { wireTraktMixin } from './wire/trakt.js';
 import { popupMixin } from './popup/index.js';
 import { popupOpenMixin } from './popup/open.js';
+import { filmSheetMixin } from './popup/film-sheet.js';
 import { popupClickMixin } from './popup/click.js';
 import { popupPanelsMixin } from './popup/panels.js';
 import { popupQuickActionsMixin } from './popup/quick-actions.js';
@@ -81,7 +83,7 @@ import { similarRenderMixin } from './render/similar.js';
 import { wireSimilarMixin } from './wire/similar.js';
 import { catCacheMixin } from './render/cat-cache.js';
 import { arrImgMixin } from './render/arr-img.js';
-import { BP, maxWidth, savedDlSort } from './shared/ui.js';
+import { BP, maxWidth, savedDlSort, savedDlInst } from './shared/ui.js';
 
 // The presets whose glass follows Home Assistant's appearance and is drawn by render/liquid.js
 const LIQUID_LOOKS = new Set(['liquid', 'apple-home']);
@@ -195,6 +197,10 @@ class ArrStackCard extends HTMLElement {
     // never set up whenever the capabilities call failed.
     this._qbitConfigured   = null;
     this._sabConfigured    = null;
+    this._qbit2Configured  = false;   // a second qBittorrent / SABnzbd (caps qbit2, sabnzbd2)
+    this._sab2Configured   = false;
+    // Which instance each queue shows when there are two: 'all', '1' or '2'
+    this._dlInst           = { qbit: savedDlInst('qbit'), sab: savedDlInst('sab') };
     this._nzbgetConfigured = null;
     this._nzbget           = null;   // status { DownloadRate, DownloadPaused, FreeDiskSpaceMB, TotalDiskSpaceMB }
     this._nzbgetQueue      = [];     // queue items from listgroups
@@ -274,7 +280,7 @@ class ArrStackCard extends HTMLElement {
     this._tmdbPinged = false;
     this._seerrRadarr = null;           // { serverId, profileId, rootFolder } z Overseerr settings (HD)
     this._seerrRadarr2 = null;         // { serverId, profileId, rootFolder } z Overseerr settings (4K)
-    this._confirmRemove = null;         // hash torrentu čekajícího na potvrzení smazání
+    this._confirmRemove = null;         // 'instance:hash' torrentu čekajícího na potvrzení smazání
     this._requestPending = null;        // { movieId, tmdbId } — overlay výběru profilu
     this._pendingRequests = [];         // čekající žádosti z Overseerr (vidí jen admin)
     this._optimisticRequested = new Set(); // mediaId odeslaných žádostí (okamžitá odezva)
@@ -306,7 +312,7 @@ class ArrStackCard extends HTMLElement {
     this._sonarrProfiles = [];          // cache quality profilů ze Sonarr
     this._qbitBusy = false;            // globální akce qBit právě probíhá
     this._sabBusy  = false;            // globální akce SAB právě probíhá
-    this._qbitItemBusy = null;         // hash torrentu, jehož akce právě probíhá
+    this._qbitItemBusy = null;         // 'instance:hash' torrentu, jehož akce právě probíhá
 
     // Popup state
     this._popup = null; // stores fetched detail data for modal
@@ -1314,6 +1320,7 @@ applyMixin(ArrStackCard.prototype, fetchMusicMixin);
 applyMixin(ArrStackCard.prototype, fetchMusicArtMixin);
 applyMixin(ArrStackCard.prototype, fetchMixin);
 applyMixin(ArrStackCard.prototype, renderLeftMixin);
+applyMixin(ArrStackCard.prototype, dlInstMixin);
 applyMixin(ArrStackCard.prototype, renderRightMixin);
 applyMixin(ArrStackCard.prototype, searchRenderMixin);
 applyMixin(ArrStackCard.prototype, streamsRenderMixin);
@@ -1334,6 +1341,7 @@ applyMixin(ArrStackCard.prototype, wireSectionsMixin);
 applyMixin(ArrStackCard.prototype, wireTraktMixin);
 applyMixin(ArrStackCard.prototype, popupMixin);
 applyMixin(ArrStackCard.prototype, popupOpenMixin);
+applyMixin(ArrStackCard.prototype, filmSheetMixin);
 applyMixin(ArrStackCard.prototype, popupClickMixin);
 applyMixin(ArrStackCard.prototype, popupPanelsMixin);
 applyMixin(ArrStackCard.prototype, popupQuickActionsMixin);

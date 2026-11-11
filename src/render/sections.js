@@ -284,7 +284,7 @@ _sectionOverlayHtmlSingle(app, o = 0.4) {
   }
 
   _getPageData(section) {
-    if (section === 'qbit')     return Array.isArray(this._qbit) ? this._qbit : [];
+    if (section === 'qbit')     return this._dlInstPick('qbit', Array.isArray(this._qbit) ? this._qbit : []);
     if (section === 'deluge')   return Array.isArray(this._delugeQueue) ? this._delugeQueue : [];
     if (section === 'rtorrent') return Array.isArray(this._rtorrentQueue) ? this._rtorrentQueue : [];
     if (section === 'transmission') return Array.isArray(this._transmissionQueue) ? this._transmissionQueue : [];
@@ -299,12 +299,12 @@ _sectionOverlayHtmlSingle(app, o = 0.4) {
     }
     if (section === 'sab') {
       const slots     = Array.isArray(this._sab?.slots) ? this._sab.slots : [];
-      const completed = (this._sabCompleted || []).map(s => ({
+      const completed = (this._sabCompleted || []).map(s => ({ _inst: s._inst,
         nzo_id: s.nzo_id, filename: s.name || s.filename || 'Unknown',
         percentage: '100', mb: String((s.bytes || 0) / 1024 / 1024),
         mbleft: '0', status: 'Completed', timeleft: '', size: s.size || '', _history: true,
       }));
-      return [...slots, ...completed];
+      return this._dlInstPick('sab', [...slots, ...completed]);
     }
     if (section === 'pending')           return this._pendingRequests || [];
     if (section === 'recommendations')   return this._recItems();

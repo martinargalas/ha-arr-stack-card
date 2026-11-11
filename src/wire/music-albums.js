@@ -87,6 +87,52 @@ class _WireMusicAlbumsMethods {
     });
   }
 
+  // What an album's automatic search did, as with a series' episode: Lidarr
+  // says when its search has run, then its queue is looked at — the album in
+  // it shows its progress, otherwise the row says nothing was found (or that
+  // the album is not out yet) and can be searched again. Without the
+  // command's state the queue is watched for some forty seconds.
+  async _musAsFollow(albumId, cmdId, sp) {
+    const alive = () => this._musicModal?.search === sp;
+    (sp.waiting ||= new Set()).add(albumId);
+    this._renderMusicModalEl();
+    const done = await this._asWaitCommand('lidarr', cmdId, null, alive);
+    const delays = done ? [500, 3000] : [2000, 3000, 5000, 5000, 5000, 10000, 10000];
+    if (done !== false) {
+      for (const ms of delays) {
+        await new Promise(r => setTimeout(r, ms));
+        if (!alive()) break;
+        try { await this._fetchLidarrQueue(); } catch (_) { /* next time */ }
+        if (this._lidarrQueue?.has(albumId)) {
+          sp.waiting.delete(albumId);
+          this._renderMusicModalEl();
+          this._musAsProgress(sp);
+          return;
+        }
+      }
+    }
+    sp.waiting.delete(albumId);
+    if (alive()) {
+      sp.searched?.delete(albumId);
+      (sp.missed ||= new Set()).add(albumId);
+      this._renderMusicModalEl();
+    }
+  }
+
+  // While an album found so shows its download, its progress is asked for
+  // every five seconds: the regular polling rests while a window is open
+  _musAsProgress(sp) {
+    if (sp.progressTimer) return;
+    sp.progressTimer = setInterval(async () => {
+      const ids = (this._musicModal?.albums || []).map(a => a.id);
+      if (this._musicModal?.search !== sp || !ids.some(id => this._lidarrQueue?.has(id))) {
+        clearInterval(sp.progressTimer); sp.progressTimer = null; return;
+      }
+      try { await this._fetchLidarrQueue(); } catch (_) { /* next time */ }
+      if (this._musicModal?.search === sp) this._renderMusicModalEl();
+    }, 5000);
+  }
+
   async _musPickAlbum(albumId) {
     const m = this._musicModal;
     const sp = m?.search;
@@ -97,9 +143,11 @@ class _WireMusicAlbumsMethods {
       // Auto Search hands the album to Lidarr and lets it choose — the row just
       // reports that it went, the way the series panel does.
       sp.busyAlbum = albumId;
+      sp.missed?.delete(albumId);
       this._renderMusicModalEl();
+      let cmd = null;
       try {
-        await this._callApi('POST', 'arr_stack/lidarr/command', { name: 'AlbumSearch', albumIds: [albumId] });
+        cmd = await this._callApi('POST', 'arr_stack/lidarr/command', { name: 'AlbumSearch', albumIds: [albumId] });
         sp.searched = sp.searched || new Set();
         sp.searched.add(albumId);
       } catch (e) {
@@ -107,6 +155,7 @@ class _WireMusicAlbumsMethods {
       }
       sp.busyAlbum = null;
       this._renderMusicModalEl();
+      if (sp.searched?.has(albumId)) this._musAsFollow(albumId, cmd?.id, sp);
       return;
     }
 

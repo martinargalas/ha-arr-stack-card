@@ -269,6 +269,13 @@ ${TOKEN_CSS}
       }
       .dc-val span { text-shadow: 0 1px 4px rgba(var(--_shadow, 0, 0, 0), 0.5); }
 
+      /* Total speed: the download and upload pills side by side, the upload one
+         under the other when a phone's half-width tile has no room for both —
+         it used to be cut off at the tile's edge */
+      .speed-pills { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+      .speed-pills > span { white-space: nowrap; }
+      .dc-sub .nw { white-space: nowrap; }
+
       .dc-sub {
         font-size: 11px; color: rgba(var(--_fg, 255, 255, 255), 1);
         text-shadow: 0 1px 4px rgba(var(--_shadow, 0, 0, 0), 0.6);
@@ -400,6 +407,40 @@ ${TOKEN_CSS}
       }
 
       .sb:active { transform: scale(0.88); }
+
+      /* A second qBittorrent or SABnzbd: one button before the sort buttons
+         steps through both → 1 → 2, and a row's label says whose it is while
+         both are shown */
+      .sort-btns.dl-inst-btns { margin-left: 0; flex-shrink: 0; }
+      .sort-btns.dl-inst-btns .sb { min-width: 26px; padding-left: 6px; padding-right: 6px; flex: 0 0 auto; }
+      .col-hdr .sort-btns.dl-inst-btns + .sort-btns { margin-left: 0; }
+      /* Three buttons on a tablet and a desktop, one stepping button on a phone */
+      .sort-btns.dl-inst-one { display: none; }
+      @media (max-width: 600px) {
+        .sort-btns.dl-inst-full { display: none; }
+        .sort-btns.dl-inst-one { display: flex; }
+      }
+      /* A download client's header on a phone: tighter gaps and sort buttons,
+         and the name gives way before the pause button does — it was pushed
+         against the edge, and off it on a small iPhone */
+      @media (max-width: 600px) {
+        .sec-card > .col-hdr:has(.sort-btns, .action-btn) { gap: 8px; }
+        .sec-card > .col-hdr:has(.sort-btns, .action-btn) .col-hdr-line { margin-left: 2px; min-width: 0; }
+        .sec-card > .col-hdr .sort-btns .sb { min-width: 30px; padding-left: 5px; padding-right: 5px; }
+        .sec-card > .col-hdr .sort-btns.dl-inst-one .sb { min-width: 30px; }
+      }
+      .sec-card > .col-hdr .col-hdr-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .dl-inst {
+        flex-shrink: 0; max-width: 72px; margin-left: 6px; padding: 1px 6px;
+        border: 0; border-radius: 999px; font: inherit; font-size: 10px; font-weight: 700; line-height: 14px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+        color: rgba(var(--_fg2, 255, 255, 255), 0.75);
+        background: rgba(var(--_fill, 255, 255, 255), calc(0.12 * var(--_a-ctl, 1)));
+      }
+      .dl-inst-2 {
+        color: rgba(var(--_btn-fg, 255, 255, 255), 0.95);
+        background: rgba(var(--accent-rgb), calc(0.30 * var(--_a-ctl, 1)));
+      }
 
       /* Direction arrow shown inside active sort button */
       .sb-dir { font-size: 9px; margin-left: 1px; }
@@ -1698,6 +1739,15 @@ ${TOKEN_CSS}
           margin: 0 -12px -12px; padding: 0 12px 12px;
         }
       }
+      /* A phone, short of the whole window: the covers in one row scrolled
+         sideways, each .85 of a grid's so the next shows at the edge */
+      .popup-body > .mus-albums.mus-row .mus-alb-wrap.mus-alb-scroll {
+        overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none;
+      }
+      .popup-body > .mus-albums.mus-row .mus-alb-scroll::-webkit-scrollbar { display: none; }
+      .popup-body > .mus-albums.mus-row .mus-alb-grid {
+        grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: calc((100% - 8px) / 2 * 0.85);
+      }
       .mus-alb-grid {
         flex: 1; min-width: 0;
         display: grid; gap: 12px;
@@ -1713,7 +1763,7 @@ ${TOKEN_CSS}
       /* The fade under a bar along the screen's bottom turned off (dockFade:
          false, an opaque dock): lists, the covers and the trailer run under it
          as they are, and no light band is laid there by day */
-      :host([no-dock-fade]) :is(.dock-fade, .to-sheet-body, .lib-scroll.vscroll, .mob-scroll, .mus-alb-scroll, .popup-yt-thumb) {
+      :host([no-dock-fade]) :is(.dock-fade, .to-sheet-body, .lib-scroll.vscroll, .mob-scroll, .mus-alb-scroll, .popup-yt-thumb, .sn-tiles-scroll, .is-results-wrap, .sn-episodes, .sn-seasons-rows) {
         -webkit-mask-image: none !important; mask-image: none !important;
       }
       :host([no-dock-fade]) * { --band: transparent !important; }
@@ -1725,7 +1775,15 @@ ${TOKEN_CSS}
         background: var(--is-glass-bg); backdrop-filter: var(--is-glass-blur); -webkit-backdrop-filter: var(--is-glass-blur);
         border-radius: 18px 18px 0 0; box-shadow: 0 -8px 22px rgba(var(--_shadow, 0, 0, 0), 0.32);
       }
-      .popup-body:has(> .sn-tiles-sheet) { padding-bottom: var(--sn-sheet-h, 0px); }
+      .popup-body:is(:has(> .sn-tiles-sheet), :has(> .sn-tile-view)) { padding-bottom: var(--sn-sheet-h, 0px); }
+      /* A phone's sources sheet, folded, keeps the detail clear of it too */
+      @media (max-width: 600px) {
+        .popup-overlay[data-modal="detail"] .popup-body:has(> :is(.is-panel, .sn-is-panel, .sn-is-section)):not(:has(.is-confirm-wrap)) { padding-bottom: var(--sn-sheet-h, 0px); }
+        .popup-overlay[data-modal="detail"] .popup-body:has(> :is(.is-panel, .sn-is-panel, .sn-is-section)) .popup-yt-thumb {
+          min-height: clamp(110px, 20vh, 180px) !important; -webkit-mask-image: none !important; mask-image: none !important;
+        }
+        .popup-overlay[data-modal="detail"] .popup-body:has(> :is(.is-panel, .sn-is-panel, .sn-is-section)) .popup-yt-overlay { padding-bottom: 0 !important; }
+      }
       .sn-tiles-scroll {
         flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
         margin: 0 -12px; padding: 4px 12px calc(12px + var(--arr-bottom-bar, 0px));
@@ -1733,6 +1791,14 @@ ${TOKEN_CSS}
       /* A tablet: small posters, as many as the width takes, not stretched */
       .sn-tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 104px)); gap: 10px 8px; }
       @media (max-width: 600px) { .sn-tiles-grid { grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)); } }
+      /* A phone, short of the whole window: the posters in one row scrolled
+         sideways, each nine tenths of a grid's so the next shows at the edge */
+      .sn-tiles-sheet.sn-row .sn-tiles-scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; }
+      .sn-tiles-sheet.sn-row .sn-tiles-scroll::-webkit-scrollbar { display: none; }
+      .sn-tiles-sheet.sn-row .sn-tiles-grid {
+        grid-template-columns: none; grid-auto-flow: column;
+        grid-auto-columns: calc((100% - (var(--arr-mob-cols, 3) - 1) * 8px) / var(--arr-mob-cols, 3) * 0.9);
+      }
       .sn-tile {
         position: relative; display: block; min-width: 0; padding: 0; border: none; background: none;
         cursor: pointer; text-align: left; color: inherit; border-radius: 9px; overflow: hidden;
@@ -1754,18 +1820,85 @@ ${TOKEN_CSS}
         background: linear-gradient(transparent, rgba(var(--_shade, 0, 0, 0), 0.85));
       }
       .sn-tile-cap b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      /* The season's name as the posters' type tag, top left (the count stays
+         at the foot, on the right, so it clears the tag when folded up) */
+      .sn-tile:not(.mv-tile) .sn-tile-cap { justify-content: flex-end; }
+      /* A film's sheet (popup/film-sheet.js): its collection's name, or that
+         these are recommended, over the posters (the rows' film cards); the
+         film shown ringed */
+      /* Under the pill, in the middle */
+      .sn-tiles-label {
+        flex: 0 0 auto; margin: -4px 24px 6px; text-align: center;
+        font-size: 12px; font-weight: 600; color: var(--is-text-sec);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+      }
+      /* Over a sheet of posters the trailer's foot fades into the window,
+         no hard edge on the sheet's (a gap between them read as a seam) */
+      @media (max-width: 600px) {
+        .popup-overlay .popup-body:has(> .sn-tiles-sheet) .popup-yt-thumb.popup-yt-thumb {
+          -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent) !important;
+          mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent) !important;
+        }
+      }
+      .mv-tile { cursor: pointer; }
+      .mv-tile > .mc { border-radius: inherit; }
+      /* Folded, only the posters' top edge shows: the rating and the title
+         go up there, the bar to the top edge; raised,
+         they ease back down to the foot, as a season's name does */
+      .mv-tile .mv-grad, .mv-tile .mv-stripe { transition: transform 0.34s cubic-bezier(.4,0,.2,1), padding 0.34s cubic-bezier(.4,0,.2,1); }
+      .sn-tiles-sheet.sn-folded .mv-tile .mv-grad {
+        transform: translateY(calc(-150cqw + 100%)); padding: 10px 6px 12px !important;
+        background: linear-gradient(to bottom, rgba(var(--_shade, 0, 0, 0), 0.88) 0%, transparent 100%) !important;
+      }
+      .sn-tiles-sheet.sn-folded .mv-tile .mv-stripe { transform: translateY(calc(-150cqw + 4px)); }
+      /* At the top, the title first and the rating under it */
+      .sn-tiles-sheet.sn-folded .mv-tile .mv-grad { display: flex; flex-direction: column; gap: 2px; }
+      .sn-tiles-sheet.sn-folded .mv-tile .mv-title { order: -1; }
+      /* …and the type tag goes: a film's sheet holds only films */
+      .mv-tile .media-type-tag { transition: opacity 0.2s ease; }
+      .sn-tiles-sheet.sn-folded .mv-tile .media-type-tag { opacity: 0; }
+      .mv-tile.mv-cur { outline: 2px solid rgb(var(--arr-accent-rgb, 10, 132, 255)); outline-offset: -2px; }
+
+      .sn-tile-tag { z-index: 3; }
+      /* The sheet folded: only the posters' top edge shows (under a dock or
+         not), so the season's name and its bar move up there; raised, they
+         ease back down to the poster's foot. A tile is 1.5 widths tall. */
+      .sn-tiles-sheet .sn-tile { container-type: inline-size; }
+      .sn-tiles-sheet .sn-tile-cap,
+      .sn-tiles-sheet .sn-tile-bar { transition: transform 0.34s cubic-bezier(.4,0,.2,1), padding 0.34s cubic-bezier(.4,0,.2,1); }
+      .sn-tiles-sheet.sn-folded .sn-tile-cap {
+        transform: translateY(calc(-150cqw + 100%));
+        padding: 8px 7px 22px; align-items: flex-start;
+        background: linear-gradient(rgba(var(--_shade, 0, 0, 0), 0.85), transparent);
+      }
+      .sn-tiles-sheet.sn-folded .sn-tile-bar { transform: translateY(calc(-150cqw + 3px)); }
       .sn-tile-cap span { font-size: 10px; opacity: 0.75; flex-shrink: 0; }
       .sn-tile-bar { position: absolute; left: 0; bottom: 0; height: 3px; }
+      /* A phone's trailer: a button on the title's picture, at its foot on
+         the right; the trailer's own block in the body goes */
+      .pp-bd-trailer { display: none; }
+      @media (max-width: 600px) {
+        .popup-overlay[data-modal="detail"] .popup-body .popup-yt-thumb { display: none !important; }
+        .popup-overlay[data-modal="detail"] .pp-bd-trailer {
+          position: absolute; right: 12px; bottom: 10px; z-index: 3;
+          display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px;
+          border-radius: 999px; text-decoration: none; font-size: 12px; font-weight: 600;
+          color: rgb(var(--_ptx, 255, 255, 255));
+          background: rgba(var(--_shade, 0, 0, 0), 0.5);
+          backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+          -webkit-tap-highlight-color: transparent;
+        }
+      }
       .sn-tile-ok   { background: rgb(var(--arr-success-rgb, 48, 209, 88)); }
       .sn-tile-part { background: rgb(var(--arr-accent-rgb, 10, 132, 255)); }
       .sn-tile-none { background: rgba(var(--arr-error-rgb, 255, 69, 58), 0.7); }
       /* With the seasons under it, the trailer ends above them: the dock is
          theirs to keep clear of */
-      .popup-body:has(> .sn-tiles-sheet) .popup-yt-thumb {
+      .popup-body:is(:has(> .sn-tiles-sheet), :has(> .sn-tile-view)) .popup-yt-thumb {
         min-height: clamp(110px, 20vh, 180px) !important;
         -webkit-mask-image: none !important; mask-image: none !important;
       }
-      .popup-body:has(> .sn-tiles-sheet) .popup-yt-overlay { padding-bottom: 0 !important; }
+      .popup-body:is(:has(> .sn-tiles-sheet), :has(> .sn-tile-view)) .popup-yt-overlay { padding-bottom: 0 !important; }
       /* A capsule's button with nothing to do here, kept in its place */
       .is-open-btn.is-off { opacity: 0.38; cursor: default; pointer-events: none; }
       .mus-alb { min-width: 0; cursor: pointer; }
@@ -3490,10 +3623,14 @@ ${TOKEN_CSS}
            never push the pager past the sheet. */
         max-height: 100%;
       }
-      .popup-body .sn-seasons-rows {
+      .popup-body .sn-seasons-rows,
+      .popup-body .sn-tile-view > .sn-episodes {
         flex: 1; min-height: 0 !important; overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
+      /* A season opened from its poster: its episodes reach the sheet's foot,
+         so under a dock they run on and fade there as the seasons do */
+      .popup-body .sn-tile-view > .sn-episodes { justify-content: flex-start; }
       /* Rows keep their height and scroll out of view — without this the flex
          column squeezes them instead, so dragging only made them thinner. */
       .popup-body .sn-seasons-rows > *,
@@ -4123,6 +4260,12 @@ ${TOKEN_CSS}
       .as-btn-badge--ok  { background:rgb(var(--_as-ok, var(--arr-success-rgb, 74, 222, 128))); color:#000; }
       .as-btn-badge--err { background:rgb(var(--arr-error-rgb, 248, 113, 113)); color:rgb(var(--_fg, 255, 255, 255)); }
       .as-btn-badge--dl  { background:rgba(var(--_as-dl, 59, 130, 246), 0.9); color:rgb(var(--_fg, 255, 255, 255)); }
+      /* An episode's search in the AS list: the button's place keeps its size
+         (a spinner, a tick), what happened in words where the date stands */
+      .as-ep-slot { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+      .as-ep-ok { color: rgb(var(--arr-success-rgb, 48, 209, 88)); background: rgba(var(--arr-success-rgb, 48, 209, 88), 0.14); }
+      .as-ep-status { font-size: 10px; color: var(--is-text-muted); white-space: nowrap; flex-shrink: 0; }
+      .as-ep-status.as-ep-miss { color: rgba(var(--arr-warning-rgb, 255, 159, 10), 0.95); }
       .as-done-icon--dl  { color: rgba(var(--_as-dl, 59, 130, 246), 0.9); }
       .as-dl-bar { flex:1; height:3px; border-radius:2px; background:rgba(var(--_fill, 255, 255, 255), calc(0.12 * var(--_a-track, 1))); overflow:hidden; min-width:30px; max-width:60px; }
       .as-dl-bar-fill { height:100%; background:rgba(var(--_as-dl, 59, 130, 246), 0.8); border-radius:2px; transition:width 0.5s linear; }
@@ -4523,10 +4666,70 @@ ${TOKEN_CSS}
       }
       .is-confirm-no:not(.is-confirm-btn):hover { filter: brightness(1.2); }
 
-      /* ── Mobile IS grab button (larger) ── */
-      .is-ic-r1 .is-grab-btn { width: 28px; height: 28px; margin: 0; }
-      /* a season's sources scroll, and the scrollbar sits over the card's edge */
-      .sn-is-panel .is-card { padding-right: 16px; }
+      /* ── A phone's sources as cards (_isCards) ── */
+      /* Each its own card across the width: a soft surface, no lines */
+      .is-card {
+        margin: 0 0 8px; padding: 10px 10px 10px 12px; border: none; border-radius: 16px;
+        background: rgba(var(--_fill, 255, 255, 255), 0.06); gap: 6px;
+      }
+      .is-card:hover { background: rgba(var(--_fill, 255, 255, 255), 0.09); }
+      /* Imported: the card says so, not only its button */
+      .is-card:has(.is-grab-done) { background: rgba(var(--arr-success-rgb, 48, 209, 88), 0.12); }
+      .is-ic-top { display: flex; align-items: flex-start; gap: 10px; }
+      .is-ic-top .is-ic-title {
+        flex: 1; min-width: 0; width: auto;
+        font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--is-text);
+        white-space: normal; overflow-wrap: anywhere;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      }
+      .is-ic-top .is-grab-btn { flex-shrink: 0; width: 34px; height: 34px; margin: 0; }
+      .is-ic-top .is-grab-btn[style*="min-width"] { width: auto; height: 30px; }
+      .is-card .is-ic-r1 { flex-wrap: wrap; gap: 5px; }
+      .is-card .is-ic-meta { font-size: 10px; }
+      /* A phone: the cards take the sheet's width, a margin each side, and
+         the sheet's header stands free over them, no box, no capitals */
+      @media (max-width: 600px) {
+        .popup-body > :is(.is-panel, .sn-is-section) { padding-left: 10px; padding-right: 10px; }
+        .popup-body .sn-is-section .sn-is-panel {
+          margin: 0; background: none; border: none; border-radius: 0; max-height: none;
+          flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .popup-body :is(.is-panel, .sn-is-panel) > .is-panel-hdr { border-bottom: 0; padding: 2px 2px 10px; }
+        .popup-body :is(.is-panel, .sn-is-panel) > .is-panel-hdr .is-panel-title {
+          font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--is-text);
+        }
+        .popup-body :is(.is-panel, .sn-is-panel) > .is-panel-hdr .is-count { font-size: 12px; }
+        .popup-body :is(.is-panel, .sn-is-panel) > .is-filter-wrap { border-bottom: 0; padding: 0 0 10px; }
+      }
+      /* The seasons and their episodes on a phone, as the sources: a season
+         is a card across the width (a soft surface, 16 px, no lines), its
+         episodes inside it; the label over them free of capitals. A season
+         opened from its poster lists its episodes as cards of their own. */
+      @media (max-width: 600px) {
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-seasons-label {
+          font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0;
+          color: var(--is-text); padding: 2px 2px 6px; margin: 0;
+        }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-seasons-rows { gap: 8px !important; }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-season-row {
+          border-radius: 16px; background: rgba(var(--_fill, 255, 255, 255), 0.06); flex-shrink: 0;
+        }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-season-header { padding: 8px 8px 8px 10px; min-height: 48px; gap: 8px; }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-season-title { font-size: 13px; }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-season-row .sn-episodes { padding: 0 6px 8px; gap: 2px; }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-ep-row { padding: 6px 4px 6px 8px; gap: 8px; border-radius: 12px; }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-ep-num { font-size: 11px; min-width: 58px; }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-ep-title { font-size: 12px; color: var(--is-text); }
+        .popup-overlay[data-modal="detail"] .sn-is-section .sn-ep-date { font-size: 10px; }
+        .popup-overlay[data-modal="detail"] .sn-is-section :is(.sn-season-header, .sn-ep-row) :is(.btn-person, .btn-ep-trash) {
+          width: 32px; height: 32px; border-radius: 50%;
+        }
+        .popup-overlay[data-modal="detail"] .sn-tile-view > .sn-episodes { padding: 0; gap: 8px; }
+        .popup-overlay[data-modal="detail"] .sn-tile-view > .sn-episodes .sn-ep-row {
+          padding: 10px 8px 10px 12px; border-radius: 16px; background: rgba(var(--_fill, 255, 255, 255), 0.06);
+        }
+        .popup-overlay[data-modal="detail"] .sn-tile-view > .sn-episodes .sn-ep-item:hover .sn-ep-row { background: rgba(var(--_fill, 255, 255, 255), 0.09); }
+      }
 
       /* ════════════════════════════════════
          RIGHT COLUMN PAGE NAV
@@ -4597,12 +4800,28 @@ ${TOKEN_CSS}
           border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important;
         }
         .popup-overlay[data-modal="detail"] > .popup-glass::before { border-radius: inherit; }
+        /* At most the picture's own 16:9 (and the dock under it): since the
+           title's picture shrank to the cast's height, a film's trailer grew
+           to fill the window and its picture was blown up to a crop */
         .popup-overlay[data-modal="detail"] .popup-yt-thumb {
           min-height: calc(clamp(140px, 28vh, 210px) + var(--arr-bottom-bar, 0px));
-          max-height: none;
+          max-height: calc(56.25vw + var(--arr-bottom-bar, 0px));
         }
         .popup-overlay[data-modal="detail"] .popup-yt-overlay {
           box-sizing: border-box; padding-bottom: var(--arr-bottom-bar, 0px);
+        }
+        /* The trailer at its own 16:9, the whole picture and no more (it was
+           blown up to fill the room left): as wide as the window, its height
+           from that, the dock's height under it where it runs on under one */
+        .popup-overlay[data-modal="detail"] .popup-body .popup-yt-thumb.popup-yt-thumb {
+          container-type: inline-size; flex: 0 0 auto !important;
+          height: auto !important; min-height: 0 !important; max-height: none !important;
+          box-sizing: content-box; padding-bottom: var(--arr-bottom-bar, 0px);
+        }
+        .popup-overlay[data-modal="detail"] .popup-body:has(> :is(.sn-tiles-sheet, .is-panel, .sn-is-panel, .sn-is-section)) .popup-yt-thumb.popup-yt-thumb { padding-bottom: 0; }
+        .popup-overlay[data-modal="detail"] .popup-body .popup-yt-thumb.popup-yt-thumb img {
+          position: relative; left: auto; top: auto; transform: none;
+          width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
         }
         /* Under a dock the trailer fades back, as a category's list does:
            the dock's icons stood dark on a dark picture. Not out altogether
@@ -4646,6 +4865,29 @@ ${TOKEN_CSS}
         :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > :is(.is-panel, .sn-is-panel, .sn-is-section):not(:has(> .is-confirm-wrap > .is-confirm-msg)) {
           padding-bottom: var(--arr-bottom-bar, 0px);
         }
+        /* …except where its list scrolls: there the rows run on under the dock
+           and fade, as a category's list does, the last one coming up above
+           it at the end. A season's view, its episodes, the season list. */
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > :is(.is-panel, .sn-is-panel, .sn-is-section):has(:is(.is-results-wrap, .sn-episodes, .sn-seasons-rows)):not(:has(> .is-confirm-wrap > .is-confirm-msg)) {
+          padding-bottom: 0;
+          background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 8px), color-mix(in srgb, var(--band, transparent) 3%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 2px), color-mix(in srgb, var(--band, transparent) 8%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 10px), color-mix(in srgb, var(--band, transparent) 15%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 18px), color-mix(in srgb, var(--band, transparent) 23%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 27px), color-mix(in srgb, var(--band, transparent) 32%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 38px), color-mix(in srgb, var(--band, transparent) 50%, transparent) 100%), var(--is-glass-bg);
+        }
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > :is(.is-panel, .sn-is-panel, .sn-is-section) :is(.is-results-wrap, .sn-episodes, .sn-seasons-rows) {
+          padding-bottom: calc(12px + var(--arr-bottom-bar, 0px)) !important; box-sizing: border-box;
+          --fbar: var(--arr-bottom-bar, 0px); --fe: color-mix(in srgb, black 35%, transparent);
+          -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 40px - var(--fbar)), var(--fe) calc(100% - var(--fbar)), var(--fe) 100%);
+          mask-image: linear-gradient(to bottom, black 0, black calc(100% - 40px - var(--fbar)), var(--fe) calc(100% - var(--fbar)), var(--fe) 100%);
+        }
+        /* The seasons' posters the same: under the dock they fade, over a
+           band of the dock's own */
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > .sn-tiles-sheet {
+          background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 8px), color-mix(in srgb, var(--band, transparent) 3%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 2px), color-mix(in srgb, var(--band, transparent) 8%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 10px), color-mix(in srgb, var(--band, transparent) 15%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 18px), color-mix(in srgb, var(--band, transparent) 23%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 27px), color-mix(in srgb, var(--band, transparent) 32%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 38px), color-mix(in srgb, var(--band, transparent) 50%, transparent) 100%), var(--is-glass-bg);
+        }
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .sn-tiles-scroll {
+          --fbar: var(--arr-bottom-bar, 0px); --fe: color-mix(in srgb, black 35%, transparent);
+          -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px - var(--fbar)), var(--fe) calc(100% - var(--fbar)), var(--fe) 100%);
+          mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px - var(--fbar)), var(--fe) calc(100% - var(--fbar)), var(--fe) 100%);
+        }
         /* An artist's and an album's window run on under a dock too
            (hdr-full): the covers, the sources and the tracks end above it */
         :host([hdr-take][style*="--arr-bottom-bar"]) .popup-overlay.hdr-taken .popup-body > :is(.mus-albums, .mus-search) {
@@ -4683,6 +4925,16 @@ ${TOKEN_CSS}
           min-height: calc(clamp(96px, 16vh, 140px) + var(--arr-bottom-bar, 0px));
           max-height: calc(30vh + var(--arr-bottom-bar, 0px));
         }
+      }
+      /* A title's picture on a phone: as tall as a row of its cast needs and
+         no more (the cast opens in it) — three faces with their names under
+         the action capsule, or, with the capsule up in the header, just
+         under the window's edge. The rest goes to the description. */
+      @media (max-width: 600px) {
+        .popup-overlay[data-modal="detail"] > .popup-glass > .popup-backdrop { height: 172px; min-height: 0; flex: 0 0 auto; }
+        .popup-overlay[data-modal="detail"] .popup-cast-panel { padding-bottom: 28px; }
+        :host([hdr-take]) .popup-overlay.hdr-taken[data-modal="detail"] > .popup-glass > .popup-backdrop { height: 128px; }
+        :host([hdr-take]) .popup-overlay.hdr-taken[data-modal="detail"] .popup-cast-panel { padding-top: 12px; }
       }
       @media (max-width: 700px) {
         /* Over Bubble Card's bottom bar it ends above it, as the windows do */
@@ -5352,6 +5604,41 @@ ${TOKEN_CSS}
       .sn-back-btn:hover {
         background: rgba(var(--_fill, 255, 255, 255), 0.15);
       }
+
+      /* A season opened from its poster: back, its name, pack or episodes */
+      .sn-tile-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-shrink: 0; }
+      .sn-tile-hdr .sn-drilldown-label { flex: 1; min-width: 0; margin-bottom: 0; font-size: 13px; color: var(--is-text); }
+      /* Episodes and the pack: pills as the detail's buttons in the header
+         (search-card .ash-take) — a grey fill, the chosen one in the accent */
+      .sn-tile-tabs { display: flex; gap: 6px; flex-shrink: 0; }
+      .sn-tile-tab {
+        height: 30px; padding: 0 12px; border: none; border-radius: 999px; cursor: pointer;
+        font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap;
+        background: rgba(var(--_fill, 255, 255, 255), 0.1); color: rgba(var(--_fg, 255, 255, 255), 0.92);
+        -webkit-tap-highlight-color: transparent;
+      }
+      .sn-tile-tab.active { background: rgba(var(--arr-accent-rgb, 0, 122, 255), 0.85); color: rgb(var(--_fg, 255, 255, 255)); }
+      /* Season + its automatic search: one capsule, a hairline between them */
+      .sn-tile-split {
+        display: inline-flex; align-items: center; height: 30px; border-radius: 999px; overflow: hidden;
+        background: rgba(var(--_fill, 255, 255, 255), 0.1); flex-shrink: 0;
+      }
+      .sn-tile-split.active { background: rgba(var(--arr-accent-rgb, 0, 122, 255), 0.85); }
+      .sn-tile-split .sn-tile-tab { background: none; padding-right: 10px; }
+      .sn-tile-as {
+        position: relative; height: 30px; width: 34px; padding: 0 2px 0 0; border: none; background: none; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        color: rgba(var(--_fg, 255, 255, 255), 0.92); -webkit-tap-highlight-color: transparent;
+      }
+      .sn-tile-as::before {
+        content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 1px;
+        background: rgba(var(--_fg, 255, 255, 255), 0.22);
+      }
+      .sn-tile-as:disabled { opacity: 0.35; cursor: default; }
+      .sn-tile-as-ok { color: rgb(var(--arr-success-rgb, 48, 209, 88)); }
+      .sn-tile-split.active .sn-tile-as-ok { color: rgb(var(--_fg, 255, 255, 255)); }
+      .sn-tile-as-status { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: -2px 2px 8px; flex-shrink: 0; }
+      .sn-tile-view .sn-episodes { display: flex; flex-direction: column; gap: 2px; }
 
       .sn-drilldown-label {
         font-size: 11px;

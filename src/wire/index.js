@@ -1,17 +1,24 @@
 import { saveDlSort } from '../shared/ui.js';
 
 class _WireMethods {
-async _qbitAction(hash, action, deleteFiles = false) {
+// `inst` is the qBittorrent the torrent is in ('1' or '2'). Pause or resume all
+// goes to the instance the header's switch shows, or to both.
+async _qbitAction(hash, action, deleteFiles = false, inst = '1') {
   this._markActivated();
   const isGlobal = action === 'pauseAll' || action === 'resumeAll';
   if (isGlobal) {
     this._qbitBusy = true;
   } else {
-    this._qbitItemBusy = hash;
+    this._qbitItemBusy = `${inst}:${hash}`;
   }
   this._reRenderLeft();
   try {
-    await this._callApi('POST', 'arr_stack/qbit/action', { action, hash, deleteFiles });
+    const shown = this._dlInstFilter('qbit');
+    const insts = !isGlobal ? [inst]
+      : shown !== 'all' ? [shown]
+      : [this._qbitConfigured && '1', this._qbit2Configured && '2'].filter(Boolean);
+    await Promise.all(insts.map(i =>
+      this._callApi('POST', `arr_stack/${i === '2' ? 'qbit2' : 'qbit'}/action`, { action, hash, deleteFiles })));
   } catch (e) {
     console.error('[arr-card] qBit action error:', e);
   } finally {
@@ -111,12 +118,17 @@ async _transmissionAction(hash, action, deleteFiles = false) {
 // SABnzbd action API
 // ─────────────────────────────────────────────
 
+// Pause or resume the queue of the SABnzbd the header's switch shows, or of both
 async _sabAction(mode) {
   this._markActivated();
   this._sabBusy = true;
   this._reRenderLeft();
   try {
-    await this._callApi('POST', 'arr_stack/sabnzbd/action', { mode });
+    const shown = this._dlInstFilter('sab');
+    const insts = shown !== 'all' ? [shown]
+      : [this._sabConfigured && '1', this._sab2Configured && '2'].filter(Boolean);
+    await Promise.all(insts.map(i =>
+      this._callApi('POST', `arr_stack/${i === '2' ? 'sabnzbd2' : 'sabnzbd'}/action`, { mode })));
   } catch (e) {
     console.error('[arr-card] SAB action error:', e);
   } finally {
@@ -171,6 +183,18 @@ _wireActionButtons() {
       }
       if (hit.type === 'music') { this._openMusicModal(hit.artistId); return; }
       this._openPopup(hit.type, hit.tmdbId, hit.tvdbId, hit.title, hit.radarrId, hit.radarr2Id);
+    });
+    // A second qBittorrent or SABnzbd: the header's switch and a row's label
+    // both pick the instance shown. The label of the instance already shown
+    // goes back to both.
+    dlCol.addEventListener('click', e => {
+      const btn = e.target.closest('[data-dl-inst]');
+      if (!btn) return;
+      e.stopPropagation();
+      const [kind, v] = btn.dataset.dlInst.split(':');
+      const fromRow = btn.classList.contains('dl-inst');
+      this._dlInstSet(kind, fromRow && this._dlInstFilter(kind) === v ? 'all' : v);
+      this._reRenderLeft();
     });
   }
 
@@ -369,21 +393,22 @@ _wireActionButtons() {
       e.stopPropagation();
       const action = btn.dataset.tbAction;
       const hash   = btn.dataset.hash || '';
+      const inst   = btn.dataset.inst === '2' ? '2' : '1';
 
       if (action === 'pause') {
-        this._qbitAction(hash, 'pause');
+        this._qbitAction(hash, 'pause', false, inst);
       } else if (action === 'resume') {
-        this._qbitAction(hash, 'resume');
+        this._qbitAction(hash, 'resume', false, inst);
       } else if (action === 'remove-confirm') {
-        this._confirmRemove = hash;
+        this._confirmRemove = `${inst}:${hash}`;
         this._reRenderLeft();
       } else if (action === 'cancel-remove') {
         this._confirmRemove = null;
         this._reRenderLeft();
       } else if (action === 'remove-keep') {
-        this._qbitAction(hash, 'delete', false);
+        this._qbitAction(hash, 'delete', false, inst);
       } else if (action === 'remove-del') {
-        this._qbitAction(hash, 'delete', true);
+        this._qbitAction(hash, 'delete', true, inst);
       }
     });
   });
@@ -394,7 +419,8 @@ _wireActionButtons() {
 // ─────────────────────────────────────────────
 
 _wireSort() {
-  const btns = this.shadowRoot.querySelectorAll('.sort-btns .sb');
+  // The instance switch shares the look, not the job (_dlInstSwitchHtml)
+  const btns = this.shadowRoot.querySelectorAll('.sort-btns .sb:not([data-dl-inst])');
   btns.forEach(btn => {
     btn.addEventListener('click', () => {
       const val = btn.dataset.sort || 'progress_desc';

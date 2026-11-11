@@ -1,27 +1,43 @@
 class _DownloadsMethods {
 
+// A second SABnzbd (sabnzbd2) is fetched beside the first, and the two queues
+// are folded into this._sab with each slot marked by its instance (_inst '1' or
+// '2'). Each keeps its own back-off, so one that is down leaves the other be.
 async _fetchSab() {
-  if (this._sabConfigured === false) return;
-  if (this._dlHeld('SABnzbd')) return;
+  await Promise.all([
+    this._fetchSabInst(false),
+    this._sab2Configured ? this._fetchSabInst(true) : null,
+  ]);
+  this._sabMerge();
+}
+
+async _fetchSabInst(second) {
+  const inst = second ? '2' : '1';
+  const name = second ? 'SABnzbd 2' : 'SABnzbd';
+  const flag = second ? '_sab2Configured' : '_sabConfigured';
+  if (this[flag] === false) return;
+  if (this._dlHeld(name)) return;
   try {
-    const data = await this._callApi('GET', 'arr_stack/sabnzbd/queue');
+    const data = await this._callApi('GET', `arr_stack/${second ? 'sabnzbd2' : 'sabnzbd'}/queue`);
     // SABnzbd returns HTTP 200 with {status:false} on a wrong API key. That is
     // a fault, not a client that is not set up: it backs off like an outage and
     // comes back once the key is fixed, without a page reload.
     if (data?.status === false) {
-      this._dlFetchFailed('SABnzbd', '_sabConfigured', { status_code: 200, body: { error: data?.error } });
+      this._dlFetchFailed(name, flag, { status_code: 200, body: { error: data?.error } });
       return;
     }
     const queue = data.queue || {};
     // Track which items' mbleft decreased → actively downloading
     // (SABnzbd reports status:'Downloading' for ALL queue slots, not just the active one)
-    const prev = this._sabMbleftPrev || {};
+    this._sabMbleftPrevI = this._sabMbleftPrevI || {};
+    const prev = this._sabMbleftPrevI[inst] || {};
     const curr = {};
     const active = new Set();
     const slots = queue.slots || [];
     const globalSpeed = parseFloat(queue.kbpersec) || 0;
     for (let i = 0; i < slots.length; i++) {
       const s = slots[i];
+      s._inst = inst;
       const mbleft = parseFloat(s.mbleft) || 0;
       curr[s.nzo_id] = mbleft;
       if (s.nzo_id in prev && prev[s.nzo_id] > mbleft) {
@@ -32,15 +48,35 @@ async _fetchSab() {
         active.add(s.nzo_id);
       }
     }
-    this._sabMbleftPrev = curr;
-    this._sabActiveIds  = queue.status === 'Paused' ? new Set() : active;
-    this._sab           = queue;
-    this._sabConfigured = true;
-    this._dlFetchOk('SABnzbd');
-    this._fetchVpnIp();
+    this._sabMbleftPrevI[inst] = curr;
+    this._sabInst = this._sabInst || {};
+    this._sabInst[inst] = { queue, active: queue.status === 'Paused' ? new Set() : active };
+    this[flag] = true;
+    this._dlFetchOk(name);
+    if (!second) this._fetchVpnIp();
   } catch (e) {
-    this._dlFetchFailed('SABnzbd', '_sabConfigured', e);
+    this._dlFetchFailed(name, flag, e);
   }
+}
+
+// One queue out of both: the slots of each in turn, the speeds added up, and
+// paused only when every one is. Disk space is the first one's — it is the one
+// the disk row matches against the libraries' folders.
+_sabMerge() {
+  const parts = ['1', '2']
+    .filter(i => i === '1' || this._sab2Configured)
+    .map(i => this._sabInst?.[i]).filter(Boolean);
+  if (!parts.length) return;
+  const first = parts[0].queue;
+  const slots = parts.flatMap(p => p.queue.slots || []);
+  this._sab = {
+    ...first,
+    slots,
+    noofslots: slots.length,
+    kbpersec: String(parts.reduce((n, p) => n + (parseFloat(p.queue.kbpersec) || 0), 0)),
+    status: parts.every(p => p.queue.status === 'Paused') ? 'Paused' : (first.status === 'Paused' ? 'Downloading' : first.status),
+  };
+  this._sabActiveIds = new Set(parts.flatMap(p => [...p.active]));
 }
 
 async _fetchVpnIp() {
@@ -65,23 +101,44 @@ async _fetchVpnIp() {
 // so without this a SABnzbd that was never set up was asked twelve times a
 // minute. The same goes for NZBGet below.
 async _fetchSabHistory() {
-  if (this._sabConfigured === false) return;
-  try {
-    const data = await this._callApi('GET', 'arr_stack/sabnzbd/history');
-    const slots = data?.history?.slots || [];
-    this._sabFailed    = slots.filter(s => s.status === 'Failed');
-    const DONE = new Set(['Completed', 'Extracting', 'Moving', 'Running Script', 'Verifying']);
-    this._sabCompleted = slots.filter(s => DONE.has(s.status)).slice(0, 10);
-  } catch (e) {
-    console.error('[arr-card] SABnzbd history fetch error:', e);
-  }
+  const insts = [
+    this._sabConfigured !== false && '1',
+    this._sab2Configured && '2',
+  ].filter(Boolean);
+  if (!insts.length) return;
+  const DONE = new Set(['Completed', 'Extracting', 'Moving', 'Running Script', 'Verifying']);
+  this._sabHistI = this._sabHistI || {};
+  await Promise.all(insts.map(async inst => {
+    try {
+      const data = await this._callApi('GET', `arr_stack/${inst === '2' ? 'sabnzbd2' : 'sabnzbd'}/history`);
+      const slots = data?.history?.slots || [];
+      for (const s of slots) s._inst = inst;
+      this._sabHistI[inst] = {
+        failed: slots.filter(s => s.status === 'Failed'),
+        completed: slots.filter(s => DONE.has(s.status)).slice(0, 10),
+      };
+    } catch (e) {
+      console.error(`[arr-card] SABnzbd${inst === '2' ? ' 2' : ''} history fetch error:`, e);
+    }
+  }));
+  const parts = insts.map(i => this._sabHistI[i]).filter(Boolean);
+  this._sabFailed    = parts.flatMap(p => p.failed);
+  // Newest first across both, still ten at most
+  this._sabCompleted = parts.flatMap(p => p.completed)
+    .sort((a, b) => (b.completed || 0) - (a.completed || 0)).slice(0, 10);
+}
+
+// Which SABnzbd a queue or history item came from, by its nzo_id
+_sabSvcOf(nzoId) {
+  const all = [...(this._sab?.slots || []), ...(this._sabFailed || []), ...(this._sabCompleted || [])];
+  return all.find(s => s.nzo_id === nzoId)?._inst === '2' ? 'sabnzbd2' : 'sabnzbd';
 }
 
 async _sabQueueDelete(nzoId) {
   this._sabQueueBusy = nzoId;
   this._reRenderLeft();
   try {
-    await this._callApi('POST', 'arr_stack/sabnzbd/action', { mode: 'queue', name: 'delete', nzo_id: nzoId });
+    await this._callApi('POST', `arr_stack/${this._sabSvcOf(nzoId)}/action`, { mode: 'queue', name: 'delete', nzo_id: nzoId });
   } catch (e) {
     console.error('[arr-card] SAB queue delete error:', e);
   } finally {
@@ -95,7 +152,7 @@ async _sabHistoryDelete(nzoId) {
   this._sabDeleteBusy = nzoId;
   this._reRenderLeft();
   try {
-    await this._callApi('POST', 'arr_stack/sabnzbd/action', { mode: 'history', name: 'delete', nzo_id: nzoId });
+    await this._callApi('POST', `arr_stack/${this._sabSvcOf(nzoId)}/action`, { mode: 'history', name: 'delete', nzo_id: nzoId });
   } catch (e) {
     console.error('[arr-card] SABnzbd history delete error:', e);
   } finally {
@@ -109,7 +166,7 @@ async _sabRetry(nzoId) {
   this._sabRetryBusy = nzoId;
   this._reRenderLeft();
   try {
-    await this._callApi('POST', 'arr_stack/sabnzbd/action', { mode: 'retry', nzo_id: nzoId });
+    await this._callApi('POST', `arr_stack/${this._sabSvcOf(nzoId)}/action`, { mode: 'retry', nzo_id: nzoId });
   } catch (e) {
     console.error('[arr-card] SABnzbd retry error:', e);
   } finally {
@@ -242,23 +299,54 @@ _dlHeld(name) {
   return until > Date.now();
 }
 
+// Both qBittorrents, the second (qbit2) only when it is set up. Their torrents
+// are folded into this._qbit, each marked with its instance (_inst '1' or '2');
+// the speeds are added up. Each has its own back-off.
 async _fetchQbit() {
-  if (this._qbitConfigured === false) return;
-  if (this._dlHeld('qBittorrent')) return;
+  await Promise.all([
+    this._fetchQbitInst(false),
+    this._qbit2Configured ? this._fetchQbitInst(true) : null,
+  ]);
+  this._qbitMerge();
+}
+
+async _fetchQbitInst(second) {
+  const inst = second ? '2' : '1';
+  const svc  = second ? 'qbit2' : 'qbit';
+  const name = second ? 'qBittorrent 2' : 'qBittorrent';
+  const flag = second ? '_qbit2Configured' : '_qbitConfigured';
+  if (this[flag] === false) return;
+  if (this._dlHeld(name)) return;
   try {
     const [torrents, transfer, maindata] = await Promise.all([
-      this._callApi('GET', 'arr_stack/qbit/torrents'),
-      this._callApi('GET', 'arr_stack/qbit/transfer'),
-      this._callApi('GET', 'arr_stack/qbit/maindata').catch(() => null),
+      this._callApi('GET', `arr_stack/${svc}/torrents`),
+      this._callApi('GET', `arr_stack/${svc}/transfer`),
+      this._callApi('GET', `arr_stack/${svc}/maindata`).catch(() => null),
     ]);
-    this._qbit = torrents;
-    this._qbitTransfer = transfer;
-    this._qbitDiskFreeBytes = maindata?.server_state?.free_space_on_disk ?? null;
-    this._qbitConfigured = true;
-    this._dlFetchOk('qBittorrent');
+    const list = Array.isArray(torrents) ? torrents : [];
+    for (const t of list) t._inst = inst;
+    this._qbitInst = this._qbitInst || {};
+    this._qbitInst[inst] = {
+      torrents: list,
+      transfer: transfer || {},
+      free: maindata?.server_state?.free_space_on_disk ?? null,
+    };
+    this[flag] = true;
+    this._dlFetchOk(name);
   } catch (e) {
-    this._dlFetchFailed('qBittorrent', '_qbitConfigured', e);
+    this._dlFetchFailed(name, flag, e);
   }
+}
+
+_qbitMerge() {
+  const parts = ['1', '2']
+    .filter(i => i === '1' || this._qbit2Configured)
+    .map(i => this._qbitInst?.[i]).filter(Boolean);
+  if (!parts.length) return;
+  const sum = k => parts.reduce((n, p) => n + (p.transfer?.[k] || 0), 0);
+  this._qbit = parts.flatMap(p => p.torrents);
+  this._qbitTransfer = { ...parts[0].transfer, dl_info_speed: sum('dl_info_speed'), up_info_speed: sum('up_info_speed') };
+  this._qbitDiskFreeBytes = parts.find(p => typeof p.free === 'number')?.free ?? null;
 }
 
 async _fetchDeluge() {

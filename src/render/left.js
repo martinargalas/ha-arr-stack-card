@@ -33,7 +33,7 @@ _dlOpenAttr(downloadId) {
 }
 _renderLeft() {
   if (!this._capsLoaded) return '';
-  if (!this._qbitConfigured && !this._sabConfigured && !this._nzbgetConfigured && !this._delugeConfigured && !this._rtorrentConfigured && !this._transmissionConfigured) return '';
+  if (!this._qbitConfigured && !this._qbit2Configured && !this._sabConfigured && !this._sab2Configured && !this._nzbgetConfigured && !this._delugeConfigured && !this._rtorrentConfigured && !this._transmissionConfigured) return '';
 
   const defaultOrder = [
     { id: 'qbit',     enabled: true },
@@ -52,7 +52,7 @@ _renderLeft() {
   ];
 
   const renderers  = { qbit: '_renderQbit', sab: '_renderSab', nzbget: '_renderNzbget', deluge: '_renderDeluge', rtorrent: '_renderRtorrent', transmission: '_renderTransmission' };
-  const configured = { qbit: this._qbitConfigured, sab: this._sabConfigured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured, rtorrent: this._rtorrentConfigured, transmission: this._transmissionConfigured };
+  const configured = { qbit: this._qbitConfigured || this._qbit2Configured, sab: this._sabConfigured || this._sab2Configured, nzbget: this._nzbgetConfigured, deluge: this._delugeConfigured, rtorrent: this._rtorrentConfigured, transmission: this._transmissionConfigured };
 
   const parts = allClients
     .filter(c => c.enabled !== false && configured[c.id])
@@ -83,9 +83,9 @@ _renderDiskRow() {
   const fmtGB = bytes => fmtBytes(bytes, { empty: '0 GB' });
 
   // ── Speed ──────────────────────────────────────────────────────
-  const qbitSpeedBytes   = this._qbitConfigured   ? ((this._qbitTransfer.dl_info_speed) || 0)  : 0;
-  const qbitUpBytes      = this._qbitConfigured   ? ((this._qbitTransfer.up_info_speed) || 0)  : 0;
-  const sabKbps          = this._sabConfigured    ? (parseFloat(this._sab.kbpersec) || 0)      : 0;
+  const qbitSpeedBytes   = (this._qbitConfigured || this._qbit2Configured) ? ((this._qbitTransfer.dl_info_speed) || 0)  : 0;
+  const qbitUpBytes      = (this._qbitConfigured || this._qbit2Configured) ? ((this._qbitTransfer.up_info_speed) || 0)  : 0;
+  const sabKbps          = (this._sabConfigured || this._sab2Configured) ? (parseFloat(this._sab.kbpersec) || 0)      : 0;
   const sabSpeedBytes    = sabKbps * 1024;
   const nzbgetSpeedBytes = this._nzbgetConfigured ? (this._nzbget?.DownloadRate || 0)           : 0;
   const delugeSpeedBytes   = this._delugeConfigured   ? (this._delugeStatus?.download_rate   || 0) : 0;
@@ -106,7 +106,9 @@ _renderDiskRow() {
   const hasUsenet    = this._sabConfigured  || this._nzbgetConfigured;
   let speedSub = '';
   if (hasTorrent && hasUsenet) {
-    speedSub = `Torrent ${this.fmtSpeed(torrentSpeed)} · Usenet ${this.fmtSpeed(usenetSpeed)}`;
+    // Each half held together: a narrow tile breaks the line at the dot, not
+    // between "Usenet" and its speed
+    speedSub = `<span class="nw">Torrent ${this.fmtSpeed(torrentSpeed)}</span> · <span class="nw">Usenet ${this.fmtSpeed(usenetSpeed)}</span>`;
   } else if (hasTorrent) {
     const torrentClients = [
       this._qbitConfigured   && 'qBittorrent',
@@ -300,7 +302,7 @@ _renderDiskRow() {
   const speedChip = showTotalSpeed ? `
     <div class="disk-chip" style="${speedStyle}">
       <div class="dc-label">${this._t('totalSpeed')}</div>
-      <div class="dc-val" style="display:flex;gap:6px;align-items:center">
+      <div class="dc-val speed-pills">
         <span class="g" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:download" style="--mdc-icon-size:13px"></ha-icon> ${combinedStr}</span>
         ${hasUpload ? `<span class="pill-teal" style="font-size:13px;font-weight:800;padding:2px 6px"><ha-icon icon="mdi:upload" style="--mdc-icon-size:13px"></ha-icon> ${combinedUpStr}</span>` : ''}
       </div>
@@ -313,10 +315,9 @@ _renderDiskRow() {
 }
 
 _renderQbit() {
-  if (!this._qbitConfigured) return '';
-  const speedBytes = (this._qbitTransfer.dl_info_speed) || 0;
-  const speedStr = this.fmtSpeed(speedBytes);
-  const torrents = Array.isArray(this._qbit) ? [...this._qbit] : [];
+  if (!this._qbitConfigured && !this._qbit2Configured) return '';
+  // With two qBittorrents, only the instance the header's switch shows
+  const torrents = [...this._dlInstPick('qbit', Array.isArray(this._qbit) ? this._qbit : [])];
 
   // Sort
   const [sortField, sortDir] = this._sort.split('_'); // e.g. 'progress','desc'
@@ -347,6 +348,7 @@ _renderQbit() {
         ${this._appIcon('qbit')}
         <span class="col-hdr-title">qBittorrent</span>
         <div class="col-hdr-line"></div>
+        ${this._dlInstSwitchHtml('qbit')}
         <div class="sort-btns">
           <button class="sb${progressActive ? ' on' : ''}" data-sort="${progressActive ? (sortDir === 'desc' ? 'progress_asc' : 'progress_desc') : 'progress_desc'}" title="${this._t('sortByProgress')}">
             <ha-icon icon="mdi:percent" class="icon-15"></ha-icon><span class="sb-dir" style="${progressActive ? '' : 'visibility:hidden'}">${dir}</span>
@@ -421,27 +423,31 @@ _renderTorrentItem(t) {
 
   // Action buttons
   const hash = t.hash || '';
+  // The same torrent can sit in both qBittorrents (cross-seeding), so a row is
+  // told apart by its instance as well as its hash
+  const inst = t._inst === '2' ? '2' : '1';
+  const rowKey = `${inst}:${hash}`;
   // qBit v4: pausedDL/pausedUP  |  qBit v5: stoppedDL/stoppedUP
   const isPaused = state === 'pausedDL' || state === 'pausedUP' ||
                    state === 'stoppedDL' || state === 'stoppedUP';
   const _allowCtrl = this._cfgGet('downloads', 'allowControls', true) !== false;
   let actionBtns = '';
   if (_allowCtrl) {
-    if (this._qbitItemBusy === hash) {
+    if (this._qbitItemBusy === rowKey) {
       actionBtns = `<span class="action-spinner" style="width:11px;height:11px;border-width:1.5px;margin:0 4px"></span>`;
-    } else if (this._confirmRemove === hash) {
+    } else if (this._confirmRemove === rowKey) {
       actionBtns = `
-        <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" title="${this._t('cancelRemove')}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
-        <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" title="${this._t('keepFiles')}"><ha-icon icon="mdi:magnet" class="icon-15"></ha-icon></button>
-        <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" title="${this._t('deleteFiles')}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
+        <button class="tb tb-cancel" data-tb-action="cancel-remove" data-hash="${hash}" data-inst="${inst}" title="${this._t('cancelRemove')}"><ha-icon icon="mdi:close" class="icon-15"></ha-icon></button>
+        <button class="tb tb-keep"   data-tb-action="remove-keep"   data-hash="${hash}" data-inst="${inst}" title="${this._t('keepFiles')}"><ha-icon icon="mdi:magnet" class="icon-15"></ha-icon></button>
+        <button class="tb tb-del"    data-tb-action="remove-del"    data-hash="${hash}" data-inst="${inst}" title="${this._t('deleteFiles')}"><ha-icon icon="mdi:delete" class="icon-15"></ha-icon></button>`;
     } else {
       if (!isCompleted && isPaused)
-        actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" title="${this._t('resume')}"><ha-icon icon="mdi:play" class="icon-15"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-resume" data-tb-action="resume" data-hash="${hash}" data-inst="${inst}" title="${this._t('resume')}"><ha-icon icon="mdi:play" class="icon-15"></ha-icon></button>`;
       if (!isCompleted && !isPaused && !isError)
-        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t('pause')}"><ha-icon icon="mdi:pause" class="icon-15"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" data-inst="${inst}" title="${this._t('pause')}"><ha-icon icon="mdi:pause" class="icon-15"></ha-icon></button>`;
       if (isSeeding)
-        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" title="${this._t('stopSeed')}"><ha-icon icon="mdi:stop" class="icon-15"></ha-icon></button>`;
-      actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" title="${this._t('remove')}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
+        actionBtns += `<button class="tb tb-pause" data-tb-action="pause" data-hash="${hash}" data-inst="${inst}" title="${this._t('stopSeed')}"><ha-icon icon="mdi:stop" class="icon-15"></ha-icon></button>`;
+      actionBtns += `<button class="tb tb-remove" data-tb-action="remove-confirm" data-hash="${hash}" data-inst="${inst}" title="${this._t('remove')}"><ha-icon icon="mdi:delete-outline" class="icon-15"></ha-icon></button>`;
     }
   }
 
@@ -449,6 +455,7 @@ _renderTorrentItem(t) {
     <div class="dl"${this._dlOpenAttr(hash)}>
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
+        ${this._dlInstChipHtml('qbit', t)}
         ${this._dlRow('rowPercent') ? `<span class="dl-pct${isError ? ' dl-pct-err' : ''}">${pct}%</span>` : ''}
         <div class="tb-group">${actionBtns}</div>
       </div>
@@ -606,21 +613,23 @@ _renderDelugeTorrentItem(t) {
 }
 
 _renderSab() {
-  if (!this._sabConfigured) return '';
-  const sabKbps = parseFloat(this._sab.kbpersec) || 0;
-  const speedStr = this.fmtSpeed(sabKbps * 1024);
-  const sabPaused = this._sab.status === 'Paused';
+  if (!this._sabConfigured && !this._sab2Configured) return '';
+  // Paused as the instance shown says; for both, only when both are
+  const inst = this._dlInstFilter('sab');
+  const sabPaused = (inst === 'all' ? this._sab : this._sabInst?.[inst]?.queue)?.status === 'Paused';
+  const failed = this._dlInstPick('sab', this._sabFailed || []);
 
   const allSlots = this._getPageData('sab');
   const items = this._pagedList(allSlots, 'sab', s => this._renderSabItem(s), this._perPage('sab'), 'dc-section-card');
 
   return `
     <div class="sec-card has-gradient" style="${this._sectionStyle()}">
-      ${allSlots.length === 0 && (!this._sabFailed || this._sabFailed.length === 0) ? this._sectionOverlayHtml('sab', 15, 85, 0.15, 55, 20) : (allSlots.length >= this._perPage('sab')) ? this._sectionOverlayHtml('sab', 15, 85, 0.23) : this._sectionOverlayHtml('sab', 15, 85, 0.23, 55, 20)}
+      ${allSlots.length === 0 && failed.length === 0 ? this._sectionOverlayHtml('sab', 15, 85, 0.15, 55, 20) : (allSlots.length >= this._perPage('sab')) ? this._sectionOverlayHtml('sab', 15, 85, 0.23) : this._sectionOverlayHtml('sab', 15, 85, 0.23, 55, 20)}
       <div class="col-hdr" style="margin-bottom:8px">
         ${this._appIcon('sab')}
         <span class="col-hdr-title">SABnzbd</span>
         <div class="col-hdr-line"></div>
+        ${this._dlInstSwitchHtml('sab')}
         ${this._cfgGet('downloads','allowControls',true) !== false
           ? this._sabBusy
             ? `<button class="action-btn" disabled><span class="action-spinner"></span></button>`
@@ -636,8 +645,9 @@ _renderSab() {
 }
 
 _renderSabFailed() {
-  if (!this._sabFailed || this._sabFailed.length === 0) return '';
-  const rows = this._sabFailed.map(s => {
+  const failed = this._dlInstPick('sab', this._sabFailed || []);
+  if (failed.length === 0) return '';
+  const rows = failed.map(s => {
     const name = this._escHtml(s.name || s.filename || 'Unknown');
     const isRetrying = this._sabRetryBusy === s.nzo_id;
     const isDeleting = this._sabDeleteBusy === s.nzo_id;
@@ -656,6 +666,7 @@ _renderSabFailed() {
         <div class="dl-r1">
           <ha-icon icon="mdi:alert-circle-outline" style="--mdc-icon-size:13px;color:rgba(var(--arr-error-rgb, 255, 69, 58), 0.85);flex-shrink:0;margin-right:3px"></ha-icon>
           <span class="dl-name" title="${name}" style="color:rgba(var(--arr-error-rgb, 255, 120, 110), 0.90)">${name}</span>
+          ${this._dlInstChipHtml('sab', s)}
           <div style="display:flex;gap:3px;flex-shrink:0">${btns}</div>
         </div>
       </div>`;
@@ -706,13 +717,13 @@ _renderSabItem(s) {
       bps = (mbLeft * 1024 * 1024) / secs;
     } else {
       // fallback: total queue speed (only accurate when 1 item downloads)
-      bps = (parseFloat(this._sab.kbpersec) || 0) * 1024;
+      bps = (parseFloat((this._sabInst?.[s._inst || '1']?.queue || this._sab).kbpersec) || 0) * 1024;
     }
     speedCol = `<span class="dm"><b class="g"><ha-icon icon="mdi:download" style="--mdc-icon-size:11px"></ha-icon> ${this.fmtSpeed(bps)}</b></span>`;
   } else {
     // Items with status 'Downloading' that aren't actively downloading are queued (serial mode)
     // If global queue is paused, all waiting items show Paused
-    const globalPaused = this._sab?.status === 'Paused';
+    const globalPaused = (this._sabInst?.[s._inst || '1']?.queue || this._sab)?.status === 'Paused';
     const pillStatus = (status === 'Downloading' || status === 'Queued')
       ? (globalPaused ? 'Paused' : 'Queued')
       : status;
@@ -747,6 +758,7 @@ _renderSabItem(s) {
     <div class="dl"${this._dlOpenAttr(nzoId)}>
       <div class="dl-r1">
         <span class="dl-name" title="${name}">${name}</span>
+        ${this._dlInstChipHtml('sab', s)}
         ${this._dlRow('rowPercent') ? `<span class="dl-pct">${pct}%</span>` : ''}
         <div class="tb-group">${actionBtns}</div>
       </div>

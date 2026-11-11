@@ -70,6 +70,9 @@ _applyCaps(caps) {
   // five seconds, and a flag left unknown is a flag that gets polled.
   this._qbitConfigured         = !!caps.qbit;
   this._sabConfigured          = !!caps.sabnzbd;
+  // A second qBittorrent and SABnzbd
+  this._qbit2Configured        = !!caps.qbit2;
+  this._sab2Configured         = !!caps.sabnzbd2;
   this._nzbgetConfigured       = !!caps.nzbget;
   this._delugeConfigured       = !!caps.deluge;
   this._rtorrentConfigured     = !!caps.rtorrent;

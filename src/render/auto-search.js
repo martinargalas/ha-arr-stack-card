@@ -169,41 +169,68 @@ class _AutoSearchMethods {
     return `<div class="sn-episodes">${eps.map(ep => this._renderAsEpRow(ep)).join('')}</div>`;
   }
 
+  // An episode's automatic search: its button and what it did, said in words
+  // where the date stands — starting, waiting for Sonarr to grab something,
+  // nothing found (searchable again); a download shows its progress there.
+  // The button's place keeps its size whatever it holds, so the row does not
+  // change height. Shared by the AS list and a season opened from its poster.
+  // status '' → the caller shows the air date.
+  _asEpParts(ep, inst = this._asInstance) {
+    const key           = `ep:${ep.id}`;
+    const two           = inst === 'sonarr2';
+    const qEps          = (two ? this._sonarr2QueueEpisodes : this._sonarrQueueEpisodes) || new Set();
+    const qPct          = (two ? this._sonarr2QueueEpPct : this._sonarrQueueEpPct) || new Map();
+    const isSearching   = this._asSearchingItems?.has(key);
+    const isSearched    = this._asSearchedItems?.has(key);
+    const isDownloading = this._asDownloadingItems?.has(key) || qEps.has(ep.id);
+    const dlPct         = isDownloading ? (qPct.get(ep.id) ?? null) : null;
+    const hasFile       = !!ep.hasFile;
+    const isPolling     = this._asPolling?.has(key);
+    const isMissed      = this._asEpMissed?.has(key);
+    const airDate       = ep.airDate ? ep.airDate.slice(0, 10) : '';
+    // Nothing found for an episode yet to air says why
+    const notAired = ep.airDateUtc ? Date.parse(ep.airDateUtc) > Date.now() : (airDate && airDate > new Date().toISOString().slice(0, 10));
+    const searchSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
+
+    let btn = '';
+    if (hasFile) {
+      btn = '';
+    } else if (isSearching || isPolling) {
+      btn = `<span class="as-ep-slot"><span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span></span>`;
+    } else if (isSearched && !isMissed) {
+      btn = `<span class="as-ep-slot as-ep-ok" title="${this._escHtml(this._t('asEpSent'))}"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
+    } else {
+      const dimStyle = isDownloading ? ' style="opacity:0.3;pointer-events:none"' : '';
+      btn = `<button class="btn-person btn-person-sm" data-action="as-ep-search" data-epid="${ep.id}" data-season="${ep.seasonNumber}" data-inst="${two ? 'sonarr2' : 'sonarr'}" title="${this._escHtml(this._t('asSearchEpisode'))}"${dimStyle}>${searchSvg}</button>`;
+    }
+
+    const statusTxt = isSearching ? this._t('asSearching')
+      : isPolling ? this._t('asWaiting')
+      : isMissed ? this._t(notAired ? 'asNotAired' : 'asNotFound') : '';
+    const status = isDownloading ? this._asProgressHtml(dlPct, 56)
+      : statusTxt ? `<span class="as-ep-status${isMissed ? ' as-ep-miss' : ''}">${this._escHtml(statusTxt)}</span>`
+      : (isSearched && !hasFile) ? `<span class="as-ep-status">${this._escHtml(this._t('asEpSent'))}</span>`
+      : '';
+    return { btn, status, airDate };
+  }
+
+  // A download's bar and percentage, as in the IS list
+  _asProgressHtml(pct, minW = 56) {
+    const p = pct ?? 0;
+    return `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:${minW}px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(p, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${p}%</span></div>`;
+  }
+
   _renderAsEpRow(ep) {
-    const key        = `ep:${ep.id}`;
-    const isSearching   = this._asSearchingItems.has(key);
-    const isSearched    = this._asSearchedItems.has(key);
-    const _qEpisodes    = this._asInstance === 'sonarr2' ? (this._sonarr2QueueEpisodes || new Set()) : (this._sonarrQueueEpisodes || new Set());
-    const _qEpPct       = this._asInstance === 'sonarr2' ? (this._sonarr2QueueEpPct    || new Map()) : (this._sonarrQueueEpPct    || new Map());
-    const isDownloading = this._asDownloadingItems.has(key) || _qEpisodes.has(ep.id);
-    const dlPct         = isDownloading ? (_qEpPct.get(ep.id) ?? null) : null;
     const hasFile    = !!ep.hasFile;
     const epNum      = `S${String(ep.seasonNumber).padStart(2,'0')}E${String(ep.episodeNumber).padStart(2,'0')}`;
-    const searchSvg  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
     const trashSvg   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const isAdmin    = !!this._hass?.user?.is_admin;
     const isDeleting = this._epFileDeleting === ep.episodeFileId;
     const isConfirm  = this._epFileConfirm === ep.id;
-
-    const epQueueHtml = isDownloading
-      ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:56px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(dlPct ?? 0,4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${dlPct ?? 0}%</span></div>`
-      : '';
-    const airDate = ep.airDate ? ep.airDate.slice(0,10) : '';
-
-    let searchBtn = '';
-    if (hasFile) {
-      searchBtn = '';
-    } else if (isSearching) {
-      searchBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;
-    } else if (isSearched) {
-      searchBtn = `<span class="as-done-icon"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
-    } else {
-      const dimStyle = isDownloading ? ' style="opacity:0.3;pointer-events:none"' : '';
-      searchBtn = `<button class="btn-person btn-person-sm" data-action="as-ep-search" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Search episode"${dimStyle}>${searchSvg}</button>`;
-    }
+    const { btn: searchBtn, status, airDate } = this._asEpParts(ep);
 
     let trashBtn = '';
-    let dateHtml = isDownloading ? epQueueHtml : (airDate ? `<span class="sn-ep-date">${airDate}</span>` : '');
+    let dateHtml = status || (airDate ? `<span class="sn-ep-date">${airDate}</span>` : '');
     if (hasFile && isAdmin) {
       if (isDeleting) {
         trashBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;

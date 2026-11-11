@@ -164,7 +164,26 @@ class _WireMusicLayoutMethods {
       }
       const headR = el.querySelector('.mus-content')?.getBoundingClientRect();
       if (!headR) return;
-      const h = this._musSheetUp ? this._musAlbMax(el) : (this._musSheetH || Math.round(bodyR.bottom - headR.bottom - 15));
+      // A phone: the covers in one row, scrolled sideways, until the sheet
+      // has the whole window — then a grid, scrolled down
+      albums.classList.toggle('mus-row', !!this._isMob && !this._musSheetUp && !(this._musSheetRows > 1));
+      this._musWireRowScroll(albums);
+      const rowH = this._isMob ? this._musAlbRowH(el) : null;
+      let rows = Math.max(1, this._musSheetRows || 1);
+      const g = this._musAlbGeom;
+      // Opening (nothing dragged yet): as many whole rows as the room under
+      // the header and the description takes — an artist with no description
+      // shows several rows at once, the grid
+      if (this._isMob && !this._musSheetUp && !this._musSheetRows && rowH && g) {
+        const descB = el.querySelector('.mus-full')?.getBoundingClientRect().bottom || 0;
+        const room = bodyR.bottom - Math.max(headR.bottom, descB) - 15;
+        while (g.base + (rows + 1) * g.gridH + rows * 8 <= room && rows < 20) rows++;
+        if (rows > 1) albums.classList.remove('mus-row');
+      }
+      const atRows = rows > 1 && g ? Math.round(g.base + rows * g.gridH + (rows - 1) * 8) : rowH;
+      const h = this._musSheetUp ? this._musAlbMax(el)
+        : this._isMob ? (rowH ? Math.min(this._musAlbMax(el) - 1, atRows) : Math.round(bodyR.bottom - headR.bottom - 15))
+        : (this._musSheetH || Math.round(bodyR.bottom - headR.bottom - 15));
       if (h > 120) {
         this._musAlbPhoneH = Math.min(h, this._musAlbMax(el));
         albums.style.height = `${this._musAlbPhoneH}px`;
@@ -232,6 +251,45 @@ class _WireMusicLayoutMethods {
     albums.style.height = `${this._musAlbH}px`;
   }
 
+  // A phone's covers sheet holding one row: its chevron, the row and the
+  // padding under it (the dock's height, where there is one). A row's cover
+  // is .85 of a grid's, so the next one shows at the edge.
+  _musAlbRowH(el) {
+    const sheet = el?.querySelector('.mus-albums');
+    const list = sheet?.querySelector('.mus-alb-scroll');
+    const tile = list?.querySelector('.mus-alb');
+    if (!tile) return null;
+    const t = tile.getBoundingClientRect();
+    const under = t.height - t.width;   // the status stripe below the square cover
+    const inRow = sheet.classList.contains('mus-row');
+    const w = inRow ? t.width : t.width * 0.85;
+    const wGrid = inRow ? t.width / 0.85 : t.width;
+    const sR = sheet.getBoundingClientRect(), lR = list.getBoundingClientRect();
+    const cs = getComputedStyle(list);
+    const pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const base = (lR.top - sR.top) + pad + Math.max(0, sR.bottom - lR.bottom);
+    // Two rows and more are the grid's covers (a stop a row: _wireMusSheetDrag)
+    this._musAlbGeom = { base, gridH: wGrid + under };
+    const row = Math.round(base + w + under);
+    this._musAlbRowPx = row;
+    return row;
+  }
+
+  // How many rows of covers a phone's sheet shows at a height
+  _musRowsAt(h) {
+    const row = this._musAlbRowPx, g = this._musAlbGeom;
+    if (!row || !g || h <= row + 1) return 1;
+    return Math.max(2, Math.round((h - g.base + 8) / (g.gridH + 8)));
+  }
+
+  // A row scrolled sideways is the covers' own, not the window's swipe
+  _musWireRowScroll(albums) {
+    const list = albums?.querySelector('.mus-alb-scroll');
+    if (!list || list._rowWired) return;
+    list._rowWired = true;
+    for (const ev of ['touchstart', 'touchmove']) list.addEventListener(ev, e => { if (albums.classList.contains('mus-row')) e.stopPropagation(); }, { passive: true, signal: this._musAbort?.signal });
+  }
+
   // The sheet's padding above and below its covers, read from the sheet: under
   // a dock along the bottom of the screen it holds the dock's height too
   _musSheetPad(sheet) {
@@ -249,9 +307,10 @@ class _WireMusicLayoutMethods {
     // A tap on the pill: from where the sheet opened, to the top; from
     // anywhere else (raised, or dragged up or down a few rows), back to
     // where it opened
-    const atDefault = !this._musSheetUp && !this._musSheetH;
+    const atDefault = !this._musSheetUp && !this._musSheetH && !(this._musSheetRows > 1);
     this._musSheetUp = atDefault;
     this._musSheetH = null;
+    this._musSheetRows = 0;
     if (which === 'alb') this._musFitAlbums(el); else this._musSizePanel(el);
     const up = this._musSheetUp;
     const btn = el.querySelector(`[data-mus-sheet-toggle="${which}"]`);
@@ -268,17 +327,40 @@ class _WireMusicLayoutMethods {
     if (!sheet || !pill) return;
     wireSheetPill(pill, {
       getH: () => sheet.getBoundingClientRect().height,
-      setH: (h, ease) => { if (ease) sheetMoving(sheet); sheet.style.height = `${h}px`; },
+      setH: (h, ease) => {
+        if (ease) sheetMoving(sheet);
+        sheet.style.height = `${h}px`;
+        // A phone's covers: rows sideways short of the whole window
+        if (which === 'alb' && this._isMob) sheet.classList.toggle('mus-row', h <= (this._musAlbRowPx ?? Infinity) + 1);
+      },
       metrics: () => {
+        const max = this._musAlbMax(el);
+        // A phone's covers: two places only, one row or the whole window
+        if (which === 'alb' && this._isMob) {
+          const row = Math.min(max, this._musAlbRowH(el) || max);
+          // A row at a time, up and down, however many albums there are:
+          // one row sideways, from two the grid scrolled down
+          const g = this._musAlbGeom;
+          const stops = [row];
+          for (let k = 2; g; k++) {
+            const h = Math.round(g.base + k * g.gridH + (k - 1) * 8);
+            if (h >= max - g.gridH / 2) break;
+            stops.push(h);
+          }
+          stops.push(max);
+          return { min: row, max, stops };
+        }
         const item = list?.querySelector(which === 'alb' ? '.mus-alb' : '.sn-season-row');
         const itemH = item?.getBoundingClientRect().height || 120;
         const pad = list ? parseFloat(getComputedStyle(list).paddingBottom) || 0 : 0;
         const chrome = sheet.getBoundingClientRect().height - (list?.clientHeight || 0);
-        return { step: itemH + (which === 'alb' ? 8 : 4), min: Math.round(chrome + itemH + pad), max: this._musAlbMax(el) };
+        return { step: itemH + (which === 'alb' ? 8 : 4), min: Math.round(chrome + itemH + pad), max };
       },
       done: (h, m) => {
         this._musSheetUp = h >= m.max - 1;
-        this._musSheetH = this._musSheetUp ? null : h;
+        this._musSheetH = this._musSheetUp || m.stops ? null : h;
+        // A phone's covers keep how many rows (re-measured on a repaint)
+        if (m.stops) this._musSheetRows = this._musSheetUp ? 0 : this._musRowsAt(h);
         this._musAlbPhoneH = h;
         if (which === 'search') this._musPanelH = h;
         pill.setAttribute('aria-label', this._musSheetUp ? 'Down' : 'Up');

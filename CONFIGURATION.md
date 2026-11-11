@@ -143,6 +143,12 @@ Stalled, an error…) is always shown.
 | **Peers** | Seeds and peers (torrents only). | `rowPeers` | `true` · `false` | `true` |
 | **Percentage** | How far along it is. | `rowPercent` | `true` · `false` | `true` |
 | **Progress bar** | The bar under the row. | `rowProgress` | `true` · `false` | `true` |
+| **Instance label** | A small **1** or **2** on each row saying which qBittorrent or SABnzbd it is in, while both are shown. Listed only when a second instance is set up in the integration. | `rowInstance` | `true` · `false` | `true` |
+
+With a second qBittorrent or SABnzbd set up in the integration, both share one
+section. Its header gets a switch — **1 | 2**, **1**, **2** (on a phone one
+button that steps through them) — and every action goes to the instance the
+download is in; pause and resume all follow the switch.
 
 ### Download clients
 
@@ -532,6 +538,7 @@ downloads:
   rowPeers: true
   rowPercent: true
   rowProgress: true
+  rowInstance: true
 
 downloadClients:                # order and visibility
   - { id: qbit, enabled: true }

@@ -10,6 +10,14 @@ class _PopupOpenMethods {
 // `this._popup` is already cleared. Returns false when the popup was opened
 // straight from a category and there is nothing to return to.
 _popupReturn() {
+  // A film opened from another's sheet (its collection, recommendations):
+  // closing it opens that one again
+  if (this._mvBackStack?.length) {
+    const b = this._mvBackStack.pop();
+    this._mvOpening = true;
+    this._openPopup(b.type, b.tmdbId, null, b.title, b.radarrId, b.radarr2Id);
+    return true;
+  }
   if (this._simReturnState) {
     const saved = this._simReturnState;
     this._simReturnState = null;
@@ -78,8 +86,11 @@ _popupReturn() {
 }
 
 async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = null) {
+  // A film opened from anywhere but a film's sheet starts a new way back
+  if (!this._mvOpening) this._mvBackStack = [];
+  this._mvOpening = false;
   // A series' season tiles open at one row for each title
-  this._snTilesUp = false; this._snTilesH = null; this._snTilesPx = null;
+  this._snTilesUp = false; this._snTilesH = null; this._snTilesRow = false; this._snTilesPx = null; this._snFromTile = null;
   if (this._calendarModalOpen) {
     this._calReturnState    = true;
     this._calendarModalOpen = false;
@@ -215,6 +226,7 @@ async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = n
           relatedVideos:   detail.youTubeTrailerId
             ? [{ site: 'YouTube', type: 'Trailer', key: detail.youTubeTrailerId }]
             : (prev.relatedVideos || []),
+          collection:   prev.collection || detail.collection || null,
         };
         this._renderPopupEl();
       }).catch(() => {}); // silently ignore if TMDB fetch fails
@@ -302,6 +314,7 @@ async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = n
           relatedVideos:   detail.youTubeTrailerId
             ? [{ site: 'YouTube', type: 'Trailer', key: detail.youTubeTrailerId }]
             : (prev.relatedVideos || []),
+          collection:   prev.collection || detail.collection || null,
         };
         this._renderPopupEl();
       }).catch(() => {});
@@ -337,6 +350,7 @@ async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = n
           relatedVideos: detail.youTubeTrailerId
             ? [{ site: 'YouTube', type: 'Trailer', key: detail.youTubeTrailerId }]
             : (prev.relatedVideos || []),
+          collection: prev.collection || detail.collection || null,
         };
         this._renderPopupEl();
       }).catch(() => {});

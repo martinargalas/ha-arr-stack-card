@@ -310,6 +310,19 @@ _renderPopupEl() {
 
   // ── Jeden click handler na glass: stopPropagation + event delegation ──
   if (glass) glass.addEventListener('click', e => this._ppGlassClick(e, root, d, overlay, glass), { signal: this._ppAbort.signal });
+  // The detail's buttons up in the header (hdr-take) are outside the window:
+  // a tap there that is not on one of them closes the sources sheet too, as
+  // a tap anywhere else outside it does
+  this.shadowRoot?.addEventListener('click', e => {
+    // Looked up at the tap: a repaint may have put a new window in place
+    const path = e.composedPath();
+    const g = this.shadowRoot.querySelector('#popup-root .popup-glass');
+    if (!g || !this._popup || path.some(n => n?.classList?.contains?.('popup-overlay'))) return;
+    const onControl = path.some(n => n?.tagName === 'BUTTON' || n?.tagName === 'A' || n?.dataset?.action);
+    if (onControl) return;
+    if (this._ppSourcesOpen()) this._ppCloseSourcesOut(g);
+    else if (this._isNarrow) this._ppFoldOnOutside({ target: { closest: () => null } });
+  }, { signal: this._ppAbort.signal });
 
   this._ppWireSeek(root);
 
@@ -555,7 +568,14 @@ _renderPopup() {
   const { confirmPanelHtml } = this._ppConfirmPanel({ _instLabels, _isMovieType, asConfirmOnly, hasDualRadarr, hasDualSonarr, isConfirmAdd, isl1, isl2, monAddLabel, snConfirmAdd });
 
   const wideClass    = '';
-  const searchActive = isActive || snIsActive || asSonarrActive;
+  // A season opened from its poster (phone, tablet) is a sheet over the whole
+  // detail, folded or raised: the picture, the cast and the trailer stay
+  // under it, as with the posters' sheet
+  const snTileView = snIsActive && this._snFromTile != null && this._isNarrow && !isActive && !asActive;
+  // On a phone every sources sheet does the same: it opens raised to the top
+  // and folds by its pill to a row, the detail whole under it
+  const phoneSheet = this._isMob && !confirmPanelHtml && (isActive || snIsActive || asSonarrActive);
+  const searchActive = (isActive || snIsActive || asSonarrActive) && !snTileView && !phoneSheet;
   // The sheet keeps one height whatever is open — the old 82vh-while-searching
   // made it jump the moment a panel appeared.
   const glassStyle   = '';
@@ -591,6 +611,14 @@ _renderPopup() {
     ? `<p class="popup-overview">${overview}</p>`
     : `<p class="popup-overview" style="color:rgba(var(--_fg3, 255, 255, 255), 0.35);font-style:italic">${this._t('noDescription')}</p>`;
 
+  // A phone's trailer is a button on the picture (the CSS shows it there
+  // only): the picture of the title is the way into its trailer, and the
+  // body keeps its room for the description and the posters under it
+  const _bdVideos = Array.isArray(d.relatedVideos) ? d.relatedVideos : [];
+  const _bdTrailer = _bdVideos.find(v => v.site === 'YouTube' && v.type === 'Trailer') || _bdVideos.find(v => v.site === 'YouTube');
+  const bdTrailerBtn = _bdTrailer
+    ? `<a class="pp-bd-trailer" href="https://www.youtube.com/watch?v=${encodeURIComponent(_bdTrailer.key)}" target="_blank" rel="noopener noreferrer"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${this._escHtml(this._t('snTileTrailer'))}</a>`
+    : '';
   const backdropEl = searchActive ? '' : (this._popupCastOpen && castPanelHtml
     ? `
         <div class="popup-backdrop popup-backdrop--cast${heroBar ? ' popup-backdrop--bar' : ''}">
@@ -602,6 +630,7 @@ _renderPopup() {
     : `
         <div class="popup-backdrop${heroBar ? ' popup-backdrop--bar' : ''}" style="${backdropStyle}">
           <div class="popup-backdrop-fade"></div>
+          ${bdTrailerBtn}
           ${heroBar}
           ${castToggleBtn ? `<div class="popup-cast-fab-anchor">${castToggleBtn}</div>` : ''}
         </div>`);
@@ -644,8 +673,8 @@ _renderPopup() {
             </div>
           </div>
           ${this._isMob ? `<div class="popup-desc">${d._streamEntity ? this._renderPopupStreamControls(d) : ''}${overviewHtml}</div>` : ''}
-          ${(confirmPanelHtml || isActive || snIsActive || asSonarrActive) ? '' : trailerHtml}
-          ${(confirmPanelHtml || isActive || snIsActive || asActive) ? '' : this._ppSnTilesHtml(d)}
+          ${(confirmPanelHtml || ((isActive || (snIsActive && !snTileView) || asSonarrActive) && !phoneSheet)) ? '' : trailerHtml}
+          ${(confirmPanelHtml || isActive || snIsActive || asActive) ? '' : (this._ppSnTilesHtml(d) || this._ppMvTilesHtml(d))}
           ${confirmPanelHtml}
           ${(asActive && !asConfirmOnly) ? this._renderAsSection() : ''}
           ${isActive ? this._renderIsPanel() : ''}

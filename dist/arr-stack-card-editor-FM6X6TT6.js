@@ -305,7 +305,12 @@ ${EDITOR_CSS}
             <span class="row-label">Progress bar</span>
             <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowProgress" ${this._cfg("downloads","rowProgress",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
           </div>
-          <div class="hint">What each download row shows. The first pill always stays \u2014 it carries the state, so Stalled, Paused, Complete and errors remain visible. Upload speed and Peers apply to torrent clients only.</div>
+          ${this._caps?.qbit2||this._caps?.sabnzbd2?`
+          <div class="row">
+            <span class="row-label">Instance label</span>
+            <label class="toggle"><input type="checkbox" data-group="downloads" data-key="rowInstance" ${this._cfg("downloads","rowInstance",!0)!==!1?"checked":""}><span class="toggle-slider"></span></label>
+          </div>`:""}
+          <div class="hint">What each download row shows. The first pill always stays \u2014 it carries the state, so Stalled, Paused, Complete and errors remain visible. Upload speed and Peers apply to torrent clients only.${this._caps?.qbit2||this._caps?.sabnzbd2?" Instance label is the 1 or 2 on each row while both of a client's instances are shown.":""}</div>
         </div></details>
 
         <!-- Download Clients -->

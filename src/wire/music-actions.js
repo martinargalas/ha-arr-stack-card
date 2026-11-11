@@ -301,9 +301,7 @@ class _WireMusicActionsMethods {
         if (m.menuSub === 'stats') this._musLoadStats();
         return;
       }
-      if (act === 'search-missing') {
-        await this._callApi('POST', 'arr_stack/lidarr/command', { name: 'ArtistSearch', artistId: id });
-      } else if (act === 'refresh') {
+      if (act === 'refresh') {
         await this._callApi('POST', 'arr_stack/lidarr/command', { name: 'RefreshArtist', artistId: id });
       } else if (act === 'monitor' || act === 'unmonitor') {
         // Lidarr wants the whole record back, not a patch.

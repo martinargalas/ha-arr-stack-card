@@ -78,7 +78,7 @@ class _MusicRenderMethods {
               ${this._isMob && musLower.trim() ? `<div class="mus-full">${musLower}</div>` : ''}
             </div>
             ${this._musSearchPanel()}
-            ${m.search ? '' : `<div class="mus-albums${albH ? ' is-sized' : ''}" data-music-albums${albH ? ` style="height:${albH}px"` : ''}>
+            ${m.search ? '' : `<div class="mus-albums${albH ? ' is-sized' : ''}${this._isMob && !this._musSheetUp && !(this._musSheetRows > 1) ? ' mus-row' : ''}" data-music-albums${albH ? ` style="height:${albH}px"` : ''}>
               ${this._isNarrow ? this._musSheetChev('alb') : '<div class="pp-grab mus-alb-grab" data-mus-alb-handle><span></span></div>'}
               ${m.loading
                 ? `<div class="is-loading"><span>${this._t('loading')}</span></div>`
@@ -397,7 +397,19 @@ class _MusicRenderMethods {
       }
     }
 
-    const searchBtn = busy
+    // An automatic search's outcome, as on a series' episode
+    const asMode   = sp.mode === 'as';
+    const waiting  = asMode && sp.waiting?.has(album.id);
+    const missed   = asMode && sp.missed?.has(album.id);
+    const dl       = asMode && this._lidarrQueue?.has(album.id);
+    const notOut   = album.releaseDate && Date.parse(album.releaseDate) > Date.now();
+    const asStatus = dl ? this._asProgressHtml(Math.max(0, this._lidarrQueuePct?.get(album.id) ?? 0), 64)
+      : waiting ? `<span class="as-ep-status">${this._escHtml(this._t('asWaiting'))}</span>`
+      : missed ? `<span class="as-ep-status as-ep-miss">${this._escHtml(this._t(notOut ? 'musNotReleased' : 'asNotFound'))}</span>`
+      : (asMode && sent) ? `<span class="as-ep-status">${this._escHtml(this._t('asEpSent'))}</span>`
+      : '';
+
+    const searchBtn = (busy || waiting)
       ? `<span class="action-spinner" style="width:14px;height:14px;border-width:1.5px;flex-shrink:0"></span>`
       : sp.mode === 'as'
         ? `<button class="btn-person${sent ? ' active' : ''}" data-mus-album="${album.id}" title="${this._t('musAutoSearch')}">${sent
@@ -407,6 +419,7 @@ class _MusicRenderMethods {
 
     const statHtml = sp.delConfirm === album.id
       ? `<span class="ep-del-msg">${this._t('delSeasonConfirm') || 'Delete all from disk?'}</span>`
+      : asStatus ? `<span class="sn-season-stat">${have}/${tot}</span>${asStatus}`
       : `<span class="sn-season-stat">${have}/${tot}</span>
          <div class="sn-season-bar"><div class="sn-season-bar-fill" style="width:${pct}%"></div></div>`;
 

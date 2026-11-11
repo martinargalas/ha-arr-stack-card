@@ -92,6 +92,21 @@ export function savedDlSort(client) {
     return DL_SORTS.includes(v) ? v : 'progress_desc';
   } catch (_) { return 'progress_desc'; }
 }
+// Which of two instances a download queue shows ('all', '1', '2'), per client
+const DL_INST_KEY = 'arr-dl-inst';
+export function savedDlInst(client) {
+  try {
+    const v = JSON.parse(localStorage.getItem(DL_INST_KEY) || '{}')[client];
+    return ['all', '1', '2'].includes(v) ? v : 'all';
+  } catch (_) { return 'all'; }
+}
+export function saveDlInst(client, v) {
+  try {
+    const o = JSON.parse(localStorage.getItem(DL_INST_KEY) || '{}');
+    o[client] = v;
+    localStorage.setItem(DL_INST_KEY, JSON.stringify(o));
+  } catch (_) { /* storage blocked: the choice holds until the page reloads */ }
+}
 export function saveDlSort(client, sort) {
   try {
     const o = JSON.parse(localStorage.getItem(DL_SORT_KEY) || '{}');
@@ -143,12 +158,16 @@ export function sheetMoving(el) {
 // no drag stays a click (the pill's own: to the top and back); a drag sets
 // pill._dragged for a moment, so the click that follows it is let go.
 // getH/setH(h, ease) read and set the sheet's height; metrics() gives
-// { step, min, max } as the drag starts; done(h, m) once it is let go.
+// { step, min, max } as the drag starts (or { stops, min, max }: only those
+// heights); done(h, m) once it is let go.
 export function wireSheetPill(pill, { getH, setH, metrics, done }) {
   if (!pill || pill._pillWired) return;
   pill._pillWired = true;
   let y0 = 0, h0 = 0, m = null, shown = null, drag = false;
   const snap = raw => {
+    // Fixed places (a phone's posters: folded, one row, the whole window):
+    // the nearest of them, nothing between
+    if (m.stops?.length) return Math.round(m.stops.reduce((a, b) => Math.abs(b - raw) < Math.abs(a - raw) ? b : a));
     const h = h0 + Math.round((raw - h0) / m.step) * m.step;
     if (h >= m.max - m.step / 2) return Math.round(m.max);
     return Math.round(Math.max(m.min, h));

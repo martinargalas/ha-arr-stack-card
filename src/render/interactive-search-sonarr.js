@@ -12,6 +12,11 @@ class _SonarrIS {
 
     const isMobile = this._isMob;
 
+    // A season opened from its poster (phone and tablet): its own view
+    if (this._snFromTile != null && this._isNarrow) {
+      return this._renderSnTileView();
+    }
+
     // Mobile + drilldown active → full-screen IS results
     if (isMobile && this._snActiveIs) {
       return this._renderSnDrilldownView();
@@ -207,6 +212,15 @@ class _SonarrIS {
     const isConfirm  = this._epFileConfirm === ep.id;
     let trashBtn = '';
     let dateHtml = epInQueue ? epQueueHtml : (airDate ? `<span class="sn-ep-date">${airDate}</span>` : '');
+    // A season opened from its poster: each episode searches automatically
+    // too (magnifier) beside the manual search (person). Its outcome stands
+    // where the date does, as in the AS list.
+    let asSlot = '';
+    if (this._snFromTile != null) {
+      const as = this._asEpParts(ep, inst2);
+      if (as.status) dateHtml = as.status;
+      asSlot = as.btn || '<span class="as-ep-slot"></span>';
+    }
     if (hasFile && isAdmin) {
       if (isDeleting) {
         trashBtn = `<span class="action-spinner" style="width:12px;height:12px;border-width:1.5px;flex-shrink:0"></span>`;
@@ -228,6 +242,7 @@ class _SonarrIS {
         <span class="sn-ep-title">${epTitle}</span>
         ${dateHtml}
         ${trashSlot}
+        ${asSlot}
         <button class="btn-person btn-person-sm${isActive ? ' active' : ''}" data-action="sn-ep-is" data-epid="${ep.id}" data-season="${ep.seasonNumber}" title="Interactive Search — ${this._t('snEpisode').toLowerCase()}">
           ${personIcon}
         </button>
@@ -379,6 +394,71 @@ class _SonarrIS {
   // ─────────────────────────────────────────────
   // Mobile drill-down (full IS panel)
   // ─────────────────────────────────────────────
+
+  // A season opened from its poster: back to the posters, the season's name,
+  // and a switch between its pack's sources and its episodes. An episode's
+  // own sources are the drill-down below, back from there to the episodes.
+  _renderSnTileView() {
+    const n = this._snFromTile;
+    if (this._snActiveIs?.type === 'episode') return this._renderSnDrilldownView();
+    const view = this._snTileView === 'episodes' ? 'episodes' : 'pack';
+    // Two pills as the detail's buttons in the header: a grey fill, the
+    // chosen one in the accent
+    const tab = (v, label) => `<button class="sn-tile-tab${view === v ? ' active' : ''}" data-action="sn-tile-view" data-view="${v}">${this._escHtml(label)}</button>`;
+    // The season's own automatic search sits inside its pill, behind a
+    // hairline: one capsule, so the magnifier plainly belongs to the season
+    // and not to the episodes. What it did shows on a line below.
+    const as = this._snTileSeasonAs(n);
+    const seasonPill = `<span class="sn-tile-split${view === 'pack' ? ' active' : ''}">${tab('pack', this._t('snTilePack'))}${as.btn}</span>`;
+    const seg = `<div class="sn-tile-tabs">${tab('episodes', this._t('snTileEpisodes'))}${seasonPill}</div>`;
+    return `<div class="sn-is-section sn-drilldown sn-tile-view">
+      <div class="sn-tile-hdr">
+        <button class="sn-back-btn" data-action="sn-back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="sn-drilldown-label">${this._escHtml(this._t('snSeasonTitle'))} ${n}</div>
+        ${seg}
+      </div>
+      ${as.status ? `<div class="sn-tile-as-status">${as.status}</div>` : ''}
+      ${view === 'episodes' ? this._renderSnEpisodesPanel(n) : this._renderSnIsPanel()}
+    </div>`;
+  }
+
+  // The season's automatic search in its pill: magnifier, spinner while it
+  // starts and waits for a grab, a tick once sent; what happened in words
+  // (or the download's progress) for the line under the header
+  _snTileSeasonAs(n) {
+    const inst  = this._snIsInstance || 'sonarr';
+    const two   = inst === 'sonarr2';
+    const key   = `season:${n}`;
+    const series = two ? this._popup?._sonarr2Series : this._popup?._sonarrSeries;
+    const sKey  = series?.id != null ? `${series.id}:${n}` : null;
+    const qSeasons = (two ? this._sonarr2QueueSeasons : this._sonarrQueueSeasons) || new Set();
+    const qPct     = (two ? this._sonarr2QueueSeasonPct : this._sonarrQueueSeasonPct) || new Map();
+    const searching   = this._asSearchingItems?.has(key);
+    const polling     = this._asPolling?.has(key);
+    const searched    = this._asSearchedItems?.has(key);
+    const missed      = this._asEpMissed?.has(key);
+    const downloading = this._asDownloadingItems?.has(key) || (sKey && qSeasons.has(sKey));
+    const title = this._escHtml(this._t('asSearchSeason'));
+    let btn;
+    if (searching || polling) {
+      btn = `<span class="sn-tile-as" title="${title}"><span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span></span>`;
+    } else if (searched && !missed) {
+      btn = `<span class="sn-tile-as sn-tile-as-ok" title="${this._escHtml(this._t('asEpSent'))}"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71Z"/></svg></span>`;
+    } else {
+      btn = `<button class="sn-tile-as" data-action="as-season-search" data-season="${n}" data-inst="${inst}" title="${title}"${downloading ? ' disabled' : ''}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>`;
+    }
+    const txt = searching ? this._t('asSearching')
+      : polling ? this._t('asWaiting')
+      : missed ? this._t('asNotFound')
+      : searched ? this._t('asEpSent') : '';
+    const label = `${this._escHtml(this._t('snSeasonTitle'))} ${n}`;
+    const status = downloading ? `<span class="as-ep-status">${label}</span>${this._asProgressHtml(sKey ? (qPct.get(sKey) ?? null) : null, 90)}`
+      : txt ? `<span class="as-ep-status">${label}</span><span class="as-ep-status${missed ? ' as-ep-miss' : ''}">${this._escHtml(txt)}</span>`
+      : '';
+    return { btn, status };
+  }
 
   _renderSnDrilldownView() {
     const label = this._snActiveIs?.type === 'season'

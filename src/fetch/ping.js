@@ -85,6 +85,9 @@ class _PingMethods {
         this._jellystatConfigured !== false && 'jellystat',
         this._qbitConfigured      !== false && 'qbit',
         this._sabConfigured       !== false && 'sabnzbd',
+        // Second instances: false until the capabilities say they are set up
+        this._qbit2Configured     === true  && 'qbit2',
+        this._sab2Configured      === true  && 'sabnzbd2',
         this._nzbgetConfigured    !== false && 'nzbget',
         this._delugeConfigured    !== false && 'deluge',
         this._traktConfigured     !== false && 'trakt',

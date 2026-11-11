@@ -273,19 +273,27 @@ _renderIsPanel() {
   // line, then where it is from in small print. Why it was rejected is a ⚠
   // that opens the sheet — written out, it took a quarter of every card and
   // a page held three releases.
+  // A phone's sources: each its own card across the width — the release's
+  // name first, on two lines (it is what one is chosen by), the grab button
+  // beside it; then its quality, size and language; the indexer, peers and
+  // age last, quiet. TOR/NZB only where both kinds are in the list, the score
+  // only where it says something.
   _isCards(releases, grab, { score = true, lang = true } = {}) {
+    const isTor = r => /torrent/i.test(String(r.protocol || ''));
+    const mixed = releases.some(isTor) && releases.some(r => !isTor(r));
     return releases.map(r => `<div class="is-card">
+        <div class="is-ic-top">
+          <button class="is-ic-title"${this._isInfoAttrs(r)}>${this._escHtml(r.title || '')}</button>
+          ${grab(r)}
+        </div>
         <div class="is-ic-r1">
-          ${this._isSrcPill(r)}
+          ${mixed ? this._isSrcPill(r) : ''}
           ${this._isQualityBadge(r)}
-          ${score ? this._isScoreHtml(r.customFormatScore) : ''}
+          ${score && r.customFormatScore ? this._isScoreHtml(r.customFormatScore) : ''}
           <span class="is-size">${fmtBytes(r.size)}</span>
           ${lang ? this._isLang(r) : ''}
           ${this._isRejIcon(r)}
-          <div class="is-ic-spacer"></div>
-          ${grab(r)}
         </div>
-        <button class="is-ic-title"${this._isInfoAttrs(r)}>${this._escHtml(r.title || '')}</button>
         <div class="is-ic-meta">
           <span class="is-ic-idx">${this._escHtml(r.indexer || '')}</span>
           ${this._isPeersInline(r)}
