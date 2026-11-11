@@ -179,4 +179,28 @@ export function wireSheetPill(pill, { getH, setH, metrics, done }) {
   };
   pill.addEventListener('touchend', end);
   pill.addEventListener('touchcancel', end);
+  // A mouse (a tablet with one, a browser at a tablet's width): the same, by
+  // pointer, held by capture so the drag goes on outside the pill
+  pill.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    y0 = e.clientY; h0 = getH(); m = metrics(); shown = null; drag = false;
+    pill.classList.add('is-pressed');
+    try { pill.setPointerCapture(e.pointerId); } catch { /* not a live pointer */ }
+    const move = ev => {
+      const dy = ev.clientY - y0;
+      if (!drag && Math.abs(dy) < 6) return;
+      drag = true;
+      const h = snap(h0 - dy);
+      if (h !== shown) { shown = h; setH(h, true); }
+    };
+    const up = () => {
+      pill.removeEventListener('pointermove', move);
+      pill.removeEventListener('pointerup', up);
+      pill.removeEventListener('pointercancel', up);
+      end();
+    };
+    pill.addEventListener('pointermove', move);
+    pill.addEventListener('pointerup', up);
+    pill.addEventListener('pointercancel', up);
+  });
 }

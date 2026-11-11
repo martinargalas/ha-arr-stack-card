@@ -9,6 +9,7 @@ async _fetchRadarr() {
     this._radarrTotal = radarrFiltered.length;
     this._radarr = radarrFiltered
       .sort((a, b) => new Date(b.added) - new Date(a.added));
+    await this._fetchRadarrRecentImports('radarr');
   } catch (e) {
     console.error('[arr-card] Radarr fetch error:', e);
   }
@@ -52,6 +53,7 @@ async _fetchRadarr2() {
     const map = new Map();
     for (const m of filtered) if (m.tmdbId) map.set(String(m.tmdbId), m);
     this._radarr2ByTmdb = map;
+    await this._fetchRadarrRecentImports('radarr2');
   } catch (e) {
     // First probe failed (null) → stop probing; already confirmed error (true→error) → keep retrying
     if (this._radarr2Configured === null) this._radarr2Configured = false;
@@ -106,6 +108,32 @@ async _fetchRecentImports(svc) {
     this[`_${svc}ImportDates`] = {};
     this[`_${svc}ImportEps`]   = {};
   }
+}
+
+// When each film last had a file imported, by Radarr's History. Recently Added
+// goes by it rather than the file's own date, which Radarr renews whenever a
+// rescan adds the file again (two cuts of a film in one folder do that on every
+// scan). Null where the integration has no such endpoint yet: then the file's
+// date is all there is.
+async _fetchRadarrRecentImports(svc) {
+  try {
+    const data = await this._callApi('GET', `arr_stack/${svc}/recentimports`);
+    const map = {};
+    for (const r of (data?.records || [])) {
+      if (r.eventType !== 'downloadFolderImported' || r.movieId == null) continue;
+      if (!(r.movieId in map) || r.date > map[r.movieId]) map[r.movieId] = r.date;
+    }
+    this[`_${svc}ImportDates`] = map;
+  } catch (e) {
+    this[`_${svc}ImportDates`] = null;
+  }
+}
+
+// A film's date in Recently Added: its last import, else when it was added
+_radarrSortDate(m) {
+  const imports = m._isRadarr2 ? this._radarr2ImportDates : this._radarrImportDates;
+  if (!imports) return m.movieFile?.dateAdded || m.added || '';
+  return imports[m.id] || m.added || '';
 }
 
 _fetchSonarrRecentImports()  { return this._fetchRecentImports('sonarr'); }

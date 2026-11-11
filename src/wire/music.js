@@ -235,7 +235,7 @@ class _WireMusicMethods {
     });
     this._wireMusPanelDrag(el);
     this._wireMusAlbDrag(el);
-    if (this._isMob) { this._wireMusSheetDrag(el, 'alb'); this._wireMusSheetDrag(el, 'search'); }
+    if (this._isNarrow) { this._wireMusSheetDrag(el, 'alb'); this._wireMusSheetDrag(el, 'search'); }
     this._wireMusSwipe(el);
     // The same seek bar the popups use, so it is dragged the same way: the
     // artist window only ever had the click, and a finger on the bar moved

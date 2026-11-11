@@ -171,6 +171,7 @@ _renderPopupEl() {
   // open. Opening it a frame later gives the roll-out and fade something to
   // animate from — but only when it actually just opened, not on every redraw.
   this._ppWirePanelGrab(root);
+  this._ppWireSnTiles(root);
 
   const openKeys = new Set();
   root.querySelectorAll('.pp-hero-pill .pp-sub').forEach(sub => {
@@ -644,6 +645,7 @@ _renderPopup() {
           </div>
           ${this._isMob ? `<div class="popup-desc">${d._streamEntity ? this._renderPopupStreamControls(d) : ''}${overviewHtml}</div>` : ''}
           ${(confirmPanelHtml || isActive || snIsActive || asSonarrActive) ? '' : trailerHtml}
+          ${(confirmPanelHtml || isActive || snIsActive || asActive) ? '' : this._ppSnTilesHtml(d)}
           ${confirmPanelHtml}
           ${(asActive && !asConfirmOnly) ? this._renderAsSection() : ''}
           ${isActive ? this._renderIsPanel() : ''}

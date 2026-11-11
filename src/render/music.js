@@ -46,7 +46,7 @@ class _MusicRenderMethods {
     // the portrait left them a third of the width
     // The sheet's height from the last paint, drawn at once: measured a frame
     // later, it jumped on every repaint (a menu opened, a track moved on)
-    const albH = this._isMob ? this._musAlbPhoneH : this._musAlbH;
+    const albH = this._isNarrow ? this._musAlbPhoneH : this._musAlbH;
     const musLower = `${this._musStreamBar()}${artist.overview
       ? `<p class="popup-overview mus-overview"${this._musDescH ? ` style="max-height:${this._musDescH}px;overflow-y:auto"` : ''}>${this._escHtml(artist.overview)}</p>`
       : ''}`;
@@ -79,7 +79,7 @@ class _MusicRenderMethods {
             </div>
             ${this._musSearchPanel()}
             ${m.search ? '' : `<div class="mus-albums${albH ? ' is-sized' : ''}" data-music-albums${albH ? ` style="height:${albH}px"` : ''}>
-              ${this._isMob ? this._musSheetChev('alb') : '<div class="pp-grab mus-alb-grab" data-mus-alb-handle><span></span></div>'}
+              ${this._isNarrow ? this._musSheetChev('alb') : '<div class="pp-grab mus-alb-grab" data-mus-alb-handle><span></span></div>'}
               ${m.loading
                 ? `<div class="is-loading"><span>${this._t('loading')}</span></div>`
                 : this._musicAlbumsHtml()}
@@ -343,7 +343,7 @@ class _MusicRenderMethods {
              </div>
            </div>`;
       return `<div class="sn-is-section mus-search${rise}"${h}>
-        ${this._isMob ? this._musSheetChev('search') : '<div class="pp-grab" data-mus-grab-handle><span></span></div>'}
+        ${this._isNarrow ? this._musSheetChev('search') : '<div class="pp-grab" data-mus-grab-handle><span></span></div>'}
         ${body}
       </div>`;
     }
@@ -355,7 +355,7 @@ class _MusicRenderMethods {
     const rise = sp.entered ? '' : ' mus-rise';
     sp.entered = true;
     return `<div class="sn-is-section mus-search${rise}"${h}>
-      ${this._isMob ? this._musSheetChev('search') : '<div class="pp-grab" data-mus-grab-handle><span></span></div>'}
+      ${this._isNarrow ? this._musSheetChev('search') : '<div class="pp-grab" data-mus-grab-handle><span></span></div>'}
       <div class="sn-seasons-label">${label}</div>
       <div class="sn-seasons-rows" style="display:flex;flex-direction:column;gap:4px">${rows}</div>
     </div>`;
@@ -553,7 +553,7 @@ class _MusicRenderMethods {
       String(b.releaseDate || '').localeCompare(String(a.releaseDate || '')));
     if (!albums.length) return `<div class="placeholder">${this._t('musicNoAlbums')}</div>`;
     // A phone scrolls the whole discography down instead of paging it sideways
-    if (this._isMob) {
+    if (this._isNarrow) {
       return `<div class="mus-alb-wrap mus-alb-scroll vscroll">
         <div class="mus-alb-grid">${albums.map(a => this._musicAlbumTile(a)).join('')}</div>
       </div>`;

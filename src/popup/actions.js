@@ -40,6 +40,7 @@ export const POPUP_ACTIONS = {
   'popup-mon-search-no': '_ppActPopupMonSearchNo',
   'sn-season-monitor': '_ppActSnSeasonMonitor',
   'sn-season-is': '_ppActSnSeasonIs',
+  'sn-tile':      '_ppActSnTile',
   'sn-ep-is': '_ppActSnEpIs',
   'sn-back': '_ppActSnBack',
   'remove-confirm': '_ppActRemoveConfirm',
@@ -429,6 +430,18 @@ _ppActSnSeasonMonitor(t, e, { root, overlay } = {}) {
 }
 
   // Sonarr season IS
+// A season's tile in a series' detail: its sources, as the season list's
+// own search button opens them — the list opened at that season, searching
+_ppActSnTile(t, e, ctx = {}) {
+  const d = this._popup;
+  const n = parseInt(t.dataset.season);
+  if (!d || !Number.isFinite(n)) return;
+  this._ppCloseIS?.();
+  this._snIsInstance = d._sonarrSeries ? 'sonarr' : 'sonarr2';
+  this._snIsOpen = true; this._snIsState = null; this._snActiveIs = null; this._snSeasonsPage = 0;
+  return this._ppActSnSeasonIs({ dataset: { season: String(n) } }, e, ctx);
+}
+
 _ppActSnSeasonIs(t, e, { root, overlay } = {}) {
   const n = parseInt(t.dataset.season);
   const isMobile = this._isMob;

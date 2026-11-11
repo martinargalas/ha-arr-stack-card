@@ -46,6 +46,120 @@ _ppGrabPollStart() {
 // Popup: render popup HTML into popup-root
 // ─────────────────────────────────────────────
 
+// A series' seasons in its detail (one in Sonarr), as the artist window has
+// its albums: a sheet of season posters along the bottom, the newest first,
+// under the trailer — folded away to its pill (above a dock, where there is
+// one), raised over the picture by it (a tap, or a row at a time as it is
+// dragged). A tile opens that season's sources. The posters are Seerr's,
+// or TMDB's where Seerr has none or is not there (asked for once).
+_ppSnTilesHtml(d) {
+  const series = d?._sonarrSeries || d?._sonarr2Series;
+  // A phone and a tablet; a desktop's detail keeps its season list
+  if (!series || !this._isNarrow) return '';
+  const seasons = (series.seasons || []).filter(s => s.seasonNumber > 0)
+    .sort((a, b) => b.seasonNumber - a.seasonNumber);
+  if (!seasons.length) return '';
+  const pics = new Map();
+  for (const s of d._tmdbSeasons || []) if (s?.posterPath) pics.set(s.seasonNumber, s.posterPath);
+  for (const s of d.seasons || []) if (s?.posterPath) pics.set(s.seasonNumber, s.posterPath);
+  const tmdbId = d.tmdbId || d.id || series.tmdbId;
+  if (seasons.some(s => !pics.has(s.seasonNumber)) && !d._tmdbSeasonsAsked && tmdbId) {
+    d._tmdbSeasonsAsked = true;
+    this._callApi('GET', `arr_stack/tmdb/tv/${tmdbId}`).then(det => {
+      if (this._popup !== d || !det?.seasons?.length) return;
+      d._tmdbSeasons = det.seasons;
+      this._renderPopupEl();
+    }).catch(() => {});
+  }
+  const img = path => path ? (path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w342${path}`) : '';
+  const fallback = img(d.posterPath) || '';
+  const tiles = seasons.map(s => {
+    const n = s.seasonNumber;
+    const src = img(pics.get(n)) || fallback;
+    const st = s.statistics || {};
+    const have = st.episodeFileCount || 0;
+    const tot = st.totalEpisodeCount || st.episodeCount || 0;
+    const pct = tot ? Math.round(have / tot * 100) : 0;
+    const tone = tot && have >= tot ? 'ok' : have ? 'part' : 'none';
+    return `<button class="sn-tile" data-action="sn-tile" data-season="${n}">
+      <span class="sn-tile-art">${src ? `<img src="${this._escHtml(src)}" alt="" loading="lazy" decoding="async">` : ''}${pics.has(n) ? '' : `<span class="sn-tile-num">${n}</span>`}</span>
+      <span class="sn-tile-cap"><b>${this._escHtml(this._t('snSeasonTitle'))} ${n}</b><span>${have}/${tot}</span></span>
+      <span class="sn-tile-bar sn-tile-${tone}" style="width:${tot ? Math.max(pct, have ? 6 : 100) : 100}%"></span>
+    </button>`;
+  }).join('');
+  const h = this._snTilesPx ? ` style="height:${this._snTilesPx}px"` : '';
+  return `<div class="sn-tiles-sheet"${h}>
+    <button class="sheet-chev" data-sn-tiles-pill aria-label="${this._snTilesUp ? 'Down' : 'Up'}">${sheetChevSvg()}</button>
+    <div class="sn-tiles-scroll"><div class="sn-tiles-grid">${tiles}</div></div>
+  </div>`;
+}
+
+// The seasons' sheet laid out: its height (one row, where it was dragged to,
+// or the window's top) and the room it keeps under the trailer
+_ppWireSnTiles(root) {
+  const sheet = root.querySelector('.popup-body > .sn-tiles-sheet');
+  const body = root.querySelector('.popup-body');
+  if (!sheet || !body) { body?.style.removeProperty('--sn-sheet-h'); return; }
+  const pill = sheet.querySelector('[data-sn-tiles-pill]');
+  const scroll = sheet.querySelector('.sn-tiles-scroll');
+  // Taps and swipes in the sheet are its own, not Bubble Card's pop-up's
+  for (const ev of ['touchstart', 'touchmove']) scroll?.addEventListener(ev, e => e.stopPropagation(), { passive: true, signal: this._ppAbort?.signal });
+  const lay = () => {
+    const tile = sheet.querySelector('.sn-tile');
+    if (!tile) return null;
+    const tileH = tile.getBoundingClientRect().height;
+    // Folded away as it opens: only its top edge with the pill shows, above
+    // a dock where there is one (the list's own padding carries the dock's
+    // height), the posters out of sight until it is raised
+    const bar = Math.max(0, (parseFloat(getComputedStyle(scroll).paddingBottom) || 12) - 12);
+    const min = Math.round((pill?.getBoundingClientRect().height || 24) + 8 + bar);
+    const g = root.querySelector('.popup-glass')?.getBoundingClientRect();
+    const barR = root.querySelector('.pp-hero-bar')?.getBoundingClientRect();
+    const top = barR?.height ? barR.bottom + 10 : (g?.top ?? 0);
+    const max = Math.round(body.getBoundingClientRect().bottom - top);
+    return { min, max, step: tileH + 10 };
+  };
+  const setH = (h, ease) => {
+    if (ease) sheetMoving(sheet);
+    sheet.style.height = `${h}px`;
+    this._snTilesPx = h;
+    const bodyH = body.getBoundingClientRect().height;
+    if (h > bodyH + 1) sheet.classList.add('pp-up');
+    else setTimeout(() => { if ((this._snTilesPx || 0) <= bodyH + 1) sheet.classList.remove('pp-up'); }, ease ? 340 : 0);
+  };
+  requestAnimationFrame(() => {
+    const m = lay();
+    if (!m) return;
+    // The trailer and the description keep clear of the sheet as it opened
+    body.style.setProperty('--sn-sheet-h', `${m.min}px`);
+    setH(this._snTilesUp ? m.max : Math.min(m.max, Math.max(m.min, this._snTilesH || m.min)));
+  });
+  if (pill) {
+    pill.onclick = e => {
+      e.stopPropagation();
+      if (pill._dragged) return;
+      const m = lay();
+      if (!m) return;
+      // From where it opened, to the top; from anywhere else, back
+      const atDefault = !this._snTilesUp && !this._snTilesH;
+      this._snTilesUp = atDefault;
+      this._snTilesH = null;
+      this._ppPanelUp = this._snTilesUp;   // a season's sources open where the sheet stood
+      setH(atDefault ? m.max : m.min, true);
+    };
+    wireSheetPill(pill, {
+      getH: () => sheet.getBoundingClientRect().height,
+      setH,
+      metrics: () => lay(),
+      done: (h, m) => {
+        this._snTilesUp = h >= m.max - 1;
+        this._snTilesH = this._snTilesUp ? null : h;
+        this._ppPanelUp = this._snTilesUp;
+      },
+    });
+  }
+}
+
 // A phone's sources list is the part worth more room, so it gets a grabber:
 // drag it up to take height from the description, down to give it back. The
 // ceiling is the action capsule — the panel never hides it.
@@ -119,7 +233,7 @@ _ppWirePanelGrab(root) {
   // A phone raises the sheet by a chevron instead of a grabber: up, to the
   // window's top over the picture (short of the action capsule while it is
   // on the picture); down, back under the poster
-  if (this._isMob) {
+  if (this._isNarrow) {
     const upH = () => {
       const bodyR = bodyEl?.getBoundingClientRect();
       const g = root.querySelector('.popup-glass')?.getBoundingClientRect();
@@ -166,7 +280,9 @@ _ppWirePanelGrab(root) {
     chev.onclick = e => {
       e.stopPropagation();
       if (chev._dragged) return;   // the end of a drag, not a tap
-      this._ppPanelUp = !this._ppPanelUp;
+      // From where the sheet opened, to the top; from anywhere else (raised,
+      // or dragged a few rows), back to where it opened
+      this._ppPanelUp = !this._ppPanelUp && !this._ppPanelDragH;
       this._ppPanelDragH = null;
       const h = this._ppPanelUp ? upH() : downH();
       setH(h, true);

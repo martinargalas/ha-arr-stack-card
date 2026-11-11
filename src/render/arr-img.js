@@ -9,6 +9,7 @@
 // cached poster, a signature gone stale — falls back to TheTVDB's address.
 
 import { tmdbSized } from '../shared/ui.js';
+import { authTag } from '../shared/signed.js';
 
 const ARR_IMG_KEY = 'arr-img-sig';
 const ARR_IMG_KEEP = 200;
@@ -76,9 +77,14 @@ _arrImgSigs() {
   if (!this._arrImgSig) {
     this._arrImgSig = new Map();
     try {
+      // Kept with the login that asked for them: another login's are no good
+      // (every poster a 401), so they are dropped and asked again
       const kept = JSON.parse(localStorage.getItem(ARR_IMG_KEY) || '{}') || {};
+      const tag = authTag(this._hass);
       const now = Date.now();
-      for (const [p, v] of Object.entries(kept)) if (Array.isArray(v) && v[1] > now) this._arrImgSig.set(p, v);
+      if (tag && kept.s === tag && kept.p) {
+        for (const [p, v] of Object.entries(kept.p)) if (Array.isArray(v) && v[1] > now) this._arrImgSig.set(p, v);
+      }
     } catch { /* storage off */ }
   }
   return this._arrImgSig;
@@ -86,7 +92,9 @@ _arrImgSigs() {
 
 _arrImgKeep() {
   const keep = [...this._arrImgSigs()].filter(([, v]) => Array.isArray(v)).slice(-ARR_IMG_KEEP);
-  try { localStorage.setItem(ARR_IMG_KEY, JSON.stringify(Object.fromEntries(keep))); }
+  const tag = authTag(this._hass);
+  if (!tag) return;
+  try { localStorage.setItem(ARR_IMG_KEY, JSON.stringify({ s: tag, p: Object.fromEntries(keep) })); }
   catch { /* storage off or full: they are asked again next time */ }
 }
 

@@ -247,7 +247,7 @@ test("without the integration's word a show's poster is TheTVDB's", () => {
 test("a show's poster comes signed from Sonarr, from the right instance", async () => {
   const asked = [];
   const card = makeCard({ _arrImageCap: true, _sonarr: [show()], _sonarr2: [show({ id: 4, tvdbId: 55, _isSonarr2: true })] });
-  card._hass = { ...card._hass, callWS: async m => { asked.push(m.path); return { path: `${m.path}&authSig=t` }; } };
+  card._hass = { ...card._hass, auth: { data: { refresh_token: 'rt-1' } }, callWS: async m => { asked.push(m.path); return { path: `${m.path}&authSig=t` }; } };
   card._arrImgRepaint = () => {};
   assert.equal(card._getSonarrPoster(show()), null, 'on its way');
   await new Promise(r => setTimeout(r, 60));
@@ -260,7 +260,25 @@ test("a show's poster comes signed from Sonarr, from the right instance", async 
   // In neither library: TheTVDB's
   assert.equal(card._getSonarrPoster(show({ tvdbId: 1 })), 'https://artworks.thetvdb.com/banners/p.jpg');
   // Kept for the next load
-  assert.ok(JSON.parse(localStorage.getItem('arr-img-sig'))['/api/arr_stack/sonarr/image?id=4&file=poster-500.jpg&v=777']);
+  assert.ok(JSON.parse(localStorage.getItem('arr-img-sig')).p['/api/arr_stack/sonarr/image?id=4&file=poster-500.jpg&v=777']);
+  // Another login on this device: those signatures would all be a 401, so
+  // they are asked again instead
+  const next = makeCard({ _arrImageCap: true, _sonarr: [show()] });
+  next._hass = { ...next._hass, auth: { data: { refresh_token: 'rt-2' } }, callWS: async m => ({ path: `${m.path}&authSig=u` }) };
+  next._arrImgRepaint = () => {};
+  assert.equal(next._getSonarrPoster(show()), null, 'asked again');
+});
+
+test('kept markup loses the pictures whose signature no longer loads', async () => {
+  const { dropDeadSigs, sigDead } = await import('../src/shared/signed.js');
+  const jwt = exp => `h.${Buffer.from(JSON.stringify({ exp })).toString('base64url')}.s`;
+  const now = Date.now();
+  const live = `/api/x?id=1&amp;authSig=${jwt(Math.floor(now / 1000) + 3600)}`;
+  const ended = `/api/x?id=2&amp;authSig=${jwt(Math.floor(now / 1000) - 10)}`;
+  const html = `<img src="${live}"><img src="${ended}"><img src="https://t/p.jpg">`;
+  assert.equal(dropDeadSigs(html, true, now), `<img src="${live}"><img><img src="https://t/p.jpg">`);
+  assert.equal(dropDeadSigs(html, false, now), '<img><img><img src="https://t/p.jpg">', 'another login: none of its own');
+  assert.equal(sigDead('https://t/p.jpg', false, now), false);
 });
 
 test('a signature that cannot be had falls back to TheTVDB', async () => {

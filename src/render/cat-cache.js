@@ -14,6 +14,8 @@
 // thrown away after a fortnight or a new version of the card. Posters are not
 // kept here — the browser's own cache holds those.
 
+import { authTag, sigDead, dropDeadSigs } from '../shared/signed.js';
+
 const CAT_CACHE_KEY = 'arr-cat-cache';
 const CAT_CACHE_CAP = 90_000;               // characters of markup per setup
 const CAT_CACHE_AGE = 14 * 24 * 3600_000;
@@ -52,6 +54,25 @@ _catCacheRead() {
 _catCacheLoad() {
   const e = this._catCacheRead()[this._catCacheId];
   this._catCache = e && Date.now() - (e.at || 0) < CAT_CACHE_AGE ? (e.c || null) : null;
+  if (this._catCache) this._catCache = this._catDropDeadSigs(this._catCache, e.s === authTag(this._hass));
+}
+
+// Pictures kept with a signature that no longer loads — another login's, or
+// one past its end (Lidarr's last half a day) — are left out rather than
+// asked for: each would be a 401 in the console and a broken picture
+_catDropDeadSigs(c, sameLogin) {
+  const now = Date.now();
+  const out = {};
+  for (const [id, e] of Object.entries(c)) {
+    const n = { ...e };
+    if (n.h) n.h = dropDeadSigs(n.h, sameLogin, now);
+    if (n.i) {
+      n.i = n.i.filter(u => !sigDead(u, sameLogin, now));
+      if (!n.i.length) delete n.i;
+    }
+    out[id] = n;
+  }
+  return out;
 }
 
 // What the categories drew with all their data in, newest over what was kept;
@@ -75,7 +96,7 @@ _catCacheSave() {
   }
   this._catCache = c;
   const all = this._catCacheRead();
-  all[this._catCacheId] = { at: Date.now(), c };
+  all[this._catCacheId] = { at: Date.now(), s: authTag(this._hass), c };
   const keep = Object.entries(all).sort((a, b) => (b[1]?.at || 0) - (a[1]?.at || 0)).slice(0, CAT_CACHE_KEEP);
   try { localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(Object.fromEntries(keep))); }
   catch { try { localStorage.removeItem(CAT_CACHE_KEY); } catch { /* storage off */ } }

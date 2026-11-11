@@ -159,10 +159,10 @@ class _ItemMethods {
   get recentlyAdded() {
     const movies = (this._radarr || [])
       .filter(m => m.hasFile)
-      .map(m => ({ ...m, _mediaType: 'movie', _sortDate: m.movieFile?.dateAdded || m.added || '' }));
+      .map(m => ({ ...m, _mediaType: 'movie', _sortDate: this._radarrSortDate(m) }));
     const movies2 = (this._radarr2 || [])
       .filter(m => m.hasFile)
-      .map(m => ({ ...m, _mediaType: 'movie', _isRadarr2: true, _sortDate: m.movieFile?.dateAdded || m.added || '' }));
+      .map(m => ({ ...m, _mediaType: 'movie', _isRadarr2: true, _sortDate: this._radarrSortDate(m) }));
     const shows = (this._sonarr || [])
       .filter(s => (s.statistics?.episodeFileCount ?? 0) > 0)
       .map(s => ({ ...s, _mediaType: 'tv', _sortDate: this._sonarrImportDates?.[s.id] || s.added || '' }));

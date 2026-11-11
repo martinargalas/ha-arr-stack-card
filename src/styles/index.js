@@ -1659,6 +1659,10 @@ ${TOKEN_CSS}
         .mus-pg { flex: 0 0 26px; width: 26px; font-size: 26px; }
         .popup-body > .mus-albums { padding: 0 12px 12px; }
         .mus-alb-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      }
+      /* A phone's and a tablet's sheets (the covers, the sources, a series'
+         seasons): raised and lowered by a pill, the covers scrolled */
+      @media (max-width: 1400px) {
         /* The chevron that raises and lowers a sheet (_musSheetChev), the
            height easing over */
         /* Eased only while a chevron moves it (.sheet-moving): a sheet sized as
@@ -1686,7 +1690,9 @@ ${TOKEN_CSS}
           width: 48px; height: 24px; margin: 2px auto 4px; padding: 0; border: none; background: none;
           color: rgba(var(--_fg, 255, 255, 255), 0.6); cursor: pointer; position: relative; z-index: 2;
         }
-        /* The discography scrolled down, every cover, instead of paged */
+        /* The discography scrolled down, every cover, instead of paged; the
+           sheet's sides as the scrolled list's, at every width it is used */
+        .popup-body > .mus-albums:has(> .mus-alb-scroll) { padding: 0 12px 12px; }
         .popup-body > .mus-albums .mus-alb-wrap.mus-alb-scroll {
           display: block; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
           margin: 0 -12px -12px; padding: 0 12px 12px;
@@ -1711,6 +1717,55 @@ ${TOKEN_CSS}
         -webkit-mask-image: none !important; mask-image: none !important;
       }
       :host([no-dock-fade]) * { --band: transparent !important; }
+      /* A series' seasons in its detail (_ppSnTilesHtml): a sheet of season
+         posters along the bottom, under the trailer, raised by its pill */
+      .popup-body > .sn-tiles-sheet {
+        position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; height: 210px;
+        display: flex; flex-direction: column; min-height: 0; padding: 0 12px;
+        background: var(--is-glass-bg); backdrop-filter: var(--is-glass-blur); -webkit-backdrop-filter: var(--is-glass-blur);
+        border-radius: 18px 18px 0 0; box-shadow: 0 -8px 22px rgba(var(--_shadow, 0, 0, 0), 0.32);
+      }
+      .popup-body:has(> .sn-tiles-sheet) { padding-bottom: var(--sn-sheet-h, 0px); }
+      .sn-tiles-scroll {
+        flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        margin: 0 -12px; padding: 4px 12px calc(12px + var(--arr-bottom-bar, 0px));
+      }
+      /* A tablet: small posters, as many as the width takes, not stretched */
+      .sn-tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 104px)); gap: 10px 8px; }
+      @media (max-width: 600px) { .sn-tiles-grid { grid-template-columns: repeat(var(--arr-mob-cols, 3), minmax(0, 1fr)); } }
+      .sn-tile {
+        position: relative; display: block; min-width: 0; padding: 0; border: none; background: none;
+        cursor: pointer; text-align: left; color: inherit; border-radius: 9px; overflow: hidden;
+      }
+      .sn-tile-art {
+        position: relative; display: block; aspect-ratio: 2 / 3;
+        background: rgba(var(--_fill, 255, 255, 255), 0.07);
+      }
+      .sn-tile-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      /* No season poster: the series' own, its number large over it */
+      .sn-tile-num {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 42px; font-weight: 800; color: rgba(var(--_ptx, 255, 255, 255), 0.92);
+        background: rgba(var(--_shade, 0, 0, 0), 0.35); text-shadow: 0 2px 8px rgba(var(--_shadow, 0, 0, 0), 0.6);
+      }
+      .sn-tile-cap {
+        position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 4px;
+        padding: 22px 7px 8px; font-size: 11px; color: rgb(var(--_ptx, 255, 255, 255));
+        background: linear-gradient(transparent, rgba(var(--_shade, 0, 0, 0), 0.85));
+      }
+      .sn-tile-cap b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sn-tile-cap span { font-size: 10px; opacity: 0.75; flex-shrink: 0; }
+      .sn-tile-bar { position: absolute; left: 0; bottom: 0; height: 3px; }
+      .sn-tile-ok   { background: rgb(var(--arr-success-rgb, 48, 209, 88)); }
+      .sn-tile-part { background: rgb(var(--arr-accent-rgb, 10, 132, 255)); }
+      .sn-tile-none { background: rgba(var(--arr-error-rgb, 255, 69, 58), 0.7); }
+      /* With the seasons under it, the trailer ends above them: the dock is
+         theirs to keep clear of */
+      .popup-body:has(> .sn-tiles-sheet) .popup-yt-thumb {
+        min-height: clamp(110px, 20vh, 180px) !important;
+        -webkit-mask-image: none !important; mask-image: none !important;
+      }
+      .popup-body:has(> .sn-tiles-sheet) .popup-yt-overlay { padding-bottom: 0 !important; }
       /* A capsule's button with nothing to do here, kept in its place */
       .is-open-btn.is-off { opacity: 0.38; cursor: default; pointer-events: none; }
       .mus-alb { min-width: 0; cursor: pointer; }
@@ -3776,8 +3831,10 @@ ${TOKEN_CSS}
           background: var(--arr-sheet-base, var(--primary-background-color, rgb(var(--_shade, 0, 0, 0))));
           opacity: .94;
         }
-        /* A title's detail is at night by day too (.detail-day): its card is
-           the night's ground, not the day's light one under white text */
+        /* At night, and in a title's detail by day too (.detail-day), the
+           card is the night's ground: the dashboard's own background is a
+           light Home Assistant's pale one under white text (Apple Home) */
+        .popup-overlay:not(.popup-day) .popup-body > .is-panel:has(> .is-confirm-wrap > .is-confirm-msg)::before,
         .popup-overlay.detail-day .popup-body > .is-panel:has(> .is-confirm-wrap > .is-confirm-msg)::before {
           background: var(--arr-sheet-night, rgb(var(--arr-sheet-night-rgb, 20, 20, 26)));
         }

@@ -7,7 +7,7 @@ class _WireMusicLayoutMethods {
   // like paging anything else in the card.
   _wireMusSwipe(el) {
     const wrap = el?.querySelector('.mus-alb-wrap');
-    if (!wrap || this._isMob) return;   // a phone's covers scroll, not page
+    if (!wrap || this._isNarrow) return;   // a phone's covers scroll, not page
     const THRESHOLD = 40;
     let startX = null;
     wrap.addEventListener('touchstart', e => {
@@ -36,7 +36,7 @@ class _WireMusicLayoutMethods {
     const grid = el?.querySelector('.mus-alb-grid');
     const tile = el?.querySelector('.mus-alb');
     const m = this._musicModal;
-    if (!grid || !m || this._isMob) return;
+    if (!grid || !m || this._isNarrow) return;
     const cols = getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length;
     const tileH = tile?.getBoundingClientRect().height || 0;
     const wrap = el.querySelector('.mus-alb-wrap') || grid;
@@ -63,7 +63,7 @@ class _WireMusicLayoutMethods {
     const head = el?.querySelector('.mus-content');
     if (!panel || !body) return;
     // A phone: under the header, or raised by its chevron to the window's top
-    if (this._isMob) {
+    if (this._isNarrow) {
       const bottom = body.getBoundingClientRect().bottom;
       const top = this._musSheetUp
         ? el.querySelector('.popup-glass')?.getBoundingClientRect().top
@@ -143,7 +143,7 @@ class _WireMusicLayoutMethods {
     // under the header, down to the screen's bottom
     // under the header, down to the screen's bottom — or as high as its
     // grabber was pulled (_wireMusAlbDrag)
-    if (this._isMob) {
+    if (this._isNarrow) {
       const bodyR = el.querySelector('.mus-modal-body')?.getBoundingClientRect();
       if (!bodyR) return;
       // The description as long as it is, short of leaving no room for one
@@ -246,8 +246,12 @@ class _WireMusicLayoutMethods {
     sheetMoving(el.querySelector(which === 'alb' ? '.mus-albums' : '.mus-search'));
     // One state for both sheets: the covers raised stay raised for an
     // album's sources opened from them, and the other way round
-    this._musSheetUp = !this._musSheetUp;
-    this._musSheetH = null;   // the chevron goes to the top, or back where the sheet opened
+    // A tap on the pill: from where the sheet opened, to the top; from
+    // anywhere else (raised, or dragged up or down a few rows), back to
+    // where it opened
+    const atDefault = !this._musSheetUp && !this._musSheetH;
+    this._musSheetUp = atDefault;
+    this._musSheetH = null;
     if (which === 'alb') this._musFitAlbums(el); else this._musSizePanel(el);
     const up = this._musSheetUp;
     const btn = el.querySelector(`[data-mus-sheet-toggle="${which}"]`);
@@ -291,7 +295,7 @@ class _WireMusicLayoutMethods {
     if (!body) return 400;
     const bottom = body.getBoundingClientRect().bottom;
     const glass = el.querySelector('.popup-glass');
-    if (this._isMob && glass) return Math.max(160, Math.round(bottom - glass.getBoundingClientRect().top));
+    if (this._isNarrow && glass) return Math.max(160, Math.round(bottom - glass.getBoundingClientRect().top));
     const top = back?.getBoundingClientRect().bottom ?? body.getBoundingClientRect().top;
     return Math.max(160, Math.round(bottom - top));
   }
@@ -332,7 +336,7 @@ class _WireMusicLayoutMethods {
       const max = this._musAlbMax(el);
       // A phone's covers scroll: the sheet follows the finger freely, up to
       // the picture, and the list inside it scrolls at whatever height it is
-      if (this._isMob) {
+      if (this._isNarrow) {
         handle.classList.add('is-dragging');
         handle.setPointerCapture(ev.pointerId);
         const move = e => {

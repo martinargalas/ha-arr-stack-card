@@ -78,6 +78,8 @@ _popupReturn() {
 }
 
 async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = null) {
+  // A series' season tiles open at one row for each title
+  this._snTilesUp = false; this._snTilesH = null; this._snTilesPx = null;
   if (this._calendarModalOpen) {
     this._calReturnState    = true;
     this._calendarModalOpen = false;
@@ -207,6 +209,7 @@ async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = n
           releaseDate:     detail.releaseDate  || prev.releaseDate  || '',
           firstAirDate:    detail.firstAirDate || prev.firstAirDate || '',
           numberOfSeasons: detail.numberOfSeasons || prev.numberOfSeasons || 0,
+          _tmdbSeasons:    detail.seasons?.length ? detail.seasons : (prev._tmdbSeasons || null),
           credits:         detail.credits?.cast?.length ? detail.credits : (prev.credits || null),
           certifications:  detail.certifications?.length ? detail.certifications : (prev.certifications || []),
           relatedVideos:   detail.youTubeTrailerId
