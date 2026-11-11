@@ -335,10 +335,10 @@ There are two ways to get this header:
 ### With Bubble Card — step by step
 
 [Bubble Card](https://github.com/Clooos/Bubble-Card) is a separate card by
-Clooos, installed from HACS. Its pop-ups slide up over the dashboard and its
+Clooos, installed from the Marketplace (HACS before Home Assistant 2026.11). Its pop-ups slide up over the dashboard and its
 dock (a row of round buttons along the bottom) opens them.
 
-1. **Install Bubble Card** from HACS, if you haven't yet.
+1. **Install Bubble Card** from the Marketplace (or HACS), if you haven't yet.
 2. **Make a pop-up for the card.** Give it a hash, e.g. `#movies`, and turn off
    Bubble Card's own header (`show_header: false`). The Arr Stack Search card
    becomes the header instead, so there would be two.

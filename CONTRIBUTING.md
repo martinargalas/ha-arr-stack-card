@@ -4,7 +4,7 @@ Thanks for looking. Bug reports and pull requests are both welcome — open an i
 
 ## Building the card
 
-The card's source is in [`src/`](src). The build writes it to [`dist/`](dist): `arr-stack-card.js`, and beside it the `arr-stack-card-*.js` files Home Assistant fetches the first time a module or the editor is opened. HACS installs straight from `dist/`.
+The card's source is in [`src/`](src). The build writes it to [`dist/`](dist): `arr-stack-card.js`, and beside it the `arr-stack-card-*.js` files Home Assistant fetches the first time a module or the editor is opened. The Marketplace (HACS before Home Assistant 2026.11) installs straight from `dist/`.
 
 ```bash
 npm install

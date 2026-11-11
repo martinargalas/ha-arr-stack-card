@@ -1,6 +1,6 @@
 # Arr Stack Card
 
-[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![HA Marketplace](https://img.shields.io/badge/HA%20Marketplace-custom-orange.svg)](https://www.home-assistant.io/integrations/marketplace/)
 [![version](https://img.shields.io/github/v/release/martinargalas/ha-arr-stack-card)](https://github.com/martinargalas/ha-arr-stack-card/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-brightgreen.svg)](https://www.home-assistant.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -36,8 +36,8 @@ Manage your full media server stack — Radarr, Sonarr, Lidarr, qBittorrent, Del
 
 ## Quick Setup
 
-1. Install **[Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration)** via HACS → Integrations
-2. Install **Arr Stack Card** via HACS → Frontend (see [Installation](#installation) below)
+1. Install **[Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration)** from the Marketplace
+2. Install **Arr Stack Card** from the Marketplace (see [Installation](#installation) below)
 3. Add `custom:arr-stack-card` to your dashboard — done
 
 ```yaml
@@ -387,7 +387,7 @@ Control what appears on poster cards across all categories. All options are avai
 
 ## Requirements
 
-1. Home Assistant 2024.1+ with HACS installed
+1. Home Assistant 2024.1+ — on 2026.11 and later the built-in Marketplace installs it, on earlier versions HACS
 2. [Arr Stack Integration](https://github.com/martinargalas/arr-stack-integration) configured with at least Radarr and Sonarr
 3. Everything else is optional — unconfigured services are hidden automatically
 
@@ -399,7 +399,19 @@ If any of your services uses a self-signed or untrusted certificate, enable **Sk
 
 ## Installation
 
-### Via HACS (recommended)
+### Via the Marketplace (recommended, Home Assistant 2026.11+)
+
+Home Assistant 2026.11 replaced HACS with the built-in [Marketplace](https://www.home-assistant.io/integrations/marketplace/).
+
+1. Go to **Settings → Marketplace**
+2. Select **Add from link** (top right)
+3. Under **GitHub link**, enter `martinargalas/ha-arr-stack-card` and select **Add** — if asked for the type, choose **Dashboard**
+4. On the card's page select **Install**, check the version and select **Install** again
+5. Hard refresh your browser (Cmd+Shift+R / Ctrl+Shift+R)
+
+Already installed through HACS? Upgrading to 2026.11 carries it over to the Marketplace, updates included — nothing to do.
+
+### Via HACS (Home Assistant 2026.10 and earlier)
 
 1. Open HACS → **Frontend**
 2. Click the **⋮** menu (top right) → **Custom repositories**
