@@ -155,7 +155,11 @@ _ppWireSnTiles(root) {
     // read from where the scrolled posters begin
     const head = Math.max((pill?.getBoundingClientRect().height || 24) + 8,
       scroll.getBoundingClientRect().top - sheet.getBoundingClientRect().top + 4);
-    const min = Math.round(head + peek + bar);
+    // Where it rests folded, moved by dock_offset (editor): up for more of
+    // the posters, down for less — never below the pill, never past a row.
+    // A dock the card doesn't know is the offset itself (already in bar).
+    const off = this._dockFound || this._dockOffset() < 0 ? this._dockOffset() : 0;
+    let min = Math.max(Math.round(head + 12), Math.round(head + peek + bar + off));
     this._snTilesMin = min;
     const g = root.querySelector('.popup-glass')?.getBoundingClientRect();
     const barR = root.querySelector('.pp-hero-bar')?.getBoundingClientRect();
@@ -183,6 +187,8 @@ _ppWireSnTiles(root) {
     const gridTileH = inRow && !few ? tileH / 0.9 : tileH;
     const base = head + 12 + bar;
     const row = Math.min(max, Math.round(base + rowTileH));
+    // Folded stays short of the row (a whole row is the next place up)
+    if (min > row - 20) { min = Math.max(Math.round(head + 12), row - 20); this._snTilesMin = min; }
     const stops = [min, row];
     for (let k = 2; ; k++) {
       const h = Math.round(base + k * gridTileH + (k - 1) * 10);

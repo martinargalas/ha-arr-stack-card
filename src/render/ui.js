@@ -256,13 +256,13 @@ class _UiMethods {
     const vh = window.innerHeight;
     const top = Math.min(vh, ...found.map(e => e.getBoundingClientRect())
       .filter(r => r.height > 0 && r.top > vh / 2 && r.top < vh).map(r => r.top));
-    // dock_offset (editor → Layout): px more kept clear above a dock found,
-    // or kept clear at the foot where the card knows no dock (a dock of
-    // another kind, or one of its own a theme draws). Below 0 it keeps less
-    // than the dock's height, down to none at all
-    const off = this._isMob ? Math.max(-300, Math.min(300, Math.round(Number(this._config?.dock_offset) || 0))) : 0;
+    // A dock found is kept clear as it is. dock_offset (editor → Layout)
+    // moves only where a sheet of posters rests folded (_ppWireSnTiles);
+    // where the card knows no dock (one of another kind), a positive one is
+    // kept clear at the foot as if it were a dock
     const found_h = Math.max(0, Math.round(vh - top));
-    const h = Math.max(0, found_h + off);
+    this._dockFound = found_h > 0;
+    const h = found_h || Math.max(0, this._dockOffset());
     this._bottomBarTop = h ? Math.round(vh - h) : null;
     if (h && !this._dockSeen) {
       this._dockSeen = true;
@@ -276,6 +276,11 @@ class _UiMethods {
     // Found (or gone) after a sheet of posters was laid out: it is measured
     // again, or it stays folded under the dock where nothing of it shows
     if (was !== this.style.getPropertyValue('--arr-bottom-bar')) requestAnimationFrame(() => { this._snTilesRelay?.(); this._musRelay?.(); });
+  }
+
+  // dock_offset, a phone's only: −300…300 px
+  _dockOffset() {
+    return this._isMob ? Math.max(-300, Math.min(300, Math.round(Number(this._config?.dock_offset) || 0))) : 0;
   }
 
   // Calls done once the dock is known: found, or not there. A page that had

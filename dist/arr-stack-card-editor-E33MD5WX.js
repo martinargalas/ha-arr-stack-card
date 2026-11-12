@@ -242,7 +242,7 @@ ${EDITOR_CSS}
             <span class="row-label">Space above bottom dock (px)</span>
             <input type="number" data-key="dock_offset" value="${this._val("dock_offset",0)}" min="-300" max="300" step="4"/>
           </div>
-          <div class="hint">Phone only. In the details of a film, a series or an artist, the window of posters or albums you drag up from the bottom stays above a Bubble Card or glass-cards dock. A positive number adds room above that dock, a negative one lets the window sit lower. With a dock the card doesn't recognise, a positive number keeps this much clear at the bottom of the screen.</div>
+          <div class="hint">Phone only. In the details of a film, a series or an artist, the window of posters or albums you drag up from the bottom stays above a Bubble Card or glass-cards dock. This moves where it rests folded: a positive number higher, a negative one lower. Dragged up a row, a whole row always shows above the dock. With a dock the card doesn't recognise, a positive number keeps this much clear at the bottom of the screen.</div>
         </div>
       </div>
 
