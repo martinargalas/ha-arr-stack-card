@@ -37,9 +37,9 @@ test('a phone\'s seasons sheet opens in one row; raised to the window it is a gr
   Object.defineProperty(card, '_isMob', { get: () => true, configurable: true });
   const ns = [1, 2, 3, 4];
   const d = { _sonarrSeries: { id: 1, seasons: ns.map(n => ({ seasonNumber: n })) }, seasons: ns.map(n => ({ seasonNumber: n, posterPath: `/${n}.jpg` })) };
-  assert.match(card._ppSnTilesHtml(d), /class="sn-tiles-sheet sn-init sn-folded sn-row"/);
+  assert.match(card._ppSnTilesHtml(d), /class="sn-tiles-sheet sn-init sn-wait sn-folded sn-row"/);
   card._snTilesUp = true;
-  assert.match(card._ppSnTilesHtml(d), /class="sn-tiles-sheet sn-init"/);
+  assert.match(card._ppSnTilesHtml(d), /class="sn-tiles-sheet sn-init sn-wait"/);
 });
 
 test('as many seasons as a row of the grid holds, or fewer: that row across the width, nothing to scroll sideways', () => {
@@ -48,7 +48,7 @@ test('as many seasons as a row of the grid holds, or fewer: that row across the 
   Object.defineProperty(card, '_isMob', { get: () => true, configurable: true });
   const ns = [1, 2, 3];
   const d = { _sonarrSeries: { id: 1, seasons: ns.map(n => ({ seasonNumber: n })) }, seasons: ns.map(n => ({ seasonNumber: n, posterPath: `/${n}.jpg` })) };
-  assert.match(card._ppSnTilesHtml(d), /class="sn-tiles-sheet sn-init sn-folded" data-few/);
+  assert.match(card._ppSnTilesHtml(d), /class="sn-tiles-sheet sn-init sn-wait sn-folded" data-few/);
 });
 
 // The sheet itself, taken above its posters or on them while they lie in a row
@@ -105,10 +105,62 @@ test('on posters in a row: sideways is their scroll, up drags the sheet', () => 
   assert.equal(st.h, 260);
 });
 
+test('a touch on the sheet does not reach the pop-up around it (Bubble Card\'s swipe to close)', () => {
+  const { area } = wiredArea();
+  assert.ok(area.fire('touchstart', 300, 510).stopped, 'on its top strip');
+  assert.ok(area.fire('touchstart', 300, 700, {}).stopped, 'anywhere else on it');
+});
+
 test('below the strip, with the posters in a grid, a touch is the content\'s own', () => {
   const { area, st } = wiredArea({ row: false });
   area.fire('touchstart', 300, 560, { poster: true });
   const e = area.fire('touchmove', 300, 300, { poster: true });
   assert.equal(st.h, 100);
   assert.ok(!e.prevented);
+});
+
+test('a dock found after a sheet was laid out measures the sheet again', async () => {
+  const card = makeCard();
+  let relaid = 0;
+  card._snTilesRelay = () => { relaid++; };
+  card._syncFixedFrame = () => {};
+  const props = {};
+  Object.defineProperty(card, 'style', { configurable: true, value: {
+    getPropertyValue: k => props[k] || '', setProperty: (k, v) => { props[k] = v; }, removeProperty: k => { delete props[k]; },
+  } });
+  const raf = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = fn => fn();
+  try {
+    card._syncBottomBar(true);            // no dock on the page: nothing changes
+    assert.equal(relaid, 0);
+    card.style.setProperty('--arr-bottom-bar', '80px');
+    card._syncBottomBar(true);            // the dock gone: measured again
+    assert.equal(relaid, 1);
+  } finally { globalThis.requestAnimationFrame = raf; }
+});
+
+test('the sheet waits below the window only the first time it shows in a detail', () => {
+  const card = makeCard();
+  Object.defineProperty(card, '_isNarrow', { get: () => true, configurable: true });
+  Object.defineProperty(card, '_isMob', { get: () => true, configurable: true });
+  const ns = [1, 2, 3, 4];
+  const d = { _sonarrSeries: { id: 1, seasons: ns.map(n => ({ seasonNumber: n })) }, seasons: ns.map(n => ({ seasonNumber: n, posterPath: `/${n}.jpg` })) };
+  assert.match(card._ppSnTilesHtml(d), /sn-wait/);
+  card._snTilesShown = true;
+  assert.doesNotMatch(card._ppSnTilesHtml(d), /sn-wait/, 'a repaint (seasons\' pictures in) does not rise again');
+});
+
+test('waiting for the dock: a page that had one waits for it, one without only a moment', async () => {
+  const card = makeCard();
+  let looks = 0;
+  card._syncBottomBar = () => { looks++; if (looks === 4) card._bottomBarTop = 850; };
+  card._dockSeen = true;
+  await new Promise(r => card._dockWait(r));
+  assert.equal(looks, 4, 'found on the fourth look');
+  const c2 = makeCard();
+  let looks2 = 0;
+  c2._syncBottomBar = () => { looks2++; };
+  try { localStorage.setItem('arr-dock', '0'); } catch { /* none */ }
+  await new Promise(r => c2._dockWait(r));
+  assert.equal(looks2, 3);
 });

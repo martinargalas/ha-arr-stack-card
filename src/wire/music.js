@@ -225,6 +225,8 @@ class _WireMusicMethods {
       if (rows) rows.scrollTop = keepScroll;
     }
 
+    // The dock found or changed later (_syncBottomBar): the sheets measured again
+    this._musRelay = () => { if (el.isConnected) { this._musSizePanel(el); this._musFitAlbums(el); } };
     requestAnimationFrame(() => {
       this._musPositionMenu(el);
       this._musSizePanel(el);

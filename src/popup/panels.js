@@ -96,7 +96,9 @@ _ppSnTilesHtml(d) {
   // unless they all fit the width: then a grid's row, nothing to scroll
   const few = seasons.length <= (this._mobCols || 3);
   const row = this._isMob && !this._snTilesUp && !few ? ' sn-row' : '';
-  return `<div class="sn-tiles-sheet sn-init${folded}${row}"${few ? ' data-few' : ''}${h}>
+  // A phone's sheet waits below the window until the dock is known, then rises
+  const wait = this._isMob && !this._snTilesShown ? ' sn-wait' : '';
+  return `<div class="sn-tiles-sheet sn-init${wait}${folded}${row}"${few ? ' data-few' : ''}${h}>
     <button class="sheet-chev" data-sn-tiles-pill aria-label="${this._snTilesUp ? 'Down' : 'Up'}">${sheetChevSvg()}</button>
     <div class="sn-tiles-scroll"><div class="sn-tiles-grid">${tiles}</div></div>
   </div>`;
@@ -120,7 +122,7 @@ _ppFoldOnOutside(e) {
 _ppWireSnTiles(root) {
   const sheet = root.querySelector('.popup-body > .sn-tiles-sheet');
   const body = root.querySelector('.popup-body');
-  if (!sheet || !body) { body?.style.removeProperty('--sn-sheet-h'); this._snTilesFold = null; return; }
+  if (!sheet || !body) { body?.style.removeProperty('--sn-sheet-h'); this._snTilesFold = null; this._snTilesRelay = null; return; }
   const pill = sheet.querySelector('[data-sn-tiles-pill]');
   const scroll = sheet.querySelector('.sn-tiles-scroll');
   // Taps and swipes in the sheet are its own, not Bubble Card's pop-up's
@@ -134,9 +136,9 @@ _ppWireSnTiles(root) {
     // height). Under the dock the posters fade, as lists do everywhere else,
     // so the edge that says there are seasons here sits above it.
     const bar = Math.max(0, (parseFloat(getComputedStyle(scroll).paddingBottom) || 12) - 12);
-    // Every phone shows the posters' top edge, a small one a narrower strip
-    const small = window.matchMedia?.('(max-width: 600px) and (max-height: 760px)')?.matches;
-    const peek = Math.round(Math.min(small ? 40 : 56, tileH * (small ? 0.22 : 0.3)));
+    // Folded, three quarters of the posters show above the dock: they are
+    // plainly posters, the rest a drag away
+    const peek = Math.round(tileH * 0.75);
     // What stands above the posters: the pill (and a film's sheet's label),
     // read from where the scrolled posters begin
     const head = Math.max((pill?.getBoundingClientRect().height || 24) + 8,
@@ -205,9 +207,9 @@ _ppWireSnTiles(root) {
   // A series' and a film's sheet always open folded: the posters' top edge
   // shows under the description, the rest is a drag or a tap on the pill away
   const fitH = m => m.min;
-  requestAnimationFrame(() => {
+  const place = () => {
     const m = lay();
-    if (!m) return;
+    if (!m) return false;
     const open = fitH(m);
     // The description keeps clear of the sheet as it opened
     body.style.setProperty('--sn-sheet-h', `${open}px`);
@@ -215,10 +217,40 @@ _ppWireSnTiles(root) {
       : (this._isMob && this._snTilesRow) ? (m.stops[Math.min(this._snTilesRow, m.stops.length - 1)] ?? m.row)
       : this._snTilesH ? Math.min(m.max, Math.max(m.min, this._snTilesH))
       : open);
-    // Painted where it stands, with no easing: the posters' names and bars
-    // move only when the sheet is moved, never as it first shows
-    requestAnimationFrame(() => sheet.classList.remove('sn-init'));
+    return true;
+  };
+  requestAnimationFrame(() => {
+    const arrive = sheet.classList.contains('sn-wait');
+    const go = () => {
+      if (!sheet.isConnected || !place()) return;
+      this._snTilesShown = true;
+      // Painted where it stands, with no easing: the posters' names and bars
+      // move only when the sheet is moved, never as it first shows. Then, the
+      // first time, it rises from below the window.
+      requestAnimationFrame(() => {
+        sheet.classList.remove('sn-init');
+        if (!arrive) return;
+        requestAnimationFrame(() => {
+          sheet.classList.add('sn-arrive');
+          sheet.classList.remove('sn-wait');
+          setTimeout(() => sheet.classList.remove('sn-arrive'), 460);
+        });
+      });
+    };
+    if (arrive) this._dockWait(go); else go();
   });
+  // The dock found or changed after this (_syncBottomBar): measured again,
+  // the sheet kept where it stood (folded, a row, the window)
+  this._snTilesRelay = () => {
+    if (!sheet.isConnected) return;
+    const m = lay();
+    if (!m) return;
+    body.style.setProperty('--sn-sheet-h', `${fitH(m)}px`);
+    setH(this._snTilesUp ? m.max
+      : (this._isMob && this._snTilesRow) ? (m.stops[Math.min(this._snTilesRow, m.stops.length - 1)] ?? m.row)
+      : this._snTilesH ? Math.min(m.max, Math.max(m.min, this._snTilesH))
+      : fitH(m));
+  };
   // A tap anywhere outside the sheet folds it back (_ppFoldOnOutside)
   this._snTilesFold = () => {
     if (!sheet.isConnected || (!this._snTilesUp && !this._snTilesH && !this._snTilesRow)) return;

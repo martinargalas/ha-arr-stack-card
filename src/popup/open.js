@@ -90,7 +90,7 @@ async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = n
   if (!this._mvOpening) this._mvBackStack = [];
   this._mvOpening = false;
   // A series' season tiles open at one row for each title
-  this._snTilesUp = false; this._snTilesH = null; this._snTilesRow = false; this._snTilesPx = null; this._snFromTile = null;
+  this._snTilesUp = false; this._snTilesH = null; this._snTilesRow = false; this._snTilesPx = null; this._snFromTile = null; this._snTilesShown = false;
   if (this._calendarModalOpen) {
     this._calReturnState    = true;
     this._calendarModalOpen = false;

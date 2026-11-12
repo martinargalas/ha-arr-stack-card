@@ -256,10 +256,39 @@ class _UiMethods {
       .filter(r => r.height > 0 && r.top > vh / 2 && r.top < vh).map(r => r.top));
     const h = Math.max(0, Math.round(vh - top));
     this._bottomBarTop = h ? Math.round(top) : null;
+    if (h && !this._dockSeen) {
+      this._dockSeen = true;
+      try { localStorage.setItem('arr-dock', '1'); } catch { /* storage off */ }
+    }
     // With room between, as the arrow keeps from the screen's own edge
+    const was = this.style.getPropertyValue('--arr-bottom-bar');
     if (h) this.style.setProperty('--arr-bottom-bar', `${h + 14}px`);
     else this.style.removeProperty('--arr-bottom-bar');
     this._syncFixedFrame();
+    // Found (or gone) after a sheet of posters was laid out: it is measured
+    // again, or it stays folded under the dock where nothing of it shows
+    if (was !== this.style.getPropertyValue('--arr-bottom-bar')) requestAnimationFrame(() => { this._snTilesRelay?.(); this._musRelay?.(); });
+  }
+
+  // Calls done once the dock is known: found, or not there. A page that had
+  // one (this visit, or the last: localStorage arr-dock) waits up to 1.5 s for
+  // it — Bubble Card's pop-up may still be opening; one without, a moment.
+  _dockWait(done) {
+    let had = !!this._dockSeen;
+    try { had = had || localStorage.getItem('arr-dock') === '1'; } catch { /* storage off */ }
+    const limit = had ? 15 : 2;
+    let n = 0;
+    const step = () => {
+      try { this._syncBottomBar(true); } catch { /* not on a page */ }
+      if (this._bottomBarTop != null) return done();
+      if (++n > limit) {
+        // Looked for long enough: none here now, so the next open won't wait
+        try { localStorage.setItem('arr-dock', '0'); } catch { /* storage off */ }
+        return done();
+      }
+      setTimeout(step, 100);
+    };
+    step();
   }
 
   // Where a window fixed to the screen really stands. In Bubble Card's pop-up

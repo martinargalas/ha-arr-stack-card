@@ -266,7 +266,10 @@ function wireSheetArea(pill, { getH, setH, metrics, done, area, headBottom, swip
     const h = snap(h0 - dy);
     if (h !== shown) { shown = h; setH(h, true); }
   }, { passive: false, capture: true });
-  // Held, the drag is the sheet's: not the pop-up's around it (Bubble Card's swipe)
+  // A touch on the sheet is the sheet's: the pop-up around it (Bubble Card's
+  // swipe down to close) never hears it begin, so a drag down folds the
+  // sheet and does not take the pop-up with it
+  area.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
   for (const ev of ['touchmove', 'touchend']) area.addEventListener(ev, e => { if (drag) e.stopPropagation(); });
   const end = () => {
     const was = drag;

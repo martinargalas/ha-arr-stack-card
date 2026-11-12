@@ -89,7 +89,8 @@ class _FilmSheetMethods {
     // All fitting the width: a grid's row, nothing to scroll sideways
     const few = sh.items.length <= (this._mobCols || 3);
     const row = !this._snTilesUp && !(this._snTilesRow > 1) && !few ? ' sn-row' : '';
-    return `<div class="sn-tiles-sheet mv-sheet sn-init${folded}${row}"${few ? ' data-few' : ''}${h}>
+    const wait = !this._snTilesShown ? ' sn-wait' : '';
+    return `<div class="sn-tiles-sheet mv-sheet sn-init${wait}${folded}${row}"${few ? ' data-few' : ''}${h}>
     <button class="sheet-chev" data-sn-tiles-pill aria-label="${this._snTilesUp ? 'Down' : 'Up'}">${sheetChevSvg()}</button>
     ${label ? `<div class="sn-tiles-label">${this._escHtml(label)}</div>` : ''}
     <div class="sn-tiles-scroll"><div class="sn-tiles-grid">${tiles}</div></div>

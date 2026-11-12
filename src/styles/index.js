@@ -1863,6 +1863,10 @@ ${TOKEN_CSS}
       /* Until the sheet is laid out (_ppWireSnTiles) nothing on its posters
          eases: names, ratings and bars appear where they belong, once */
       .sn-tiles-sheet.sn-init *, .sn-tiles-sheet.sn-init { transition: none !important; }
+      /* A phone's sheet the first time: below the window until the dock is
+         known (_dockWait), then it rises into place */
+      .popup-body > .sn-tiles-sheet.sn-wait { transform: translateY(calc(100% + 24px)); }
+      .popup-body > .sn-tiles-sheet.sn-arrive { transition: transform 0.42s cubic-bezier(.2, .8, .2, 1) !important; }
       /* The sheet folded: only the posters' top edge shows (under a dock or
          not), so the season's name and its bar move up there; raised, they
          ease back down to the poster's foot. A tile is 1.5 widths tall. */
