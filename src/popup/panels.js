@@ -191,7 +191,10 @@ _ppWireSnTiles(root) {
     const row = Math.min(max, Math.round(base + rowTileH));
     // Folded stays short of the row (a whole row is the next place up)
     if (min > row - 20) { min = Math.max(Math.round(head + 12), row - 20); this._snTilesMin = min; }
-    const stops = [min, row];
+    // Folded within a quarter of a poster of the row (a large dock_offset):
+    // a drag up from it would barely move, so the row is left out and the
+    // first step up is two rows (or the window)
+    const stops = row - min < rowTileH * 0.25 ? [min] : [min, row];
     for (let k = 2; ; k++) {
       const h = Math.round(base + k * gridTileH + (k - 1) * 10);
       if (h >= max - gridTileH / 2) break;
@@ -201,6 +204,14 @@ _ppWireSnTiles(root) {
     this._snTilesRowGeom = { row, base, gridTileH };
     this._snTilesFull = row;
     return { min, max, row, stops };
+  };
+  // The place kept for a number of rows: the stop nearest that many (a row
+  // left out of the stops lands on the next one up)
+  const atRows = (m, k) => {
+    const g = this._snTilesRowGeom;
+    const want = !g || k <= 1 ? m.row : Math.round(g.base + k * g.gridTileH + (k - 1) * 10);
+    const up = m.stops.filter(h => h >= want - 1);
+    return up.length ? Math.min(...up) : m.max;
   };
   // How many rows show at a height: one when folded or at one row
   const rowsAt = h => {
@@ -234,7 +245,7 @@ _ppWireSnTiles(root) {
     // The description keeps clear of the sheet as it opened
     body.style.setProperty('--sn-sheet-h', `${open}px`);
     setH(this._snTilesUp ? m.max
-      : (this._isMob && this._snTilesRow) ? (m.stops[Math.min(this._snTilesRow, m.stops.length - 1)] ?? m.row)
+      : (this._isMob && this._snTilesRow) ? atRows(m, this._snTilesRow)
       : this._snTilesH ? Math.min(m.max, Math.max(m.min, this._snTilesH))
       : open);
     return true;
@@ -267,7 +278,7 @@ _ppWireSnTiles(root) {
     if (!m) return;
     body.style.setProperty('--sn-sheet-h', `${fitH(m)}px`);
     setH(this._snTilesUp ? m.max
-      : (this._isMob && this._snTilesRow) ? (m.stops[Math.min(this._snTilesRow, m.stops.length - 1)] ?? m.row)
+      : (this._isMob && this._snTilesRow) ? atRows(m, this._snTilesRow)
       : this._snTilesH ? Math.min(m.max, Math.max(m.min, this._snTilesH))
       : fitH(m));
   };

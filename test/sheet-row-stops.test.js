@@ -200,3 +200,19 @@ test('a negative dock_offset keeps less than the dock, never below none', () => 
     assert.equal(card._bottomBarTop, null);
   } finally { globalThis.requestAnimationFrame = raf; }
 });
+
+test('a short drag always moves a sheet with fixed places one place that way', () => {
+  const pill = fakePill();
+  let h = 315, last = null;
+  wireSheetPill(pill, {
+    getH: () => h, setH: v => { h = v; }, metrics: () => ({ min: 315, max: 800, stops: [315, 520, 800] }),
+    done: v => { last = v; },
+  });
+  pill.fire('touchstart', 600);
+  pill.fire('touchmove', 590);   // 10px: not yet
+  assert.equal(h, 315);
+  pill.fire('touchmove', 560);   // 40px up: the next place, though 315 is nearer
+  assert.equal(h, 520);
+  pill.fire('touchend');
+  assert.equal(last, 520);
+});

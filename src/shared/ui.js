@@ -165,6 +165,18 @@ export function sheetMoving(el) {
 // sheet's label), and, where swipe(target) says so, on its content too —
 // there the first move decides: sideways it is the content's own scroll,
 // up or down it drags the sheet. Either way the pill shows it is held.
+// A sheet with fixed places, dragged from h0 to raw: the nearest place —
+// but once the finger has gone 24px from where it began, at least the next
+// place that way, so a short drag always moves it a place (a far one, the
+// place after it, can need a long drag)
+function stopAt(stops, h0, raw) {
+  const near = stops.reduce((a, b) => Math.abs(b - raw) < Math.abs(a - raw) ? b : a);
+  if (Math.abs(near - h0) > 1 || Math.abs(raw - h0) < 24) return Math.round(near);
+  const way = raw > h0 ? stops.filter(h => h > h0 + 1) : stops.filter(h => h < h0 - 1);
+  if (!way.length) return Math.round(near);
+  return Math.round(raw > h0 ? Math.min(...way) : Math.max(...way));
+}
+
 export function wireSheetPill(pill, { getH, setH, metrics, done, area, headBottom, swipe }) {
   wireSheetArea(pill, { getH, setH, metrics, done, area, headBottom, swipe });
   if (!pill || pill._pillWired) return;
@@ -173,7 +185,7 @@ export function wireSheetPill(pill, { getH, setH, metrics, done, area, headBotto
   const snap = raw => {
     // Fixed places (a phone's posters: folded, one row, the whole window):
     // the nearest of them, nothing between
-    if (m.stops?.length) return Math.round(m.stops.reduce((a, b) => Math.abs(b - raw) < Math.abs(a - raw) ? b : a));
+    if (m.stops?.length) return stopAt(m.stops, h0, raw);
     const h = h0 + Math.round((raw - h0) / m.step) * m.step;
     if (h >= m.max - m.step / 2) return Math.round(m.max);
     return Math.round(Math.max(m.min, h));
@@ -235,7 +247,7 @@ function wireSheetArea(pill, { getH, setH, metrics, done, area, headBottom, swip
   area._areaWired = true;
   let mode = null, x0 = 0, y0 = 0, h0 = 0, m = null, shown = null, drag = false;
   const snap = raw => {
-    if (m.stops?.length) return Math.round(m.stops.reduce((a, b) => Math.abs(b - raw) < Math.abs(a - raw) ? b : a));
+    if (m.stops?.length) return stopAt(m.stops, h0, raw);
     const h = h0 + Math.round((raw - h0) / m.step) * m.step;
     if (h >= m.max - m.step / 2) return Math.round(m.max);
     return Math.round(Math.max(m.min, h));
