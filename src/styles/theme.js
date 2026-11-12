@@ -164,10 +164,10 @@ class _ThemeMethods {
       // season or an episode, grabbing a release or an album, the windows'
       // round actions in any tone (run, delete, import…), and the AS and IS
       // entries of a detail's Search menu. One that is on turns white. A
-      // release's grabbed or failed state keeps its colour. Not a panel's
+      // release's grabbed, downloading or failed state keeps its colour. Not a panel's
       // grabber (.pp-grab): with the glass it read as a broken band.
       {
-        const mini = '.popup-overlay :is([data-mt-round], .btn-person, .is-grab-btn:not(.is-grab-done):not(.is-grab-failed):not(.force))';
+        const mini = '.popup-overlay :is([data-mt-round], .btn-person, .is-grab-btn:not(.is-grab-done):not(.is-grab-failed):not(.force):not(.is-grab-dl))';
         rules.push(`${mini} { background: ${bg} !important; background-origin: border-box; box-shadow: ${sh}; border-color: transparent !important; color: rgba(${fg}) !important; backdrop-filter: none; -webkit-backdrop-filter: none; }`);
         rules.push('.popup-overlay .btn-person { border-radius: 999px; }');
         rules.push('.popup-overlay .btn-person.active { background: rgba(255, 255, 255, 0.92) !important; color: rgb(28, 28, 30) !important; }');
@@ -193,6 +193,10 @@ class _ThemeMethods {
       // with a white label, the bar in white on a shade of the glass.
       rules.push(`.popup-overlay .inst-chip.ic--downloading { ${quiet} border-color: transparent !important; backdrop-filter: blur(6px) saturate(115%); -webkit-backdrop-filter: blur(6px) saturate(115%); --_pg-fill: rgba(${fg}); --_pg-track: rgba(${tint}, 0.45); }`);
       rules.push('.popup-overlay .inst-chip.ic--downloading :is(span, .is-spin) { color: inherit !important; }');
+      // A phone's detail sets its title under the picture, on the window: no
+      // picture to read over, so no glass — the chip as an available one's,
+      // in the info blue
+      rules.push('@media (max-width: 600px) { .popup-overlay .inst-chip.ic--downloading { background: rgba(var(--arr-info-rgb, 96, 165, 250), 0.08) !important; border-color: rgba(var(--arr-info-rgb, 96, 165, 250), 0.35) !important; color: rgb(var(--arr-info-rgb, 96, 165, 250)) !important; text-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; --_pg-fill: rgb(var(--arr-info-rgb, 96, 165, 250)); --_pg-track: rgba(var(--arr-info-rgb, 96, 165, 250), 0.25); } }');
       rules.push(`:is(${btns}.active, .popup-overlay .popup-close, .to-sheet .popup-close) { background: ${bg} !important; background-origin: border-box; box-shadow: ${sh}; border-color: transparent !important; color: rgba(${fg}) !important; }`);
       // The open one is plain control glass: under it the lens bent the
       // picture round its edge and, with the glass's own sheen, read as 3D

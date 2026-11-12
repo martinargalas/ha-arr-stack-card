@@ -216,8 +216,7 @@ class _AutoSearchMethods {
 
   // A download's bar and percentage, as in the IS list
   _asProgressHtml(pct, minW = 56) {
-    const p = pct ?? 0;
-    return `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:${minW}px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(p, 4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${p}%</span></div>`;
+    return this._dlProgHtml(pct, { pill: true });
   }
 
   _renderAsEpRow(ep) {

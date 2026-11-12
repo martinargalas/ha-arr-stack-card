@@ -160,7 +160,13 @@ export function sheetMoving(el) {
 // getH/setH(h, ease) read and set the sheet's height; metrics() gives
 // { step, min, max } as the drag starts (or { stops, min, max }: only those
 // heights); done(h, m) once it is let go.
-export function wireSheetPill(pill, { getH, setH, metrics, done }) {
+// area (the sheet) widens where a finger takes hold, as sheets do elsewhere:
+// anywhere above headBottom() (a client y: the strip with the pill and the
+// sheet's label), and, where swipe(target) says so, on its content too —
+// there the first move decides: sideways it is the content's own scroll,
+// up or down it drags the sheet. Either way the pill shows it is held.
+export function wireSheetPill(pill, { getH, setH, metrics, done, area, headBottom, swipe }) {
+  wireSheetArea(pill, { getH, setH, metrics, done, area, headBottom, swipe });
   if (!pill || pill._pillWired) return;
   pill._pillWired = true;
   let y0 = 0, h0 = 0, m = null, shown = null, drag = false;
@@ -222,4 +228,56 @@ export function wireSheetPill(pill, { getH, setH, metrics, done }) {
     pill.addEventListener('pointerup', up);
     pill.addEventListener('pointercancel', up);
   });
+}
+
+function wireSheetArea(pill, { getH, setH, metrics, done, area, headBottom, swipe }) {
+  if (!area || area._areaWired) return;
+  area._areaWired = true;
+  let mode = null, x0 = 0, y0 = 0, h0 = 0, m = null, shown = null, drag = false;
+  const snap = raw => {
+    if (m.stops?.length) return Math.round(m.stops.reduce((a, b) => Math.abs(b - raw) < Math.abs(a - raw) ? b : a));
+    const h = h0 + Math.round((raw - h0) / m.step) * m.step;
+    if (h >= m.max - m.step / 2) return Math.round(m.max);
+    return Math.round(Math.max(m.min, h));
+  };
+  // Capture: the content's own listeners stop these from bubbling
+  area.addEventListener('touchstart', e => {
+    mode = null;
+    if (e.touches.length !== 1 || pill.contains(e.target)) return;
+    const t = e.touches[0];
+    // Buttons and fields in the strip keep their own taps; a drag from them is fine
+    if (t.clientY <= (headBottom?.() ?? -Infinity)) mode = 'head';
+    else if (swipe?.(e.target)) mode = 'swipe';
+    else return;
+    x0 = t.clientX; y0 = t.clientY; h0 = getH(); m = metrics(); shown = null; drag = false;
+  }, { passive: true, capture: true });
+  area.addEventListener('touchmove', e => {
+    if (!mode || !m) return;
+    const t = e.touches[0];
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    if (!drag) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
+      // Sideways on the content: its own scroll, not the sheet
+      if (mode === 'swipe' && Math.abs(dx) > Math.abs(dy)) { mode = null; return; }
+      drag = true;
+      pill.classList.add('is-pressed');
+    }
+    if (e.cancelable) e.preventDefault();
+    const h = snap(h0 - dy);
+    if (h !== shown) { shown = h; setH(h, true); }
+  }, { passive: false, capture: true });
+  // Held, the drag is the sheet's: not the pop-up's around it (Bubble Card's swipe)
+  for (const ev of ['touchmove', 'touchend']) area.addEventListener(ev, e => { if (drag) e.stopPropagation(); });
+  const end = () => {
+    const was = drag;
+    mode = null; drag = false;
+    pill.classList.remove('is-pressed');
+    if (!was) return;
+    // A tile under the finger is not opened by the drag's end
+    area._dragged = true;
+    setTimeout(() => { area._dragged = false; }, 400);
+    if (shown != null) done(shown, m);
+  };
+  area.addEventListener('touchend', end, { capture: true });
+  area.addEventListener('touchcancel', end, { capture: true });
 }

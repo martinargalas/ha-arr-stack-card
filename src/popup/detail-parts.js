@@ -58,8 +58,7 @@ _ppInstanceChips({ _instLabels, d, isMovieType, isSonarrType, radarr2Entry, rada
     };
     const { cls } = map[status] || map.none;
     if (status === 'downloading') {
-      const p = pct ?? 0;
-      const barHtml = `<div style="display:inline-flex;align-items:center;gap:3px;margin-left:4px;vertical-align:middle"><div style="width:36px;height:3px;background:var(--_pg-track, rgba(59,130,246,0.20));border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle"><div style="width:${Math.max(p,4)}%;height:100%;background:var(--_pg-fill, #3b82f6);border-radius:2px"></div></div><span style="font-size:9px;color:var(--_pg-fill, #3b82f6);font-weight:700;white-space:nowrap">${p}%</span></div>`;
+      const barHtml = this._dlProgHtml(pct);
       return `<span class="inst-chip ${cls}">${label}${barHtml}</span>`;
     }
     const { icon } = map[status] || map.none;
@@ -108,13 +107,13 @@ _ppInstanceChips({ _instLabels, d, isMovieType, isSonarrType, radarr2Entry, rada
       // where the progress bar is about to appear.
       singleDlTag = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span class="is-spin" style="width:10px;height:10px;border-width:1.5px"></span><span style="font-size:10px;color:var(--_pg-fill, #3b82f6);font-weight:700">${this._t('loading')}</span></div>`;
     } else if (pct !== null) {
-      singleDlTag = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><div style="width:80px;height:3px;background:var(--_pg-track, rgba(59,130,246,0.20));border-radius:2px;overflow:hidden"><div style="width:${Math.max(pct,4)}%;height:100%;background:var(--_pg-fill, #3b82f6);border-radius:2px"></div></div><span style="font-size:10px;color:var(--_pg-fill, #3b82f6);font-weight:700">${pct}%</span></div>`;
+      singleDlTag = `<div style="margin-bottom:4px">${this._dlProgHtml(pct, { pill: true })}</div>`;
     }
   } else if (isSonarrType) {
     // Single Sonarr — episode count chip when added, download tag when downloading
     const pct = _chipSeriesPct('sonarr');
     if (pct !== null) {
-      singleDlTag = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><div style="width:80px;height:3px;background:var(--_pg-track, rgba(59,130,246,0.20));border-radius:2px;overflow:hidden"><div style="width:${Math.max(pct,4)}%;height:100%;background:var(--_pg-fill, #3b82f6);border-radius:2px"></div></div><span style="font-size:10px;color:var(--_pg-fill, #3b82f6);font-weight:700">${pct}%</span></div>`;
+      singleDlTag = `<div style="margin-bottom:4px">${this._dlProgHtml(pct, { pill: true })}</div>`;
     } else if (sonarrEntry) {
       instanceStatusHtml = `<div class="instance-status-row">${this._snInstChip(_instChip, '', sonarrEntry, null, 'sonarr')}</div>`;
     }

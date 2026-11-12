@@ -178,7 +178,7 @@ class _MusicRenderMethods {
     const dl = dlPct !== undefined
       ? `<span class="inst-chip ic--downloading">${
           dlPct >= 0
-            ? `<span class="ic-bar"><span style="width:${dlPct}%"></span></span> ${dlPct}%`
+            ? this._dlProgHtml(dlPct)
             : `↓ ${this._t('badgeDownloading')}`
         }</span>`
       : (waiting

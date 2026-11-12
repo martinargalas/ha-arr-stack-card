@@ -92,9 +92,11 @@ _ppSnTilesHtml(d) {
   // Folded, only the posters' top edge shows: their names and bars sit there
   // until the sheet is raised (_ppWireSnTiles moves them, eased)
   const folded = !this._snTilesUp && !this._snTilesH && !this._snTilesRow ? ' sn-folded' : '';
-  // A phone's posters in one row, sideways, short of the whole window
-  const row = this._isMob && !this._snTilesUp ? ' sn-row' : '';
-  return `<div class="sn-tiles-sheet${folded}${row}"${h}>
+  // A phone's posters in one row, sideways, short of the whole window —
+  // unless they all fit the width: then a grid's row, nothing to scroll
+  const few = seasons.length <= (this._mobCols || 3);
+  const row = this._isMob && !this._snTilesUp && !few ? ' sn-row' : '';
+  return `<div class="sn-tiles-sheet sn-init${folded}${row}"${few ? ' data-few' : ''}${h}>
     <button class="sheet-chev" data-sn-tiles-pill aria-label="${this._snTilesUp ? 'Down' : 'Up'}">${sheetChevSvg()}</button>
     <div class="sn-tiles-scroll"><div class="sn-tiles-grid">${tiles}</div></div>
   </div>`;
@@ -132,10 +134,9 @@ _ppWireSnTiles(root) {
     // height). Under the dock the posters fade, as lists do everywhere else,
     // so the edge that says there are seasons here sits above it.
     const bar = Math.max(0, (parseFloat(getComputedStyle(scroll).paddingBottom) || 12) - 12);
-    // A small phone keeps only the pill above the dock: the description
-    // needs the room more than the posters' edge does
+    // Every phone shows the posters' top edge, a small one a narrower strip
     const small = window.matchMedia?.('(max-width: 600px) and (max-height: 760px)')?.matches;
-    const peek = small ? 0 : Math.round(Math.min(56, tileH * 0.3));
+    const peek = Math.round(Math.min(small ? 40 : 56, tileH * (small ? 0.22 : 0.3)));
     // What stands above the posters: the pill (and a film's sheet's label),
     // read from where the scrolled posters begin
     const head = Math.max((pill?.getBoundingClientRect().height || 24) + 8,
@@ -147,7 +148,12 @@ _ppWireSnTiles(root) {
     const top = barR?.height ? barR.bottom + 10 : (g?.top ?? 0);
     const max = Math.round(body.getBoundingClientRect().bottom - top);
     this._snTilesMaxPx = max;
-    if (!this._isMob) return { min, max, step: tileH + 10 };
+    // From this height a whole poster shows: below it the posters are cut,
+    // and their names, ratings and bars sit at the top edge (sn-folded)
+    if (!this._isMob) {
+      this._snTilesFull = Math.round(head + 12 + bar + tileH);
+      return { min, max, step: tileH + 10 };
+    }
     // A phone: the posters in one row, scrolled sideways, until the sheet
     // has the whole window — then a grid, scrolled down. Three places only:
     // folded, one row, the window. A row's poster is nine tenths of a grid's
@@ -156,9 +162,11 @@ _ppWireSnTiles(root) {
     // down. Dragged, the sheet stops a row at a time either way, however
     // many seasons there are. A row's poster is nine tenths of a grid's (the
     // next one shows at the edge), a poster all picture (2:3).
+    // As many posters as the width takes or fewer: one row of the grid's own
+    const few = sheet.hasAttribute('data-few');
     const inRow = sheet.classList.contains('sn-row');
-    const rowTileH = inRow ? tileH : tileH * 0.9;
-    const gridTileH = inRow ? tileH / 0.9 : tileH;
+    const rowTileH = inRow || few ? tileH : tileH * 0.9;
+    const gridTileH = inRow && !few ? tileH / 0.9 : tileH;
     const base = head + 12 + bar;
     const row = Math.min(max, Math.round(base + rowTileH));
     const stops = [min, row];
@@ -169,6 +177,7 @@ _ppWireSnTiles(root) {
     }
     stops.push(max);
     this._snTilesRowGeom = { row, base, gridTileH };
+    this._snTilesFull = row;
     return { min, max, row, stops };
   };
   // How many rows show at a height: one when folded or at one row
@@ -181,33 +190,21 @@ _ppWireSnTiles(root) {
     if (ease) sheetMoving(sheet);
     sheet.style.height = `${h}px`;
     this._snTilesPx = h;
-    // At its least the names and bars go up to the posters' top edge, the
-    // only part that shows; raised, back down to the posters' foot
-    if (this._snTilesMin != null) sheet.classList.toggle('sn-folded', h <= this._snTilesMin + 1);
+    // While the posters are cut, the names, ratings and bars sit at their
+    // top edge, the part that shows; once a whole poster shows (a row, more
+    // rows, the window), they ease back down to the foot, and up again
+    const full = this._snTilesFull ?? ((this._snTilesMin ?? 0) + 2);
+    sheet.classList.toggle('sn-folded', h < full - 1);
     // A phone's posters lie in one row short of the whole window
     // A phone's posters lie in one row, sideways, only while one row shows
-    if (this._isMob) sheet.classList.toggle('sn-row', h <= (this._snTilesRowGeom?.row ?? Infinity) + 1);
+    if (this._isMob) sheet.classList.toggle('sn-row', !sheet.hasAttribute('data-few') && h <= (this._snTilesRowGeom?.row ?? Infinity) + 1);
     const bodyH = body.getBoundingClientRect().height;
     if (h > bodyH + 1) sheet.classList.add('pp-up');
     else setTimeout(() => { if ((this._snTilesPx || 0) <= bodyH + 1) sheet.classList.remove('pp-up'); }, ease ? 340 : 0);
   };
-  // Where a phone's sheet opens: as many whole rows as the room under the
-  // description takes (the trailer is a button on the picture), folded
-  // where there is not even one — as an artist's albums open
-  const fitH = m => {
-    if (!this._isMob || !m.stops) return m.min;
-    let bottom = 0;
-    for (const el of body.children) {
-      if (el === sheet || !el.offsetParent) continue;
-      const parts = el.classList.contains('popup-content') ? el.children : [el];
-      for (const p of parts) if (p.offsetParent) bottom = Math.max(bottom, p.getBoundingClientRect().bottom);
-    }
-    if (!bottom) return m.min;
-    const room = body.getBoundingClientRect().bottom - bottom - 12;
-    let h = m.min;
-    for (const st of m.stops) if (st < m.max - 1 && st <= room) h = Math.max(h, st);
-    return h;
-  };
+  // A series' and a film's sheet always open folded: the posters' top edge
+  // shows under the description, the rest is a drag or a tap on the pill away
+  const fitH = m => m.min;
   requestAnimationFrame(() => {
     const m = lay();
     if (!m) return;
@@ -218,6 +215,9 @@ _ppWireSnTiles(root) {
       : (this._isMob && this._snTilesRow) ? (m.stops[Math.min(this._snTilesRow, m.stops.length - 1)] ?? m.row)
       : this._snTilesH ? Math.min(m.max, Math.max(m.min, this._snTilesH))
       : open);
+    // Painted where it stands, with no easing: the posters' names and bars
+    // move only when the sheet is moved, never as it first shows
+    requestAnimationFrame(() => sheet.classList.remove('sn-init'));
   });
   // A tap anywhere outside the sheet folds it back (_ppFoldOnOutside)
   this._snTilesFold = () => {
@@ -245,6 +245,12 @@ _ppWireSnTiles(root) {
       getH: () => sheet.getBoundingClientRect().height,
       setH,
       metrics: () => lay(),
+      // Taken anywhere above the posters, or on them while they lie in one row
+      area: sheet,
+      headBottom: () => scroll.getBoundingClientRect().top,
+      // (or, all fitting the width, while their one row shows: no sideways scroll there)
+      swipe: t => !!t.closest?.('.sn-tiles-scroll') && (sheet.classList.contains('sn-row')
+        || (sheet.hasAttribute('data-few') && this._isMob && sheet.getBoundingClientRect().height <= (this._snTilesFull ?? 0) + 1)),
       done: (h, m) => {
         this._snTilesUp = h >= m.max - 1;
         // A phone keeps which place, not the pixels (a row is re-measured)
@@ -413,6 +419,9 @@ _ppWirePanelGrab(root) {
     };
     // Dragged by its pill a row at a time while held, to no less than one row
     wireSheetPill(chev, {
+      // Taken anywhere across the pill's strip, not only on the pill
+      area: panel,
+      headBottom: () => chev.getBoundingClientRect().bottom + 6,
       getH: () => panel.getBoundingClientRect().height,
       setH: (h, ease) => setH(h, ease),
       metrics: () => {

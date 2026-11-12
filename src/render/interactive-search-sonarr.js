@@ -132,7 +132,7 @@ class _SonarrIS {
       }
     }
 
-    const queueBarHtml = isQueued ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:64px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(qPct,4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${qPct}%</span></div>` : '';
+    const queueBarHtml = isQueued ? this._dlProgHtml(qPct, { pill: true }) : '';
     const statHtml = isConfirmSeason
       ? `<span class="ep-del-msg">${this._t('delSeasonConfirm') || 'Delete all from disk?'}</span>`
       : `<span class="sn-season-stat">${have}/${tot}</span>
@@ -201,7 +201,7 @@ class _SonarrIS {
     const epInQueue   = qEps.has(ep.id);
     const epQPct      = epInQueue ? (qEpPctMap.get(ep.id) ?? 0) : null;
     const epQueueHtml = epInQueue
-      ? `<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:56px"><div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden"><div style="width:${Math.max(epQPct,4)}%;height:100%;background:#3b82f6;border-radius:2px"></div></div><span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${epQPct}%</span></div>`
+      ? this._dlProgHtml(epQPct, { pill: true })
       : '';
 
     const epIsHtml = (!isMobile && isActive) ? this._renderSnIsPanel() : '';
@@ -365,17 +365,11 @@ class _SonarrIS {
           <span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>
         </button>`;
       }
-      const showProg   = grabbed && inQueue;
+      // Grabbed earlier (another visit, Sonarr itself) and still downloading
+      const showProg   = (grabbed || histState === 'grabbed') && inQueue;
       if (showProg) {
         const p = rawPct;
-        return `<button class="is-grab-btn" disabled style="min-width:56px;gap:3px;padding:0 6px;border-radius:9px" title="${this._t('isGrabbed')}">
-          <div style="display:flex;align-items:center;gap:3px;width:100%">
-            <div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden">
-              <div style="width:${Math.max(p,4)}%;height:100%;background:#3b82f6;border-radius:2px"></div>
-            </div>
-            <span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${p}%</span>
-          </div>
-        </button>`;
+        return this._isGrabProgHtml(p);
       }
     }
     if (this._snIsGrabbing === guid) {

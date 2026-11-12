@@ -144,6 +144,15 @@ class _UiMethods {
 
   // Every badge in a table or modal goes through here, so the palette stays a
   // short list rather than a colour invented per call site.
+  // A download's progress, the same everywhere (a detail's chip, a release
+  // in IS, an episode or a season in AS, an album): a bar and its share in
+  // the info blue. pill: on its own in a row, in a tinted capsule of its own
+  // (a chip or the IS button already is one).
+  _dlProgHtml(pct, { pill = false } = {}) {
+    const p = Math.max(0, Math.round(pct ?? 0));
+    return `<span class="dl-prog${pill ? ' dl-prog-pill' : ''}"><span class="dl-prog-bar"><span style="width:${Math.max(p, 4)}%"></span></span><b>${p}%</b></span>`;
+  }
+
   _uiBadge(label, tone = 'neutral', { small = false, extra = '', title = '', white = false } = {}) {
     const TONES = {
       neutral: '150,150,165',

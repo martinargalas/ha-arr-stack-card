@@ -160,6 +160,14 @@ _renderIsPanel() {
     return `<div class="is-peers"><span class="is-s">↑${s}</span>/<span class="is-l">↓${l}</span></div>`;
   }
 
+  // A grabbed release downloading: its share, in the info colour on a
+  // tinted capsule, at full strength (not dimmed as a disabled button is)
+  _isGrabProgHtml(p) {
+    return `<button class="is-grab-btn is-grab-dl is-grab-prog" disabled title="${this._t('isGrabbed')}">
+      ${this._dlProgHtml(p)}
+    </button>`;
+  }
+
   _isGrabBtn(r) {
     const guid = r.guid;
     const isRej = !r.approved;
@@ -186,6 +194,9 @@ _renderIsPanel() {
       const qPct    = inst === 'radarr2' ? (this._radarr2QueuePct || new Map()) : (this._radarrQueuePct || new Map());
       const inQueue = !!(mId && qPct.has(mId));
       const grabbed  = this._isGrabbed.has(guid);
+      // Grabbed earlier (another visit, Radarr itself): its download in the
+      // queue shows here too, not a grab button the queue refuses
+      const fromHist = histState === 'grabbed' && guid === this._isHistLatest;
       if (grabbed && !inQueue) {
         // Grabbed, but the queue has not picked it up yet — a 0% bar would
         // claim a download that is not running. Spin until it really is.
@@ -193,19 +204,12 @@ _renderIsPanel() {
           <span class="action-spinner" style="width:12px;height:12px;border-width:1.5px"></span>
         </button>`;
       }
-      const showProg = grabbed && inQueue;
+      const showProg = (grabbed || fromHist) && inQueue;
       if (showProg) {
         const p = qPct.get(mId);
         // Wider than tall — the round shape the icon states use would stretch
         // this into an ellipse, so it keeps a plain rounded rectangle.
-        return `<button class="is-grab-btn" disabled style="min-width:56px;gap:3px;padding:0 6px;border-radius:9px" title="${this._t('isGrabbed')}">
-          <div style="display:flex;align-items:center;gap:3px;width:100%">
-            <div style="flex:1;height:3px;background:rgba(59,130,246,0.20);border-radius:2px;overflow:hidden">
-              <div style="width:${Math.max(p,4)}%;height:100%;background:#3b82f6;border-radius:2px"></div>
-            </div>
-            <span style="font-size:9px;color:#3b82f6;font-weight:700;white-space:nowrap">${p}%</span>
-          </div>
-        </button>`;
+        return this._isGrabProgHtml(p);
       }
     }
     if (this._isGrabbing === guid) {
@@ -508,6 +512,10 @@ _renderIsPanel() {
         histMap[guid] = dlIdOutcome[h.downloadId] ?? 'grabbed';
       });
       this._isHistory = histMap;
+      // The newest grab still without an outcome: what the queue is downloading
+      // when the film is in it, though it was grabbed before this window opened
+      const last = records.find(h => h.eventType === 'grabbed' && h.data?.guid);
+      this._isHistLatest = last && histMap[last.data.guid] === 'grabbed' ? last.data.guid : null;
       const sorted = (Array.isArray(data) ? data : []).sort((a, b) => {
         if (a.approved !== b.approved) return a.approved ? -1 : 1;
         return (b.customFormatScore ?? 0) - (a.customFormatScore ?? 0);

@@ -166,7 +166,7 @@ class _WireMusicLayoutMethods {
       if (!headR) return;
       // A phone: the covers in one row, scrolled sideways, until the sheet
       // has the whole window — then a grid, scrolled down
-      albums.classList.toggle('mus-row', !!this._isMob && !this._musSheetUp && !(this._musSheetRows > 1));
+      albums.classList.toggle('mus-row', !!this._isMob && !this._musSheetUp && !(this._musSheetRows > 1) && !this._musFew(albums));
       this._musWireRowScroll(albums);
       const rowH = this._isMob ? this._musAlbRowH(el) : null;
       let rows = Math.max(1, this._musSheetRows || 1);
@@ -262,8 +262,10 @@ class _WireMusicLayoutMethods {
     const t = tile.getBoundingClientRect();
     const under = t.height - t.width;   // the status stripe below the square cover
     const inRow = sheet.classList.contains('mus-row');
-    const w = inRow ? t.width : t.width * 0.85;
-    const wGrid = inRow ? t.width / 0.85 : t.width;
+    // As many covers as the width takes or fewer: one row of the grid's own
+    const few = this._musFew(sheet);
+    const w = inRow || few ? t.width : t.width * 0.85;
+    const wGrid = inRow && !few ? t.width / 0.85 : t.width;
     const sR = sheet.getBoundingClientRect(), lR = list.getBoundingClientRect();
     const cs = getComputedStyle(list);
     const pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
@@ -273,6 +275,12 @@ class _WireMusicLayoutMethods {
     const row = Math.round(base + w + under);
     this._musAlbRowPx = row;
     return row;
+  }
+
+  // A phone's covers all fitting its width (two a row): no row to scroll
+  // sideways, the grid's own row instead
+  _musFew(albums) {
+    return (albums?.querySelectorAll('.mus-alb').length || 0) <= 2;
   }
 
   // How many rows of covers a phone's sheet shows at a height
@@ -326,12 +334,18 @@ class _WireMusicLayoutMethods {
     const pill = sheet?.querySelector('[data-mus-sheet-toggle]');
     if (!sheet || !pill) return;
     wireSheetPill(pill, {
+      // Taken anywhere above the covers (or the sources), or on the covers
+      // while they lie in one row
+      area: sheet,
+      headBottom: () => (list || pill).getBoundingClientRect()[list ? 'top' : 'bottom'],
+      swipe: t => which === 'alb' && !!t.closest?.('.mus-alb-scroll') && (sheet.classList.contains('mus-row')
+        || (this._isMob && this._musFew(sheet) && sheet.getBoundingClientRect().height <= (this._musAlbRowPx ?? 0) + 1)),
       getH: () => sheet.getBoundingClientRect().height,
       setH: (h, ease) => {
         if (ease) sheetMoving(sheet);
         sheet.style.height = `${h}px`;
         // A phone's covers: rows sideways short of the whole window
-        if (which === 'alb' && this._isMob) sheet.classList.toggle('mus-row', h <= (this._musAlbRowPx ?? Infinity) + 1);
+        if (which === 'alb' && this._isMob) sheet.classList.toggle('mus-row', !this._musFew(sheet) && h <= (this._musAlbRowPx ?? Infinity) + 1);
       },
       metrics: () => {
         const max = this._musAlbMax(el);

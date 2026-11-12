@@ -119,6 +119,7 @@ async _openPopup(type, tmdbId, tvdbId, title, radarrId = null, radarr2IdHint = n
   this._isGrabbing = null;
   this._isGrabbed  = new Set();
   this._isHistory  = {};
+  this._isHistLatest = null;
   this._isError    = null;
 
   // Reset remove confirm state

@@ -1860,6 +1860,9 @@ ${TOKEN_CSS}
       .mv-tile.mv-cur { outline: 2px solid rgb(var(--arr-accent-rgb, 10, 132, 255)); outline-offset: -2px; }
 
       .sn-tile-tag { z-index: 3; }
+      /* Until the sheet is laid out (_ppWireSnTiles) nothing on its posters
+         eases: names, ratings and bars appear where they belong, once */
+      .sn-tiles-sheet.sn-init *, .sn-tiles-sheet.sn-init { transition: none !important; }
       /* The sheet folded: only the posters' top edge shows (under a dock or
          not), so the season's name and its bar move up there; raised, they
          ease back down to the poster's foot. A tile is 1.5 widths tall. */
@@ -1874,10 +1877,11 @@ ${TOKEN_CSS}
       .sn-tiles-sheet.sn-folded .sn-tile-bar { transform: translateY(calc(-150cqw + 3px)); }
       .sn-tile-cap span { font-size: 10px; opacity: 0.75; flex-shrink: 0; }
       .sn-tile-bar { position: absolute; left: 0; bottom: 0; height: 3px; }
-      /* A phone's trailer: a button on the title's picture, at its foot on
-         the right; the trailer's own block in the body goes */
+      /* A small phone's trailer: a button on the title's picture, at its
+         foot on the right; the trailer's own block in the body goes (a large
+         phone keeps it under the description, faded in and out below) */
       .pp-bd-trailer { display: none; }
-      @media (max-width: 600px) {
+      @media (max-width: 600px) and (max-height: 760px) {
         .popup-overlay[data-modal="detail"] .popup-body .popup-yt-thumb { display: none !important; }
         .popup-overlay[data-modal="detail"] .pp-bd-trailer {
           position: absolute; right: 12px; bottom: 10px; z-index: 3;
@@ -1888,6 +1892,23 @@ ${TOKEN_CSS}
           backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
           -webkit-tap-highlight-color: transparent;
         }
+      }
+      /* A large phone's trailer under the description: its picture fades
+         into the window at the top and at the foot (above a dock, or above
+         a sheet of posters), no hard edge either way */
+      @media (max-width: 600px) and (min-height: 761px) {
+        .popup-overlay[data-modal="detail"] .popup-body:not(:has(> :is(.is-panel, .sn-is-panel, .sn-is-section))) .popup-yt-thumb.popup-yt-thumb {
+          -webkit-mask-image: linear-gradient(to bottom, transparent, black 36px, black calc(100% - var(--arr-bottom-bar, 0px) - 44px), transparent calc(100% - var(--arr-bottom-bar, 0px))) !important;
+          mask-image: linear-gradient(to bottom, transparent, black 36px, black calc(100% - var(--arr-bottom-bar, 0px) - 44px), transparent calc(100% - var(--arr-bottom-bar, 0px))) !important;
+        }
+        .popup-overlay[data-modal="detail"] .popup-body:has(> .sn-tiles-sheet) .popup-yt-thumb.popup-yt-thumb {
+          -webkit-mask-image: linear-gradient(to bottom, transparent, black 36px, black calc(100% - 44px), transparent) !important;
+          mask-image: linear-gradient(to bottom, transparent, black 36px, black calc(100% - 44px), transparent) !important;
+        }
+        .popup-overlay[data-modal="detail"] .popup-body .popup-yt-thumb::after { display: none; }
+        /* As high as the description lets it: right under it, not down at
+           the foot of the window with a gap above */
+        .popup-overlay[data-modal="detail"] .popup-body .popup-yt-thumb.popup-yt-thumb { margin-top: 0 !important; }
       }
       .sn-tile-ok   { background: rgb(var(--arr-success-rgb, 48, 209, 88)); }
       .sn-tile-part { background: rgb(var(--arr-accent-rgb, 10, 132, 255)); }
@@ -3200,7 +3221,7 @@ ${TOKEN_CSS}
         --is-q4k-bg:     rgba(var(--arr-modal-quality-4k-rgb, 191,90,242), 0.22); --is-q4k-bdr: rgba(var(--arr-modal-quality-4k-rgb, 191,90,242), 0.55); --is-q4k-clr: rgba(var(--arr-modal-quality-4k-rgb, 210,140,255), 0.95);
         --is-q1080-bg:   rgba(var(--arr-modal-quality-1080-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.22); --is-q1080-bdr: rgba(var(--arr-modal-quality-1080-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.55); --is-q1080-clr: rgba(var(--arr-modal-quality-1080-rgb, 90,170,255), 0.95);
         --is-q720-bg:    rgba(var(--arr-modal-quality-720-rgb, var(--arr-info-rgb, 90, 200, 250)), 0.20); --is-q720-bdr: rgba(var(--arr-modal-quality-720-rgb, var(--arr-info-rgb, 90, 200, 250)), 0.50); --is-q720-clr: rgba(var(--arr-modal-quality-720-rgb, 120,210,255), 0.90);
-        --is-lang-bg:    rgba(var(--arr-modal-fill-rgb, 255, 255, 255), 0.07); --is-lang-bdr: rgba(var(--arr-modal-line-rgb, 255, 255, 255), 0.13); --is-lang-clr: rgba(var(--arr-modal-text-muted-rgb, var(--arr-modal-text-secondary-rgb, var(--arr-modal-text-rgb, 255, 255, 255))), 0.42);
+        --is-lang-bg:    rgba(var(--arr-modal-fill-rgb, 255, 255, 255), 0.13); --is-lang-bdr: rgba(var(--arr-modal-line-rgb, 255, 255, 255), 0.24); --is-lang-clr: rgba(var(--arr-modal-text-rgb, 255, 255, 255), 0.82);
         --is-grab-bg:    rgba(var(--arr-modal-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.12); --is-grab-bdr: rgba(var(--arr-modal-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.32); --is-grab-clr: rgba(var(--arr-modal-grab-rgb, 80,160,255), 0.9);
         --is-grab-hbg:   rgba(var(--arr-modal-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.28); --is-grab-hbdr: rgba(var(--arr-modal-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.55); --is-grab-hclr: #fff;
         --is-grab-f-bg:  rgba(var(--arr-modal-grab-failed-rgb, var(--arr-warning-rgb, 255, 149, 0)), 0.10);  --is-grab-f-bdr: rgba(var(--arr-modal-grab-failed-rgb, var(--arr-warning-rgb, 255, 149, 0)), 0.32); --is-grab-f-clr: rgba(var(--arr-modal-grab-failed-rgb, var(--arr-warning-rgb, 255, 149, 0)), 0.80);
@@ -3249,7 +3270,7 @@ ${TOKEN_CSS}
         --is-q4k-bg:     rgba(var(--arr-modal-day-quality-4k-rgb, 191,90,242), 0.13); --is-q4k-bdr: rgba(var(--arr-modal-day-quality-4k-rgb, 191,90,242), 0.50); --is-q4k-clr: rgba(var(--arr-modal-day-quality-4k-rgb, 110,10,190), 0.90);
         --is-q1080-bg:   rgba(var(--arr-modal-day-quality-1080-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.12); --is-q1080-bdr: rgba(var(--arr-modal-day-quality-1080-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.50); --is-q1080-clr: rgba(var(--arr-modal-day-quality-1080-rgb, 0,80,200), 0.90);
         --is-q720-bg:    rgba(var(--arr-modal-day-quality-720-rgb, var(--arr-info-rgb, 90, 200, 250)), 0.14); --is-q720-bdr: rgba(var(--arr-modal-day-quality-720-rgb, var(--arr-info-rgb, 90, 200, 250)), 0.50); --is-q720-clr: rgba(var(--arr-modal-day-quality-720-rgb, 0,100,170), 0.85);
-        --is-lang-bg:    rgba(var(--arr-modal-day-fill-rgb, 0, 0, 0), 0.06);      --is-lang-bdr: rgba(var(--arr-modal-day-line-rgb, 0, 0, 0), 0.12);     --is-lang-clr: rgba(var(--arr-modal-day-text-muted-rgb, var(--arr-modal-day-text-secondary-rgb, var(--arr-modal-day-text-rgb, 0, 0, 0))), 0.48);
+        --is-lang-bg:    rgba(var(--arr-modal-day-fill-rgb, 0, 0, 0), 0.09);      --is-lang-bdr: rgba(var(--arr-modal-day-line-rgb, 0, 0, 0), 0.2);      --is-lang-clr: rgba(var(--arr-modal-day-text-rgb, 0, 0, 0), 0.76);
         --is-grab-bg:    rgba(var(--arr-modal-day-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.10); --is-grab-bdr: rgba(var(--arr-modal-day-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.35); --is-grab-clr: rgba(var(--arr-modal-day-grab-rgb, 0,80,200), 0.90);
         --is-grab-hbg:   rgba(var(--arr-modal-day-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.22); --is-grab-hbdr: rgba(var(--arr-modal-day-grab-rgb, var(--arr-accent-rgb, 10, 132, 255)), 0.60); --is-grab-hclr: #fff;
         --is-grab-f-bg:  rgba(var(--arr-modal-day-grab-failed-rgb, var(--arr-warning-rgb, 255, 149, 0)), 0.10);  --is-grab-f-bdr: rgba(var(--arr-modal-day-grab-failed-rgb, var(--arr-warning-rgb, 255, 149, 0)), 0.40); --is-grab-f-clr: rgba(var(--arr-modal-day-grab-failed-rgb, 160,80,0), 0.90);
@@ -4210,7 +4231,7 @@ ${TOKEN_CSS}
       .ic-icon { font-size: 11px; font-weight: 900; line-height: 1; display: inline-flex; align-items: center; }
       .ic--available   { color: rgb(var(--arr-success-rgb, 74, 222, 128)); border-color: rgba(var(--arr-success-rgb, 74, 222, 128), 0.35); background: rgba(var(--arr-success-rgb, 74, 222, 128), 0.08); }
       .is-grab-btn.is-grab-dl {
-        background: rgba(var(--arr-info-rgb, 96, 165, 250), 0.18); border-color: rgba(var(--arr-info-rgb, 96, 165, 250), 0.45); color: rgb(var(--arr-info-rgb, 96, 165, 250));
+        background: rgba(var(--arr-info-rgb, 96, 165, 250), 0.08); border-color: rgba(var(--arr-info-rgb, 96, 165, 250), 0.35); color: rgb(var(--arr-info-rgb, 96, 165, 250));
       }
       .inst-chip .ic-bar {
         display: inline-block; width: 34px; height: 4px; border-radius: 2px;
@@ -4627,7 +4648,7 @@ ${TOKEN_CSS}
       .is-peers .is-l { color: var(--is-peers-l); font-weight: 700; }
       .is-peers-na { font-size: 10px; color: var(--is-text-muted); }
       .is-lang-chip {
-        font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+        font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
         background: var(--is-lang-bg); border: 1px solid var(--is-lang-bdr);
         color: var(--is-lang-clr); text-transform: uppercase; letter-spacing: 0.03em;
       }
@@ -4647,6 +4668,21 @@ ${TOKEN_CSS}
       .is-grab-btn.is-grab-failed { background: rgba(var(--arr-error-rgb, 255, 69, 58), 0.12); border-color: rgba(var(--arr-error-rgb, 255, 69, 58), 0.35); color: rgba(var(--arr-error-rgb, 255, 69, 58), 0.90); }
       .is-grab-btn.is-grab-failed:hover { background: rgba(var(--arr-error-rgb, 255, 69, 58), 0.22); border-color: rgba(var(--arr-error-rgb, 255, 69, 58), 0.55); color: rgb(var(--_fg, 255, 255, 255)); }
       .is-grab-btn:disabled { opacity: 0.6; cursor: default; }
+      /* Downloading: wider than tall, a capsule; its share legible */
+      .is-grab-btn.is-grab-prog {
+        width: auto; min-width: 64px; padding: 0 10px; gap: 5px; border-radius: 999px; opacity: 1;
+      }
+      /* A download's progress (_dlProgHtml): the same bar and share in a
+         detail's chip, a release's IS button, AS's rows and an album's */
+      .dl-prog { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; vertical-align: middle; color: var(--_pg-fill, rgb(var(--arr-info-rgb, 96, 165, 250))); }
+      .inst-chip .dl-prog { margin-left: 5px; }
+      .dl-prog-bar { display: block; width: 32px; height: 4px; border-radius: 2px; overflow: hidden; background: var(--_pg-track, rgba(var(--arr-info-rgb, 96, 165, 250), 0.25)); }
+      .dl-prog-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--_pg-fill, rgb(var(--arr-info-rgb, 96, 165, 250))); transition: width 0.4s ease; }
+      .dl-prog b { font-size: 10px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; color: inherit; }
+      .dl-prog-pill {
+        height: 22px; padding: 0 9px; border-radius: 999px; box-sizing: border-box;
+        background: rgba(var(--arr-info-rgb, 96, 165, 250), 0.08); border: 1px solid rgba(var(--arr-info-rgb, 96, 165, 250), 0.35);
+      }
 
       /* Confirm wrap (inline 2-button potvrzení uvnitř výsledku).
          Scoped away from .is-confirm-btn — the add-confirm panel reuses the same
@@ -4683,7 +4719,7 @@ ${TOKEN_CSS}
         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
       }
       .is-ic-top .is-grab-btn { flex-shrink: 0; width: 34px; height: 34px; margin: 0; }
-      .is-ic-top .is-grab-btn[style*="min-width"] { width: auto; height: 30px; }
+      .is-ic-top .is-grab-btn.is-grab-prog { width: auto; height: 30px; }
       .is-card .is-ic-r1 { flex-wrap: wrap; gap: 5px; }
       .is-card .is-ic-meta { font-size: 10px; }
       /* A phone: the cards take the sheet's width, a margin each side, and

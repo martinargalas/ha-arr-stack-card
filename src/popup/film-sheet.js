@@ -86,8 +86,10 @@ class _FilmSheetMethods {
     const label = sh.kind === 'collection' ? sh.name : this._t('simTitle');
     const h = this._snTilesPx ? ` style="height:${this._snTilesPx}px"` : '';
     const folded = !this._snTilesUp && !this._snTilesH && !this._snTilesRow ? ' sn-folded' : '';
-    const row = !this._snTilesUp && !(this._snTilesRow > 1) ? ' sn-row' : '';
-    return `<div class="sn-tiles-sheet mv-sheet${folded}${row}"${h}>
+    // All fitting the width: a grid's row, nothing to scroll sideways
+    const few = sh.items.length <= (this._mobCols || 3);
+    const row = !this._snTilesUp && !(this._snTilesRow > 1) && !few ? ' sn-row' : '';
+    return `<div class="sn-tiles-sheet mv-sheet sn-init${folded}${row}"${few ? ' data-few' : ''}${h}>
     <button class="sheet-chev" data-sn-tiles-pill aria-label="${this._snTilesUp ? 'Down' : 'Up'}">${sheetChevSvg()}</button>
     ${label ? `<div class="sn-tiles-label">${this._escHtml(label)}</div>` : ''}
     <div class="sn-tiles-scroll"><div class="sn-tiles-grid">${tiles}</div></div>
