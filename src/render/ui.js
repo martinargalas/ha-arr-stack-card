@@ -237,7 +237,8 @@ class _UiMethods {
     });
   }
 
-  // A bar fixed along the bottom of the screen — Bubble Card's row of buttons —
+  // A bar fixed along the bottom of the screen — Bubble Card's row of buttons,
+  // glass-cards' dock —
   // covers what sits there: the arrow back to the top rises above it, and a
   // window's list ends above it. Looked for when the arrow is about to show,
   // through every shadow root on the page, so not more than once a few seconds.
@@ -247,7 +248,8 @@ class _UiMethods {
     this._bottomBarAt = now;
     const found = [];
     const look = root => {
-      root.querySelectorAll('.bubble-horizontal-buttons-stack-card-container').forEach(e => found.push(e));
+      // Bubble Card's row of buttons, or glass-cards' dock (<glass-dock>)
+      root.querySelectorAll('.bubble-horizontal-buttons-stack-card-container, glass-dock').forEach(e => found.push(e));
       root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) look(e.shadowRoot); });
     };
     try { look(document); } catch (_) { return; }
