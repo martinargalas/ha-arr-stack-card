@@ -137,15 +137,17 @@ _ppWireSnTiles(root) {
     // so the edge that says there are seasons here sits above it.
     let bar = Math.max(0, (parseFloat(getComputedStyle(scroll).paddingBottom) || 12) - 12);
     // With a dock: where it really begins on the screen (a pop-up may run on
-    // under the screen's edge), and the posters' fade above it (28px, the
-    // list's mask) — what counts as shown is what stands clear of both, so
-    // three quarters show sharp, and a whole poster means a whole clear one
+    // under the screen's edge). Folded, three quarters of the posters reach
+    // to it (edge), their foot fading; a whole row also clears the posters'
+    // fade above it (28px, the list's mask), so a whole poster is a clear one
+    let edge = bar;
     if (bar > 0) {
       const dockTop = this._bottomBarTop;
       // The body's foot, where the sheet stands (the sheet itself may still
       // wait below the window, moved down)
       const sb = body.getBoundingClientRect().bottom;
       if (dockTop != null && sb > 0) bar = Math.max(bar, Math.round(sb - dockTop + 14));
+      edge = bar;
       bar += 28;
     }
     // Folded, three quarters of the posters show above the dock: they are
@@ -159,7 +161,7 @@ _ppWireSnTiles(root) {
     // the posters, down for less — never below the pill, never past a row.
     // A dock the card doesn't know is the offset itself (already in bar).
     const off = this._dockFound || this._dockOffset() < 0 ? this._dockOffset() : 0;
-    let min = Math.max(Math.round(head + 12), Math.round(head + peek + bar + off));
+    let min = Math.max(Math.round(head + 12), Math.round(head + peek + edge + off));
     this._snTilesMin = min;
     const g = root.querySelector('.popup-glass')?.getBoundingClientRect();
     const barR = root.querySelector('.pp-hero-bar')?.getBoundingClientRect();
