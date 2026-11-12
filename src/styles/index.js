@@ -1863,13 +1863,8 @@ ${TOKEN_CSS}
       /* Until the sheet is laid out (_ppWireSnTiles) nothing on its posters
          eases: names, ratings and bars appear where they belong, once */
       .sn-tiles-sheet.sn-init *, .sn-tiles-sheet.sn-init { transition: none !important; }
-      /* Dragged or easing (.sheet-moving), the list's fade under the dock is
-         off: tied to the sheet's height, it made the browser paint every
-         poster again each frame, and on Android the pictures blinked. Each
-         poster on a layer of its own, so a new height leaves it as it is. */
-      .popup-body > :is(.sn-tiles-sheet, .mus-albums).sheet-moving :is(.sn-tiles-scroll, .mus-alb-scroll) {
-        -webkit-mask-image: none !important; mask-image: none !important;
-      }
+      /* Each poster on a layer of its own, so a new height of the sheet
+         leaves it as it is (on Android the pictures blinked while dragged) */
       .popup-body > .sn-tiles-sheet .sn-tile, .popup-body > .mus-albums .mus-alb { transform: translateZ(0); backface-visibility: hidden; }
       /* A phone's sheet the first time: below the window until the dock is
          known (_dockWait), then it rises into place */
@@ -4931,10 +4926,15 @@ ${TOKEN_CSS}
         :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > .sn-tiles-sheet {
           background: linear-gradient(to bottom, transparent calc(100% - var(--arr-bottom-bar, 0px) - 8px), color-mix(in srgb, var(--band, transparent) 3%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 2px), color-mix(in srgb, var(--band, transparent) 8%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 10px), color-mix(in srgb, var(--band, transparent) 15%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 18px), color-mix(in srgb, var(--band, transparent) 23%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 27px), color-mix(in srgb, var(--band, transparent) 32%, transparent) calc(100% - var(--arr-bottom-bar, 0px) + 38px), color-mix(in srgb, var(--band, transparent) 50%, transparent) 100%), var(--is-glass-bg);
         }
-        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .sn-tiles-scroll {
-          --fbar: var(--arr-bottom-bar, 0px); --fe: color-mix(in srgb, black 35%, transparent);
-          -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px - var(--fbar)), var(--fe) calc(100% - var(--fbar)), var(--fe) 100%);
-          mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px - var(--fbar)), var(--fe) calc(100% - var(--fbar)), var(--fe) 100%);
+        /* The posters dim under the dock. A shade laid over them, not a mask
+           on the list: a mask is tied to the sheet's height, and every new
+           height (each frame of a drag, a snap, switching it off and on) had
+           Android paint all the posters again — they blinked */
+        :host([style*="--arr-bottom-bar"]) .popup-overlay[data-modal="detail"] .popup-body > .sn-tiles-sheet::after {
+          content: ''; position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; pointer-events: none;
+          height: calc(28px + var(--arr-bottom-bar, 0px));
+          background: linear-gradient(to bottom, transparent, rgba(var(--_shade, 0, 0, 0), 0.6) 28px);
+          transform: translateZ(0);
         }
         /* An artist's and an album's window run on under a dock too
            (hdr-full): the covers, the sources and the tracks end above it */
