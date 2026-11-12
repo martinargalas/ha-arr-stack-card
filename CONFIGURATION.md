@@ -106,7 +106,8 @@ discover:
 | **Language** | The card's language. | `localisation` | `en` English · `cs` Czech · `fr` French | `en` |
 | **Layout** | Which panels the card shows. | `layout` | `both` Both panels · `left` Downloads only · `right` Media only | `both` |
 | **Swap sides** | Puts the media on the left and the downloads on the right. On a phone the media then comes first. | `swap_sides` | `true` · `false` | `false` |
-| **Sticky nav offset** | On a phone, the media's page buttons float at the bottom of the screen once you scroll down to the media. This sets how early they appear. With **Swap sides** on, about 2000 shows them straight away. Only with the **Pages** layout: Shelves and List have no pages to turn on a phone. | `sticky_nav_offset` | a number of pixels, 0 or more (the editor offers 0–500) | `100` |
+| **Sticky nav offset** | On a phone, the media's page buttons float at the bottom of the screen once you scroll down to the media. This sets how early they appear. With **Swap sides** on, about 2000 shows them straight away. Only with the **Pages** layout: Shelves and List have no pages to turn on a phone, and the editor shows this setting only while a phone or tablet uses Pages. | `sticky_nav_offset` | a number of pixels, 0 or more (the editor offers 0–500) | `100` |
+| **Space above bottom dock** | Phone only. In the details of a film, a series or an artist, the window of posters or albums you drag up from the bottom stays above a Bubble Card or glass-cards dock. This adds room above that dock — or, with a dock the card doesn't recognise, keeps this much clear at the bottom of the screen. | `dock_offset` | a number of pixels, 0–300 | `0` |
 
 ---
 
@@ -521,6 +522,7 @@ localisation: en                # en | cs | fr
 layout: both                    # both | left | right
 swap_sides: false
 sticky_nav_offset: 100
+dock_offset: 0
 search_in_header: false
 search_link: ""
 phone_header: false

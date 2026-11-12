@@ -198,6 +198,8 @@ class ArrStackCardEditor extends HTMLElement {
     // Styles had a tab of its own for a while
     if (this._activeTab === 'styles') this._activeTab = 'appearance';
     const tab = this._activeTab;
+    // The floating page buttons (Sticky nav offset) live only in the Pages layout
+    const pagesNav = this._cfg('discover', 'mobileLayout', 'pages') === 'pages' || this._cfg('discover', 'tabletLayout', 'pages') === 'pages';
     // One-click's own settings show while it is on (the old movie-only key counts)
     // The panels' groups fold like the Appearance tab's; the first of each starts open
     this._rpOpen = this._rpOpen || new Set(['rp.layout', 'lp.downloads']);
@@ -254,12 +256,17 @@ ${EDITOR_CSS}
               <span class="toggle-slider"></span>
             </label>
           </div>
-          ${this._val('swap_sides', false) ? `<div class="hint">Media panel is taller — set Sticky nav offset to ~2000 for the nav to appear immediately on mobile.</div>` : ''}` : ''}
-          <div class="row">
+          ${this._val('swap_sides', false) && pagesNav ? `<div class="hint">Media panel is taller — set Sticky nav offset to ~2000 for the nav to appear immediately on mobile.</div>` : ''}` : ''}
+          ${pagesNav ? `<div class="row">
             <span class="row-label">Sticky nav offset (px)</span>
             <input type="number" data-key="sticky_nav_offset" value="${this._val('sticky_nav_offset', 100)}" min="0" max="500" step="10"/>
           </div>
-          <div class="hint">On a phone, how early the media's page buttons float in as you scroll down to them. Pages layout only.</div>
+          <div class="hint">On a phone or tablet, how early the media's page buttons float in as you scroll down to them. Only with the Pages layout (Media → Discover).</div>` : ''}
+          <div class="row">
+            <span class="row-label">Space above bottom dock (px)</span>
+            <input type="number" data-key="dock_offset" value="${this._val('dock_offset', 0)}" min="0" max="300" step="4"/>
+          </div>
+          <div class="hint">Phone only. In the details of a film, a series or an artist, the window of posters or albums you drag up from the bottom stays above a Bubble Card or glass-cards dock. This adds room above that dock — or, with a dock the card doesn't recognise, keeps this much clear at the bottom of the screen.</div>
         </div>
       </div>
 

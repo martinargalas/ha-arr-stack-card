@@ -164,3 +164,21 @@ test('waiting for the dock: a page that had one waits for it, one without only a
   await new Promise(r => c2._dockWait(r));
   assert.equal(looks2, 3);
 });
+
+test('dock_offset adds room above a dock, or keeps room where none is known', () => {
+  const card = makeCard();
+  Object.defineProperty(card, '_isMob', { get: () => true, configurable: true });
+  card._syncFixedFrame = () => {};
+  const props = {};
+  Object.defineProperty(card, 'style', { configurable: true, value: {
+    getPropertyValue: k => props[k] || '', setProperty: (k, v) => { props[k] = v; }, removeProperty: k => { delete props[k]; },
+  } });
+  card._config = { ...(card._config || {}), dock_offset: 40 };
+  const raf = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = fn => fn();
+  try {
+    card._syncBottomBar(true);   // no dock on the page
+    assert.equal(props['--arr-bottom-bar'], '54px', 'the offset alone, with the usual gap');
+    assert.equal(card._bottomBarTop, window.innerHeight - 40);
+  } finally { globalThis.requestAnimationFrame = raf; }
+});
