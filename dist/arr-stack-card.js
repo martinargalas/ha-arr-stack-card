@@ -1878,6 +1878,14 @@ ${TOKEN_CSS}
       /* Until the sheet is laid out (_ppWireSnTiles) nothing on its posters
          eases: names, ratings and bars appear where they belong, once */
       .sn-tiles-sheet.sn-init *, .sn-tiles-sheet.sn-init { transition: none !important; }
+      /* Dragged or easing (.sheet-moving), the list's fade under the dock is
+         off: tied to the sheet's height, it made the browser paint every
+         poster again each frame, and on Android the pictures blinked. Each
+         poster on a layer of its own, so a new height leaves it as it is. */
+      .popup-body > :is(.sn-tiles-sheet, .mus-albums).sheet-moving :is(.sn-tiles-scroll, .mus-alb-scroll) {
+        -webkit-mask-image: none !important; mask-image: none !important;
+      }
+      .popup-body > .sn-tiles-sheet .sn-tile, .popup-body > .mus-albums .mus-alb { transform: translateZ(0); backface-visibility: hidden; }
       /* A phone's sheet the first time: below the window until the dock is
          known (_dockWait), then it rises into place */
       .popup-body > .sn-tiles-sheet.sn-wait { transform: translateY(calc(100% + 24px)); }
