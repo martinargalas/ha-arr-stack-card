@@ -135,7 +135,19 @@ _ppWireSnTiles(root) {
     // a dock where there is one (the list's own padding carries the dock's
     // height). Under the dock the posters fade, as lists do everywhere else,
     // so the edge that says there are seasons here sits above it.
-    const bar = Math.max(0, (parseFloat(getComputedStyle(scroll).paddingBottom) || 12) - 12);
+    let bar = Math.max(0, (parseFloat(getComputedStyle(scroll).paddingBottom) || 12) - 12);
+    // With a dock: where it really begins on the screen (a pop-up may run on
+    // under the screen's edge), and the posters' fade above it (28px, the
+    // list's mask) — what counts as shown is what stands clear of both, so
+    // three quarters show sharp, and a whole poster means a whole clear one
+    if (bar > 0) {
+      const dockTop = this._bottomBarTop;
+      // The body's foot, where the sheet stands (the sheet itself may still
+      // wait below the window, moved down)
+      const sb = body.getBoundingClientRect().bottom;
+      if (dockTop != null && sb > 0) bar = Math.max(bar, Math.round(sb - dockTop + 14));
+      bar += 28;
+    }
     // Folded, three quarters of the posters show above the dock: they are
     // plainly posters, the rest a drag away
     const peek = Math.round(tileH * 0.75);
