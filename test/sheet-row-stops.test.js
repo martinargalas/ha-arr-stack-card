@@ -182,3 +182,21 @@ test('dock_offset adds room above a dock, or keeps room where none is known', ()
     assert.equal(card._bottomBarTop, window.innerHeight - 40);
   } finally { globalThis.requestAnimationFrame = raf; }
 });
+
+test('a negative dock_offset keeps less than the dock, never below none', () => {
+  const card = makeCard();
+  Object.defineProperty(card, '_isMob', { get: () => true, configurable: true });
+  card._syncFixedFrame = () => {};
+  const props = {};
+  Object.defineProperty(card, 'style', { configurable: true, value: {
+    getPropertyValue: k => props[k] || '', setProperty: (k, v) => { props[k] = v; }, removeProperty: k => { delete props[k]; },
+  } });
+  card._config = { ...(card._config || {}), dock_offset: -40 };
+  const raf = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = fn => fn();
+  try {
+    card._syncBottomBar(true);   // no dock: nothing to take from
+    assert.equal(props['--arr-bottom-bar'], undefined);
+    assert.equal(card._bottomBarTop, null);
+  } finally { globalThis.requestAnimationFrame = raf; }
+});

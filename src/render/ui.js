@@ -258,10 +258,11 @@ class _UiMethods {
       .filter(r => r.height > 0 && r.top > vh / 2 && r.top < vh).map(r => r.top));
     // dock_offset (editor → Layout): px more kept clear above a dock found,
     // or kept clear at the foot where the card knows no dock (a dock of
-    // another kind, or one of its own a theme draws)
-    const off = this._isMob ? Math.max(0, Math.min(300, Math.round(Number(this._config?.dock_offset) || 0))) : 0;
+    // another kind, or one of its own a theme draws). Below 0 it keeps less
+    // than the dock's height, down to none at all
+    const off = this._isMob ? Math.max(-300, Math.min(300, Math.round(Number(this._config?.dock_offset) || 0))) : 0;
     const found_h = Math.max(0, Math.round(vh - top));
-    const h = found_h || off ? found_h + off : 0;
+    const h = Math.max(0, found_h + off);
     this._bottomBarTop = h ? Math.round(vh - h) : null;
     if (h && !this._dockSeen) {
       this._dockSeen = true;
