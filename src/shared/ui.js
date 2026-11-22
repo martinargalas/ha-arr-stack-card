@@ -296,3 +296,15 @@ function wireSheetArea(pill, { getH, setH, metrics, done, area, headBottom, swip
   area.addEventListener('touchend', end, { capture: true });
   area.addEventListener('touchcancel', end, { capture: true });
 }
+
+// One click handler per element and job, however often it is wired. The
+// columns are repainted by morphing (render/layout.js), which keeps a button
+// that did not change — wiring it again on every repaint stacked a listener
+// each time, and one click on a Deluge torrent sent dozens of requests (#50).
+export function onClick(el, key, fn) {
+  if (!el) return;
+  const k = `_arrClick_${key}`;
+  if (el[k]) el.removeEventListener('click', el[k]);
+  el[k] = fn;
+  el.addEventListener('click', fn);
+}

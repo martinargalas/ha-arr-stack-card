@@ -1,4 +1,4 @@
-import { saveDlSort } from '../shared/ui.js';
+import { onClick, saveDlSort } from '../shared/ui.js';
 
 class _WireMethods {
 // `inst` is the qBittorrent the torrent is in ('1' or '2'). Pause or resume all
@@ -45,7 +45,12 @@ async _delugeAction(hash, action, deleteFiles = false) {
   }
   this._reRenderLeft();
   try {
-    await this._callApi('POST', 'arr_stack/deluge/action', { action, hash, deleteFiles });
+    // The proxy's words, as for rTorrent and Transmission (#50): the card's
+    // own (pauseAll, hash) were refused with a 400
+    const mode = isGlobal ? (action === 'pauseAll' ? 'global_pause' : 'global_resume')
+               : action === 'delete' ? (deleteFiles ? 'delete_files' : 'delete')
+               : action;
+    await this._callApi('POST', 'arr_stack/deluge/action', { action: mode, id: hash || '' });
   } catch (e) {
     console.error('[arr-card] Deluge action error:', e);
   } finally {
@@ -201,7 +206,7 @@ _wireActionButtons() {
   // ── qBit global pause / resume ──
   const qbitToggle = this.shadowRoot.querySelector('.qbit-global-toggle');
   if (qbitToggle) {
-    qbitToggle.addEventListener('click', () => {
+    onClick(qbitToggle, 'act', () => {
       const paused = qbitToggle.classList.contains('paused');
       this._qbitAction(null, paused ? 'resumeAll' : 'pauseAll');
     });
@@ -210,7 +215,7 @@ _wireActionButtons() {
   // ── SAB global pause / resume ──
   const sabToggle = this.shadowRoot.querySelector('.sab-global-toggle');
   if (sabToggle) {
-    sabToggle.addEventListener('click', () => {
+    onClick(sabToggle, 'act', () => {
       const paused = sabToggle.classList.contains('paused');
       this._sabAction(paused ? 'resume' : 'pause');
     });
@@ -218,7 +223,7 @@ _wireActionButtons() {
 
   // ── SAB retry buttons ──
   this.shadowRoot.querySelectorAll('.tb-retry').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const nzoId = btn.dataset.nzoid;
       if (nzoId) this._sabRetry(nzoId);
@@ -227,7 +232,7 @@ _wireActionButtons() {
 
   // ── SAB history delete buttons ──
   this.shadowRoot.querySelectorAll('.tb-hist-del').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const nzoId = btn.dataset.nzoid;
       if (nzoId) this._sabHistoryDelete(nzoId);
@@ -236,7 +241,7 @@ _wireActionButtons() {
 
   // ── SAB queue action buttons (confirm / cancel / delete) ──
   this.shadowRoot.querySelectorAll('[data-sab-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const action = btn.dataset.sabAction;
       const nzoId  = btn.dataset.nzoid;
@@ -257,7 +262,7 @@ _wireActionButtons() {
   // ── NZBGet global pause / resume ──
   const nzbgetToggle = this.shadowRoot.querySelector('.nzbget-global-toggle');
   if (nzbgetToggle) {
-    nzbgetToggle.addEventListener('click', () => {
+    onClick(nzbgetToggle, 'act', () => {
       const paused = nzbgetToggle.classList.contains('paused');
       this._nzbgetAction(paused ? 'resume' : 'pause');
     });
@@ -265,7 +270,7 @@ _wireActionButtons() {
 
   // ── NZBGet item action buttons ──
   this.shadowRoot.querySelectorAll('[data-nzbget-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const action = btn.dataset.nzbgetAction;
       const nzbId  = parseInt(btn.dataset.nzbid, 10);
@@ -288,7 +293,7 @@ _wireActionButtons() {
   // ── Deluge global pause / resume ──
   const delugeToggle = this.shadowRoot.querySelector('.deluge-global-toggle');
   if (delugeToggle) {
-    delugeToggle.addEventListener('click', () => {
+    onClick(delugeToggle, 'act', () => {
       const paused = delugeToggle.classList.contains('paused');
       this._delugeAction(null, paused ? 'resumeAll' : 'pauseAll');
     });
@@ -296,7 +301,7 @@ _wireActionButtons() {
 
   // ── Deluge per-torrent action buttons ──
   this.shadowRoot.querySelectorAll('[data-dlg-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const action = btn.dataset.dlgAction;
       const hash   = btn.dataset.dlgHash || '';
@@ -322,7 +327,7 @@ _wireActionButtons() {
   // ── rTorrent global pause / resume ──
   const rtorrentToggle = this.shadowRoot.querySelector('.rtorrent-global-toggle');
   if (rtorrentToggle) {
-    rtorrentToggle.addEventListener('click', () => {
+    onClick(rtorrentToggle, 'act', () => {
       const paused = rtorrentToggle.classList.contains('paused');
       this._rtorrentAction(null, paused ? 'resumeAll' : 'pauseAll');
     });
@@ -330,7 +335,7 @@ _wireActionButtons() {
 
   // ── rTorrent per-torrent action buttons ──
   this.shadowRoot.querySelectorAll('[data-rt-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const action = btn.dataset.rtAction;
       const hash   = btn.dataset.rtHash || '';
@@ -356,7 +361,7 @@ _wireActionButtons() {
   // ── Transmission global pause / resume ──
   const transmissionToggle = this.shadowRoot.querySelector('.transmission-global-toggle');
   if (transmissionToggle) {
-    transmissionToggle.addEventListener('click', () => {
+    onClick(transmissionToggle, 'act', () => {
       const paused = transmissionToggle.classList.contains('paused');
       this._transmissionAction(null, paused ? 'resumeAll' : 'pauseAll');
     });
@@ -364,7 +369,7 @@ _wireActionButtons() {
 
   // ── Transmission per-torrent action buttons ──
   this.shadowRoot.querySelectorAll('[data-tr-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const action = btn.dataset.trAction;
       const hash   = btn.dataset.trHash || '';
@@ -389,7 +394,7 @@ _wireActionButtons() {
 
   // ── Per-torrent action buttons ──
   this.shadowRoot.querySelectorAll('[data-tb-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
+    onClick(btn, 'act', e => {
       e.stopPropagation();
       const action = btn.dataset.tbAction;
       const hash   = btn.dataset.hash || '';
@@ -422,7 +427,7 @@ _wireSort() {
   // The instance switch shares the look, not the job (_dlInstSwitchHtml)
   const btns = this.shadowRoot.querySelectorAll('.sort-btns .sb:not([data-dl-inst])');
   btns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    onClick(btn, 'sort', () => {
       const val = btn.dataset.sort || 'progress_desc';
       if (btn.dataset.client === 'deluge') {
         this._sortDeluge = val;
