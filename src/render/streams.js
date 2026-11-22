@@ -143,8 +143,14 @@ _startStreamsTimer(streams) {
       const s = this._hass?.states?.[endedId];
       if (!s) continue;
       if (s.state !== 'playing' && s.state !== 'paused') continue;
-      const hassPos = s.attributes?.media_position || 0;
-      const hassDur = s.attributes?.media_duration || 0;
+      // Where the player stands now, counted on from when it last said so —
+      // as the bar counts. The bare position stays behind while a player does
+      // not report (Plexamp): read as a restart, the stream came back, ran
+      // out again at once and the section was repainted every second.
+      const a = s.attributes || {};
+      const hassDur = a.media_duration || 0;
+      const upd = a.media_position_updated_at ? new Date(a.media_position_updated_at).getTime() : NaN;
+      const hassPos = (a.media_position || 0) + (s.state === 'playing' && upd ? Math.max(0, (Date.now() - upd) / 1000) : 0);
       if (hassDur > 0 && hassPos < hassDur - 5) {
         this._streamsEnded.delete(endedId);
         anyRestarted = true;
